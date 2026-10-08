@@ -2,50 +2,13 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
-<meta name="theme-color" content="#FFFFFF">
 <title>Cliente</title>
-<link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="assets/img/icon-192.png">
-<link rel="stylesheet" href="assets/css/base.css?v=4">
-<link rel="stylesheet" href="assets/css/modulos.css?v=4">
-<link rel="stylesheet" href="assets/css/app.css?v=4">
+<script>
+// El expediente ahora se abre encima de la lista de Clientes. Los enlaces viejos llegan aquí y se llevan allá.
+(function(){ var u = new URLSearchParams(location.search); var n = new URLSearchParams(); if(u.get('id')) n.set('c', u.get('id')); ['t','revisar','pedir'].forEach(function(k){ if(u.get(k)) n.set(k, u.get(k)); }); location.replace('clientes.html' + (n.toString() ? '?' + n.toString() : '')); })();
+</script>
 </head>
-<body>
-<header class="barra" id="barra"><a class="marca" href="inicio.html" aria-label="Inicio"><img class="logo" src="assets/img/logo.svg?v=4" alt="Airtek" width="96" height="12"><span>Empresas</span></a></header>
-<main class="pagina">
-  <a class="volver solo-pc" href="clientes.html" id="volverPc" style="display:inline-flex"><svg class="i ch" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>Clientes</a>
-  <div class="ficha-cab" id="cabFicha"><div class="izq"><span class="sk" style="width:70%;height:26px"></span><span class="sk" style="width:50%;height:13px;margin-top:10px"></span><span class="sk" style="height:62px;border-radius:18px;margin-top:14px"></span></div></div>
-  <div class="tabs" id="tabs" role="tablist" aria-label="Secciones del cliente">
-    <button type="button" role="tab" data-tab="hilo" class="on" aria-selected="true">Hilo</button>
-    <button type="button" role="tab" data-tab="documentos" aria-selected="false">Documentos</button>
-    <button type="button" role="tab" data-tab="datos" aria-selected="false">Datos</button>
-    <button type="button" role="tab" data-tab="comision" aria-selected="false">Comisión</button>
-  </div>
-  <div class="ficha-cols" id="cuerpoFicha">
-    <div class="col">
-      <section class="panel-tab on" id="tab-hilo" aria-label="Hilo"><div class="sk-bloque"><span class="sk" style="height:14px;width:80%"></span><span class="sk" style="height:14px;width:60%"></span><span class="sk" style="height:14px;width:72%"></span></div></section>
-      <section class="panel-tab" id="tab-comision" aria-label="Comisión"></section>
-    </div>
-    <section class="panel-tab" id="tab-documentos" aria-label="Documentos"></section>
-    <section class="panel-tab" id="tab-datos" aria-label="Datos"></section>
-  </div>
-</main>
-
-<input type="file" id="archivo" class="hidden" multiple accept="image/*,application/pdf" tabindex="-1" aria-hidden="true">
-<input type="file" id="archivosLote" class="hidden" multiple accept="image/*,application/pdf" tabindex="-1" aria-hidden="true">
-
-<section class="hoja completa" id="hojaVer" role="dialog" aria-modal="true" aria-labelledby="tVer" aria-hidden="true"></section>
-<section class="hoja completa" id="hojaVarios" role="dialog" aria-modal="true" aria-labelledby="tVarios" aria-hidden="true"></section>
-<section class="hoja" id="hojaCampo" role="dialog" aria-modal="true" aria-labelledby="tCampo" aria-hidden="true"></section>
-<section class="hoja" id="hojaEstatus" role="dialog" aria-modal="true" aria-labelledby="tEstatus" aria-hidden="true"></section>
-<script src="assets/vendor/supabase.js?v=1"></script>
-<script src="assets/js/supabase-client.js?v=1"></script>
-<script src="assets/js/comun.js?v=4"></script>
-<script src="assets/js/sesion.js?v=4"></script>
-<script src="assets/js/armazon.js?v=4"></script>
-<script src="assets/js/pedir.js?v=4"></script>
-<script src="assets/js/cliente.js?v=4"></script>
-</body>
+<body></body>
 </html>

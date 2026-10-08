@@ -175,6 +175,18 @@ const RPC = {
         por_firmar: v.filter((c) => ['contrato_en_curso', 'por_firmar'].includes(c.estatus)).length, por_instalar: v.filter(porInstalar).length },
       tad_en: null, tad_dias: null, usuarios: yo.rol === 'admin' ? m.personas.filter((p) => p.activo).length : null, hay_demo: false };
   },
+  // Igual que clientes_lista, con los filtros de las listas desplegables y sus opciones
+  clientes_lista2(m, yo, a){
+    const f = a.p_filtros || {}; const todos = visibles(m, yo);
+    const pasa = (c) => (!f.lider || (c.lider || 'Sin líder') === f.lider) && (!f.estatus || c.estatus === f.estatus) && (!f.tipo || segmento(c) === f.tipo) &&
+      (!f.sucursal || c.servicios.some((s) => s.sucursal === f.sucursal)) && (!f.servicio || c.servicios.some((s) => norm(s.estado) === norm(f.servicio)));
+    const m2 = Object.assign({}, m, { datos: Object.assign({}, m.datos, { clientes: m.datos.clientes.filter(pasa) }) });
+    const r = RPC.clientes_lista(m2, yo, a); if(r && r.__error) return r;
+    const un = (l) => Array.from(new Set(l)).sort();
+    r.opciones = { lider: un(todos.map((c) => c.lider || 'Sin líder')), sucursal: un([].concat.apply([], todos.map((c) => c.servicios.map((s) => s.sucursal)))),
+      servicio: un([].concat.apply([], todos.map((c) => c.servicios.map((s) => norm(s.estado).replace(/^./, (x) => x.toUpperCase()))))), tipo: ['PYME', 'PYME + Dedicado', 'Dedicado corporativo', 'Dedicado ISP', 'Natural'] };
+    return r;
+  },
   clientes_lista(m, yo, a){
     if(yo.rol === 'aliado') return error('No tienes permiso para hacer esto');
     const v = visibles(m, yo); const b = norm(a.p_busca); let bd = String(a.p_busca || '').replace(/\D/g, ''); if(bd.length < 4) bd = '';

@@ -252,28 +252,56 @@
   let velo = null; let abierta = null; let volverA = null;
   // Con una hoja abierta, lo de atrás no recibe foco; cerrada, la hoja tampoco
   function fondo(inerte){ Array.prototype.forEach.call(document.querySelectorAll('body > header, body > main, body > nav'), (n) => { n.inert = inerte; }); }
+  // Las hojas se apilan: una acción dentro de una hoja abre otra encima y al cerrarla se vuelve a la anterior.
+  const pila = [];   // [{ h, volver }]
   function prepararHojas(){ Array.prototype.forEach.call(document.querySelectorAll('.hoja'), (h) => { if(h !== abierta) h.inert = true; }); }
   prepararHojas();
-  function abrirHoja(id){
+  function acomodar(){
+    abierta = pila.length ? pila[pila.length - 1].h : null;
+    pila.forEach((x, i) => { x.h.style.zIndex = String(70 + i * 2); x.h.inert = i !== pila.length - 1; x.h.classList.toggle('debajo', i !== pila.length - 1); });
+    if(velo){ velo.classList.toggle('ver', pila.length > 0); velo.style.zIndex = String(69 + (pila.length - 1) * 2); }
+    document.body.classList.toggle('con-hoja', pila.length > 0);
+    fondo(pila.length > 0);
+  }
+  // Se abre sobre la que ya esté; al cerrarla se vuelve a la anterior
+  function abrirHoja(id, opciones){
     const h = $(id); if(!h) return;
-    if(abierta && abierta !== h) cerrarHoja(true);
+    if(pila.some((x) => x.h === h)) return;
     if(!velo){ velo = document.createElement('div'); velo.className = 'velo'; velo.dataset.cierra = '1'; document.body.appendChild(velo); }
-    if(!abierta) volverA = document.activeElement;
-    abierta = h; h.inert = false; h.classList.add('ver'); velo.classList.add('ver'); h.setAttribute('aria-hidden', 'false');
-    document.body.classList.add('con-hoja');
-    fondo(true);
+    pila.push({ h, volver: document.activeElement });
+    // El botón Atrás del teléfono cierra la hoja en vez de sacar de la pantalla
+    try { if(history.state && history.state.ae_hoja === pila.length) history.replaceState({ ae_hoja: pila.length }, ''); else history.pushState({ ae_hoja: pila.length }, ''); } catch (e) {}
+    h.classList.add('ver'); h.setAttribute('aria-hidden', 'false');
+    acomodar();
     const foco = h.querySelector('[data-foco]') || h.querySelector('input,select,textarea,button,a[href]');
     if(foco) setTimeout(() => { try { foco.focus({ preventScroll: true }); } catch (e) { foco.focus(); } }, 60);
   }
-  function cerrarHoja(sinFoco){
-    if(!abierta) return;
-    const h = abierta;
-    h.classList.remove('ver'); h.setAttribute('aria-hidden', 'true'); h.inert = true; velo.classList.remove('ver');
-    document.body.classList.remove('con-hoja');
-    abierta = null; fondo(false);
+  function cerrarHoja(sinFoco, porAtras){
+    if(!pila.length) return;
+    if(!porAtras && history.state && history.state.ae_hoja === pila.length){ saltarAtras++; urlAlCerrar = location.href; try { history.back(); } catch (e) { saltarAtras--; } }
+    const x = pila.pop(); const h = x.h;
+    h.classList.remove('ver', 'debajo'); h.setAttribute('aria-hidden', 'true'); h.inert = true; h.style.zIndex = '';
+    acomodar();
     h.dispatchEvent(new CustomEvent('hoja-cerrada'));
-    if(sinFoco !== true && volverA && volverA.focus && document.contains(volverA)) volverA.focus();
+    if(sinFoco !== true && x.volver && x.volver.focus && document.contains(x.volver)) x.volver.focus();
   }
+  let saltarAtras = 0;
+  let urlAlCerrar = '';
+  // Al cerrar con la equis se retrocede un paso del historial; la dirección (filtros, búsqueda) se conserva
+  window.addEventListener('popstate', () => { if(saltarAtras > 0){ saltarAtras--; if(urlAlCerrar && urlAlCerrar !== location.href){ try { history.replaceState(history.state, '', urlAlCerrar); } catch (e) {} } return; }
+    // Atrás o Adelante: quedan abiertas tantas hojas como diga esa entrada del historial
+    const n = (history.state && history.state.ae_hoja) || 0; while(pila.length > n) cerrarHoja(false, true); });
+  // Tras recargar con una hoja abierta no debe quedar un Atrás que no hace nada
+  try { if(history.state && history.state.ae_hoja) history.replaceState(null, ''); } catch (e) {}
+  function cerrarTodas(){
+    const n = pila.length; if(!n) return;
+    const enHistorial = history.state && history.state.ae_hoja === n;
+    while(pila.length) cerrarHoja(true, true);
+    if(enHistorial){ saltarAtras++; urlAlCerrar = location.href; try { history.go(-n); } catch (e) { saltarAtras--; } }
+  }
+  // Un enlace dentro de una hoja lleva a otra página: se reemplaza la entrada de la hoja para que Atrás funcione
+  document.addEventListener('click', (e) => { const a = e.target.closest('.hoja a[href]'); if(!a || a.target || !pila.length || e.defaultPrevented) return;
+    const h = a.getAttribute('href') || ''; if(!h || h.charAt(0) === '#' || /^(mailto:|tel:|https?:)/i.test(h)) return; e.preventDefault(); location.replace(a.href); });
   function hojaAbierta(){ return abierta ? abierta.id : null; }
   document.addEventListener('click', (e) => {
     const a = e.target.closest('[data-abre]'); if(a){ abrirHoja(a.dataset.abre); return; }
@@ -288,7 +316,7 @@
     window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
   }
 
-  window.Comun = { $, esc, normalizeStr, toast, mensajeError, iniciales, primerNombre, abrirHoja, cerrarHoja, hojaAbierta, prepararHojas,
+  window.Comun = { $, esc, normalizeStr, toast, mensajeError, iniciales, primerNombre, abrirHoja, cerrarHoja, cerrarTodas, hojaAbierta, hojasAbiertas: () => pila.map((x) => x.h.id), prepararHojas,
     ic, partes, hoyClave, diasEntre, fecha, fechaDia, hora, mes, mesAnio, dia, capital, plural, lista,
     docFmt, telWa, enlaceWa, enlaceTel, enlaceCorreo,
     ESTATUS, MOTIVOS, devueltoFrase, sucursal, chipEstatus, estadoServicio, casilla, faltaTexto,

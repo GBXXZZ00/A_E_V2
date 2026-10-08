@@ -8,12 +8,12 @@
 <title>Clientes</title>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="assets/img/icon-192.png">
-<link rel="stylesheet" href="assets/css/base.css?v=4">
-<link rel="stylesheet" href="assets/css/modulos.css?v=4">
-<link rel="stylesheet" href="assets/css/app.css?v=4">
+<link rel="stylesheet" href="assets/css/base.css?v=5">
+<link rel="stylesheet" href="assets/css/modulos.css?v=5">
+<link rel="stylesheet" href="assets/css/app.css?v=5">
 </head>
 <body>
-<header class="barra" id="barra"><a class="marca" href="inicio.html" aria-label="Inicio"><img class="logo" src="assets/img/logo.svg?v=4" alt="Airtek" width="96" height="12"><span>Empresas</span></a></header>
+<header class="barra" id="barra"><a class="marca" href="inicio.html" aria-label="Inicio"><img class="logo" src="assets/img/logo.svg?v=5" alt="Airtek" width="96" height="12"><span>Empresas</span></a></header>
 <main class="pagina">
   <div class="cabeza busca">
     <h1 class="titulo">Clientes</h1>
@@ -23,17 +23,27 @@
       <input class="campo" id="busca" type="search" inputmode="search" enterkeyhint="search" placeholder="Nombre, RIF, código o teléfono" maxlength="60">
     </form>
   </div>
-  <div class="filtros" id="filtros" role="tablist" aria-label="Filtros"></div>
-  <p class="nota-chica hidden" id="notaBusca"></p>
-  <div id="lista" aria-live="polite"></div>
+  <div class="filtros una" id="filtros" role="group" aria-label="Atajos"></div>
+  <div class="sels" id="selsPc"></div>
+  <p class="cuenta-l" id="cuentaLista" aria-live="polite">&nbsp;</p>
+  <div class="enc hidden" id="enc" aria-hidden="true"><span>Cliente</span><span>Líder</span><span>Estatus</span><span>Qué sigue</span><span></span></div>
+  <div id="lista"></div>
   <div class="pie-lista hidden" id="pieLista"></div>
 </main>
+
+<section class="hoja" id="hojaFiltros" role="dialog" aria-modal="true" aria-labelledby="tFiltros" aria-hidden="true">
+  <div class="asa" aria-hidden="true"></div>
+  <div class="cab"><div><h2 id="tFiltros">Filtros</h2><p class="sub-hoja">Elige una opción en cada uno. Los que dejes en Todos no filtran.</p></div><button type="button" class="cerrar" data-cierra="1" aria-label="Cerrar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+  <div class="sels" id="selsTel"></div>
+  <div class="acciones" style="display:flex;gap:10px"><button type="button" class="btn btn-2" id="limpiarFiltros">Limpiar</button><button type="button" class="btn" style="flex:1" id="verFiltrados" data-cierra="1">Ver clientes</button></div>
+</section>
 <script src="assets/vendor/supabase.js?v=1"></script>
 <script src="assets/js/supabase-client.js?v=1"></script>
-<script src="assets/js/comun.js?v=4"></script>
-<script src="assets/js/sesion.js?v=4"></script>
-<script src="assets/js/armazon.js?v=4"></script>
-<script src="assets/js/pedir.js?v=4"></script>
-<script src="assets/js/clientes.js?v=4"></script>
+<script src="assets/js/comun.js?v=5"></script>
+<script src="assets/js/sesion.js?v=5"></script>
+<script src="assets/js/armazon.js?v=5"></script>
+<script src="assets/js/pedir.js?v=5"></script>
+<script src="assets/js/ficha.js?v=5"></script>
+<script src="assets/js/clientes.js?v=5"></script>
 </body>
 </html>

@@ -65,7 +65,7 @@ async function contexto(navegador, opciones, mundo){
       return j({ Key: 'expedientes/' + ruta, Id: 'x' });
     }
     if(u.includes('/storage/v1/object/sign/') && req.method() === 'GET') return r.fulfill({ status: 200, contentType: 'image/png', headers: cab, body: PNG });
-    const rp = u.match(/\/rest\/v1\/rpc\/([a-z_]+)/);
+    const rp = u.match(/\/rest\/v1\/rpc\/([a-z0-9_]+)/);
     if(rp && rp[1] !== 'pin_cambiado'){
       const yo = quien(req); const args = cuerpo(); m.llamadas.push(['rpc', rp[1], args]);
       if(!yo || !yo.activo) return j({ code: 'P0001', message: 'Tu sesión venció. Entra de nuevo' }, 400);
