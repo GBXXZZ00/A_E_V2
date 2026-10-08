@@ -68,6 +68,13 @@ function xlsx(filas){
     ok(nombre + ': queda en el historial con quién la subió', (await p.textContent('#cargas')).includes('Marcos') && !(await p.textContent('#ultimoTad')).includes('ningún'));
     ok(nombre + ': sin desborde', await sinDesborde(p));
     await p.screenshot({ path: 'capturas/05-' + nombre + '-fin.png', fullPage: true });
+    await p.click('#revisarCruce'); await p.waitForSelector('#aplicarCruce');
+    const cz = await p.textContent('#cruce');
+    ok(nombre + ': el cruce primero muestra qué va a cambiar sin guardar', cz.includes('9 clientes reciben su líder') && cz.includes('Comisiones de octubre') && cz.includes('no se ha guardado nada') && llamo(mundo, 'cruce_aplicar').length === 0);
+    await p.screenshot({ path: 'capturas/05-' + nombre + '-cruce.png', fullPage: true });
+    await p.click('#aplicarCruce'); await p.waitForSelector('#cruce a[href="comisiones.html"]');
+    ok(nombre + ': al aplicar lo confirma y lleva a comisiones', mundo.cruceAplicado === true && (await p.textContent('#cruce')).includes('Cruce aplicado'));
+    ok(nombre + ': sin desborde con el cruce', await sinDesborde(p));
     mundo.fallaRpc = 'tad_filas'; await p.click('#otro');
     await p.setInputFiles('#archivos', [{ name: 'tad2.csv', mimeType: 'text/csv', buffer: Buffer.from(csv(5)) }, { name: 'tad3.csv', mimeType: 'text/csv', buffer: Buffer.from(csv(3)) }]);
     await p.waitForSelector('#cargarTodo');

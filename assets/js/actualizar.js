@@ -283,7 +283,8 @@
     if(fallo){ pintar(); toast('La carga se detuvo. ' + fallo.message + '. Puedes volver a intentarlo: no se duplica nada', 'error'); }
     else {
       const crudos = cola.some((a) => a.tipo !== 'tad');
-      fin = { titulo: plural(cola.length, 'archivo cargado', 'archivos cargados'), texto: (total !== null ? 'Ahora hay ' + num(total) + ' clientes en total. ' : '') + (crudos ? 'Las órdenes y la base anterior quedan guardadas: el cruce con los clientes se hace en el siguiente paso.' : '') };
+      fin = { titulo: plural(cola.length, 'archivo cargado', 'archivos cargados'), texto: (total !== null ? 'Ahora hay ' + num(total) + ' clientes en total. ' : '') + 'Sigue con Revisar cruce, aquí abajo.' };
+      cruce = null; pintarCruce();
       pintar(); toast('Carga completa');
     }
     cargas();
@@ -311,11 +312,48 @@
     }
   }
 
+  // ---------- Cruce: primero se prueba (no guarda nada) y después se aplica ----------
+  const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+  const mesDe = (f) => MESES[parseInt(String(f).slice(5, 7), 10) - 1] || '';
+  let cruce = null; let cruzando = false;
+  const lin = (t, v) => '<div class="dato-f"><span>' + esc(t) + '</span><b>' + esc(v) + '</b></div>';
+  function resumenCruce(r){
+    const b = r.base, o = r.odoo, i = r.inst; let h = '<div class="datos" style="margin-top:0">';
+    if(b.hay) h += lin('Base anterior', num(b.lider) + ' clientes reciben su líder, ' + num(b.estatus) + ' cambian de estatus legal y entran ' + num(b.contactos) + ' contactos. ' + num(b.sin_tad) + ' de esa base no están en el TAD.');
+    if(o.hay) h += lin('Órdenes de Odoo', num(o.nuevas) + ' nuevas y ' + num(o.actualizadas) + ' actualizadas. ' + num(o.por_rif + o.por_nombre) + ' con cliente identificado (' + num(o.por_rif) + ' por RIF), ' + num(o.sin_cliente) + ' sin identificar. ' + num(o.abiertas) + ' por instalar.');
+    if(i.hay) h += lin('Instalaciones', num(i.nuevas) + ' nuevas y ' + num(i.completadas) + ' completadas con su serial. ' + num(i.con_orden) + ' encuentran su orden, ' + num(i.por_confirmar) + ' por confirmar y ' + num(i.sin_orden) + ' sin orden.') +
+      lin('No entran', num(i.reemplazos) + ' reemplazos de equipo, ' + num(i.dedicados) + ' de dedicados, ' + num(i.residenciales) + ' residenciales sin orden del equipo y ' + num(i.antes_del_inicio) + ' de antes del 21/08.');
+    h += lin('Comisiones de ' + mesDe(r.corte.mes), num(r.corte.del_corte) + ' del corte y ' + num(r.corte.filas - r.corte.del_corte) + ' que vienen del anterior. ' + num(r.corte.cumplen) + ' ya cumplen.');
+    h += lin('Comisiones de ' + mesDe(r.anterior.mes), num(r.anterior.filas) + ' filas, ' + num(r.anterior.cumplen) + ' cumplen.');
+    return h + '</div>';
+  }
+  function pintarCruce(){
+    const z = $('cruce');
+    if(cruzando){ z.innerHTML = esqueleto(2); return; }
+    if(!cruce){ z.innerHTML = '<button type="button" class="btn" id="revisarCruce">Revisar cruce</button>'; return; }
+    z.innerHTML = '<b style="font-size:15.5px">' + (cruce.aplicado ? 'Cruce aplicado' : 'Esto es lo que va a cambiar') + '</b><div style="margin-top:10px">' + resumenCruce(cruce.r) + '</div>' +
+      (cruce.aplicado ? '<p style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap"><a class="btn btn-chico" href="comisiones.html">Ver comisiones</a><a class="btn btn-chico btn-2" href="clientes.html?f=todos">Ver clientes</a></p>'
+        : '<div class="acc" style="margin-top:14px"><button type="button" class="btn btn-2" id="cancelarCruce">Ahora no</button><button type="button" class="btn" id="aplicarCruce">Aplicar cruce</button></div><p class="nota-chica">Todavía no se ha guardado nada.</p>');
+  }
+  async function correrCruce(aplicar){
+    if(cruzando || ocupado) return;
+    cruzando = true; pintarCruce();
+    try {
+      const r = await rpc(aplicar ? 'cruce_aplicar' : 'cruce_probar', {});
+      cruce = { r, aplicado: aplicar };
+      if(aplicar){ cache.borrarTodo(); toast('Cruce aplicado'); }
+    } catch (e) { toast('No se pudo ' + (aplicar ? 'aplicar' : 'revisar') + ' el cruce. ' + e.message, 'error'); if(aplicar) cruce = null; }
+    cruzando = false; pintarCruce();
+  }
+
   document.addEventListener('click', (e) => {
     const t = e.target;
     if(t.closest('#soltar')){ if(ocupado) return; const i = $('archivos'); i.value = ''; i.click(); return; }
     if(t.closest('#limpiar') || t.closest('#otro')){ if(ocupado) return; lista = []; fin = null; pintar(); return; }
-    if(t.closest('#cargarTodo')) cargarTodo();
+    if(t.closest('#cargarTodo')){ cargarTodo(); return; }
+    if(t.closest('#revisarCruce')){ correrCruce(false); return; }
+    if(t.closest('#aplicarCruce')){ correrCruce(true); return; }
+    if(t.closest('#cancelarCruce')){ cruce = null; pintarCruce(); }
   });
   $('archivos').addEventListener('change', () => elegir($('archivos').files));
   const zona = $('zona');
@@ -328,7 +366,7 @@
     yo = await S.requerir(['admin', 'analista']);
     if(!yo) return;
     window.Armazon.montar(yo, { activo: null, volver: { enlace: 'inicio.html', texto: 'Inicio' } });
-    pintar();
+    pintar(); pintarCruce();
     $('cargas').innerHTML = esqueleto(2);
     cargas();
   })();

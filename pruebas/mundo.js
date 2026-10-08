@@ -162,6 +162,12 @@ function ultimoCorte(c){
   return c.instalaciones.some((i) => { const t = new Date(i.instalada_en).getTime(); return comisionable(i) && t >= iniAnt && t < ini && (!c.legal_ok_en || !i.pago_ok_en); });
 }
 
+function cruceFalso(m, yo){
+  if(!['admin', 'analista'].includes(yo.rol)) return error('No tienes permiso para hacer esto');
+  return { base: { hay: true, clientes: 12, lider: 9, estatus: 4, contactos: 6, sin_tad: 1 }, odoo: { hay: true, nuevas: 7, actualizadas: 2, por_rif: 3, por_nombre: 4, sin_cliente: 2, abiertas: 1 },
+    inst: { hay: true, nuevas: 5, completadas: 3, reemplazos: 2, antes_del_inicio: 4, dedicados: 1, residenciales: 2, con_orden: 4, por_confirmar: 1, sin_orden: 1, aliado: 2, pagos: 0 },
+    corte: { mes: '2026-10-01', filas: 10, cumplen: 2, del_corte: 8 }, anterior: { mes: '2026-09-01', filas: 20, cumplen: 15, del_corte: 20 }, totales: {} };
+}
 const RPC = {
   inicio_datos(m, yo){
     if(yo.rol === 'aliado') return { rol: yo.rol, hoy: hoy() };
@@ -344,6 +350,8 @@ const RPC = {
     c.estado = 'lista'; return { guardadas: c.crudas.length, total: c.filas };
   },
   clientes_rifs(m, yo){ return m.datos.clientes.map((c) => c.doc_numero); },
+  cruce_probar(m, yo){ return cruceFalso(m, yo); },
+  cruce_aplicar(m, yo){ const r = cruceFalso(m, yo); if(!r.error) m.cruceAplicado = true; return r; },
   cargas_ultimas(m, yo){
     if(!['admin', 'analista'].includes(yo.rol)) return error('No tienes permiso para hacer esto');
     return (m.cargas || []).filter((c) => c.estado !== 'procesando').slice().reverse();
