@@ -18,7 +18,7 @@ const { ok, cerrar } = marcador();
     await p.click('a.corte'); await p.waitForURL('**/comisiones.html'); await p.waitForSelector('.grupo');
     ok(nombre + ': Comisiones marca su pestaña', (await p.textContent(navSel + ' .on')).trim() === 'Comisiones');
     const grupos = await p.locator('.grupo').count();
-    ok(nombre + ': agrupa por líder', grupos === 3 && (await p.textContent('.mets .negro')).includes('de 16'));
+    ok(nombre + ': agrupa por líder', grupos === 4 && (await p.textContent('.mets .negro')).includes('de 16'));
     ok(nombre + ': los grupos empiezan cerrados', (await p.locator('.grupo.abierto').count()) === 0);
     await p.locator('.grupo-cab').filter({ hasText: 'Rosa Paredes' }).click();
     ok(nombre + ': al abrir separa el último corte', (await p.locator('.grupo.abierto .sub-bloque').count()) === 2 && (await p.textContent('.grupo.abierto .sub-bloque')).includes('Último corte'));

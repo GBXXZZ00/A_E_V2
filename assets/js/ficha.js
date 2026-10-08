@@ -117,7 +117,12 @@
         es_top: d.valor === 'true' ? 'lo marcó como Cliente TOP' : 'le quitó la marca de Cliente TOP', es_isp: d.valor === 'true' ? 'lo marcó como proveedor de internet' : 'le quitó la marca de proveedor de internet' }[h.texto] || 'actualizó un dato'); break;
       case 'gestion': t = quien + (d.hecho ? ' marcó la ' : ' quitó la marca de la ') + (h.texto === 'bienvenida' ? 'carta de bienvenida' : 'proforma') + (d.hecho ? ' como enviada' : ''); break;
       case 'pago': tono = h.texto === 'pagada' ? 'verde' : ''; t = quien + (h.texto === 'pagada' ? ' marcó la instalación como pagada' : ' quitó el pago de la instalación'); break;
-      case 'instalacion': t = 'Se instaló el servicio'; break;
+      case 'instalacion':
+        if(h.texto === 'asignada'){ t = quien + ' asignó la comisión a <b>' + esc(d.dueno || '') + '</b>' + (d.orden ? ', con la orden ' + esc(String(d.orden).split('/').pop()) : ', sin orden de Odoo'); }
+        else if(h.texto === 'excepcion'){ tono = 'verde'; t = quien + ' dio una excepción de comisión'; glo = d.motivo ? '<div class="glo gris">' + esc(d.motivo) + '</div>' : ''; }
+        else if(h.texto === 'excepcion_quitada') t = quien + ' quitó la excepción de comisión';
+        else t = 'Se instaló el servicio';
+        break;
       case 'correo': tono = 'azul'; t = '<b>Correo del cliente</b>'; glo = h.texto ? '<div class="glo gris">' + esc(h.texto) + '</div>' : ''; break;
       default: t = esc(h.texto || h.tipo);
     }

@@ -591,3 +591,44 @@ button.fila{width:100%;text-align:left;background:none}
 .chk > i .i{width:13px;height:13px;stroke-width:3}
 .chk > i.ok{background:var(--verde);color:#fff} .chk > i.rv{background:var(--ambar-bg);color:var(--ambar)} .chk > i.no{border:2px solid var(--rojo)}
 @media (max-width:899px){ .mini{min-height:44px} }
+
+/* v10: comisiones con orden, dueño, excepción y certificación */
+.tx-rojo{color:var(--rojo);font-weight:700}
+.tx-ambar{color:var(--ambar);font-weight:700}
+.tagn{display:inline-block;margin-right:6px;padding:0 7px;border-radius:var(--pill);background:var(--surface-3);color:var(--text);font-size:11px;font-weight:700;line-height:18px;vertical-align:1px}
+.grupo .fila small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.franja{display:flex;align-items:center;gap:12px;width:100%;margin-top:12px;padding:12px 14px;border-radius:16px;text-align:left;font-size:13px;min-height:56px}
+.franja > span{flex:1;min-width:0}
+.franja b{display:block;font-size:14.5px}
+.franja .i{width:20px;height:20px;flex:none}
+.franja .mini{background:#fff}
+button.franja{transition:transform 140ms var(--ease-out)}
+button.franja:active{transform:scale(.97)}
+.linea-corte{margin-top:16px}
+.linea-corte .buscar{margin-top:0}
+.acc-corte{display:flex;gap:8px;flex-wrap:wrap}
+.acc-corte:empty{display:none}
+.acc-corte .mini{display:inline-flex;align-items:center;gap:6px}
+.acc-corte .mini .i{width:16px;height:16px}
+.ops{margin-top:2px}
+.opr{display:flex;align-items:flex-start;gap:12px;padding:12px 2px;box-shadow:0 -1px 0 var(--line);cursor:pointer;min-height:48px}
+.opr:first-child{box-shadow:none}
+.opr input{width:20px;height:20px;margin:1px 0 0;flex:none;accent-color:var(--accent)}
+.opr span{flex:1;min-width:0}
+.opr b{display:block;font-size:14.5px}
+.opr small{display:block;font-size:12.5px;color:var(--text2);overflow-wrap:anywhere}
+.opr small.mal,.nota-chica.mal{color:var(--rojo);font-weight:600}
+.opr.no{cursor:default}
+.opr.no b,.opr.no small:not(.mal){color:var(--text3)}
+.busca-linea{display:flex;gap:8px;align-items:center}
+.busca-linea .campo{flex:1;min-width:0;height:44px}
+.busca-linea .btn{flex:none}
+.chk > i.opc{border:2px solid var(--line)}
+.chk .mini + .mini{margin-left:-2px}
+.hoja .estado + .estado{margin-top:8px}
+@media (min-width:900px){
+  .linea-corte{margin-top:22px}
+  .linea-corte .buscar{max-width:420px}
+  .acc-corte{margin-left:auto}
+}
+@media (prefers-reduced-motion:reduce){ button.franja{transition:none} }

@@ -13,6 +13,7 @@ function basePersonas(){
     { id: '11111111-1111-4111-8111-111111111111', usuario: 'marcos', pin: '482913', nombre: 'Marcos Rivas', rol: 'admin', cargo: 'Administrador de contratos', equipo: 'ambos', codigo_vendedor: 1, nombre_odoo: null, activo: true, debe_cambiar_pin: false },
     { id: '22222222-2222-4222-8222-222222222222', usuario: 'lucia', pin: '739105', nombre: 'Lucía Ferrer', rol: 'lider', cargo: 'Líder de ventas', equipo: 'ventas', codigo_vendedor: null, nombre_odoo: 'Lucía Ferrer', activo: true, debe_cambiar_pin: false },
     { id: '33333333-3333-4333-8333-333333333333', usuario: 'pedro', pin: '204871', nombre: 'Pedro Salas', rol: 'analista', cargo: 'Analista de canales', equipo: 'ventas', codigo_vendedor: 5, nombre_odoo: 'Pedro Salas', activo: true, debe_cambiar_pin: true },
+    { id: '66666666-6666-4666-8666-666666666666', usuario: 'elena', pin: '315806', nombre: 'Elena Soto', rol: 'analista', senior: true, cargo: 'Analista Senior', equipo: 'ambos', codigo_vendedor: null, nombre_odoo: null, whatsapp: null, correo: null, activo: true, debe_cambiar_pin: false },
     { id: '44444444-4444-4444-8444-444444444444', usuario: 'baja', pin: '918273', nombre: 'Cuenta De Baja', rol: 'lider', cargo: null, equipo: 'ventas', codigo_vendedor: null, nombre_odoo: null, activo: false, debe_cambiar_pin: false }
   ];
 }

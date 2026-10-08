@@ -30,7 +30,7 @@
     const s = await sesionActual();
     if(!s) return null;
     const { data, error } = await db.from('perfiles')
-      .select('id, usuario, nombre, rol, cargo, equipo, codigo_vendedor, activo, debe_cambiar_pin')
+      .select('id, usuario, nombre, rol, senior, cargo, equipo, codigo_vendedor, activo, debe_cambiar_pin')
       .eq('id', s.user.id).maybeSingle();
     if(error) throw error;
     perfilActual = data || null;
