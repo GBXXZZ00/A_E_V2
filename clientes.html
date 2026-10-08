@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
 <meta name="theme-color" content="#FFFFFF">
-<title>Inicio</title>
+<title>Clientes</title>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="assets/img/icon-192.png">
 <link rel="stylesheet" href="assets/css/base.css?v=3">
@@ -15,21 +15,25 @@
 <body>
 <header class="barra" id="barra"><a class="marca" href="inicio.html" aria-label="Inicio"><img class="logo" src="assets/img/logo.svg?v=3" alt="Airtek" width="96" height="12"><span>Empresas</span></a></header>
 <main class="pagina">
-  <div class="cols inicio">
-    <section>
-      <h1 class="titulo" id="saludo">&nbsp;</h1>
-      <p class="sub" id="subSaludo">&nbsp;</p>
-      <div id="zonaCorte"></div>
-      <div id="zonaPendientes" aria-live="polite"></div>
-    </section>
-    <section id="zonaModulos"></section>
+  <div class="cabeza busca">
+    <h1 class="titulo">Clientes</h1>
+    <form class="buscar" id="formBusca" role="search" autocomplete="off">
+      <label class="solo-lector" for="busca">Buscar cliente</label>
+      <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM20 20l-3.5-3.5"/></svg>
+      <input class="campo" id="busca" type="search" inputmode="search" enterkeyhint="search" placeholder="Nombre, RIF, código o teléfono" maxlength="60">
+    </form>
   </div>
+  <div class="filtros" id="filtros" role="tablist" aria-label="Filtros"></div>
+  <p class="nota-chica hidden" id="notaBusca"></p>
+  <div id="lista" aria-live="polite"></div>
+  <div class="pie-lista hidden" id="pieLista"></div>
 </main>
 <script src="assets/vendor/supabase.js?v=1"></script>
 <script src="assets/js/supabase-client.js?v=1"></script>
 <script src="assets/js/comun.js?v=3"></script>
 <script src="assets/js/sesion.js?v=3"></script>
 <script src="assets/js/armazon.js?v=3"></script>
-<script src="assets/js/inicio.js?v=3"></script>
+<script src="assets/js/pedir.js?v=3"></script>
+<script src="assets/js/clientes.js?v=3"></script>
 </body>
 </html>

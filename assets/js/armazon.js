@@ -20,7 +20,7 @@
     const barra = $('barra');
     barra.innerHTML =
       (o.volver ? '<a class="barra-volver" href="' + esc(o.volver.enlace) + '">' + ic('volver', 'ch') + esc(o.volver.texto) + '</a>' : '') +
-      '<a class="marca" href="inicio.html" aria-label="Inicio"><img class="logo" src="assets/img/logo.svg?v=2" alt="Airtek" width="96" height="12"><span>Empresas</span></a>' +
+      '<a class="marca" href="inicio.html" aria-label="Inicio"><img class="logo" src="assets/img/logo.svg?v=3" alt="Airtek" width="96" height="12"><span>Empresas</span></a>' +
       (conNav ? '<nav class="navpc" aria-label="Navegación">' + NAV.map((n) => '<a href="' + n.enlace + '"' + (o.activo === n.id ? ' class="on" aria-current="page"' : '') + '>' + n.texto + '</a>').join('') + '</nav>' : '') +
       '<span class="sep"></span>' +
       (o.acciones ? '<div class="acciones-bar" id="accionesBar">' + o.acciones + '</div>' : '') +

@@ -125,7 +125,7 @@ a.mod:active{transform:scale(.97)}
 .filtros button,.filtros a{display:flex;align-items:center;gap:6px;height:40px;padding:0 14px;border-radius:var(--pill);background:var(--surface-2);font-size:13.5px;font-weight:600;color:var(--text2);white-space:nowrap}
 .filtros .on{background:var(--text);color:#fff}
 .filtros em{font-style:normal;opacity:.7}
-.buscar{position:relative;margin-top:16px}
+.buscar{position:relative;margin-top:16px;width:100%}
 .buscar .i{position:absolute;left:18px;top:50%;margin-top:-11px;color:var(--text3);pointer-events:none}
 .buscar .campo{padding-left:50px;height:50px}
 .mets{display:grid;grid-template-columns:1.25fr 1fr 1fr;gap:10px;margin-top:16px}
@@ -308,6 +308,7 @@ a.mod:active{transform:scale(.97)}
 .hoja.completa .hoja-pie{display:flex;gap:10px;padding:12px 20px calc(16px + var(--safe-b));border-top:1px solid var(--line);background:#fff}
 .hoja.completa .hoja-pie .btn{flex:1;min-width:0}
 .hoja.completa .hoja-pie.col{flex-direction:column;gap:8px}
+.hoja.completa .hoja-pie.col .btn{flex:none}
 .hoja.completa .hoja-pie p{font-size:13px;color:var(--text2);text-align:center}
 .hoja .sub-hoja{font-size:13.5px;color:var(--text2);margin-top:2px}
 .selector{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:5px;border-radius:var(--pill);background:var(--surface-2)}
@@ -418,6 +419,7 @@ a.mod:active{transform:scale(.97)}
   .ficha-cab{display:flex;align-items:center;gap:20px}
   .ficha-cab .izq{flex:1;min-width:0}
   .ficha-cab .nom{font-size:30px}
+  .ficha-cab .linea1 h1{flex:0 1 auto}
   .ficha-cab .paso{margin-top:0;width:400px;flex:none}
   .ficha-cab .contacto{display:flex;gap:8px}
   .escribir{position:static;border-top:1px solid var(--line);margin:0 -20px -20px;padding:12px 16px;border-radius:0 0 24px 24px}
@@ -435,6 +437,8 @@ a.mod:active{transform:scale(.97)}
   .hoja.completa .hoja-pie.fin .btn{flex:none;min-width:180px}
 }
 @media (max-width:899px){
+  .filtros button,.filtros a,.tres button,.ck,.paginas button{min-height:44px}
+  .h2 .der{min-height:44px}
   .solo-pc{display:none !important}
   .ficha-cab .contacto{display:none}
   body.modo-ficha .barra .marca,body.modo-ficha .barra .cuenta{display:none}
@@ -452,3 +456,7 @@ a.mod:active{transform:scale(.97)}
 /* Usuarios dentro del armazón nuevo */
 .persona b,.persona .det{min-width:0;overflow-wrap:anywhere}
 .persona .av{color:var(--text)}
+
+#lado{margin-top:16px}
+@media (min-width:900px){#lado{margin-top:10px}}
+@media (min-width:900px){.filtros [data-chico]{height:32px}}
