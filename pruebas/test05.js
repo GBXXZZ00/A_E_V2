@@ -3,8 +3,8 @@ const { chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar } = requir
 const { ok, cerrar } = marcador();
 const llamo = (m, f) => m.llamadas.filter((l) => l[0] === 'rpc' && l[1] === f);
 function csv(n){
-  let t = 'Sucursal,Cliente,Tipo,Documento,Fecha_Instalacion,Nombre,Equipo,Plan,Estado,CATEGORIA,CXCPENDIENTE,INSTALADOR\n';
-  for(let i = 1; i <= n; i++) t += '824,' + String(700000 + i).padStart(8, '0') + ',J,0' + (597000000 + i) + ',15-03-2025,"Comercio de Prueba ' + i + ', C.A",SERIE' + i + ',ORO-EMP,Habilitado,PYME-1GB,' + (i % 2 ? 'SI' : 'NO') + ',INVENTADO\n';
+  let t = 'Sucursal,Cliente,Tipo,Documento,Fecha_Instalacion,Nombre,Equipo,Plan,Estado,CATEGORIA,CXCPENDIENTE,INSTALADOR,Telefono,Direccion\n';
+  for(let i = 1; i <= n; i++) t += '824,' + String(700000 + i).padStart(8, '0') + ',J,0' + (597000000 + i) + ',15-03-2025,"Comercio de Prueba ' + i + ', C.A",SERIE' + i + ',ORO-EMP,Habilitado,PYME-1GB,' + (i % 2 ? 'SI' : 'NO') + ',INVENTADO,' + (i % 3 ? '41455501' + String(i % 100).padStart(2, '0') : '') + ',Calle inventada ' + i + '\n';
   t += '824,00700001,J,0597000001,31-02-2025,"Comercio de Prueba 1, C.A",SERIEB,ORO-EMP,Habilitado,PYME-1GB,NO,INVENTADO\n';   // fecha imposible: entra sin fecha
   t += '824,00799999,J,#N/A,01-01-2025,Fila Mala,X,ORO,Habilitado,PYME-1GB,NO,INVENTADO\n';
   t += '824,00799998,J,597999998,01-01-2025,NaN,X,ORO,Habilitado,PYME-1GB,NO,INVENTADO\n';
@@ -57,6 +57,8 @@ function xlsx(filas){
     ok(nombre + ': los clientes quedan en la base', mundo.datos.clientes.length === antes + 900);
     const f0 = lotes[0][2].p_filas[0];
     ok(nombre + ': la fecha viaja como fecha y los acentos se leen', f0.f === '2025-03-15' && f0.n === 'Comercio de Prueba 1, C.A' && lotes[2][2].p_filas.slice(-1)[0].f === '');
+    const tc = llamo(mundo, 'tad_contactos');
+    ok(nombre + ': teléfono y dirección viajan aparte y no en el lote principal', tc.length === 3 && tc[0][2].p_filas[0].di === 'Calle inventada 1' && tc[0][2].p_filas[0].te === '4145550101' && !('te' in f0) && !('di' in f0));
     const cr = llamo(mundo, 'crudo_filas'); const ini = llamo(mundo, 'crudo_iniciar').map((l) => l[2].p_fuente);
     ok(nombre + ': la base anterior, Odoo y las órdenes se guardan en ese orden', ini.join() === 'base_vieja,odoo,instalaciones' && llamo(mundo, 'crudo_cerrar').length === 3);
     const od = cr[1][2].p_filas;
@@ -70,7 +72,7 @@ function xlsx(filas){
     await p.screenshot({ path: 'capturas/05-' + nombre + '-fin.png', fullPage: true });
     await p.click('#revisarCruce'); await p.waitForSelector('#aplicarCruce');
     const cz = await p.textContent('#cruce');
-    ok(nombre + ': el cruce primero muestra qué va a cambiar sin guardar', cz.includes('9 clientes reciben su líder') && cz.includes('Comisiones de octubre') && cz.includes('no se ha guardado nada') && llamo(mundo, 'cruce_aplicar').length === 0);
+    ok(nombre + ': el cruce primero muestra qué va a cambiar sin guardar', cz.includes('9 clientes reciben su líder') && cz.includes('Comisiones de octubre') && cz.includes('3 quedan pendientes por asignar') && cz.includes('no se ha guardado nada') && llamo(mundo, 'cruce_aplicar').length === 0);
     await p.screenshot({ path: 'capturas/05-' + nombre + '-cruce.png', fullPage: true });
     await p.click('#aplicarCruce'); await p.waitForSelector('#cruce a[href="comisiones.html"]');
     ok(nombre + ': al aplicar lo confirma y lleva a comisiones', mundo.cruceAplicado === true && (await p.textContent('#cruce')).includes('Cruce aplicado'));

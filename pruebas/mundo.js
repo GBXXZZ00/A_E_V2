@@ -166,7 +166,7 @@ function cruceFalso(m, yo){
   if(!['admin', 'analista'].includes(yo.rol)) return error('No tienes permiso para hacer esto');
   return { base: { hay: true, clientes: 12, lider: 9, estatus: 4, contactos: 6, sin_tad: 1 }, odoo: { hay: true, nuevas: 7, actualizadas: 2, por_rif: 3, por_nombre: 4, sin_cliente: 2, abiertas: 1 },
     inst: { hay: true, nuevas: 5, completadas: 3, reemplazos: 2, antes_del_inicio: 4, dedicados: 1, residenciales: 2, con_orden: 4, por_confirmar: 1, sin_orden: 1, aliado: 2, pagos: 0 },
-    corte: { mes: '2026-10-01', filas: 10, cumplen: 2, del_corte: 8 }, anterior: { mes: '2026-09-01', filas: 20, cumplen: 15, del_corte: 20 }, totales: {} };
+    corte: { mes: '2026-10-01', filas: 10, cumplen: 2, del_corte: 8, por_asignar: 3 }, anterior: { mes: '2026-09-01', filas: 20, cumplen: 15, del_corte: 20 }, totales: {} };
 }
 const RPC = {
   inicio_datos(m, yo){
@@ -329,6 +329,7 @@ const RPC = {
     });
     return c.resumen;
   },
+  tad_contactos(m, yo, a){ const c = (m.cargas || []).find((x) => x.id === a.p_carga && x.estado === 'procesando'); if(!c) return error('Esta carga ya se cerró. Vuelve a empezar'); c.contactos = (c.contactos || 0) + a.p_filas.length; return a.p_filas.length; },
   tad_cerrar(m, yo, a){
     const c = (m.cargas || []).find((x) => x.id === a.p_carga && x.estado === 'procesando'); if(!c) return error('Esta carga ya se cerró');
     c.estado = c.resumen.invalidas ? 'con_errores' : 'lista';

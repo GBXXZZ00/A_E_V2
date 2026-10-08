@@ -4,7 +4,7 @@
   const { $, esc, rpc, toast, normalizeStr, fecha, hora, plural, esqueleto, cache } = window.Comun;
   const S = window.Sesion;
   const LOTE = 400;
-  const COLUMNAS = { s: 'sucursal', c: 'cliente', t: 'tipo', d: 'documento', f: 'fecha_instalacion', n: 'nombre', e: 'equipo', p: 'plan', es: 'estado', ca: 'categoria', cx: 'cxcpendiente' };
+  const COLUMNAS = { s: 'sucursal', c: 'cliente', t: 'tipo', d: 'documento', f: 'fecha_instalacion', n: 'nombre', e: 'equipo', p: 'plan', es: 'estado', ca: 'categoria', cx: 'cxcpendiente', te: 'telefono', di: 'direccion' };
   const OBLIGATORIAS = ['s', 'c', 'd', 'n'];
   const BASURA = ['nan', '#n/a', '#ref!', '#value!', 'null', 'undefined'];
   let yo = null; let lista = []; let ocupado = false; let fin = null;
@@ -260,7 +260,13 @@
     const carga = tad ? await rpc('tad_iniciar', { p_archivo: a.nombre, p_total: a.datos.length + a.malas })
       : await rpc('crudo_iniciar', { p_fuente: a.tipo, p_archivo: a.nombre, p_total: a.datos.length });
     for(let i = 0; i < a.datos.length; i += paso){
-      await conReintento(() => rpc(tad ? 'tad_filas' : 'crudo_filas', { p_carga: carga, p_filas: a.datos.slice(i, i + paso) }));
+      const lote = a.datos.slice(i, i + paso);
+      if(tad){
+        // El teléfono y la dirección viajan aparte para no engordar el lote principal
+        await conReintento(() => rpc('tad_filas', { p_carga: carga, p_filas: lote.map((o) => { const c = Object.assign({}, o); delete c.te; delete c.di; return c; }) }));
+        const con = lote.filter((o) => o.te || o.di).map((o) => ({ s: o.s, c: o.c, te: o.te, di: o.di }));
+        if(con.length) await conReintento(() => rpc('tad_contactos', { p_carga: carga, p_filas: con }));
+      } else await conReintento(() => rpc('crudo_filas', { p_carga: carga, p_filas: lote }));
       a.hecho = Math.min(i + paso, a.datos.length); pintar();
     }
     const r = await rpc(tad ? 'tad_cerrar' : 'crudo_cerrar', { p_carga: carga });
@@ -321,9 +327,9 @@
     const b = r.base, o = r.odoo, i = r.inst; let h = '<div class="datos" style="margin-top:0">';
     if(b.hay) h += lin('Base anterior', num(b.lider) + ' clientes reciben su líder, ' + num(b.estatus) + ' cambian de estatus legal y entran ' + num(b.contactos) + ' contactos. ' + num(b.sin_tad) + ' de esa base no están en el TAD.');
     if(o.hay) h += lin('Órdenes de Odoo', num(o.nuevas) + ' nuevas y ' + num(o.actualizadas) + ' actualizadas. ' + num(o.por_rif + o.por_nombre) + ' con cliente identificado (' + num(o.por_rif) + ' por RIF), ' + num(o.sin_cliente) + ' sin identificar. ' + num(o.abiertas) + ' por instalar.');
-    if(i.hay) h += lin('Instalaciones', num(i.nuevas) + ' nuevas y ' + num(i.completadas) + ' completadas con su serial. ' + num(i.con_orden) + ' encuentran su orden, ' + num(i.por_confirmar) + ' por confirmar y ' + num(i.sin_orden) + ' sin orden.') +
+    if(i.hay) h += lin('Instalaciones', num(i.nuevas) + ' nuevas y ' + num(i.completadas) + ' completadas con su serial. ' + num(i.con_orden) + ' encuentran su orden, ' + num(i.por_confirmar) + ' por confirmar y ' + num(i.sin_orden) + ' sin orden. Sin orden confirmada no comisionan.') +
       lin('No entran', num(i.reemplazos) + ' reemplazos de equipo, ' + num(i.dedicados) + ' de dedicados, ' + num(i.residenciales) + ' residenciales sin orden del equipo y ' + num(i.antes_del_inicio) + ' de antes del 21/08.');
-    h += lin('Comisiones de ' + mesDe(r.corte.mes), num(r.corte.del_corte) + ' del corte y ' + num(r.corte.filas - r.corte.del_corte) + ' que vienen del anterior. ' + num(r.corte.cumplen) + ' ya cumplen.');
+    h += lin('Comisiones de ' + mesDe(r.corte.mes), num(r.corte.del_corte) + ' del corte y ' + num(r.corte.filas - r.corte.del_corte) + ' que vienen del anterior. ' + num(r.corte.cumplen) + ' ya cumplen y ' + num(r.corte.por_asignar || 0) + ' quedan pendientes por asignar.');
     h += lin('Comisiones de ' + mesDe(r.anterior.mes), num(r.anterior.filas) + ' filas, ' + num(r.anterior.cumplen) + ' cumplen.');
     return h + '</div>';
   }
