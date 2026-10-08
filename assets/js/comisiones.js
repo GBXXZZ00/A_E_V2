@@ -215,8 +215,8 @@
     const x = (F.documentos || []).find((y) => y.casilla === cas && y.numero === num); const k = cas + ':' + num;
     if(x && x.estado === 'aprobado') return [1, '<div class="chk"><i class="ok">' + ic('check') + '</i><span>' + esc(nombre) + '</span></div>'];
     if(x && x.estado === 'por_revisar') return [0, '<div class="chk"><i class="rv">' + ic('reloj') + '</i><span>' + esc(nombre) + '<small>Subido. Legal lo está revisando</small></span><button type="button" class="mini" data-ir-doc="' + k + '">Ver</button></div>'];
-    if(x && x.estado === 'devuelto') return [0, '<div class="chk"><i class="no"></i><span>' + esc(nombre) + '<small class="mal">Devuelto' + (x.revisado_por ? ' por ' + esc(primerNombre(x.revisado_por)) : '') + (x.revisado_en ? ' ' + esc(dia(x.revisado_en).toLowerCase()) : '') + ': ' + esc((MOTIVOS[x.motivo] || 'revisa la nota').toLowerCase()) + (x.nota ? '. "' + esc(x.nota) + '"' : '') + '</small></span><button type="button" class="mini pri" data-ir-doc="' + k + '">Subir de nuevo</button></div>'];
-    return [0, '<div class="chk"><i class="no"></i><span>' + esc(nombre) + '</span><button type="button" class="mini pri" data-ir-doc="' + k + '">Subir</button></div>'];
+    if(x && x.estado === 'devuelto') return [0, '<div class="chk"><i class="no"></i><span>' + esc(nombre) + '<small class="mal">Devuelto' + (x.revisado_por ? ' por ' + esc(primerNombre(x.revisado_por)) : '') + (x.revisado_en ? ' ' + esc(dia(x.revisado_en).toLowerCase()) : '') + ': ' + esc((MOTIVOS[x.motivo] || 'revisa la nota').toLowerCase()) + (x.nota ? '. "' + esc(x.nota) + '"' : '') + '</small></span><button type="button" class="mini pri" data-sube-doc="' + k + '">Subir de nuevo</button></div>'];
+    return [0, '<div class="chk"><i class="no"></i><span>' + esc(nombre) + '</span><button type="button" class="mini pri" data-sube-doc="' + k + '">Subir</button></div>'];
   }
   // Contacto del representante: teléfono y correo en una sola línea
   function itemContacto(r, n, natural){
@@ -271,6 +271,7 @@
     }
     h += '<div class="req"><div class="req-t">Legal<span class="m ' + (legalOk ? 'verde' : 'rojo') + '">' + (legalOk ? 'Cumple' : 'Falta') + '</span></div>' +
         '<p>' + (legalOk ? 'Cumplió el ' + esc(fecha(c.legal_ok_en)) + '.' : hechos + ' de ' + total + ' listos. Estatus: ' + esc((window.Comun.ESTATUS[c.estatus] || {}).t || c.estatus) + '.') + '</p>' + legal +
+        '<p class="nota-chica hidden" id="subidaCom" role="status"><span class="cargando-linea"><i></i></span> </p>' +
         (fal.length ? '<div class="chk"><span>¿No los tienes?</span><button type="button" class="mini" id="pedirCom">Pedir al cliente</button></div>' : '') + '</div>';
     if(i && i.comisiona){
       h += '<div class="req"><div class="req-t">Pago de instalación<span class="m ' + (pagoOk ? 'verde' : 'rojo') + '">' + (pagoOk ? 'Pagada' : 'Debe') + '</span></div>' +
@@ -368,7 +369,9 @@
     if(t.closest('#abrirExp')){ alExpediente({ tab: 'datos' }); return; }
     if(t.closest('#verHilo')){ alExpediente({ tab: 'hilo' }); return; }
     if((b = t.closest('[data-ir-doc]'))){ alExpediente({ tab: 'documentos', casilla: b.dataset.irDoc }); return; }
-    if((b = t.closest('[data-ir-campo]'))){ alExpediente({ tab: 'documentos', campo: b.dataset.irCampo }); return; }
+    // Subir un documento o escribir un dato se hace aquí mismo, sin saltar al expediente
+    if((b = t.closest('[data-sube-doc]')) && K && K.F){ const p = b.dataset.subeDoc.split(':'); window.Ficha.subirA(K.F, p[0], Number(p[1]), tras); return; }
+    if((b = t.closest('[data-ir-campo]')) && K && K.F){ window.Ficha.editarCampo(K.F, b.dataset.irCampo, tras); return; }
     if(t.closest('#pedirCom') && K && K.F){ const c = K.F.cliente; window.Pedir.abrir({ id: c.id, nombre: c.nombre, es_natural: c.es_natural, estatus: c.estatus, falta: K.F.faltantes, tel: c.tel, correo: c.correo }, { yo: yo.nombre, alHacer: tras }); return; }
     if(t.closest('#bajarExcel') && d){ bajarExcel(); return; }
     if(t.closest('#abrirCert') && d){ abrirCertificar(); return; }

@@ -11,13 +11,15 @@
 
   let yo = null; let id = 0; let F = null; let tab = 'datos'; let montada = false; let alCerrar = null; let llegada = null;
   const encima = () => { const h = hojaAbierta(); return !!h && h !== 'hojaFicha'; };
-  let hiloTodo = false; let soloNotas = false; let repExtra = 0;
+  let hiloTodo = false; let soloNotas = false; let repExtra = 0; let actaExtra = 0;
+  let fuera = null;               // { cliente, F, alTerminar }: se sube o se escribe desde otra hoja, sin abrir el expediente
   let ocupado = false;            // hay una subida en curso
   let destino = null;             // casilla a la que va el archivo que se está eligiendo
   let ver = null;                 // { docId, cola, paso, motivo, archivo }
   let lote = [];                  // archivos de "Subir varios"
   let campo = null;               // lo que se edita en la hoja pequeña
 
+  const FF = () => F;
   const docDe = (cas, num) => (F.documentos || []).find((d) => d.casilla === cas && d.numero === num);
   const porRevisar = () => (F.documentos || []).filter((d) => d.estado === 'por_revisar');
   const esRequerido = (cas, num) => (F.requeridos || []).some((r) => r.casilla === cas && r.numero === num);
@@ -114,7 +116,7 @@
         glo = '<div class="glo rojo">' + esc((C.MOTIVOS[d.motivo] || 'Devuelto') + (d.nota ? '. ' + d.nota : '')) + '</div>'; break;
       case 'dato': t = quien + ' ' + ({ representante: 'actualizó el contacto del representante ' + (d.orden || 1), correo_empresa: 'actualizó el correo de la empresa', telefono: 'actualizó el teléfono', direccion: 'actualizó la dirección',
         regimen_firma: 'puso el régimen de firma en ' + (d.valor === 'conjunta' ? 'Conjunta' : d.valor === 'individual' ? 'Individual' : 'Sin definir'),
-        es_top: d.valor === 'true' ? 'lo marcó como Cliente TOP' : 'le quitó la marca de Cliente TOP', es_isp: d.valor === 'true' ? 'lo marcó como proveedor de internet' : 'le quitó la marca de proveedor de internet' }[h.texto] || 'actualizó un dato'); break;
+        ip: 'actualizó la IP' + (d.codigo ? ' del servicio ' + d.codigo : ''), es_top: d.valor === 'true' ? 'lo marcó como Cliente TOP' : 'le quitó la marca de Cliente TOP', es_isp: d.valor === 'true' ? 'lo marcó como proveedor de internet' : 'le quitó la marca de proveedor de internet' }[h.texto] || 'actualizó un dato'); break;
       case 'gestion': t = quien + (d.hecho ? ' marcó la ' : ' quitó la marca de la ') + (h.texto === 'bienvenida' ? 'carta de bienvenida' : 'proforma') + (d.hecho ? ' como enviada' : ''); break;
       case 'pago': tono = h.texto === 'pagada' ? 'verde' : ''; t = quien + (h.texto === 'pagada' ? ' marcó la instalación como pagada' : ' quitó el pago de la instalación'); break;
       case 'instalacion':
@@ -178,10 +180,18 @@
     return '<button type="button" class="casilla doc dato ' + (falta ? (obligatorio ? 'falta' : '') : 'ok') + '" data-campo="' + clave + '"><span class="ico' + (falta ? ' mas' : '') + '" aria-hidden="true">' + (falta ? ic('lapiz') : ic('check')) + '</span>' +
       '<span class="tx"><b>' + nombre + '</b><small>' + esc(falta ? (obligatorio ? 'Toca para escribirlo' : 'Opcional') : valor) + '</small></span>' + (falta && obligatorio ? '<span class="chip rojo">Falta</span>' : falta ? '' : ic('lapiz', 'ch')) + '</button>';
   }
+  // Contacto del representante: una sola casilla con el teléfono y el correo
+  function contactoHtml(r, n, obligatorio){
+    const tel = String(r.telefono || '').trim(); const co = String(r.correo || '').trim(); const lleno = !!(tel && co); const algo = tel || co;
+    const falta = obligatorio && !lleno;
+    const sub = lleno ? tel + ' · ' + co : algo ? algo + (obligatorio ? '. Falta el ' + (tel ? 'correo' : 'teléfono') : '') : obligatorio ? 'Toca para escribir el teléfono y el correo' : 'Opcional';
+    return '<button type="button" class="casilla doc dato ' + (falta ? 'falta' : algo ? 'ok' : '') + '" data-campo="rep:' + n + '"><span class="ico' + (algo && !falta ? '' : ' mas') + '" aria-hidden="true">' + (algo && !falta ? ic('check') : ic('lapiz')) + '</span>' +
+      '<span class="tx"><b>Contacto</b><small>' + esc(sub) + '</small></span>' + (falta ? '<span class="chip rojo">Falta</span>' : algo ? ic('lapiz', 'ch') : '') + '</button>';
+  }
   function grupoRep(n, requeridoN){
     const r = (F.representantes || []).find((x) => x.orden === n) || {};
     return '<section class="bloque" data-grupo="rep' + n + '"><div class="sec">' + (F.cliente.es_natural ? 'Titular' : 'Representante ' + n) + (r.nombre ? '<span>' + esc(r.nombre) + '</span>' : !requeridoN ? '<span>Opcional</span>' : '') + '</div>' +
-      datoHtml('Teléfono', r.telefono, 'rep:' + n, requeridoN) + datoHtml('Correo', r.correo, 'rep:' + n, requeridoN) +
+      contactoHtml(r, n, requeridoN && !F.cliente.es_natural) +
       casillaHtml('cedula', n, { nombre: 'Cédula' }) + casillaHtml('rif_personal', n, { nombre: 'RIF personal' }) + '</section>';
   }
   function pintarDocumentos(){
@@ -199,16 +209,22 @@
     for(let n = 1; n <= nReps; n++) h += grupoRep(n, n <= nReq);
     if(!c.es_natural && nReps < 4) h += '<button type="button" class="btn btn-chico btn-2 btn-ancho" id="agregarRep" style="margin-top:12px">Agregar representante</button>';
     if(!c.es_natural){
-      const actas = [1, 2, 3, 4].filter((n) => docDe('acta_asamblea', n)); const libre = [1, 2, 3, 4].find((n) => !docDe('acta_asamblea', n));
-      const mostrar = actas.concat(libre ? [libre] : []).sort();
+      // Las actas de asamblea se agregan con su botón, hasta 4
+      const actas = [1, 2, 3, 4].filter((n) => docDe('acta_asamblea', n)); const libres = [1, 2, 3, 4].filter((n) => !docDe('acta_asamblea', n));
+      const mostrar = actas.concat(libres.slice(0, Math.min(actaExtra, libres.length))).sort();
       h += '<section class="bloque" data-grupo="empresa"><div class="sec">Empresa</div>' + datoHtml('Correo de la empresa', c.correo_empresa, 'correo_empresa', true) +
         casillaHtml('rif_empresa', 0, { nombre: 'RIF de la empresa' }) + casillaHtml('acta_constitutiva', 0) + (c.es_isp ? casillaHtml('conatel', 0) : '') +
-        mostrar.map((n) => casillaHtml('acta_asamblea', n)).join('') + '</section>';
+        mostrar.map((n) => casillaHtml('acta_asamblea', n, { sub: 'Toca o suelta el archivo aquí' })).join('') +
+        (mostrar.length < 4 ? '<button type="button" class="btn btn-chico btn-2 btn-ancho" id="agregarActa" style="margin-top:10px">' + ic('mas') + 'Agregar acta de asamblea</button>' : '') + '</section>';
     }
     const tieneDed = /Dedicado/.test(c.seg); const tienePyme = !/^Dedicado/.test(c.seg);
-    h += '<section class="bloque" data-grupo="contrato"><div class="sec">Contrato<span>Lo sube Legal</span></div>' +
-      (tienePyme || docDe('contrato_pyme', 0) ? casillaHtml('contrato_pyme', 0, { sub: F.puedo.contrato ? 'Con fecha de firma y de vencimiento' : 'Lo sube Legal' }) : '') +
-      (tieneDed || docDe('contrato_dedicado', 0) ? casillaHtml('contrato_dedicado', 0, { sub: F.puedo.contrato ? 'Con fecha de firma y de vencimiento' : 'Lo sube Legal' }) : '') + '</section>';
+    // El contrato aparece cuando ya se envió a firmar (o si ya hay uno guardado). Los naturales no llevan contrato.
+    const hayContrato = !!(docDe('contrato_pyme', 0) || docDe('contrato_dedicado', 0));
+    if(hayContrato || (!c.es_natural && (c.estatus === 'por_firmar' || c.estatus === 'contrato_firmado'))){
+      h += '<section class="bloque" data-grupo="contrato"><div class="sec">Contrato<span>Lo sube Legal</span></div>' +
+        ((tienePyme && !c.es_natural) || docDe('contrato_pyme', 0) ? casillaHtml('contrato_pyme', 0, { sub: F.puedo.contrato ? 'Con fecha de firma y de vencimiento' : 'Lo sube Legal' }) : '') +
+        (tieneDed || docDe('contrato_dedicado', 0) ? casillaHtml('contrato_dedicado', 0, { sub: F.puedo.contrato ? 'Con fecha de firma y de vencimiento' : 'Lo sube Legal' }) : '') + '</section>';
+    }
     const otros = (F.documentos || []).filter((d) => d.casilla === 'otro');
     h += '<section class="bloque" data-grupo="otros"><div class="sec">Otros documentos</div>' + otros.map((d) => casillaHtml('otro', d.numero)).join('') +
       '<button type="button" class="casilla doc" data-subir="otro:0" data-casilla="otro:0" data-suelta="1"><span class="ico mas" aria-hidden="true">+</span><span class="tx"><b>Otro documento</b><small>Lo que no entra en las casillas de arriba</small></span></button></section>';
@@ -227,14 +243,16 @@
       tj(c.es_natural ? 'Contacto' : 'Representante', esc(r1.nombre || (c.es_natural ? c.nombre : 'Sin nombre todavía')), [esc(r1.telefono || c.telefono || s0.telefono || 'Sin teléfono'), esc(r1.correo || c.correo_empresa || 'Sin correo')]) +
       tj('Líder', esc(c.lider || 'Sin asignar'), [c.estatus === 'contrato_firmado' ? 'Gestión cerrada' : 'En gestión hace ' + esc(plural(diasGestion, 'día', 'días'))]) +
       tj('Estatus legal', chipEstatus(c.estatus), [], F.puedo.estatus ? '<button type="button" class="enlace" id="cambiarEstatus" style="margin-top:8px">Cambiar</button>' : '') + '</div>';
-    h += '<div class="sec">' + (s.length ? plural(s.length, 'servicio', 'servicios') + ' en este ' + (c.es_natural ? 'documento' : 'RIF') : 'Servicios') + '</div><div class="tarjs">';
+    h += '<div class="serv-n"><b>' + s.length + '</b><span>' + (s.length === 1 ? 'Servicio' : 'Servicios') + ' en este ' + (c.es_natural ? 'documento' : 'RIF') + '</span></div><div class="tarjs">';
     if(!s.length) h += '<div class="tj"><span class="tj-t">Sin instalar<span class="chip azul">Por instalar</span></span><b>Todavía sin servicio</b><small>' +
       (F.orden ? 'Orden de Odoo ' + esc(F.orden.numero) + ' del ' + esc(fecha(F.orden.creada_en)) + ' · ' + esc(F.orden.etapa || '') : 'Puedes adelantar los documentos mientras se instala.') + '</small></div>';
     s.forEach((x) => {
       h += '<div class="tj"><span class="tj-t">' + esc(x.sucursal + '-' + x.codigo) + estadoServicio(x.estado) + '</span><b>' + esc(x.plan || x.categoria || 'Servicio') + '</b>' +
         '<small>' + esc(sucursal(x.sucursal)) + ' · ' + (x.fecha_instalacion ? 'Instalado el ' + esc(fecha(x.fecha_instalacion, true)) : 'Sin fecha de instalación') + '</small>' +
-        ((x.ip || x.equipo) ? '<small>' + [x.ip ? 'IP ' + esc(x.ip) : '', x.equipo ? 'Serial ' + esc(x.equipo) : ''].filter(Boolean).join(' · ') + '</small>' : '') +
-        (x.con_deuda ? '<small style="color:var(--rojo);font-weight:600">Con deuda en el TAD</small>' : '') + '</div>';
+        (x.equipo ? '<small>Serial ' + esc(x.equipo) + '</small>' : '') +
+        (x.con_deuda ? '<small style="color:var(--rojo);font-weight:600">Con deuda en el TAD</small>' : '') +
+        '<div class="ip-l"><span>' + (x.ip || x.ip6 ? [x.ip ? 'IPv4 ' + esc(x.ip) : '', x.ip6 ? 'IPv6 ' + esc(x.ip6) : ''].filter(Boolean).join(' · ') : 'IP pendiente por asignar') + '</span>' +
+          (F.puedo.ip ? '<button type="button" class="enlace" data-ip="' + esc(x.id) + '">' + (x.ip || x.ip6 ? 'Cambiar IP' : 'Escribir IP') + '</button>' : '') + '</div></div>';
     });
     h += '</div>';
     if(!c.es_natural){
@@ -242,7 +260,7 @@
       h += '<div class="secc">Régimen de firma' + (F.puedo.regimen ? '' : '<span class="der">Lo define Legal</span>') + '</div><div class="tres" role="radiogroup" aria-label="Régimen de firma">' +
         [['', 'Sin definir'], ['individual', 'Individual'], ['conjunta', 'Conjunta']].map((x) => '<button type="button" role="radio" aria-checked="' + (r === x[0]) + '" data-regimen="' + x[0] + '" class="' + (r === x[0] ? 'on' : '') + '"' + dis + '>' + x[1] + '</button>').join('') + '</div>' +
         (r === 'conjunta' ? '<p class="nota-chica">Con firma conjunta se piden la cédula y el RIF de dos representantes.</p>' : '') +
-        '<div class="interr"><span class="tx">Proveedor de internet (ISP)<small>Se le pide el permiso de Conatel</small></span><button type="button" class="sw" role="switch" aria-checked="' + !!c.es_isp + '" data-interr="es_isp" aria-label="Proveedor de internet"' + dis + '></button></div>';
+        (/Dedicado/.test(c.seg) || c.es_isp ? '<div class="interr"><span class="tx">Proveedor de internet (ISP)<small>Se le pide el permiso de Conatel</small></span><button type="button" class="sw" role="switch" aria-checked="' + !!c.es_isp + '" data-interr="es_isp" aria-label="Proveedor de internet"' + dis + '></button></div>' : '');
     }
     h += '<div class="secc">Cartera</div><div class="interr"><span class="tx">Cliente TOP<small>Protegido: los aliados no pueden instalarlo</small></span>' +
       '<button type="button" class="sw" role="switch" aria-checked="' + !!c.es_top + '" data-interr="es_top" aria-label="Cliente TOP"' + (F.puedo.top ? '' : ' disabled') + '></button></div>';
@@ -303,7 +321,17 @@
 
   // ---------- Hoja pequeña: contacto del representante o correo de la empresa ----------
   function abrirCampo(clave){
-    const h = $('hojaCampo');
+    const h = $('hojaCampo'); const F = fuera ? fuera.F : FF();
+    if(String(clave).indexOf('ip:') === 0){
+      const sv = (F.servicios || []).find((x) => String(x.id) === String(clave).slice(3)); if(!sv) return;
+      campo = { tipo: 'ip', servicio: sv.id };
+      h.innerHTML = cabHoja('tCampo', 'IP del servicio', sv.sucursal + '-' + sv.codigo + (sv.plan ? ' · ' + sv.plan : '')) + '<form id="formCampo" novalidate>' +
+        '<label class="rotulo" for="cIp">IPv4</label><input class="campo" id="cIp" inputmode="decimal" autocapitalize="none" autocomplete="off" spellcheck="false" maxlength="18" value="' + esc(sv.ip || '') + '" data-foco>' +
+        '<label class="rotulo arriba" for="cIp6">IPv6 (opcional)</label><input class="campo" id="cIp6" autocapitalize="none" autocomplete="off" spellcheck="false" maxlength="43" value="' + esc(sv.ip6 || '') + '">' +
+        '<p class="nota">Sale en la carta de bienvenida. Si la dejas vacía, la carta dice "Pendiente por asignar".</p>' +
+        '<div class="error" id="eCampo" role="alert"></div><div class="acciones"><button type="submit" class="btn btn-ancho" id="guardarCampo">Guardar</button></div></form>';
+      abrirHoja('hojaCampo'); return;
+    }
     if(clave === 'correo_empresa'){
       campo = { tipo: 'empresa' };
       h.innerHTML = cabHoja('tCampo', 'Correo de la empresa', F.cliente.nombre) + '<form id="formCampo" novalidate><label class="rotulo" for="cCorreo">Correo de la empresa</label>' +
@@ -324,13 +352,16 @@
   }
   async function guardarCampo(e){
     e.preventDefault(); if(!campo) return;
-    const b = $('guardarCampo'); const co = $('cCorreo').value.trim(); $('eCampo').textContent = '';
+    const b = $('guardarCampo'); const co = $('cCorreo') ? $('cCorreo').value.trim() : ''; $('eCampo').textContent = '';
     if(co && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(co)){ $('eCampo').textContent = 'Ese correo no parece válido'; return; }
+    const f = fuera; const cli = f ? f.cliente : id;
     b.disabled = true; b.textContent = 'Guardando…';
     try {
-      if(campo.tipo === 'empresa') await rpc('cliente_dato', { p_cliente: id, p_campo: 'correo_empresa', p_valor: co });
-      else await rpc('cliente_representante', { p_cliente: id, p_orden: campo.orden, p_correo: co, p_telefono: $('cTel').value.trim() });
-      toast('Guardado'); if(hojaAbierta() === 'hojaCampo') cerrarHoja(); await cargar();
+      if(campo.tipo === 'ip') await rpc('servicio_ip', { p_servicio: campo.servicio, p_ip: $('cIp').value.trim(), p_ip6: $('cIp6').value.trim() });
+      else if(campo.tipo === 'empresa') await rpc('cliente_dato', { p_cliente: cli, p_campo: 'correo_empresa', p_valor: co });
+      else await rpc('cliente_representante', { p_cliente: cli, p_orden: campo.orden, p_correo: co, p_telefono: $('cTel').value.trim() });
+      toast('Guardado'); if(hojaAbierta() === 'hojaCampo') cerrarHoja();
+      if(f){ if(f.alTerminar) f.alTerminar(); } else await cargar();
     } catch (err) { $('eCampo').textContent = err.message; b.disabled = false; b.textContent = 'Guardar'; }
   }
 
@@ -378,12 +409,14 @@
   }
   function avance(texto){
     const z = $('estadoSubida'); if(z){ z.classList.remove('hidden'); const t = $('textoSubida'); if(t) t.textContent = texto; }
+    const q = $('subidaCom'); if(q){ q.classList.remove('hidden'); q.lastChild.textContent = texto; }
     const p = $('progLote'); if(p) p.textContent = texto;
   }
   // items: [{ files:[File], casillas:[{casilla,numero}], vence_en, firmado_en }]
   async function guardarItems(items){
     if(ocupado) return false;
-    ocupado = true; const total = items.reduce((a, it) => a + it.files.length, 0); let hecho = 0; const cli = id;   // el cliente de esta subida, aunque después se abra otro
+    const f = fuera; fuera = null;
+    ocupado = true; const total = items.reduce((a, it) => a + it.files.length, 0); let hecho = 0; const cli = f ? f.cliente : id;   // el cliente de esta subida, aunque después se abra otro
     Array.prototype.forEach.call(document.querySelectorAll('[data-subir],#subirVarios'), (b) => { b.disabled = true; });
     try {
       const envio = [];
@@ -402,10 +435,10 @@
       avance('Guardando…');
       const n = await rpc('documentos_registrar', { p_cliente: cli, p_items: envio });
       toast(plural(n, 'documento guardado', 'documentos guardados'));
-      ocupado = false; if(cli === id) await cargar();
+      ocupado = false; if(f){ if(f.alTerminar) f.alTerminar(); } else if(cli === id) await cargar();
       return true;
     } catch (e) {
-      ocupado = false; toast(e.message, 'error'); if(cli === id && F) pintarDocumentos();
+      ocupado = false; toast(e.message, 'error'); if(f){ if(f.alTerminar) f.alTerminar(); } else if(cli === id && F) pintarDocumentos();
       return false;
     }
   }
@@ -602,9 +635,11 @@
     }
     if(t.closest('#hiloMas')){ hiloTodo = true; pintarHilo(); return; }
     if((b = t.closest('[data-hilo]'))){ soloNotas = b.dataset.hilo === 'notas'; pintarHilo(); return; }
-    if((b = t.closest('#hojaFicha [data-subir]'))){ const p = b.dataset.subir.split(':'); elegirPara(p[0], Number(p[1])); return; }
+    if((b = t.closest('#hojaFicha [data-subir]'))){ fuera = null; const p = b.dataset.subir.split(':'); elegirPara(p[0], Number(p[1])); return; }
+    if((b = t.closest('#hojaFicha [data-ip]'))){ fuera = null; abrirCampo('ip:' + b.dataset.ip); return; }
+    if(t.closest('#agregarActa')){ actaExtra = Math.min(4, actaExtra + 1); pintarDocumentos(); const cs = document.querySelectorAll('[data-grupo="empresa"] [data-casilla^="acta_asamblea"]'); if(cs.length) cs[cs.length - 1].scrollIntoView({ block: 'center' }); return; }
     if((b = t.closest('[data-ver]'))){ abrirVer(Number(b.dataset.ver)); return; }
-    if((b = t.closest('[data-campo]'))){ abrirCampo(b.dataset.campo); return; }
+    if((b = t.closest('#hojaFicha [data-campo]'))){ fuera = null; abrirCampo(b.dataset.campo); return; }
     if(t.closest('#agregarRep')){ const n = Math.max((F.representantes || []).reduce((a, x) => Math.max(a, x.orden), 1), repExtra, !F.cliente.es_natural && F.cliente.regimen_firma === 'conjunta' ? 2 : 1) + 1; repExtra = Math.min(4, n); pintarDocumentos(); const g = document.querySelector('[data-grupo="rep' + repExtra + '"]'); if(g) g.scrollIntoView({ block: 'center' }); return; }
     if(t.closest('#subirVarios')){ abrirVarios(); return; }
     if(t.closest('#revisarTodo')){ abrirRevision(); return; }
@@ -701,7 +736,7 @@
     const o = opciones || {};
     montar();
     yo = o.yo || yo; id = Number(idCliente) || 0; if(!id) return;
-    F = null; hiloTodo = false; soloNotas = false; repExtra = 0; llegada = { revisar: o.revisar, pedir: o.pedir, casilla: o.casilla, campo: o.campo }; alCerrar = o.alCerrar || null;
+    F = null; fuera = null; hiloTodo = false; soloNotas = false; repExtra = 0; actaExtra = 0; llegada = { revisar: o.revisar, pedir: o.pedir, casilla: o.casilla, campo: o.campo }; alCerrar = o.alCerrar || null;
     $('cabFicha').innerHTML = '<div class="f-cab"><span class="mono sk" aria-hidden="true"></span><div class="tx"><span class="sk" style="width:70%;height:22px"></span><span class="sk" style="width:50%;height:12px;margin-top:8px"></span></div>' +
       '<button type="button" class="cerrar" data-cierra="1" aria-label="Cerrar">' + ic('x') + '</button></div>';
     TABS.forEach((x) => { $('tab-' + x).innerHTML = '<div class="sk-bloque"><span class="sk" style="height:64px;border-radius:16px"></span><span class="sk" style="height:64px;border-radius:16px"></span><span class="sk" style="height:64px;border-radius:16px"></span></div>'; });
@@ -710,5 +745,12 @@
     abrirHoja('hojaFicha');
     cargar(true);
   }
-  window.Ficha = { lineaHilo, abrir, montar, abierta: () => id, alContactarFuera: (f) => { externo = f; }, recargar: () => { if(id) cargar(); } };
+  // Desde otra hoja (la de comisión): subir a una casilla o escribir un dato sin abrir el expediente
+  function subirA(ficha, cas, num, alTerminar){
+    montar(); if(ocupado){ toast('Espera a que termine la subida'); return; }
+    fuera = { cliente: ficha.cliente.id, F: ficha, alTerminar }; destino = { casilla: cas, numero: num };
+    const inp = $('archivo'); inp.value = ''; inp.click();
+  }
+  function editarCampo(ficha, clave, alTerminar){ montar(); fuera = { cliente: ficha.cliente.id, F: ficha, alTerminar }; abrirCampo(clave); }
+  window.Ficha = { subirA, editarCampo, lineaHilo, abrir, montar, abierta: () => id, alContactarFuera: (f) => { externo = f; }, recargar: () => { if(id) cargar(); } };
 })();

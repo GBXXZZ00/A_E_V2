@@ -8,12 +8,12 @@
 <title>Usuarios</title>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="assets/img/icon-192.png">
-<link rel="stylesheet" href="assets/css/base.css?v=10">
-<link rel="stylesheet" href="assets/css/modulos.css?v=10">
-<link rel="stylesheet" href="assets/css/app.css?v=10">
+<link rel="stylesheet" href="assets/css/base.css?v=11">
+<link rel="stylesheet" href="assets/css/modulos.css?v=11">
+<link rel="stylesheet" href="assets/css/app.css?v=11">
 </head>
 <body>
-<header class="barra" id="barra"><a class="marca" href="inicio.html" aria-label="Inicio"><img class="logo" src="assets/img/logo.svg?v=10" alt="Airtek" width="96" height="12"><span>Empresas</span></a></header>
+<header class="barra" id="barra"><a class="marca" href="inicio.html" aria-label="Inicio"><img class="logo" src="assets/img/logo.svg?v=11" alt="Airtek" width="96" height="12"><span>Empresas</span></a></header>
 <main class="pagina">
   <a class="volver solo-pc" href="inicio.html" style="display:inline-flex"><svg class="i ch" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>Inicio</a>
   <div class="encabezado">
@@ -31,10 +31,13 @@
       <div><label class="rotulo" for="fNombre">Nombre y apellido</label><input class="campo" id="fNombre" maxlength="80" autocomplete="off" data-foco><div class="error" id="eNombre" role="alert"></div></div>
       <div><label class="rotulo" for="fUsuario">Usuario para entrar</label><input class="campo" id="fUsuario" maxlength="30" autocapitalize="none" autocomplete="off" spellcheck="false"><div class="error" id="eUsuarioF" role="alert"></div></div>
       <div><label class="rotulo" for="fCargo">Cargo</label><input class="campo" id="fCargo" maxlength="80" autocomplete="off"><div class="error"></div></div>
-      <div><label class="rotulo" for="fRol">Rol</label><select class="campo" id="fRol"><option value="lider">Líder</option><option value="analista">Analista</option><option value="abogado">Legal</option><option value="aliado">Aliado</option><option value="admin">Administrador</option></select><div class="error"></div></div>
+      <div><label class="rotulo" for="fRol">Rol</label><select class="campo" id="fRol"><option value="lider">Líder</option><option value="analista">Analista</option><option value="analista_senior">Analista Senior</option><option value="abogado">Legal</option><option value="aliado">Aliado</option><option value="admin">Administrador</option></select><div class="error"></div></div>
       <div><label class="rotulo" for="fEquipo">Equipo</label><select class="campo" id="fEquipo"><option value="ventas">Ventas corporativas</option><option value="aliados">Aliados comerciales</option><option value="ambos">Los dos</option></select><div class="error"></div></div>
       <div><label class="rotulo" for="fCodigo">Número de vendedor</label><input class="campo" id="fCodigo" inputmode="numeric" maxlength="2" autocomplete="off"><div class="error" id="eCodigo" role="alert"></div></div>
+      <div><label class="rotulo" for="fWhatsapp">WhatsApp</label><input class="campo" id="fWhatsapp" type="tel" inputmode="tel" maxlength="20" autocomplete="off"><div class="error" id="eWhatsapp" role="alert"></div></div>
+      <div><label class="rotulo" for="fCorreo">Correo</label><input class="campo" id="fCorreo" type="email" inputmode="email" autocapitalize="none" maxlength="120" autocomplete="off"><div class="error" id="eCorreo" role="alert"></div></div>
     </div>
+    <p class="nota" style="margin:-6px 0 14px">El WhatsApp y el correo de un líder salen en la carta de bienvenida de sus clientes.</p>
     <div><label class="rotulo" for="fOdoo">Nombre en Odoo</label><input class="campo" id="fOdoo" maxlength="120" autocomplete="off"><p class="nota">Tal como sale en "Creado por" de las órdenes. Sirve para asignar las ventas solas.</p></div>
     <div id="zonaPin" style="margin-top:16px">
       <label class="rotulo" for="fPin">PIN temporal</label>
@@ -57,9 +60,9 @@
 
 <script src="assets/vendor/supabase.js?v=1"></script>
 <script src="assets/js/supabase-client.js?v=1"></script>
-<script src="assets/js/comun.js?v=10"></script>
-<script src="assets/js/sesion.js?v=10"></script>
-<script src="assets/js/armazon.js?v=10"></script>
-<script src="assets/js/usuarios.js?v=10"></script>
+<script src="assets/js/comun.js?v=11"></script>
+<script src="assets/js/sesion.js?v=11"></script>
+<script src="assets/js/armazon.js?v=11"></script>
+<script src="assets/js/usuarios.js?v=11"></script>
 </body>
 </html>

@@ -41,7 +41,7 @@
     $('lista').innerHTML = '<div class="lista">' + usuarios.map((u, i) => {
       const est = !u.activo ? '<span class="chip chip-off">Sin acceso</span>'
         : u.debe_cambiar_pin ? '<span class="chip chip-warn">PIN temporal</span>' : '<span class="chip chip-ok">Activo</span>';
-      const rol = S.ROLES[u.rol] || u.rol;
+      const rol = u.rol === 'analista' && u.senior ? 'Analista Senior' : (S.ROLES[u.rol] || u.rol);
       return '<button type="button" class="persona' + (u.activo ? '' : ' inactiva') + '" data-i="' + i + '">' +
         '<span class="quien"><span class="av" aria-hidden="true">' + esc(iniciales(u.nombre)) + '</span><b>' + esc(u.nombre) + '</b>' +
         '<span class="det"><span class="solo-pc">' + esc(u.usuario) + (u.cargo ? ' · ' + esc(u.cargo) : '') + '</span>' +
@@ -73,7 +73,7 @@
     }
   }
 
-  function limpiarErrores(){ ['eNombre','eUsuarioF','eCodigo','ePin'].forEach((id) => { $(id).textContent = ''; }); }
+  function limpiarErrores(){ ['eNombre','eUsuarioF','eCodigo','ePin','eWhatsapp','eCorreo'].forEach((id) => { $(id).textContent = ''; }); }
   function abrir(u){
     editando = u || null;
     limpiarErrores();
@@ -81,7 +81,8 @@
     $('fNombre').value = u ? u.nombre : '';
     $('fUsuario').value = u ? u.usuario : ''; $('fUsuario').disabled = !!u;
     $('fCargo').value = u ? (u.cargo || '') : '';
-    $('fRol').value = u ? u.rol : 'lider';
+    $('fRol').value = u ? (u.rol === 'analista' && u.senior ? 'analista_senior' : u.rol) : 'lider';
+    $('fWhatsapp').value = u ? (u.whatsapp || '') : ''; $('fCorreo').value = u ? (u.correo || '') : '';
     $('fEquipo').value = u ? u.equipo : 'ventas';
     $('fCodigo').value = u && u.codigo_vendedor ? u.codigo_vendedor : '';
     $('fOdoo').value = u ? (u.nombre_odoo || '') : '';
@@ -109,8 +110,13 @@
     if(cod && !/^[1-9]\d?$/.test(cod)){ $('eCodigo').textContent = 'Un número del 1 al 99'; ok = false; }
     const pin = $('fPin').value.trim();
     if(!editando && (!/^\d{6}$/.test(pin) || S.pinFacil(pin))){ $('ePin').textContent = /^\d{6}$/.test(pin) ? 'Ese PIN es muy fácil. Usa Generar' : 'Escribe 6 números o usa Generar'; ok = false; }
+    const wa = $('fWhatsapp').value.replace(/\D/g, '');
+    if(wa && (wa.length < 10 || wa.length > 15)){ $('eWhatsapp').textContent = 'Escribe el número completo, con el código del operador'; ok = false; }
+    const correo = $('fCorreo').value.trim().toLowerCase();
+    if(correo && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(correo)){ $('eCorreo').textContent = 'Ese correo no parece válido'; ok = false; }
     if(!ok) return null;
-    return { nombre, usuario, pin, cargo: $('fCargo').value.trim(), rol: $('fRol').value, equipo: $('fEquipo').value,
+    const rolForm = $('fRol').value;
+    return { nombre, usuario, pin, cargo: $('fCargo').value.trim(), rol: rolForm === 'analista_senior' ? 'analista' : rolForm, senior: rolForm === 'analista_senior', whatsapp: wa, correo, equipo: $('fEquipo').value,
       codigo_vendedor: cod ? Number(cod) : null, nombre_odoo: $('fOdoo').value.trim() };
   }
 
@@ -135,6 +141,8 @@
       const m = err.message || '';
       if(m.includes('usuario ya existe')) $('eUsuarioF').textContent = m;
       else if(m.includes('número de vendedor')) $('eCodigo').textContent = m;
+      else if(m.includes('WhatsApp')) $('eWhatsapp').textContent = m;
+      else if(m.includes('correo')) $('eCorreo').textContent = m;
       toast(m, 'error');
     } finally { b.disabled = false; b.textContent = 'Guardar'; }
   }
@@ -187,6 +195,7 @@
   $('form').addEventListener('submit', guardar);
   $('generar').addEventListener('click', () => { $('fPin').value = pinAzar(); $('ePin').textContent = ''; });
   $('fUsuario').addEventListener('blur', () => { if(!editando) $('fUsuario').value = limpiarUsuario($('fUsuario').value); });
+  [['fWhatsapp', 'eWhatsapp'], ['fCorreo', 'eCorreo']].forEach((x) => $(x[0]).addEventListener('input', () => { $(x[1]).textContent = ''; }));
   $('restablecer').addEventListener('click', restablecer);
   $('alternar').addEventListener('click', alternar);
   $('hojaUsuario').addEventListener('hoja-cerrada', () => { editando = null; desarmar(); });

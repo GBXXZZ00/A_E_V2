@@ -90,11 +90,11 @@ async function contexto(navegador, opciones, mundo){
       if(b.accion === 'listar') return j({ usuarios: m.personas.map((p) => { const f = Object.assign({}, p); delete f.pin; return f; }) });
       if(b.accion === 'crear'){
         if(m.personas.some((p) => p.usuario === b.usuario)) return j({ error: 'Ese usuario ya existe' }, 400);
-        m.personas.push({ id: '55555555-5555-4555-8555-55555555555' + m.personas.length, usuario: b.usuario, pin: b.pin, nombre: b.nombre, rol: b.rol, cargo: b.cargo || null, equipo: b.equipo, codigo_vendedor: b.codigo_vendedor, nombre_odoo: b.nombre_odoo || null, activo: true, debe_cambiar_pin: true });
+        m.personas.push({ id: '55555555-5555-4555-8555-55555555555' + m.personas.length, usuario: b.usuario, pin: b.pin, nombre: b.nombre, rol: b.rol, cargo: b.cargo || null, equipo: b.equipo, codigo_vendedor: b.codigo_vendedor, nombre_odoo: b.nombre_odoo || null, senior: b.rol === 'analista' && b.senior === true, whatsapp: b.whatsapp || null, correo: b.correo || null, activo: true, debe_cambiar_pin: true });
         return j({ ok: true });
       }
       const p = m.personas.find((x) => x.id === b.id); if(!p) return j({ error: 'Falta el usuario' }, 400);
-      if(b.accion === 'editar'){ Object.assign(p, { nombre: b.nombre, rol: b.rol, cargo: b.cargo || null, equipo: b.equipo, codigo_vendedor: b.codigo_vendedor, nombre_odoo: b.nombre_odoo || null }); return j({ ok: true }); }
+      if(b.accion === 'editar'){ Object.assign(p, { nombre: b.nombre, rol: b.rol, cargo: b.cargo || null, equipo: b.equipo, codigo_vendedor: b.codigo_vendedor, nombre_odoo: b.nombre_odoo || null, senior: b.rol === 'analista' && b.senior === true, whatsapp: b.whatsapp || null, correo: b.correo || null }); return j({ ok: true }); }
       if(b.accion === 'pin'){ p.pin = b.pin; p.debe_cambiar_pin = true; return j({ ok: true }); }
       if(b.accion === 'activo'){ p.activo = b.activo; return j({ ok: true }); }
       return j({ error: 'Acción no reconocida' }, 400);

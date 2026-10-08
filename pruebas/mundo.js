@@ -35,7 +35,7 @@ function doc(casilla, numero, estado, extra){
   return Object.assign({ id: ++sec, casilla, numero, estado, motivo: null, nota: null, vence_en: null, firmado_en: null, subido_en: hace(1), subido_por: 'Lucía Ferrer', revisado_en: null, revisado_por: null,
     archivos: [{ id: ++sec, ruta: null, url_externa: null, nombre: 'ejemplo-' + casilla + '.pdf', mime: 'application/pdf', tamano: 250000 }], comparte: [] }, extra || {});
 }
-function servicio(cod, o){ return Object.assign({ id: ++sec, codigo: cod, sucursal: '824', plan: 'PYME 1 GB', categoria: 'pyme-1gb', estado: 'HABILITADO', fecha_instalacion: hoy(), ip: '10.24.1.6', equipo: 'SERIE' + cod, direccion: 'Calle inventada 1', telefono: '0414-555 01 00', con_deuda: false }, o || {}); }
+function servicio(cod, o){ return Object.assign({ id: ++sec, codigo: cod, sucursal: '824', plan: 'PYME 1 GB', categoria: 'pyme-1gb', estado: 'HABILITADO', fecha_instalacion: hoy(), ip: '10.24.1.6', ip6: null, equipo: 'SERIE' + cod, direccion: 'Calle inventada 1', telefono: '0414-555 01 00', con_deuda: false }, o || {}); }
 function instalacion(cod, diasAtras, pagoDias, o){ return Object.assign({ id: ++sec, codigo: cod, sucursal: '824', categoria: 'pyme-1gb', instalada_en: hace(diasAtras), pago_ok_en: pagoDias === null ? null : hace(pagoDias), pago_manual: false, es_aliado: false, instalador: 'instalador mb-02', orden: { id: Number(cod.slice(-5)), numero: 'PRUEBA-001/4' + cod.slice(-5), titulo: 'Solicitud de Instalación PROMO PYME cliente ' + cod.slice(-3), creador: null }, cruce: 'rif', confirmada: true, excepcion_corte: null, excepcion_motivo: null, excepcion_por: null }, o || {}); }
 const linea = (tipo, texto, detalle, autor, en) => ({ id: ++sec, tipo, texto: texto || '', detalle: detalle || {}, autor: autor || null, autor_id: null, en: en || hace(0) });
 
@@ -297,6 +297,15 @@ const RPC = {
     if(t){ r.push({ id: 77001, numero: 'PRUEBA-001/477001', titulo: 'Solicitud de Instalación PROMO PYME ' + a.p_texto, creada_en: hace(9), etapa: 'Realizado', creador: 'Rosa Paredes', motivo: null, actual: false });
       r.push({ id: 77002, numero: 'PRUEBA-001/377002', titulo: 'Solicitud vieja de ' + a.p_texto, creada_en: hace(200), etapa: 'Realizado', creador: 'Tomás Guerra', motivo: 'Se creó más de 45 días antes', actual: false }); }
     return r;
+  },
+  servicio_ip(m, yo, a){
+    if(!['admin', 'analista'].includes(yo.rol)) return error('No tienes permiso para hacer esto');
+    for(const c of m.datos.clientes){ const sv = c.servicios.find((x) => x.id === Number(a.p_servicio)); if(!sv) continue;
+      const v4 = String(a.p_ip || '').trim() || null; const v6 = String(a.p_ip6 || '').trim().toLowerCase() || null;
+      if(v4 && !/^(\d{1,3}\.){3}\d{1,3}(\/\d{1,2})?$/.test(v4)) return error('La IPv4 no parece válida. Ejemplo: 190.124.30.15');
+      if(v6 && (!/^[0-9a-f:]{2,39}(\/\d{1,3})?$/.test(v6) || !v6.includes(':'))) return error('La IPv6 no parece válida. Ejemplo: 2803:1a00:10::1');
+      sv.ip = v4; sv.ip6 = v6; c.hilo.push(linea('dato', 'ip', { codigo: sv.sucursal + '-' + sv.codigo, ip: v4, ip6: v6 }, yo.nombre)); return null; }
+    return error('Ese servicio no existe');
   },
   instalacion_asignar(m, yo, a){
     if(!esSenior(yo)) return error('Esto lo hace el Analista Senior o el administrador');

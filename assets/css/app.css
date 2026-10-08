@@ -632,3 +632,11 @@ button.franja:active{transform:scale(.97)}
   .acc-corte{margin-left:auto}
 }
 @media (prefers-reduced-motion:reduce){ button.franja{transition:none} }
+/* v11: expediente */
+.serv-n{display:flex;align-items:baseline;gap:10px;margin:22px 0 0}
+.serv-n b{font-size:34px;font-weight:800;letter-spacing:-.03em;line-height:1}
+.serv-n span{font-size:14px;font-weight:700;color:var(--text2)}
+.ip-l{display:flex;align-items:center;gap:8px;margin-top:8px;padding-top:6px;box-shadow:0 -1px 0 var(--line);font-size:12.5px;color:var(--text2);min-height:44px}
+.ip-l span{flex:1;min-width:0;overflow-wrap:anywhere}
+.ip-l .enlace{flex:none;min-height:44px}
+#agregarActa .i{width:16px;height:16px}
