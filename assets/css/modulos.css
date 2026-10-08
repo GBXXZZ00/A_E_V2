@@ -1,0 +1,71 @@
+/* Inicio y Usuarios. */
+.accesos{display:grid;gap:12px;margin-top:28px}
+.acceso{display:grid;grid-template-columns:1fr auto;align-items:start;gap:6px 14px;padding:22px;border-radius:var(--radius);background:var(--surface-2);color:var(--text);text-decoration:none;text-align:left;transition:transform 120ms var(--ease-out)}
+.acceso b{font-size:18px;font-weight:700;letter-spacing:-.015em}
+.acceso p{grid-column:1;font-size:14px;color:var(--text2)}
+.acceso .chip{grid-row:1;grid-column:2;background:#fff}
+.acceso.activo{background:var(--text);color:#fff}
+.acceso.activo p{color:#B9BFC7}
+.acceso.activo:active{transform:scale(.98)}
+.acceso[aria-disabled="true"]{cursor:default}
+.aviso{margin-top:28px;padding:22px;border-radius:var(--radius);background:var(--surface-2)}
+.aviso b{display:block;font-size:17px;margin-bottom:4px}
+.aviso p{color:var(--text2)}
+.dato{display:grid;gap:2px;padding:12px 0;border-bottom:1px solid var(--line)}
+.dato small{font-size:12px;color:var(--text3)}
+.dato b{font-size:15px;font-weight:600}
+
+.encabezado{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px}
+.volver{display:inline-flex;align-items:center;gap:6px;min-height:44px;margin:-10px 0 6px;font-size:14px;font-weight:600;color:var(--text2);text-decoration:none}
+.volver svg{width:18px;height:18px}
+.lista{margin-top:24px;display:grid}
+.lista-cab{display:none}
+.persona{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:4px 14px;width:100%;padding:16px 4px;text-align:left;border-bottom:1px solid var(--line)}
+.persona .av{grid-row:1 / span 2;display:grid;place-items:center;width:42px;height:42px;border-radius:50%;background:var(--surface-2);font-weight:700;font-size:14px}
+.persona b{font-size:15.5px;font-weight:700}
+.persona .det{grid-column:2;font-size:13px;color:var(--text2)}
+.persona .est{grid-row:1 / span 2;grid-column:3}
+.persona .solo-pc{display:none}
+.persona.inactiva b,.persona.inactiva .det{color:var(--text2)}
+.vacio{margin-top:28px;padding:36px 22px;border-radius:var(--radius);background:var(--surface-2);text-align:center}
+.vacio b{display:block;font-size:18px;margin-bottom:6px}
+.vacio p{color:var(--text2);margin-bottom:18px}
+.esq{height:74px;background:var(--surface-2);animation:latido 1.2s var(--ease-out) infinite alternate;border-radius:14px;margin-bottom:8px}
+@keyframes latido{from{opacity:1}to{opacity:.45}}
+.con-boton{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:start}
+.pin-listo{margin-top:18px;padding:18px;border-radius:var(--radius-sm);background:var(--ok-soft);color:var(--ok)}
+.pin-listo b{display:block;font-size:30px;letter-spacing:.18em;font-weight:800;margin:4px 0 6px;color:var(--text)}
+.pin-listo p{font-size:13px}
+.pin-listo .quien-es{display:block;font-size:14px;font-weight:600;color:var(--text)}
+.separa{height:1px;background:var(--line);margin:22px 0 4px}
+
+@media (hover:hover) and (pointer:fine){
+  .acceso.activo:hover{background:#26292E}
+  .persona:hover{background:var(--surface-2)}
+  .volver:hover{color:var(--text)}
+}
+@media (min-width:900px){
+  .accesos{grid-template-columns:repeat(6,1fr);gap:14px}
+  .acceso{grid-column:span 2;min-height:150px;align-content:space-between}
+  .acceso.grande{grid-column:span 4}
+  .acceso.grande b{font-size:24px}
+  .lista{margin-top:0}
+  .lista-cab{display:grid;grid-template-columns:2.2fr 1.3fr 1.2fr 1.4fr .8fr 1fr;gap:14px;margin-top:32px;padding:0 12px 10px;font-size:12px;font-weight:600;color:var(--text3)}
+  .persona{grid-template-columns:2.2fr 1.3fr 1.2fr 1.4fr .8fr 1fr;gap:14px;padding:14px 12px;border-radius:12px;border-bottom:0}
+  .persona + .persona{box-shadow:inset 0 1px 0 var(--line)}
+  .persona .quien{display:grid;grid-template-columns:auto 1fr;align-items:center;gap:0 14px}
+  .persona .av{grid-row:1 / span 2}
+  .persona .det{grid-column:2}
+  .persona .est{grid-row:auto;grid-column:auto}
+  .persona .solo-pc{display:block;font-size:14px;color:var(--text2)}
+  .persona .solo-tel{display:none}
+}
+@media (max-width:899px){
+  .persona .quien{display:contents}
+}
+
+/* Formularios dentro de una hoja: un poco más compactos */
+.hoja .campo{height:50px}
+.hoja .error{min-height:16px;margin-top:4px}
+.hoja .fila-campos{gap:10px 16px}
+.hoja form > div + div{margin-top:10px}
