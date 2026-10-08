@@ -328,6 +328,21 @@ const RPC = {
     c.estado = c.resumen.invalidas ? 'con_errores' : 'lista';
     return Object.assign({}, c.resumen, { pagos_marcados: 0, clientes_total: m.datos.clientes.length, filas: c.filas });
   },
+  crudo_iniciar(m, yo, a){
+    if(!['admin', 'analista'].includes(yo.rol)) return error('No tienes permiso para hacer esto');
+    if(!['odoo', 'instalaciones', 'base_vieja'].includes(a.p_fuente)) return error('Tipo de archivo no reconocido');
+    m.cargas = m.cargas || []; const c = { id: m.cargas.length + 1, fuente: a.p_fuente, archivo: a.p_archivo, en: new Date().toISOString(), por: yo.nombre, estado: 'procesando', filas: a.p_total, resumen: {}, crudas: [] };
+    m.cargas.push(c); return c.id;
+  },
+  crudo_filas(m, yo, a){
+    const c = (m.cargas || []).find((x) => x.id === a.p_carga && x.estado === 'procesando'); if(!c) return error('Esta carga ya no está abierta');
+    if((a.p_filas || []).length > 500) return error('Lote no válido');
+    c.crudas = c.crudas.concat(a.p_filas); return a.p_filas.length;
+  },
+  crudo_cerrar(m, yo, a){
+    const c = (m.cargas || []).find((x) => x.id === a.p_carga && x.estado === 'procesando'); if(!c) return error('Esta carga ya no está abierta');
+    c.estado = 'lista'; return { guardadas: c.crudas.length, total: c.filas };
+  },
   cargas_ultimas(m, yo){
     if(!['admin', 'analista'].includes(yo.rol)) return error('No tienes permiso para hacer esto');
     return (m.cargas || []).filter((c) => c.estado !== 'procesando').slice().reverse();

@@ -8,29 +8,22 @@
 <title>Actualizar datos</title>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="assets/img/icon-192.png">
-<link rel="stylesheet" href="assets/css/base.css?v=5">
-<link rel="stylesheet" href="assets/css/modulos.css?v=5">
-<link rel="stylesheet" href="assets/css/app.css?v=5">
+<link rel="stylesheet" href="assets/css/base.css?v=6">
+<link rel="stylesheet" href="assets/css/modulos.css?v=6">
+<link rel="stylesheet" href="assets/css/app.css?v=6">
 </head>
 <body>
-<header class="barra" id="barra"><a class="marca" href="inicio.html" aria-label="Inicio"><img class="logo" src="assets/img/logo.svg?v=5" alt="Airtek" width="96" height="12"><span>Empresas</span></a></header>
+<header class="barra" id="barra"><a class="marca" href="inicio.html" aria-label="Inicio"><img class="logo" src="assets/img/logo.svg?v=6" alt="Airtek" width="96" height="12"><span>Empresas</span></a></header>
 <main class="pagina">
   <a class="volver solo-pc" href="inicio.html" style="display:inline-flex"><svg class="i ch" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>Inicio</a>
   <h1 class="titulo">Actualizar datos</h1>
-  <p class="sub">Sube el archivo del TAD tal como sale del sistema. La app agrega los clientes y servicios nuevos y actualiza los que ya están.</p>
+  <p class="sub">Sube los archivos tal como salen de cada sistema, todos juntos. La app reconoce cuál es cada uno.</p>
 
-  <section class="panel" style="margin-top:20px" aria-labelledby="tTad">
-    <span class="tit" id="tTad">TAD</span>
-    <p class="nota-chica" id="ultimoTad">Todavía no se ha subido ninguno.</p>
-    <div id="zonaTad" style="margin-top:14px">
-      <button type="button" class="soltar" id="soltarTad"><svg class="i g" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5M5 20h14"/></svg><b>Elige el archivo del TAD</b>O arrástralo aquí. Formato CSV.</button>
-    </div>
-    <input type="file" id="archivoTad" class="hidden" accept=".csv,text/csv,text/plain" tabindex="-1" aria-hidden="true">
-  </section>
-
-  <section class="panel" style="margin-top:14px" aria-labelledby="tOtros">
-    <span class="tit" id="tOtros">Lo que viene</span>
-    <p class="nota-chica">Órdenes de Odoo, órdenes de instalación y la base de la app anterior se suben aquí mismo cuando estén listas. Por ahora se cargan por el chat.</p>
+  <section class="panel" style="margin-top:20px" aria-labelledby="tArch">
+    <span class="tit" id="tArch">Archivos</span>
+    <p class="nota-chica">TAD, órdenes de Odoo, órdenes de instalación y la base de la app anterior. <span id="ultimoTad">Todavía no se ha subido ningún TAD.</span></p>
+    <div id="zona" style="margin-top:14px"></div>
+    <input type="file" id="archivos" class="hidden" multiple accept=".csv,.xlsx,.txt,text/csv,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" tabindex="-1" aria-hidden="true">
   </section>
 
   <h2 class="h2" style="margin-top:26px">Últimas cargas</h2>
@@ -38,9 +31,9 @@
 </main>
 <script src="assets/vendor/supabase.js?v=1"></script>
 <script src="assets/js/supabase-client.js?v=1"></script>
-<script src="assets/js/comun.js?v=5"></script>
-<script src="assets/js/sesion.js?v=5"></script>
-<script src="assets/js/armazon.js?v=5"></script>
-<script src="assets/js/actualizar.js?v=5"></script>
+<script src="assets/js/comun.js?v=6"></script>
+<script src="assets/js/sesion.js?v=6"></script>
+<script src="assets/js/armazon.js?v=6"></script>
+<script src="assets/js/actualizar.js?v=6"></script>
 </body>
 </html>
