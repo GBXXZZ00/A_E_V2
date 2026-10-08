@@ -291,6 +291,35 @@ const RPC = {
       gestion(c, yo); recalcular(c, yo); return null; }
     return error('Ese documento ya no existe');
   },
+  tad_iniciar(m, yo, a){
+    if(!['admin', 'analista'].includes(yo.rol)) return error('No tienes permiso para hacer esto');
+    m.cargas = m.cargas || []; const c = { id: m.cargas.length + 1, fuente: 'tad', archivo: a.p_archivo, en: new Date().toISOString(), por: yo.nombre, estado: 'procesando', filas: a.p_total, resumen: { clientes_nuevos: 0, servicios_nuevos: 0, servicios_actualizados: 0, invalidas: 0 }, vistas: [] };
+    m.cargas.push(c); return c.id;
+  },
+  tad_filas(m, yo, a){
+    if(!['admin', 'analista'].includes(yo.rol)) return error('No tienes permiso para hacer esto');
+    const c = (m.cargas || []).find((x) => x.id === a.p_carga && x.estado === 'procesando'); if(!c) return error('Esta carga ya se cerró. Vuelve a empezar');
+    (a.p_filas || []).forEach((f) => {
+      const doc = String(f.d || '').replace(/\D/g, '').replace(/^0+/, ''); if(!/^[1-9][0-9]{4,9}$/.test(doc) || !f.n){ c.resumen.invalidas++; return; }
+      let cl = m.datos.clientes.find((x) => x.doc_numero === doc);
+      if(!cl){ cl = cliente({ nombre: f.n, doc_tipo: f.t || 'J', doc_numero: doc, lider: null, es_natural: ['V', 'E'].includes(f.t) }); m.datos.clientes.push(cl); c.resumen.clientes_nuevos++; }
+      const cod = String(f.c).replace(/\D/g, '').padStart(8, '0'); const suc = String(f.s).replace(/\D/g, '').padStart(3, '0');
+      const sv = cl.servicios.find((x) => x.codigo === cod || x.codigo === String(Number(cod)));
+      if(sv){ sv.estado = f.es; sv.con_deuda = f.cx === 'SI'; c.resumen.servicios_actualizados++; }
+      else { cl.servicios.push(servicio(cod, { sucursal: suc, plan: f.p, categoria: f.ca, estado: f.es, equipo: f.e, con_deuda: f.cx === 'SI' })); c.resumen.servicios_nuevos++; }
+      c.vistas.push(cl.id);
+    });
+    return c.resumen;
+  },
+  tad_cerrar(m, yo, a){
+    const c = (m.cargas || []).find((x) => x.id === a.p_carga && x.estado === 'procesando'); if(!c) return error('Esta carga ya se cerró');
+    c.estado = c.resumen.invalidas ? 'con_errores' : 'lista';
+    return Object.assign({}, c.resumen, { pagos_marcados: 0, clientes_total: m.datos.clientes.length, filas: c.filas });
+  },
+  cargas_ultimas(m, yo){
+    if(!['admin', 'analista'].includes(yo.rol)) return error('No tienes permiso para hacer esto');
+    return (m.cargas || []).filter((c) => c.estado !== 'procesando').slice().reverse();
+  },
   comisiones_corte(m, yo, a){
     if(yo.rol === 'aliado') return error('No tienes permiso para hacer esto');
     const actual = corteDe(hoy()); let c = a.p_corte ? String(a.p_corte).slice(0, 8) + '01' : actual; if(c > actual) c = actual;

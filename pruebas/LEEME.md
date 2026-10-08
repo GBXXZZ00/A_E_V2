@@ -12,3 +12,4 @@ Simulan Supabase con datos falsos: no tocan la base real y los PIN son inventado
 - `mundo.js`: la base de mentira (clientes, documentos, hilo y comisiones con nombres inventados) y las mismas reglas del servidor en pequeño.
 - test03: Inicio (corte, módulos, menú de cuenta, navegación) y Comisiones (grupos por líder, último corte, filtros, por instalar, cambiar de corte, el líder solo ve lo suyo, error y Reintentar).
 - test04: Clientes (búsqueda, lo que ve cada rol), Pedir documentos por WhatsApp o correo, y la ficha: subir uno o varios, archivo que falla o no sirve, nota en el hilo, revisar, aprobar, devolver con motivo, régimen de firma, ISP, estatus, gestión del analista y pago manual.
+- test05: Actualizar datos. Rechaza archivos que no son el TAD, muestra cuántos servicios y clientes trae, carga por lotes, limpia valores corruptos y fechas imposibles, deja historial, permite reintentar si falla y un líder no entra.
