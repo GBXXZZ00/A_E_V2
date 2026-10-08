@@ -18,7 +18,7 @@
     return t.replace(/^﻿/, '');
   }
   function partirCsv(texto){
-    const primera = texto.slice(0, texto.indexOf('\n') < 0 ? texto.length : texto.indexOf('\n'));
+    const primera = texto.slice(0, 3000);   // varias líneas: algunos reportes traen un título antes del encabezado
     const sep = (primera.split(';').length > primera.split(',').length) ? ';' : (primera.split('\t').length > primera.split(',').length ? '\t' : ',');
     const filas = []; let fila = []; let campo = ''; let dentro = false;
     for(let i = 0; i < texto.length; i++){
@@ -50,110 +50,152 @@
     return a + '-' + String(me).padStart(2, '0') + '-' + String(d).padStart(2, '0');
   }
 
-  // ---------- Excel (.xlsx) sin librerías: zip + XML ----------
-  async function inflar(bytes){
-    const st = new Blob([bytes]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
-    return new Uint8Array(await new Response(st).arrayBuffer());
-  }
-  async function leerXlsx(file){
-    if(typeof DecompressionStream === 'undefined') throw new Error('Este navegador no abre Excel. Guárdalo como CSV');
-    const u = new Uint8Array(await file.arrayBuffer()); const v = new DataView(u.buffer);
+  // ---------- Excel (.xlsx) sin librerías: zip + XML leído por trozos, para que aguante archivos de cientos de MB ----------
+  const ENT = { amp: '&', lt: '<', gt: '>', quot: '"', apos: "'" };
+  const sinEnt = (t) => t.indexOf('&') < 0 ? t : t.replace(/&(#x?[0-9a-f]+|amp|lt|gt|quot|apos);/gi, (m, e) => e[0] === '#' ? String.fromCodePoint(e[1] === 'x' || e[1] === 'X' ? parseInt(e.slice(2), 16) : parseInt(e.slice(1), 10)) : ENT[e.toLowerCase()]);
+  const textoDe = (x) => { let t = ''; const re = /<t(?:\s[^>]*)?>([\s\S]*?)<\/t>/g; let m; while((m = re.exec(x))) t += m[1]; return sinEnt(t); };
+  async function indiceZip(file){
+    const cola = new Uint8Array(await file.slice(Math.max(0, file.size - 70000)).arrayBuffer()); const v = new DataView(cola.buffer);
     let fin = -1;
-    for(let i = u.length - 22; i >= Math.max(0, u.length - 70000); i--){ if(v.getUint32(i, true) === 0x06054b50){ fin = i; break; } }
+    for(let i = cola.length - 22; i >= 0; i--){ if(v.getUint32(i, true) === 0x06054b50){ fin = i; break; } }
     if(fin < 0) throw new Error('El Excel está dañado o no es .xlsx');
-    const n = v.getUint16(fin + 10, true); let pos = v.getUint32(fin + 16, true); const dec = new TextDecoder('utf-8'); const dentro = {};
-    for(let k = 0; k < n; k++){
-      if(v.getUint32(pos, true) !== 0x02014b50) break;
-      const metodo = v.getUint16(pos + 10, true), tam = v.getUint32(pos + 20, true), ln = v.getUint16(pos + 28, true), le = v.getUint16(pos + 30, true), lc = v.getUint16(pos + 32, true), loc = v.getUint32(pos + 42, true);
-      dentro[dec.decode(u.subarray(pos + 46, pos + 46 + ln))] = { metodo, tam, loc };
+    const n = v.getUint16(fin + 10, true), tamDir = v.getUint32(fin + 12, true), ini = v.getUint32(fin + 16, true);
+    if(ini === 0xFFFFFFFF) throw new Error('El Excel es demasiado grande. Guárdalo como CSV');
+    const u = new Uint8Array(await file.slice(ini, ini + tamDir).arrayBuffer()); const d = new DataView(u.buffer); const dec = new TextDecoder('utf-8'); const dentro = {}; let pos = 0;
+    for(let k = 0; k < n && pos + 46 <= u.length; k++){
+      if(d.getUint32(pos, true) !== 0x02014b50) break;
+      const ln = d.getUint16(pos + 28, true), le = d.getUint16(pos + 30, true), lc = d.getUint16(pos + 32, true);
+      dentro[dec.decode(u.subarray(pos + 46, pos + 46 + ln))] = { metodo: d.getUint16(pos + 10, true), tam: d.getUint32(pos + 20, true), real: d.getUint32(pos + 24, true), loc: d.getUint32(pos + 42, true) };
       pos += 46 + ln + le + lc;
     }
-    async function texto(nombre){
-      const e = dentro[nombre]; if(!e) return null;
-      const ini = e.loc + 30 + v.getUint16(e.loc + 26, true) + v.getUint16(e.loc + 28, true);
-      const crudo = u.subarray(ini, ini + e.tam);
-      return dec.decode(e.metodo === 0 ? crudo : await inflar(crudo));
-    }
-    const hojas = Object.keys(dentro).filter((x) => /^xl\/worksheets\/sheet\d+\.xml$/.test(x)).sort((a, b) => parseInt(a.replace(/\D/g, ''), 10) - parseInt(b.replace(/\D/g, ''), 10));
-    if(!hojas.length) throw new Error('El Excel no trae hojas');
-    const xml = (t) => new DOMParser().parseFromString(t, 'application/xml');
-    const sst = await texto('xl/sharedStrings.xml'); const textos = [];
-    if(sst){ const si = xml(sst).getElementsByTagName('si'); for(let i = 0; i < si.length; i++){ const ts = si[i].getElementsByTagName('t'); let t = ''; for(let j = 0; j < ts.length; j++){ if(ts[j].parentNode.nodeName !== 'rPh') t += ts[j].textContent; } textos.push(t); } }
-    const filas = []; const rs = xml(await texto(hojas[0])).getElementsByTagName('row');
-    for(let i = 0; i < rs.length; i++){
-      const cs = rs[i].getElementsByTagName('c'); const fila = []; let sig = 0;
-      for(let j = 0; j < cs.length; j++){
-        const c = cs[j]; const ref = (c.getAttribute('r') || '').replace(/\d/g, ''); let col = sig;
-        if(ref){ col = 0; for(let q = 0; q < ref.length; q++) col = col * 26 + (ref.charCodeAt(q) - 64); col -= 1; }
-        sig = col + 1; const tp = c.getAttribute('t'); let val = '';
-        if(tp === 'inlineStr'){ const ts = c.getElementsByTagName('t'); for(let q = 0; q < ts.length; q++) val += ts[q].textContent; }
-        else { const vv = c.getElementsByTagName('v')[0]; if(vv){ val = vv.textContent; if(tp === 's') val = textos[+val] || ''; } }
-        while(fila.length < col) fila.push('');
-        fila[col] = val;
-      }
-      if(fila.some((x) => x !== '')) filas.push(fila);
-    }
-    return filas;
+    return dentro;
   }
-  async function leerFilas(file){
-    if(/\.xlsx$/i.test(file.name)) return leerXlsx(file);
+  // Recorre una parte del zip como texto, trozo a trozo. alTrozo devuelve false para dejar de leer.
+  async function recorrer(file, e, alTrozo){
+    const cab = new DataView(await file.slice(e.loc, e.loc + 30).arrayBuffer());
+    const ini = e.loc + 30 + cab.getUint16(26, true) + cab.getUint16(28, true);
+    let st = file.slice(ini, ini + e.tam).stream();
+    if(e.metodo === 8) st = st.pipeThrough(new DecompressionStream('deflate-raw'));
+    else if(e.metodo !== 0) throw new Error('El Excel usa una compresión que no conozco. Guárdalo como CSV');
+    const lector = st.pipeThrough(new TextDecoderStream('utf-8')).getReader();
+    try {
+      for(;;){ const r = await lector.read(); if(r.done) break; if(alTrozo(r.value) === false){ await lector.cancel().catch(() => {}); break; } }
+    } finally { try { lector.releaseLock(); } catch (x) { /* ya liberado */ } }
+  }
+  async function leerXlsx(file, alFila, alAvance){
+    if(typeof DecompressionStream === 'undefined' || typeof TextDecoderStream === 'undefined') throw new Error('Este navegador no abre Excel. Guárdalo como CSV');
+    const dentro = await indiceZip(file);
+    const hojas = Object.keys(dentro).filter((x) => /^xl\/worksheets\/sheet\d+\.xml$/.test(x)).sort((x, y) => parseInt(x.replace(/\D/g, ''), 10) - parseInt(y.replace(/\D/g, ''), 10));
+    if(!hojas.length) throw new Error('El Excel no trae hojas');
+    const hoja = dentro[hojas[0]]; const sst = dentro['xl/sharedStrings.xml'];
+    const total = (hoja.real || 1) + (sst ? sst.real : 0); let leido = 0; let buf = '';
+    const textos = [];
+    if(sst){
+      const re = /<si\/>|<si(?:\s[^>]*)?>([\s\S]*?)<\/si>/g;
+      await recorrer(file, sst, (t) => {
+        leido += t.length; buf += t; re.lastIndex = 0; let m; let hasta = 0;
+        while((m = re.exec(buf))){ textos.push(m[1] ? textoDe(m[1].replace(/<rPh[\s\S]*?<\/rPh>/g, '')) : ''); hasta = re.lastIndex; }
+        buf = buf.slice(hasta); alAvance(leido / total);
+      });
+    }
+    buf = ''; let seguir = true;
+    const reFila = /<row(?:\s[^>]*)?\/>|<row(?:\s[^>]*)?>([\s\S]*?)<\/row>/g;
+    const reCelda = /<c\b([^>]*?)(?:\/>|>([\s\S]*?)<\/c>)/g;
+    await recorrer(file, hoja, (t) => {
+      leido += t.length; buf += t; reFila.lastIndex = 0; let m; let hasta = 0;
+      while(seguir && (m = reFila.exec(buf))){
+        hasta = reFila.lastIndex; if(!m[1]) continue;
+        const fila = []; let sig = 0; let c; let hay = false; reCelda.lastIndex = 0;
+        while((c = reCelda.exec(m[1]))){
+          const at = c[1]; const r = /\br="([A-Z]+)\d*"/.exec(at); let col = sig;
+          if(r){ col = 0; for(let q = 0; q < r[1].length; q++) col = col * 26 + (r[1].charCodeAt(q) - 64); col -= 1; }
+          sig = col + 1; let val = '';
+          if(c[2]){
+            const tp = /\bt="([a-zA-Z]+)"/.exec(at); const tipo = tp ? tp[1] : '';
+            if(tipo === 'inlineStr') val = textoDe(c[2]);
+            else { const vv = /<v(?:\s[^>]*)?>([\s\S]*?)<\/v>/.exec(c[2]); if(vv){ val = tipo === 's' ? (textos[+vv[1]] || '') : tipo === 'b' ? (vv[1] === '1' ? 'SI' : '') : sinEnt(vv[1]); } }
+          }
+          if(val !== ''){ while(fila.length < col) fila.push(''); fila[col] = val; hay = true; }
+        }
+        if(hay && alFila(fila) === false) seguir = false;
+      }
+      buf = buf.slice(hasta); alAvance(leido / total);
+      return seguir;
+    });
+  }
+  async function leerFilas(file, alFila, alAvance){
+    if(/\.xlsx$/i.test(file.name)) return leerXlsx(file, alFila, alAvance);
     if(/\.xls$/i.test(file.name)) throw new Error('Es un Excel antiguo (.xls). Guárdalo como .xlsx o CSV');
-    return partirCsv(await leerTexto(file));
+    const filas = partirCsv(await leerTexto(file));
+    for(let i = 0; i < filas.length; i++){
+      if(alFila(filas[i]) === false) break;
+      if(i % 20000 === 19999){ alAvance(i / filas.length); await new Promise((ok) => setTimeout(ok, 0)); }
+    }
   }
 
   // ---------- Reconocer cada archivo por sus columnas ----------
   const TIPOS = {
-    tad: { nombre: 'TAD', pide: ['sucursal', 'cliente', 'documento', 'nombre'], que: 'Agrega clientes y servicios nuevos y actualiza estado, plan y deuda.' },
-    instalaciones: { nombre: 'Órdenes de instalación', pide: ['codcliente', 'feccump', 'cedula'], que: 'Queda guardado para cruzar instalaciones con clientes.' },
-    odoo: { nombre: 'Órdenes de Odoo', pide: ['odt', 'etapa', 'cliente'], que: 'Queda guardado para cruzar órdenes con clientes.' },
-    base_vieja: { nombre: 'Base de la app anterior', pide: ['razon_social', 'rif', 'estatus_legal'], que: 'Queda guardada para traer estatus legal, líder y contactos.' }
+    tad: { nombre: 'TAD', pide: ['sucursal', 'cliente', 'documento', 'nombre'] },
+    instalaciones: { nombre: 'Órdenes de instalación', pide: ['codcliente', 'feccump', 'cedula'] },
+    odoo: { nombre: 'Órdenes de Odoo', pide: ['etapa', 'cliente'], alguna: ['odt', 'cod_orden_de_trabajo'] },
+    base_vieja: { nombre: 'Base de la app anterior', pide: ['razon_social', 'rif', 'estatus_legal'] }
   };
   const ORDEN = ['tad', 'base_vieja', 'odoo', 'instalaciones'];
   const clave = (h) => normalizeStr(h).replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
   function reconocer(cab){
-    return ORDEN.find((t) => TIPOS[t].pide.every((c) => cab.indexOf(c) >= 0)) || null;
+    return ORDEN.find((t) => TIPOS[t].pide.every((c) => cab.indexOf(c) >= 0) && (!TIPOS[t].alguna || TIPOS[t].alguna.some((c) => cab.indexOf(c) >= 0))) || null;
   }
-  const esB2B = (o) => o.t === 'J' || o.t === 'G' || /^(pyme|dedicado|conectividad)/.test(normalizeStr(o.ca)) || /emp/.test(normalizeStr(o.p));
-  function prepararTad(filas, cab){
-    const idx = {};
-    Object.keys(COLUMNAS).forEach((k) => { idx[k] = cab.indexOf(COLUMNAS[k]); });
-    let datos = []; let malas = 0;
-    for(let i = 1; i < filas.length; i++){
-      const f = filas[i]; const o = {};
-      Object.keys(COLUMNAS).forEach((k) => { o[k] = idx[k] >= 0 ? limpio(f[idx[k]]) : ''; });
-      o.f = fechaIso(o.f);
-      const doc = o.d.replace(/\D/g, '').replace(/^0+/, '');
-      if(!/^[1-9][0-9]{4,9}$/.test(doc) || !o.n || !/[1-9]/.test(o.s) || !/[1-9]/.test(o.c)){ malas++; continue; }
-      if(!o.t) o.t = 'J';
-      o._doc = doc; datos.push(o);
-    }
-    // El TAD completo trae también residenciales: se queda solo lo de empresas
-    let fuera = 0;
-    if(datos.length > TOPE_TAD){ const antes = datos.length; datos = datos.filter(esB2B); fuera = antes - datos.length; }
-    if(datos.length > TOPE_TAD) throw new Error('Trae más de ' + TOPE_TAD.toLocaleString('es-VE') + ' servicios de empresas. Avísame para revisarlo');
-    const clientes = new Set(); datos.forEach((o) => { clientes.add(o._doc); delete o._doc; });
-    if(!datos.length) throw new Error('Ninguna fila se pudo leer');
-    return { datos, malas, fuera, clientes: clientes.size };
+  const soloDoc = (v) => String(v || '').replace(/\D/g, '').replace(/^0+/, '');
+  // Empresa: por categoría o plan del servicio, o porque el RIF ya es un cliente conocido.
+  // Probado con el TAD completo del 08/10: recupera todos los servicios del TAD de empresas del 07/10.
+  const CAT_EMP = /^(pyme|dedicado|conectividad)/; const PLAN_EMP = /(^oro-emp$|\d\s*[mg]bps$)/;
+  const esEmpresa = (cat, plan, doc, conocidos) => CAT_EMP.test(normalizeStr(cat)) || PLAN_EMP.test(normalizeStr(plan)) || conocidos.has(doc);
+  function fechaHora(v){   // número de fecha de Excel a texto
+    const n = +v; const x = new Date(Date.UTC(1899, 11, 30) + Math.round(n * 86400000));
+    return isNaN(x) ? v : x.toISOString().slice(0, n % 1 ? 19 : 10).replace('T', ' ');
   }
-  function prepararCrudo(filas, cab){
-    const datos = [];
-    for(let i = 1; i < filas.length; i++){
+  async function preparar(file, conocidos, alAvance){
+    let cab = null; let tipo = null; let vistas = 0; let total = 0; let malas = 0; let fuera = 0; let idx = null;
+    let datos = []; let dudosas = []; const clientes = new Set(); let filtrando = false; const rifs = [];
+    await leerFilas(file, (f) => {
+      if(!cab){
+        const c = f.map(clave); tipo = reconocer(c);
+        if(tipo){ cab = c; if(tipo === 'tad'){ idx = {}; Object.keys(COLUMNAS).forEach((k) => { idx[k] = cab.indexOf(COLUMNAS[k]); }); } }
+        else if(++vistas >= 6) return false;
+        return true;
+      }
+      total++;
+      if(tipo === 'tad'){
+        const o = {};
+        Object.keys(COLUMNAS).forEach((k) => { o[k] = idx[k] >= 0 ? limpio(f[idx[k]]) : ''; });
+        o.f = fechaIso(o.f);
+        const doc = soloDoc(o.d);
+        if(!/^[1-9][0-9]{4,9}$/.test(doc) || !o.n || !/[1-9]/.test(o.s) || !/[1-9]/.test(o.c)){ malas++; return true; }
+        if(!o.t) o.t = 'J';
+        if(esEmpresa(o.ca, o.p, doc, conocidos)){ datos.push(o); clientes.add(doc); }
+        else if(filtrando) fuera++;
+        else { dudosas.push(o); if(datos.length + dudosas.length > TOPE_TAD){ filtrando = true; fuera += dudosas.length; dudosas = []; } }
+        return true;
+      }
       const o = {}; let hay = false;
-      for(let j = 0; j < cab.length; j++){ if(!cab[j]) continue; const v = limpio(filas[i][j]); if(v !== ''){ o[cab[j]] = v.slice(0, 2000); hay = true; } }
-      if(hay) datos.push(o);
-    }
-    if(!datos.length) throw new Error('El archivo no trae filas');
-    if(datos.length > 60000) throw new Error('Trae demasiadas filas. Expórtalo con menos fechas');
-    return { datos, malas: 0, fuera: 0, clientes: 0 };
-  }
-  async function preparar(file){
-    const filas = await leerFilas(file);
-    if(filas.length < 2) throw new Error('Está vacío o no se puede leer');
-    const cab = filas[0].map(clave);
-    const tipo = reconocer(cab);
+      for(let j = 0; j < cab.length; j++){
+        if(!cab[j]) continue; let v = limpio(f[j]); if(v === '') continue;
+        if(/^\d{5}(\.\d+)?$/.test(v) && /fec|creado/.test(cab[j])) v = fechaHora(v);
+        o[cab[j]] = v.slice(0, 2000); hay = true;
+      }
+      if(!hay){ total--; return true; }
+      if(tipo === 'instalaciones' && !esEmpresa(o.categoria, o.profile, soloDoc(o.cedula), conocidos)){ fuera++; return true; }
+      if(tipo === 'base_vieja'){ const r = soloDoc(o.rif); if(r) rifs.push(r); }
+      datos.push(o);
+      if(datos.length > 60000) throw new Error('Trae demasiadas filas. Expórtalo con menos fechas');
+      return true;
+    }, alAvance);
     if(!tipo) throw new Error('No reconozco este archivo por sus columnas');
-    const p = tipo === 'tad' ? prepararTad(filas, cab) : prepararCrudo(filas, cab);
-    return Object.assign(p, { tipo, total: filas.length - 1 });
+    if(tipo === 'tad' && !filtrando){ dudosas.forEach((o) => { datos.push(o); clientes.add(soloDoc(o.d)); }); }   // un TAD ya filtrado entra completo
+    if(datos.length > TOPE_TAD) throw new Error('Trae más de ' + TOPE_TAD.toLocaleString('es-VE') + ' filas de empresas. Avísame para revisarlo');
+    if(!datos.length) throw new Error(total ? 'Ninguna fila es de empresas o se pudo leer' : 'El archivo no trae filas');
+    rifs.forEach((r) => conocidos.add(r));
+    return { tipo, datos, malas, fuera, clientes: clientes.size, total };
   }
 
   // ---------- Pantalla ----------
@@ -161,14 +203,14 @@
   const ICO = '<svg class="i g" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5M5 20h14"/></svg>';
   function detalle(a){
     if(a.error) return '<small style="color:var(--rojo)">' + esc(a.error) + '</small>';
-    if(a.leyendo) return '<small>Leyendo...</small>';
+    if(a.leyendo) return '<small>' + (a.espera ? 'En espera' : 'Leyendo' + (a.avance ? ' ' + a.avance + ' %' : '...')) + '</small>';
     if(a.resultado) return '<small>' + esc(a.resultado) + '</small>';
     if(a.tipo === 'tad') return '<small>' + num(a.datos.length) + ' servicios de ' + num(a.clientes) + ' clientes' + (a.fuera ? ' · ' + num(a.fuera) + ' residenciales quedan fuera' : '') + (a.malas ? ' · ' + plural(a.malas, 'fila', 'filas') + ' sin RIF, nombre o código' : '') + '</small>';
-    return '<small>' + plural(a.datos.length, 'fila', 'filas') + '</small>';
+    return '<small>' + plural(a.datos.length, 'fila', 'filas') + (a.fuera ? ' de empresas · ' + num(a.fuera) + ' residenciales quedan fuera' : '') + '</small>';
   }
   function marca(a){
     if(a.error) return '<span class="m rojo">No sirve</span>';
-    if(a.leyendo) return '<span class="m">Leyendo</span>';
+    if(a.leyendo) return '<span class="m">' + (a.espera ? 'En espera' : 'Leyendo') + '</span>';
     if(a.estado === 'lista') return '<span class="m verde">Cargado</span>';
     if(a.estado === 'fallo') return '<span class="m rojo">Se detuvo</span>';
     if(a.estado === 'subiendo') return '<span class="m ambar">' + Math.round(a.hecho * 100 / Math.max(1, a.datos.length)) + ' %</span>';
@@ -182,26 +224,33 @@
     const filas = '<div class="grupo abierto" id="listaArch" role="status" aria-live="polite">' + lista.map((a, i) =>
       '<div class="fila carga-f"' + (i === 0 ? ' style="border-top:0"' : '') + ' data-i="' + i + '"><span class="tx"><b>' + esc(a.tipo ? TIPOS[a.tipo].nombre : 'Sin reconocer') + ' · ' + esc(a.nombre) + '</b>' + detalle(a) + '</span>' + marca(a) + '</div>').join('') + '</div>';
     let pie;
-    if(ocupado) pie = '<p class="nota-chica">No cierres esta pantalla hasta que termine.</p>';
+    if(ocupado) pie = '<p class="nota-chica">' + (lista.some((a) => a.leyendo) ? 'Leyendo los archivos. Los más pesados pueden tardar un par de minutos.' : 'No cierres esta pantalla hasta que termine.') + '</p>';
     else if(fin) pie = '<div class="aviso" style="margin-top:14px"><b>' + esc(fin.titulo) + '</b><p>' + esc(fin.texto) + '</p><p style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap"><a class="btn btn-chico" href="clientes.html?f=todos">Ver clientes</a><button type="button" class="btn btn-chico btn-2" id="otro">Subir otros</button></p></div>';
     else pie = '<div class="acc" style="margin-top:14px"><button type="button" class="btn btn-2" id="limpiar">Quitar todos</button>' + (buenos.length ? '<button type="button" class="btn" id="cargarTodo">Cargar ' + plural(buenos.length, 'archivo', 'archivos') + '</button>' : '') + '</div><p class="nota-chica">No borra nada. Agrega lo nuevo y actualiza lo que ya está.</p>';
     z.innerHTML = filas + (ocupado || fin ? '' : '<div style="margin-top:12px">' + soltar + '</div>') + pie;
   }
+  let conocidos = null;
   async function elegir(files){
     if(ocupado || !files || !files.length) return;
     if(fin){ lista = []; fin = null; }
-    const nuevos = Array.prototype.slice.call(files, 0, 12).map((f) => ({ nombre: f.name, file: f, leyendo: true }));
-    lista = lista.concat(nuevos); pintar();
+    // Los livianos primero: la base anterior le dice al TAD cuáles RIF son de empresas
+    const nuevos = Array.prototype.slice.call(files, 0, 12).sort((x, y) => x.size - y.size).map((f) => ({ nombre: f.name, file: f, leyendo: true, espera: true }));
+    lista = lista.concat(nuevos); ocupado = true; pintar();
+    if(!conocidos){ try { conocidos = new Set(await rpc('clientes_rifs', {})); } catch (e) { conocidos = new Set(); } }
     for(const a of nuevos){
+      a.espera = false; pintar();
       await new Promise((ok) => setTimeout(ok, 30));   // deja pintar antes de leer un archivo pesado
+      let ultimo = 0;
       try {
-        if(a.file.size > 150 * 1024 * 1024) throw new Error('Pesa más de 150 MB');
-        Object.assign(a, await preparar(a.file));
-        const rep = lista.find((x) => x !== a && x.tipo === a.tipo && x.datos && x.estado !== 'lista');
-        if(rep){ delete a.datos; throw new Error('Ya hay otro archivo de ' + TIPOS[a.tipo].nombre + ' en la lista'); }
+        if(a.file.size > 200 * 1024 * 1024) throw new Error('Pesa más de 200 MB');
+        const p = await preparar(a.file, conocidos, (parte) => { const ahora = Date.now(); if(ahora - ultimo > 400){ ultimo = ahora; a.avance = Math.min(99, Math.round(parte * 100)); pintar(); } });
+        const rep = lista.find((x) => x !== a && x.tipo === p.tipo && x.datos && x.estado !== 'lista');
+        if(rep){ a.tipo = p.tipo; throw new Error('Ya hay otro archivo de ' + TIPOS[p.tipo].nombre + ' en la lista'); }
+        Object.assign(a, p);
       } catch (e) { a.error = e.message || 'No se pudo leer'; }
       a.leyendo = false; a.file = null; pintar();
     }
+    ocupado = false; pintar();
     const malos = nuevos.filter((a) => a.error).length;
     if(malos) toast(plural(malos, 'archivo no se pudo usar', 'archivos no se pudieron usar') + '. Mira el motivo en la lista', 'error');
   }

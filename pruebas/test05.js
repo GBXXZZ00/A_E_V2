@@ -41,7 +41,7 @@ function xlsx(filas){
     await p.setInputFiles('#archivos', [
       { name: 'tad.csv', mimeType: 'text/csv', buffer: Buffer.from(csv(900), 'latin1') },
       { name: 'odoo.xlsx', mimeType: 'application/octet-stream', buffer: xlsx([['odt', 'tema', 'creado', 'creador', 'etapa', 'fejec', 'rel', 'cliente'], ['OT-1', 'Instalación ñandú', '2026-09-01', 'Inventado', 'Nuevo', '', '', 'Comercio de Prueba 1'], ['OT-2', '#N/A', '', '', 'Hecho', '', '', 'Comercio de Prueba 2']]) },
-      { name: 'ordenes.csv', mimeType: 'text/csv', buffer: Buffer.from('Pref;Codcliente;Nombre;Cedula;Feccump;Usuario;Tipo\n824;700001;Comercio de Prueba 1;597000001;2026-09-03 03:57:53 p.m.;SERIE1;INSTALACION\n') },
+      { name: 'ordenes.csv', mimeType: 'text/csv', buffer: Buffer.from('Título del reporte\nPref;Codcliente;Nombre;Cedula;Feccump;Usuario;Tipo;Categoria\n824;700001;Comercio de Prueba 1;597000001;2026-09-03 03:57:53 p.m.;SERIE1;INSTALACION;pyme-1gb\n824;700002;Vecino Inventado;12345678;2026-09-03 03:57:53 p.m.;SERIE2;INSTALACION;promo-1gb\n') },
       { name: 'base.csv', mimeType: 'text/csv', buffer: Buffer.from('Sucursal,EJECUTIVO,COD.,RAZON SOCIAL,RIF,TIPO_CLIENTE,ESTATUS_LEGAL\n824,Lucia,700001,Comercio de Prueba 1,597000001,PYMES,CONTRATO FIRMADO\n') }
     ]);
     await p.waitForSelector('#cargarTodo');

@@ -343,6 +343,7 @@ const RPC = {
     const c = (m.cargas || []).find((x) => x.id === a.p_carga && x.estado === 'procesando'); if(!c) return error('Esta carga ya no está abierta');
     c.estado = 'lista'; return { guardadas: c.crudas.length, total: c.filas };
   },
+  clientes_rifs(m, yo){ return m.datos.clientes.map((c) => c.doc_numero); },
   cargas_ultimas(m, yo){
     if(!['admin', 'analista'].includes(yo.rol)) return error('No tienes permiso para hacer esto');
     return (m.cargas || []).filter((c) => c.estado !== 'procesando').slice().reverse();
