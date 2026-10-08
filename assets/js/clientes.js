@@ -180,5 +180,7 @@
     cargar(false);
     // Enlace directo a un expediente (desde Inicio o un aviso)
     if(u.c){ guardarUrl(); abrirCliente(u.c, { tab: u.t, revisar: u.revisar, pedir: u.pedir }); }
+    // Desde Inicio: la lista de bienvenidas por enviar
+    else if(new URLSearchParams(location.search).get('bienvenidas')){ try { history.replaceState(history.state, '', location.pathname); } catch (e) {} window.Bienvenidas.abrir({ yo, alCerrar: refrescar }); }
   })();
 })();

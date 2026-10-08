@@ -15,7 +15,7 @@ const cerrarTodo = async (p) => { for(let i = 0; i < 4; i++){ if(await p.evaluat
     await abrirCliente(p, 'Vidrios El Faro');
     ok(nombre + ': servicios del RIF con el número grande', (await p.textContent('.serv-n b')) === '2' && (await p.textContent('.serv-n span')).includes('Servicios en este RIF'));
     ok(nombre + ': con dedicado sí sale el interruptor de ISP', (await p.locator('[data-interr="es_isp"]').count()) === 1);
-    ok(nombre + ': cada servicio muestra su IP y deja cambiarla', (await p.locator('.ip-l').count()) === 2 && (await p.textContent('.ip-l')).includes('IPv4 10.24.1.6'));
+    ok(nombre + ': cada servicio muestra su IP y deja cambiarla', (await p.locator('.ip-l:not(.env-l)').count()) === 2 && (await p.textContent('.ip-l')).includes('IPv4 10.24.1.6'));
     await p.locator('[data-ip]').first().click(); await p.waitForSelector('#hojaCampo.ver #cIp');
     await p.fill('#cIp', '999.1.1'); await p.click('#guardarCampo'); await p.waitForFunction(() => document.getElementById('eCampo').textContent.length > 3);
     ok(nombre + ': una IP mal escrita se avisa debajo del campo', (await p.textContent('#eCampo')).includes('IPv4'));

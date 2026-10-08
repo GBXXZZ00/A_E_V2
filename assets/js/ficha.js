@@ -55,6 +55,7 @@
     if(o.revisar && F.puedo.revisar && porRevisar().length) abrirRevision();
     else if(o.pedir) pedir(o.pedir === '1' ? null : o.pedir);
     else if(o.campo) abrirCampo(o.campo);
+    else if(o.enviar) abrirEnviar(o.enviar);
     else if(o.casilla){ const el = document.querySelector('#tab-documentos [data-casilla="' + o.casilla + '"]'); if(el){ el.scrollIntoView({ block: 'center' }); el.classList.add('sobre'); setTimeout(() => el.classList.remove('sobre'), 1600); } }
   }
 
@@ -117,7 +118,10 @@
       case 'dato': t = quien + ' ' + ({ representante: 'actualizó el contacto del representante ' + (d.orden || 1), correo_empresa: 'actualizó el correo de la empresa', telefono: 'actualizó el teléfono', direccion: 'actualizó la dirección',
         regimen_firma: 'puso el régimen de firma en ' + (d.valor === 'conjunta' ? 'Conjunta' : d.valor === 'individual' ? 'Individual' : 'Sin definir'),
         ip: 'actualizó la IP' + (d.codigo ? ' del servicio ' + d.codigo : ''), es_top: d.valor === 'true' ? 'lo marcó como Cliente TOP' : 'le quitó la marca de Cliente TOP', es_isp: d.valor === 'true' ? 'lo marcó como proveedor de internet' : 'le quitó la marca de proveedor de internet' }[h.texto] || 'actualizó un dato'); break;
-      case 'gestion': t = quien + (d.hecho ? ' marcó la ' : ' quitó la marca de la ') + (h.texto === 'bienvenida' ? 'carta de bienvenida' : 'proforma') + (d.hecho ? ' como enviada' : ''); break;
+      case 'gestion': { const que = h.texto === 'ambas' ? 'la proforma y la carta de bienvenida' : h.texto === 'bienvenida' ? 'la carta de bienvenida' : 'la proforma';
+        if(d.canal === 'whatsapp' || d.canal === 'correo'){ tono = 'azul'; t = quien + ' envió ' + que + (d.canal === 'correo' ? ' por correo' : ' por WhatsApp'); }
+        else t = quien + (d.hecho ? ' marcó ' : ' quitó la marca de ') + que + (d.hecho ? (h.texto === 'ambas' ? ' como enviadas' : ' como enviada') : '');
+        break; }
       case 'pago': tono = h.texto === 'pagada' ? 'verde' : ''; t = quien + (h.texto === 'pagada' ? ' marcó la instalación como pagada' : ' quitó el pago de la instalación'); break;
       case 'instalacion':
         if(h.texto === 'asignada'){ t = quien + ' asignó la comisión a <b>' + esc(d.dueno || '') + '</b>' + (d.orden ? ', con la orden ' + esc(String(d.orden).split('/').pop()) : ', sin orden de Odoo'); }
@@ -252,7 +256,8 @@
         (x.equipo ? '<small>Serial ' + esc(x.equipo) + '</small>' : '') +
         (x.con_deuda ? '<small style="color:var(--rojo);font-weight:600">Con deuda en el TAD</small>' : '') +
         '<div class="ip-l"><span>' + (x.ip || x.ip6 ? [x.ip ? 'IPv4 ' + esc(x.ip) : '', x.ip6 ? 'IPv6 ' + esc(x.ip6) : ''].filter(Boolean).join(' · ') : 'IP pendiente por asignar') + '</span>' +
-          (F.puedo.ip ? '<button type="button" class="enlace" data-ip="' + esc(x.id) + '">' + (x.ip || x.ip6 ? 'Cambiar IP' : 'Escribir IP') + '</button>' : '') + '</div></div>';
+          (F.puedo.ip ? '<button type="button" class="enlace" data-ip="' + esc(x.id) + '">' + (x.ip || x.ip6 ? 'Cambiar IP' : 'Escribir IP') + '</button>' : '') + '</div>' +
+        (F.puedo.enviar ? '<div class="ip-l env-l"><span>' + esc(estadoEnvio(x)) + '</span><button type="button" class="mini" data-enviar="' + esc(x.id) + '">Proforma y carta</button></div>' : '') + '</div>';
     });
     h += '</div>';
     if(!c.es_natural){
@@ -264,10 +269,116 @@
     }
     h += '<div class="secc">Cartera</div><div class="interr"><span class="tx">Cliente TOP<small>Protegido: los aliados no pueden instalarlo</small></span>' +
       '<button type="button" class="sw" role="switch" aria-checked="' + !!c.es_top + '" data-interr="es_top" aria-label="Cliente TOP"' + (F.puedo.top ? '' : ' disabled') + '></button></div>';
-    const g = (cual, etq) => { const en = c[cual + '_en']; return fila(etq, (en ? '<span class="chip verde">Enviada</span> ' + esc(fecha(en)) + (c[cual + '_por'] ? ', ' + esc(primerNombre(c[cual + '_por'])) : '') : '<span class="chip">Sin enviar</span>') +
-      (F.puedo.gestion ? '<button type="button" class="enlace" data-gestion="' + cual + '" data-hecho="' + (en ? '0' : '1') + '" style="margin-left:auto">' + (en ? 'Quitar' : 'Marcar') + '</button>' : '')); };
-    h += '<div class="secc">Gestión del analista<span class="der">Opcional</span></div><div class="datos">' + g('proforma', 'Proforma') + g('bienvenida', 'Bienvenida') + '</div>';
     $('tab-datos').innerHTML = h;
+  }
+
+  // ---------- Proforma y carta de bienvenida ----------
+  function estadoEnvio(x){
+    const una = (e, que) => (e ? que + ' enviada el ' + fecha(e.en) + (e.por ? ', ' + primerNombre(e.por) : '') : '');
+    return [una(x.bienvenida_envio, 'Carta'), una(x.proforma_envio, 'Proforma')].filter(Boolean).join(' · ') || 'Proforma y carta sin enviar';
+  }
+  let env = null;   // { servicio, tipo }
+  const saludoHora = () => { const h = new Date().getHours(); return h < 12 ? 'Buenos días' : h < 19 ? 'Buenas tardes' : 'Buenas noches'; };
+  function telefonosDe(sv){
+    const D = window.Documentos; const vistos = {}; const r = [];
+    const pon = (t, de) => { const n = D.waNumero(t); if(n.length < 11 || vistos[n]) return; vistos[n] = 1; r.push({ n: String(t), t: D.telFmt(t) + ' · ' + de }); };
+    (F.representantes || []).forEach((x) => pon(x.telefono, F.cliente.es_natural ? 'titular' : 'representante ' + x.orden));
+    pon(F.cliente.telefono, 'Proham'); pon(sv.telefono, 'TAD');
+    (F.servicios || []).forEach((x) => { if(x !== sv) pon(x.telefono, 'TAD, otro servicio'); });
+    return r;
+  }
+  function abrirEnviar(servicioId){
+    const sv = (F.servicios || []).find((x) => String(x.id) === String(servicioId)); if(!sv || !F.puedo.enviar) return;
+    const k = sv.carta || {}; const tels = telefonosDe(sv); const sinIp = !sv.ip && !sv.ip6;
+    env = { servicio: sv.id, tipo: k.puede ? 'ambas' : 'proforma' };
+    const aviso = (t, extra) => '<div class="estado ambar chico"><small>' + t + '</small>' + (extra || '') + '</div>';
+    let h = cabHoja('tEnviar', 'Proforma y carta', F.cliente.nombre + ' · ' + sv.sucursal + '-' + sv.codigo);
+    if(!k.puede) h += aviso('La carta de bienvenida sale cuando la instalación tenga dueño. Se asigna en Comisiones.');
+    else {
+      if(sinIp) h += aviso('Este servicio no tiene IP: la carta dirá "Pendiente por asignar".', F.puedo.ip ? '<button type="button" class="mini" id="envIp">Escribir IP</button>' : '');
+      if(k.lider && !k.whatsapp) h += aviso('A ' + esc(k.lider) + ' le falta el WhatsApp en Usuarios: la carta saldrá sin ese dato.');
+    }
+    h += '<span class="rotulo arriba" id="rEnvTipo">Qué envías</span><div class="tres" role="radiogroup" aria-labelledby="rEnvTipo">' +
+      [['proforma', 'Proforma'], ['bienvenida', 'Carta'], ['ambas', 'Las dos']].map((x) => '<button type="button" role="radio" data-env-tipo="' + x[0] + '" aria-checked="' + (env.tipo === x[0]) + '" class="' + (env.tipo === x[0] ? 'on' : '') + '"' + (x[0] !== 'proforma' && !k.puede ? ' disabled' : '') + '>' + x[1] + '</button>').join('') + '</div>' +
+      '<div class="ver-l"><button type="button" class="enlace" data-env-ver="proforma">Ver la proforma</button>' + (k.puede ? '<button type="button" class="enlace" data-env-ver="bienvenida">Ver la carta</button>' : '') + '</div>' +
+      '<label class="rotulo arriba" for="envNum">WhatsApp del cliente</label><select class="campo" id="envNum">' + tels.map((x) => '<option value="' + esc(x.n) + '">' + esc(x.t) + '</option>').join('') + '<option value="">Otro número</option></select>' +
+      '<div id="envOtroZ"' + (tels.length ? ' class="hidden"' : '') + '><label class="rotulo arriba" for="envOtro">Otro número</label><input class="campo" id="envOtro" type="tel" inputmode="tel" autocomplete="off" maxlength="20"></div>' +
+      '<div class="error" id="eEnv" role="alert"></div>' +
+      '<div class="acciones col"><button type="button" class="btn btn-ancho" id="envWa">' + ic('wa') + (puedeCompartir() ? 'Compartir por WhatsApp' : 'Descargar y abrir WhatsApp') + '</button>' +
+      '<button type="button" class="btn btn-2 btn-ancho" id="envCorreo">' + ic('correo') + 'Enviar las dos por correo</button></div>' +
+      '<p class="nota-chica" id="envAyuda">' + (puedeCompartir() ? 'Se copia el número y se abre Compartir con el PDF: elige WhatsApp y pega el número.' : 'Se descarga el PDF, se copia el número y se abre el chat: arrastra el PDF al chat.') + '</p>' +
+      '<div class="ip-l env-l"><span>' + esc(estadoEnvio(sv)) + '</span>' + (F.puedo.gestion ? '<button type="button" class="enlace" id="envManual">Ya se envió por fuera</button>' : '') + '</div>';
+    $('hojaEnviar').innerHTML = h;
+    abrirHoja('hojaEnviar');
+  }
+  // En teléfono se comparte el archivo; en computadora se descarga
+  function puedeCompartir(){
+    try { return window.matchMedia('(pointer: coarse)').matches && !!navigator.canShare && navigator.canShare({ files: [new File(['x'], 'x.pdf', { type: 'application/pdf' })] }); } catch (e) { return false; }
+  }
+  function archivosEnvio(tipo, telefono){
+    const sv = (F.servicios || []).find((x) => x.id === env.servicio); const D = window.Documentos; const x = D.datosDe(F, sv, telefono); const r = [];
+    if(tipo !== 'bienvenida') r.push(new File([D.proforma(x)], D.nombreArchivo('proforma', x.nombre), { type: 'application/pdf' }));
+    if(tipo !== 'proforma') r.push(new File([D.carta(x)], D.nombreArchivo('bienvenida', x.nombre), { type: 'application/pdf' }));
+    return r;
+  }
+  const tiposDe = (tipo) => (tipo === 'ambas' ? ['proforma', 'bienvenida'] : [tipo]);
+  async function anotarEnvio(tipo, canal, destino){
+    const mio = id;
+    try { await rpc('envio_registrar', { p_servicio: env.servicio, p_tipos: tiposDe(tipo), p_canal: canal, p_destino: destino || null }); toast(canal === 'manual' ? 'Marcado como enviado' : 'Quedó anotado en el hilo'); }
+    catch (e) { toast(e.message, 'error'); return; }
+    if(hojaAbierta() === 'hojaEnviar') cerrarHoja();
+    if(mio === id) cargar();
+  }
+  function numeroEnvio(){
+    const s = $('envNum'); const v = s && s.value ? s.value : $('envOtro').value.trim();
+    if(window.Documentos.waNumero(v).length < 11){ $('eEnv').textContent = 'Escribe un número de WhatsApp completo, con el código del operador'; if(!s.value) $('envOtro').focus(); return null; }
+    return v;
+  }
+  const copiar = (t) => { try { if(navigator.clipboard) navigator.clipboard.writeText(t).catch(() => {}); } catch (e) {} };
+  async function enviarWhatsapp(){
+    $('eEnv').textContent = ''; const num = numeroEnvio(); if(!num) return;
+    const D = window.Documentos; const tipo = env.tipo; let files;
+    try { files = archivosEnvio(tipo, num); } catch (e) { toast('No se pudo armar el PDF. Intenta de nuevo', 'error'); return; }
+    const quien = saludoHora() + '. Le escribe ' + (F.yo.nombre || 'el equipo') + ', de Airtek. ';
+    const msj = quien + (tipo === 'proforma' ? 'Le envío la proforma de instalación de su servicio de internet, con las opciones de pago.'
+      : 'Le damos la bienvenida a Airtek Empresas. Le envío su carta de bienvenida con los datos de su servicio' + (tipo === 'ambas' ? ' y la proforma de instalación.' : '.')) + ' Quedo a su orden. Gracias.';
+    copiar(D.telFmt(num));
+    if(puedeCompartir()){
+      try { await navigator.share({ files, text: msj }); }
+      catch (e) { if(e && e.name === 'AbortError') return; toast('No se pudo abrir Compartir. Intenta de nuevo', 'error'); return; }
+    } else {
+      files.forEach((f) => window.Archivos.descargar(f, f.name));
+      window.open(C.enlaceWa(num, msj), '_blank', 'noopener');
+      toast('PDF descargado y número copiado. Arrástralo al chat');
+    }
+    anotarEnvio(tipo, 'whatsapp', D.telFmt(num));
+  }
+  async function enviarCorreo(){
+    $('eEnv').textContent = ''; const c = F.cliente; const sv = (F.servicios || []).find((x) => x.id === env.servicio); const k = sv.carta || {};
+    if(!c.correo){ $('eEnv').textContent = 'Este cliente no tiene correo guardado. Escríbelo en Documentos, en Contacto.'; return; }
+    const tipo = k.puede ? 'ambas' : 'proforma'; const D = window.Documentos; let files;
+    try { files = archivosEnvio(tipo); } catch (e) { toast('No se pudo armar el PDF. Intenta de nuevo', 'error'); return; }
+    const nombre = D.limpiarNombre(c.nombre); const asunto = 'Bienvenido a Airtek Empresas: ' + nombre;
+    const cuerpo = (c.es_natural ? 'Estimado(a) ' + nombre + ':' : 'Estimados señores de ' + nombre + ':') + '\n\nReciban un cordial saludo. ' + (tipo === 'ambas'
+        ? 'Les damos la bienvenida a Airtek Empresas.\n\nAdjuntamos la carta de bienvenida con los datos de su servicio (contrato N° ' + String(sv.codigo).replace(/^0+/, '') + ') y la proforma de instalación con las opciones de pago.'
+        : 'Adjuntamos la proforma de instalación de su servicio de internet (contrato N° ' + String(sv.codigo).replace(/^0+/, '') + '), con las opciones de pago.') +
+      '\n\nQuedamos a su disposición para cualquier consulta.\n\nAtentamente,\n' + (F.yo.nombre || 'Airtek Empresas') + '\nAirtek Empresas\n0412 247 8343';
+    if(puedeCompartir()){
+      copiar(c.correo);
+      try { await navigator.share({ files, title: asunto, text: cuerpo }); }
+      catch (e) { if(e && e.name === 'AbortError') return; toast('No se pudo abrir Compartir. Intenta de nuevo', 'error'); return; }
+    } else {
+      files.forEach((f) => window.Archivos.descargar(f, f.name));
+      location.href = C.enlaceCorreo(c.correo, asunto, cuerpo);
+      toast(plural(files.length, 'PDF descargado', 'PDF descargados') + '. Adjúntalos al correo que se abrió');
+    }
+    anotarEnvio(tipo, 'correo', c.correo);
+  }
+  function verPdf(tipo){
+    let f; try { f = archivosEnvio(tipo)[0]; } catch (e) { toast('No se pudo armar el PDF. Intenta de nuevo', 'error'); return; }
+    const u = URL.createObjectURL(f); const w = window.open(u, '_blank');
+    if(!w) window.Archivos.descargar(f, f.name);
+    setTimeout(() => URL.revokeObjectURL(u), 120000);
   }
 
   // ---------- Comisión ----------
@@ -637,6 +748,14 @@
     if((b = t.closest('[data-hilo]'))){ soloNotas = b.dataset.hilo === 'notas'; pintarHilo(); return; }
     if((b = t.closest('#hojaFicha [data-subir]'))){ fuera = null; const p = b.dataset.subir.split(':'); elegirPara(p[0], Number(p[1])); return; }
     if((b = t.closest('#hojaFicha [data-ip]'))){ fuera = null; abrirCampo('ip:' + b.dataset.ip); return; }
+    if((b = t.closest('#hojaFicha [data-enviar]'))){ abrirEnviar(b.dataset.enviar); return; }
+    if((b = t.closest('#hojaEnviar [data-env-tipo]')) && env){ env.tipo = b.dataset.envTipo; Array.prototype.forEach.call($('hojaEnviar').querySelectorAll('[data-env-tipo]'), (x) => { const on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-checked', String(on)); }); return; }
+    if((b = t.closest('[data-env-ver]')) && env){ verPdf(b.dataset.envVer); return; }
+    if(t.closest('#envWa') && env){ enviarWhatsapp(); return; }
+    if(t.closest('#envCorreo') && env){ enviarCorreo(); return; }
+    if(t.closest('#envIp') && env){ const sid = env.servicio; cerrarHoja(); fuera = null; abrirCampo('ip:' + sid); return; }
+    if((b = t.closest('#envManual')) && env){ if(b.dataset.armado !== '1'){ b.dataset.armado = '1'; b.textContent = '¿Seguro? Toca otra vez'; setTimeout(() => { if(document.contains(b)){ b.dataset.armado = ''; b.textContent = 'Ya se envió por fuera'; } }, 4000); return; }
+      b.disabled = true; anotarEnvio(env.tipo, 'manual', null); return; }
     if(t.closest('#agregarActa')){ actaExtra = Math.min(4, actaExtra + 1); pintarDocumentos(); const cs = document.querySelectorAll('[data-grupo="empresa"] [data-casilla^="acta_asamblea"]'); if(cs.length) cs[cs.length - 1].scrollIntoView({ block: 'center' }); return; }
     if((b = t.closest('[data-ver]'))){ abrirVer(Number(b.dataset.ver)); return; }
     if((b = t.closest('#hojaFicha [data-campo]'))){ fuera = null; abrirCampo(b.dataset.campo); return; }
@@ -711,7 +830,8 @@
       '<section class="hoja completa lado" id="hojaVer" role="dialog" aria-modal="true" aria-labelledby="tVer" aria-hidden="true"></section>' +
       '<section class="hoja completa lado" id="hojaVarios" role="dialog" aria-modal="true" aria-labelledby="tVarios" aria-hidden="true"></section>' +
       '<section class="hoja" id="hojaCampo" role="dialog" aria-modal="true" aria-labelledby="tCampo" aria-hidden="true"></section>' +
-      '<section class="hoja" id="hojaEstatus" role="dialog" aria-modal="true" aria-labelledby="tEstatus" aria-hidden="true"></section>';
+      '<section class="hoja" id="hojaEstatus" role="dialog" aria-modal="true" aria-labelledby="tEstatus" aria-hidden="true"></section>' +
+      '<section class="hoja" id="hojaEnviar" role="dialog" aria-modal="true" aria-labelledby="tEnviar" aria-hidden="true"></section>';
     while(mas.firstChild) document.body.appendChild(mas.firstChild);
     C.prepararHojas();
     $('archivo').addEventListener('change', alElegir);
@@ -722,6 +842,8 @@
     $('hojaVarios').addEventListener('drop', (e) => { e.preventDefault(); if(e.dataTransfer && e.dataTransfer.files) agregarLote(Array.prototype.slice.call(e.dataTransfer.files)); });
     $('hojaVarios').addEventListener('hoja-cerrada', () => { if(!ocupado){ soltarMinis(); lote = []; } });
     $('hojaVer').addEventListener('hoja-cerrada', () => { ver = null; });
+    $('hojaEnviar').addEventListener('hoja-cerrada', () => { env = null; });
+    $('hojaEnviar').addEventListener('change', (e) => { if(e.target.id === 'envNum'){ $('envOtroZ').classList.toggle('hidden', !!e.target.value); $('eEnv').textContent = ''; if(!e.target.value) $('envOtro').focus(); } });
     const zona = $('tab-documentos');
     zona.addEventListener('dragover', (e) => { e.preventDefault(); limpiarSobre(); const c = e.target.closest('[data-suelta]'); (c || zona).classList.add('sobre'); });
     zona.addEventListener('dragleave', (e) => { if(!zona.contains(e.relatedTarget)) limpiarSobre(); });
@@ -736,7 +858,7 @@
     const o = opciones || {};
     montar();
     yo = o.yo || yo; id = Number(idCliente) || 0; if(!id) return;
-    F = null; fuera = null; hiloTodo = false; soloNotas = false; repExtra = 0; actaExtra = 0; llegada = { revisar: o.revisar, pedir: o.pedir, casilla: o.casilla, campo: o.campo }; alCerrar = o.alCerrar || null;
+    F = null; fuera = null; hiloTodo = false; soloNotas = false; repExtra = 0; actaExtra = 0; llegada = { revisar: o.revisar, pedir: o.pedir, casilla: o.casilla, campo: o.campo, enviar: o.enviar }; alCerrar = o.alCerrar || null;
     $('cabFicha').innerHTML = '<div class="f-cab"><span class="mono sk" aria-hidden="true"></span><div class="tx"><span class="sk" style="width:70%;height:22px"></span><span class="sk" style="width:50%;height:12px;margin-top:8px"></span></div>' +
       '<button type="button" class="cerrar" data-cierra="1" aria-label="Cerrar">' + ic('x') + '</button></div>';
     TABS.forEach((x) => { $('tab-' + x).innerHTML = '<div class="sk-bloque"><span class="sk" style="height:64px;border-radius:16px"></span><span class="sk" style="height:64px;border-radius:16px"></span><span class="sk" style="height:64px;border-radius:16px"></span></div>'; });

@@ -40,6 +40,14 @@
       r.push({ c: 'rojo', i: 'devolver', t: plural(c.devueltos, 'cliente', 'clientes') + ' con documentos devueltos',
         s: 'Hay que pedirlos de nuevo al cliente', e: 'clientes.html?f=devueltos', k: 'devueltos' });
     }
+    if((d.senior || admin) && com.por_asignar > 0){
+      r.push({ c: 'ambar', i: 'alerta', t: plural(com.por_asignar, 'instalación', 'instalaciones') + ' por asignar',
+        s: 'No comisionan hasta confirmar la orden y a quién pertenecen', e: 'comisiones.html?f=asignar', k: 'asignar' });
+    }
+    if((analista || admin || lider) && d.bienvenidas > 0){
+      r.push({ c: 'azul', i: 'enviar', t: plural(d.bienvenidas, 'bienvenida', 'bienvenidas') + ' por enviar',
+        s: 'Instalaciones de este corte sin su carta de bienvenida', e: 'clientes.html?bienvenidas=1', k: 'bienvenidas' });
+    }
     if(com.ultimo > 0){
       r.push({ c: 'azul', i: 'reloj', t: plural(com.ultimo, 'instalación', 'instalaciones') + ' en su último corte',
         s: 'Si no ' + (com.ultimo === 1 ? 'cumple' : 'cumplen') + ' el ' + (d.corte ? fecha(d.corte.fin).split(' de ')[0] : '20') + ', se pierde la comisión', e: 'comisiones.html?f=ultimo', k: 'ultimo' });
