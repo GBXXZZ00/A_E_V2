@@ -1,14 +1,6 @@
 // Usuarios (solo administrador): lista, crear, editar, restablecer PIN, desactivar y permisos.
-const { chromium, H, TEL, PC, contexto, marcador, pin, sinDesborde } = require('./simulador');
+const { chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar } = require('./simulador');
 const { ok, cerrar } = marcador();
-async function entrar(ctx, usuario, clave){
-  const p = await ctx.newPage();
-  await p.goto(H + 'index.html'); await p.waitForSelector('#pasoEquipo:not(.hidden)');
-  await p.click('[data-equipo="ventas"]'); await p.fill('#usuario', usuario); await p.click('#seguir');
-  const pc = await p.evaluate(() => window.matchMedia('(min-width:900px)').matches);
-  await pin(p, clave, pc); await p.waitForURL('**/inicio.html');
-  return p;
-}
 (async () => {
   const nav = await chromium.launch();
   const errores = [];
@@ -17,14 +9,15 @@ async function entrar(ctx, usuario, clave){
     // Un nombre con código dentro: debe verse como texto, nunca ejecutarse
     mundo.personas[1].nombre = 'Lucía <img src=x onerror="window.__xss=1">';
     const p = await entrar(ctx, 'marcos', '482913'); p.on('pageerror', (e) => errores.push(e.message));
-    await p.click('a.acceso[data-modulo="usuarios"]'); await p.waitForURL('**/usuarios.html');
+    await p.click('#cuenta'); await p.waitForSelector('#hojaCuenta.ver'); await p.click('#hojaCuenta a[data-ir="usuarios"]'); await p.waitForURL('**/usuarios.html');
+    ok(nombre + ': mientras carga se ven filas grises', (await p.locator('.sk-fila').count()) >= 3 || (await p.locator('.persona').count()) > 0);
     await p.waitForSelector('.persona');
     ok(nombre + ': lista a las 4 personas', (await p.locator('.persona').count()) === 4);
     ok(nombre + ': resumen de accesos', (await p.textContent('#resumen')) === '3 con acceso, 1 sin acceso');
     ok(nombre + ': estados por color', (await p.locator('.chip-ok').count()) === 2 && (await p.locator('.chip-warn').count()) === 1 && (await p.locator('.chip-off').count()) === 1);
     ok(nombre + ': el texto de la base no se ejecuta', (await p.evaluate(() => window.__xss)) === undefined && (await p.locator('.persona img').count()) === 0);
     ok(nombre + ': sin desborde horizontal', await sinDesborde(p));
-    await p.screenshot({ path: 'capturas/02-' + nombre + '-lista.png', fullPage: true });
+    await p.screenshot({ path: 'capturas/02-' + nombre + '-lista.png' });
 
     await p.click('#nuevo'); await p.waitForSelector('#hojaUsuario.ver');
     await p.click('#guardar');
@@ -39,7 +32,7 @@ async function entrar(ctx, usuario, clave){
     const generado = await p.inputValue('#fPin');
     ok(nombre + ': Generar da 6 números', /^\d{6}$/.test(generado) && generado !== '123456');
     await p.screenshot({ path: 'capturas/02-' + nombre + '-nuevo.png' });
-    ok(nombre + ': hoja cerrada no recibe foco', await p.evaluate(() => document.getElementById('hojaCuenta') === null && document.getElementById('hojaUsuario').inert === false && document.querySelector('main').inert === true));
+    ok(nombre + ': hoja cerrada no recibe foco', await p.evaluate(() => document.getElementById('hojaCuenta').inert === true && document.getElementById('hojaUsuario').inert === false && document.querySelector('main').inert === true));
     await p.click('#guardar');
     await p.waitForFunction(() => document.querySelectorAll('.persona').length === 5);
     const creado = mundo.llamadas.find((l) => l[0] === 'usuarios' && l[1].accion === 'crear');
@@ -72,8 +65,8 @@ async function entrar(ctx, usuario, clave){
   // Un líder no entra a Usuarios aunque escriba la dirección
   const { ctx, mundo } = await contexto(nav, TEL);
   const p = await entrar(ctx, 'lucia', '739105'); p.on('pageerror', (e) => errores.push(e.message));
-  await p.waitForSelector('[data-modulo="instalaciones"]');
-  ok('líder: no ve el acceso a Usuarios', (await p.locator('[data-modulo="usuarios"]').count()) === 0 && (await p.locator('[data-modulo="actualizar"]').count()) === 0);
+  await p.waitForSelector('[data-modulo="comisiones"]');
+  ok('líder: no ve el acceso a Usuarios', (await p.locator('[data-ir="usuarios"]').count()) === 0 && (await p.locator('[data-ir="actualizar"]').count()) === 0);
   await p.goto(H + 'usuarios.html'); await p.waitForURL('**/inicio.html');
   ok('líder: Usuarios lo devuelve a Inicio', !mundo.llamadas.some((l) => l[0] === 'usuarios'));
   await ctx.close();

@@ -1,7 +1,7 @@
 // Usuarios (solo administrador): crear, editar, restablecer PIN y activar o desactivar.
 (function(){
   'use strict';
-  const { $, esc, toast, mensajeError, iniciales, normalizeStr, abrirHoja, cerrarHoja } = window.Comun;
+  const { $, esc, toast, mensajeError, iniciales, normalizeStr, abrirHoja, cerrarHoja, cache, esqueleto } = window.Comun;
   const S = window.Sesion;
   const db = window.db;
   const EQ = { ventas: 'Ventas corporativas', aliados: 'Aliados comerciales', ambos: 'Los dos' };
@@ -54,13 +54,21 @@
     }).join('') + '</div>';
   }
 
+  // Primero se pinta lo último que se vio (o filas grises) y después llega lo nuevo
   async function cargar(){
+    const guardado = cache.leer('usuarios');
+    if(!usuarios.length){
+      if(guardado && guardado.length){ usuarios = guardado; pintar(); $('resumen').innerHTML = '<span class="cargando-linea"><i></i>Actualizando la lista</span>'; }
+      else { $('resumen').innerHTML = '<span class="cargando-linea"><i></i>Cargando la lista</span>'; $('lista').innerHTML = '<div class="lista">' + esqueleto(5) + '</div>'; }
+    }
     try {
       const r = await llamar({ accion: 'listar' });
       usuarios = r.usuarios || [];
+      cache.guardar('usuarios', usuarios);
       pintar();
     } catch (e) {
-      $('lista').innerHTML = '<div class="vacio"><b>No se pudo cargar la lista</b><p>' + esc(e.message) + '</p><button type="button" class="btn btn-chico" id="reintentar">Reintentar</button></div>';
+      if(guardado && guardado.length){ pintar(); }
+      else { $('resumen').textContent = ''; $('lista').innerHTML = '<div class="vacio"><b>No se pudo cargar la lista</b><p>' + esc(e.message) + '</p><button type="button" class="btn btn-chico" id="reintentar">Reintentar</button></div>'; }
       toast(e.message, 'error');
     }
   }
@@ -173,7 +181,7 @@
 
   $('nuevo').addEventListener('click', () => abrir(null));
   $('lista').addEventListener('click', (e) => {
-    if(e.target.closest('#reintentar')){ $('lista').innerHTML = '<div class="esq"></div><div class="esq"></div>'; cargar(); return; }
+    if(e.target.closest('#reintentar')){ usuarios = []; cargar(); return; }
     const f = e.target.closest('.persona'); if(f) abrir(usuarios[Number(f.dataset.i)]);
   });
   $('form').addEventListener('submit', guardar);
@@ -186,6 +194,7 @@
   (async function(){
     yo = await S.requerir(['admin']);
     if(!yo) return;
+    window.Armazon.montar(yo, { activo: null, volver: { enlace: 'inicio.html', texto: 'Inicio' } });
     cargar();
   })();
 })();

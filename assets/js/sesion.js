@@ -40,6 +40,8 @@
     const { data, error } = await db.auth.signInWithPassword({ email: usuario + DOMINIO, password: pin });
     if(error) throw error;
     perfilActual = null;
+    // Lo que quedó en pantalla de otra persona no se le muestra a quien entra
+    if(window.Comun && window.Comun.cache) window.Comun.cache.borrarTodo();
     return data.session;
   }
   async function salir(){

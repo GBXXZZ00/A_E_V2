@@ -31,12 +31,14 @@ const visible = (p, id) => p.locator('#' + id).isVisible();
   await p.waitForURL('**/inicio.html');
   await p.waitForFunction(() => document.getElementById('saludo').textContent.includes('Marcos'));
   ok('PIN correcto: entra a Inicio', true);
-  ok('admin ve Usuarios encendido', await p.locator('a.acceso[data-modulo="usuarios"]').isVisible());
-  ok('módulos por construir no son enlaces', (await p.locator('a.acceso[data-modulo="instalaciones"]').count()) === 0 && await p.locator('[data-modulo="instalaciones"]').isVisible());
+  await p.waitForSelector('a.mod[data-modulo="comisiones"]');
+  ok('Inicio muestra Comisiones y Clientes encendidos', await p.locator('a.mod[data-modulo="comisiones"]').isVisible() && await p.locator('a.mod[data-modulo="clientes"]').isVisible());
+  ok('módulos por construir no son enlaces', (await p.locator('a.mod[data-modulo="factibilidad"]').count()) === 0 && await p.locator('[data-modulo="factibilidad"]').isVisible());
   ok('Inicio: sin desborde horizontal', await sinDesborde(p));
   await p.screenshot({ path: 'capturas/01-tel-inicio.png', fullPage: true });
   await p.click('#cuenta'); await p.waitForSelector('#hojaCuenta.ver');
   ok('Mi cuenta muestra cargo y equipo', (await p.textContent('#dCargo')) === 'Administrador de contratos' && (await p.textContent('#dEquipo')) === 'Ventas corporativas');
+  ok('admin ve Usuarios en su menú de cuenta', await p.locator('#hojaCuenta a[data-ir="usuarios"]').isVisible());
   await p.screenshot({ path: 'capturas/01-tel-cuenta.png' });
 
   // Otra pestaña: la sesión no se hereda, pero el usuario y el equipo sí se recuerdan
@@ -61,8 +63,8 @@ const visible = (p, id) => p.locator('#' + id).isVisible();
   await pin(p2, '640278'); await p2.waitForFunction(() => document.getElementById('tPin').textContent === 'Repite tu PIN nuevo'); await pin(p2, '640278');
   await p2.waitForURL('**/inicio.html');
   ok('PIN nuevo guardado y avisado al servidor', mundo.llamadas.some((l) => l[0] === 'pin' && l[2] === '640278') && mundo.llamadas.some((l) => l[0] === 'pin_cambiado'));
-  await p2.waitForSelector('[data-modulo="actualizar"]');
-  ok('analista no ve Usuarios', (await p2.locator('[data-modulo="usuarios"]').count()) === 0);
+  await p2.waitForSelector('[data-modulo="comisiones"]');
+  ok('analista no ve Usuarios', (await p2.locator('[data-ir="usuarios"]').count()) === 0 && (await p2.locator('#hojaCuenta').count()) === 1);
   await ctx.close();
 
   // Equipo que no corresponde, cuenta desactivada, sin sesión y sin internet
@@ -91,7 +93,7 @@ const visible = (p, id) => p.locator('#' + id).isVisible();
   p = await ctx.newPage(); p.on('pageerror', (e) => errores.push(e.message));
   await p.goto(H + 'index.html'); await p.click('[data-equipo="aliados"]'); await p.fill('#usuario', 'marcos'); await p.click('#seguir'); await pin(p, '482913');
   await p.waitForURL('**/inicio.html'); await p.waitForSelector('.aviso');
-  ok('equipo aliados: aviso de en construcción, sin módulos de ventas', (await p.locator('.acceso').count()) === 0);
+  ok('equipo aliados: aviso de en construcción, sin módulos ni navegación de ventas', (await p.locator('.mod').count()) === 0 && (await p.locator('.nav').count()) === 0 && (await p.locator('.navpc').count()) === 0);
   await ctx.close();
 
   // ---------- Escritorio ----------
@@ -107,7 +109,7 @@ const visible = (p, id) => p.locator('#' + id).isVisible();
   ok('escritorio: se escribe con el teclado sin tocar nada', (await p.locator('#casillas i.on').count()) === 4);
   await p.screenshot({ path: 'capturas/01-pc-pin.png' });
   await p.keyboard.type('13', { delay: 15 });
-  await p.waitForURL('**/inicio.html'); await p.waitForSelector('[data-modulo="usuarios"]');
+  await p.waitForURL('**/inicio.html'); await p.waitForSelector('[data-modulo="comisiones"]');
   ok('escritorio: entra a Inicio', await sinDesborde(p));
   await p.screenshot({ path: 'capturas/01-pc-inicio.png' });
   await p.goto(H + 'index.html#cambiar'); await p.waitForFunction(() => document.getElementById('tPin').textContent === 'Tu PIN actual');
