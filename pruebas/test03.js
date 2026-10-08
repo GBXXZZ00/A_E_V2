@@ -12,7 +12,7 @@ const { ok, cerrar } = marcador();
     const navSel = nombre === 'tel' ? '#navAbajo' : '.navpc';
     ok(nombre + ': navegación con Inicio marcado', (await p.textContent(navSel + ' .on')).trim() === 'Inicio');
     await p.click('#cuenta'); await p.waitForSelector('#hojaCuenta.ver');
-    ok(nombre + ': menú de cuenta con usuarios y sin Actualizar todavía', (await p.locator('#hojaCuenta [data-ir="usuarios"]').count()) === 1 && (await p.locator('#hojaCuenta [data-ir="actualizar"]').count()) === 0);
+    ok(nombre + ': menú de cuenta con Usuarios y Actualizar', (await p.locator('#hojaCuenta [data-ir="usuarios"]').count()) === 1 && (await p.locator('#hojaCuenta [data-ir="actualizar"]').count()) === 1);
     await p.keyboard.press('Escape'); await p.waitForFunction(() => !document.querySelector('#hojaCuenta.ver'));
 
     await p.click('a.corte'); await p.waitForURL('**/comisiones.html'); await p.waitForSelector('.grupo');
