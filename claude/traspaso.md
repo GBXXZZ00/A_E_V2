@@ -1,6 +1,6 @@
 # Traspaso (se actualiza al cerrar cada sesión)
 
-Actualizado: 09/10/2026. Publicado: `?v=20` (Factibilidad simplificada; coordenadas pegadas junto al enlace mandan).
+Actualizado: 09/10/2026 (definición de IA y aliados en curso). Publicado: `?v=20` (Factibilidad simplificada; coordenadas pegadas junto al enlace mandan).
 
 ## Estado
 - Publicado y con pruebas (test01 a test14 en TODO OK): acceso con PIN, Usuarios, Inicio, Clientes, expediente como hoja (`assets/js/ficha.js`), Comisiones (`comisiones.js`), Actualizar con cruce (`actualizar.js`), proforma y carta en PDF (`documentos.js`, `marca.js`), bienvenidas por enviar (`bienvenidas.js`), ZIP y Excel sin librerías (`archivos.js`), página de privacidad (`privacidad.html`), Enviar pendientes en Comisiones y Factibilidad (`factibilidad.js`, `coordenadas.js`, `mapared.js`, `kmz-lector.js`).
@@ -33,7 +33,8 @@ Antes de cada una: explicar en simple y esperar el OK.
 1. Lo que salga de las pruebas del administrador de lo hecho el 09/10.
 2. **Factibilidad paso 6**: avisos al teléfono y cierre automático a "Vendida" cuando aparezca una orden de Odoo con ese RIF.
 3. **Subidas nuevas directo a Drive** (después de que el administrador pruebe con el Analista Senior). Carpeta "RIF - NOMBRE" creada sola, subcarpeta por tipo de servicio como ya existe. La app deja de usar el bucket `expedientes`. Es el cambio con más riesgo: toca `guardarItems` en `ficha.js` y `documentos_registrar`. test04, test05, test07 y test08 deben seguir pasando. Espera decisión del administrador.
-4. **Revisión de documentos con IA.** Falta la columna para la marca de la IA (separada del estatus legal). La IA corre en una función de borde que lee de Drive; nunca pasan documentos reales por este repo. Necesita la clave de la API de IA como secreto en Supabase. Espera decisión del administrador.
+4. **Revisión de documentos con IA.** EN DEFINICIÓN (09/10): reglas propuestas en `claude/ia-reglas.md`, con 7 puntos por confirmar (5, 8, 10, 13, 14, 15, 21). Lo que hacían las apps viejas está en `claude/aliados-app-vieja.md`. Después de las respuestas: prueba de 20 clientes (Gemini contra Claude) y maqueta; no programar hasta que se apruebe la maqueta. No tocar `ficha.js`: otra sesión trabaja las subidas a Drive.
+   Antes: Falta la columna para la marca de la IA (separada del estatus legal). La IA corre en una función de borde que lee de Drive; nunca pasan documentos reales por este repo. Necesita la clave de la API de IA como secreto en Supabase. Espera decisión del administrador.
 5. **Módulo de aliados**: consultas viejas con el indicador de instaladas, y sus documentos. Fuente: `privado.aliados_appsheet`.
 
 ## Pendientes que NO son de este repo (se hacen en el chat del proyecto)
