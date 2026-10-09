@@ -662,3 +662,57 @@ button.franja:active{transform:scale(.97)}
 .acciones.col{flex-direction:column;gap:8px}
 .tres button[disabled]{opacity:.45}
 .fila .ch{width:18px;height:18px;color:var(--text3);flex:none}
+/* Revisión con IA dentro del expediente */
+.ia-bloque{margin-top:12px;padding:12px 14px;border:1px solid var(--line);border-radius:16px;background:#fff}
+.ia-cab{display:flex;gap:12px;align-items:center}
+.ia-cab .tx{flex:1;min-width:0}
+.ia-cab .tx b{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:15px}
+.ia-cab .tx small{display:block;font-size:12.5px;color:var(--text2);margin-top:2px}
+.ia-cab .carga-barra{margin-top:8px}
+.ia-ps{display:grid;gap:0;margin-top:8px}
+.ia-p{display:flex;gap:10px;align-items:flex-start;padding:9px 0;border-top:1px solid var(--line)}
+.ia-p:first-child{border-top:0}
+.ia-p .chip{flex:none;margin-top:1px}
+.ia-p .tx{flex:1;min-width:0}
+.ia-p .tx b{display:block;font-size:14px;font-weight:600}
+.ia-p .tx small{display:block;font-size:12.5px;color:var(--text2);overflow-wrap:anywhere}
+.ia-p .enlace{margin-top:4px;min-height:36px}
+.ia-ok{margin-top:6px}
+.ia-ok summary{cursor:pointer;min-height:44px;display:flex;align-items:center;font-size:13px;font-weight:600;color:var(--text2)}
+@media (max-width:560px){ .ia-cab{flex-wrap:wrap} .ia-cab .mini{width:100%} }
+/* Módulo Revisión: bandejas, marcar varios para la IA y comparar con Legal */
+.sub-pagina{margin-top:6px;font-size:13.5px;color:var(--text2);max-width:70ch}
+.lista-rv{display:grid;margin-top:4px}
+.rv{display:flex;align-items:stretch;border-radius:14px}
+.rv + .rv{box-shadow:0 -1px 0 var(--line)}
+.rv.sel{background:var(--azul-bg)}
+.caja-rv{flex:none;width:44px;display:grid;place-items:center}
+.caja-rv i{width:22px;height:22px;border-radius:7px;border:2px solid #B9BFC8;background:#fff;display:grid;place-items:center}
+.caja-rv.on i{background:var(--accent);border-color:var(--accent)}
+.caja-rv.on i::after{content:"";width:10px;height:6px;border:2.5px solid #fff;border-top:0;border-right:0;transform:translateY(-1px) rotate(-45deg)}
+.caja-rv[disabled] i{opacity:.4}
+.rv-cuerpo{flex:1;min-width:0;display:grid;grid-template-columns:minmax(0,1fr);gap:6px 10px;align-items:center;padding:14px 4px;text-align:left;color:var(--text);transition:transform 120ms var(--ease-out)}
+.rv-cuerpo:active{transform:scale(.99)}
+.rv-cuerpo .quien{display:flex;gap:12px;align-items:center;min-width:0}
+.rv-cuerpo .quien > span:last-child{min-width:0}
+.rv-cuerpo b{display:block;font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rv-cuerpo small{display:block;font-size:12.5px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rv-chips{display:flex;gap:6px;flex-wrap:wrap;padding-left:52px}
+.rv-arch{font-size:13px;color:var(--text2);padding-left:52px;overflow-wrap:anywhere}
+.rv-cuerpo .fl{display:none}
+.accion-rv{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + var(--safe-b));z-index:25;width:min(760px,calc(100% - 32px));display:flex;align-items:center;gap:10px;padding:10px 10px 10px 16px;background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:0 10px 30px rgba(17,19,21,.14)}
+.accion-rv .tx{flex:1;min-width:0;font-size:13px;color:var(--text2)}
+.accion-rv .tx b{display:block;font-size:15px;color:var(--text)}
+.cifras-rv{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+.cifra-rv{flex:1;min-width:140px;padding:12px 14px;border-radius:16px;background:var(--surface-2)}
+.cifra-rv.grande{flex:1.6}
+.cifra-rv b{display:block;font-size:22px;font-weight:800;letter-spacing:-.02em;line-height:1.15}
+.cifra-rv small{font-size:12.5px;color:var(--text2)}
+@media (min-width:900px){
+  .rv-cuerpo{grid-template-columns:minmax(0,2.2fr) minmax(0,1.6fr) minmax(0,1.4fr) 20px;gap:14px;padding:13px 10px}
+  .rv-chips,.rv-arch{padding-left:0}
+  .rv-cuerpo .fl{display:block;color:var(--text3)}
+  .accion-rv{bottom:24px}
+}
+@media (hover:hover) and (pointer:fine){ .rv:hover{background:var(--surface-2)} .rv.sel:hover{background:var(--azul-bg)} }
+@media (prefers-reduced-motion:reduce){ .rv-cuerpo{transition:none} }

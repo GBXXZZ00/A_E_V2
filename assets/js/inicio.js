@@ -85,6 +85,7 @@
         texto: d.clientes ? (c.en_curso ? c.en_curso + ' con documentos en curso' : 'Sin expedientes en curso') : 'Expediente, documentos e hilo' }
     ];
     if(['admin', 'lider', 'analista'].indexOf(rol) >= 0) activos.push({ id: 'factibilidad', nombre: 'Factibilidad', icono: 'wifi', enlace: 'factibilidad.html', texto: 'Si una ubicación tiene red' });
+    if(rol === 'admin' || rol === 'abogado') activos.push({ id: 'revision', nombre: 'Revisión', icono: 'doc', enlace: 'revision.html', texto: rol === 'admin' ? 'Documentos por revisar, también con IA' : 'Tus contratos por hacer y por firmar' });
     const pronto = PRONTO.filter((m) => m.roles.indexOf(rol) >= 0);
     $('zonaModulos').innerHTML = '<div class="h2 primero">Módulos</div><div class="mods">' +
       activos.map((m) => '<a class="mod" href="' + m.enlace + '" data-modulo="' + m.id + '"><span class="ic">' + ic(m.icono, 'g') + '</span><span><b>' + m.nombre + '</b><small>' + esc(m.texto) + '</small></span></a>').join('') +

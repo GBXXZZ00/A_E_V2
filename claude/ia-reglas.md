@@ -1,4 +1,4 @@
-# Reglas de la revisión con IA: propuesta (09/10/2026)
+# Reglas de la revisión con IA (programadas el 09/10/2026, v24)
 
 Salen de los scripts viejos (contratos y aliados), que se armaron a prueba y error. Aquí cada regla dice de dónde viene, qué opino y si falta que la confirme el administrador o la abogada. Nada de esto está programado todavía.
 
@@ -81,3 +81,22 @@ Fecha de referencia: hoy. Las fechas de actas son siempre las de inscripción en
 3. `ia_marcas`: una por documento y corrida. `corrida_id`, `documento_id`, `archivo_id`, `propuesta` (`bien`, `problema`, `revisar_a_mano`), `motivo` (lista de Legal), `nota`, `pagina`, `datos` (jsonb: nombre, cédula, RIF, vencimiento, expedición, firma), `creado_en`.
 4. "Cerrar revisión" guarda en su propio registro el `corrida_id` que usó (si hubo IA). Así la comparación con Legal es `ia_marcas` contra lo que quedó en `documentos` al cerrar.
 - RLS: leen admin y abogado; escribe solo la función de borde (llave de servicio). Todo pasa por `bitacora`.
+
+## Cómo quedó programado (v24)
+- Reglas: `supabase/funciones/ia_revisar/reglas.mjs` (versión 2), probadas en `pruebas/test16.js` con los 14 casos y otros. La IA solo lee; las reglas deciden.
+- Lectura: función de borde `ia_revisar` (copia en `supabase/funciones/ia_revisar/`). La despierta la base con `privado.ia_despertar` (pg_net y un token interno en el Vault); lee un archivo por llamada desde Drive, se lo pasa a Gemini por su canal de archivos en alta resolución y se vuelve a llamar sola para el siguiente.
+- Modelo: ajuste `modelo` en `privado.ia_ajustes` ('auto' = el Pro más nuevo; hoy gemini-3.1-pro-preview). `version_lector` (hoy 2): si cambia, se vuelve a leer todo. Precios para calcular el costo: `precio_entrada` y `precio_salida`.
+- Base: `ia_lecturas` (lo leído de cada archivo, para no pagar dos veces), `ia_corridas` (cada envío de un cliente), `ia_marcas` (propuesta por documento); las propuestas pasan a `revision_marcas` con origen `ia` sin pisar lo que marcó una persona.
+- Lo que falta en las actas (junta vencida, empresa vencida, domicilio, razón social) se propone devolviendo el acta constitutiva con la nota "Falta: acta de asamblea de ...": así el estatus se sigue calculando por documentos.
+- Si un documento está en el archivo de otra casilla (por ejemplo cédula y RIF al revés), queda "a mano" diciendo dónde está.
+- Excepciones: junta vencida y firmante fuera de la junta se conceden en el resultado (vuelve a decidir sin volver a leer); aprobar un documento que la IA devolvió pide motivo y queda en la bitácora como `documento_excepcion`.
+
+## Prueba con 5 clientes reales (09/10/2026)
+Clientes en "Documentos recibidos" (ya aprobados por Legal), 27 archivos, 2 minutos y unos US$ 0,16 por cliente.
+- Coinciden con Legal 20 de 26 documentos antes de corregir las reglas; después, las diferencias que quedan son hallazgos o reglas nuevas:
+  - Junta vencida en 2 clientes (designadas en 2008 y 2012, sin ratificación): la regla 13 decidida el 09/10 las bloquea; Legal las aprobó antes de esa regla.
+  - RIF de la empresa vencido en 1 cliente (venció después de que Legal lo aprobara).
+  - Cédula y RIF subidos en la casilla del otro en 1 cliente; en otro, la casilla de la cédula trae un RIF.
+  - Falta el correo de la empresa en los 5 (requisito de la app que los clientes viejos no tienen).
+  - 1 acta constitutiva de 12 páginas que la IA no pudo leer: queda a mano.
+- No cambió ningún estatus. Quedaron sus propuestas marcadas (revisión en curso) para que el administrador las vea y decida.

@@ -16,7 +16,9 @@
   let ocupado = false;            // hay una subida en curso
   let subiendo = {};              // casillas que se están subiendo ('cedula:1': true): se ven con su barra en la misma fila
   let drive;                      // carpeta del cliente en Drive (solo admin): undefined cargando, null sin permiso
-  let rev = null;                 // revisión en curso (solo quien revisa): marcas sin cerrar, historial y WhatsApp del líder
+  let rev = null;                 // revisión en curso (solo quien revisa): marcas sin cerrar, historial, WhatsApp del líder y la última revisión con IA
+  let sondeo = null;              // mientras la IA lee, se pregunta cada pocos segundos cómo va
+  let excIA = null;               // punto al que se le concede excepción
   let destino = null;             // casilla a la que va el archivo que se está eligiendo
   let ver = null;                 // { docId, cola, paso, motivo, archivo }
   let lote = [];                  // archivos de "Subir varios"
@@ -30,6 +32,8 @@
   const marcaDe = (docId) => marcas().find((m) => m.documento === docId) || null;
   const sinMarcar = () => porRevisar().filter((d) => !marcaDe(d.id));
   const revisa = () => !!(yo && (yo.rol === 'admin' || yo.rol === 'abogado'));
+  const iaActiva = () => !!(rev && rev.ia && (rev.ia.estado === 'en_cola' || rev.ia.estado === 'leyendo'));
+  const iaDe = (docId) => (rev && rev.ia && rev.ia.estado === 'lista' && (rev.ia.marcas || []).find((m) => m.documento === docId)) || null;
   const esRequerido = (cas, num) => (F.requeridos || []).some((r) => r.casilla === cas && r.numero === num);
   const liderCorto = () => primerNombre(F.cliente.lider) || 'el líder';
 
@@ -40,7 +44,7 @@
       const [r, rv] = await Promise.all([rpc('cliente_ficha', { p_cliente: mio }), leerRevision(mio)]);
       if(mio !== id) return;   // ya se abrió otro cliente: esta respuesta no es de él
       F = r; rev = rv;
-      pintarTodo();
+      pintarTodo(); vigilar();
       if(primera) alLlegar();
       cargarDrive(mio);
     } catch (e) {
@@ -98,9 +102,10 @@
     const c = F.cliente; const f = F.faltantes || []; const n = F.puedo.revisar ? sinMarcar().length : porRevisar().length;
     const dev = f.some((x) => x.e === 'devuelto'); const fal = f.some((x) => x.e === 'falta');
     if(c.estatus === 'contrato_firmado') return { tono: 'verde', texto: 'Contrato firmado', sub: 'El expediente está completo' };
+    if(F.puedo.revisar && iaActiva()) return { tono: 'azul', texto: 'La IA está leyendo el expediente', sub: rev.ia.avance + ' de ' + rev.ia.total + ' archivos. El resultado sale en Documentos' };
     if(F.puedo.revisar && marcas().length){
       const cierra = rev && rev.puede_cerrar;
-      if(n) return { tono: 'azul', texto: 'Revisión en curso', sub: resumenMarcas() + '. Quedan ' + plural(n, 'documento', 'documentos') + ' por revisar', boton: 'Seguir revisando', accion: 'revisar' };
+      if(n) return { tono: 'azul', texto: 'Revisión en curso', sub: resumenMarcas() + '. ' + (n === 1 ? 'Queda 1 documento' : 'Quedan ' + n + ' documentos') + ' por revisar', boton: 'Seguir revisando', accion: 'revisar' };
       return { tono: 'azul', texto: 'Revisión lista para cerrar', sub: resumenMarcas() + '. ' + (cierra ? capital(liderCorto()) + ' no se entera hasta que la cierres' : 'La cierra el administrador'), boton: cierra ? 'Cerrar revisión' : '', accion: 'cerrarrev' };
     }
     if(c.estatus === 'por_firmar') return F.puedo.contrato
@@ -221,8 +226,13 @@
     const mk = F.puedo.revisar ? marcaDe(d.id) : null;
     if(mk){
       const dv = mk.accion === 'devolver';
+      const ia = mk.origen === 'ia'; const pg = ia && mk.pagina ? ' (página ' + mk.pagina + ')' : '';
       return '<button type="button" class="casilla doc marcada ' + (dv ? 'dev' : '') + '" data-casilla="' + k + '" data-ver="' + d.id + '"><span class="ico" aria-hidden="true">' + (dv ? '!' : ic('check')) + '</span><span class="tx"><b>' + esc(nombre) + '</b><small>' +
-        esc(dv ? 'Para devolver: ' + (C.MOTIVOS[mk.motivo] || '').toLowerCase() + (mk.nota ? '. ' + mk.nota : '') : 'Para aprobar al cerrar la revisión') + '</small></span><span class="chip ' + (dv ? 'rojo">Devolver' : 'azul">Aprobar') + '</span></button>';
+        esc(dv ? (ia ? 'La IA propone devolver: ' : 'Para devolver: ') + (C.MOTIVOS[mk.motivo] || '').toLowerCase() + (mk.nota ? '. ' + mk.nota : '') + pg : ia ? 'La IA lo da por bueno' + pg + '. Se aprueba al cerrar' : 'Para aprobar al cerrar la revisión') + '</small></span><span class="chip ' + (dv ? 'rojo">' : 'azul">') + (ia ? 'IA: ' : '') + (dv ? 'Devolver' : 'Aprobar') + '</span></button>';
+    }
+    const iaM = F.puedo.revisar && d.estado === 'por_revisar' ? iaDe(d.id) : null;
+    if(iaM && iaM.propuesta === 'revisar_a_mano'){
+      return '<button type="button" class="casilla doc rev" data-casilla="' + k + '" data-ver="' + d.id + '"><span class="ico" aria-hidden="true">?</span><span class="tx"><b>' + esc(nombre) + '</b><small>' + esc('La IA no pudo decidir: ' + (iaM.nota || 'míralo tú')) + '</small></span><span class="chip morado">Míralo tú</span></button>';
     }
     if(d.estado === 'devuelto'){
       return '<div class="casilla doc dev" data-casilla="' + k + '"' + (puedeSubir ? ' data-suelta="1"' : '') + '><button type="button" class="cuerpo" data-ver="' + d.id + '"><span class="ico" aria-hidden="true">!</span><span class="tx"><b>' + esc(nombre) + '</b><small>' + esc(subCasilla(d)) + (d.nota ? '. ' + esc(d.nota) : '') + '</small></span></button>' +
@@ -262,7 +272,7 @@
       '<div class="acc"><button type="button" class="btn btn-chico btn-2" id="subirVarios"' + (ocupado ? ' disabled' : '') + '>' + ic('subir') + 'Subir varios</button>' +
         (F.puedo.revisar && nr ? '<button type="button" class="btn btn-chico" id="revisarTodo">Revisar ' + nr + '</button>'
           : fal.length ? '<button type="button" class="btn btn-chico" data-paso="pedir:' + pedirM + '">Pedir lo que falta</button>' : '') + '</div>' +
-      barraRevision() +
+      bloqueIA() + barraRevision() +
       '<p class="nota-chica solo-pc" style="text-align:center">También puedes arrastrar un archivo desde tu computadora y soltarlo sobre una casilla.</p>' +
       '<p class="nota-chica' + (ocupado ? '' : ' hidden') + '" id="estadoSubida" role="status"><span class="cargando-linea"><i></i><span id="textoSubida">Subiendo…</span></span></p>' + driveHtml();
     for(let n = 1; n <= nReps; n++) h += grupoRep(n, n <= nReq);
@@ -292,13 +302,114 @@
   }
   const resumenMarcas = () => { const ap = marcas().filter((m) => m.accion === 'aprobar').length; const dv = marcas().length - ap;
     return [ap ? plural(ap, 'para aprobar', 'para aprobar') : '', dv ? plural(dv, 'para devolver', 'para devolver') : ''].filter(Boolean).join(' y '); };
+  // ---------- Revisión con IA ----------
+  const VEREDICTO = { apto: ['verde', 'Apto'], no_apto: ['rojo', 'No apto'], revisar_a_mano: ['morado', 'Revisar a mano'] };
+  const PUNTO = { bloquea: ['rojo', 'Bloquea'], mano: ['morado', 'A mano'], aviso: ['azul', 'Aviso'], ok: ['verde', 'Cumple'] };
+  function puntoIA(p, puede){
+    const t = PUNTO[p.estado] || PUNTO.aviso;
+    return '<div class="ia-p"><span class="chip ' + (p.excepcion ? 'azul' : t[0]) + '">' + (p.excepcion ? 'Excepción' : t[1]) + '</span><span class="tx"><b>' + esc(p.titulo) + '</b><small>' + esc(p.detalle + (p.pagina ? ' ' + p.pagina + '.' : '')) + '</small>' +
+      (puede && p.excepcionable && p.estado === 'bloquea' ? '<button type="button" class="enlace" data-exc-ia="' + esc(p.id) + '">Conceder excepción</button>' : '') +
+      (puede && p.excepcion ? '<button type="button" class="enlace" data-quitar-exc="' + esc(p.id) + '">Quitar excepción</button>' : '') + '</span></div>';
+  }
+  function bloqueIA(){
+    if(!F.puedo.revisar || !rev || rev.error) return '';
+    const k = rev.ia; const puede = !!rev.puede_ia;
+    const boton = (txt) => (puede && rev.archivos && !iaActiva() ? '<button type="button" class="mini' + (k && k.estado === 'lista' ? '' : ' pri') + '" id="mandarIA">' + txt + '</button>' : '');
+    if(!k || k.estado === 'cerrada'){
+      if(!puede) return '';
+      return '<div class="ia-bloque"><div class="ia-cab"><span class="tx"><b>Revisión con IA</b><small>' + (rev.archivos ? plural(rev.archivos, 'archivo', 'archivos') + (rev.nuevos ? ', ' + plural(rev.nuevos, 'sin leer', 'sin leer') : ', todos ya leídos') : 'Todavía no hay documentos') +
+        (k ? '. La última se usó al cerrar la revisión del ' + esc(fecha(k.terminada_en)) : '') + '.</small></span>' + boton('Mandar a revisión con IA') + '</div></div>';
+    }
+    if(iaActiva()){
+      return '<div class="ia-bloque" id="iaLeyendo" aria-busy="true"><div class="ia-cab"><span class="tx"><b>La IA está leyendo</b><small>' + esc(k.avance + ' de ' + k.total) + ' archivos. Puedes seguir trabajando: el resultado sale aquí y las propuestas quedan marcadas.</small><span class="carga-barra" aria-hidden="true"><i></i></span></span>' +
+        (k.trabada && puede ? '<button type="button" class="mini" id="reanudarIA">Reanudar</button>' : '') + '</div></div>';
+    }
+    if(k.estado === 'error'){
+      return '<div class="ia-bloque"><div class="estado rojo chico" role="alert"><small>La IA no pudo terminar: ' + esc(k.error || 'error desconocido') + '</small>' + (puede ? '<button type="button" class="mini" id="reanudarIA">Reintentar</button>' : '') + '</div></div>';
+    }
+    const v = VEREDICTO[k.veredicto] || ['', 'Sin veredicto'];
+    const orden = { bloquea: 0, mano: 1, aviso: 2 };
+    const malos = (k.puntos || []).filter((p) => p.estado !== 'ok' || p.excepcion).sort((a, b) => (orden[a.estado] === undefined ? 3 : orden[a.estado]) - (orden[b.estado] === undefined ? 3 : orden[b.estado]));
+    const buenos = (k.puntos || []).filter((p) => p.estado === 'ok' && !p.excepcion);
+    return '<div class="ia-bloque" id="iaResultado"><div class="ia-cab"><span class="tx"><b>Revisión con IA <span class="chip ' + v[0] + '">' + v[1] + '</span></b><small>' + esc(dia(k.terminada_en) + ' ' + hora(k.terminada_en)) + ' · ' + plural(k.total, 'archivo', 'archivos') + ' · ' + esc('US$ ' + Number(k.costo_usd || 0).toFixed(2)) +
+      '. Lo que propone ya está marcado en cada documento: cámbialo si no estás de acuerdo y cierra la revisión.</small></span>' + boton('Revisar de nuevo') + '</div>' +
+      (malos.length ? '<div class="ia-ps">' + malos.map((p) => puntoIA(p, puede)).join('') + '</div>' : '') +
+      (buenos.length ? '<details class="ia-ok"><summary>' + plural(buenos.length, 'punto del expediente cumple', 'puntos del expediente cumplen') + '</summary><div class="ia-ps">' + buenos.map((p) => puntoIA(p, puede)).join('') + '</div></details>' : '') + '</div>';
+  }
+  // Mientras la IA lee, se pregunta cada 5 segundos; al terminar se refresca el expediente
+  function vigilar(){
+    clearTimeout(sondeo); sondeo = null;
+    if(!id || !iaActiva()) return;
+    const mio = id;
+    sondeo = setTimeout(async () => {
+      if(mio !== id) return;
+      let r; try { r = await rpc('revision_estado', { p_cliente: mio }); } catch (e) { vigilar(); return; }
+      if(mio !== id) return;
+      rev = r;
+      if(iaActiva()){ if(!encima()) pintarDocumentos(); pintarCab(); vigilar(); return; }
+      try { F = await rpc('cliente_ficha', { p_cliente: mio }); } catch (e) {}
+      if(mio !== id) return;
+      pintarTodo();
+      const k = rev.ia;
+      if(k && k.estado === 'lista') toast('La IA terminó: ' + ((VEREDICTO[k.veredicto] || [])[1] || 'revisa el resultado') + '. Mira Documentos');
+      else if(k && k.estado === 'error') toast('La IA no pudo terminar: ' + (k.error || ''), 'error');
+    }, 5000);
+  }
+  function abrirMandarIA(){
+    if(!rev || !rev.puede_ia) return;
+    const n = rev.nuevos || 0;
+    $('hojaIA').innerHTML = cabHoja('tIA', 'Revisión con IA', F.cliente.nombre) +
+      '<div class="datos" style="margin-top:0">' + fila('Archivos', esc(plural(rev.archivos || 0, 'archivo vigente', 'archivos vigentes'))) +
+        fila('Por leer', esc(n ? plural(n, 'archivo nuevo', 'archivos nuevos') + ', unos US$ ' + (n * 0.04).toFixed(2) : 'Ninguno: todo ya se leyó, no cuesta')) + '</div>' +
+      '<p class="nota">La IA lee los documentos, propone aprobar o devolver cada uno y revisa el expediente completo. No cambia el estatus ni le avisa al líder: eso pasa cuando tú cierras la revisión. Lo que ya marcaste a mano se respeta.</p>' +
+      '<div class="error" id="eIA" role="alert"></div>' +
+      '<div class="acciones"><button type="button" class="btn btn-ancho" id="lanzarIA">Revisar con IA</button></div>';
+    abrirHoja('hojaIA');
+  }
+  async function lanzarIA(b){
+    b.disabled = true; $('eIA').textContent = '';
+    try {
+      const r = await rpc('ia_lanzar', { p_clientes: [id] });
+      if(!(r && (r.lanzadas || []).length)){ const o = ((r && r.omitidos) || [])[0]; $('eIA').textContent = (o && o.motivo) || 'No se pudo lanzar la revisión'; b.disabled = false; return; }
+    } catch (e) { $('eIA').textContent = e.message; b.disabled = false; return; }
+    if(hojaAbierta() === 'hojaIA') cerrarHoja();
+    toast('La IA empezó a leer. Te aviso aquí cuando termine');
+    try { rev = await rpc('revision_estado', { p_cliente: id }); } catch (e) {}
+    pintarTodo(); vigilar();
+  }
+  async function reanudarIA(b){
+    b.disabled = true;
+    try { await rpc('ia_reanudar', { p_corrida: rev.ia.id }); rev = await rpc('revision_estado', { p_cliente: id }); }
+    catch (e) { toast(e.message, 'error'); b.disabled = false; return; }
+    pintarTodo(); vigilar();
+  }
+  function abrirExcIA(punto){
+    const p = ((rev && rev.ia && rev.ia.puntos) || []).find((x) => x.id === punto); if(!p) return;
+    excIA = punto;
+    $('hojaExcIA').innerHTML = cabHoja('tExcIA', 'Excepción: ' + p.titulo.toLowerCase(), F.cliente.nombre) +
+      '<p class="nota" style="margin-top:0">' + esc(p.detalle) + '</p>' +
+      '<label class="rotulo arriba" for="motExcIA">Motivo</label><textarea class="area corta" id="motExcIA" maxlength="300"></textarea><div class="error" id="eExcIA" role="alert"></div>' +
+      '<p class="nota">Queda en la bitácora con tu nombre. La IA vuelve a decidir con la excepción, sin volver a leer (no cuesta).</p>' +
+      '<div class="acciones"><button type="button" class="btn btn-ancho" id="darExcIA">Conceder excepción</button></div>';
+    abrirHoja('hojaExcIA');
+  }
+  async function darExcIA(b, quitar, punto){
+    const mot = quitar ? null : $('motExcIA').value.trim();
+    if(!quitar && mot.length < 5){ $('eExcIA').textContent = 'Escribe el motivo (al menos 5 letras)'; $('motExcIA').focus(); return; }
+    b.disabled = true;
+    try { await rpc('ia_excepcion', { p_corrida: rev.ia.id, p_punto: punto || excIA, p_motivo: mot, p_quitar: !!quitar }); rev = await rpc('revision_estado', { p_cliente: id }); }
+    catch (e) { if(quitar) toast(e.message, 'error'); else $('eExcIA').textContent = e.message; b.disabled = false; return; }
+    if(!quitar && hojaAbierta() === 'hojaExcIA') cerrarHoja();
+    toast(quitar ? 'Excepción quitada. La IA vuelve a decidir' : 'Excepción anotada. La IA vuelve a decidir');
+    pintarTodo(); vigilar();
+  }
   // Barra de la revisión en curso: lo marcado y el botón para cerrarla
   function barraRevision(){
     if(!F.puedo.revisar || !rev) return '';
     if(rev.error) return '<div class="estado ambar chico" role="alert"><small>No se pudo leer la revisión en curso: ' + esc(rev.error) + '</small><button type="button" class="mini" id="revReintentar">Reintentar</button></div>';
     if(!marcas().length) return '';
     const quedan = sinMarcar().length;
-    return '<div class="estado azul chico" id="barraRev"><small>Revisión en curso: ' + esc(resumenMarcas()) + (quedan ? '. Quedan ' + quedan + ' por revisar' : '') + '. ' + esc(capital(liderCorto())) + ' no se entera hasta cerrarla.</small>' +
+    return '<div class="estado azul chico" id="barraRev"><small>Revisión en curso: ' + esc(resumenMarcas()) + (quedan ? '. ' + (quedan === 1 ? 'Queda 1' : 'Quedan ' + quedan) + ' por revisar' : '') + '. ' + esc(capital(liderCorto())) + ' no se entera hasta cerrarla.</small>' +
       (rev.puede_cerrar ? '<button type="button" class="mini pri" id="abrirCerrarRev">Cerrar revisión</button>' : '') + '</div>';
   }
   function historialRevisiones(){
@@ -764,8 +875,10 @@
     const estado = d.estado === 'aprobado' ? '<span class="chip verde">Aprobado</span>' : d.estado === 'devuelto' ? '<span class="chip rojo">Devuelto</span>' : '<span class="chip ambar">Por revisar</span>';
     const mk = F.puedo.revisar ? marcaDe(d.id) : null;
     const info = '<div class="datos" style="margin-top:0">' + fila('Estado', estado + (d.revisado_por ? ' ' + esc(primerNombre(d.revisado_por)) + ', ' + esc(dia(d.revisado_en).toLowerCase()) : '')) +
-      (mk ? fila('En esta revisión', (mk.accion === 'devolver' ? '<span class="chip rojo">Devolver</span> ' + esc((C.MOTIVOS[mk.motivo] || '') + (mk.nota ? '. ' + mk.nota : '')) : '<span class="chip azul">Aprobar</span>') +
+      (mk ? fila('En esta revisión', (mk.accion === 'devolver' ? '<span class="chip rojo">Devolver</span> ' + esc((C.MOTIVOS[mk.motivo] || '') + (mk.nota ? '. ' + mk.nota : '')) : '<span class="chip azul">Aprobar</span>' + (mk.nota ? ' ' + esc(mk.nota) : '')) +
+        (mk.origen === 'ia' ? ' <small>' + esc('Propuesta de la IA' + (mk.pagina ? ', página ' + mk.pagina : '')) + '</small>' : '') +
         ' <button type="button" class="enlace" id="verQuitarMarca">Quitar marca</button>') : '') +
+      (!mk && iaDe(d.id) && iaDe(d.id).propuesta === 'revisar_a_mano' ? fila('La IA', esc('No pudo decidir: ' + (iaDe(d.id).nota || ''))) : '') +
       fila('Subido', esc(dia(d.subido_en)) + (d.subido_por ? ' por ' + esc(d.subido_por) : '')) +
       (d.estado === 'devuelto' ? fila('Motivo', esc(C.MOTIVOS[d.motivo] || '') + (d.nota ? '. ' + esc(d.nota) : '')) : '') +
       (d.firmado_en ? fila('Firmado', esc(fecha(d.firmado_en, true))) : '') +
@@ -773,6 +886,8 @@
       ((d.comparte || []).length ? fila('También trae', esc(C.lista(d.comparte.map((x) => casilla(x.casilla, x.numero))))) : '') +
       (a ? fila('Archivo', esc(a.nombre || '')) : '') + '</div>' +
       (F.puedo.revisar && !(d.casilla.indexOf('contrato_') === 0 && !F.puedo.contrato) ? '<button type="button" class="btn btn-chico btn-2" id="verReemplazar" style="margin-top:12px">' + ic('subir') + 'Reemplazar archivo</button>' : '') +
+      (mk && mk.origen === 'ia' && mk.accion === 'devolver' && rev && rev.puede_cerrar ? '<label class="rotulo arriba" for="excDoc">Si lo apruebas igual, escribe el motivo</label><textarea class="area corta" id="excDoc" maxlength="300"></textarea>' +
+        '<p class="nota">Aprobar lo que la IA devolvió es una excepción: queda en la bitácora con tu nombre.</p>' : '') +
       (F.puedo.revisar ? '<label class="rotulo arriba" for="venceDoc">Fecha de vencimiento (opcional)</label><input class="campo" id="venceDoc" type="date" value="' + esc(d.vence_en || '') + '">' +
         '<p class="nota">Sirve para avisar antes de que se venza.</p>' : '');
     const puedeSubir = !(d.casilla.indexOf('contrato_') === 0 && !F.puedo.contrato);
@@ -829,7 +944,11 @@
   async function revisar(accionRev){
     const d = docVer(); if(!d) return;
     const args = { p_documento: d.id, p_accion: accionRev, p_motivo: null, p_nota: null, p_vence: null };
-    if(accionRev === 'aprobar'){ const v = $('venceDoc'); args.p_vence = v && v.value ? v.value : null; }
+    if(accionRev === 'aprobar'){
+      const v = $('venceDoc'); args.p_vence = v && v.value ? v.value : null;
+      const x = $('excDoc');
+      if(x){ const m = x.value.trim(); if(m.length < 5){ toast('Escribe el motivo para aprobar lo que la IA devolvió', 'error'); x.focus(); return; } args.p_nota = m; }
+    }
     else {
       ver.nota = $('notaDev').value.trim();
       if(!ver.motivo){ $('eDev').textContent = 'Elige un motivo'; return; }
@@ -885,12 +1004,15 @@
     const ap = marcas().filter((m) => m.accion === 'aprobar'); const dv = marcas().filter((m) => m.accion === 'devolver');
     const nom = (m) => { const d = (F.documentos || []).find((x) => x.id === m.documento); return d ? casilla(d.casilla, d.numero) : 'Documento'; };
     const quedan = sinMarcar().length; const despues = estatusDespues(); const msj = mensajeRevision();
+    const k = rev.ia && rev.ia.estado === 'lista' ? rev.ia : null; const v = k ? VEREDICTO[k.veredicto] : null;
+    const iaMalos = k ? (k.puntos || []).filter((p) => p.estado === 'bloquea' || p.estado === 'mano') : [];
     $('hojaCerrarRev').innerHTML = cabHoja('tCerrarRev', 'Cerrar revisión', F.cliente.nombre) +
       '<div class="datos" style="margin-top:0">' +
         (ap.length ? fila('Se aprueban', esc(C.lista(ap.map(nom)))) : '') +
         (dv.length ? fila('Se devuelven', dv.map((m) => esc(nom(m) + ': ' + (C.MOTIVOS[m.motivo] || ''))).join('<br>')) : '') +
-        (despues ? fila('Estatus', esc(despues)) : '') + '</div>' +
-      (quedan ? '<div class="estado ambar chico"><small>Quedan ' + plural(quedan, 'documento', 'documentos') + ' sin revisar. Seguirán por revisar.</small></div>' : '') +
+        (despues ? fila('Estatus', esc(despues)) : '') + (v ? fila('La IA', '<span class="chip ' + v[0] + '">' + v[1] + '</span>') : '') + '</div>' +
+      (iaMalos.length ? '<div class="ia-ps" style="margin-top:10px">' + iaMalos.map((p) => puntoIA(p, false)).join('') + '</div>' : '') +
+      (quedan ? '<div class="estado ambar chico"><small>' + (quedan === 1 ? 'Queda 1 documento sin revisar. Seguirá' : 'Quedan ' + quedan + ' documentos sin revisar. Seguirán') + ' por revisar.</small></div>' : '') +
       (msj ? '<label class="rotulo arriba" for="msjRev">Mensaje para ' + esc(liderCorto()) + '</label><textarea class="area" id="msjRev" maxlength="4000">' + esc(msj) + '</textarea>' +
         '<p class="nota">Puedes cambiarlo antes de enviarlo. ' + (rev.lider_whatsapp ? 'Se abre el WhatsApp de ' + esc(liderCorto()) + '.' : 'No tiene WhatsApp en Usuarios: se abre WhatsApp para que elijas el chat.') + '</p>'
         : '<p class="nota">No hay nada que pedirle a ' + esc(liderCorto()) + '.</p>') +
@@ -949,6 +1071,12 @@
     if(t.closest('#cerrarRevEnviar')){ cerrarRevision(true); return; }
     if(t.closest('#revReintentar')){ cargar(); return; }
     if((b = t.closest('#verQuitarMarca'))){ quitarMarca(b); return; }
+    if(t.closest('#mandarIA')){ abrirMandarIA(); return; }
+    if((b = t.closest('#lanzarIA'))){ lanzarIA(b); return; }
+    if((b = t.closest('#reanudarIA'))){ reanudarIA(b); return; }
+    if((b = t.closest('[data-exc-ia]'))){ abrirExcIA(b.dataset.excIa); return; }
+    if((b = t.closest('#darExcIA'))){ darExcIA(b, false); return; }
+    if((b = t.closest('[data-quitar-exc]'))){ darExcIA(b, true, b.dataset.quitarExc); return; }
     if(t.closest('#cambiarEstatus')){ abrirEstatus(); return; }
     if((b = t.closest('[data-estatus]'))){
       Array.prototype.forEach.call($('hojaEstatus').querySelectorAll('.mot'), (x) => { const on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-checked', String(on)); });
@@ -1021,7 +1149,9 @@
       '<section class="hoja" id="hojaCampo" role="dialog" aria-modal="true" aria-labelledby="tCampo" aria-hidden="true"></section>' +
       '<section class="hoja" id="hojaEstatus" role="dialog" aria-modal="true" aria-labelledby="tEstatus" aria-hidden="true"></section>' +
       '<section class="hoja" id="hojaEnviar" role="dialog" aria-modal="true" aria-labelledby="tEnviar" aria-hidden="true"></section>' +
-      '<section class="hoja" id="hojaCerrarRev" role="dialog" aria-modal="true" aria-labelledby="tCerrarRev" aria-hidden="true"></section>';
+      '<section class="hoja" id="hojaCerrarRev" role="dialog" aria-modal="true" aria-labelledby="tCerrarRev" aria-hidden="true"></section>' +
+      '<section class="hoja" id="hojaIA" role="dialog" aria-modal="true" aria-labelledby="tIA" aria-hidden="true"></section>' +
+      '<section class="hoja" id="hojaExcIA" role="dialog" aria-modal="true" aria-labelledby="tExcIA" aria-hidden="true"></section>';
     while(mas.firstChild) document.body.appendChild(mas.firstChild);
     C.prepararHojas();
     $('archivo').addEventListener('change', alElegir);
@@ -1038,7 +1168,7 @@
     zona.addEventListener('dragover', (e) => { e.preventDefault(); limpiarSobre(); const c = e.target.closest('[data-suelta]'); (c || zona).classList.add('sobre'); });
     zona.addEventListener('dragleave', (e) => { if(!zona.contains(e.relatedTarget)) limpiarSobre(); });
     zona.addEventListener('drop', soltarEn);
-    h.addEventListener('hoja-cerrada', () => { const f = alCerrar; id = 0; F = null; alCerrar = null; ver = null; if(f) f(); });
+    h.addEventListener('hoja-cerrada', () => { const f = alCerrar; id = 0; F = null; alCerrar = null; ver = null; clearTimeout(sondeo); sondeo = null; if(f) f(); });
     window.Pedir.alContactar(() => { if(id) cargar(); else if(externo) externo(); });
   }
   let externo = null;
@@ -1047,7 +1177,7 @@
   function abrir(idCliente, opciones){
     const o = opciones || {};
     montar();
-    yo = o.yo || yo; id = Number(idCliente) || 0; drive = undefined; rev = null; if(!id) return;
+    yo = o.yo || yo; id = Number(idCliente) || 0; drive = undefined; rev = null; clearTimeout(sondeo); sondeo = null; if(!id) return;
     F = null; fuera = null; hiloTodo = false; soloNotas = false; repExtra = 0; actaExtra = 0; llegada = { revisar: o.revisar, pedir: o.pedir, casilla: o.casilla, campo: o.campo, enviar: o.enviar }; alCerrar = o.alCerrar || null;
     $('cabFicha').innerHTML = '<div class="f-cab"><span class="mono sk" aria-hidden="true"></span><div class="tx"><span class="sk" style="width:70%;height:22px"></span><span class="sk" style="width:50%;height:12px;margin-top:8px"></span></div>' +
       '<button type="button" class="cerrar" data-cierra="1" aria-label="Cerrar">' + ic('x') + '</button></div>';

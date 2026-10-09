@@ -201,6 +201,28 @@ function cruceFalso(m, yo){
     inst: { hay: true, nuevas: 5, completadas: 3, reemplazos: 2, antes_del_inicio: 4, dedicados: 1, residenciales: 2, con_orden: 4, por_confirmar: 1, sin_orden: 1, aliado: 2, pagos: 0 },
     corte: { mes: '2026-10-01', filas: 10, cumplen: 2, del_corte: 8, por_asignar: 3 }, anterior: { mes: '2026-09-01', filas: 20, cumplen: 15, del_corte: 20 }, totales: {} };
 }
+// Archivos vigentes de un cliente y la revisión con IA de mentira
+const archivosDe = (c) => Array.from(new Set([].concat.apply([], c.documentos.map((d) => (d.archivos || []).map((x) => x.id)))));
+const iaActiva = (c) => !!(c.ia && ['en_cola', 'leyendo'].includes(c.ia.estado));
+function avanzarIA(m, c){
+  if(!iaActiva(c)) return;
+  if(m.iaTrabada){ c.ia.trabada = true; return; }
+  if(m.iaFalla){ Object.assign(c.ia, { estado: 'error', error: m.iaFalla, terminada_en: hace(0) }); return; }
+  c.ia.avance = Math.min(c.ia.total, c.ia.avance + (m.iaPaso || 1)); c.ia.costo_usd = Math.round(c.ia.avance * 3.2) / 100;
+  if(c.ia.avance < c.ia.total) return;
+  c.leidos = c.leidos || {}; archivosDe(c).forEach((x) => { c.leidos[x] = true; });
+  // El primer documento por revisar sale vencido; los demás bien. Junta vencida (con excepción posible) y un aviso.
+  const porRev = c.documentos.filter((d) => d.estado === 'por_revisar');
+  c.ia.marcas = c.documentos.map((d, i) => d === porRev[0] ? { documento: d.id, propuesta: 'problema', motivo: 'vencido', nota: 'Venció el 31/05/2026.', pagina: 1 }
+    : d === porRev[1] ? { documento: d.id, propuesta: 'revisar_a_mano', motivo: null, nota: 'Se ve borroso o incompleto. Míralo tú.', pagina: 1 } : { documento: d.id, propuesta: 'bien', motivo: null, nota: 'Vigente.', pagina: 1 });
+  c.ia.puntos = [{ id: 'junta', titulo: 'Junta vencida', estado: 'bloquea', detalle: 'Designada en el acta inscrita el 14/03/2012 por 5 años: venció el 14/03/2017.', pagina: 'Acta constitutiva · página 6', falta: 'Acta de asamblea de ratificación o cambio de junta', excepcionable: true },
+    { id: 'sin_marcar_1', titulo: 'Documento sin marcar', estado: 'aviso', detalle: 'El archivo de Cédula también trae un RIF personal en la página 2. Márcalo en el expediente para que cuente.' },
+    { id: 'duracion', titulo: 'Duración de la empresa', estado: 'ok', detalle: '50 años desde el 14/03/2012.' }];
+  Object.assign(c.ia, { estado: 'lista', veredicto: 'no_apto', terminada_en: hace(0) });
+  c.marcas = c.marcas || {};
+  c.ia.marcas.forEach((k) => { const ant = c.marcas[k.documento]; if(ant && ant.accion && ant.origen !== 'ia') return; if(k.propuesta === 'revisar_a_mano'){ delete c.marcas[k.documento]; return; }
+    c.marcas[k.documento] = { documento: k.documento, accion: k.propuesta === 'bien' ? 'aprobar' : 'devolver', motivo: k.propuesta === 'bien' ? null : k.motivo, nota: k.propuesta === 'bien' ? null : k.nota, vence_en: null, por: null, en: hace(0), origen: 'ia', pagina: k.pagina }; });
+}
 const RPC = {
   inicio_datos(m, yo){
     if(yo.rol === 'aliado') return { rol: yo.rol, hoy: hoy() };
@@ -424,7 +446,14 @@ const RPC = {
     for(const c of m.datos.clientes){ const d = c.documentos.find((x) => x.id === Number(a.p_documento)); if(!d) continue;
       const nt = String(a.p_nota || '').trim() || null; c.marcas = c.marcas || {};
       if(a.p_accion === 'quitar') delete c.marcas[d.id];
-      else if(a.p_accion === 'aprobar') c.marcas[d.id] = { documento: d.id, accion: 'aprobar', motivo: null, nota: null, vence_en: a.p_vence || null, por: yo.nombre, en: hace(0), origen: 'manual' };
+      else if(a.p_accion === 'aprobar'){
+        const ant = c.marcas[d.id];
+        if(ant && ant.origen === 'ia' && ant.accion === 'devolver'){
+          if(yo.rol !== 'admin') return error('Aprobar lo que la IA devolvió es una excepción: la concede el administrador');
+          if(!nt || nt.length < 5) return error('Escribe el motivo de la excepción');
+        }
+        c.marcas[d.id] = { documento: d.id, accion: 'aprobar', motivo: null, nota: nt, vence_en: a.p_vence || null, por: yo.nombre, en: hace(0), origen: 'manual' };
+      }
       else if(a.p_accion === 'devolver'){
         if(!['vencido', 'ilegible', 'no_corresponde', 'falta_firma', 'otro'].includes(a.p_motivo)) return error('Elige por qué lo devuelves');
         if(a.p_motivo === 'otro' && !nt) return error('Escribe el motivo en la nota');
@@ -438,12 +467,71 @@ const RPC = {
     if(!['admin', 'abogado'].includes(yo.rol)) return error('No tienes permiso para hacer esto');
     const c = visibles(m, yo).find((x) => x.id === Number(a.p_cliente)); if(!c) return error('No tienes acceso a este cliente');
     const p = m.personas.find((x) => x.id === c.lider_id);
-    return { puede_cerrar: yo.rol === 'admin', lider_whatsapp: p ? p.whatsapp || null : null, marcas: Object.values(c.marcas || {}), historial: (c.revisiones || []).slice().reverse() };
+    avanzarIA(m, c);
+    return { puede_cerrar: yo.rol === 'admin', puede_ia: yo.rol === 'admin', lider_whatsapp: p ? p.whatsapp || null : null, archivos: archivosDe(c).length, nuevos: archivosDe(c).filter((x) => !(c.leidos || {})[x]).length,
+      marcas: Object.values(c.marcas || {}).filter((x) => x.accion), historial: (c.revisiones || []).slice().reverse(), ia: c.ia ? Object.assign({}, c.ia) : null };
+  },
+  // ----- Revisión con IA (en pequeño: avanza un archivo cada vez que alguien pregunta) -----
+  ia_estimar(m, yo, a){
+    if(yo.rol !== 'admin') return error('No tienes permiso para hacer esto');
+    return { clientes: (a.p_clientes || []).map((id) => m.datos.clientes.find((c) => c.id === Number(id))).filter(Boolean).map((c) => ({ cliente: c.id, nombre: c.nombre, archivos: archivosDe(c).length,
+      nuevos: archivosDe(c).filter((x) => !(c.leidos || {})[x]).length, activa: iaActiva(c) })), precio_entrada: 2, precio_salida: 12 };
+  },
+  ia_lanzar(m, yo, a){
+    if(yo.rol !== 'admin') return error('No tienes permiso para hacer esto');
+    const ids = a.p_clientes || []; if(!ids.length) return error('Elige al menos un cliente'); if(ids.length > 25) return error('Son muchos clientes de una vez. Elige hasta 25');
+    const lanzadas = []; const omitidos = [];
+    ids.forEach((id) => { const c = m.datos.clientes.find((x) => x.id === Number(id)); if(!c) return;
+      if(!archivosDe(c).length){ omitidos.push({ cliente: c.id, motivo: 'No tiene documentos' }); return; }
+      if(iaActiva(c)){ omitidos.push({ cliente: c.id, motivo: 'Ya se está revisando' }); return; }
+      const n = archivosDe(c).length; m.secIA = (m.secIA || 0) + 1;
+      c.ia = { id: m.secIA, estado: 'leyendo', avance: 0, total: n, nuevos: archivosDe(c).filter((x) => !(c.leidos || {})[x]).length, veredicto: null, puntos: [], excepciones: [], costo_usd: 0, modelo: 'gemini-de-prueba',
+        error: null, lanzada_en: hace(0), terminada_en: null, por: yo.nombre, trabada: false, marcas: [] };
+      (m.bitacora = m.bitacora || []).push({ accion: 'ia_lanzada', registro: c.ia.id, por: yo.nombre });
+      lanzadas.push(c.ia.id); });
+    return { lanzadas, omitidos };
+  },
+  ia_reanudar(m, yo, a){
+    if(yo.rol !== 'admin') return error('No tienes permiso para hacer esto');
+    const c = m.datos.clientes.find((x) => x.ia && x.ia.id === Number(a.p_corrida)); if(!c) return error('Esa revisión ya no existe');
+    Object.assign(c.ia, { estado: 'leyendo', trabada: false, error: null }); return null;
+  },
+  ia_excepcion(m, yo, a){
+    if(yo.rol !== 'admin') return error('No tienes permiso para hacer esto');
+    const c = m.datos.clientes.find((x) => x.ia && x.ia.id === Number(a.p_corrida)); if(!c || c.ia.estado !== 'lista') return error('Esa revisión ya no está abierta');
+    const p = c.ia.puntos.find((x) => x.id === a.p_punto); if(!p) return error('Ese punto no admite excepción');
+    if(!a.p_quitar && String(a.p_motivo || '').trim().length < 5) return error('Escribe el motivo de la excepción');
+    if(a.p_quitar){ delete p.excepcion; p.estado = 'bloquea'; } else { p.excepcion = a.p_motivo; p.estado = 'ok'; }
+    c.ia.veredicto = c.ia.puntos.some((x) => x.estado === 'bloquea') || c.ia.marcas.some((x) => x.propuesta === 'problema') ? 'no_apto' : 'apto';
+    (m.bitacora = m.bitacora || []).push({ accion: a.p_quitar ? 'ia_excepcion_quitada' : 'ia_excepcion', registro: c.ia.id, por: yo.nombre, motivo: a.p_motivo || null });
+    return null;
+  },
+  revision_bandeja(m, yo, a){
+    if(!['admin', 'abogado'].includes(yo.rol)) return error('No tienes permiso para hacer esto');
+    m.datos.clientes.forEach((c) => avanzarIA(m, c));
+    const grupos = (c) => [c.estatus === 'documentos_en_revision' ? 'por_revisar' : null, Object.values(c.marcas || {}).some((x) => x.accion) ? 'en_curso' : null,
+      c.ia && c.ia.estado === 'lista' ? 'borradores' : null, c.ia && ['en_cola', 'leyendo', 'error'].includes(c.ia.estado) ? 'leyendo' : null,
+      ['documentos_recibidos', 'contrato_en_curso'].includes(c.estatus) ? 'contrato' : null, c.estatus === 'por_firmar' ? 'por_firmar' : null, archivosDe(c).length ? 'analizables' : null].filter(Boolean);
+    const conteos = {}; m.datos.clientes.forEach((c) => grupos(c).forEach((g) => { conteos[g] = (conteos[g] || 0) + 1; }));
+    const b = norm(a.p_busca);
+    const sel = m.datos.clientes.filter((c) => grupos(c).includes(a.p_bandeja) && (!b || norm(c.nombre).includes(b) || c.doc_numero.includes(String(a.p_busca || '').replace(/\D/g, '') || '@')));
+    const des = a.p_desde || 0; const lim = a.p_limite || 30;
+    return { rol: yo.rol, bandeja: a.p_bandeja, total: sel.length, desde: des, conteos, filas: sel.slice(des, des + lim).map((c) => ({ id: c.id, nombre: c.nombre, doc_tipo: c.doc_tipo, doc_numero: c.doc_numero, es_natural: c.es_natural,
+      lider: c.lider, estatus: c.estatus, estatus_desde: c.estatus_desde, archivos: archivosDe(c).length, nuevos: archivosDe(c).filter((x) => !(c.leidos || {})[x]).length,
+      marcas: Object.values(c.marcas || {}).filter((x) => x.accion).length, ia: c.ia ? { estado: c.ia.estado, veredicto: c.ia.veredicto, avance: c.ia.avance, total: c.ia.total, costo_usd: c.ia.costo_usd, en: c.ia.terminada_en || c.ia.lanzada_en } : null })) };
+  },
+  ia_comparar(m, yo){
+    if(yo.rol !== 'admin') return error('No tienes permiso para hacer esto');
+    return { filas: m.datos.clientes.filter((c) => c.ia && ['lista', 'cerrada'].includes(c.ia.estado)).map((c) => ({ corrida: c.ia.id, cliente: c.id, nombre: c.nombre, doc_tipo: c.doc_tipo, doc_numero: c.doc_numero,
+      estado: c.ia.estado, veredicto: c.ia.veredicto, estatus: c.estatus, costo_usd: c.ia.costo_usd, en: c.ia.terminada_en,
+      docs: c.ia.marcas.map((k) => { const d = c.documentos.find((x) => x.id === k.documento) || {}; return { casilla: d.casilla, numero: d.numero, ia: k.propuesta, nota: k.nota, legal: d.estado === 'aprobado' ? 'bien' : d.estado === 'devuelto' ? 'problema' : null }; }) })) };
   },
   revision_cerrar(m, yo, a){
     if(yo.rol !== 'admin') return error('No tienes permiso para hacer esto');
     const c = visibles(m, yo).find((x) => x.id === Number(a.p_cliente)); if(!c) return error('No tienes acceso a este cliente');
-    const marcas = Object.values(c.marcas || {}); if(!marcas.length) return error('No hay documentos marcados. Aprueba o devuelve al menos uno');
+    if(iaActiva(c)) return error('La IA todavía está leyendo este expediente. Espera a que termine');
+    const marcas = Object.values(c.marcas || {}).filter((x) => x.accion); if(!marcas.length) return error('No hay documentos marcados. Aprueba o devuelve al menos uno');
+    const conIA = !!(c.ia && c.ia.estado === 'lista'); if(conIA) c.ia.estado = 'cerrada';
     const antes = c.estatus; let ap = 0, dv = 0; const det = [];
     marcas.forEach((k) => { const d = c.documentos.find((x) => x.id === k.documento); if(!d) return;
       if(k.accion === 'aprobar'){ Object.assign(d, { estado: 'aprobado', motivo: null, nota: null, vence_en: k.vence_en || d.vence_en, revisado_por: k.por, revisado_en: hace(0) }); ap++; }
@@ -455,7 +543,7 @@ const RPC = {
     const info = { revision: rid, aprobados: ap, devueltos: dv, documentos: det, antes, estatus: c.estatus };
     const l = linea(dv ? 'documento_devuelto' : 'documento_aprobado', 'revision', info, yo.nombre);
     if(c.hilo.length > n0) c.hilo[c.hilo.length - 1] = l; else c.hilo.push(l);   // una sola entrada en el hilo
-    (c.revisiones = c.revisiones || []).push({ id: rid, en: hace(0), por: yo.nombre, antes, estatus: c.estatus, aprobados: ap, devueltos: dv, detalle: det, enviado: !!a.p_enviado, con_ia: false });
+    (c.revisiones = c.revisiones || []).push({ id: rid, en: hace(0), por: yo.nombre, antes, estatus: c.estatus, aprobados: ap, devueltos: dv, detalle: det, enviado: !!a.p_enviado, con_ia: conIA });
     (m.bitacora = m.bitacora || []).push({ accion: 'revision_cerrada', registro: rid, por: yo.nombre, mensaje: a.p_mensaje || null, enviado: !!a.p_enviado });
     return info;
   },

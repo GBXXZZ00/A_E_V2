@@ -9,10 +9,11 @@
     { id: 'inicio', texto: 'Inicio', icono: 'casa', enlace: 'inicio.html' },
     { id: 'comisiones', texto: 'Comisiones', icono: 'barras', enlace: 'comisiones.html' },
     { id: 'clientes', texto: 'Clientes', icono: 'edificio', enlace: 'clientes.html' },
-    { id: 'factibilidad', texto: 'Factibilidad', icono: 'wifi', enlace: 'factibilidad.html', roles: ['admin', 'analista', 'lider'] }
+    { id: 'factibilidad', texto: 'Factibilidad', icono: 'wifi', enlace: 'factibilidad.html', roles: ['admin', 'analista', 'lider'] },
+    { id: 'revision', texto: 'Revisión', icono: 'doc', enlace: 'revision.html', roles: ['admin', 'abogado'] }
   ];
 
-  // opciones: { activo: 'inicio'|'comisiones'|'clientes'|'factibilidad'|null, sinNav: bool, volver: {enlace, texto}, acciones: html }
+  // opciones: { activo: 'inicio'|'comisiones'|'clientes'|'factibilidad'|'revision'|null, sinNav: bool, volver: {enlace, texto}, acciones: html }
   function montar(p, opciones){
     const o = opciones || {};
     let equipo = S.equipoGuardado();
