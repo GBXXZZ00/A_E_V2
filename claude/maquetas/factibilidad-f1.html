@@ -1,0 +1,556 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Maqueta F1 Factibilidad</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<style>
+/* Mismo sistema de las maquetas aprobadas: la lista no se va, todo sale como hoja encima. Un solo tema claro, a propósito. */
+:root{
+  --bg:#FFFFFF; --s2:#F5F6F7; --s3:#ECEEF1; --text:#111315; --text2:#5B636E; --line:#E3E6EA;
+  --rojo:#C0271B; --rojo-bg:#FCEDEB; --verde:#11734B; --verde-bg:#E7F5EE; --ambar:#8A5A00; --ambar-bg:#FBF1DC; --azul:#1B3A9E; --azul-bg:#E8ECF9;
+  --acc:#1B3A9E; --acc-bg:#E8ECF9; --fondo:#E9EBEE; --velo:rgba(17,19,21,.38); --sombra:0 18px 44px rgba(17,19,21,.16);
+  --chat:#EFEAE2; --burbuja:#FFFFFF; --burbuja2:#D9FDD3; --mapa:#D5DDD0; --calle:#F7F7F2; --zona:#3B78E7; --diseno:#E2BC00; --excl:#00A3CC;
+  --ease:cubic-bezier(0.23,1,0.32,1); --f:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--fondo);color:var(--text);font-family:var(--f);font-size:15px;line-height:1.45;padding-block:18px 40px;padding-inline:16px}
+button{font:inherit;color:inherit;border:0;background:none;padding:0;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:3px solid rgba(27,58,158,.35);outline-offset:2px}
+.guia{max-width:1180px;margin:0 auto 12px;display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap}
+.guia h1{font-size:20px;font-weight:800;margin:0;letter-spacing:-.02em;text-wrap:balance}
+.guia p{margin:2px 0 0;color:var(--text2);font-size:13.5px;max-width:64ch}
+.guia .tx{flex:1;min-width:240px}
+.modo{display:flex;padding:4px;border-radius:999px;background:var(--bg)}
+.modo button{height:38px;padding:0 14px;border-radius:999px;font-weight:700;font-size:13.5px;color:var(--text2)}
+.modo button.on{background:var(--text);color:#fff}
+.prueba{max-width:1180px;margin:0 auto 14px;padding:0;list-style:none;display:flex;gap:8px;flex-wrap:wrap;font-size:13px;color:var(--text2);align-items:center}
+.prueba li{background:var(--bg);border-radius:999px;padding:6px 12px}
+.prueba b{color:var(--text)}
+.prueba .sim{background:var(--text);color:#fff;border-radius:999px;padding:7px 14px;font-weight:700;font-size:13px}
+
+.app{position:relative;margin:0 auto;background:var(--bg);overflow:hidden;box-shadow:var(--sombra);display:flex;flex-direction:column}
+.app.pc{max-width:1180px;height:740px;border-radius:18px}
+.app.tel{width:100%;max-width:390px;height:800px;border-radius:34px;border:8px solid var(--text)}
+.barra{display:flex;align-items:center;gap:18px;padding:14px 22px;border-bottom:1px solid var(--line);flex:none}
+.barra b{font-weight:800;letter-spacing:.14em;font-size:14px}
+.barra span{color:var(--text2);font-size:13.5px}
+.barra nav{display:flex;gap:4px;margin-left:10px}
+.barra nav i{font-style:normal;padding:8px 14px;border-radius:999px;font-weight:600;font-size:14px;color:var(--text2)}
+.barra nav i.on{background:var(--acc-bg);color:var(--acc)}
+.camp{position:relative;margin-left:auto;width:40px;height:40px;border-radius:50%;background:var(--s2);font-size:17px}
+.camp u{position:absolute;top:-2px;right:-2px;text-decoration:none;background:var(--rojo);color:#fff;border-radius:999px;min-width:18px;height:18px;font-size:11px;font-weight:700;display:grid;place-items:center}
+.barra .av{width:36px;height:36px;border-radius:50%;background:var(--acc);color:#fff;display:grid;place-items:center;font-size:12px;font-weight:700}
+.tel .barra nav{display:none}
+.cuerpo{flex:1;overflow:auto;padding:20px 22px 24px}
+.tel .cuerpo{padding:16px 16px 150px}
+.navab{display:none}
+.tel .navab{display:flex;position:absolute;left:0;right:0;bottom:0;background:var(--bg);border-top:1px solid var(--line);padding:8px 0 12px;z-index:2}
+.navab i{flex:1;text-align:center;font-style:normal;font-size:12px;font-weight:600;color:var(--text2)}
+.navab i::before{content:"";display:block;width:46px;height:26px;border-radius:999px;margin:0 auto 3px;background:var(--s2)}
+.navab i.on{color:var(--acc)} .navab i.on::before{background:var(--acc)}
+
+.cab{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.cab h2{font-size:28px;font-weight:800;letter-spacing:-.025em;margin:0;flex:1}
+.nueva{height:46px;padding:0 20px;border-radius:999px;background:var(--acc);color:#fff;font-weight:700;white-space:nowrap;transition:transform 120ms var(--ease)}
+.nueva:active{transform:scale(.97)}
+.tel .cab .nueva{display:none}
+.fab{display:none}
+.tel .fab{display:flex;position:absolute;right:16px;bottom:84px;z-index:3;height:52px;padding:0 20px;border-radius:999px;background:var(--acc);color:#fff;font-weight:700;align-items:center;box-shadow:0 8px 22px rgba(27,58,158,.28);transition:transform 120ms var(--ease)}
+.fab:active{transform:scale(.97)}
+.cuenta{margin:6px 0 0;font-size:12.5px;color:var(--text2)}
+.cambio{margin-top:14px;display:flex;gap:12px;align-items:center;padding:14px;border-radius:16px;background:var(--verde-bg);color:var(--verde)}
+.cambio .tx{flex:1;min-width:0;font-size:13px}
+.cambio b{display:block;font-size:15px}
+.cambio button{height:40px;padding:0 16px;border-radius:999px;background:var(--verde);color:#fff;font-weight:700;white-space:nowrap}
+.fila-f{display:flex;gap:8px;align-items:center;margin-top:14px;flex-wrap:wrap}
+.tel .fila-f{flex-wrap:nowrap;overflow-x:auto;margin-inline:-16px;padding-inline:16px;scrollbar-width:none}
+.at{height:40px;padding:0 14px;border-radius:999px;background:var(--s2);font-weight:600;font-size:13.5px;color:var(--text2);white-space:nowrap}
+.at em{font-style:normal;opacity:.7;margin-left:4px}
+.at.on{background:var(--acc);color:#fff}
+.at.nv{color:var(--verde);background:var(--verde-bg)}
+.at.nv.on{background:var(--verde);color:#fff}
+
+.lista{display:grid;margin-top:8px}
+.pro{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1.6fr) auto;gap:14px;align-items:center;padding:14px 10px;border-radius:14px;width:100%;text-align:left;transition:transform 120ms var(--ease)}
+.pro + .pro{box-shadow:0 -1px 0 var(--line)}
+.pro:active{transform:scale(.99)}
+@media (hover:hover) and (pointer:fine){.pro:hover{background:var(--s2)}}
+.pro b{display:flex;gap:8px;align-items:center;font-weight:700;min-width:0}
+.pro b span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pro small{display:block;font-size:12.5px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pro .c2{font-size:13px;color:var(--text2);min-width:0}
+.pro .c2 s{text-decoration:line-through;opacity:.7}
+.tel .pro{grid-template-columns:minmax(0,1fr) auto;padding:14px 4px;border-radius:0}
+.tel .pro .c2{grid-column:1 / -1}
+.nuevo{flex:none;font-size:10.5px;font-weight:800;letter-spacing:.04em;background:var(--verde);color:#fff;border-radius:999px;padding:2px 7px}
+.chip{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap;background:var(--s3);color:var(--text2)}
+.chip::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.rojo{background:var(--rojo-bg);color:var(--rojo)} .verde{background:var(--verde-bg);color:var(--verde)} .ambar{background:var(--ambar-bg);color:var(--ambar)} .azul{background:var(--azul-bg);color:var(--azul)} .gris{background:var(--s3);color:var(--text2)}
+.vacio{padding:30px 10px;text-align:center;color:var(--text2);font-size:14px}
+.vacio b{display:block;color:var(--text);font-size:16px;margin-bottom:2px}
+.mapa-fecha{margin-top:18px;padding:12px 14px;border-radius:14px;background:var(--s2);font-size:13px;color:var(--text2)}
+.mapa-fecha b{color:var(--text)}
+
+/* Pantallas del teléfono fuera de la app (simuladas) */
+.capa{position:absolute;inset:0;z-index:30;display:flex;flex-direction:column;transition:transform 320ms var(--ease),opacity 320ms var(--ease)}
+.capa.fuera{transform:translateX(-30%);opacity:0;pointer-events:none}
+.pc .capa{display:none}
+.chrome{background:var(--bg)}
+.ch-bar{display:flex;align-items:center;gap:10px;padding:14px 14px;border-bottom:1px solid var(--line)}
+.ch-bar span{flex:1;height:40px;border-radius:999px;background:var(--s2);display:flex;align-items:center;padding:0 14px;font-size:13px;color:var(--text2);overflow:hidden;white-space:nowrap}
+.ch-bar button{width:40px;height:40px;border-radius:50%;background:var(--s2);font-size:20px;font-weight:800}
+.ch-body{flex:1;padding:22px 18px;display:flex;flex-direction:column;gap:12px}
+.ch-body h4{margin:0;font-size:20px;font-weight:800;letter-spacing:-.02em}
+.ch-body p{margin:0;color:var(--text2);font-size:14px}
+.inst{padding:16px;border-radius:18px;background:var(--acc-bg);display:flex;gap:14px;align-items:center}
+.inst i{width:52px;height:52px;border-radius:14px;background:var(--acc);color:#fff;display:grid;place-items:center;font-style:normal;font-weight:800;font-size:10.5px;letter-spacing:.08em;flex:none}
+.inst div{flex:1;min-width:0;font-size:13px;color:var(--text2)}
+.inst b{display:block;color:var(--text);font-size:15px}
+.inst button{height:42px;padding:0 18px;border-radius:999px;background:var(--acc);color:#fff;font-weight:700}
+.ch-menu{position:absolute;right:12px;top:62px;background:var(--bg);border-radius:14px;box-shadow:var(--sombra);padding:6px;display:none;min-width:210px}
+.ch-menu.ver{display:block}
+.ch-menu button{display:block;width:100%;text-align:left;padding:12px 14px;border-radius:10px;font-size:14px;font-weight:600}
+.ch-menu button.pri{background:var(--acc-bg);color:var(--acc)}
+.wa{background:var(--chat)}
+.wa-cab{display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--bg);border-bottom:1px solid var(--line)}
+.wa-cab .ft{width:38px;height:38px;border-radius:50%;background:var(--s3);display:grid;place-items:center;font-weight:800;color:var(--text2)}
+.wa-cab b{display:block;font-size:15px} .wa-cab small{color:var(--text2);font-size:12px}
+.wa-chat{flex:1;padding:16px 12px;display:flex;flex-direction:column;gap:8px;overflow:auto}
+.burb{max-width:84%;background:var(--burbuja);border-radius:12px;padding:8px 10px;font-size:14px;box-shadow:0 1px 0 rgba(17,19,21,.08)}
+.burb time{display:block;text-align:right;font-size:11px;color:var(--text2)}
+.burb.yo{align-self:flex-end;background:var(--burbuja2)}
+.burb.link{cursor:pointer;transition:transform 120ms var(--ease)}
+.burb.link:active{transform:scale(.98)}
+.burb .lk{color:#0B6BCB;text-decoration:underline;overflow-wrap:anywhere}
+.burb .prev{margin:6px 0 4px;border-radius:8px;background:var(--s2);padding:8px;font-size:12.5px;color:var(--text2)}
+.burb .prev b{display:block;color:var(--text);font-size:13px}
+.burb.marcada{outline:3px solid rgba(27,58,158,.35)}
+.wa-pista{margin:auto 0 0;align-self:center;background:rgba(17,19,21,.72);color:#fff;font-size:12.5px;font-weight:600;padding:8px 14px;border-radius:999px}
+.menu{position:absolute;left:12px;right:12px;bottom:12px;background:var(--bg);border-radius:20px;box-shadow:var(--sombra);padding:8px;z-index:35;transform:translateY(120%);transition:transform 260ms var(--ease)}
+.menu.ver{transform:none}
+.menu h4{margin:6px 10px 8px;font-size:13px;color:var(--text2);font-weight:700}
+.menu .ops{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
+.menu .ap{display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 4px;border-radius:14px;font-size:12px;font-weight:600;transition:transform 120ms var(--ease)}
+.menu .ap:active{transform:scale(.95)}
+.menu .ap i{width:48px;height:48px;border-radius:14px;background:var(--s2);display:grid;place-items:center;font-style:normal;font-weight:800;color:var(--text2)}
+.menu .ap.empresa i{background:var(--acc);color:#fff;font-size:10px;letter-spacing:.08em}
+.menu .ap.empresa{color:var(--acc)}
+.menu .acc{display:flex;gap:6px;margin-top:6px}
+.menu .acc button{flex:1;height:44px;border-radius:12px;background:var(--s2);font-weight:700;font-size:13.5px}
+.menu .acc button.pri{background:var(--acc);color:#fff}
+.menu .nt{font-size:12px;color:var(--text2);margin:8px 10px 4px}
+
+/* Velo y hojas */
+.velo{position:absolute;inset:0;background:var(--velo);opacity:0;pointer-events:none;transition:opacity 220ms var(--ease);z-index:5}
+.velo.ver{opacity:1;pointer-events:auto}
+.velo.dos{z-index:7}
+.hoja{position:absolute;background:var(--bg);box-shadow:var(--sombra);display:flex;flex-direction:column;z-index:6;visibility:hidden;transition:transform 300ms var(--ease),visibility 0s linear 300ms}
+.hoja.dos{z-index:8}
+.hoja.ver{visibility:visible;transition:transform 300ms var(--ease),visibility 0s}
+.tel .hoja{left:0;right:0;bottom:0;height:94%;border-radius:26px 26px 0 0;transform:translateY(102%)}
+.tel .hoja.ver{transform:none}
+.pc .hoja{top:0;bottom:0;right:0;width:500px;transform:translateX(104%)}
+.pc .hoja.dos{width:760px}
+.pc .hoja.ver{transform:none}
+.asa{width:40px;height:5px;border-radius:3px;background:var(--s3);margin:8px auto 0;flex:none}
+.pc .asa{display:none}
+.h-cab{display:flex;align-items:flex-start;gap:12px;padding:14px 18px 10px;flex:none}
+.h-cab .tx{flex:1;min-width:0}
+.h-cab h3{margin:0;font-size:20px;font-weight:800;letter-spacing:-.02em;text-wrap:balance}
+.h-cab p{margin:2px 0 0;font-size:13px;color:var(--text2);overflow-wrap:anywhere}
+.x,.atras{width:40px;height:40px;border-radius:50%;background:var(--s2);font-size:20px;line-height:1;flex:none;transition:transform 120ms var(--ease)}
+.atras{font-size:18px}
+.x:active,.atras:active{transform:scale(.92)}
+.h-cuerpo{flex:1;overflow:auto;padding:4px 18px 18px;overscroll-behavior:contain}
+.h-pie{display:flex;gap:10px;padding:12px 18px 16px;border-top:1px solid var(--line);flex:none}
+.h-pie:empty{display:none}
+.btn{flex:1;height:48px;border-radius:999px;background:var(--acc);color:#fff;font-weight:700;white-space:nowrap;transition:transform 120ms var(--ease)}
+.btn.b2{background:var(--s2);color:var(--text)}
+.btn:active{transform:scale(.97)}
+
+.campo{margin-top:12px}
+.campo label{display:block;font-size:12.5px;font-weight:700;color:var(--text2);margin-bottom:6px}
+.campo label em{font-style:normal;font-weight:500}
+.campo .fila{display:flex;gap:8px}
+.campo input{flex:1;min-width:0;height:48px;border-radius:14px;border:1.5px solid var(--line);background:var(--bg);padding:0 14px;font:inherit;color:var(--text)}
+.campo input:focus{border-color:var(--acc)}
+.pegar{height:48px;padding:0 18px;border-radius:14px;background:var(--acc-bg);color:var(--acc);font-weight:700;white-space:nowrap;transition:transform 120ms var(--ease)}
+.pegar:active{transform:scale(.97)}
+.campo .ayuda{font-size:12.5px;color:var(--text2);margin-top:6px}
+.campo .err{font-size:12.5px;color:var(--rojo);font-weight:600;margin-top:6px}
+.otra{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.otra button{height:44px;padding:0 16px;border-radius:999px;border:1.5px solid var(--line);font-weight:600;font-size:13.5px;color:var(--text2);white-space:nowrap}
+.ejs{margin-top:18px}
+.ejs > span{display:block;font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
+.ej{display:flex;gap:10px;align-items:center;width:100%;text-align:left;padding:10px 0;font-size:13.5px}
+.ej + .ej{box-shadow:0 -1px 0 var(--line)}
+.ej span{flex:1;min-width:0;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ej b{font-weight:600;color:var(--text);white-space:nowrap}
+
+/* Resultado */
+.sk{border-radius:18px;background:var(--s2);height:96px;margin-top:6px;position:relative;overflow:hidden}
+.sk::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.7),transparent);transform:translateX(-100%);animation:brillo 1.1s infinite}
+.sk.b{height:230px;margin-top:10px} .sk.c{height:54px;margin-top:10px}
+@keyframes brillo{to{transform:translateX(100%)}}
+.lee{font-size:13px;color:var(--text2);margin-top:10px}
+.veredicto{padding:16px;border-radius:18px;display:grid;gap:4px}
+.veredicto b{font-size:22px;font-weight:800;letter-spacing:-.02em;line-height:1.15}
+.veredicto p{margin:0;font-size:14px}
+.veredicto small{font-size:12.5px;opacity:.85}
+.veredicto.verde{background:var(--verde-bg);color:var(--verde)}
+.veredicto.ambar{background:var(--ambar-bg);color:var(--ambar)}
+.veredicto.azul{background:var(--azul-bg);color:var(--azul)}
+.veredicto.rojo{background:var(--rojo-bg);color:var(--rojo)}
+.aviso{margin-top:10px;padding:12px 14px;border-radius:14px;border:1.5px solid var(--excl);font-size:13.5px}
+.aviso b{display:block}
+.aviso small{color:var(--text2)}
+.mapa{margin-top:12px;border-radius:18px;overflow:hidden;background:var(--mapa);position:relative}
+.mapa svg{display:block;width:100%;height:auto}
+.mapa .ley{position:absolute;left:10px;bottom:10px;display:flex;gap:6px;flex-wrap:wrap;right:10px}
+.mapa .ley span{background:rgba(255,255,255,.94);border-radius:999px;padding:3px 9px;font-size:11.5px;font-weight:600;display:flex;gap:5px;align-items:center}
+.mapa .ley i{width:9px;height:9px;border-radius:2px;display:block}
+.mapa .amplio{position:absolute;right:10px;top:10px;background:var(--bg);border-radius:999px;height:36px;padding:0 14px;font-size:13px;font-weight:700;color:var(--acc);box-shadow:0 2px 8px rgba(17,19,21,.12)}
+.cerca{margin-top:12px}
+.cerca > span{display:block;font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+.mdt{display:flex;gap:10px;align-items:center;padding:10px 0;font-size:14px}
+.mdt + .mdt{box-shadow:0 -1px 0 var(--line)}
+.mdt i{width:12px;height:12px;border-radius:3px;flex:none}
+.mdt span{flex:1;min-width:0}
+.mdt b{font-weight:700}
+.mdt small{display:block;font-size:12.5px;color:var(--text2)}
+.mdt time{font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.bloque{margin-top:14px;padding:14px;border-radius:16px;background:var(--s2);font-size:13.5px;color:var(--text2)}
+.bloque > b{display:block;color:var(--text);font-size:14.5px;margin-bottom:2px}
+.odoo{margin-top:10px;display:flex;gap:8px;align-items:stretch}
+.odoo code{flex:1;min-width:0;background:var(--bg);border-radius:12px;padding:10px 12px;font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:12.5px;color:var(--text);overflow-wrap:anywhere;border:1.5px solid var(--line)}
+.odoo button{padding:0 14px;border-radius:12px;background:var(--acc);color:#fff;font-weight:700;font-size:13px;white-space:nowrap}
+.odoo-n{margin-top:8px;font-size:12px}
+.plegar{display:flex;align-items:center;gap:10px;width:100%;text-align:left;margin-top:14px;padding:14px;border-radius:16px;border:1.5px solid var(--line);font-weight:700;font-size:14px}
+.plegar span{flex:1} .plegar small{display:block;font-weight:500;color:var(--text2);font-size:12.5px}
+.plegar i{font-style:normal;color:var(--text2);transition:transform 200ms var(--ease)}
+.plegar[aria-expanded="true"] i{transform:rotate(90deg)}
+.dos-c{display:grid;grid-template-columns:1fr 1fr;gap:0 10px}
+.tel .dos-c{grid-template-columns:1fr}
+.hist{margin-top:14px}
+.hist > span{display:block;font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+.mov{display:flex;gap:10px;padding:8px 0;font-size:13.5px}
+.mov::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--s3);margin-top:6px;flex:none}
+.mov.vd::before{background:var(--verde)} .mov.az::before{background:var(--acc)}
+.mov span{flex:1} .mov time{color:var(--text2);font-size:12px;white-space:nowrap}
+.cierre{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+.cierre button{flex:1;min-width:140px;height:44px;border-radius:999px;border:1.5px solid var(--line);font-weight:700;font-size:13.5px;white-space:nowrap}
+.grande{border-radius:18px;overflow:hidden;background:var(--mapa);position:relative}
+.grande svg{display:block;width:100%;height:auto}
+.capas{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.capas button{height:36px;padding:0 12px;border-radius:999px;border:1.5px solid var(--line);font-size:12.5px;font-weight:700;color:var(--text2);display:flex;gap:6px;align-items:center}
+.capas button i{width:10px;height:10px;border-radius:2px}
+.capas button[aria-pressed="false"]{opacity:.45}
+.toast{position:absolute;left:50%;bottom:86px;transform:translate(-50%,12px);background:var(--text);color:#fff;padding:12px 18px;border-radius:999px;font-weight:700;font-size:13.5px;opacity:0;transition:opacity 200ms var(--ease),transform 200ms var(--ease);z-index:40;pointer-events:none;white-space:nowrap;max-width:92%;overflow:hidden;text-overflow:ellipsis}
+.toast.ver{opacity:1;transform:translate(-50%,0)}
+.explica{max-width:1180px;margin:16px auto 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.explica div{background:var(--bg);border-radius:16px;padding:14px 16px;font-size:13.5px;color:var(--text2);min-width:0}
+.explica b{display:block;color:var(--text);font-size:14.5px;margin-bottom:4px}
+@media (prefers-reduced-motion:reduce){.hoja,.velo,.capa,.menu,.btn,.pro{transition:none}.sk::after{animation:none}}
+</style>
+
+<div class="guia">
+  <div class="tx"><h1>Maqueta F1 (versión 2): Factibilidad desde WhatsApp</h1><p>El líder comparte la ubicación a la app y ve si hay red, con el mapa de los MDT cercanos. Cada consulta queda guardada sola y se vuelve a revisar con cada mapa nuevo.</p></div>
+  <div class="modo" role="group" aria-label="Tamaño"><button type="button" data-modo="and">Android</button><button type="button" data-modo="ios">iPhone</button><button type="button" data-modo="pc">Web</button></div>
+</div>
+<ul class="prueba" id="pasos"></ul>
+
+<div class="app" id="app">
+  <div class="barra"><b>EMPRESA</b><span>Empresas</span><nav><i>Inicio</i><i>Comisiones</i><i>Clientes</i><i class="on">Factibilidad</i></nav><button type="button" class="camp" id="camp" aria-label="Avisos">🔔<u id="campN" hidden>2</u></button><span class="av">NL</span></div>
+  <div class="cuerpo">
+    <div class="cab"><h2>Factibilidad</h2><button type="button" class="nueva" data-nueva>Nueva consulta</button></div>
+    <p class="cuenta">Tus consultas. Se revisan solas con cada mapa nuevo. Así lo ve Ninibeth, líder.</p>
+    <div id="banner"></div>
+    <div class="fila-f" id="atajos"></div>
+    <div class="lista" id="lista"></div>
+    <div class="mapa-fecha" id="fechaMapa"></div>
+  </div>
+  <div class="navab"><i>Inicio</i><i>Clientes</i><i class="on">Factibilidad</i></div>
+  <button type="button" class="fab" data-nueva>+ Consultar</button>
+
+  <!-- Android: instalar una sola vez desde Chrome -->
+  <div class="capa chrome" id="chrome">
+    <div class="ch-bar"><span>gbxxzz00.github.io/A_E_V2</span><button type="button" id="chPuntos" aria-label="Menú de Chrome">⋮</button></div>
+    <div class="ch-menu" id="chMenu"><button type="button">Nueva pestaña</button><button type="button" class="pri" data-instalar>Instalar app</button><button type="button">Compartir</button></div>
+    <div class="ch-body">
+      <h4>Una sola vez: instala Empresa</h4>
+      <p>No viene de Play Store. Se instala desde Chrome y queda como una app más, con su ícono. Con eso aparece en Compartir de WhatsApp.</p>
+      <div class="inst"><i>EMPRESA</i><div><b>Empresa Empresas</b>Toca Instalar o usa el menú ⋮ y luego Instalar app</div><button type="button" data-instalar>Instalar</button></div>
+      <p style="font-size:12.5px">En iPhone es parecido: en Safari, Compartir y luego Agregar a inicio. Ahí no sale en Compartir, pero sí recibe avisos.</p>
+    </div>
+  </div>
+
+  <!-- WhatsApp simulado -->
+  <div class="capa wa fuera" id="wa">
+    <div class="wa-cab"><span class="ft">CP</span><span><b>Carlos Pérez · Panadería La Espiga</b><small>en línea</small></span></div>
+    <div class="wa-chat">
+      <div class="burb">Buenas, ¿me pueden instalar internet en el local? Te paso la ubicación<time>3:12 p. m.</time></div>
+      <div class="burb link" id="msgLink"><span class="lk">https://maps.app.goo.gl/q8Wd3sKbL1</span><div class="prev"><b>Panadería La Espiga</b>Machiques, Zulia</div><time>3:12 p. m.</time></div>
+      <div class="burb yo">Listo, ya te digo si hay cobertura<time>3:13 p. m.</time></div>
+      <p class="wa-pista" id="pista">Mantén presionado el enlace</p>
+    </div>
+    <div class="menu" id="menu"></div>
+  </div>
+
+  <div class="velo" id="velo"></div>
+  <section class="hoja" id="hoja" role="dialog" aria-modal="true" aria-labelledby="tH">
+    <div class="asa"></div>
+    <div class="h-cab"><div class="tx"><h3 id="tH">Nueva consulta</h3><p id="sH"></p></div><button type="button" class="x" data-cierra aria-label="Cerrar">×</button></div>
+    <div class="h-cuerpo" id="cH"></div>
+    <div class="h-pie" id="pH"></div>
+  </section>
+  <div class="velo dos" id="velo2"></div>
+  <section class="hoja dos" id="hMapa" role="dialog" aria-modal="true" aria-labelledby="tM">
+    <div class="asa"></div>
+    <div class="h-cab"><button type="button" class="atras" data-cierra2 aria-label="Volver al resultado">←</button><div class="tx"><h3 id="tM">Mapa amplio</h3><p id="sM"></p></div><button type="button" class="x" data-cierra2 aria-label="Cerrar">×</button></div>
+    <div class="h-cuerpo" id="cM"></div>
+  </section>
+  <div class="toast" id="toast" role="status"></div>
+</div>
+
+<div class="explica">
+  <div><b>Se guarda sola</b>Toda consulta queda en la lista con su resultado. No hay que elegir etiqueta. Nombre, teléfono y RIF son opcionales.</div>
+  <div><b>Se revisa sola</b>Cuando se sube un mapa nuevo, la app revisa todas las consultas abiertas. Si alguna cambia, el líder recibe un aviso y la ve marcada como Nuevo.</div>
+  <div><b>Se cierra sola</b>Si el líder puso el RIF y aparece una orden de Odoo con ese RIF, la consulta pasa a Vendida. También puede cerrarla él con Ya no interesa.</div>
+</div>
+
+<script>
+(function(){
+  const $ = (id) => document.getElementById(id);
+  let t0; function toast(m){ const t = $('toast'); t.textContent = m; t.classList.add('ver'); clearTimeout(t0); t0 = setTimeout(() => t.classList.remove('ver'), 2200); }
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  let modo = 'and'; let at = 'todas'; let actual = null; let mapaNuevo = false; let capas = { red:true, dis:true, exc:true };
+
+  const PASOS = {
+    and: ['Instala Empresa desde Chrome (una sola vez)', 'En WhatsApp mantén presionado el enlace', 'Compartir y elige Empresa', 'Toca Mapa amplio'],
+    ios: ['En WhatsApp mantén presionado el enlace y toca Copiar', 'Abre Empresa y toca Pegar', 'Toca Mapa amplio'],
+    pc:  ['Toca Nueva consulta y prueba un ejemplo', 'Abre Mapa amplio', 'Pulsa Simular mapa nuevo y mira la lista']
+  };
+
+  const EST = {
+    red:  { c:'verde', t:'Hay red' },
+    exc:  { c:'ambar', t:'Posible excepción' },
+    esp:  { c:'azul',  t:'En espera' },
+    sin:  { c:'rojo',  t:'Sin red' },
+    ven:  { c:'gris',  t:'Vendida' },
+    cer:  { c:'gris',  t:'Cerrada' }
+  };
+  const QUE = {
+    red: 'Se puede vender. La zona tiene red activa.',
+    exc: 'Está muy cerca de la red, pero fuera. Confirma con ingeniería antes de vender.',
+    esp: 'Todavía no hay red aquí. Queda en seguimiento: te avisamos si un mapa nuevo trae red.',
+    sin: 'No hay red cerca. Queda guardada por si la red llega más adelante.'
+  };
+
+  // Mapa del 18/09. Coordenadas del dibujo: 0 a 320 x 0 a 220.
+  const ZONAS = [
+    { id:'MDT013', e:'red', cap:792, p:'60,62 196,48 226,124 168,164 76,152' },
+    { id:'MDT026', e:'red', cap:299, p:'206,20 300,30 296,96 232,104' },
+    { id:'MDT025', e:'red', cap:410, p:'10,160 70,158 82,214 6,216' },
+    { id:'MDT031', e:'dis', cap:0,   p:'240,130 312,140 306,214 246,210' },
+    { id:'MDT008', e:'exc', cap:260, p:'96,172 170,176 166,216 92,216', al:'Aliado Uno' }
+  ];
+  const CASOS = {
+    espiga: { link:'https://maps.app.goo.gl/q8Wd3sKbL1', nombre:'Panadería La Espiga', lugar:'Machiques, Zulia', coord:'10.0601, -72.5524', e:'red', mdt:'MDT013', cap:'792 hogares', dist:'Dentro de la zona', pin:[150,104],
+      cer:[['MDT013','red','Dentro'],['MDT026','red','620 m'],['MDT008','exc','1,1 km'],['MDT031','dis','1,4 km']] },
+    ferre:  { link:'https://maps.app.goo.gl/Zp2LkW9mQ4', nombre:'Ferretería El Tornillo', lugar:'Machiques, Zulia', coord:'10.0655, -72.5398', e:'exc', mdt:'MDT026', cap:'299 hogares', dist:'240 m del borde', pin:[232,118], linea:[232,118,246,98,'240 m'],
+      cer:[['MDT026','red','240 m'],['MDT013','red','310 m'],['MDT031','dis','Dentro del diseño'],['MDT008','exc','900 m']] },
+    posada: { link:'10.0577, -72.5352', nombre:'Posada Los Cocos', lugar:'Machiques, Zulia', coord:'10.0577, -72.5352', e:'esp', mdt:'MDT031', cap:'Zona en diseño', dist:'Red más cercana a 1,2 km', pin:[278,176],
+      cer:[['MDT031','dis','Dentro'],['MDT026','red','1,2 km'],['MDT013','red','1,6 km'],['MDT008','exc','2,1 km']] },
+    clinica:{ link:'https://maps.app.goo.gl/Hr7tYv2NcX', nombre:'Clínica San Benito', lugar:'Machiques, Zulia', coord:'10.0512, -72.5501', e:'red', mdt:'MDT008', cap:'260 hogares', dist:'Dentro de la zona', pin:[132,196], al:'Aliado Uno',
+      cer:[['MDT008','exc','Dentro'],['MDT013','red','150 m'],['MDT025','red','700 m'],['MDT031','dis','2,0 km']] }
+  };
+
+  let PRO = [
+    { n:'Posada Los Cocos', s:'Machiques · hace 3 semanas', k:'posada', e:'esp', rev:'Revisada con el mapa del 18/09' },
+    { n:'Taller Hermanos Ríos', s:'Coro · hace 5 días', k:'posada', e:'esp', rev:'Revisada con el mapa del 18/09', mdt:'MFC052 · 1,2 km de la red' },
+    { n:'Ferretería El Tornillo', s:'Machiques · hace 1 semana', k:'ferre', e:'exc', rev:'Revisada con el mapa del 18/09' },
+    { n:'Panadería Los Andes', s:'Machiques · hace 2 días', k:'espiga', e:'red', rev:'MDT013 · dentro de la zona' },
+    { n:'Sin nombre · 10.4012, -71.4520', s:'Cabimas · hace 1 mes', k:'ferre', e:'sin', rev:'Revisada con el mapa del 18/09', mdt:'Red a 4,8 km' },
+    { n:'Licorería La Fuente', s:'Cabimas · hace 1 mes', k:'espiga', e:'ven', rev:'Orden de Odoo 4521 · 22/09' }
+  ];
+  const AT = [
+    ['nuevo','Ahora con red',(p) => p.nuevo, 'nv'],
+    ['todas','Abiertas',(p) => p.e !== 'ven' && p.e !== 'cer'],
+    ['esp','En espera',(p) => p.e === 'esp'],
+    ['exc','Excepción',(p) => p.e === 'exc'],
+    ['cerr','Cerradas',(p) => p.e === 'ven' || p.e === 'cer']
+  ];
+
+  function lista(){
+    $('fechaMapa').innerHTML = mapaNuevo ? 'Mapa de red del <b>9 de octubre</b> (subido hoy). 1.974 zonas.' : 'Mapa de red del <b>18 de septiembre</b>. 1.961 zonas.';
+    const nuevos = PRO.filter((p) => p.nuevo).length;
+    $('banner').innerHTML = nuevos ? '<div class="cambio"><div class="tx"><b>' + nuevos + ' de tus consultas ahora tienen red</b>Llegó el mapa del 9 de octubre. Llama al cliente.</div><button type="button" data-at="nuevo">Ver</button></div>' : '';
+    $('campN').hidden = !nuevos; $('campN').textContent = nuevos;
+    $('atajos').innerHTML = AT.filter((a) => a[0] !== 'nuevo' || nuevos).map((a) => '<button type="button" class="at' + (a[3] ? ' ' + a[3] : '') + (a[0] === at ? ' on' : '') + '" data-at="' + a[0] + '">' + a[1] + '<em>' + PRO.filter(a[2]).length + '</em></button>').join('');
+    const pasa = (AT.find((a) => a[0] === at) || AT[1])[2];
+    const fil = PRO.map((p, i) => [p, i]).filter((x) => pasa(x[0]));
+    $('lista').innerHTML = fil.length ? fil.map(([p, i]) => '<button type="button" class="pro" data-pro="' + i + '"><span><b>' + (p.nuevo ? '<em class="nuevo">NUEVO</em>' : '') + '<span>' + esc(p.n) + '</span></b><small>' + esc(p.s) + '</small></span><span class="c2">' + (p.antes ? '<s>' + esc(EST[p.antes].t) + '</s> · ' : '') + esc(p.mdt ? p.mdt + ' · ' + p.rev : p.rev) + '</span><span class="chip ' + EST[p.e].c + '">' + esc(EST[p.e].t) + '</span></button>').join('')
+      : '<div class="vacio"><b>Nada por aquí</b>Cuando compartas una ubicación, la consulta aparece en esta lista.</div>';
+  }
+  function pasos(){ $('pasos').innerHTML = PASOS[modo].map((p, i) => '<li><b>' + (i + 1) + '.</b> ' + p + '</li>').join('') + '<li style="background:none;padding:0"><button type="button" class="sim" data-simular>' + (mapaNuevo ? 'Volver al mapa del 18/09' : 'Simular mapa nuevo') + '</button></li>'; }
+
+  function ponModo(m){
+    modo = m;
+    $('app').className = 'app ' + (m === 'pc' ? 'pc' : 'tel');
+    document.querySelectorAll('[data-modo]').forEach((b) => b.classList.toggle('on', b.dataset.modo === m));
+    ver(false); ver2(false); $('menu').classList.remove('ver'); $('msgLink').classList.remove('marcada'); $('pista').hidden = false; $('chMenu').classList.remove('ver');
+    $('chrome').classList.toggle('fuera', m !== 'and');
+    $('wa').classList.toggle('fuera', m === 'pc' || m === 'and');
+    pasos();
+  }
+  function ver(si){ $('hoja').classList.toggle('ver', si); $('velo').classList.toggle('ver', si); }
+  function ver2(si){ $('hMapa').classList.toggle('ver', si); $('velo2').classList.toggle('ver', si); }
+
+  function formulario(pegado){
+    $('tH').textContent = 'Nueva consulta'; $('sH').textContent = 'Comparte, pega o usa tu ubicación';
+    const tel = modo !== 'pc';
+    $('cH').innerHTML =
+      (modo === 'ios' && pegado ? '<div class="bloque" style="background:var(--acc-bg);color:var(--text)"><b style="color:var(--acc)">Tienes un enlace copiado</b>Toca Pegar y consulta sola.</div>' : '') +
+      '<div class="campo"><label for="enl">Enlace de Google Maps o coordenadas</label><div class="fila"><input id="enl" type="text" inputmode="url" autocomplete="off"><button type="button" class="pegar" data-pegar>Pegar</button></div><div class="ayuda">Ejemplos: https://maps.app.goo.gl/… o 10.06, -72.55</div><div class="err" id="err" hidden></div></div>' +
+      (tel ? '<div class="otra"><button type="button" data-ubic>Usar mi ubicación</button></div>' : '') +
+      '<div class="ejs"><span>Prueba un ejemplo</span>' + Object.keys(CASOS).map((k) => '<button type="button" class="ej" data-ej="' + k + '"><b>' + esc(CASOS[k].nombre) + '</b><span>' + esc(CASOS[k].link) + '</span></button>').join('') + '</div>';
+    $('pH').innerHTML = '<button type="button" class="btn" data-consultar>Consultar</button>';
+    ver(true);
+  }
+
+  function cargando(k, idx){
+    actual = { k:k, idx:idx };
+    $('tH').textContent = 'Consultando'; $('sH').textContent = CASOS[k].link;
+    $('cH').innerHTML = '<div class="sk"></div><div class="sk b"></div><div class="sk c"></div><p class="lee">Leyendo el enlace y buscando los MDT cercanos…</p>';
+    $('pH').innerHTML = '';
+    ver(true);
+    setTimeout(() => resultado(k, idx), 850);
+  }
+
+  function color(e){ return e === 'red' ? 'var(--zona)' : e === 'dis' ? 'var(--diseno)' : 'var(--excl)'; }
+  function centro(p){ const pts = p.split(' ').map((s) => s.split(',').map(Number)); const x = pts.reduce((a, b) => a + b[0], 0) / pts.length; const y = pts.reduce((a, b) => a + b[1], 0) / pts.length; return [x, y]; }
+  function mapaSVG(c, grande){
+    const z = ZONAS.filter((q) => (q.e === 'red' && capas.red) || (q.e === 'dis' && capas.dis) || (q.e === 'exc' && capas.exc) || !grande);
+    let s = '<svg viewBox="0 0 320 220" role="img" aria-label="Mapa de MDT cercanos">' +
+      '<rect width="320" height="220" fill="var(--mapa)"/>' +
+      '<path d="M0 78 L320 44 M0 168 L320 150 M92 0 L118 220 M222 0 L244 220" stroke="var(--calle)" stroke-width="7" fill="none"/>';
+    if(grande){ s += '<circle cx="' + c.pin[0] + '" cy="' + c.pin[1] + '" r="92" fill="none" stroke="var(--text2)" stroke-width="1" stroke-dasharray="4 4"/><text x="' + (c.pin[0] + 66) + '" y="' + (c.pin[1] - 70) + '" font-size="9" fill="var(--text2)" font-family="Inter,sans-serif">2 km</text>'; }
+    z.forEach((q) => { const col = color(q.e); const m = centro(q.p);
+      s += '<polygon points="' + q.p + '" fill="' + col + '" fill-opacity="' + (q.e === 'dis' ? '.30' : '.36') + '" stroke="' + col + '" stroke-width="' + (q.id === c.mdt ? 3.5 : 2) + '"/>';
+      s += '<g font-family="Inter,sans-serif" font-weight="700"><rect x="' + (m[0] - 25) + '" y="' + (m[1] - 9) + '" width="50" height="17" rx="8" fill="#fff" fill-opacity=".92"/><text x="' + m[0] + '" y="' + (m[1] + 3.5) + '" font-size="9.5" text-anchor="middle" fill="#111315">' + q.id + '</text></g>';
+      if(grande && q.cap){ s += '<text x="' + m[0] + '" y="' + (m[1] + 20) + '" font-size="8.5" text-anchor="middle" fill="#111315" font-family="Inter,sans-serif">' + q.cap + ' HP</text>'; }
+    });
+    if(c.linea){ s += '<path d="M' + c.linea[0] + ' ' + c.linea[1] + ' L' + c.linea[2] + ' ' + c.linea[3] + '" stroke="#8A5A00" stroke-width="2.5" stroke-dasharray="5 4"/><text x="' + (c.linea[2] + 6) + '" y="' + (c.linea[3] + 14) + '" font-size="10.5" font-weight="800" fill="#8A5A00" font-family="Inter,sans-serif">' + c.linea[4] + '</text>'; }
+    const pc = c.e === 'red' ? '#11734B' : c.e === 'exc' ? '#8A5A00' : c.e === 'esp' ? '#1B3A9E' : '#C0271B';
+    s += '<g transform="translate(' + (c.pin[0] - 11) + ',' + (c.pin[1] - 30) + ')"><path d="M11 0C4.9 0 0 4.9 0 11c0 8.25 11 19 11 19s11-10.75 11-19C22 4.9 17.1 0 11 0z" fill="' + pc + '" stroke="#fff" stroke-width="1.5"/><circle cx="11" cy="11" r="4" fill="#fff"/></g></svg>';
+    return s;
+  }
+  function ley(){ return '<span><i style="background:var(--zona)"></i>Con red</span><span><i style="background:var(--excl)"></i>Exclusiva aliado</span><span><i style="background:var(--diseno)"></i>En diseño</span>'; }
+  function cercanos(c){
+    return '<div class="cerca"><span>MDT cercanos</span>' + c.cer.map((m) => { const z = ZONAS.find((q) => q.id === m[0]);
+      const tx = m[1] === 'red' ? 'Con red' : m[1] === 'dis' ? 'En diseño' : 'Exclusiva de ' + (z && z.al ? z.al : 'aliado');
+      return '<div class="mdt"><i style="background:' + color(m[1]) + '"></i><span><b>' + m[0] + '</b><small>' + tx + (z && z.cap ? ' · ' + z.cap + ' hogares' : '') + '</small></span><time>' + m[2] + '</time></div>'; }).join('') + '</div>';
+  }
+
+  function resultado(k, idx){
+    const c = CASOS[k];
+    const p = idx != null ? PRO[idx] : null;
+    const e = p ? (p.e === 'ven' || p.e === 'cer' ? c.e : p.e) : c.e;
+    const st = EST[e];
+    const nom = p ? p.n : '';
+    $('tH').textContent = nom && nom.indexOf('Sin nombre') < 0 ? nom : c.nombre;
+    $('sH').textContent = c.lugar + ' · ' + c.coord;
+    const rif = p && p.rif ? p.rif : '';
+    const nomOdoo = (nom && nom.indexOf('Sin nombre') < 0 ? nom : c.nombre).toUpperCase();
+    const odoo = 'INST. PROMO PYME ' + nomOdoo + ' ' + (rif || 'J000000000');
+    $('cH').innerHTML =
+      (p && p.nuevo ? '<div class="bloque" style="background:var(--verde-bg);color:var(--verde);margin:0 0 10px"><b style="color:var(--verde)">Cambió con el mapa del 9 de octubre</b>Antes: ' + esc(EST[p.antes].t) + '. Ahora la zona tiene red.</div>' : '') +
+      (p && p.e === 'ven' ? '<div class="bloque" style="margin:0 0 10px"><b>Vendida</b>Se cerró sola: apareció la orden de Odoo 4521 con este RIF el 22/09.</div>' : '') +
+      '<div class="veredicto ' + st.c + '"><b>' + esc(st.t) + '</b><p>' + esc(QUE[e]) + '</p><small>MDT ' + esc(c.mdt) + ' · ' + esc(c.dist) + ' · ' + esc(c.cap) + '</small></div>' +
+      (c.al ? '<div class="aviso"><b>Zona exclusiva de ' + esc(c.al) + '</b><small>Se puede instalar. Solo ten en cuenta que esa zona tiene aliado asignado.</small></div>' : '') +
+      '<div class="mapa">' + mapaSVG(c, false) + '<div class="ley">' + ley() + '</div><button type="button" class="amplio" data-amplio>Mapa amplio</button></div>' +
+      cercanos(c) +
+      (e === 'red' ? '<div class="bloque"><b>Texto para la orden de Odoo</b>Cópialo al crear la orden. El nodo ' + esc(c.mdt) + ' lo pone Odoo.<div class="odoo"><code id="txOdoo">' + esc(odoo) + '</code><button type="button" data-copiaodoo>Copiar</button></div><div class="odoo-n">' + (rif ? 'RIF sin guiones, con su letra.' : 'Pon el RIF del cliente en lugar de J000000000, sin guiones.') + ' Si la orden la crea Patricia, agrega al final tu código de vendedor.</div></div>' : '') +
+      (e !== 'red' ? '<div class="bloque"><b>Queda en seguimiento</b>Cada vez que se suba un mapa nuevo la revisamos. Si cambia, te llega un aviso.</div>' : '') +
+      '<button type="button" class="plegar" data-plegar aria-expanded="false"><span>Datos del cliente<small>Opcional. Con el RIF se cierra sola cuando aparezca en Odoo.</small></span><i>›</i></button>' +
+      '<div id="datosCli" hidden><div class="campo"><label for="gNom">Nombre <em>(opcional)</em></label><div class="fila"><input id="gNom" type="text" value="' + esc(nom && nom.indexOf('Sin nombre') < 0 ? nom : '') + '"></div></div>' +
+      '<div class="dos-c"><div class="campo"><label for="gTel">Teléfono <em>(opcional)</em></label><div class="fila"><input id="gTel" type="tel" inputmode="tel"></div></div><div class="campo"><label for="gRif">RIF <em>(opcional)</em></label><div class="fila"><input id="gRif" type="text" value="' + esc(rif) + '"></div></div></div></div>' +
+      (p ? '<div class="hist"><span>Historial</span>' + (p.nuevo ? '<div class="mov vd"><span>Mapa del 9/10: pasó a <b>Hay red</b></span><time>Hoy</time></div>' : '') + '<div class="mov"><span>Mapa del 18/09: ' + esc(EST[p.antes || e].t) + '</span><time>19/09</time></div><div class="mov az"><span>Consultada por Ninibeth</span><time>' + esc(p.s.split('· ')[1] || '') + '</time></div></div>' : '') +
+      (p && p.e !== 'ven' && p.e !== 'cer' ? '<div class="cierre"><button type="button" data-cerrar="ven">Ya lo vendí</button><button type="button" data-cerrar="cer">Ya no interesa</button></div>' : '');
+    $('pH').innerHTML = '<button type="button" class="btn b2" data-copiar>Copiar para el cliente</button><button type="button" class="btn" data-listo>Listo</button>';
+    if(idx == null){
+      PRO.unshift({ n:c.nombre, s:c.lugar.split(',')[0] + ' · ahora', k:k, e:c.e, rev: c.e === 'red' ? c.mdt + ' · ' + c.dist.toLowerCase() : 'Revisada con el mapa del 18/09' });
+      actual.idx = 0; lista();
+    }
+  }
+
+  function mapaAmplio(){
+    const c = CASOS[actual.k];
+    $('tM').textContent = 'Mapa amplio'; $('sM').textContent = 'MDT a menos de 2 km de ' + c.nombre;
+    $('cM').innerHTML = '<div class="grande">' + mapaSVG(c, true) + '</div>' +
+      '<div class="capas"><button type="button" data-capa="red" aria-pressed="' + capas.red + '"><i style="background:var(--zona)"></i>Con red</button><button type="button" data-capa="exc" aria-pressed="' + capas.exc + '"><i style="background:var(--excl)"></i>Exclusiva aliado</button><button type="button" data-capa="dis" aria-pressed="' + capas.dis + '"><i style="background:var(--diseno)"></i>En diseño</button><button type="button" data-sat>Vista satélite</button></div>' +
+      cercanos(c) + '<div class="bloque">En la app real es un mapa de verdad: se mueve, hace zoom y tiene vista satélite. Tocar una zona muestra su MDT, capacidad y a qué distancia está.</div>';
+    ver2(true);
+  }
+
+  function simular(){
+    mapaNuevo = !mapaNuevo;
+    PRO.forEach((p) => {
+      if(mapaNuevo && (p.n === 'Posada Los Cocos' || p.n === 'Ferretería El Tornillo')){ p.antes = p.e; p.e = 'red'; p.nuevo = true; p.rev = 'Revisada con el mapa del 9/10'; }
+      else if(!mapaNuevo && p.nuevo){ p.e = p.antes; delete p.antes; delete p.nuevo; p.rev = 'Revisada con el mapa del 18/09'; }
+      else if(p.e === 'esp' || p.e === 'exc' || p.e === 'sin') p.rev = mapaNuevo ? 'Revisada con el mapa del 9/10' : 'Revisada con el mapa del 18/09';
+    });
+    at = mapaNuevo ? 'nuevo' : 'todas'; ver(false); ver2(false); lista(); pasos();
+    toast(mapaNuevo ? 'Mapa nuevo: 2 consultas ahora tienen red. Avisos enviados' : 'Volvió el mapa del 18/09');
+  }
+
+  function menuAndroid(){
+    $('menu').innerHTML = '<h4>Compartir enlace</h4><div class="ops"><button type="button" class="ap empresa" data-compartir><i>EMPRESA</i>Empresa</button><button type="button" class="ap" data-nada><i>M</i>Maps</button><button type="button" class="ap" data-nada><i>G</i>Gmail</button><button type="button" class="ap" data-nada><i>D</i>Drive</button></div><p class="nt">Empresa sale aquí porque la instalaste desde Chrome.</p>';
+    $('menu').classList.add('ver');
+  }
+  function menuIos(){
+    $('menu').innerHTML = '<h4>Enlace</h4><div class="acc"><button type="button" class="pri" data-copiarlink>Copiar</button><button type="button" data-nada>Abrir</button><button type="button" data-nada>Reenviar</button></div><p class="nt">Copia el enlace y luego abre Empresa.</p>';
+    $('menu').classList.add('ver');
+  }
+  function copiar(txt, ok){ if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(txt).then(() => toast(ok), () => toast('Selecciona el texto para copiarlo')); } else toast('Selecciona el texto para copiarlo'); }
+
+  document.addEventListener('click', (e) => { const t = e.target; let b;
+    if((b = t.closest('[data-modo]'))){ ponModo(b.dataset.modo); return; }
+    if(t.closest('[data-simular]')){ simular(); return; }
+    if(t.closest('#chPuntos')){ $('chMenu').classList.toggle('ver'); return; }
+    if(t.closest('[data-instalar]')){ $('chMenu').classList.remove('ver'); toast('Empresa instalada en tu teléfono'); $('chrome').classList.add('fuera'); $('wa').classList.remove('fuera'); return; }
+    if(t.closest('#msgLink')){ $('msgLink').classList.add('marcada'); $('pista').hidden = true; modo === 'ios' ? menuIos() : menuAndroid(); return; }
+    if(t.closest('[data-compartir]')){ $('menu').classList.remove('ver'); $('wa').classList.add('fuera'); setTimeout(() => cargando('espiga'), 250); return; }
+    if(t.closest('[data-copiarlink]')){ $('menu').classList.remove('ver'); $('wa').classList.add('fuera'); toast('Enlace copiado'); setTimeout(() => formulario(true), 450); return; }
+    if(t.closest('[data-nada]')){ toast('En la maqueta solo funciona Empresa'); return; }
+    if(t.closest('[data-cierra2]') || t === $('velo2')){ ver2(false); return; }
+    if(t.closest('[data-cierra]') || t === $('velo')){ ver(false); return; }
+    if(t.closest('[data-listo]')){ ver(false); toast('Guardada en tu lista'); return; }
+    if(t.closest('[data-nueva]')){ formulario(false); return; }
+    if((b = t.closest('[data-ej]'))){ cargando(b.dataset.ej); return; }
+    if(t.closest('[data-pegar]')){ $('enl').value = CASOS.espiga.link; cargando('espiga'); return; }
+    if(t.closest('[data-ubic]')){ toast('Pide permiso de ubicación la primera vez'); setTimeout(() => cargando('espiga'), 600); return; }
+    if(t.closest('[data-consultar]')){ const v = ($('enl').value || '').trim(); const er = $('err');
+      if(!v){ er.textContent = 'Pega un enlace o escribe las coordenadas.'; er.hidden = false; return; }
+      if(!/maps|goo\.gl|^-?\d+(\.\d+)?\s*[, ]\s*-?\d+(\.\d+)?$/i.test(v)){ er.textContent = 'Eso no es un enlace de mapa ni coordenadas. Ejemplo: 10.06, -72.55'; er.hidden = false; return; }
+      cargando('espiga'); return; }
+    if(t.closest('[data-amplio]')){ mapaAmplio(); return; }
+    if((b = t.closest('[data-capa]'))){ capas[b.dataset.capa] = !capas[b.dataset.capa]; mapaAmplio(); return; }
+    if(t.closest('[data-sat]')){ toast('En la app cambia a vista satélite'); return; }
+    if((b = t.closest('[data-plegar]'))){ const ab = b.getAttribute('aria-expanded') !== 'true'; b.setAttribute('aria-expanded', ab); $('datosCli').hidden = !ab; return; }
+    if(t.closest('[data-copiaodoo]')){ copiar($('txOdoo').textContent, 'Texto para Odoo copiado'); return; }
+    if(t.closest('[data-copiar]')){ const c = CASOS[actual.k]; const p = PRO[actual.idx]; const st = EST[p && p.e !== 'ven' && p.e !== 'cer' ? p.e : c.e];
+      copiar(st.t === 'Hay red' ? 'Buenas noticias: en su ubicación hay cobertura de Empresa. ¿Le parece si avanzamos con la instalación?' : 'Por ahora su ubicación no tiene cobertura confirmada. La dejamos registrada y le avisamos apenas haya red.', 'Mensaje copiado para WhatsApp'); return; }
+    if((b = t.closest('[data-cerrar]'))){ const p = PRO[actual.idx]; p.e = b.dataset.cerrar; p.nuevo = false; p.rev = b.dataset.cerrar === 'ven' ? 'Marcada como vendida hoy' : 'Cerrada hoy'; ver(false); lista(); toast(b.dataset.cerrar === 'ven' ? 'Marcada como vendida' : 'Cerrada. Ya no se revisa'); return; }
+    if((b = t.closest('[data-pro]'))){ const i = +b.dataset.pro; const p = PRO[i]; const k = p.nuevo ? p.k : p.k; cargando(k, i); return; }
+    if((b = t.closest('[data-at]'))){ at = b.dataset.at; lista(); return; }
+    if(t.closest('#camp')){ if(PRO.some((p) => p.nuevo)){ at = 'nuevo'; lista(); toast('Te llevó a Ahora con red'); } else toast('Sin avisos nuevos'); return; }
+  });
+  document.addEventListener('keydown', (e) => {
+    if(e.key === 'Escape'){ if($('hMapa').classList.contains('ver')) ver2(false); else ver(false); }
+    if(e.key === 'Enter' && document.activeElement && document.activeElement.id === 'enl'){ const btn = document.querySelector('[data-consultar]'); if(btn) btn.click(); }
+  });
+  lista(); ponModo(window.innerWidth < 900 ? 'and' : 'pc');
+})();
+</script>
+
+</body></html>
