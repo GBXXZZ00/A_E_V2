@@ -96,6 +96,7 @@ Sin nombres reales: el repo es público. "Analista Senior" es el responsable de 
 - Referir: desde el resultado "Cliente en cartera" (sin escribir) o desde el inicio escribiendo el RIF. Vale el primero que lo refirió.
 - Correos con hilo (aprobación incluida) y notificaciones al teléfono: PENDIENTE SUPER URGENTE, en la tarea de notificaciones, antes de abrir la app a los aliados.
 - Factibilidad para aliados: sí la usarán, pero después.
+- Programado el 09/10 (v26, decisiones de Claude Code, falta confirmar): Orden de Odoo abierta bloquea solo si tiene menos de 60 días; un cliente con servicio activo cuenta como cartera; borrador sin enviar vence a los 7 días y recaudos sin completar a los 30; lo aprobado sin instalar vence a los 30. Un cliente bloqueado no guarda los documentos del aliado (solo el RIF leído). Los pagos de instalaciones se mueven a mano (Marcar pagado), sin montos.
 
 ## Proforma y carta de bienvenida
 - Formato original de la app vieja, sin rediseñar. Instalación 60 dólares, día límite 10, descripción "servicio de internet", número de contrato = código.

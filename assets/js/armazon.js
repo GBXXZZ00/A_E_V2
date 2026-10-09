@@ -10,10 +10,11 @@
     { id: 'comisiones', texto: 'Comisiones', icono: 'barras', enlace: 'comisiones.html' },
     { id: 'clientes', texto: 'Clientes', icono: 'edificio', enlace: 'clientes.html' },
     { id: 'factibilidad', texto: 'Factibilidad', icono: 'wifi', enlace: 'factibilidad.html', roles: ['admin', 'analista', 'lider'] },
-    { id: 'revision', texto: 'Revisión', icono: 'doc', enlace: 'revision.html', roles: ['admin', 'abogado'] }
+    { id: 'revision', texto: 'Revisión', icono: 'doc', enlace: 'revision.html', roles: ['admin', 'abogado'] },
+    { id: 'aliados', texto: 'Aliados', icono: 'usuarios', enlace: 'aliados.html', roles: ['admin', 'analista', 'lider', 'abogado'], soloPc: true }
   ];
 
-  // opciones: { activo: 'inicio'|'comisiones'|'clientes'|'factibilidad'|'revision'|null, sinNav: bool, volver: {enlace, texto}, acciones: html }
+  // opciones: { activo: 'inicio'|'comisiones'|'clientes'|'factibilidad'|'revision'|'aliados'|null, sinNav: bool, volver: {enlace, texto}, acciones: html }
   function montar(p, opciones){
     const o = opciones || {};
     let equipo = S.equipoGuardado();
@@ -35,7 +36,7 @@
       document.body.classList.add('con-nav');
       let nav = $('navAbajo');
       if(!nav){ nav = document.createElement('nav'); nav.id = 'navAbajo'; nav.className = 'nav'; nav.setAttribute('aria-label', 'Navegación'); document.body.appendChild(nav); }
-      nav.innerHTML = NAV.filter((n) => !n.roles || n.roles.indexOf(p.rol) >= 0).map((n) => '<a href="' + n.enlace + '"' + (o.activo === n.id ? ' class="on" aria-current="page"' : '') + '><span>' + ic(n.icono) + '</span>' + n.texto + '</a>').join('');
+      nav.innerHTML = NAV.filter((n) => (!n.roles || n.roles.indexOf(p.rol) >= 0) && !n.soloPc).map((n) => '<a href="' + n.enlace + '"' + (o.activo === n.id ? ' class="on" aria-current="page"' : '') + '><span>' + ic(n.icono) + '</span>' + n.texto + '</a>').join('');
     }
 
     let hoja = $('hojaCuenta');

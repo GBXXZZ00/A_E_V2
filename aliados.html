@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
 <meta name="theme-color" content="#FFFFFF">
-<title>Inicio</title>
+<title>Aliados</title>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="assets/img/icon-192.png">
 <link rel="stylesheet" href="assets/css/base.css?v=26">
@@ -15,21 +15,27 @@
 <body>
 <header class="barra" id="barra"><a class="marca" href="inicio.html" aria-label="Inicio"><img class="logo" src="assets/img/logo.svg?v=26" alt="Airtek" width="96" height="12"><span>Empresas</span></a></header>
 <main class="pagina">
-  <div class="cols inicio">
-    <section>
-      <h1 class="titulo" id="saludo">&nbsp;</h1>
-      <p class="sub" id="subSaludo">&nbsp;</p>
-      <div id="zonaCorte"></div>
-      <div id="zonaPendientes" aria-live="polite"></div>
-    </section>
-    <section id="zonaModulos"></section>
+  <div class="cabeza">
+    <h1 class="titulo" id="titulo">Aliados</h1>
+    <div id="accionCab"></div>
   </div>
+  <p class="sub-pagina" id="ayuda">&nbsp;</p>
+  <div class="filtros una" id="filtros" role="group" aria-label="Secciones"></div>
+  <p class="cuenta-l" id="cuentaLista" aria-live="polite">&nbsp;</p>
+  <div id="lista"></div>
 </main>
+<input type="file" id="alArchivo" accept="application/pdf,image/jpeg,image/png,image/webp,image/heic,image/heif" hidden>
 <script src="assets/vendor/supabase.js?v=1"></script>
 <script src="assets/js/supabase-client.js?v=1"></script>
 <script src="assets/js/comun.js?v=26"></script>
 <script src="assets/js/sesion.js?v=26"></script>
 <script src="assets/js/armazon.js?v=26"></script>
-<script src="assets/js/inicio.js?v=26"></script>
+<script src="assets/js/archivos.js?v=26"></script>
+<script src="assets/js/marca.js?v=26"></script>
+<script src="assets/js/documentos.js?v=26"></script>
+<script src="assets/js/pedir.js?v=26"></script>
+<script src="assets/js/ficha.js?v=26"></script>
+<script src="assets/js/bienvenidas.js?v=26"></script>
+<script src="assets/js/aliados.js?v=26"></script>
 </body>
 </html>

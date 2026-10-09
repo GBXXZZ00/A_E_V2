@@ -7,8 +7,7 @@
 
   const PRONTO = [
     { id: 'migraciones', nombre: 'Migraciones', icono: 'cambio', roles: ['admin', 'lider', 'analista'] },
-    { id: 'dedicados', nombre: 'Dedicados', icono: 'servidor', roles: ['admin', 'abogado', 'analista'] },
-    { id: 'aliados', nombre: 'Aliados', icono: 'usuarios', roles: ['admin', 'analista'] }
+    { id: 'dedicados', nombre: 'Dedicados', icono: 'servidor', roles: ['admin', 'abogado', 'analista'] }
   ];
 
   function pintarCorte(d){
@@ -85,6 +84,8 @@
         texto: d.clientes ? (c.en_curso ? c.en_curso + ' con documentos en curso' : 'Sin expedientes en curso') : 'Expediente, documentos e hilo' }
     ];
     if(['admin', 'lider', 'analista'].indexOf(rol) >= 0) activos.push({ id: 'factibilidad', nombre: 'Factibilidad', icono: 'wifi', enlace: 'factibilidad.html', texto: 'Si una ubicación tiene red' });
+    activos.push({ id: 'aliados', nombre: 'Aliados', icono: 'usuarios', enlace: 'aliados.html',
+      texto: rol === 'admin' ? 'Solicitudes, referidos y pagos de aliados' : canales ? 'Tus solicitudes, referidos y pagos' : 'Clientes instalados por aliados' });
     if(rol === 'admin' || rol === 'abogado') activos.push({ id: 'revision', nombre: 'Revisión', icono: 'doc', enlace: 'revision.html', texto: rol === 'admin' ? 'Documentos por revisar, también con IA' : 'Tus contratos por hacer y por firmar' });
     const pronto = PRONTO.filter((m) => m.roles.indexOf(rol) >= 0);
     $('zonaModulos').innerHTML = '<div class="h2 primero">Módulos</div><div class="mods">' +
@@ -94,6 +95,7 @@
       (d.hay_demo ? '<div class="linea-info" id="avisoDemo">' + ic('estrella') + '<span>Estás viendo datos de ejemplo, con nombres inventados.</span></div>' : '');
   }
 
+  let canales = false;
   function pintar(d, rol){ pintarCorte(d); pintarPendientes(d, rol); pintarModulos(d, rol); }
 
   function esqueletoInicio(){
@@ -108,7 +110,10 @@
     const { equipo } = window.Armazon.montar(p, { activo: 'inicio' });
     $('saludo').textContent = 'Hola, ' + (primerNombre(p.nombre) || p.nombre);
     $('subSaludo').textContent = fechaDia(new Date().toISOString());
-    if(equipo === 'aliados' || p.rol === 'aliado'){
+    canales = !!p.canales;
+    // El aliado trabaja en su propio módulo
+    if(p.rol === 'aliado'){ location.replace('aliados.html'); return; }
+    if(equipo === 'aliados'){
       $('subSaludo').textContent = 'Aliados comerciales';
       $('zonaCorte').innerHTML = '<div class="aviso"><b>Este espacio está en construcción</b><p>El módulo de aliados comerciales llega después de instalaciones y documentos. Te avisaremos cuando esté listo.</p></div>';
       return;

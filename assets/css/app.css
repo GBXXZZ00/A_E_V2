@@ -716,3 +716,67 @@ button.franja:active{transform:scale(.97)}
 }
 @media (hover:hover) and (pointer:fine){ .rv:hover{background:var(--surface-2)} .rv.sel:hover{background:var(--azul-bg)} }
 @media (prefers-reduced-motion:reduce){ .rv-cuerpo{transition:none} }
+
+/* Aliados comerciales (prefijo al-) */
+.al-grandes{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:12px;margin-top:6px}
+@media (max-width:620px){ .al-grandes{grid-template-columns:1fr} }
+.al-grande{display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:18px;border-radius:20px;border:1px solid var(--line);text-align:left;min-height:96px;background:#fff;transition:transform 160ms var(--ease-out)}
+.al-grande:active{transform:scale(.97)}
+.al-grande b{font-size:18px;font-weight:800;letter-spacing:-.015em}
+.al-grande small{font-size:13px;color:var(--text2)}
+.al-grande.prin{background:var(--accent);border-color:var(--accent);color:#fff}
+.al-grande.prin small{color:rgba(255,255,255,.82)}
+.al-seg{display:inline-flex;padding:3px;border-radius:var(--pill);background:var(--surface-2);gap:2px;margin-bottom:12px}
+.al-seg button{height:40px;padding:0 16px;border-radius:var(--pill);font-weight:700;font-size:13.5px;color:var(--text2);white-space:nowrap}
+.al-seg button.on{background:var(--text);color:#fff}
+.al-seg button:disabled{opacity:.55}
+.al-banda{display:grid;gap:4px;padding:14px;border-radius:16px;margin:4px 0 6px;background:var(--surface-2)}
+.al-banda b{font-size:15px}
+.al-banda p{font-size:13px}
+.al-banda .btn{justify-self:start;margin-top:6px}
+.al-banda.verde{background:var(--verde-bg);color:var(--verde)} .al-banda.ambar{background:var(--ambar-bg);color:var(--ambar)} .al-banda.azul{background:var(--azul-bg);color:var(--azul)}
+.al-h2{justify-content:flex-start}
+.al-h2 em{font-style:normal;opacity:.7}
+.al-h2 .btn{margin-left:auto}
+.al-casillas{border:1px solid var(--line);border-radius:16px;padding:0 14px}
+.al-cas{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 0;min-height:56px}
+.al-cas + .al-cas{border-top:1px solid var(--line)}
+.al-cas .tx{flex:1 1 180px;min-width:0}
+.al-cas .tx b{display:block;font-size:14.5px;font-weight:700}
+.al-cas .tx small{display:block;font-size:12.5px;color:var(--text2);overflow-wrap:anywhere}
+.al-cas .tx small.mal{color:var(--rojo)}
+.al-cas .btn{flex:none;height:44px}
+.al-acc{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.al-acc .btn{height:44px}
+.al-nota{margin-top:10px;padding:10px 12px;border-radius:12px;background:var(--surface-2);font-size:13px;color:var(--text2)}
+.al-nota b{color:var(--text)}
+.al-area{height:auto;min-height:96px;padding:12px 18px;border-radius:18px;resize:vertical;line-height:1.45}
+.al-barra{display:block;height:8px;border-radius:4px;background:var(--surface-3);overflow:hidden;margin:4px 0 8px}
+.al-barra i{display:block;height:100%;width:100%;background:var(--accent);transform-origin:left;transition:transform 280ms var(--ease-out)}
+.al-barra.corre i{transform:scaleX(.35);animation:al-corre 1.2s var(--ease-out) infinite alternate}
+@keyframes al-corre{ from{transform:translateX(-40%) scaleX(.35)} to{transform:translateX(160%) scaleX(.35)} }
+.al-pasos{display:grid}
+.al-paso{display:flex;gap:12px;padding:12px 0;align-items:flex-start}
+.al-paso + .al-paso{border-top:1px solid var(--line)}
+.al-paso i{width:24px;height:24px;border-radius:50%;flex:none;background:var(--surface-3);display:grid;place-items:center;margin-top:1px}
+.al-paso.hecho i{background:var(--verde)}
+.al-paso.hecho i::after{content:"";width:9px;height:5px;border:2.5px solid #fff;border-top:0;border-right:0;transform:translate(0,-1px) rotate(-45deg)}
+.al-paso.activo i{background:var(--accent);animation:al-latir 900ms var(--ease-out) infinite alternate}
+.al-paso.espera{opacity:.55}
+@keyframes al-latir{ from{opacity:1} to{opacity:.45} }
+.al-paso b{display:block;font-size:14.5px}
+.al-paso small{display:block;font-size:12.5px;color:var(--text2)}
+.estado.al-gris{background:var(--surface-2)}
+.al-hilo{display:grid}
+.al-hi{display:flex;gap:10px;padding:10px 0;font-size:13.5px}
+.al-hi + .al-hi{border-top:1px solid var(--line)}
+.al-hi::before{content:"";width:9px;height:9px;border-radius:50%;background:var(--surface-3);margin-top:6px;flex:none}
+.al-hi.vd::before{background:var(--verde)} .al-hi.rj::before{background:var(--rojo)} .al-hi.az::before{background:var(--accent)}
+.al-hi small{display:block;color:var(--text2);font-size:12.5px}
+.al-pago,.al-enlace{align-items:center;gap:10px;flex-wrap:wrap;padding-right:4px}
+.al-pago .rv-cuerpo,.al-enlace .rv-cuerpo{flex:1 1 240px}
+.al-pago > .btn{flex:none;height:44px}
+.al-enlace .campo-s{flex:1 1 220px;padding:0 4px 12px}
+@media (min-width:900px){ .al-enlace .campo-s{padding-bottom:0;max-width:320px} }
+@media (prefers-reduced-motion:reduce){ .al-grande,.al-barra i{transition:none} .al-paso.activo i,.al-barra.corre i{animation:none} }
+@media (hover:hover) and (pointer:fine){ .al-grande:hover{border-color:#C9CED6} .al-grande.prin:hover{border-color:var(--accent)} }

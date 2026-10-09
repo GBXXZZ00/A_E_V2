@@ -171,12 +171,36 @@ async function leerConGemini(modelo: string, mime: string, uri: string) {
   throw new Error("Gemini: " + ultimo.slice(0, 200));
 }
 
+// Un archivo: de Drive a Gemini y de vuelta. Nunca lanza; un error grave vuelve en "fatal".
+const LOTE = 4; const LOTE_BYTES = 45 * 1024 * 1024;
+type Archivo = { id: number; drive_id: string | null; nombre: string; mime: string; tamano: number };
+async function leerArchivo(a: Archivo, modelo: string, pe: number, ps: number): Promise<{ lectura: Record<string, unknown>; fatal?: Error }> {
+  const mime = String(a.mime || "").toLowerCase();
+  if (!a.drive_id) return { lectura: { estado: "error", error: "El archivo no está en Drive" } };
+  if (!TIPOS.test(mime)) return { lectura: { estado: "formato", error: "Tipo de archivo que la IA no lee: " + (mime || "desconocido") } };
+  if (Number(a.tamano) > MAX_BYTES) return { lectura: { estado: "formato", error: "Archivo muy grande para leerlo de una vez" } };
+  try {
+    let bytes: Uint8Array | null = await bajar(a.drive_id);
+    if (bytes.length > MAX_BYTES) return { lectura: { estado: "formato", error: "Archivo muy grande para leerlo de una vez" } };
+    const f = await subirAGemini(mime, bytes, a.nombre || "archivo");
+    bytes = null;   // suelta la memoria antes de esperar a Gemini
+    let g;
+    try { g = await leerConGemini(modelo, mime, f.uri); } finally { borrarDeGemini(f.name); }
+    const costo = Math.round(((g.entrada * pe + g.salida * ps) / 1e6) * 1e5) / 1e5;
+    return { lectura: { estado: g.datos.legible === false && !(g.datos.documentos || []).length ? "ilegible" : "ok", hallazgos: g.datos.documentos || [], paginas: g.datos.paginas || null,
+      tokens_entrada: g.entrada, tokens_salida: g.salida, costo_usd: costo, modelo } };
+  } catch (e) {
+    const m = (e as Error).message;
+    return { lectura: { estado: "error", error: m }, fatal: /permiso de Google|clave de Gemini|no aceptó/.test(m) ? (e as Error) : undefined };
+  }
+}
+
 // ---------- Trabajo ----------
 type Trabajo = {
   corrida: number; hoy: string; ajustes: Record<string, string>; excepciones: unknown[];
   cliente: Record<string, unknown>; representantes: unknown[]; faltantes: unknown[];
   documentos: { id: number; casilla: string; numero: number; estado: string; archivos: number[] }[];
-  archivos: { id: number; drive_id: string | null; nombre: string; mime: string; tamano: number }[];
+  archivos: Archivo[];
   lecturas: Record<string, { estado: string; documentos: unknown[]; error?: string }>;
 };
 
@@ -193,35 +217,25 @@ async function trabajar(corrida: number) {
       modelo = await elegirModelo(w.ajustes.modelo);
     }
     const pe = Number(w.ajustes.precio_entrada) || 0; const ps = Number(w.ajustes.precio_salida) || 0;
-    // Un archivo por llamada: así ninguna llamada pasa los límites de la función; luego se llama de nuevo
-    const a = pendientes[0];
-    if (a) {
-      let lectura: Record<string, unknown>;
-      const mime = String(a.mime || "").toLowerCase();
-      if (!a.drive_id) lectura = { estado: "error", error: "El archivo no está en Drive" };
-      else if (!TIPOS.test(mime)) lectura = { estado: "formato", error: "Tipo de archivo que la IA no lee: " + (mime || "desconocido") };
-      else if (Number(a.tamano) > MAX_BYTES) lectura = { estado: "formato", error: "Archivo muy grande para leerlo de una vez" };
-      else {
-        try {
-          const bytes = await bajar(a.drive_id);
-          if (bytes.length > MAX_BYTES) lectura = { estado: "formato", error: "Archivo muy grande para leerlo de una vez" };
-          else {
-            const f = await subirAGemini(mime, bytes, a.nombre || "archivo");
-            let g;
-            try { g = await leerConGemini(modelo, mime, f.uri); } finally { borrarDeGemini(f.name); }
-            const costo = Math.round(((g.entrada * pe + g.salida * ps) / 1e6) * 1e5) / 1e5;
-            lectura = { estado: g.datos.legible === false && !(g.datos.documentos || []).length ? "ilegible" : "ok", hallazgos: g.datos.documentos || [], paginas: g.datos.paginas || null,
-              tokens_entrada: g.entrada, tokens_salida: g.salida, costo_usd: costo, modelo };
-          }
-        } catch (e) {
-          lectura = { estado: "error", error: (e as Error).message };
-          if (/permiso de Google|clave de Gemini|no aceptó/.test((e as Error).message)) throw e;   // no sirve seguir con los demás
-        }
+    // Varios archivos a la vez (hasta 4 y sin pasar ~45 MB entre todos) para tardar menos; cada uno se lee igual que antes.
+    // Lo que quede se sigue en otra llamada, así ninguna pasa los límites de la función.
+    const lote: typeof pendientes = []; let peso = 0;
+    for (const a of pendientes) {
+      const t = Math.min(Number(a.tamano) || 0, MAX_BYTES);
+      if (lote.length && (lote.length >= LOTE || peso + t > LOTE_BYTES)) break;
+      lote.push(a); peso += t;
+    }
+    if (lote.length) {
+      const leidas = await Promise.all(lote.map((a) => leerArchivo(a, modelo, pe, ps)));
+      const fatal = leidas.find((l) => l.fatal);
+      if (fatal) throw fatal.fatal;   // permiso de Google o clave de Gemini: no sirve seguir con los demás
+      for (let i = 0; i < lote.length; i++) {
+        const a = lote[i]; const lectura = leidas[i].lectura;
+        const { error: eg } = await db.rpc("ia_guardar_lectura", { p_corrida: corrida, p_archivo: a.id, p_datos: lectura });
+        if (eg) throw new Error("No se pudo guardar lo leído: " + eg.message);
+        w.lecturas[String(a.id)] = { estado: String(lectura.estado), documentos: (lectura.hallazgos as unknown[]) || [], error: lectura.error as string };
       }
-      const { error: eg } = await db.rpc("ia_guardar_lectura", { p_corrida: corrida, p_archivo: a.id, p_datos: lectura });
-      if (eg) throw new Error("No se pudo guardar lo leído: " + eg.message);
-      w.lecturas[String(a.id)] = { estado: String(lectura.estado), documentos: (lectura.hallazgos as unknown[]) || [], error: lectura.error as string };
-      if (pendientes.length > 1) { await seguir(corrida); return; }
+      if (pendientes.length > lote.length) { await seguir(corrida); return; }
     }
     // Todo leído: deciden las reglas (sin IA y sin costo)
     const r = evaluar({ hoy: w.hoy, cliente: w.cliente, representantes: w.representantes, faltantes: w.faltantes, documentos: w.documentos, lecturas: w.lecturas, excepciones: w.excepciones });
@@ -232,6 +246,21 @@ async function trabajar(corrida: number) {
     await db.rpc("ia_fallo", { p_corrida: corrida, p_error: (e as Error).message });
   }
 }
+// Lectura adelantada: un archivo de una solicitud de aliado se lee apenas se sube, así el resultado sale rápido al enviar
+async function leerSuelto(archivo: number) {
+  const { data, error } = await db.rpc("ia_archivo_datos", { p_archivo: archivo });
+  if (error || !data) { console.error("ia_archivo_datos", error?.message); return; }
+  if (data.leido || !CLAVE()) return;
+  const aj = (data.ajustes || {}) as Record<string, string>;
+  try {
+    const modelo = await elegirModelo(aj.modelo);
+    const l = await leerArchivo(data.archivo as Archivo, modelo, Number(aj.precio_entrada) || 0, Number(aj.precio_salida) || 0);
+    if (l.fatal) { console.error("lectura adelantada", archivo, l.fatal.message); return; }
+    const { error: eg } = await db.rpc("ia_guardar_lectura_sola", { p_archivo: archivo, p_datos: l.lectura });
+    if (eg) console.error("guardar lectura adelantada", eg.message);
+  } catch (e) { console.error("lectura adelantada", archivo, (e as Error).message); }
+}
+
 // Expedientes largos: suelta la corrida y se llama de nuevo para seguir
 async function seguir(corrida: number) {
   await db.rpc("ia_soltar", { p_corrida: corrida });
@@ -246,6 +275,8 @@ Deno.serve(async (req: Request) => {
   if (valido !== true) return respuesta({ error: "No autorizado" }, 401);
   TAREA = tk;
   const b = (await req.json().catch(() => ({}))) as Record<string, unknown>;
+  const archivo = Number(b.archivo);
+  if (Number.isInteger(archivo) && archivo > 0) { EdgeRuntime.waitUntil(leerSuelto(archivo)); return respuesta({ ok: true }, 202); }
   const corrida = Number(b.corrida);
   if (!Number.isInteger(corrida) || corrida < 1) return respuesta({ error: "Falta la corrida" }, 400);
   // Responde enseguida; el trabajo sigue en segundo plano
