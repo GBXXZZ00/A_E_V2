@@ -321,7 +321,8 @@
         (k ? '. La última se usó al cerrar la revisión del ' + esc(fecha(k.terminada_en)) : '') + '.</small></span>' + boton('Mandar a revisión con IA') + '</div></div>';
     }
     if(iaActiva()){
-      return '<div class="ia-bloque" id="iaLeyendo" aria-busy="true"><div class="ia-cab"><span class="tx"><b>La IA está leyendo</b><small>' + esc(k.avance + ' de ' + k.total) + ' archivos. Puedes seguir trabajando: el resultado sale aquí y las propuestas quedan marcadas.</small><span class="carga-barra" aria-hidden="true"><i></i></span></span>' +
+      return '<div class="ia-bloque" id="iaLeyendo" aria-busy="true"><div class="ia-cab"><span class="tx"><b>' + (k.nuevos ? 'La IA está leyendo' : 'La IA está actualizando el resultado') + '</b><small>' +
+        (k.nuevos ? esc(k.avance + ' de ' + k.total) + ' archivos. Puedes seguir trabajando: el resultado sale aquí y las propuestas quedan marcadas.' : 'Con los datos de ahora y lo que ya leyó: no cuesta. Tarda unos segundos.') + '</small><span class="carga-barra" aria-hidden="true"><i></i></span></span>' +
         (k.trabada && puede ? '<button type="button" class="mini" id="reanudarIA">Reanudar</button>' : '') + '</div></div>';
     }
     if(k.estado === 'error'){
@@ -332,13 +333,14 @@
     const malos = (k.puntos || []).filter((p) => p.estado !== 'ok' || p.excepcion).sort((a, b) => (orden[a.estado] === undefined ? 3 : orden[a.estado]) - (orden[b.estado] === undefined ? 3 : orden[b.estado]));
     const buenos = (k.puntos || []).filter((p) => p.estado === 'ok' && !p.excepcion);
     return '<div class="ia-bloque" id="iaResultado"><div class="ia-cab"><span class="tx"><b>Revisión con IA <span class="chip ' + v[0] + '">' + v[1] + '</span></b><small>' + esc(dia(k.terminada_en) + ' ' + hora(k.terminada_en)) + ' · ' + plural(k.total, 'archivo', 'archivos') + ' · ' + esc('US$ ' + Number(k.costo_usd || 0).toFixed(2)) +
-      '. Lo que propone ya está marcado en cada documento: cámbialo si no estás de acuerdo y cierra la revisión.</small></span>' + boton('Revisar de nuevo') + '</div>' +
+      '. Lo que propone ya está marcado en cada documento: cámbialo si no estás de acuerdo y cierra la revisión.</small></span>' + boton('Revisar de nuevo') + '</div>' + avisoViejo(k, puede) +
       (malos.length ? '<div class="ia-ps">' + malos.map((p) => puntoIA(p, puede)).join('') + '</div>' : '') +
       (buenos.length ? '<details class="ia-ok"><summary>' + plural(buenos.length, 'punto del expediente cumple', 'puntos del expediente cumplen') + '</summary><div class="ia-ps">' + buenos.map((p) => puntoIA(p, puede)).join('') + '</div></details>' : '') + '</div>';
   }
   // Mientras la IA lee, se pregunta cada 5 segundos; al terminar se refresca el expediente
   function vigilar(){
     clearTimeout(sondeo); sondeo = null;
+    if(actualizarSolo()) return;
     if(!id || !iaActiva()) return;
     const mio = id;
     sondeo = setTimeout(async () => {
@@ -376,6 +378,35 @@
     toast('La IA empezó a leer. Te aviso aquí cuando termine');
     try { rev = await rpc('revision_estado', { p_cliente: id }); } catch (e) {}
     pintarTodo(); vigilar();
+  }
+  // Si el expediente cambió después de la IA y no hay archivos sin leer, el resultado se actualiza solo (no cuesta).
+  // Una vez por resultado y a lo sumo 3 por corrida, para que nunca quede dando vueltas.
+  const autoIA = new Map();
+  function actualizarSolo(){
+    const k = rev && rev.ia;
+    if(!id || !k || k.estado !== 'lista' || !k.cambio || k.sin_leer || !rev.puede_ia) return false;
+    const a = autoIA.get(k.id) || { veces: 0 }; if(a.en === k.terminada_en || a.veces >= 3) return false;
+    autoIA.set(k.id, { en: k.terminada_en, veces: a.veces + 1 });
+    actualizarIA(null, true); return true;
+  }
+  async function actualizarIA(b, solo){
+    if(b) b.disabled = true;
+    const mio = id;
+    try { await rpc('ia_actualizar', { p_corrida: rev.ia.id }); if(mio !== id) return; rev = await rpc('revision_estado', { p_cliente: mio }); }
+    catch (e) { if(mio === id) toast((solo ? 'No se pudo actualizar el resultado de la IA: ' : '') + e.message, 'error'); if(b && document.contains(b)) b.disabled = false; return; }
+    if(mio !== id) return;
+    if(!solo){ if(hojaAbierta() === 'hojaCerrarRev') cerrarHoja(); toast('La IA está actualizando el resultado. Te aviso aquí cuando termine'); }
+    pintarTodo(); vigilar();
+  }
+  // Aviso de que el resultado es de antes de un cambio en el expediente
+  function avisoViejo(k, puede){
+    if(!k || k.estado !== 'lista' || !k.cambio) return '';
+    const n = k.sin_leer || 0;
+    return '<div class="estado ambar chico ia-vieja" role="status"><small>' +
+      (n ? 'Subieron ' + plural(n, 'archivo', 'archivos') + ' después de la IA y este resultado no ' + (n === 1 ? 'lo' : 'los') + ' incluye.' + (puede ? ' Leer' + (n === 1 ? 'lo' : 'los') + ' cuesta unos US$ ' + (n * 0.04).toFixed(2) + '.' : '')
+        : 'Cambiaron datos después de la IA y este resultado es de antes.') +
+      (puede ? '' : ' El administrador debe actualizarlo.') + '</small>' +
+      (puede ? '<button type="button" class="mini pri" data-actualizar-ia>Actualizar resultado</button>' : '') + '</div>';
   }
   async function reanudarIA(b){
     b.disabled = true;
@@ -1011,6 +1042,7 @@
         (ap.length ? fila('Se aprueban', esc(C.lista(ap.map(nom)))) : '') +
         (dv.length ? fila('Se devuelven', dv.map((m) => esc(nom(m) + ': ' + (C.MOTIVOS[m.motivo] || ''))).join('<br>')) : '') +
         (despues ? fila('Estatus', esc(despues)) : '') + (v ? fila('La IA', '<span class="chip ' + v[0] + '">' + v[1] + '</span>') : '') + '</div>' +
+      avisoViejo(k, true) +
       (iaMalos.length ? '<div class="ia-ps" style="margin-top:10px">' + iaMalos.map((p) => puntoIA(p, false)).join('') + '</div>' : '') +
       (quedan ? '<div class="estado ambar chico"><small>' + (quedan === 1 ? 'Queda 1 documento sin revisar. Seguirá' : 'Quedan ' + quedan + ' documentos sin revisar. Seguirán') + ' por revisar.</small></div>' : '') +
       (msj ? '<label class="rotulo arriba" for="msjRev">Mensaje para ' + esc(liderCorto()) + '</label><textarea class="area" id="msjRev" maxlength="4000">' + esc(msj) + '</textarea>' +
@@ -1074,6 +1106,7 @@
     if(t.closest('#mandarIA')){ abrirMandarIA(); return; }
     if((b = t.closest('#lanzarIA'))){ lanzarIA(b); return; }
     if((b = t.closest('#reanudarIA'))){ reanudarIA(b); return; }
+    if((b = t.closest('[data-actualizar-ia]'))){ actualizarIA(b, false); return; }
     if((b = t.closest('[data-exc-ia]'))){ abrirExcIA(b.dataset.excIa); return; }
     if((b = t.closest('#darExcIA'))){ darExcIA(b, false); return; }
     if((b = t.closest('[data-quitar-exc]'))){ darExcIA(b, true, b.dataset.quitarExc); return; }

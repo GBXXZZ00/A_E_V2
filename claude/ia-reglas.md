@@ -82,6 +82,11 @@ Fecha de referencia: hoy. Las fechas de actas son siempre las de inscripción en
 4. "Cerrar revisión" guarda en su propio registro el `corrida_id` que usó (si hubo IA). Así la comparación con Legal es `ia_marcas` contra lo que quedó en `documentos` al cerrar.
 - RLS: leen admin y abogado; escribe solo la función de borde (llave de servicio). Todo pasa por `bitacora`.
 
+## Cuando el expediente cambia después de la IA (v25)
+- Al terminar, la corrida guarda una huella de lo que usan las reglas. Si después cambia un dato (correo, teléfono, régimen, nombre) el resultado queda viejo.
+- Si no hay archivos nuevos, la ficha del administrador lo actualiza sola: mismas lecturas, reglas otra vez, sin costo y con las excepciones que ya dio.
+- Si subieron archivos, avisa y el administrador decide con "Actualizar resultado": solo se lee y se cobra lo nuevo.
+
 ## Cómo quedó programado (v24)
 - Reglas: `supabase/funciones/ia_revisar/reglas.mjs` (versión 2), probadas en `pruebas/test16.js` con los 14 casos y otros. La IA solo lee; las reglas deciden.
 - Lectura: función de borde `ia_revisar` (copia en `supabase/funciones/ia_revisar/`). La despierta la base con `privado.ia_despertar` (pg_net y un token interno en el Vault); lee un archivo por llamada desde Drive, se lo pasa a Gemini por su canal de archivos en alta resolución y se vuelve a llamar sola para el siguiente.

@@ -203,6 +203,9 @@ function cruceFalso(m, yo){
 }
 // Archivos vigentes de un cliente y la revisión con IA de mentira
 const archivosDe = (c) => Array.from(new Set([].concat.apply([], c.documentos.map((d) => (d.archivos || []).map((x) => x.id)))));
+// Lo que las reglas usan del expediente: si cambia después de la IA, su resultado quedó viejo
+const huellaIA = (c) => JSON.stringify([c.nombre, c.regimen_firma, c.es_isp, c.correo_empresa, c.representantes.map((r) => [r.orden, r.nombre, r.correo, r.telefono]), archivosDe(c)]);
+const sinLeer = (c) => archivosDe(c).filter((x) => !(c.leidos || {})[x]).length;
 const iaActiva = (c) => !!(c.ia && ['en_cola', 'leyendo'].includes(c.ia.estado));
 function avanzarIA(m, c){
   if(!iaActiva(c)) return;
@@ -217,8 +220,10 @@ function avanzarIA(m, c){
     : d === porRev[1] ? { documento: d.id, propuesta: 'revisar_a_mano', motivo: null, nota: 'Se ve borroso o incompleto. Míralo tú.', pagina: 1 } : { documento: d.id, propuesta: 'bien', motivo: null, nota: 'Vigente.', pagina: 1 });
   c.ia.puntos = [{ id: 'junta', titulo: 'Junta vencida', estado: 'bloquea', detalle: 'Designada en el acta inscrita el 14/03/2012 por 5 años: venció el 14/03/2017.', pagina: 'Acta constitutiva · página 6', falta: 'Acta de asamblea de ratificación o cambio de junta', excepcionable: true },
     { id: 'sin_marcar_1', titulo: 'Documento sin marcar', estado: 'aviso', detalle: 'El archivo de Cédula también trae un RIF personal en la página 2. Márcalo en el expediente para que cuente.' },
-    { id: 'duracion', titulo: 'Duración de la empresa', estado: 'ok', detalle: '50 años desde el 14/03/2012.' }];
-  Object.assign(c.ia, { estado: 'lista', veredicto: 'no_apto', terminada_en: hace(0) });
+    { id: 'duracion', titulo: 'Duración de la empresa', estado: 'ok', detalle: '50 años desde el 14/03/2012.' }]
+    .concat(faltantes(c).filter((f) => f.dato).map((f) => ({ id: 'falta_' + f.k, titulo: 'Falta ' + f.t, estado: 'bloquea', detalle: 'Hay que escribirlo en el expediente.' })));
+  c.ia.puntos.forEach((p) => { const e = (c.ia.excepciones || []).find((x) => x.punto === p.id); if(e){ p.excepcion = e.motivo; p.estado = 'ok'; } });
+  Object.assign(c.ia, { estado: 'lista', veredicto: c.ia.puntos.some((x) => x.estado === 'bloquea') || c.ia.marcas.some((x) => x.propuesta === 'problema') ? 'no_apto' : 'apto', terminada_en: new Date().toISOString(), huella: huellaIA(c) });
   c.marcas = c.marcas || {};
   c.ia.marcas.forEach((k) => { const ant = c.marcas[k.documento]; if(ant && ant.accion && ant.origen !== 'ia') return; if(k.propuesta === 'revisar_a_mano'){ delete c.marcas[k.documento]; return; }
     c.marcas[k.documento] = { documento: k.documento, accion: k.propuesta === 'bien' ? 'aprobar' : 'devolver', motivo: k.propuesta === 'bien' ? null : k.motivo, nota: k.propuesta === 'bien' ? null : k.nota, vence_en: null, por: null, en: hace(0), origen: 'ia', pagina: k.pagina }; });
@@ -469,7 +474,8 @@ const RPC = {
     const p = m.personas.find((x) => x.id === c.lider_id);
     avanzarIA(m, c);
     return { puede_cerrar: yo.rol === 'admin', puede_ia: yo.rol === 'admin', lider_whatsapp: p ? p.whatsapp || null : null, archivos: archivosDe(c).length, nuevos: archivosDe(c).filter((x) => !(c.leidos || {})[x]).length,
-      marcas: Object.values(c.marcas || {}).filter((x) => x.accion), historial: (c.revisiones || []).slice().reverse(), ia: c.ia ? Object.assign({}, c.ia) : null };
+      marcas: Object.values(c.marcas || {}).filter((x) => x.accion), historial: (c.revisiones || []).slice().reverse(),
+      ia: c.ia ? Object.assign({}, c.ia, { cambio: c.ia.estado === 'lista' && c.ia.huella !== huellaIA(c), sin_leer: c.ia.estado === 'lista' ? sinLeer(c) : 0 }) : null };
   },
   // ----- Revisión con IA (en pequeño: avanza un archivo cada vez que alguien pregunta) -----
   ia_estimar(m, yo, a){
@@ -496,12 +502,21 @@ const RPC = {
     const c = m.datos.clientes.find((x) => x.ia && x.ia.id === Number(a.p_corrida)); if(!c) return error('Esa revisión ya no existe');
     Object.assign(c.ia, { estado: 'leyendo', trabada: false, error: null }); return null;
   },
+  ia_actualizar(m, yo, a){
+    if(yo.rol !== 'admin') return error('No tienes permiso para hacer esto');
+    const c = m.datos.clientes.find((x) => x.ia && x.ia.id === Number(a.p_corrida)); if(!c || c.ia.estado !== 'lista') return error('Esa revisión ya no está abierta');
+    const nv = sinLeer(c); if(!nv && c.ia.huella === huellaIA(c)) return { actualizada: false };
+    const n = archivosDe(c).length; Object.assign(c.ia, { estado: 'en_cola', total: n, avance: n - nv, nuevos: nv, error: null });
+    (m.bitacora = m.bitacora || []).push({ accion: 'ia_actualizada', registro: c.ia.id, por: yo.nombre });
+    return { actualizada: true, nuevos: nv };
+  },
   ia_excepcion(m, yo, a){
     if(yo.rol !== 'admin') return error('No tienes permiso para hacer esto');
     const c = m.datos.clientes.find((x) => x.ia && x.ia.id === Number(a.p_corrida)); if(!c || c.ia.estado !== 'lista') return error('Esa revisión ya no está abierta');
     const p = c.ia.puntos.find((x) => x.id === a.p_punto); if(!p) return error('Ese punto no admite excepción');
     if(!a.p_quitar && String(a.p_motivo || '').trim().length < 5) return error('Escribe el motivo de la excepción');
     if(a.p_quitar){ delete p.excepcion; p.estado = 'bloquea'; } else { p.excepcion = a.p_motivo; p.estado = 'ok'; }
+    c.ia.excepciones = (c.ia.excepciones || []).filter((x) => x.punto !== a.p_punto).concat(a.p_quitar ? [] : [{ punto: a.p_punto, motivo: a.p_motivo }]);
     c.ia.veredicto = c.ia.puntos.some((x) => x.estado === 'bloquea') || c.ia.marcas.some((x) => x.propuesta === 'problema') ? 'no_apto' : 'apto';
     (m.bitacora = m.bitacora || []).push({ accion: a.p_quitar ? 'ia_excepcion_quitada' : 'ia_excepcion', registro: c.ia.id, por: yo.nombre, motivo: a.p_motivo || null });
     return null;

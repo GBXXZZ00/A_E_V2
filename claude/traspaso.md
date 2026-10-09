@@ -1,9 +1,9 @@
 # Traspaso (se actualiza al cerrar cada sesión)
 
-Actualizado: 09/10/2026. Publicado: `?v=24` (revisión con IA, módulo Revisión y bandeja de la abogada).
+Actualizado: 09/10/2026. Publicado: `?v=25` (revisión con IA que se actualiza sola cuando cambia el expediente).
 
 ## Estado
-- Publicado y con pruebas (test01 a test14 en TODO OK): acceso con PIN, Usuarios, Inicio, Clientes, expediente como hoja (`assets/js/ficha.js`), Comisiones (`comisiones.js`), Actualizar con cruce (`actualizar.js`), proforma y carta en PDF (`documentos.js`, `marca.js`), bienvenidas por enviar (`bienvenidas.js`), ZIP y Excel sin librerías (`archivos.js`), página de privacidad (`privacidad.html`), Enviar pendientes en Comisiones y Factibilidad (`factibilidad.js`, `coordenadas.js`, `mapared.js`, `kmz-lector.js`).
+- Publicado y con pruebas (test01 a test18 en TODO OK): acceso con PIN, Usuarios, Inicio, Clientes, expediente como hoja (`assets/js/ficha.js`), Comisiones (`comisiones.js`), Actualizar con cruce (`actualizar.js`), proforma y carta en PDF (`documentos.js`, `marca.js`), bienvenidas por enviar (`bienvenidas.js`), ZIP y Excel sin librerías (`archivos.js`), página de privacidad (`privacidad.html`), Enviar pendientes en Comisiones y Factibilidad (`factibilidad.js`, `coordenadas.js`, `mapared.js`, `kmz-lector.js`).
 - Base: lotes 1 a 12 aplicados. Corte de referencia para probar comisiones: septiembre 2026 = 59 filas y 49 cumplen; octubre = 48 filas. Si un cambio mueve esos números sin razón, está mal.
 - Documentos nuevos (v21): van directo a Drive, nada al almacenamiento de Supabase (ver punto 6 de la corrida del 09/10).
 - Documentos: los de la app vieja ya están registrados en `archivos` (con `drive_id` y `url_externa`), `documentos` y `documento_archivos`. Son unos 2.000 archivos de unos 390 clientes. Los de clientes ya aprobados por Legal entraron aprobados; el resto por revisar. Desde v13 se ven dentro de la app: `ficha.js` (`bajarDeDrive`) pide el archivo a la función de borde `drive_archivo` (copia en `supabase/funciones/drive_archivo/`), que revisa el permiso con `public.archivo_drive` (mismas reglas de `cliente_ficha`) y entrega el archivo desde Drive. El enlace de Drive ya no se abre. Word y ZIP se ofrecen para descargar.
@@ -41,6 +41,13 @@ Actualizado: 09/10/2026. Publicado: `?v=24` (revisión con IA, módulo Revisión
    - Fila "Carpeta en Drive" en Documentos, solo admin (`public.drive_carpeta_info`, devuelve null a los demás): Abrir y una nota ("Carpeta de la app vieja" o "Creada por la app ... por ..." y "Última subida ..."); sin carpeta: "Se crea sola con el primer documento".
    - "Reemplazar archivo" también para quien revisa (antes solo el líder).
    - No se hace "Quitar": decidido que basta con Reemplazar.
+
+## Hecho el 09/10 (v25): el resultado de la IA se actualiza cuando cambia el expediente
+- Pedido del administrador tras probar 10 clientes (10 de 10 bien): si después de la IA llena un dato (correo, teléfono) o suben un archivo, el resultado no debe quedar viejo.
+- Migración `ia_actualizar_resultado`: columna `ia_corridas.huella` (md5 de lo que usan las reglas: datos del cliente, representantes, faltantes, documentos y archivos vigentes; la guarda `ia_guardar_resultado`), `privado.ia_huella`, `privado.ia_sin_leer(cliente, desde)` (archivos que la corrida no intentó leer) y `ia_actualizar(p_corrida)` (solo admin: vuelve a pasar las reglas sobre la MISMA corrida, conserva las excepciones, solo lee y cobra lo nuevo, bitácora `ia_actualizada`). `revision_estado.ia` trae `cambio` y `sin_leer`. La función de borde no cambió.
+- Pantalla: si cambió un dato y no hay archivos nuevos, la ficha la actualiza sola (gratis; una vez por resultado y máximo 3 por corrida). Si hay archivos nuevos, aviso ámbar con "Actualizar resultado" y el costo, en el bloque de la IA y en la hoja de cierre. La abogada solo ve el aviso.
+- Las 6 corridas abiertas de antes (sin huella) se actualizan solas, gratis, la primera vez que el admin abra cada cliente.
+- Prueba nueva: `pruebas/test18.js`.
 
 ## Hecho el 09/10 (v24): revisión con IA (falta que el administrador la pruebe)
 - Todo lo de `claude/ia-reglas.md`, secciones "Cómo quedó programado" y "Prueba con 5 clientes reales".
