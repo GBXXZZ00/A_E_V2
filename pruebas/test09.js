@@ -47,8 +47,8 @@ const llamadasDrive = (m) => m.llamadas.filter((l) => l[0] === 'drive');
 
     // Word: no se puede ver, se ofrece descargar
     await p.click('[data-ver="' + dDocx.id + '"]'); await p.waitForSelector('#hojaVer.ver'); await visorListo(p);
-    ok(nombre + ': un Word ofrece descargarlo', (await p.textContent('#visor')).includes('Descargar el archivo') && (await p.getAttribute('#visor a[download]', 'download')) === 'rif empresa.docx');
-    const [bajada] = await Promise.all([p.waitForEvent('download'), p.click('#visor a[download]')]);
+    ok(nombre + ': un Word ofrece descargarlo', (await p.textContent('#visor')).includes('Descargar el archivo') && (await p.getAttribute('#bajarArch', 'data-nombre')) === 'rif empresa.docx');
+    const [bajada] = await Promise.all([p.waitForEvent('download'), p.click('#bajarArch')]);
     ok(nombre + ': la descarga trae el nombre del archivo', bajada.suggestedFilename() === 'rif empresa.docx', bajada.suggestedFilename());
     await cerrarTodo(p); await abrirCliente(p, 'Vidrios El Faro');
 

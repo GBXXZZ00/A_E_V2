@@ -120,7 +120,7 @@
       return '<div class="grupo' + (abierto ? ' abierto' : '') + '" data-lider="' + esc(g.lider) + '">' +
         '<button type="button" class="grupo-cab" data-grupo="' + esc(g.lider) + '" aria-expanded="' + !!abierto + '"><span class="tx"><b>' + esc(g.lider) + '</b><small>' + plural(g.filas.length, 'instalación', 'instalaciones') +
           (ult ? ' · <span class="mal">' + ult + ' en último corte</span>' : '') + '</small></span><span class="num">' + cumplen + ' de ' + g.filas.length + '</span>' + ic('abajo') + '</button>' +
-        '<div class="grupo-cuerpo">' +
+        '<div class="grupo-cuerpo">' + barraPendientes(g) +
           bloque(g.lider + '|a', 'Último corte: si no cumplen se pierden', g.filas.filter((f) => f.origen === 'anterior'), 'rojo') +
           bloque(g.lider + '|c', 'Instaladas en este corte', g.filas.filter((f) => f.origen === 'corte')) +
         '</div></div>';
@@ -166,6 +166,103 @@
     ]);
     window.Archivos.descargar(blob, 'Comisiones-' + d.corte.slice(0, 7) + (d.certificado ? '-certificado' : '') + '.xlsx');
     toast('Excel descargado');
+  }
+
+  // ---------- Enviar pendientes al líder (solo admin, corte en curso) ----------
+  const SIN_LIDER = ['sin lider', 'por asignar'];
+  function barraPendientes(g){
+    if(!yo || yo.rol !== 'admin' || !d || d.corte !== d.actual || SIN_LIDER.indexOf(normalizeStr(g.lider)) >= 0) return '';
+    if(!d.filas.some((f) => f.lider === g.lider && !f.cumple)) return '';
+    return '<div class="pend-barra"><button type="button" class="btn btn-2 btn-chico" data-pend="' + esc(g.lider) + '">' + ic('wa') + 'Enviar pendientes</button>' +
+      '<span>Mensaje de seguimiento por WhatsApp</span></div>';
+  }
+  const TOPE_MSJ = 12;   // con más clientes pendientes va un resumen y la lista en PDF
+  let P = null;   // { datos, pendientes, pdf }
+  const saludo = () => { const h = new Date().getHours(); return h < 12 ? 'Buenos días' : h < 19 ? 'Buenas tardes' : 'Buenas noches'; };
+  function detalle(f){
+    if(!f.orden_ok) return 'pendiente por asignar, todavía no comisiona.';
+    const partes = [];
+    if(!f.legal_ok){
+      if((f.falta || []).length) partes.push('falta ' + window.Comun.lista(f.falta));
+      if((f.devuelto || []).length) partes.push('corregir ' + window.Comun.lista(f.devuelto) + ' (lo devolvió Legal)');
+      if(!partes.length) partes.push('documentos en revisión con Legal');
+    }
+    const docs = partes.length ? partes.join('; ') + '.' : '';
+    if(f.pago_ok) return docs;
+    return docs ? docs + ' Debe la instalación.' : 'debe la instalación.';
+  }
+  function armarPendientes(x){
+    const pend = x.filas.filter((f) => !f.cumple); let n = 0;
+    const sec = (origen) => pend.filter((f) => f.origen === origen).map((f) => ({ n: ++n, nombre: window.Documentos.limpiarNombre(f.nombre), codigo: f.codigo || '', detalle: detalle(f) }));
+    const ultimo = sec('anterior'); const actual = sec('corte');
+    const dia = Number(String(x.fin).slice(8, 10));
+    const cierre = x.dias <= 0 ? 'Cierra hoy, el ' + dia : 'Cierra el ' + dia + ' y ' + (x.dias === 1 ? 'falta 1 día' : 'faltan ' + x.dias + ' días');
+    const cumplen = x.filas.filter((f) => f.cumple).length;
+    const cab = saludo() + ', ' + primerNombre(x.nombre) + '. Te paso tus pendientes del corte de ' + mes(x.corte) + '. ' + cierre + '.';
+    const cola = 'Ya cumplen: ' + cumplen + ' de ' + x.filas.length + '.\n\nCualquier documento me lo envías por aquí o lo subes en la app. Gracias.';
+    const linea = (f) => f.n + '. ' + f.nombre + (f.codigo ? ' (' + f.codigo + ')' : '') + ': ' + f.detalle;
+    const conPdf = pend.length > TOPE_MSJ;
+    let cuerpo;
+    if(conPdf){
+      cuerpo = 'Tienes ' + pend.length + ' clientes con pendientes' + (ultimo.length ? ': ' + ultimo.length + ' del último corte (si no cumplen el ' + dia + ', se pierde la comisión) y ' + actual.length + ' de este corte' : '') + '. Te envío la lista completa en PDF.';
+    } else {
+      const b = [];
+      if(ultimo.length) b.push('ÚLTIMO CORTE (si no cumplen el ' + dia + ', se pierde la comisión)\n' + ultimo.map(linea).join('\n'));
+      if(actual.length) b.push('DE ESTE CORTE\n' + actual.map(linea).join('\n'));
+      cuerpo = b.join('\n\n');
+    }
+    return { texto: cab + '\n\n' + cuerpo + '\n\n' + cola, pendientes: pend.length, conPdf, ultimo, actual, cierre, cumplen, dia };
+  }
+  const may = (f) => Object.assign({}, f, { detalle: capital(f.detalle) });
+  function pdfPendientes(){
+    const x = P.datos; const a = P.armado; const hoy = new Date();
+    const blob = window.Documentos.pendientes({ lider: x.nombre, corte: mes(x.corte), cierre: a.cierre, cumplen: a.cumplen, total: x.filas.length,
+      fecha: String(hoy.getDate()).padStart(2, '0') + '/' + String(hoy.getMonth() + 1).padStart(2, '0') + '/' + hoy.getFullYear(),
+      secciones: [{ titulo: 'Último corte: si no cumplen el ' + a.dia + ', se pierde la comisión', rojo: true, filas: a.ultimo.map(may) }, { titulo: 'De este corte', filas: a.actual.map(may) }] });
+    const base = String(x.nombre).normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^A-Za-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 40) || 'lider';
+    return new File([blob], 'Pendientes_' + base + '_' + mes(x.corte) + '.pdf', { type: 'application/pdf' });
+  }
+  async function abrirPendientes(lider){
+    const h = hojaChica('hojaPend', 'tPend');
+    h.innerHTML = cabHoja('tPend', 'Enviar pendientes', lider) + '<div id="cuerpoPend"><span class="sk" style="height:22px;border-radius:8px;display:block;width:60%"></span><span class="sk" style="height:180px;border-radius:20px;display:block;margin-top:14px"></span></div>';
+    if(hojaAbierta() !== 'hojaPend') abrirHoja('hojaPend');
+    P = { lider };
+    let x;
+    try { x = await rpc('pendientes_lider', { p_lider: lider }); }
+    catch (e) { if(P && P.lider === lider && $('cuerpoPend')) $('cuerpoPend').innerHTML = '<div class="vacio" role="alert"><b>No se pudieron armar los pendientes</b><p>' + esc(e.message) + '</p><button type="button" class="btn btn-chico" data-pend="' + esc(lider) + '">Reintentar</button></div>'; return; }
+    if(!P || P.lider !== lider || !$('cuerpoPend')) return;
+    const a = armarPendientes(x); P = { lider, datos: x, armado: a };
+    const num = window.Comun.telWa(x.whatsapp);
+    $('cuerpoPend').innerHTML = '<p class="nota-chica" style="margin-top:0">' + (num ? 'Para ' + esc(x.nombre) + ', al ' + esc(window.Documentos.telFmt(x.whatsapp)) + '.' : esc(x.nombre) + ' no tiene WhatsApp en Usuarios: al abrir WhatsApp eliges su chat.') +
+        (x.ultimo ? ' Último envío: ' + esc(dia(x.ultimo).toLowerCase()) + '.' : '') + '</p>' +
+      '<label class="rotulo arriba" for="pendMsj">Mensaje</label><textarea class="area" id="pendMsj" rows="12" maxlength="6000">' + esc(a.texto) + '</textarea>' +
+      (a.conPdf ? '<p class="nota-chica">Son ' + a.pendientes + ' clientes: el mensaje va corto y la lista completa en PDF. <button type="button" class="enlace" id="pendVerPdf">Ver el PDF</button></p>' : '<p class="nota-chica">Puedes cambiar el texto antes de enviarlo.</p>') +
+      '<div class="error" id="ePend" role="alert"></div><div class="acciones"><button type="button" class="btn btn-ancho" id="pendEnviar">' + ic('wa') + 'Enviar por WhatsApp</button></div>';
+  }
+  function puedeCompartir(){
+    try { return window.matchMedia('(pointer: coarse)').matches && !!navigator.canShare && navigator.canShare({ files: [new File(['x'], 'x.pdf', { type: 'application/pdf' })] }); } catch (e) { return false; }
+  }
+  async function enviarPendientes(b){
+    if(!P || !P.datos) return;
+    const er = $('ePend'); er.textContent = '';
+    const texto = $('pendMsj').value.trim();
+    if(texto.length < 20){ er.textContent = 'Escribe el mensaje antes de enviarlo'; $('pendMsj').focus(); return; }
+    let archivo = null;
+    if(P.armado.conPdf){ try { archivo = pdfPendientes(); } catch (e) { er.textContent = 'No se pudo armar el PDF. Intenta de nuevo'; return; } }
+    const num = P.datos.whatsapp;
+    if(archivo && puedeCompartir()){
+      if(num) try { await navigator.clipboard.writeText(window.Documentos.telFmt(num)); } catch (e) {}
+      try { await navigator.share({ files: [archivo], text: texto }); }
+      catch (e) { if(e && e.name === 'AbortError') return; er.textContent = 'No se pudo abrir Compartir. Intenta de nuevo'; return; }
+    } else {
+      if(archivo) window.Archivos.descargar(archivo, archivo.name);
+      window.open(num ? window.Comun.enlaceWa(num, texto) : 'https://wa.me/?text=' + encodeURIComponent(texto), '_blank', 'noopener');
+    }
+    b.disabled = true;
+    try { await rpc('pendientes_enviados', { p_lider: P.lider, p_pendientes: P.armado.pendientes, p_pdf: !!archivo }); }
+    catch (e) { toast('Se abrió WhatsApp, pero no quedó anotado el envío: ' + e.message, 'error'); b.disabled = false; return; }
+    toast(archivo && !puedeCompartir() ? 'PDF descargado. Adjúntalo en el chat de WhatsApp. Quedó anotado el envío' : 'Quedó anotado el envío');
+    if(hojaAbierta() === 'hojaPend') cerrarHoja();
   }
 
   async function cargar(){
@@ -374,6 +471,10 @@
     if((b = t.closest('[data-ir-campo]')) && K && K.F){ window.Ficha.editarCampo(K.F, b.dataset.irCampo, tras); return; }
     if(t.closest('#pedirCom') && K && K.F){ const c = K.F.cliente; window.Pedir.abrir({ id: c.id, nombre: c.nombre, es_natural: c.es_natural, estatus: c.estatus, falta: K.F.faltantes, tel: c.tel, correo: c.correo }, { yo: yo.nombre, alHacer: tras }); return; }
     if(t.closest('#bajarExcel') && d){ bajarExcel(); return; }
+    if((b = t.closest('[data-pend]')) && d){ abrirPendientes(b.dataset.pend); return; }
+    if((b = t.closest('#pendEnviar'))){ enviarPendientes(b); return; }
+    if(t.closest('#pendVerPdf') && P && P.datos){ let f; try { f = pdfPendientes(); } catch (err) { toast('No se pudo armar el PDF. Intenta de nuevo', 'error'); return; }
+      const u = URL.createObjectURL(f); const w = window.open(u, '_blank'); if(!w) window.Archivos.descargar(f, f.name); setTimeout(() => URL.revokeObjectURL(u), 120000); return; }
     if(t.closest('#abrirCert') && d){ abrirCertificar(); return; }
     if((b = t.closest('#certificar')) && d){ b.disabled = true; b.textContent = 'Certificando…';
       rpc('corte_certificar', { p_corte: d.corte }).then(() => { toast('Corte certificado'); if(hojaAbierta() === 'hojaCert') cerrarHoja(); cache.borrarTodo(); cargar(); })

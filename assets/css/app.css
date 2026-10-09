@@ -191,6 +191,9 @@ a.mod:active{transform:scale(.97)}
 .sub-bloque{display:flex;align-items:center;gap:8px;padding:9px 14px;border-top:1px solid var(--line);font-size:12.5px;font-weight:700}
 .sub-bloque.liso{background:none;color:var(--text2)}
 .sub-bloque .n2{margin-left:auto;font-weight:600}
+.pend-barra{display:flex;align-items:center;gap:12px;padding:10px 14px;border-top:1px solid var(--line)}
+.pend-barra span{font-size:12.5px;color:var(--text3)}
+@media (max-width:560px){ .pend-barra span{display:none} .pend-barra .btn{width:100%} }
 .fila{display:flex;align-items:center;gap:10px;padding:12px 14px;border-top:1px solid var(--line);color:var(--text);min-height:56px}
 .fila .tx{flex:1;min-width:0}
 .fila b{display:block;font-size:14.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}

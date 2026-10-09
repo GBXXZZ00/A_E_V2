@@ -288,5 +288,58 @@
     };
   }
 
-  window.Documentos = { proforma, carta, datosDe, nombreArchivo, telFmt, limpiarNombre, waNumero, PORTAL, _ancho: ancho, _partir: partir };
+  // ---------- Lista de pendientes del líder (varias páginas) ----------
+  // Arma un PDF con varias hojas: solo texto, sin QR ni enlaces
+  function armarPaginas(hojas, titulo){
+    const PT = 0.75; const anchoPt = ANCHO * PT; const altoPt = ALTO * PT; const n = hojas.length;
+    const objetos = [];
+    objetos.push('<< /Type /Catalog /Pages 2 0 R /Lang (es) >>');
+    objetos.push('<< /Type /Pages /Kids [' + hojas.map((h, i) => (5 + i * 2) + ' 0 R').join(' ') + '] /Count ' + n + ' >>');
+    objetos.push('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>');
+    objetos.push('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>');
+    hojas.forEach((h, i) => {
+      const contenido = n2(PT) + ' 0 0 ' + n2(-PT) + ' 0 ' + n2(altoPt) + ' cm\n' + h.ops.join('\n') + '\n';
+      objetos.push('<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ' + n2(anchoPt) + ' ' + n2(altoPt) + '] /Contents ' + (6 + i * 2) + ' 0 R /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> >>');
+      objetos.push('<< /Length ' + contenido.length + ' >>\nstream\n' + contenido + 'endstream');
+    });
+    const info = objetos.length + 1;
+    objetos.push('<< /Title ' + hexTexto(titulo) + ' /Producer (Airtek Empresas) >>');
+    let cuerpo = '%PDF-1.4\n%\xe2\xe3\xcf\xd3\n'; const pos = [];
+    objetos.forEach((t, i) => { pos.push(cuerpo.length); cuerpo += (i + 1) + ' 0 obj\n' + t + '\nendobj\n'; });
+    const inicio = cuerpo.length;
+    cuerpo += 'xref\n0 ' + (objetos.length + 1) + '\n0000000000 65535 f \n' + pos.map((p) => String(p).padStart(10, '0') + ' 00000 n \n').join('') +
+      'trailer\n<< /Size ' + (objetos.length + 1) + ' /Root 1 0 R /Info ' + info + ' 0 R >>\nstartxref\n' + inicio + '\n%%EOF\n';
+    const bytes = new Uint8Array(cuerpo.length);
+    for(let i = 0; i < cuerpo.length; i++) bytes[i] = cuerpo.charCodeAt(i) & 255;
+    return new Blob([bytes], { type: 'application/pdf' });
+  }
+  // x: { lider, corte (mes), cierre (texto), dias, cumplen, total, fecha, secciones: [{ titulo, rojo, filas: [{ n, nombre, codigo, detalle }] }] }
+  function pendientes(x){
+    const hojas = []; let d = null; let y = 0;
+    const nueva = () => { d = new Lapiz(); hojas.push(d); y = ARRIBA; };
+    nueva();
+    y += d.logo(X0, y, 170) + 22;
+    y += d.texto(X0, y, 'Pendientes del corte de ' + x.corte, { tam: 20, negrita: true }) + 8;
+    y += d.texto(X0, y, 'Líder: ' + x.lider + '  ·  ' + x.cierre + '  ·  Ya cumplen ' + x.cumplen + ' de ' + x.total, { tam: 11, color: '#555555', max: W }) + 4;
+    y += d.texto(X0, y, 'Generado el ' + x.fecha, { tam: 10, color: '#777777' }) + 20;
+    x.secciones.forEach((sec) => {
+      if(!sec.filas.length) return;
+      if(y > ABAJO - 90) nueva();
+      d.caja(X0, y, W, 30, sec.rojo ? '#FCEDEB' : '#F2F3F5');
+      d.texto(X0 + 12, y + 7, sec.titulo, { tam: 11, negrita: true, color: sec.rojo ? '#B42318' : GRIS, max: W - 24 }); y += 40;
+      sec.filas.forEach((f) => {
+        const lineas = partir(f.detalle, 10.5, false, W - 34).length; const alto = 16 + lineas * 10.5 * 1.4 + 12;
+        if(y + alto > ABAJO){ nueva(); }
+        d.texto(X0, y, f.n + '.', { tam: 11.5, negrita: true, color: '#777777' });
+        d.texto(X0 + 30, y, f.nombre + (f.codigo ? '  (' + f.codigo + ')' : ''), { tam: 11.5, negrita: true, max: W - 34 });
+        d.texto(X0 + 30, y + 16, f.detalle, { tam: 10.5, alto: 1.4, color: '#333333', max: W - 34 });
+        y += alto; d.caja(X0 + 30, y - 6, W - 30, 0.8, '#E3E6EA');
+      });
+      y += 10;
+    });
+    hojas.forEach((h, i) => { if(hojas.length > 1) h.linea(X0 + W, ALTO - 18, 'Página ' + (i + 1) + ' de ' + hojas.length, { tam: 9, color: '#888888', derecha: true }); });
+    return armarPaginas(hojas, 'Pendientes de ' + x.lider + ', corte de ' + x.corte);
+  }
+
+  window.Documentos = { proforma, carta, pendientes, datosDe, nombreArchivo, telFmt, limpiarNombre, waNumero, PORTAL, _ancho: ancho, _partir: partir };
 })();

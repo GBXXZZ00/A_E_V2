@@ -457,6 +457,24 @@ const RPC = {
     if(!['admin', 'analista'].includes(yo.rol)) return error('No tienes permiso para hacer esto');
     return (m.cargas || []).filter((c) => c.estado !== 'procesando').slice().reverse();
   },
+  pendientes_lider(m, yo, a){
+    if(yo.rol !== 'admin') return error('No tienes permiso para hacer esto');
+    const actual = corteDe(hoy()); const filas = filasComision(m, yo, actual).filter((f) => f.lider === a.p_lider);
+    if(!filas.length) return error('Ese líder no tiene instalaciones en este corte');
+    const txt = (x) => (x.k === 'cedula' || x.k === 'rif_personal') && x.n > 1 ? x.t + ' del representante ' + x.n : x.t;
+    const p = m.personas.find((x) => x.activo && norm(x.nombre) === norm(a.p_lider));
+    const ult = (m.bitacora || []).filter((b) => b.accion === 'pendientes_enviados' && b.registro_id === a.p_lider).pop();
+    return { lider: a.p_lider, nombre: p ? p.nombre : a.p_lider, whatsapp: p ? p.whatsapp || null : null, corte: actual, fin: corteFin(actual), dias: dias(hoy(), corteFin(actual)), ultimo: ult ? ult.en : null,
+      filas: filas.slice().sort((x, y) => (x.origen === 'corte') - (y.origen === 'corte') || x.instalada_en.localeCompare(y.instalada_en)).map((f) => {
+        const c = m.datos.clientes.find((x) => x.id === f.cliente_id); const fl = faltantes(c);
+        return { instalacion_id: f.instalacion_id, cliente_id: f.cliente_id, nombre: f.nombre, codigo: f.codigo, origen: f.origen, cumple: f.cumple, orden_ok: f.orden_ok, legal_ok: f.legal_ok, pago_ok: f.pago_ok,
+          falta: fl.filter((x) => x.e === 'falta').map(txt), devuelto: fl.filter((x) => x.e === 'devuelto').map(txt) };
+      }) };
+  },
+  pendientes_enviados(m, yo, a){
+    if(yo.rol !== 'admin') return error('No tienes permiso para hacer esto');
+    (m.bitacora = m.bitacora || []).push({ usuario: yo.usuario, accion: 'pendientes_enviados', registro_id: a.p_lider, despues: { pendientes: a.p_pendientes, pdf: a.p_pdf }, en: new Date().toISOString() });
+  },
   comisiones_corte(m, yo, a){
     if(yo.rol === 'aliado') return error('No tienes permiso para hacer esto');
     const actual = corteDe(hoy()); let c = a.p_corte ? String(a.p_corte).slice(0, 8) + '01' : actual; if(c > actual) c = actual;

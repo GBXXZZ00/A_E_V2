@@ -692,7 +692,7 @@
     if(ab){ ab.href = url; ab.classList.remove('hidden'); }
     const pdf = a.mime === 'application/pdf' || /\.pdf$/i.test(a.nombre || '');
     const imagen = /^image\//i.test(a.mime || '') || /\.(jpe?g|png|gif|webp)$/i.test(a.nombre || '');
-    if(!pdf && !imagen){ if(ab) ab.classList.add('hidden'); z.innerHTML = '<div>' + papel('Este archivo no se puede ver aquí') + '<a class="btn btn-chico" id="bajarArch" href="' + esc(url) + '" download="' + esc(a.nombre || 'archivo') + '" style="margin-top:12px">Descargar el archivo</a></div>'; }
+    if(!pdf && !imagen){ if(ab) ab.classList.add('hidden'); z.innerHTML = '<div>' + papel('Este archivo no se puede ver aquí') + '<button type="button" class="btn btn-chico" id="bajarArch" data-url="' + esc(url) + '" data-nombre="' + esc(a.nombre || 'archivo') + '" style="margin-top:12px">Descargar el archivo</button></div>'; }
     else if(!pdf) z.innerHTML = '<img src="' + esc(url) + '" alt="' + esc(casilla(d.casilla, d.numero)) + '">';
     else if(window.matchMedia('(min-width:900px)').matches) z.innerHTML = '<iframe src="' + esc(url) + '" title="' + esc(casilla(d.casilla, d.numero)) + '"></iframe>';
     else z.innerHTML = '<div>' + papel('Documento en PDF') + '<a class="btn btn-chico" href="' + esc(url) + '" target="_blank" rel="noopener" style="margin-top:12px">Abrir el PDF</a></div>';
@@ -806,7 +806,7 @@
     if(t.closest('#guardarLote')){ guardarLote(); return; }
     // Ver y revisar
     // Dentro de la hoja Chromium pierde el nombre del archivo: se descarga con un enlace suelto en la página
-    if((b = t.closest('#bajarArch'))){ e.preventDefault(); const x = document.createElement('a'); x.href = b.href; x.download = b.getAttribute('download') || 'archivo'; x.rel = 'noopener'; document.body.appendChild(x); x.click(); x.remove(); return; }
+    if((b = t.closest('#bajarArch'))){ const x = document.createElement('a'); x.href = b.dataset.url; x.download = b.dataset.nombre || 'archivo'; x.rel = 'noopener'; document.body.appendChild(x); x.click(); x.remove(); return; }
     if((b = t.closest('[data-archivo]'))){ ver.archivo = Number(b.dataset.archivo); pintarVer(); cargarArchivo(); return; }
     if(t.closest('#verAprobar')){ revisar('aprobar'); return; }
     if(t.closest('#verDevolver')){ ver.paso = 'devolver'; ver.motivo = null; ver.nota = ''; pintarVer(); return; }
