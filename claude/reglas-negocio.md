@@ -57,6 +57,8 @@ Sin nombres reales: el repo es público. "Analista Senior" es el responsable de 
 - Las reglas salen de la app vieja (App-Airtek-Empresas) y del script de Apps Script que el administrador va a pasar. No funcionaban al 100 %: hay que adaptarlas a esta app y mejorarlas.
 - Lo que revisaba la app vieja: por representante, cédula y RIF vigentes, nombre igual en los dos, que esté en la junta directiva vigente (si no está pero otro sí firma, no bloquea) y documentos duplicados; RIF de la empresa vigente y con el mismo nombre del sistema; acta constitutiva (fecha de inscripción, empresa vigente, régimen de firma, junta vigente y hasta cuándo, domicilio igual al del RIF); actas de asamblea (cambio de nombre, de domicilio, de directores o presidente, ratificación de junta, prórroga, aumento de capital); faltantes críticos y no críticos, incluidos Conatel, correo y teléfono.
 - Veredicto de la app vieja: aprobado, con observaciones o no apto. Desde ahí Legal aprobaba o mandaba los faltantes al líder.
+- La cuenta personal de Gemini ya es de pago.
+- Referencia de cómo funcionaban aliados e IA en las apps viejas: `claude/aliados-app-vieja.md`.
 
 ## Aliados
 - "Aliado Comercial" es el nombre de la cartera: instalaciones de canales más las de los aliados. Hay que mostrar quién instaló cada una.
