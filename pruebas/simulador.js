@@ -27,6 +27,10 @@ async function contexto(navegador, opciones, mundo){
   const sesionDe = (p) => ({ access_token: jwt(p.id), token_type: 'bearer', expires_in: 3600, expires_at: ahora() + 3600, refresh_token: 'r-' + p.id,
     user: { id: p.id, aud: 'authenticated', role: 'authenticated', email: p.usuario + '@aev2.app', user_metadata: {} } });
   const quien = (req) => { try { const t = (req.headers().authorization || '').split(' ')[1]; const sub = JSON.parse(Buffer.from(t.split('.')[1], 'base64url')).sub; return m.personas.find((p) => p.id === sub); } catch (e) { return null; } };
+  // Leaflet por CDN y los mosaicos del mapa: se sirven desde la copia local para no depender de internet
+  await ctx.route('https://unpkg.com/leaflet@1.9.4/dist/**', (r) => { const f = r.request().url().split('/dist/')[1].split('?')[0];
+    try { return r.fulfill({ status: 200, contentType: f.endsWith('.css') ? 'text/css' : 'application/javascript', headers: { 'access-control-allow-origin': '*' }, body: require('fs').readFileSync(__dirname + '/vendor/leaflet/' + f) }); } catch (e) { return r.fulfill({ status: 404, body: '' }); } });
+  await ctx.route(/tile\.openstreetmap\.org|arcgisonline\.com/, (r) => r.fulfill({ status: 200, contentType: 'image/png', body: PNG }));
   await ctx.route('**/*.supabase.co/**', async (r) => {
     const req = r.request(); const u = decodeURIComponent(req.url());
     const cab = { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': '*', 'access-control-expose-headers': 'content-range' };
@@ -93,6 +97,13 @@ async function contexto(navegador, opciones, mundo){
       const r2 = archivoDrive(m, yo, b.archivo); if(r2.error) return j({ error: r2.error }, r2.status);
       const a = r2.archivo; const pdf = a.mime === 'application/pdf';
       return r.fulfill({ status: 200, contentType: /^image\//.test(a.mime) ? 'image/png' : a.mime, headers: cab, body: /^image\//.test(a.mime) ? PNG : pdf ? PDF_MIN : Buffer.from('PK prueba') });
+    }
+    // Enlaces cortos de Google Maps: el servidor devuelve el enlace largo
+    if(u.includes('/functions/v1/resolver_enlace')){
+      const yo = quien(req); const b = cuerpo(); m.llamadas.push(['resolver', b.url]);
+      if(!yo) return j({ error: 'Tu sesión venció. Entra de nuevo' }, 401);
+      const dest = (m.cortos || {})[b.url]; if(!dest) return j({ error: 'No pude leer las coordenadas de ese enlace' }, 422);
+      return j({ url: dest });
     }
     if(u.includes('/functions/v1/gestionar_usuarios')){
       const yo = quien(req); const b = cuerpo(); m.llamadas.push(['usuarios', b]);

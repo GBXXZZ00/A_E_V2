@@ -36,7 +36,7 @@ button.enlace{min-height:44px;padding:0 4px}
 .barra .acciones-bar{display:flex;gap:8px}
 
 /* ---------- Navegación de abajo (teléfono) ---------- */
-.nav{position:fixed;left:0;right:0;bottom:0;z-index:30;display:grid;grid-template-columns:repeat(3,1fr);padding:8px 12px calc(10px + var(--safe-b));background:rgba(255,255,255,.96);-webkit-backdrop-filter:saturate(180%) blur(14px);backdrop-filter:saturate(180%) blur(14px);border-top:1px solid var(--line)}
+.nav{position:fixed;left:0;right:0;bottom:0;z-index:30;display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);padding:8px 12px calc(10px + var(--safe-b));background:rgba(255,255,255,.96);-webkit-backdrop-filter:saturate(180%) blur(14px);backdrop-filter:saturate(180%) blur(14px);border-top:1px solid var(--line)}
 .nav a{display:flex;flex-direction:column;align-items:center;gap:3px;min-height:48px;font-size:11.5px;font-weight:600;color:var(--text3)}
 .nav a span{display:grid;place-items:center;width:60px;height:32px;border-radius:var(--pill);transition:transform 120ms var(--ease-out)}
 .nav a:active span{transform:scale(.94)}

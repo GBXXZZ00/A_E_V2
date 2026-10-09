@@ -6,7 +6,6 @@
   const K_OCULTO = 'ae_pend_oculto';
 
   const PRONTO = [
-    { id: 'factibilidad', nombre: 'Factibilidad', icono: 'wifi', roles: ['admin', 'lider', 'analista'] },
     { id: 'migraciones', nombre: 'Migraciones', icono: 'cambio', roles: ['admin', 'lider', 'analista'] },
     { id: 'dedicados', nombre: 'Dedicados', icono: 'servidor', roles: ['admin', 'abogado', 'analista'] },
     { id: 'aliados', nombre: 'Aliados', icono: 'usuarios', roles: ['admin', 'analista'] }
@@ -85,6 +84,7 @@
       { id: 'clientes', nombre: 'Clientes', icono: 'edificio', enlace: 'clientes.html',
         texto: d.clientes ? (c.en_curso ? c.en_curso + ' con documentos en curso' : 'Sin expedientes en curso') : 'Expediente, documentos e hilo' }
     ];
+    if(['admin', 'lider', 'analista'].indexOf(rol) >= 0) activos.push({ id: 'factibilidad', nombre: 'Factibilidad', icono: 'wifi', enlace: 'factibilidad.html', texto: 'Si una ubicación tiene red' });
     const pronto = PRONTO.filter((m) => m.roles.indexOf(rol) >= 0);
     $('zonaModulos').innerHTML = '<div class="h2 primero">Módulos</div><div class="mods">' +
       activos.map((m) => '<a class="mod" href="' + m.enlace + '" data-modulo="' + m.id + '"><span class="ic">' + ic(m.icono, 'g') + '</span><span><b>' + m.nombre + '</b><small>' + esc(m.texto) + '</small></span></a>').join('') +

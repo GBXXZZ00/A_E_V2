@@ -8,10 +8,11 @@
   const NAV = [
     { id: 'inicio', texto: 'Inicio', icono: 'casa', enlace: 'inicio.html' },
     { id: 'comisiones', texto: 'Comisiones', icono: 'barras', enlace: 'comisiones.html' },
-    { id: 'clientes', texto: 'Clientes', icono: 'edificio', enlace: 'clientes.html' }
+    { id: 'clientes', texto: 'Clientes', icono: 'edificio', enlace: 'clientes.html' },
+    { id: 'factibilidad', texto: 'Factibilidad', icono: 'wifi', enlace: 'factibilidad.html', roles: ['admin', 'analista', 'lider'] }
   ];
 
-  // opciones: { activo: 'inicio'|'comisiones'|'clientes'|null, sinNav: bool, volver: {enlace, texto}, acciones: html }
+  // opciones: { activo: 'inicio'|'comisiones'|'clientes'|'factibilidad'|null, sinNav: bool, volver: {enlace, texto}, acciones: html }
   function montar(p, opciones){
     const o = opciones || {};
     let equipo = S.equipoGuardado();
@@ -22,7 +23,7 @@
     barra.innerHTML =
       (o.volver ? '<a class="barra-volver" href="' + esc(o.volver.enlace) + '">' + ic('volver', 'ch') + esc(o.volver.texto) + '</a>' : '') +
       '<a class="marca" href="inicio.html" aria-label="Inicio"><img class="logo" src="assets/img/logo.svg?v=5" alt="Airtek" width="96" height="12"><span>Empresas</span></a>' +
-      (conNav ? '<nav class="navpc" aria-label="Navegación">' + NAV.map((n) => '<a href="' + n.enlace + '"' + (o.activo === n.id ? ' class="on" aria-current="page"' : '') + '>' + n.texto + '</a>').join('') + '</nav>' : '') +
+      (conNav ? '<nav class="navpc" aria-label="Navegación">' + NAV.filter((n) => !n.roles || n.roles.indexOf(p.rol) >= 0).map((n) => '<a href="' + n.enlace + '"' + (o.activo === n.id ? ' class="on" aria-current="page"' : '') + '>' + n.texto + '</a>').join('') + '</nav>' : '') +
       '<span class="sep"></span>' +
       (o.acciones ? '<div class="acciones-bar" id="accionesBar">' + o.acciones + '</div>' : '') +
       '<button type="button" class="cuenta" id="cuenta" data-abre="hojaCuenta" aria-label="Mi cuenta">' +
@@ -33,7 +34,7 @@
       document.body.classList.add('con-nav');
       let nav = $('navAbajo');
       if(!nav){ nav = document.createElement('nav'); nav.id = 'navAbajo'; nav.className = 'nav'; nav.setAttribute('aria-label', 'Navegación'); document.body.appendChild(nav); }
-      nav.innerHTML = NAV.map((n) => '<a href="' + n.enlace + '"' + (o.activo === n.id ? ' class="on" aria-current="page"' : '') + '><span>' + ic(n.icono) + '</span>' + n.texto + '</a>').join('');
+      nav.innerHTML = NAV.filter((n) => !n.roles || n.roles.indexOf(p.rol) >= 0).map((n) => '<a href="' + n.enlace + '"' + (o.activo === n.id ? ' class="on" aria-current="page"' : '') + '><span>' + ic(n.icono) + '</span>' + n.texto + '</a>').join('');
     }
 
     let hoja = $('hojaCuenta');

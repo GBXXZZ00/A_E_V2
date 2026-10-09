@@ -49,7 +49,7 @@ const archivo = (nombre, buffer) => ({ name: nombre, mimeType: 'application/vnd.
     ok(nombre + ': el punto del MDT viaja con su zona', JSON.stringify(de('AAA001')[0].p) === JSON.stringify([-71.005, 10.005]) && de('DIS001')[0].p === null);
     ok(nombre + ': sin vértice repetido al cerrar', de('AAA001')[0].lng.length === 4);
     let r = await p.textContent('#mapaRed');
-    ok(nombre + ': el resumen del primer mapa', r.includes('8 zonas') && r.includes('Todavía no hay consultas guardadas') && (await p.locator('a[href="factibilidad.html"]').count()) === 1, r);
+    ok(nombre + ': el resumen del primer mapa', r.includes('8 zonas') && r.includes('Todavía no hay consultas guardadas') && (await p.locator('#mapaRed a[href="factibilidad.html"]').count()) === 1, r);
     ok(nombre + ': queda en la bitácora', (mundo.bitacora || []).some((b) => b.accion === 'mapa_red_subido'));
 
     // Una consulta en espera dentro del diseño; el mapa nuevo trae el diseño liberado

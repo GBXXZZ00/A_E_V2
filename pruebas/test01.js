@@ -33,7 +33,7 @@ const visible = (p, id) => p.locator('#' + id).isVisible();
   ok('PIN correcto: entra a Inicio', true);
   await p.waitForSelector('a.mod[data-modulo="comisiones"]');
   ok('Inicio muestra Comisiones y Clientes encendidos', await p.locator('a.mod[data-modulo="comisiones"]').isVisible() && await p.locator('a.mod[data-modulo="clientes"]').isVisible());
-  ok('módulos por construir no son enlaces', (await p.locator('a.mod[data-modulo="factibilidad"]').count()) === 0 && await p.locator('[data-modulo="factibilidad"]').isVisible());
+  ok('Factibilidad ya es un módulo y los por construir no son enlaces', (await p.locator('a.mod[data-modulo="factibilidad"]').count()) === 1 && (await p.locator('a.mod[data-modulo="migraciones"]').count()) === 0 && await p.locator('[data-modulo="migraciones"]').isVisible());
   ok('Inicio: sin desborde horizontal', await sinDesborde(p));
   await p.screenshot({ path: 'capturas/01-tel-inicio.png', fullPage: true });
   await p.click('#cuenta'); await p.waitForSelector('#hojaCuenta.ver');
