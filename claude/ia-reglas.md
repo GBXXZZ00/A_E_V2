@@ -7,7 +7,8 @@ Salen de los scripts viejos (contratos y aliados), que se armaron a prueba y err
 - Cada archivo se lee una sola vez y lo leído se guarda. Las reglas se vuelven a calcular sin costo cuando cambia algo. Solo se paga la lectura de archivos nuevos.
 - El administrador elige qué clientes se corren. La abogada también puede lanzar la revisión.
 - Ante cualquier dato dudoso o ilegible: "revisar a mano". Nunca se aprueba ni se rechaza por suposición.
-- Resultado por cliente: Apto, Con observaciones o No apto, más la lista de lo que falta y por qué. Es una marca aparte del estatus legal; Legal decide.
+- Resultado por cliente: Apto, Con observaciones o No apto, más la lista de lo que falta y por qué. Es una marca aparte del estatus legal. El veredicto final lo aprueba el administrador (09/10).
+- Se revisa el expediente completo en conjunto y sale un solo veredicto, no documento por documento por separado (09/10). Propuesta en espera: la IA deja un borrador de la misma revisión de Legal (cada documento con su problema y detalle) y el administrador la cierra con "Cerrar revisión".
 - Mismo motor para aliados (después).
 
 ## Reglas
@@ -23,7 +24,7 @@ Estado: SEGUIR = se queda como estaba; CAMBIAR = propongo otra cosa; CONFIRMAR =
 ### Empresa
 6. **RIF de la empresa vigente.** Bloquea. SEGUIR.
 7. **Razón social del acta igual a la del RIF** (o una asamblea que cambió el nombre). Bloquea. SEGUIR.
-8. **Domicilio.** La dirección vigente (la del acta, o la de la última asamblea de cambio de domicilio) debe parecerse a la del RIF en un 65 % o más. Si no se parece, falta un acta de asamblea de cambio de domicilio. Se mantiene la excepción del acta con cláusula de sucursales. Si el acta solo trae la ciudad, se mira en las otras páginas antes de concluir. DECIDIDO 09/10.
+8. **Domicilio.** La dirección vigente (la del acta, o la de la última asamblea de cambio de domicilio) debe parecerse a la del RIF en un 65 % o más. Si no se parece, falta un acta de asamblea de cambio de domicilio. Se mantiene la excepción del acta con cláusula de sucursales. Si el acta solo trae la ciudad, se mira en las otras páginas antes de concluir. Bloquea: hace falta el acta de asamblea de cambio de domicilio. DECIDIDO 09/10.
 9. **Fechas de las asambleas:** cuenta la de inscripción en el Registro, no la de la reunión. Las reformas tienen efecto ante terceros desde que se inscriben. SEGUIR.
 10. **Duración de la empresa.** La IA busca en todo el acta, no solo en la cláusula: muchas veces está en otra página o dice que no vence. Si dice que no vence, no vence. Si no aparece en ningún lado, 30 años desde la inscripción. Si la empresa está vencida y hay actas de asamblea, se renueva 10 años desde la inscripción de la última (criterio de la oficina, no norma). DECIDIDO 09/10.
 11. **Conatel** solo para dedicado ISP. SEGUIR.
@@ -32,7 +33,7 @@ Estado: SEGUIR = se queda como estaba; CAMBIAR = propongo otra cosa; CONFIRMAR =
 12. **Junta vigente.** Fecha de la última ratificación o designación inscrita (o del acta constitutiva) más los años que diga el acta (10 si no dice). DECIDIDO 09/10.
 13. **Cláusula de "permanecen hasta ser sustituidos".** Si el período de la junta ya venció pero el acta trae esa cláusula, la junta sigue valiendo mientras no hayan pasado 10 años desde la inscripción del acta que la designó. Pasados 10 años, hace falta un acta de asamblea de ratificación o cambio de junta. Sin corte por año. DECIDIDO 09/10.
 14. **Junta vencida:** bloquea. El administrador puede conceder la excepción. DECIDIDO 09/10.
-15. **El firmante debe estar en la junta vigente** (comparación de nombres en código). Si no está, bloquea y el administrador decide. El caso del poder notariado (alguien fuera de la junta autorizado a firmar) es raro: se sube en "Otros" y lo concede el administrador como excepción. Sin casilla nueva. DECIDIDO 09/10.
+15. **El firmante debe estar en la junta vigente**, en el acta constitutiva o en la de asamblea que lo designó: nombre y número de cédula (comparación en código; el número manda si el acta lo trae). Si no está, bloquea y el administrador decide. El caso del poder notariado (alguien fuera de la junta autorizado a firmar) es raro: se sube en "Otros" y lo concede el administrador como excepción. Sin casilla nueva. DECIDIDO 09/10.
 16. **Régimen de firma.** "Conjunta y/o separada" cuenta como separada (vale la opción menos estricta). Solo cuenta cómo firman los directores, no los poderes a terceros. Si una asamblea cambió la cláusula, vale la más reciente. SEGUIR.
 17. **Firma separada:** basta un representante completo (cédula, RIF y en la junta). **Conjunta:** todos los que exige la cláusula. SEGUIR.
 18. **Contacto** (teléfono y correo) del firmante que cuenta. Lo revisa la app, no la IA. SEGUIR.
@@ -55,7 +56,7 @@ Fecha de referencia: hoy. Las fechas de actas son siempre las de inscripción en
 6. "Conjunta y/o separada", un representante completo y en la junta: Apto aunque falte el segundo.
 7. Firma conjunta con dos directores y solo uno subido: No apto, falta el segundo.
 8. Cédula con vencimiento 2031 y expedición 2016: el cruce da 2026, no cuadra. Revisar a mano, no se aprueba ni se rechaza.
-9. RIF con dirección completa y acta de 2015 con otra dirección (menos de 65 % parecida), sin cláusula de sucursales: Con observaciones, falta acta de cambio de domicilio. Propuesta: el domicilio no bloquea (la regla 8 no lo dice); falta el OK.
+9. RIF con dirección completa y acta de 2015 con otra dirección (menos de 65 % parecida), sin cláusula de sucursales: No apto, falta acta de asamblea de cambio de domicilio.
 10. Firmante que no está en la junta pero trae poder en "Otros": No apto hasta que el administrador conceda la excepción; con la excepción, Apto y la excepción queda en la bitácora.
 11. RIF personal del firmante vencido y cédula vigente: No apto, sin excepción posible (regla 5).
 12. Cédula vencida con excepción concedida por el administrador ("en trámite"): Apto, y el resultado muestra la excepción con su motivo.
