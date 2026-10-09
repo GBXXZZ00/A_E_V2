@@ -17,6 +17,8 @@ Sin nombres reales: el repo es público. "Analista Senior" es el responsable de 
 - La orden de Odoo es obligatoria, debe ser nueva (creada hasta 45 días antes de la instalación) y va siempre a la vista. Sin orden clara: "pendiente por asignar" hasta que el Analista Senior confirme o asigne.
 - Pago: lo dice el TAD (deuda por RIF). El Analista Senior puede marcarlo o quitarlo a mano y eso se respeta en la siguiente carga.
 - Excepciones: solo el administrador, con motivo.
+- Decidido 09/10: la excepción del documento (revisión e IA) y la excepción de la comisión son cosas distintas. Si al cliente le falta un acta, se le puede pagar la comisión por excepción, pero el acta sigue saliendo como "Falta" en el expediente y se sigue buscando. En la revisión solo admiten excepción la junta vencida y el firmante fuera de la junta.
+- Decidido 09/10: Factibilidad no pasa sola a "Vendida" (los líderes no siempre ponen los datos). Si la consulta tiene RIF y aparece una orden de Odoo con ese RIF, se muestra como indicador.
 - Dedicados, conectividad, aliados y reemplazos no comisionan. Los eventos comisionan a veces: decide el Analista Senior.
 - Naturales: también salen en el corte y se pagan. Solo cédula y RIF personal; contacto opcional; sin contrato.
 - Canales comisiona con las mismas reglas de documentos.
