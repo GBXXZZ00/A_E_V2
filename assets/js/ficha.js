@@ -16,6 +16,7 @@
   let ocupado = false;            // hay una subida en curso
   let subiendo = {};              // casillas que se están subiendo ('cedula:1': true): se ven con su barra en la misma fila
   let drive;                      // carpeta del cliente en Drive (solo admin): undefined cargando, null sin permiso
+  let rev = null;                 // revisión en curso (solo quien revisa): marcas sin cerrar, historial y WhatsApp del líder
   let destino = null;             // casilla a la que va el archivo que se está eligiendo
   let ver = null;                 // { docId, cola, paso, motivo, archivo }
   let lote = [];                  // archivos de "Subir varios"
@@ -24,6 +25,11 @@
   const FF = () => F;
   const docDe = (cas, num) => (F.documentos || []).find((d) => d.casilla === cas && d.numero === num);
   const porRevisar = () => (F.documentos || []).filter((d) => d.estado === 'por_revisar');
+  // Revisión de una sola vez: lo marcado no cuenta como revisado hasta cerrar la revisión
+  const marcas = () => (rev && rev.marcas) || [];
+  const marcaDe = (docId) => marcas().find((m) => m.documento === docId) || null;
+  const sinMarcar = () => porRevisar().filter((d) => !marcaDe(d.id));
+  const revisa = () => !!(yo && (yo.rol === 'admin' || yo.rol === 'abogado'));
   const esRequerido = (cas, num) => (F.requeridos || []).some((r) => r.casilla === cas && r.numero === num);
   const liderCorto = () => primerNombre(F.cliente.lider) || 'el líder';
 
@@ -31,9 +37,9 @@
   async function cargar(primera){
     const mio = id; if(!mio) return;
     try {
-      const r = await rpc('cliente_ficha', { p_cliente: mio });
+      const [r, rv] = await Promise.all([rpc('cliente_ficha', { p_cliente: mio }), leerRevision(mio)]);
       if(mio !== id) return;   // ya se abrió otro cliente: esta respuesta no es de él
-      F = r;
+      F = r; rev = rv;
       pintarTodo();
       if(primera) alLlegar();
       cargarDrive(mio);
@@ -46,6 +52,12 @@
       } else if(!encima()) pintarTodo();   // deja los botones como estaban
       toast(e.message, 'error');
     }
+  }
+  // Marcas sin cerrar e historial de revisiones; si falla, la ficha abre igual y avisa en Documentos
+  async function leerRevision(mio){
+    if(!revisa()) return null;
+    try { return await rpc('revision_estado', { p_cliente: mio }); }
+    catch (e) { return { error: e.message, marcas: [], historial: [] }; }
   }
   // Fila "Carpeta en Drive" (solo el administrador): soporte para ver dónde quedó cada archivo
   async function cargarDrive(mio){
@@ -83,9 +95,14 @@
 
   // ---------- Encabezado y paso siguiente ----------
   function paso(){
-    const c = F.cliente; const f = F.faltantes || []; const n = porRevisar().length;
+    const c = F.cliente; const f = F.faltantes || []; const n = F.puedo.revisar ? sinMarcar().length : porRevisar().length;
     const dev = f.some((x) => x.e === 'devuelto'); const fal = f.some((x) => x.e === 'falta');
     if(c.estatus === 'contrato_firmado') return { tono: 'verde', texto: 'Contrato firmado', sub: 'El expediente está completo' };
+    if(F.puedo.revisar && marcas().length){
+      const cierra = rev && rev.puede_cerrar;
+      if(n) return { tono: 'azul', texto: 'Revisión en curso', sub: resumenMarcas() + '. Quedan ' + plural(n, 'documento', 'documentos') + ' por revisar', boton: 'Seguir revisando', accion: 'revisar' };
+      return { tono: 'azul', texto: 'Revisión lista para cerrar', sub: resumenMarcas() + '. ' + (cierra ? capital(liderCorto()) + ' no se entera hasta que la cierres' : 'La cierra el administrador'), boton: cierra ? 'Cerrar revisión' : '', accion: 'cerrarrev' };
+    }
     if(c.estatus === 'por_firmar') return F.puedo.contrato
       ? { tono: 'morado', texto: 'Falta la firma del cliente', sub: 'Cuando llegue, sube el contrato firmado', boton: 'Subir contrato', accion: 'tab:documentos' }
       : { tono: 'morado', texto: 'Falta la firma del cliente', sub: 'El contrato ya se le envió', boton: 'Recordar la firma', accion: 'pedir:firma' };
@@ -116,7 +133,7 @@
       '<div class="contacto">' + window.Pedir.iconos(clienteContacto()) + '</div>' +
       (p ? '<div class="paso ' + p.tono + '" id="paso"><span class="tx">' + esc(p.texto) + (sub ? '<small>' + esc(sub) + '</small>' : '') + '</span>' +
         (p.boton ? '<button type="button" class="btn btn-chico" data-paso="' + esc(p.accion) + '">' + esc(p.boton) + '</button>' : '') + '</div>' : '');
-    const nr = porRevisar().length; const t = $('tabs').querySelector('[data-tab="documentos"]');
+    const nr = F.puedo.revisar ? sinMarcar().length : porRevisar().length; const t = $('tabs').querySelector('[data-tab="documentos"]');
     if(t) t.innerHTML = 'Documentos' + (nr ? '<em>' + nr + '</em>' : '');
   }
 
@@ -134,8 +151,16 @@
           : d.motivo === 'firma' ? quien + ' recordó la firma ' + canal : d.canal === 'llamada' ? quien + ' llamó al cliente' : quien + ' escribió ' + canal; break;
       case 'documento_subido': { const cs = (d.casillas || []).map((x) => casilla(x.casilla, x.numero));
         t = quien + ' subió ' + plural(Number(h.texto) || cs.length || 1, 'documento', 'documentos') + (cs.length && cs.length <= 3 ? ': ' + esc(C.lista(cs)) : ''); break; }
-      case 'documento_aprobado': tono = 'verde'; t = quien + ' aprobó: ' + esc(casilla(d.casilla || h.texto, d.numero)); break;
-      case 'documento_devuelto': tono = 'rojo'; t = quien + ' devolvió: ' + esc(casilla(d.casilla || h.texto, d.numero));
+      case 'documento_aprobado': case 'documento_devuelto':
+        if(h.texto === 'revision'){   // cierre de una revisión: una sola entrada con todo
+          tono = d.devueltos ? 'rojo' : 'verde'; const e = C.ESTATUS[d.estatus] || null;
+          t = quien + ' cerró la revisión: ' + plural(d.aprobados || 0, 'aprobado', 'aprobados') + (d.devueltos ? ' y ' + plural(d.devueltos, 'devuelto', 'devueltos') : '') + (e && d.estatus !== d.antes ? '. Pasó a <b>' + esc(e.t) + '</b>' : '');
+          const dv = (d.documentos || []).filter((x) => x.accion === 'devolver');
+          glo = dv.length ? '<div class="glo rojo">' + dv.map((x) => esc(casilla(x.casilla, x.numero) + ': ' + (C.MOTIVOS[x.motivo] || 'Devuelto') + (x.nota ? '. ' + x.nota : ''))).join('<br>') + '</div>' : '';
+          break;
+        }
+        if(h.tipo === 'documento_aprobado'){ tono = 'verde'; t = quien + ' aprobó: ' + esc(casilla(d.casilla || h.texto, d.numero)); break; }
+        tono = 'rojo'; t = quien + ' devolvió: ' + esc(casilla(d.casilla || h.texto, d.numero));
         glo = '<div class="glo rojo">' + esc((C.MOTIVOS[d.motivo] || 'Devuelto') + (d.nota ? '. ' + d.nota : '')) + '</div>'; break;
       case 'dato': t = quien + ' ' + ({ representante: 'actualizó el contacto del representante ' + (d.orden || 1), correo_empresa: 'actualizó el correo de la empresa', telefono: 'actualizó el teléfono', direccion: 'actualizó la dirección',
         regimen_firma: 'puso el régimen de firma en ' + (d.valor === 'conjunta' ? 'Conjunta' : d.valor === 'individual' ? 'Individual' : 'Sin definir'),
@@ -193,6 +218,12 @@
       return '<button type="button" class="casilla doc falta" data-casilla="' + k + '" data-subir="' + k + '" data-suelta="1"><span class="ico mas" aria-hidden="true">+</span><span class="tx"><b>' + esc(nombre) + '</b><small>' + esc(o.sub || (req ? 'Toca o suelta el archivo aquí' : 'Opcional')) + '</small></span>' +
         (req ? '<span class="chip rojo">Falta</span>' : '') + '</button>';
     }
+    const mk = F.puedo.revisar ? marcaDe(d.id) : null;
+    if(mk){
+      const dv = mk.accion === 'devolver';
+      return '<button type="button" class="casilla doc marcada ' + (dv ? 'dev' : '') + '" data-casilla="' + k + '" data-ver="' + d.id + '"><span class="ico" aria-hidden="true">' + (dv ? '!' : ic('check')) + '</span><span class="tx"><b>' + esc(nombre) + '</b><small>' +
+        esc(dv ? 'Para devolver: ' + (C.MOTIVOS[mk.motivo] || '').toLowerCase() + (mk.nota ? '. ' + mk.nota : '') : 'Para aprobar al cerrar la revisión') + '</small></span><span class="chip ' + (dv ? 'rojo">Devolver' : 'azul">Aprobar') + '</span></button>';
+    }
     if(d.estado === 'devuelto'){
       return '<div class="casilla doc dev" data-casilla="' + k + '"' + (puedeSubir ? ' data-suelta="1"' : '') + '><button type="button" class="cuerpo" data-ver="' + d.id + '"><span class="ico" aria-hidden="true">!</span><span class="tx"><b>' + esc(nombre) + '</b><small>' + esc(subCasilla(d)) + (d.nota ? '. ' + esc(d.nota) : '') + '</small></span></button>' +
         (puedeSubir ? '<button type="button" class="mini pri" data-subir="' + k + '">Subir de nuevo</button>' : '<span class="chip rojo">Devuelto</span>') + '</div>';
@@ -222,7 +253,7 @@
       casillaHtml('cedula', n, { nombre: 'Cédula' }) + casillaHtml('rif_personal', n, { nombre: 'RIF personal' }) + '</section>';
   }
   function pintarDocumentos(){
-    const c = F.cliente; const fal = F.faltantes || []; const nr = porRevisar().length;
+    const c = F.cliente; const fal = F.faltantes || []; const nr = F.puedo.revisar ? sinMarcar().length : porRevisar().length;
     const aprobados = (F.documentos || []).filter((d) => d.estado === 'aprobado').length;
     const nReq = !c.es_natural && c.regimen_firma === 'conjunta' ? 2 : 1;
     const nReps = Math.max(nReq, (F.representantes || []).reduce((a, r) => Math.max(a, r.orden), 1), repExtra);
@@ -231,6 +262,7 @@
       '<div class="acc"><button type="button" class="btn btn-chico btn-2" id="subirVarios"' + (ocupado ? ' disabled' : '') + '>' + ic('subir') + 'Subir varios</button>' +
         (F.puedo.revisar && nr ? '<button type="button" class="btn btn-chico" id="revisarTodo">Revisar ' + nr + '</button>'
           : fal.length ? '<button type="button" class="btn btn-chico" data-paso="pedir:' + pedirM + '">Pedir lo que falta</button>' : '') + '</div>' +
+      barraRevision() +
       '<p class="nota-chica solo-pc" style="text-align:center">También puedes arrastrar un archivo desde tu computadora y soltarlo sobre una casilla.</p>' +
       '<p class="nota-chica' + (ocupado ? '' : ' hidden') + '" id="estadoSubida" role="status"><span class="cargando-linea"><i></i><span id="textoSubida">Subiendo…</span></span></p>' + driveHtml();
     for(let n = 1; n <= nReps; n++) h += grupoRep(n, n <= nReq);
@@ -255,7 +287,27 @@
     const otros = (F.documentos || []).filter((d) => d.casilla === 'otro');
     h += '<section class="bloque" data-grupo="otros"><div class="sec">Otros documentos</div>' + otros.map((d) => casillaHtml('otro', d.numero)).join('') +
       '<button type="button" class="casilla doc" data-subir="otro:0" data-casilla="otro:0" data-suelta="1"><span class="ico mas" aria-hidden="true">+</span><span class="tx"><b>Otro documento</b><small>Lo que no entra en las casillas de arriba</small></span></button></section>';
+    h += historialRevisiones();
     $('tab-documentos').innerHTML = h;
+  }
+  const resumenMarcas = () => { const ap = marcas().filter((m) => m.accion === 'aprobar').length; const dv = marcas().length - ap;
+    return [ap ? plural(ap, 'para aprobar', 'para aprobar') : '', dv ? plural(dv, 'para devolver', 'para devolver') : ''].filter(Boolean).join(' y '); };
+  // Barra de la revisión en curso: lo marcado y el botón para cerrarla
+  function barraRevision(){
+    if(!F.puedo.revisar || !rev) return '';
+    if(rev.error) return '<div class="estado ambar chico" role="alert"><small>No se pudo leer la revisión en curso: ' + esc(rev.error) + '</small><button type="button" class="mini" id="revReintentar">Reintentar</button></div>';
+    if(!marcas().length) return '';
+    const quedan = sinMarcar().length;
+    return '<div class="estado azul chico" id="barraRev"><small>Revisión en curso: ' + esc(resumenMarcas()) + (quedan ? '. Quedan ' + quedan + ' por revisar' : '') + '. ' + esc(capital(liderCorto())) + ' no se entera hasta cerrarla.</small>' +
+      (rev.puede_cerrar ? '<button type="button" class="mini pri" id="abrirCerrarRev">Cerrar revisión</button>' : '') + '</div>';
+  }
+  function historialRevisiones(){
+    const hs = (rev && rev.historial) || []; if(!F.puedo.revisar || !hs.length) return '';
+    return '<section class="bloque" data-grupo="revisiones"><div class="sec">Revisiones<span>' + hs.length + '</span></div>' + hs.map((r) => {
+      const e = C.ESTATUS[r.estatus] || { t: r.estatus || '' }; const dv = r.devueltos > 0;
+      return '<div class="casilla doc ' + (dv ? 'dev' : 'ok') + '"><span class="ico" aria-hidden="true">' + (dv ? '!' : ic('check')) + '</span><span class="tx"><b>' + esc(e.t) + (r.con_ia ? ' · con IA' : '') + '</b><small>' +
+        esc(dia(r.en) + ' ' + hora(r.en) + (r.por ? ' · ' + primerNombre(r.por) : '') + ' · ' + plural(r.aprobados || 0, 'aprobado', 'aprobados') + (dv ? ', ' + plural(r.devueltos, 'devuelto', 'devueltos') : '') + (r.enviado ? ' · se avisó al líder' : '')) + '</small></span></div>';
+    }).join('') + '</section>';
   }
 
   // ---------- Datos ----------
@@ -689,7 +741,7 @@
   }
 
   // ---------- Ver y revisar un documento ----------
-  function abrirRevision(){ const cola = porRevisar().map((d) => d.id); if(!cola.length) return; irTab('documentos'); soltarBlobs(); ver = { docId: cola[0], cola, paso: 'ver', motivo: null, archivo: 0, url: {} }; pintarVer(); abrirHoja('hojaVer'); cargarArchivo(); }
+  function abrirRevision(){ const cola = sinMarcar().map((d) => d.id); if(!cola.length) return; irTab('documentos'); soltarBlobs(); ver = { docId: cola[0], cola, paso: 'ver', motivo: null, archivo: 0, url: {} }; pintarVer(); abrirHoja('hojaVer'); cargarArchivo(); }
   function abrirVer(docId){ soltarBlobs(); ver = { docId, cola: null, paso: 'ver', motivo: null, archivo: 0, url: {} }; pintarVer(); abrirHoja('hojaVer'); cargarArchivo(); }
   function docVer(){ return (F.documentos || []).find((d) => d.id === ver.docId); }
   function pintarVer(){
@@ -702,15 +754,18 @@
       h.classList.add('angosta');
       h.innerHTML = cab + '<div class="hoja-cuerpo"><h2 style="font-size:20px;font-weight:800;margin-bottom:14px">¿Por qué lo devuelves?</h2><div class="motivos" role="radiogroup" aria-label="Motivo">' +
         Object.keys(C.MOTIVOS).map((k) => '<button type="button" role="radio" aria-checked="' + (ver.motivo === k) + '" class="mot' + (ver.motivo === k ? ' on' : '') + '" data-motivo="' + k + '"><i></i>' + esc(C.MOTIVOS[k]) + '</button>').join('') + '</div>' +
-        '<label class="rotulo arriba" for="notaDev">Nota para ' + esc(liderCorto()) + (ver.motivo === 'otro' ? '' : ' (opcional)') + '</label><textarea class="area corta" id="notaDev" maxlength="500">' + esc(ver.nota || '') + '</textarea><div class="error" id="eDev" role="alert"></div></div>' +
-        '<div class="hoja-pie"><button type="button" class="btn btn-2" id="devVolver">Volver</button><button type="button" class="btn btn-peligro" id="devConfirmar"' + (ver.motivo ? '' : ' disabled') + '>Devolver a ' + esc(liderCorto()) + '</button></div>';
+        '<label class="rotulo arriba" for="notaDev">Nota para ' + esc(liderCorto()) + (ver.motivo === 'otro' ? '' : ' (opcional)') + '</label><textarea class="area corta" id="notaDev" maxlength="500">' + esc(ver.nota || '') + '</textarea><div class="error" id="eDev" role="alert"></div><p class="nota">' + esc(capital(liderCorto())) + ' se entera cuando se cierre la revisión.</p></div>' +
+        '<div class="hoja-pie"><button type="button" class="btn btn-2" id="devVolver">Volver</button><button type="button" class="btn btn-peligro" id="devConfirmar"' + (ver.motivo ? '' : ' disabled') + '>Marcar para devolver</button></div>';
       return;
     }
     h.classList.remove('angosta');
     const arch = d.archivos || []; const a = arch[ver.archivo] || arch[0];
     const paginas = arch.length > 1 ? '<div class="paginas">' + arch.map((x, n) => '<button type="button" data-archivo="' + n + '" class="' + (n === ver.archivo ? 'on' : '') + '">Archivo ' + (n + 1) + '</button>').join('') + '</div>' : '';
     const estado = d.estado === 'aprobado' ? '<span class="chip verde">Aprobado</span>' : d.estado === 'devuelto' ? '<span class="chip rojo">Devuelto</span>' : '<span class="chip ambar">Por revisar</span>';
+    const mk = F.puedo.revisar ? marcaDe(d.id) : null;
     const info = '<div class="datos" style="margin-top:0">' + fila('Estado', estado + (d.revisado_por ? ' ' + esc(primerNombre(d.revisado_por)) + ', ' + esc(dia(d.revisado_en).toLowerCase()) : '')) +
+      (mk ? fila('En esta revisión', (mk.accion === 'devolver' ? '<span class="chip rojo">Devolver</span> ' + esc((C.MOTIVOS[mk.motivo] || '') + (mk.nota ? '. ' + mk.nota : '')) : '<span class="chip azul">Aprobar</span>') +
+        ' <button type="button" class="enlace" id="verQuitarMarca">Quitar marca</button>') : '') +
       fila('Subido', esc(dia(d.subido_en)) + (d.subido_por ? ' por ' + esc(d.subido_por) : '')) +
       (d.estado === 'devuelto' ? fila('Motivo', esc(C.MOTIVOS[d.motivo] || '') + (d.nota ? '. ' + esc(d.nota) : '')) : '') +
       (d.firmado_en ? fila('Firmado', esc(fecha(d.firmado_en, true))) : '') +
@@ -722,7 +777,7 @@
         '<p class="nota">Sirve para avisar antes de que se venza.</p>' : '');
     const puedeSubir = !(d.casilla.indexOf('contrato_') === 0 && !F.puedo.contrato);
     const pie = F.puedo.revisar
-      ? '<div class="hoja-pie"><button type="button" class="btn btn-peligro" id="verDevolver">Devolver</button><button type="button" class="btn" id="verAprobar">' + (d.estado === 'aprobado' ? 'Guardar' : ver.cola && pos < ver.cola.length ? 'Aprobar y seguir' : 'Aprobar') + '</button></div>'
+      ? '<div class="hoja-pie"><button type="button" class="btn btn-peligro" id="verDevolver">Devolver</button><button type="button" class="btn" id="verAprobar">' + (d.estado === 'aprobado' && !mk ? 'Guardar' : ver.cola && pos < ver.cola.length ? 'Aprobar y seguir' : 'Aprobar') + '</button></div>'
       : '<div class="hoja-pie">' + (puedeSubir ? '<button type="button" class="btn btn-2" id="verReemplazar">Reemplazar</button>' : '') + '<button type="button" class="btn" data-cierra="1">Cerrar</button></div>';
     h.innerHTML = cab + '<div class="hoja-cuerpo"><div class="revisar-cols"><section><div class="visor" id="visor"><span class="cargando-linea"><i></i>Abriendo el archivo</span></div>' + paginas +
       '<div class="visor-pie"><span>' + (arch.length > 1 ? 'Archivo ' + (ver.archivo + 1) + ' de ' + arch.length : '') + '</span><a class="enlace hidden" id="abrirCompleto" target="_blank" rel="noopener">Abrir completo</a></div></section>' +
@@ -782,18 +837,82 @@
       args.p_motivo = ver.motivo; args.p_nota = ver.nota || null;
     }
     const b = $(accionRev === 'aprobar' ? 'verAprobar' : 'devConfirmar'); b.disabled = true;
-    try { await rpc('documento_revisar', args); }
+    // Solo se marca: el estatus y el aviso al líder esperan a "Cerrar revisión"
+    try { await rpc('documento_marcar', args); }
     catch (e) { toast(e.message, 'error'); if(document.contains(b)) b.disabled = false; return; }
-    toast(accionRev === 'aprobar' ? 'Aprobado' : 'Devuelto a ' + liderCorto());
+    toast(accionRev === 'aprobar' ? 'Marcado para aprobar' : 'Marcado para devolver');
     if(!ver || hojaAbierta() !== 'hojaVer'){ cargar(); return; }   // cerraron el visor mientras guardaba
     const cola = ver.cola; const actual = d.id;
     try {
-      F = await rpc('cliente_ficha', { p_cliente: id });
-      // Sigue con el próximo que quede por revisar; si no hay, cierra
-      const sig = cola ? cola.slice(cola.indexOf(actual) + 1).find((x) => { const y = (F.documentos || []).find((z) => z.id === x); return y && y.estado === 'por_revisar'; }) : null;
+      await recargarRevision();
+      // Sigue con el próximo que quede sin marcar; si no hay, cierra
+      const sig = cola ? cola.slice(cola.indexOf(actual) + 1).find((x) => { const y = (F.documentos || []).find((z) => z.id === x); return y && y.estado === 'por_revisar' && !marcaDe(x); }) : null;
       if(sig){ soltarBlobs(); ver = { docId: sig, cola, paso: 'ver', motivo: null, archivo: 0, url: {} }; pintarTodo(); cargarArchivo(); }
-      else { ver = null; cerrarHoja(); pintarTodo(); if(cola) toast('Listo. No quedan documentos por revisar'); }
-    } catch (e) { ver = null; if(hojaAbierta() === 'hojaVer') cerrarHoja(); toast('Quedó guardado, pero no se pudo actualizar la pantalla. Cierra y abre el cliente', 'error'); }
+      else { ver = null; cerrarHoja(); pintarTodo(); if(cola) toast(rev && rev.puede_cerrar ? 'Listo. Toca Cerrar revisión para avisarle a ' + liderCorto() : 'Listo. El administrador cierra la revisión'); }
+    } catch (e) { ver = null; if(hojaAbierta() === 'hojaVer') cerrarHoja(); toast('Quedó marcado, pero no se pudo actualizar la pantalla. Cierra y abre el cliente', 'error'); }
+  }
+  async function recargarRevision(){
+    const [f, r] = await Promise.all([rpc('cliente_ficha', { p_cliente: id }), rpc('revision_estado', { p_cliente: id })]);
+    F = f; rev = r;
+  }
+  async function quitarMarca(b){
+    const d = docVer(); if(!d) return; b.disabled = true;
+    try { await rpc('documento_marcar', { p_documento: d.id, p_accion: 'quitar', p_motivo: null, p_nota: null, p_vence: null }); await recargarRevision(); }
+    catch (e) { toast(e.message, 'error'); if(document.contains(b)) b.disabled = false; return; }
+    toast('Marca quitada'); pintarTodo();
+  }
+
+  // ---------- Cerrar revisión: todo junto, una sola vez ----------
+  function estatusDespues(){
+    const c = F.cliente; if(['grandes_negocios', 'documentos_pendientes', 'documentos_solicitados', 'documentos_en_revision', 'documentos_recibidos'].indexOf(c.estatus) < 0) return '';
+    const docDeFalta = (x) => (F.documentos || []).find((d) => d.casilla === x.k && d.numero === x.n) || {};
+    const dv = marcas().some((m) => m.accion === 'devolver') || (F.faltantes || []).some((x) => { if(x.e !== 'devuelto') return false; const m = marcaDe(docDeFalta(x).id); return !m || m.accion !== 'aprobar'; });
+    const falta = (F.faltantes || []).some((x) => x.e === 'falta');
+    const nuevo = dv ? 'documentos_pendientes' : falta ? ((F.documentos || []).length ? 'documentos_pendientes' : c.estatus) : sinMarcar().some((d) => esRequerido(d.casilla, d.numero)) ? 'documentos_en_revision' : 'documentos_recibidos';
+    return (C.ESTATUS[nuevo] || {}).t || '';
+  }
+  function mensajeRevision(){
+    const c = F.cliente; const lis = [];
+    marcas().filter((m) => m.accion === 'devolver').forEach((m) => { const d = (F.documentos || []).find((x) => x.id === m.documento);
+      lis.push('• ' + (d ? casilla(d.casilla, d.numero) : 'Documento') + ': ' + (C.MOTIVOS[m.motivo] || 'devuelto').toLowerCase() + (m.nota ? '. ' + m.nota : '')); });
+    (F.faltantes || []).filter((x) => x.e === 'falta').forEach((x) => lis.push('• Falta ' + x.t));
+    if(!lis.length) return '';
+    const quien = primerNombre(c.lider);
+    return saludoHora() + (quien ? ', ' + quien : '') + '. Del cliente ' + c.nombre + ' (' + docFmt(c.doc_tipo, c.doc_numero) + ') hace falta:\n' + lis.join('\n') + '\nCuando lo tengas, súbelo a la app. Gracias.';
+  }
+  function abrirCerrar(){
+    if(!rev || !rev.puede_cerrar || !marcas().length) return;
+    const ap = marcas().filter((m) => m.accion === 'aprobar'); const dv = marcas().filter((m) => m.accion === 'devolver');
+    const nom = (m) => { const d = (F.documentos || []).find((x) => x.id === m.documento); return d ? casilla(d.casilla, d.numero) : 'Documento'; };
+    const quedan = sinMarcar().length; const despues = estatusDespues(); const msj = mensajeRevision();
+    $('hojaCerrarRev').innerHTML = cabHoja('tCerrarRev', 'Cerrar revisión', F.cliente.nombre) +
+      '<div class="datos" style="margin-top:0">' +
+        (ap.length ? fila('Se aprueban', esc(C.lista(ap.map(nom)))) : '') +
+        (dv.length ? fila('Se devuelven', dv.map((m) => esc(nom(m) + ': ' + (C.MOTIVOS[m.motivo] || ''))).join('<br>')) : '') +
+        (despues ? fila('Estatus', esc(despues)) : '') + '</div>' +
+      (quedan ? '<div class="estado ambar chico"><small>Quedan ' + plural(quedan, 'documento', 'documentos') + ' sin revisar. Seguirán por revisar.</small></div>' : '') +
+      (msj ? '<label class="rotulo arriba" for="msjRev">Mensaje para ' + esc(liderCorto()) + '</label><textarea class="area" id="msjRev" maxlength="4000">' + esc(msj) + '</textarea>' +
+        '<p class="nota">Puedes cambiarlo antes de enviarlo. ' + (rev.lider_whatsapp ? 'Se abre el WhatsApp de ' + esc(liderCorto()) + '.' : 'No tiene WhatsApp en Usuarios: se abre WhatsApp para que elijas el chat.') + '</p>'
+        : '<p class="nota">No hay nada que pedirle a ' + esc(liderCorto()) + '.</p>') +
+      '<div class="error" id="eCerrar" role="alert"></div>' +
+      '<div class="acciones">' + (msj ? '<button type="button" class="btn btn-2" id="cerrarRevSolo">Cerrar sin enviar</button><button type="button" class="btn" id="cerrarRevEnviar">Cerrar y enviar</button>'
+        : '<button type="button" class="btn btn-ancho" id="cerrarRevSolo">Cerrar revisión</button>') + '</div>';
+    abrirHoja('hojaCerrarRev');
+  }
+  async function cerrarRevision(enviar){
+    const er = $('eCerrar'); er.textContent = '';
+    const m = $('msjRev'); const texto = m ? m.value.trim() : '';
+    if(enviar && texto.length < 10){ er.textContent = 'Escribe el mensaje o cierra sin enviar'; m.focus(); return; }
+    const bs = ['cerrarRevSolo', 'cerrarRevEnviar'].map($).filter(Boolean); bs.forEach((x) => { x.disabled = true; });
+    // WhatsApp se abre primero: después de esperar al servidor el navegador lo bloquearía
+    if(enviar) window.open(rev && rev.lider_whatsapp ? C.enlaceWa(rev.lider_whatsapp, texto) : 'https://wa.me/?text=' + encodeURIComponent(texto), '_blank', 'noopener');
+    let r;
+    try { r = await rpc('revision_cerrar', { p_cliente: id, p_mensaje: texto || null, p_enviado: !!enviar }); }
+    catch (e) { er.textContent = (enviar ? 'Se abrió WhatsApp, pero la revisión no se cerró: ' : '') + e.message; bs.forEach((x) => { if(document.contains(x)) x.disabled = false; }); return; }
+    if(hojaAbierta() === 'hojaCerrarRev') cerrarHoja();
+    const e = C.ESTATUS[r && r.estatus] || null;
+    toast('Revisión cerrada' + (e ? '. Quedó en ' + e.t : ''));
+    cargar();
   }
 
   // ---------- Eventos ----------
@@ -804,7 +923,7 @@
     if((b = t.closest('#tabs [data-tab]'))){ irTab(b.dataset.tab); return; }
     if((b = t.closest('[data-paso]'))){
       const a = b.dataset.paso;
-      if(a === 'revisar') abrirRevision(); else if(a === 'estatus') abrirEstatus(); else if(a.indexOf('pedir:') === 0) pedir(a.slice(6)); else if(a.indexOf('tab:') === 0){ irTab(a.slice(4)); const g = document.querySelector('[data-grupo="contrato"]'); if(g) g.scrollIntoView({ block: 'center' }); }
+      if(a === 'revisar') abrirRevision(); else if(a === 'cerrarrev') abrirCerrar(); else if(a === 'estatus') abrirEstatus(); else if(a.indexOf('pedir:') === 0) pedir(a.slice(6)); else if(a.indexOf('tab:') === 0){ irTab(a.slice(4)); const g = document.querySelector('[data-grupo="contrato"]'); if(g) g.scrollIntoView({ block: 'center' }); }
       return;
     }
     if(t.closest('#hiloMas')){ hiloTodo = true; pintarHilo(); return; }
@@ -825,6 +944,11 @@
     if(t.closest('#agregarRep')){ const n = Math.max((F.representantes || []).reduce((a, x) => Math.max(a, x.orden), 1), repExtra, !F.cliente.es_natural && F.cliente.regimen_firma === 'conjunta' ? 2 : 1) + 1; repExtra = Math.min(4, n); pintarDocumentos(); const g = document.querySelector('[data-grupo="rep' + repExtra + '"]'); if(g) g.scrollIntoView({ block: 'center' }); return; }
     if(t.closest('#subirVarios')){ abrirVarios(); return; }
     if(t.closest('#revisarTodo')){ abrirRevision(); return; }
+    if(t.closest('#abrirCerrarRev')){ abrirCerrar(); return; }
+    if(t.closest('#cerrarRevSolo')){ cerrarRevision(false); return; }
+    if(t.closest('#cerrarRevEnviar')){ cerrarRevision(true); return; }
+    if(t.closest('#revReintentar')){ cargar(); return; }
+    if((b = t.closest('#verQuitarMarca'))){ quitarMarca(b); return; }
     if(t.closest('#cambiarEstatus')){ abrirEstatus(); return; }
     if((b = t.closest('[data-estatus]'))){
       Array.prototype.forEach.call($('hojaEstatus').querySelectorAll('.mot'), (x) => { const on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-checked', String(on)); });
@@ -896,7 +1020,8 @@
       '<section class="hoja completa lado" id="hojaVarios" role="dialog" aria-modal="true" aria-labelledby="tVarios" aria-hidden="true"></section>' +
       '<section class="hoja" id="hojaCampo" role="dialog" aria-modal="true" aria-labelledby="tCampo" aria-hidden="true"></section>' +
       '<section class="hoja" id="hojaEstatus" role="dialog" aria-modal="true" aria-labelledby="tEstatus" aria-hidden="true"></section>' +
-      '<section class="hoja" id="hojaEnviar" role="dialog" aria-modal="true" aria-labelledby="tEnviar" aria-hidden="true"></section>';
+      '<section class="hoja" id="hojaEnviar" role="dialog" aria-modal="true" aria-labelledby="tEnviar" aria-hidden="true"></section>' +
+      '<section class="hoja" id="hojaCerrarRev" role="dialog" aria-modal="true" aria-labelledby="tCerrarRev" aria-hidden="true"></section>';
     while(mas.firstChild) document.body.appendChild(mas.firstChild);
     C.prepararHojas();
     $('archivo').addEventListener('change', alElegir);
@@ -922,7 +1047,7 @@
   function abrir(idCliente, opciones){
     const o = opciones || {};
     montar();
-    yo = o.yo || yo; id = Number(idCliente) || 0; drive = undefined; if(!id) return;
+    yo = o.yo || yo; id = Number(idCliente) || 0; drive = undefined; rev = null; if(!id) return;
     F = null; fuera = null; hiloTodo = false; soloNotas = false; repExtra = 0; actaExtra = 0; llegada = { revisar: o.revisar, pedir: o.pedir, casilla: o.casilla, campo: o.campo, enviar: o.enviar }; alCerrar = o.alCerrar || null;
     $('cabFicha').innerHTML = '<div class="f-cab"><span class="mono sk" aria-hidden="true"></span><div class="tx"><span class="sk" style="width:70%;height:22px"></span><span class="sk" style="width:50%;height:12px;margin-top:8px"></span></div>' +
       '<button type="button" class="cerrar" data-cierra="1" aria-label="Cerrar">' + ic('x') + '</button></div>';

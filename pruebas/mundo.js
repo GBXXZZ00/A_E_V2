@@ -401,6 +401,7 @@ const RPC = {
         let d = busca(c, ca.casilla, num);
         if(!d){ d = { id: ++sec, casilla: ca.casilla, numero: num }; c.documentos.push(d); }
         Object.assign(d, { estado: 'por_revisar', motivo: null, nota: null, vence_en: it.vence_en || null, firmado_en: it.firmado_en || null, subido_en: hace(0), subido_por: yo.nombre, revisado_en: null, revisado_por: null, archivos, comparte: [] });
+        if(c.marcas) delete c.marcas[d.id];   // archivo nuevo: la marca anterior ya no vale (disparador marca_al_subir)
         etiquetas.push({ casilla: ca.casilla, numero: num }); n++;
       }
       if(it.casillas.length > 1) it.casillas.forEach((ca) => { const d = c.documentos.find((x) => x.archivos === archivos && x.casilla === ca.casilla); if(d) d.comparte = c.documentos.filter((x) => x.archivos === archivos && x !== d).map((x) => ({ casilla: x.casilla, numero: x.numero })); });
@@ -416,6 +417,47 @@ const RPC = {
         Object.assign(d, { estado: 'devuelto', motivo: a.p_motivo, nota: nt, revisado_por: yo.nombre, revisado_en: hace(0) }); c.hilo.push(linea('documento_devuelto', d.casilla, { casilla: d.casilla, numero: d.numero, motivo: a.p_motivo, nota: nt }, yo.nombre)); }
       gestion(c, yo); recalcular(c, yo); return null; }
     return error('Ese documento ya no existe');
+  },
+  // Revisión de una sola vez: marcar no cambia el estatus ni deja hilo; cerrar aplica todo junto
+  documento_marcar(m, yo, a){
+    if(!['admin', 'abogado'].includes(yo.rol)) return error('No tienes permiso para hacer esto');
+    for(const c of m.datos.clientes){ const d = c.documentos.find((x) => x.id === Number(a.p_documento)); if(!d) continue;
+      const nt = String(a.p_nota || '').trim() || null; c.marcas = c.marcas || {};
+      if(a.p_accion === 'quitar') delete c.marcas[d.id];
+      else if(a.p_accion === 'aprobar') c.marcas[d.id] = { documento: d.id, accion: 'aprobar', motivo: null, nota: null, vence_en: a.p_vence || null, por: yo.nombre, en: hace(0), origen: 'manual' };
+      else if(a.p_accion === 'devolver'){
+        if(!['vencido', 'ilegible', 'no_corresponde', 'falta_firma', 'otro'].includes(a.p_motivo)) return error('Elige por qué lo devuelves');
+        if(a.p_motivo === 'otro' && !nt) return error('Escribe el motivo en la nota');
+        c.marcas[d.id] = { documento: d.id, accion: 'devolver', motivo: a.p_motivo, nota: nt, vence_en: null, por: yo.nombre, en: hace(0), origen: 'manual' };
+      } else return error('Acción no reconocida');
+      (m.bitacora = m.bitacora || []).push({ accion: 'documento_marcado', registro: d.id, por: yo.nombre });
+      return null; }
+    return error('Ese documento ya no existe');
+  },
+  revision_estado(m, yo, a){
+    if(!['admin', 'abogado'].includes(yo.rol)) return error('No tienes permiso para hacer esto');
+    const c = visibles(m, yo).find((x) => x.id === Number(a.p_cliente)); if(!c) return error('No tienes acceso a este cliente');
+    const p = m.personas.find((x) => x.id === c.lider_id);
+    return { puede_cerrar: yo.rol === 'admin', lider_whatsapp: p ? p.whatsapp || null : null, marcas: Object.values(c.marcas || {}), historial: (c.revisiones || []).slice().reverse() };
+  },
+  revision_cerrar(m, yo, a){
+    if(yo.rol !== 'admin') return error('No tienes permiso para hacer esto');
+    const c = visibles(m, yo).find((x) => x.id === Number(a.p_cliente)); if(!c) return error('No tienes acceso a este cliente');
+    const marcas = Object.values(c.marcas || {}); if(!marcas.length) return error('No hay documentos marcados. Aprueba o devuelve al menos uno');
+    const antes = c.estatus; let ap = 0, dv = 0; const det = [];
+    marcas.forEach((k) => { const d = c.documentos.find((x) => x.id === k.documento); if(!d) return;
+      if(k.accion === 'aprobar'){ Object.assign(d, { estado: 'aprobado', motivo: null, nota: null, vence_en: k.vence_en || d.vence_en, revisado_por: k.por, revisado_en: hace(0) }); ap++; }
+      else { Object.assign(d, { estado: 'devuelto', motivo: k.motivo, nota: k.nota, revisado_por: k.por, revisado_en: hace(0) }); dv++; }
+      det.push({ casilla: d.casilla, numero: d.numero, accion: k.accion, motivo: k.motivo, nota: k.nota }); });
+    c.marcas = {}; gestion(c, yo);
+    const n0 = c.hilo.length; recalcular(c, yo);
+    const rid = (m.secRev = (m.secRev || 0) + 1);
+    const info = { revision: rid, aprobados: ap, devueltos: dv, documentos: det, antes, estatus: c.estatus };
+    const l = linea(dv ? 'documento_devuelto' : 'documento_aprobado', 'revision', info, yo.nombre);
+    if(c.hilo.length > n0) c.hilo[c.hilo.length - 1] = l; else c.hilo.push(l);   // una sola entrada en el hilo
+    (c.revisiones = c.revisiones || []).push({ id: rid, en: hace(0), por: yo.nombre, antes, estatus: c.estatus, aprobados: ap, devueltos: dv, detalle: det, enviado: !!a.p_enviado, con_ia: false });
+    (m.bitacora = m.bitacora || []).push({ accion: 'revision_cerrada', registro: rid, por: yo.nombre, mensaje: a.p_mensaje || null, enviado: !!a.p_enviado });
+    return info;
   },
   tad_iniciar(m, yo, a){
     if(!['admin', 'analista'].includes(yo.rol)) return error('No tienes permiso para hacer esto');

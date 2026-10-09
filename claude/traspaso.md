@@ -1,6 +1,6 @@
 # Traspaso (se actualiza al cerrar cada sesión)
 
-Actualizado: 09/10/2026. Publicado: `?v=22` (subidas directo a Drive, fila de carpeta en Drive, "Subiendo a Drive" en la casilla y Reemplazar para quien revisa).
+Actualizado: 09/10/2026. Publicado: `?v=23` (revisión de una sola vez: marcar y Cerrar revisión).
 
 ## Estado
 - Publicado y con pruebas (test01 a test14 en TODO OK): acceso con PIN, Usuarios, Inicio, Clientes, expediente como hoja (`assets/js/ficha.js`), Comisiones (`comisiones.js`), Actualizar con cruce (`actualizar.js`), proforma y carta en PDF (`documentos.js`, `marca.js`), bienvenidas por enviar (`bienvenidas.js`), ZIP y Excel sin librerías (`archivos.js`), página de privacidad (`privacidad.html`), Enviar pendientes en Comisiones y Factibilidad (`factibilidad.js`, `coordenadas.js`, `mapared.js`, `kmz-lector.js`).
@@ -42,10 +42,19 @@ Actualizado: 09/10/2026. Publicado: `?v=22` (subidas directo a Drive, fila de ca
    - "Reemplazar archivo" también para quien revisa (antes solo el líder).
    - No se hace "Quitar": decidido que basta con Reemplazar.
 
+## Hecho el 09/10 (v23): revisión de una sola vez (falta que el administrador la pruebe con datos reales)
+- Base (migración `revision_una_sola_vez`): tabla `revision_marcas` (una marca por documento: aprobar o devolver con motivo, nota y vencimiento; `origen` manual o ia) y tabla `revisiones` (historial: quién cerró, estatus antes y después, aprobados, devueltos, detalle, mensaje, si se envió; `ia_corrida_id` libre para la IA). RLS: solo leen admin y abogado; escriben solo las funciones.
+- Funciones: `documento_marcar` (admin y abogado; no cambia estatus, no deja hilo, deja bitácora `documento_marcado`), `revision_estado` (marcas, historial y WhatsApp del líder) y `revision_cerrar` (solo admin: aplica todas las marcas, bitácora por documento y `revision_cerrada`, un solo recalcular, una sola entrada en el hilo con texto `revision`). Disparador `documentos_marca_al_subir`: si suben un archivo nuevo a la casilla, su marca se borra.
+- Probado en la base con función temporal (deshecha): marcar no toca estatus ni hilo; cierre pasa a Documentos pendientes con una sola entrada; sin marcas no cierra; motivo inválido o "otro" sin nota se rechazan; sin perfil no entra; el disparador limpia. Septiembre 59 y 49 antes y después.
+- Pantalla (`ficha.js`): Aprobar y Devolver solo marcan; la casilla dice "Para aprobar al cerrar" o "Para devolver: motivo"; barra "Revisión en curso" con Cerrar revisión (solo admin); Quitar marca en el visor; hoja Cerrar revisión con resumen, estatus que quedará y mensaje editable para el líder (Cerrar sin enviar o Cerrar y enviar por WhatsApp); historial "Revisiones" al final de Documentos; el hilo muestra "cerró la revisión: N aprobados y M devueltos". El líder no ve nada hasta el cierre.
+- Cambio para la abogada: ya no aprueba ni devuelve directo; marca y el administrador cierra (decisión del 09/10: el veredicto final es del administrador).
+- `documento_revisar` sigue existiendo para la app vieja en caché; la v23 no la usa. Hay una función `privado.prueba_tmp` que no es de esta sesión (aviso del asesor de seguridad).
+
 ## Siguientes tareas para Claude Code, en orden
 Antes de cada una: explicar en simple y esperar el OK.
 
-1. **Revisión de documentos de una sola vez (pendiente, decidido el 09/10, va primero).** Hoy, al devolver un documento, el cliente pasa en ese momento a Documentos pendientes. Lo nuevo: quien revisa (el administrador o la IA) marca cada documento con su problema y detalle sin que el líder se entere todavía; al final, "Cerrar revisión" cambia el estatus una sola vez (Documentos pendientes o Recibidos), deja una sola entrada en el hilo y arma un solo mensaje al líder con la lista de qué corregir. La IA propone marcas; la persona las confirma en "Cerrar revisión". Toca estatus y Legal de comisiones: probar contra septiembre (59 y 49) antes y después. La IA se está armando en el chat del proyecto con este flujo en mente.
+1. **Revisión de una sola vez: HECHA en v23** (ver arriba). Falta la prueba del administrador.
+   Antes: Hoy, al devolver un documento, el cliente pasa en ese momento a Documentos pendientes. Lo nuevo: quien revisa (el administrador o la IA) marca cada documento con su problema y detalle sin que el líder se entere todavía; al final, "Cerrar revisión" cambia el estatus una sola vez (Documentos pendientes o Recibidos), deja una sola entrada en el hilo y arma un solo mensaje al líder con la lista de qué corregir. La IA propone marcas; la persona las confirma en "Cerrar revisión". Toca estatus y Legal de comisiones: probar contra septiembre (59 y 49) antes y después. La IA se está armando en el chat del proyecto con este flujo en mente.
 2. Lo que salga de las pruebas del administrador de lo hecho el 09/10.
 3. **Factibilidad paso 6**: avisos al teléfono y cierre automático a "Vendida" cuando aparezca una orden de Odoo con ese RIF.
 4. **Estado de carga en todo lo que se congela** (pendiente): revisar pantalla por pantalla cada espera (guardar, enviar, cargar) para que siempre se vea que está trabajando, como "Subiendo a Drive".

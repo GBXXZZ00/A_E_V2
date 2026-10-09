@@ -524,6 +524,7 @@ button.casilla.doc:active{transform:scale(.99)}
 .doc.rev .ico{background:var(--ambar-bg);color:var(--ambar)}
 .doc.dev .ico{background:var(--rojo-bg);color:var(--rojo)}
 .doc.dev .tx small{color:var(--rojo);font-weight:600}
+.doc.marcada:not(.dev) .ico{background:var(--azul-bg);color:var(--azul)}
 .doc.subiendo .ico,.doc.drive .ico{background:var(--acc-bg);color:var(--accent)}
 .doc.subiendo .tx small{color:var(--accent);font-weight:600}
 .carga-barra{display:block;height:4px;margin-top:7px;border-radius:2px;background:var(--surface-3);overflow:hidden}
@@ -656,6 +657,7 @@ button.franja:active{transform:scale(.97)}
 .estado.chico{display:flex;align-items:center;gap:10px;padding:10px 14px;margin-top:8px}
 .estado.chico small{flex:1;margin:0;font-size:13px;font-weight:600}
 .estado.chico .mini{background:#fff}
+.estado.chico .mini.pri{background:var(--accent);color:#fff}
 .ver-l{display:flex;gap:18px;margin-top:4px}
 .acciones.col{flex-direction:column;gap:8px}
 .tres button[disabled]{opacity:.45}
