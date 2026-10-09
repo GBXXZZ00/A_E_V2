@@ -35,11 +35,12 @@
 @keyframes sacudir{0%,100%{transform:none}20%{transform:translateX(-7px)}45%{transform:translateX(6px)}70%{transform:translateX(-4px)}}
 
 .pie{margin-top:auto;padding-top:14px;max-width:360px;font-size:12px;line-height:1.6;color:var(--text3);text-align:center}
+.pie .priv-enlace{display:inline-block;font-size:12px;font-weight:600;color:var(--text2);text-decoration:underline;text-underline-offset:3px;padding:14px 4px;margin:-14px 0}
 .pie button{font-size:12px;font-weight:600;color:var(--text2);text-decoration:underline;text-underline-offset:3px;padding:14px 4px;margin:-14px -4px}
 
 @media (hover:hover) and (pointer:fine){
   .tecla:hover{background:var(--surface-3)}
-  .pie button:hover{color:var(--accent)}
+  .pie button:hover,.pie .priv-enlace:hover{color:var(--accent)}
   .equipo:hover{border-color:var(--text)}
   .equipo:hover svg{transform:translateX(3px);color:var(--text)}
 }
