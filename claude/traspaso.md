@@ -23,7 +23,8 @@ Antes de cada una: explicar en simple y esperar el OK.
 7. **Factibilidad**: solo hay diagnóstico y una maqueta aprobada a medias. No empezar hasta que el administrador responda sus dudas (entre ellas, si se sigue pidiendo PYME o Dedicado al consultar) y pase el mapa vigente.
 
 ## Pendientes que NO son de este repo (se hacen en el chat del proyecto)
-- Migrar los documentos de los aliados y sus contactos.
+- Hecho el 09/10: los expedientes viejos de aliados ya están en la app (unos 440 archivos de 68 clientes, subidos por "Aliado: nombre", por revisar) con correo y teléfono del representante. Falta una carpeta de aliados con códigos AL- sin cliente identificado.
+- En la base existe `privado.aliados_appsheet`: los 79 expedientes viejos de aliados con su situación (instalado, pendiente_por_instalacion, instalado_sin_cliente, consulta). Es la fuente de "consultas viejas" para el módulo de aliados.
 - Decidir si se recalcula el estatus de los clientes cuyos documentos entraron por revisar.
 - Carpetas de Drive con archivos cuyo RIF no existe como cliente.
 - Cambiar el secreto de Google (previsto para el martes 13/10).

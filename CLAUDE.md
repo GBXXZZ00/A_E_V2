@@ -64,3 +64,11 @@ El usuario es el administrador de contratos. No programa, no usa SQL ni el panel
 - Siempre estado de carga (esqueleto, no spinner, y mostrando lo último visto), estado vacío y estado de error.
 - En teléfono las tablas anchas pasan a lista o tarjetas, nunca a scroll horizontal de la página.
 - Textos cortos y en el idioma de la oficina. Cada pantalla y cada aviso dicen qué hacer después.
+
+## 8. Dónde se hace cada cosa
+El usuario trabaja en dos lugares: aquí (Claude Code, sobre este repo) y un chat de su proyecto que tiene los archivos con datos reales y la memoria de sus decisiones. Aquí no ves ese chat.
+- Aquí: todo lo que sea código de la app, pruebas, capturas y publicar. También los cambios de base, si tienes el conector de Supabase.
+- En el chat del proyecto: migraciones de datos reales (documentos, aliados, cruces con archivos), decisiones de negocio largas y los cambios de base si aquí no hay conector.
+- Termina SIEMPRE tu respuesta final con una línea "Dónde seguir:" que diga si lo siguiente se hace aquí o en el chat del proyecto, y por qué en pocas palabras. Si es en el chat, dale el texto exacto que debe pegar allá.
+- Si el usuario te cuenta una decisión que tomó en el otro chat, anótala en `claude/reglas-negocio.md` o en el traspaso en el mismo commit.
+- Puedes llevar varias tareas del traspaso en una sola corrida si él aprueba el lote; por defecto, una tarea, sus pruebas y su publicación antes de pasar a la siguiente.
