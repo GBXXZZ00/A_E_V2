@@ -59,6 +59,9 @@ Sin nombres reales: el repo es público. "Analista Senior" es el responsable de 
 - Veredicto de la app vieja: aprobado, con observaciones o no apto. Desde ahí Legal aprobaba o mandaba los faltantes al líder.
 - La cuenta personal de Gemini ya es de pago.
 - Referencia de cómo funcionaban aliados e IA en las apps viejas: `claude/aliados-app-vieja.md`.
+- Un solo motor de lectura para todo: el mismo que revisa expedientes de clientes sirve para las solicitudes de aliados. Primero se arma el motor; aliados va después.
+- El administrador elige qué clientes se corren; nunca se corre toda la base de una vez. Volumen: unos 80 clientes nuevos al mes, más los viejos que falta recopilar.
+- Proveedor por decidir con una prueba: Gemini contra Claude sobre los mismos clientes que Legal ya decidió.
 
 ## Aliados
 - "Aliado Comercial" es el nombre de la cartera: instalaciones de canales más las de los aliados. Hay que mostrar quién instaló cada una.

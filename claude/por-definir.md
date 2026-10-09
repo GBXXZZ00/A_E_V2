@@ -32,6 +32,10 @@ Por preguntar: quién registra la solicitud, qué documentos exige cada caso y c
 ## 4. Dedicados
 No comisionan, pero pasan por aprobación y contrato. Falta todo, incluido su texto de Odoo.
 
+## 5. Ideas nuevas del administrador (09/10)
+- Bot que revisa el correo y sube a la app los documentos que mandan los clientes o líderes. Ojo: leer Gmail exige otro permiso de Google, más estricto que el de Drive.
+- Elaborar el contrato con lo que ya hay en la base (datos del cliente, del registro y de los firmantes).
+
 ## Pendientes del administrador
 - Martes 13/10: subir el KMZ real en Actualizar; pasar el permiso de Google a producción (vence cerca del 15/10); cambiar el secreto de Google; seguridad de acceso, con él presente.
 - Crear usuarios: el Analista Senior y los líderes con su WhatsApp y correo.
