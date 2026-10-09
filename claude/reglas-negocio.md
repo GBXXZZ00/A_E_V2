@@ -22,7 +22,17 @@ Sin nombres reales: el repo es público. "Analista Senior" es el responsable de 
 - Canales comisiona con las mismas reglas de documentos.
 
 ## Nomenclatura de Odoo (arranca el lunes 12/10/2026)
-- El MDT se coloca solo. El líder escribe el tipo ("inst. promo pyme" y similares), el nombre y el RIF sin guiones con su letra. El vendedor va como código en número, solo en las órdenes que crea otra persona por él. Hay que prever RIF mal tecleado.
+- Formato del texto que escribe el líder: `INST. [TIPO] NOMBRE J000000000` y, solo si la orden la crea otra persona por él, su código de vendedor en número al final. El MDT o nodo lo pone Odoo solo.
+- RIF sin guiones y con su letra (J, V, G, E). Para persona natural, la cédula con su letra. Hay que prever RIF mal tecleado.
+- TIPO es una lista cerrada, una forma por categoría de orden:
+  - `PROMO PYME`: instalación PYME nueva. Es casi todo.
+  - `EVENTO`: instalación para un evento. Comisiona a veces; decide el Analista Senior.
+  - `MIGRACION`: cliente que ya tiene servicio residencial y pasa a PYME.
+  - `CAMBIO`: cambio de plan o de equipo en un cliente que ya existe.
+  - `DEDICADO`: lo puso Claude Code por su cuenta; el administrador no lo ha confirmado.
+- En Factibilidad solo aplican los tipos de cliente nuevo: PROMO PYME, EVENTO y, si se confirma, DEDICADO. Migración y cambio son de clientes que ya tienen servicio y no pasan por factibilidad.
+- Lo que hoy se escribe delante y estorba el cruce (reprogramada, requiere construcción, día y hora) va al final o en notas, nunca delante.
+- El cruce debe llevar el número de la orden de trabajo de Odoo.
 
 ## Expediente y documentos
 - Casillas: cédula y RIF personal por representante (hasta 4), RIF de la empresa, acta constitutiva, actas de asamblea (agregables hasta 4), Conatel, contrato PYME, contrato dedicado, otros.
