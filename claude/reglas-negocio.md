@@ -61,6 +61,7 @@ Sin nombres reales: el repo es público. "Analista Senior" es el responsable de 
 - Lo que revisaba la app vieja: por representante, cédula y RIF vigentes, nombre igual en los dos, que esté en la junta directiva vigente (si no está pero otro sí firma, no bloquea) y documentos duplicados; RIF de la empresa vigente y con el mismo nombre del sistema; acta constitutiva (fecha de inscripción, empresa vigente, régimen de firma, junta vigente y hasta cuándo, domicilio igual al del RIF); actas de asamblea (cambio de nombre, de domicilio, de directores o presidente, ratificación de junta, prórroga, aumento de capital); faltantes críticos y no críticos, incluidos Conatel, correo y teléfono.
 - Veredicto de la app vieja: aprobado, con observaciones o no apto. Desde ahí Legal aprobaba o mandaba los faltantes al líder.
 - La cuenta personal de Gemini ya es de pago.
+- 09/10: la cuenta de ventas ya tiene la API de Gemini en plan pago (Nivel 1, prepago). Se usa esa desde el inicio, con una clave propia para esta app; la personal ya no hace falta. Con prepago, si se acaba el saldo la IA se detiene (sirve de tope).
 - Referencia de cómo funcionaban aliados e IA en las apps viejas: `claude/aliados-app-vieja.md`.
 - Un solo motor de lectura para todo: el mismo que revisa expedientes de clientes sirve para las solicitudes de aliados. Primero se arma el motor; aliados va después.
 - El administrador elige qué clientes se corren; nunca se corre toda la base de una vez. Volumen: unos 80 clientes nuevos al mes, más los viejos que falta recopilar.
