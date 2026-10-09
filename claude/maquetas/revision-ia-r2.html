@@ -1,0 +1,559 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Maqueta R2 Revisión</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<style>
+/* Maqueta R2 para usar con clics: Revisión con IA dentro de la revisión de Legal. Todo inventado, nada se guarda. */
+:root{
+  --bg:#FFFFFF; --s2:#F5F6F7; --s3:#ECEEF1; --text:#111315; --text2:#5B636E; --text3:#69717C; --line:#E3E6EA;
+  --rojo:#A32117; --rojo-bg:#FCEDEB; --verde:#11734B; --verde-bg:#E7F5EE; --ambar:#8A5A00; --ambar-bg:#FBF1DC; --azul:#1B3A9E; --azul-bg:#E8ECF9;
+  --morado:#5B3AA6; --morado-bg:#F0EBFA;
+  --velo:rgba(17,19,21,.38); --sombra:0 18px 44px rgba(17,19,21,.16);
+  --ease-out:cubic-bezier(0.23, 1, 0.32, 1);
+  --f:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:var(--f);font-size:15px;line-height:1.45}
+button,input,textarea,select{font:inherit;color:inherit}
+button{border:0;background:none;padding:0;cursor:pointer}
+h1,h2,h3,h4,p{margin:0}
+
+/* Guía de la maqueta */
+.guia{background:var(--azul-bg);color:var(--azul);font-size:13.5px;padding:10px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.guia b{font-weight:800}
+.guia span{flex:1;min-width:220px}
+.guia .seg{background:#fff}
+.guia .reini{height:36px;padding:0 14px;border-radius:999px;background:#fff;font-weight:700;font-size:13px;color:var(--azul)}
+
+/* Barra y navegación */
+.barra{display:flex;align-items:center;gap:16px;padding:12px 22px;border-bottom:1px solid var(--line);position:sticky;top:0;background:#fff;z-index:5}
+.barra .marca{font-weight:800;letter-spacing:.14em;font-size:14px}
+.barra .marca small{font-weight:500;letter-spacing:0;color:var(--text2);font-size:13.5px;margin-left:10px}
+.navpc{display:flex;gap:4px;margin-left:10px}
+.navpc button{padding:8px 14px;border-radius:999px;font-weight:600;font-size:14px;color:var(--text2);min-height:40px}
+.navpc button.on{background:var(--azul-bg);color:var(--azul)}
+.av{margin-left:auto;width:36px;height:36px;border-radius:50%;background:var(--azul);color:#fff;display:grid;place-items:center;font-size:12px;font-weight:700;flex:none}
+.navab{display:none}
+@media (max-width:760px){
+  .navpc{display:none}
+  .barra{padding:12px 16px}
+  .navab{display:flex;position:fixed;left:0;right:0;bottom:0;background:rgba(255,255,255,.97);border-top:1px solid var(--line);padding:8px 6px calc(10px + env(safe-area-inset-bottom));z-index:5}
+  .navab button{flex:1;font-size:11px;font-weight:600;color:var(--text3);min-height:44px}
+  .navab button::before{content:"";display:block;width:46px;height:28px;border-radius:999px;margin:0 auto 3px;background:var(--s2)}
+  .navab button.on{color:var(--azul)} .navab button.on::before{background:var(--azul)}
+  main{padding-bottom:110px !important}
+}
+
+main{max-width:1180px;margin:0 auto;padding:20px 22px 120px}
+@media (max-width:760px){ main{padding:16px 16px 110px} }
+.cab{display:flex;align-items:center;gap:12px}
+.cab h1{font-size:28px;font-weight:800;letter-spacing:-.025em;flex:1}
+.sub{font-size:13.5px;color:var(--text2);margin-top:4px}
+.atajos{display:flex;gap:8px;margin-top:14px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.atajos::-webkit-scrollbar{display:none}
+.atajos button{height:40px;padding:0 14px;border-radius:999px;background:var(--s2);font-size:13.5px;font-weight:600;color:var(--text2);white-space:nowrap;flex:none}
+.atajos button em{font-style:normal;opacity:.7;margin-left:4px}
+.atajos button.on{background:var(--azul);color:#fff}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:48px;padding:0 22px;border-radius:999px;background:var(--azul);color:#fff;font-weight:700;white-space:nowrap}
+.btn.b2{background:var(--s2);color:var(--text)}
+.btn.chico{height:44px;padding:0 16px;font-size:14px}
+.btn.mini{height:36px;padding:0 12px;font-size:13px}
+.btn[disabled]{background:var(--s3);color:var(--text3);cursor:default}
+.btn:active,.atajos button:active,.fila:active,.caja:active{transform:scale(.97)}
+.btn,.atajos button,.fila,.caja{transition:transform 160ms var(--ease-out)}
+
+.chip{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap;background:var(--s3);color:var(--text2)}
+.chip::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.verde{background:var(--verde-bg);color:var(--verde)} .ambar{background:var(--ambar-bg);color:var(--ambar)} .azul{background:var(--azul-bg);color:var(--azul)} .rojo{background:var(--rojo-bg);color:var(--rojo)} .morado{background:var(--morado-bg);color:var(--morado)}
+
+/* Listas */
+.lista{display:grid;gap:10px;margin-top:14px}
+.fila{display:grid;grid-template-columns:auto minmax(0,2.2fr) minmax(0,1.3fr) minmax(0,1.5fr) minmax(0,1fr);gap:12px;align-items:center;padding:10px 14px;border:1px solid var(--line);border-radius:16px;background:#fff;text-align:left;width:100%;min-height:64px}
+.fila.sinc{grid-template-columns:minmax(0,2.2fr) minmax(0,1.3fr) minmax(0,1.5fr) minmax(0,1fr)}
+.fila.sel{border-color:var(--azul);box-shadow:0 0 0 1px var(--azul) inset;background:#F7F9FE}
+.fila b{display:block;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fila small{display:block;font-size:12.5px;color:var(--text2)}
+.fila .gris{font-size:13px;color:var(--text2)}
+.nuevos{color:var(--azul);font-weight:700}
+.caja{width:44px;height:44px;display:grid;place-items:center;margin:-10px 0 -10px -10px;flex:none}
+.caja i{width:22px;height:22px;border-radius:7px;border:2px solid #B9BFC8;display:grid;place-items:center;background:#fff}
+.caja.on i{background:var(--azul);border-color:var(--azul)}
+.caja.on i::after{content:"";width:10px;height:6px;border:2.5px solid #fff;border-top:0;border-right:0;transform:translate(0,-1px) rotate(-45deg)}
+.prog{display:block;height:6px;border-radius:3px;background:var(--s3);overflow:hidden;margin-top:5px;width:110px}
+.prog i{display:block;height:100%;width:100%;background:var(--azul);transform-origin:left;transition:transform 280ms var(--ease-out)}
+@media (max-width:760px){
+  .fila{grid-template-columns:auto auto minmax(0,1fr);gap:6px 8px;align-items:start}
+  .fila > :nth-child(2),.fila > .c5{grid-column:2 / -1}
+  .fila > .c3{grid-column:2} .fila > .c4{grid-column:3}
+  .fila.sinc{grid-template-columns:auto minmax(0,1fr)}
+  .fila.sinc > :nth-child(1),.fila.sinc > :nth-child(4){grid-column:1 / -1}
+  .fila.sinc > :nth-child(2){grid-column:1} .fila.sinc > :nth-child(3){grid-column:2}
+  .fila .cs{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+}
+.accion{position:fixed;left:50%;transform:translateX(-50%);bottom:18px;width:min(760px,calc(100% - 32px));display:flex;align-items:center;gap:12px;padding:10px 10px 10px 16px;background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:var(--sombra);z-index:4}
+.accion .tx{flex:1;min-width:0;font-size:13px;color:var(--text2)}
+.accion .tx b{display:block;color:var(--text);font-size:15px}
+@media (max-width:760px){ .accion{bottom:calc(78px + env(safe-area-inset-bottom))} .accion .q{display:none} }
+.vacio{text-align:center;padding:40px 12px}
+.vacio b{display:block;font-size:17px;font-weight:800}
+.vacio p{font-size:13.5px;color:var(--text2);margin:6px auto 14px;max-width:38ch}
+
+/* Hojas */
+.velo{position:fixed;inset:0;background:var(--velo);opacity:0;transition:opacity 240ms var(--ease-out)}
+.velo.on{opacity:1}
+.hoja{position:fixed;background:var(--bg);display:flex;flex-direction:column;box-shadow:var(--sombra);top:0;bottom:0;right:0;width:min(580px,100%);transform:translateX(100%);transition:transform 260ms var(--ease-out)}
+.hoja.on{transform:none}
+.hoja.ancha{width:min(620px,100%)}
+@media (max-width:760px){
+  .hoja,.hoja.ancha{top:auto;left:0;width:100%;max-height:94vh;max-height:94dvh;border-radius:26px 26px 0 0;transform:translateY(100%)}
+  .hoja.on{transform:none}
+}
+.asa{width:40px;height:5px;border-radius:3px;background:var(--s3);margin:8px auto 0;flex:none;display:none}
+@media (max-width:760px){ .asa{display:block} }
+.h-cab{display:flex;align-items:flex-start;gap:12px;padding:14px 18px 10px;flex:none;border-bottom:1px solid var(--line)}
+.h-cab .tx{flex:1;min-width:0}
+.h-cab h2{font-size:19px;font-weight:800;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.h-cab p{font-size:13px;color:var(--text2);margin-top:2px}
+.x{width:44px;height:44px;border-radius:50%;background:var(--s2);font-size:20px;flex:none;display:grid;place-items:center}
+.h-cuerpo{flex:1;overflow-y:auto;padding:14px 18px 22px;overscroll-behavior:contain}
+.h-pie{display:flex;gap:10px;padding:12px 18px calc(14px + env(safe-area-inset-bottom));border-top:1px solid var(--line);flex:none;align-items:center}
+.h-pie .btn{flex:1;min-width:0;padding:0 12px}
+.h-pie .falta{flex:1;font-size:13px;color:var(--morado);font-weight:600}
+@media (prefers-reduced-motion:reduce){ .hoja,.velo,.btn,.prog i,.fila,.caja,.atajos button{transition:none} }
+@media (hover:hover) and (pointer:fine){
+  .fila:hover{border-color:#C9CED6}
+  .btn.b2:hover{background:var(--s3)}
+}
+
+/* Contenido de hojas */
+.secc{font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin:18px 0 6px;display:flex;gap:8px;align-items:center}
+.secc:first-child{margin-top:0}
+.caja-s{border:1px solid var(--line);border-radius:16px;padding:4px 14px}
+.it{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 10px;padding:11px 0;border-top:1px solid var(--line);align-items:start}
+.it:first-child{border-top:0}
+.it b{font-size:14.5px;font-weight:700}
+.it p{grid-column:1 / -1;font-size:13px;color:var(--text2)}
+.it .pg{grid-column:1 / -1;font-size:13px;font-weight:600;color:var(--azul)}
+.it .acc{grid-column:1 / -1;display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:4px}
+.exc{grid-column:1 / -1;font-size:12.5px;padding:8px 10px;border-radius:10px;background:var(--s2);color:var(--text2)}
+.exc b{font-size:12.5px;color:var(--text)}
+.veredicto{padding:14px 16px;border-radius:18px;display:grid;gap:2px}
+.veredicto b{font-size:22px;font-weight:800;letter-spacing:-.02em;line-height:1.15}
+.veredicto p{font-size:14px}
+.borr{display:flex;gap:10px;align-items:center;margin-bottom:10px;padding:10px 14px;border-radius:14px;background:var(--s2);font-size:13px;color:var(--text2)}
+.borr b{color:var(--text)}
+.seg{display:inline-flex;padding:3px;border-radius:999px;background:var(--s2);gap:2px}
+.seg button{height:38px;padding:0 14px;border-radius:999px;font-weight:700;font-size:13px;color:var(--text2);white-space:nowrap}
+.seg button.on{background:var(--text);color:#fff}
+.seg button.on.ap{background:var(--verde)} .seg button.on.dv{background:var(--rojo)}
+.lbl{display:block;font-size:13px;font-weight:600;margin:12px 0 6px}
+.campo{width:100%;min-height:44px;padding:10px 14px;border:1.5px solid var(--text);border-radius:14px;background:#fff;font-size:14.5px}
+textarea.campo{min-height:96px;resize:vertical;line-height:1.45}
+select.campo{appearance:none;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23111315' stroke-width='2'/%3E%3C/svg%3E") no-repeat right 14px center;padding-right:36px}
+.err{font-size:12.5px;color:var(--rojo);margin:6px 2px 0;min-height:18px}
+.nota{font-size:12.5px;color:var(--text3);margin-top:8px}
+.dos{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:0 10px}
+@media (max-width:520px){ .dos{grid-template-columns:1fr} }
+.hist{display:grid;gap:0}
+.hi{display:flex;gap:10px;padding:10px 0;border-top:1px solid var(--line);font-size:13.5px}
+.hi:first-child{border-top:0}
+.hi::before{content:"";width:9px;height:9px;border-radius:50%;background:var(--s3);margin-top:6px;flex:none}
+.hi.vd::before{background:var(--verde)} .hi.rj::before{background:var(--rojo)} .hi.az::before{background:var(--azul)}
+.hi div{flex:1;min-width:0}
+.hi small{display:block;color:var(--text2);font-size:12.5px}
+.resumen{padding:12px 14px;border-radius:14px;background:var(--s2);font-size:13.5px}
+.resumen b{display:block;font-size:15px}
+.docs .it{grid-template-columns:minmax(0,1fr) auto}
+.toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,20px);opacity:0;width:min(520px,calc(100% - 32px));padding:12px 14px;border-radius:14px;background:var(--text);color:#fff;font-size:13.5px;z-index:999;display:flex;gap:10px;align-items:center;transition:transform 220ms var(--ease-out),opacity 220ms var(--ease-out);pointer-events:none}
+.toast.on{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+.toast span{flex:1}
+.toast button{color:#9DB4FF;font-weight:700;min-height:36px;white-space:nowrap}
+@media (max-width:760px){ .toast{bottom:calc(90px + env(safe-area-inset-bottom))} }
+</style>
+</head>
+<body>
+<div class="guia">
+  <span><b>Maqueta R2 para usar.</b> Datos inventados, nada se guarda. Prueba: en Clientes abre "Comercial Ejemplo 2020" y toca "Mandar a revisión con IA"; después abre el borrador, cambia lo que quieras y toca "Cerrar revisión".</span>
+  <span class="seg" id="rol"><button type="button" class="on" data-rol="admin">Administrador</button><button type="button" data-rol="abogado">Abogado</button></span>
+  <button type="button" class="reini" data-acc="reiniciar">Reiniciar</button>
+</div>
+<header class="barra">
+  <span class="marca">EMPRESA<small>Empresas</small></span>
+  <nav class="navpc" id="navpc"></nav>
+  <span class="av" id="av">AD</span>
+</header>
+<main id="main"></main>
+<nav class="navab" id="navab"></nav>
+<div class="toast" id="toast" role="status" aria-live="polite"><span></span><button type="button" hidden></button></div>
+
+<script>
+(function(){
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+  const rifVer = (r) => r[0] === 'V' && r.length < 11 ? r[0] + '-' + r.slice(1) : r[0] + '-' + r.slice(1, 9) + '-' + r.slice(9);
+  const ahora = () => { const d = new Date(); return 'hoy ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); };
+  const MOTIVOS = ['Vencido', 'Ilegible', 'No corresponde', 'Falta firma', 'Otro'];
+
+  // ---------- Datos inventados ----------
+  function datos(){
+    return [
+      { id: 'c1', nombre: 'Comercial Ejemplo 2020, C.A.', rif: 'J000000010', tipo: 'PYME', firma: 'conjunta y/o separada', lider: 'Laura Prueba', legal: 'En revisión', archivos: 9, leidos: 0,
+        hist: [], caso: 'problemas' },
+      { id: 'c2', nombre: 'Distribuidora Prueba, C.A.', rif: 'J000000020', tipo: 'Dedicado corporativo', firma: 'separada', lider: 'Carlos Muestra', legal: 'En revisión', archivos: 6, leidos: 0, hist: [], caso: 'bien' },
+      { id: 'c3', nombre: 'Inversiones Modelo, C.A.', rif: 'J000000030', tipo: 'PYME', firma: 'separada', lider: 'Laura Prueba', legal: 'Documentos pendientes', archivos: 11, leidos: 10,
+        hist: [{ fecha: '28/09/2026', quien: 'Administrador', como: 'Manual', ver: 'No apto', det: 'Faltaba el RIF de la empresa. Se avisó al líder.' }], caso: 'bien' },
+      { id: 'c4', nombre: 'Ana Prueba', rif: 'V00000005', tipo: 'Persona natural', firma: '', lider: 'Carlos Muestra', legal: 'En revisión', archivos: 2, leidos: 0, hist: [], caso: 'natural' },
+      { id: 'c5', nombre: 'Talleres Ejemplo, C.A.', rif: 'J000000060', tipo: 'PYME', firma: 'separada', lider: 'Laura Prueba', legal: 'Recibidos', archivos: 8, leidos: 8,
+        hist: [{ fecha: '01/09/2026', quien: 'Administrador', como: 'IA + revisión', ver: 'Apto', det: 'Sin observaciones.' }], caso: 'bien', ia: 'Apto' },
+      { id: 'c6', nombre: 'Servicios Ficticios, C.A.', rif: 'J000000070', tipo: 'PYME', firma: '', lider: 'Carlos Muestra', legal: 'Documentos solicitados', archivos: 0, leidos: 0, hist: [], caso: 'bien' }
+    ];
+  }
+  function borrador(c){
+    if(c.caso === 'problemas') return {
+      hora: ahora(),
+      puntos: [
+        { id: 'p1', t: 'Teléfono y correo del representante', est: 'bloquea', d: 'Pedro Ejemplo tiene teléfono pero no correo.', falta: 'Correo de Pedro Ejemplo' },
+        { id: 'p2', t: 'Pedro Ejemplo está en el acta', est: 'ok', d: 'Nombre y cédula V-00.000.011 coinciden con el acta constitutiva.', pg: 'Acta constitutiva · página 7' },
+        { id: 'p3', t: 'Junta vencida', est: 'bloquea', excable: true, d: 'Designada en el acta inscrita el 14/03/2012 por 5 años. Tiene cláusula de permanencia, pero ya pasaron 10 años.', pg: 'Acta constitutiva · página 6', falta: 'Acta de asamblea de ratificación de junta' },
+        { id: 'p4', t: 'Domicilio distinto al del RIF', est: 'bloquea', d: 'La dirección del acta se parece en un 48 % a la del RIF.', pg: 'Acta constitutiva · página 2', falta: 'Acta de asamblea de cambio de domicilio' },
+        { id: 'p5', t: 'Duración de la empresa', est: 'ok', d: '50 años desde 2012. Vigente hasta 2062.', pg: 'Acta constitutiva · página 3' },
+        { id: 'p6', t: 'Régimen de firma', est: 'ok', d: 'Conjunta y/o separada: basta un representante completo.', pg: 'Acta constitutiva · página 8' },
+        { id: 'p7', t: 'Documento sin marcar', est: 'aviso', d: 'El archivo de la cédula de Pedro Ejemplo trae también su RIF en la página 2. Márcalo en el expediente para que cuente.' }
+      ],
+      docs: [
+        { id: 'd1', t: 'Cédula · Pedro Ejemplo', prop: 'devolver', motivo: 'Vencido', nota: 'Venció el 31/05/2026.', pg: 'Página 1', },
+        { id: 'd2', t: 'RIF personal · Pedro Ejemplo', prop: 'aprobar', nota: 'Vigente hasta 15/02/2028. Nombre igual al de la cédula.', pg: 'Página 2 del archivo de la cédula' },
+        { id: 'd3', t: 'Cédula · María Ejemplo', prop: 'mano', nota: 'El vencimiento (2031) no cuadra con la expedición (2016). Puede estar mal leída: míralo y decide.', pg: 'Página 1' },
+        { id: 'd4', t: 'RIF personal · María Ejemplo', prop: 'aprobar', nota: 'Vigente hasta 03/11/2027.', pg: 'Página 1' },
+        { id: 'd5', t: 'RIF de la empresa', prop: 'aprobar', nota: 'Vigente hasta 10/01/2028. Razón social igual a la del acta.', pg: 'Página 1' },
+        { id: 'd6', t: 'Acta constitutiva', prop: 'aprobar', nota: 'Inscrita el 14/03/2012. 12 páginas leídas.', pg: '12 páginas' },
+        { id: 'd7', t: 'Contrato PYME', prop: 'aprobar', nota: 'Firmado por Pedro Ejemplo.', pg: 'Página 4' }
+      ]
+    };
+    if(c.caso === 'natural') return {
+      hora: ahora(),
+      puntos: [{ id: 'p1', t: 'Teléfono y correo', est: 'ok', d: 'Tiene los dos.' }],
+      docs: [
+        { id: 'd1', t: 'Cédula · Ana Prueba', prop: 'aprobar', nota: 'Vigente hasta 30/06/2033. Expedición 2023 (cuadra).', pg: 'Página 1' },
+        { id: 'd2', t: 'RIF personal · Ana Prueba', prop: 'aprobar', nota: 'Vigente hasta 12/05/2028. Nombre igual al de la cédula.', pg: 'Página 1' }
+      ]
+    };
+    return {
+      hora: ahora(),
+      puntos: [
+        { id: 'p1', t: 'Teléfono y correo del representante', est: 'ok', d: 'Tiene los dos.' },
+        { id: 'p2', t: 'El representante está en el acta', est: 'ok', d: 'Nombre y cédula coinciden con la última asamblea.', pg: 'Acta de asamblea · página 3' },
+        { id: 'p3', t: 'Junta vigente', est: 'ok', d: 'Ratificada en 2023 por 10 años.', pg: 'Acta de asamblea · página 2' },
+        { id: 'p4', t: 'Domicilio igual al del RIF', est: 'ok', d: 'Se parece en un 91 %.' },
+        { id: 'p5', t: 'Duración de la empresa', est: 'ok', d: 'Vigente hasta 2069.' }
+      ],
+      docs: [
+        { id: 'd1', t: 'Cédula del representante', prop: 'aprobar', nota: 'Vigente. Expedición cuadra.', pg: 'Página 1' },
+        { id: 'd2', t: 'RIF personal del representante', prop: 'aprobar', nota: 'Vigente. Nombre igual.', pg: 'Página 1' },
+        { id: 'd3', t: 'RIF de la empresa', prop: 'aprobar', nota: 'Vigente. Razón social igual.', pg: 'Página 1' },
+        { id: 'd4', t: 'Acta constitutiva', prop: 'aprobar', nota: 'Leída completa.', pg: '9 páginas' },
+        { id: 'd5', t: 'Acta de asamblea', prop: 'aprobar', nota: 'Ratifica la junta.', pg: '4 páginas' }
+      ]
+    };
+  }
+  function prepararDecisiones(b){
+    b.docs.forEach((d) => { d.dec = d.prop === 'mano' ? null : { acc: d.prop, motivo: d.motivo || '', nota: d.prop === 'devolver' ? d.nota : '' }; });
+    b.puntos.forEach((p) => { p.exc = null; });
+    return b;
+  }
+
+  let E;   // estado de la maqueta
+  function reiniciar(){
+    E = { rol: E ? E.rol : 'admin', vista: 'clientes', filtroC: 'todos', filtroR: 'analizables', sel: new Set(), clientes: datos(), hojas: [] };
+    E.clientes.forEach((c) => { if(c.id === 'c5'){ c.borrador = prepararDecisiones(borrador(c)); c.borrador.cerrado = true; } });
+  }
+
+  // ---------- Veredicto ----------
+  function calcular(b){
+    const pend = b.docs.filter((d) => !d.dec).length;
+    const bloq = b.puntos.filter((p) => p.est === 'bloquea' && !p.exc).concat(b.docs.filter((d) => d.dec && d.dec.acc === 'devolver'));
+    if(pend) return { v: 'Falta decidir', cl: 'morado', pend, bloq, txt: pend === 1 ? 'Falta que decidas 1 documento.' : 'Falta que decidas ' + pend + ' documentos.' };
+    if(bloq.length) return { v: 'No apto', cl: 'rojo', pend, bloq, estatus: 'Documentos pendientes', txt: bloq.length === 1 ? '1 cosa por corregir.' : bloq.length + ' cosas por corregir.' };
+    return { v: 'Apto', cl: 'verde', pend, bloq, estatus: 'Recibidos', txt: 'Todo está en orden.' };
+  }
+  function chipIA(c){
+    if(c.corriendo) return '<span class="chip azul">Leyendo ' + c.corriendo.n + ' de ' + c.corriendo.total + '</span><span class="prog"><i style="transform:scaleX(' + (c.corriendo.n / c.corriendo.total).toFixed(2) + ')"></i></span>';
+    if(c.borrador && !c.borrador.cerrado) return '<span class="chip ambar">Borrador por cerrar</span>';
+    if(c.ia) return '<span class="chip ' + (c.ia === 'Apto' ? 'verde' : 'rojo') + '">IA: ' + esc(c.ia) + '</span>';
+    return '<span class="chip">Sin revisar</span>';
+  }
+  const CL_LEGAL = { 'En revisión': 'azul', 'Recibidos': 'verde', 'Documentos pendientes': 'rojo', 'Documentos solicitados': 'ambar' };
+  const chipLegal = (c) => '<span class="chip ' + (CL_LEGAL[c.legal] || '') + '">' + esc(c.legal) + '</span>';
+  const nuevos = (c) => c.archivos - c.leidos;
+
+  // ---------- Vistas ----------
+  const NAV = [['inicio', 'Inicio'], ['comisiones', 'Comisiones'], ['clientes', 'Clientes'], ['factibilidad', 'Factib.'], ['revision', 'Revisión']];
+  function pintarNav(){
+    const navs = NAV.filter((n) => E.rol === 'admin' || n[0] !== 'factibilidad');
+    $('navpc').innerHTML = navs.map((n) => '<button type="button" data-ir="' + n[0] + '"' + (E.vista === n[0] ? ' class="on"' : '') + '>' + (n[0] === 'factibilidad' ? 'Factibilidad' : n[1]) + '</button>').join('');
+    $('navab').innerHTML = navs.map((n) => '<button type="button" data-ir="' + n[0] + '"' + (E.vista === n[0] ? ' class="on"' : '') + '>' + n[1] + '</button>').join('');
+    $('av').textContent = E.rol === 'admin' ? 'AD' : 'AB';
+  }
+  function pintar(){
+    pintarNav();
+    $('main').innerHTML = E.vista === 'revision' ? vistaRevision() : vistaClientes();
+    pintarAccion();
+  }
+  function vistaClientes(){
+    const filas = E.clientes.map((c) =>
+      '<button type="button" class="fila sinc" data-abrir="exp" data-id="' + c.id + '">' +
+        '<span><b>' + esc(c.nombre) + '</b><small>' + esc(rifVer(c.rif)) + ' · ' + esc(c.tipo) + '</small></span>' +
+        '<span class="cs">' + chipLegal(c) + '</span><span class="cs">' + chipIA(c) + '</span>' +
+        '<span class="gris">' + (c.archivos ? c.archivos + ' archivos' : 'Sin documentos') + '</span></button>').join('');
+    return '<div class="cab"><h1>Clientes</h1></div><p class="sub">Toca un cliente para abrir su expediente.</p><div class="lista">' + filas + '</div>';
+  }
+  const FILTROS_R = [
+    ['analizables', 'Todos los que se pueden analizar', (c) => c.archivos > 0],
+    ['nuevos', 'Con archivos nuevos', (c) => c.archivos > 0 && nuevos(c) > 0],
+    ['porcerrar', 'Borrador por cerrar', (c) => c.borrador && !c.borrador.cerrado],
+    ['sin', 'Sin revisar', (c) => c.archivos > 0 && !c.borrador && !c.corriendo]
+  ];
+  function vistaRevision(){
+    const f = FILTROS_R.find((x) => x[0] === E.filtroR);
+    const lista = E.clientes.filter(f[2]);
+    const atajos = FILTROS_R.map((x) => '<button type="button" data-filtro="' + x[0] + '"' + (x[0] === E.filtroR ? ' class="on"' : '') + '>' + x[1] + '<em>' + E.clientes.filter(x[2]).length + '</em></button>').join('');
+    const filas = lista.map((c) => {
+      const n = nuevos(c);
+      return '<div class="fila' + (E.sel.has(c.id) ? ' sel' : '') + '">' +
+        '<button type="button" class="caja' + (E.sel.has(c.id) ? ' on' : '') + '" data-marcar="' + c.id + '" aria-pressed="' + E.sel.has(c.id) + '" aria-label="Marcar ' + esc(c.nombre) + '"' + (c.corriendo ? ' disabled' : '') + '><i></i></button>' +
+        '<button type="button" style="text-align:left;min-width:0" data-abrir="' + (c.borrador && !c.corriendo ? 'rev' : 'exp') + '" data-id="' + c.id + '"><b>' + esc(c.nombre) + '</b><small>' + esc(rifVer(c.rif)) + ' · ' + esc(c.tipo) + '</small></button>' +
+        '<span class="cs c3">' + chipLegal(c) + '</span><span class="cs c4">' + chipIA(c) + '</span>' +
+        '<span class="gris c5">' + c.archivos + ' archivos' + (n ? ' · <span class="nuevos">' + n + (n === 1 ? ' nuevo' : ' nuevos') + '</span>' : ' · todos leídos') + '</span></div>';
+    }).join('');
+    return '<div class="cab"><h1>Revisión</h1></div>' +
+      '<p class="sub">Marca los clientes y toca Revisar. Solo se pagan los archivos que nunca se han leído; lo ya leído se recalcula gratis. Nada cambia el estatus hasta que cierres la revisión.</p>' +
+      '<div class="atajos">' + atajos + '</div>' +
+      (lista.length ? '<div class="lista">' + filas + '</div>' : '<div class="vacio"><b>Nada por aquí</b><p>No hay clientes en este grupo. Mira "Todos los que se pueden analizar".</p><button type="button" class="btn b2 chico" data-filtro="analizables">Ver todos</button></div>');
+  }
+  function pintarAccion(){
+    let a = $('accion');
+    if(E.vista !== 'revision' || !E.sel.size){ if(a) a.remove(); return; }
+    if(!a){ a = document.createElement('div'); a.id = 'accion'; a.className = 'accion'; document.body.appendChild(a); }
+    const sel = E.clientes.filter((c) => E.sel.has(c.id));
+    const porLeer = sel.reduce((s, c) => s + nuevos(c), 0);
+    a.innerHTML = '<span class="tx"><b>' + sel.length + (sel.length === 1 ? ' cliente marcado' : ' clientes marcados') + '</b>' + porLeer + ' archivos por leer</span>' +
+      '<button type="button" class="btn b2 chico q" data-acc="quitar">Quitar marcas</button><button type="button" class="btn chico" data-acc="confirmar">Revisar ' + sel.length + '</button>';
+  }
+
+  // ---------- Hojas apiladas ----------
+  function abrirHoja(tipo, id, extra){
+    const z = 20 + E.hojas.length * 2;
+    const velo = document.createElement('div'); velo.className = 'velo'; velo.style.zIndex = z; velo.dataset.acc = 'cerrarArriba';
+    const h = document.createElement('section'); h.className = 'hoja' + (tipo === 'rev' ? ' ancha' : ''); h.style.zIndex = z + 1; h.setAttribute('role', 'dialog'); h.setAttribute('aria-modal', 'true');
+    document.body.appendChild(velo); document.body.appendChild(h);
+    const hoja = { tipo, id, extra: extra || {}, el: h, velo };
+    E.hojas.push(hoja);
+    pintarHoja(hoja);
+    requestAnimationFrame(() => requestAnimationFrame(() => { velo.classList.add('on'); h.classList.add('on'); }));
+    history.pushState({ hoja: E.hojas.length }, '');
+  }
+  function cerrarArriba(desdeAtras){
+    const hoja = E.hojas.pop(); if(!hoja) return;
+    hoja.el.classList.remove('on'); hoja.velo.classList.remove('on');
+    setTimeout(() => { hoja.el.remove(); hoja.velo.remove(); }, 270);
+    if(!desdeAtras){ ignorarAtras++; history.back(); }
+  }
+  let ignorarAtras = 0;   // los history.back() propios no deben cerrar otra hoja
+  window.addEventListener('popstate', () => { if(ignorarAtras){ ignorarAtras--; return; } if(E.hojas.length) cerrarArriba(true); });
+  function refrescarHojas(){ E.hojas.forEach((h) => { const c = h.el.querySelector('.h-cuerpo'); const y = c ? c.scrollTop : 0; pintarHoja(h); const c2 = h.el.querySelector('.h-cuerpo'); if(c2) c2.scrollTop = y; }); }
+  const cli = (id) => E.clientes.find((c) => c.id === id);
+  function cab(t, s){ return '<div class="asa"></div><div class="h-cab"><div class="tx"><h2>' + esc(t) + '</h2><p>' + esc(s) + '</p></div><button type="button" class="x" data-acc="cerrarArriba" aria-label="Cerrar">×</button></div>'; }
+
+  function pintarHoja(h){
+    const c = cli(h.id);
+    if(h.tipo === 'exp') h.el.innerHTML = hojaExpediente(c);
+    else if(h.tipo === 'conf') h.el.innerHTML = hojaConfirmar(h.extra.ids);
+    else if(h.tipo === 'rev') h.el.innerHTML = hojaRevision(c);
+    else if(h.tipo === 'exc') h.el.innerHTML = hojaExcepcion(c, h.extra);
+    else if(h.tipo === 'cerrar') h.el.innerHTML = hojaCerrar(c);
+  }
+
+  function hojaExpediente(c){
+    const b = c.borrador;
+    let bloque;
+    if(!c.archivos) bloque = '<div class="resumen"><b>Sin documentos</b>Cuando el líder suba documentos se podrá mandar a revisión.</div>';
+    else if(c.corriendo) bloque = '<div class="resumen"><b>La IA está leyendo</b>' + c.corriendo.n + ' de ' + c.corriendo.total + ' archivos. Puedes cerrar esta hoja; te aviso cuando termine.<span class="prog" style="width:100%"><i style="transform:scaleX(' + (c.corriendo.n / c.corriendo.total).toFixed(2) + ')"></i></span></div>';
+    else if(b && !b.cerrado){ const r = calcular(b); bloque = '<div class="resumen"><b>Borrador listo · ' + esc(r.v) + '</b>' + esc(r.txt) + ' Todavía no se le avisa a nadie.</div><p style="margin-top:10px"><button type="button" class="btn chico" data-abrir="rev" data-id="' + c.id + '">Abrir borrador</button></p>'; }
+    else bloque = '<p style="display:flex;gap:10px;flex-wrap:wrap"><button type="button" class="btn chico" data-acc="mandar" data-id="' + c.id + '">Mandar a revisión con IA</button>' + (b ? '<button type="button" class="btn b2 chico" data-abrir="rev" data-id="' + c.id + '">Ver la última</button>' : '') + '</p>' +
+      '<p class="nota">' + (nuevos(c) ? nuevos(c) + ' archivos nuevos por leer.' : 'Todo ya se leyó: revisar de nuevo no cuesta.') + '</p>';
+    const hist = c.hist.length ? '<div class="caja-s hist">' + c.hist.map((x) => '<div class="hi ' + (x.ver === 'Apto' ? 'vd' : x.ver === 'No apto' ? 'rj' : 'az') + '"><div><b>' + esc(x.ver) + '</b> · ' + esc(x.como) + '<small>' + esc(x.fecha) + ' · ' + esc(x.quien) + '. ' + esc(x.det) + '</small></div></div>').join('') + '</div>'
+      : '<p class="nota">Todavía no tiene revisiones.</p>';
+    return cab(c.nombre, rifVer(c.rif) + ' · ' + c.tipo + ' · Líder: ' + c.lider) +
+      '<div class="h-cuerpo">' +
+        '<div style="display:flex;gap:8px;flex-wrap:wrap">' + chipLegal(c) + chipIA(c) + '</div>' +
+        '<div class="secc">Revisión</div>' + bloque +
+        '<div class="secc">Historial de revisiones</div>' + hist +
+        '<div class="secc">Lo demás del expediente</div><p class="nota">Datos, contacto, documentos y servicios quedan como hoy. Esta maqueta solo agrega el bloque Revisión.</p>' +
+      '</div>';
+  }
+
+  function hojaConfirmar(ids){
+    const cs = ids.map(cli);
+    const porLeer = cs.reduce((s, c) => s + nuevos(c), 0);
+    const yaLeidos = cs.reduce((s, c) => s + c.leidos, 0);
+    return cab(cs.length === 1 ? 'Revisar ' + cs[0].nombre : 'Revisar ' + cs.length + ' clientes', 'Lo que va a hacer la IA') +
+      '<div class="h-cuerpo"><div class="resumen"><b>' + porLeer + ' archivos nuevos por leer</b>' + esc(cs.map((c) => c.nombre + ' (' + nuevos(c) + ')').join(', ')) + '.' + (yaLeidos ? ' Los ' + yaLeidos + ' ya leídos se recalculan sin costo.' : '') + '</div>' +
+      '<p class="nota">Puedes seguir trabajando. Cuando termine, cada cliente queda con un borrador; nada cambia el estatus ni le llega al líder hasta que cierres la revisión.</p></div>' +
+      '<div class="h-pie"><button type="button" class="btn b2" data-acc="cerrarArriba">Cancelar</button><button type="button" class="btn" data-acc="correr">Revisar</button></div>';
+  }
+
+  function hojaRevision(c){
+    const b = c.borrador; const r = calcular(b); const admin = E.rol === 'admin'; const cerrado = b.cerrado;
+    const puntos = b.puntos.map((p) => {
+      const cl = p.est === 'ok' ? 'verde' : p.est === 'aviso' ? 'azul' : p.exc ? 'azul' : 'rojo';
+      const tx = p.est === 'ok' ? 'Cumple' : p.est === 'aviso' ? 'Aviso' : p.exc ? 'Excepción' : 'Bloquea';
+      return '<div class="it"><b>' + esc(p.t) + '</b><span class="chip ' + cl + '">' + tx + '</span><p>' + esc(p.d) + '</p>' +
+        (p.pg ? '<span class="pg">' + esc(p.pg) + '</span>' : '') +
+        (p.exc ? '<div class="exc"><b>Motivo:</b> ' + esc(p.exc) + '</div>' : '') +
+        (!cerrado && admin && p.est === 'bloquea' && p.excable ? (p.exc ? '<span class="acc"><button type="button" class="btn b2 mini" data-acc="quitarExc" data-p="' + p.id + '">Quitar excepción</button></span>' : '<span class="acc"><button type="button" class="btn b2 mini" data-acc="excP" data-p="' + p.id + '">Conceder excepción</button></span>') : '') +
+        '</div>';
+    }).join('');
+    const docs = b.docs.map((d) => {
+      const dec = d.dec;
+      const propTx = d.prop === 'aprobar' ? '<span class="chip verde">IA: bien</span>' : d.prop === 'devolver' ? '<span class="chip rojo">IA: ' + esc(d.motivo) + '</span>' : '<span class="chip morado">IA: míralo tú</span>';
+      const seg = cerrado ? '' : '<span class="acc"><span class="seg"><button type="button" class="ap' + (dec && dec.acc === 'aprobar' ? ' on' : '') + '" data-acc="aprobar" data-d="' + d.id + '">Aprobar</button><button type="button" class="dv' + (dec && dec.acc === 'devolver' ? ' on' : '') + '" data-acc="devolver" data-d="' + d.id + '">Devolver</button></span><button type="button" class="btn b2 mini" data-acc="verArchivo">Ver archivo</button></span>';
+      const devolver = dec && dec.acc === 'devolver' && !cerrado ? '<div class="dos" style="grid-column:1 / -1"><div><label class="lbl" for="m' + d.id + '">Motivo</label><select class="campo" id="m' + d.id + '" data-motivo="' + d.id + '">' + MOTIVOS.map((m) => '<option' + (m === dec.motivo ? ' selected' : '') + '>' + m + '</option>').join('') + '</select></div><div><label class="lbl" for="n' + d.id + '">Nota para el líder</label><input class="campo" id="n' + d.id + '" data-nota="' + d.id + '" value="' + esc(dec.nota) + '"></div></div>' : '';
+      const excTx = dec && dec.exc ? '<div class="exc"><b>Aprobado contra la IA. Motivo:</b> ' + esc(dec.exc) + '</div>' : '';
+      const final = cerrado && dec ? '<span class="chip ' + (dec.acc === 'aprobar' ? 'verde' : 'rojo') + '" style="grid-column:1 / -1;justify-self:start">' + (dec.acc === 'aprobar' ? 'Aprobado' : 'Devuelto: ' + esc(dec.motivo)) + '</span>' : '';
+      return '<div class="it"><b>' + esc(d.t) + '</b>' + propTx + '<p>' + esc(d.nota) + '</p><span class="pg">' + esc(d.pg) + '</span>' + excTx + final + seg + devolver + '</div>';
+    }).join('');
+    let pie;
+    if(cerrado) pie = '<button type="button" class="btn b2" data-acc="cerrarArriba">Listo</button>';
+    else if(!admin) pie = '<span class="falta">Solo el administrador cierra la revisión.</span><button type="button" class="btn chico" data-acc="dejarLista">Dejar lista</button>';
+    else if(r.pend) pie = '<span class="falta">' + esc(r.txt) + '</span><button type="button" class="btn chico" disabled>Cerrar revisión</button>';
+    else pie = '<button type="button" class="btn b2" data-acc="cerrarArriba">Seguir luego</button><button type="button" class="btn" data-acc="aCerrar">Cerrar revisión</button>';
+    return cab(c.nombre, rifVer(c.rif) + ' · ' + c.tipo + (c.firma ? ' · firma ' + c.firma : '')) +
+      '<div class="h-cuerpo">' +
+        '<div class="borr">' + (cerrado ? '<span><b>Revisión cerrada.</b> Así quedó.</span>' : '<span><b>Borrador de la IA</b> de ' + esc(b.hora) + '. Cambia lo que haga falta: nada se envía hasta que cierres.</span>') + '</div>' +
+        '<div class="veredicto ' + r.cl + '"><b>' + esc(r.v) + '</b><p>' + esc(r.txt) + (r.estatus && !cerrado ? ' Al cerrar pasa a "' + esc(r.estatus) + '".' : '') + '</p></div>' +
+        '<div class="secc">Del expediente completo</div><div class="caja-s">' + puntos + '</div>' +
+        '<div class="secc">Documento por documento</div><div class="caja-s docs">' + docs + '</div>' +
+        (b.listo ? '<p class="nota">El abogado la dejó lista el ' + esc(b.listo) + '.</p>' : '') +
+      '</div><div class="h-pie">' + pie + '</div>';
+  }
+
+  function hojaExcepcion(c, x){
+    const t = x.p ? c.borrador.puntos.find((p) => p.id === x.p).t : c.borrador.docs.find((d) => d.id === x.d).t;
+    return cab(x.p ? 'Excepción: ' + t : 'Aprobar contra la IA', x.p ? c.nombre : t) +
+      '<div class="h-cuerpo"><label class="lbl" for="excMot" style="margin-top:0">Motivo</label><textarea class="campo" id="excMot"></textarea><div class="err" id="excErr"></div>' +
+      '<p class="nota">Queda en la bitácora con tu nombre y la fecha. Deja de bloquear y se ve como excepción. Se puede quitar mientras la revisión siga abierta.</p></div>' +
+      '<div class="h-pie"><button type="button" class="btn b2" data-acc="cerrarArriba">Cancelar</button><button type="button" class="btn" data-acc="guardarExc">Conceder</button></div>';
+  }
+
+  function mensajeLider(c, r){
+    const h = new Date().getHours(); const saludo = h < 12 ? 'Buenos días' : h < 19 ? 'Buenas tardes' : 'Buenas noches';
+    const lineas = r.bloq.map((x) => x.dec ? '• ' + x.t + ': ' + x.dec.motivo.toLowerCase() + (x.dec.nota ? ' (' + x.dec.nota + ')' : '') : '• Falta: ' + x.falta);
+    return saludo + ', ' + c.lider.split(' ')[0] + '. Del cliente ' + c.nombre + ' (' + rifVer(c.rif) + ') hace falta corregir:\n' + lineas.join('\n') + '\nCuando lo subas a la app, avísame.';
+  }
+  function hojaCerrar(c){
+    const r = calcular(c.borrador);
+    const ok = r.v === 'Apto';
+    return cab('Cerrar revisión', c.nombre) +
+      '<div class="h-cuerpo"><div class="veredicto ' + r.cl + '"><b>' + esc(r.v) + '</b><p>El estatus pasa a "' + esc(r.estatus) + '". Queda una sola entrada en el hilo y en la bitácora.</p></div>' +
+      (ok ? '<p class="nota" style="margin-top:12px">No hay nada que mandarle al líder. Si quieres, le avisas que el expediente quedó aprobado.</p>'
+          : '<label class="lbl" for="msj">Mensaje para ' + esc(c.lider) + '</label><textarea class="campo" id="msj" style="min-height:190px">' + esc(mensajeLider(c, r)) + '</textarea><p class="nota">Puedes cambiarlo antes de enviarlo. Se abre WhatsApp con el texto, como en "Enviar pendientes".</p>') +
+      '</div><div class="h-pie"><button type="button" class="btn b2" data-acc="cerrarRev" data-env="0">' + (ok ? 'Cerrar' : 'Cerrar sin enviar') + '</button>' + (ok ? '' : '<button type="button" class="btn" data-acc="cerrarRev" data-env="1">Cerrar y enviar</button>') + '</div>';
+  }
+
+  // ---------- Simulación de la corrida ----------
+  function correr(ids){
+    ids.forEach((id) => {
+      const c = cli(id);
+      c.corriendo = { n: 0, total: Math.max(nuevos(c), 1) };
+      const paso = setInterval(() => {
+        c.corriendo.n++;
+        if(c.corriendo.n >= c.corriendo.total){
+          clearInterval(paso);
+          c.corriendo = null; c.leidos = c.archivos;
+          c.borrador = prepararDecisiones(borrador(c));
+          c.ia = calcular(c.borrador).v === 'Apto' ? 'Apto' : 'No apto';
+          const quedan = E.clientes.some((x) => x.corriendo);
+          if(!quedan) toast('Listo: borradores de la IA por cerrar.', 'Ver', () => { E.vista = 'revision'; E.filtroR = 'porcerrar'; while(E.hojas.length) cerrarArriba(); pintar(); });
+        }
+        pintar(); refrescarHojas();
+      }, 420);
+    });
+  }
+
+  // ---------- Toast ----------
+  let tTo;
+  function toast(msg, accion, fn){
+    const t = $('toast'); t.querySelector('span').textContent = msg;
+    const b = t.querySelector('button'); b.hidden = !accion; b.textContent = accion || ''; b.onclick = () => { t.classList.remove('on'); fn && fn(); };
+    t.classList.add('on'); clearTimeout(tTo); tTo = setTimeout(() => t.classList.remove('on'), 5000);
+  }
+
+  // ---------- Eventos ----------
+  document.addEventListener('click', (e) => {
+    const el = e.target.closest('[data-acc],[data-ir],[data-filtro],[data-marcar],[data-abrir],[data-rol]');
+    if(!el || el.disabled) return;
+    const hoja = E.hojas[E.hojas.length - 1];
+    const c = hoja ? cli(hoja.id) : null;
+    if(el.dataset.rol){ E.rol = el.dataset.rol; document.querySelectorAll('#rol button').forEach((b) => b.classList.toggle('on', b === el)); if(E.vista === 'factibilidad') E.vista = 'clientes'; pintar(); refrescarHojas(); return; }
+    if(el.dataset.ir){ if(['clientes', 'revision'].indexOf(el.dataset.ir) < 0){ toast('Esa pantalla no es parte de esta maqueta.'); return; } E.vista = el.dataset.ir; pintar(); return; }
+    if(el.dataset.filtro){ E.filtroR = el.dataset.filtro; pintar(); return; }
+    if(el.dataset.marcar){ const id = el.dataset.marcar; E.sel.has(id) ? E.sel.delete(id) : E.sel.add(id); pintar(); return; }
+    if(el.dataset.abrir){ abrirHoja(el.dataset.abrir, el.dataset.id); return; }
+    const acc = el.dataset.acc;
+    if(acc === 'reiniciar'){ while(E.hojas.length) cerrarArriba(); reiniciar(); pintar(); toast('Maqueta reiniciada.'); }
+    else if(acc === 'cerrarArriba') cerrarArriba();
+    else if(acc === 'quitar'){ E.sel.clear(); pintar(); }
+    else if(acc === 'confirmar') abrirHoja('conf', null, { ids: Array.from(E.sel) });
+    else if(acc === 'mandar') abrirHoja('conf', null, { ids: [el.dataset.id] });
+    else if(acc === 'correr'){ const ids = hoja.extra.ids; E.sel.clear(); cerrarArriba(); correr(ids); toast('La IA empezó a leer. Puedes seguir trabajando.'); }
+    else if(acc === 'aprobar' || acc === 'devolver'){
+      const d = c.borrador.docs.find((x) => x.id === el.dataset.d);
+      if(acc === 'aprobar' && d.prop === 'devolver' && !(d.dec && d.dec.acc === 'aprobar')){ abrirHoja('exc', c.id, { d: d.id }); return; }
+      d.dec = acc === 'aprobar' ? { acc: 'aprobar', motivo: '', nota: '' } : { acc: 'devolver', motivo: d.motivo || 'Ilegible', nota: d.prop === 'devolver' ? d.nota : '' };
+      refrescarHojas();
+    }
+    else if(acc === 'excP') abrirHoja('exc', c.id, { p: el.dataset.p });
+    else if(acc === 'quitarExc'){ c.borrador.puntos.find((p) => p.id === el.dataset.p).exc = null; refrescarHojas(); }
+    else if(acc === 'guardarExc'){
+      const mot = $('excMot').value.trim();
+      if(mot.length < 5){ $('excErr').textContent = 'Escribe el motivo (al menos 5 letras).'; $('excMot').focus(); return; }
+      const cc = cli(hoja.id);
+      if(hoja.extra.p) cc.borrador.puntos.find((p) => p.id === hoja.extra.p).exc = mot;
+      else cc.borrador.docs.find((d) => d.id === hoja.extra.d).dec = { acc: 'aprobar', motivo: '', nota: '', exc: mot };
+      cerrarArriba(); refrescarHojas(); toast('Excepción anotada en la bitácora.');
+    }
+    else if(acc === 'verArchivo') toast('Aquí se abre el archivo en la página que dice la IA.');
+    else if(acc === 'dejarLista'){ c.borrador.listo = ahora(); refrescarHojas(); toast('Lista para que el administrador la cierre.'); }
+    else if(acc === 'aCerrar') abrirHoja('cerrar', c.id);
+    else if(acc === 'cerrarRev'){
+      const cc = cli(hoja.id); const r = calcular(cc.borrador);
+      cc.legal = r.estatus; cc.ia = r.v === 'Apto' ? 'Apto' : 'No apto'; cc.borrador.cerrado = true;
+      const devueltos = cc.borrador.docs.filter((d) => d.dec.acc === 'devolver').length;
+      cc.hist.unshift({ fecha: ahora(), quien: 'Administrador', como: 'IA + revisión', ver: r.v, det: r.v === 'Apto' ? 'Todo aprobado.' : r.bloq.length + ' por corregir (' + devueltos + ' documentos devueltos).' + (el.dataset.env === '1' ? ' Se avisó al líder.' : '') });
+      while(E.hojas.length) cerrarArriba();
+      pintar();
+      toast(el.dataset.env === '1' ? 'Revisión cerrada. Se abriría WhatsApp con el mensaje.' : 'Revisión cerrada. Estatus: ' + r.estatus + '.', 'Ver expediente', () => abrirHoja('exp', cc.id));
+    }
+  });
+  document.addEventListener('change', (e) => {
+    const h = E.hojas[E.hojas.length - 1]; if(!h) return; const c = cli(h.id);
+    if(e.target.dataset.motivo){ c.borrador.docs.find((d) => d.id === e.target.dataset.motivo).dec.motivo = e.target.value; }
+  });
+  document.addEventListener('input', (e) => {
+    const h = E.hojas[E.hojas.length - 1]; if(!h) return; const c = cli(h.id);
+    if(e.target.dataset.nota){ c.borrador.docs.find((d) => d.id === e.target.dataset.nota).dec.nota = e.target.value; }
+    if(e.target.id === 'excMot') $('excErr').textContent = '';
+  });
+  document.addEventListener('keydown', (e) => { if(e.key === 'Escape' && E.hojas.length) cerrarArriba(); });
+
+  reiniciar();
+  pintar();
+})();
+</script>
+</body>
+</html>
