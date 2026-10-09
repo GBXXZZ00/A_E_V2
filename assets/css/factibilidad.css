@@ -106,3 +106,6 @@
 .fa-etq{background:rgba(255,255,255,.92);border:0;box-shadow:none;border-radius:8px;padding:1px 7px;font-weight:700;font-size:11px;color:#111315}
 .fa-etq::before{display:none}
 #pFact .btn{font-size:15px;padding:0 14px;min-width:0}
+.fa-ayuda{margin-top:14px;background:var(--azul-bg);color:var(--text)}
+.fa-ayuda > b{color:var(--azul)}
+.fa-ayuda .acc{flex-wrap:wrap}

@@ -137,5 +137,7 @@
     b.textContent = ocultar ? 'Mostrar' : 'Ocultar'; b.setAttribute('aria-expanded', String(!ocultar));
     try { ocultar ? localStorage.setItem(K_OCULTO, hoyClave()) : localStorage.removeItem(K_OCULTO); } catch (err) {}
   });
-  arrancar();
+  // Una ubicación compartida antes de entrar: se sigue en Factibilidad
+  let compartido = false; try { compartido = !!sessionStorage.getItem('ae_compartido'); } catch (e) {}
+  if(compartido) location.replace('factibilidad.html'); else arrancar();
 })();

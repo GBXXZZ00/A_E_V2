@@ -1,26 +1,33 @@
 # Traspaso (se actualiza al cerrar cada sesión)
 
-Actualizado: 09/10/2026. Publicado: `?v=13` (archivos de Drive desde la app).
+Actualizado: 09/10/2026. Publicado: `?v=18` (Drive desde la app, privacidad, Enviar pendientes y Factibilidad completa).
 
 ## Estado
-- Publicado y con pruebas (test01 a test09 en TODO OK): acceso con PIN, Usuarios, Inicio, Clientes, expediente como hoja (`assets/js/ficha.js`), Comisiones (`comisiones.js`), Actualizar con cruce (`actualizar.js`), proforma y carta en PDF (`documentos.js`, `marca.js`), bienvenidas por enviar (`bienvenidas.js`), ZIP y Excel sin librerías (`archivos.js`).
+- Publicado y con pruebas (test01 a test14 en TODO OK): acceso con PIN, Usuarios, Inicio, Clientes, expediente como hoja (`assets/js/ficha.js`), Comisiones (`comisiones.js`), Actualizar con cruce (`actualizar.js`), proforma y carta en PDF (`documentos.js`, `marca.js`), bienvenidas por enviar (`bienvenidas.js`), ZIP y Excel sin librerías (`archivos.js`), página de privacidad (`privacidad.html`), Enviar pendientes en Comisiones y Factibilidad (`factibilidad.js`, `coordenadas.js`, `mapared.js`, `kmz-lector.js`).
 - Base: lotes 1 a 12 aplicados. Corte de referencia para probar comisiones: septiembre 2026 = 59 filas y 49 cumplen; octubre = 48 filas. Si un cambio mueve esos números sin razón, está mal.
 - Documentos: los de la app vieja ya están registrados en `archivos` (con `drive_id` y `url_externa`), `documentos` y `documento_archivos`. Son unos 2.000 archivos de unos 390 clientes. Los de clientes ya aprobados por Legal entraron aprobados; el resto por revisar. Desde v13 se ven dentro de la app: `ficha.js` (`bajarDeDrive`) pide el archivo a la función de borde `drive_archivo` (copia en `supabase/funciones/drive_archivo/`), que revisa el permiso con `public.archivo_drive` (mismas reglas de `cliente_ficha`) y entrega el archivo desde Drive. El enlace de Drive ya no se abre. Word y ZIP se ofrecen para descargar.
 - Drive: los tres secretos de Google están en Supabase (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REFRESH_TOKEN`; hacer `.trim()` a los tres). El permiso está en modo Prueba y vence cada 7 días hasta que se publique la app de OAuth, que exige página principal y política de privacidad.
 - No verificado: nada de la última corrida se ha probado con usuarios reales; el arreglo del pago quitado a mano no se probó con una carga real del TAD; `actualizar.js` solo tuvo revisión por encima.
 
+## Hecho en la corrida del 09/10 (falta que el administrador lo pruebe con datos reales)
+1. **Archivos de Drive desde la app** (v13): función `drive_archivo` + `public.archivo_drive`. Probar abriendo un documento viejo en web y teléfono.
+2. **Privacidad** (v14): `privacidad.html`, pública y enlazada en la entrada. Dirección para Google: `https://gbxxzz00.github.io/A_E_V2/privacidad.html` (página principal: `https://gbxxzz00.github.io/A_E_V2/`). Falta que el administrador la ponga en la pantalla de consentimiento de OAuth y pase la app a producción.
+3. **Enviar pendientes** (v15): botón en el grupo de cada líder en Comisiones (solo admin, corte en curso). Funciones `pendientes_lider` y `pendientes_enviados` (bitácora `pendientes_enviados`). Con más de 12 clientes: resumen y PDF de varias páginas (`Documentos.pendientes`). Hoy ningún líder tiene usuario con WhatsApp: se abre WhatsApp sin número y se elige el chat.
+4. **Factibilidad** (v16 a v18), pasos 1 a 5 de `claude/factibilidad.md`:
+   - Base: `mapas_red`, `zonas_red`, `consultas_fact`, `consultas_fact_hist` (RLS). Motor `privado.fact_evaluar` con `privado.fact_medir` (distancia al borde, sin PostGIS). Batería en `supabase/pruebas/factibilidad_bateria.sql`: 12 de 12 puntos correctos en la base real.
+   - Mapa: panel "Mapa de red" en Actualizar (solo admin). El KMZ se lee en `kmz-lector.js` (fuera de la pantalla) y sube por lotes con `mapa_iniciar`, `mapa_zonas`, `mapa_cerrar`. El cierre compara con el mapa anterior y revisa solas las consultas abiertas (marca NUEVO).
+   - Pantalla: `factibilidad.html` con lista, atajos, hoja de consulta, resultado con Leaflet (OpenStreetMap y Esri satélite), mapa amplio, datos del cliente, texto de Odoo plegado, Ya lo vendí y Ya no interesa.
+   - WhatsApp: `share_target` en `manifest.json` (Android instalada), retoma lo compartido después del PIN, ayuda de una sola vez, Pegar en iPhone. Enlaces cortos con la función `resolver_enlace` (no confirmado que Google no la bloquee: si falla, pide coordenadas).
+   - **Falta probar con el KMZ real**: subirlo en Actualizar y verificar el reparto (Liberado 1.507, Exclusiva 36, Diseño 416, Construcción 1, Permiso VGT 1; 1.961 polígonos). El resumen de la carga lo muestra.
+
 ## Siguientes tareas para Claude Code, en orden
 Antes de cada una: explicar en simple y esperar el OK.
 
-1. **Hecho en v13, falta que el administrador lo pruebe:** abrir archivos de Drive desde la app. Probado con el simulador (test09) y la regla de permiso contra la base real con la cuenta admin. No se pudo llamar la función real desde la terminal (no hay red hacia Supabase): la primera prueba real la hace el administrador abriendo un documento viejo en web y en teléfono. Si dice "El permiso de Google venció", es el permiso en modo Prueba de 7 días. Los PDF muy grandes (hay uno de 70 MB) tardan en bajar al teléfono.
-2. **Página de privacidad** pública en la app, para publicar el permiso de Google. Listo cuando existe y el administrador pudo pasar la app de OAuth a producción.
-3. **Botón "Enviar pendientes" al líder** (solo admin) en el grupo de cada líder en Comisiones: mensaje de seguimiento por WhatsApp, sin enlaces. Texto aprobado:
-   "Buenas tardes, [Líder]. Te paso tus pendientes del corte de [mes]. Cierra el 20 y faltan [n] días. / ÚLTIMO CORTE (si no cumplen el 20, se pierde la comisión) / 1. [Cliente] ([código]): falta [documentos]. Debe la instalación. / DE ESTE CORTE / 3. [Cliente] ([código]): falta [documentos]. / 5. [Cliente] ([código]): pendiente por asignar, todavía no comisiona. / Ya cumplen: [x] de [y]. / Cualquier documento me lo envías por aquí o lo subes en la app. Gracias."
-   Sin confirmar: con más de 12 clientes, resumen corto más un PDF con la lista. Listo cuando abre WhatsApp con el texto correcto, queda anotado quién lo envió y cuándo, y hay prueba.
-4. **Subidas nuevas directo a Drive** (después de que el administrador pruebe con el Analista Senior). Carpeta "RIF - NOMBRE" creada sola, subcarpeta por tipo de servicio como ya existe. La app deja de usar el bucket `expedientes`. Es el cambio con más riesgo: toca `guardarItems` en `ficha.js` y `documentos_registrar`. test04, test05, test07 y test08 deben seguir pasando.
-5. **Revisión de documentos con IA.** Falta la columna para la marca de la IA (separada del estatus legal). La IA corre en una función de borde que lee de Drive; nunca pasan documentos reales por este repo. Las reglas del script viejo (vigencia, nombres, cartera, cotejo con el acta) pasan al servidor como reglas deterministas. Necesita la clave de la API de IA como secreto en Supabase. Sin propuesta todavía.
-6. **Módulo de aliados**: consultas viejas con el indicador de instaladas, y sus documentos. Los datos se están cruzando fuera del repo.
-7. **Factibilidad**: aprobada el 09/10. Todo lo necesario está en `claude/factibilidad.md` y la maqueta en `claude/maquetas/factibilidad-f1.html`. El KMZ real no está en el repo: se prueba con uno inventado y el administrador sube el real por Actualizar. Seguir el orden de construcción de ese documento.
+1. Lo que salga de las pruebas del administrador de lo hecho el 09/10.
+2. **Factibilidad paso 6**: avisos al teléfono y cierre automático a "Vendida" cuando aparezca una orden de Odoo con ese RIF.
+3. **Subidas nuevas directo a Drive** (después de que el administrador pruebe con el Analista Senior). Carpeta "RIF - NOMBRE" creada sola, subcarpeta por tipo de servicio como ya existe. La app deja de usar el bucket `expedientes`. Es el cambio con más riesgo: toca `guardarItems` en `ficha.js` y `documentos_registrar`. test04, test05, test07 y test08 deben seguir pasando. Espera decisión del administrador.
+4. **Revisión de documentos con IA.** Falta la columna para la marca de la IA (separada del estatus legal). La IA corre en una función de borde que lee de Drive; nunca pasan documentos reales por este repo. Necesita la clave de la API de IA como secreto en Supabase. Espera decisión del administrador.
+5. **Módulo de aliados**: consultas viejas con el indicador de instaladas, y sus documentos. Fuente: `privado.aliados_appsheet`.
 
 ## Pendientes que NO son de este repo (se hacen en el chat del proyecto)
 - Hecho el 09/10: los expedientes viejos de aliados ya están en la app (unos 440 archivos de 68 clientes, subidos por "Aliado: nombre", por revisar) con correo y teléfono del representante. Falta una carpeta de aliados con códigos AL- sin cliente identificado.
@@ -36,6 +43,17 @@ Antes de cada una: explicar en simple y esperar el OK.
 - Los nombres salen con ", C.A." en los documentos.
 - Las bienvenidas pendientes cuentan solo el corte en curso.
 
+- Factibilidad: el líder ve solo sus consultas; admin y analistas todas; abogado y aliado no entran.
+- Factibilidad: el tipo de cliente viene marcado en PYME; se puede cambiar antes de consultar.
+- Factibilidad: lo compartido desde WhatsApp abre la consulta con el enlace puesto y espera un toque en Consultar (para elegir el tipo).
+- Factibilidad: un polígono que no está en una carpeta de estado (Liberado, Exclusiva, Diseño, Construcción, Permiso VGT) queda fuera y el resumen lo dice; no se usa el color como respaldo.
+- Factibilidad: solo se revisan con el mapa nuevo las consultas abiertas (no las vendidas ni las cerradas).
+- Factibilidad: texto de Odoo para Dedicado: "INST. DEDICADO NOMBRE RIF".
+- Factibilidad: en iPhone, la ayuda y el formulario ofrecen Pegar; no se lee el portapapeles sin que la persona toque.
+- Enviar pendientes: el saludo cambia según la hora (Buenos días, Buenas tardes, Buenas noches); el mensaje se puede editar antes de enviarlo; "más de 12" cuenta los clientes pendientes, no todos.
+- Enviar pendientes: si el documento está subido pero sin aprobar, dice "documentos en revisión con Legal"; si lo devolvieron, "corregir ... (lo devolvió Legal)".
+- Privacidad: el contacto es "el administrador de la app" (sin correo, porque el repo es público).
+
 ## Problemas ya resueltos (no repetir)
 - Sin acceso de red desde la terminal a Supabase: todo por el conector.
 - `pg_net` y `http` no están instalados: no se llama a funciones de borde desde SQL.
@@ -43,4 +61,6 @@ Antes de cada una: explicar en simple y esperar el OK.
 - PDF sin librerías: Helvetica estándar, anchos de letra en una tabla dentro de `documentos.js`, texto en hexadecimal; el QR es una imagen de un bit idéntica a la original.
 - Drive devuelve como máximo 460 elementos por página cuando se piden los padres.
 - No dejar funciones de borde abiertas (`verify_jwt` apagado) después de una prueba. `drive_prueba` quedó abierta y se apagó el 09/10 (devuelve 404 y pide sesión); `drive_inventario` también está apagada.
+- Leaflet: fijar la vista antes de agregar zonas y sin animaciones; si no, falla al cerrar la hoja (`_leaflet_pos`, `_clipPoints`).
+- Las pruebas sirven Leaflet desde `pruebas/vendor/leaflet` y los mosaicos con una imagen de mentira (por eso el mapa se ve rojo en las capturas).
 - Chromium ignora el atributo `download` de un enlace dentro de una hoja: se descarga con un enlace suelto en la página (ver `#bajarArch` en `ficha.js`).

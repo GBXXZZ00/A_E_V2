@@ -53,7 +53,7 @@
     $('faFecha').innerHTML = d.mapa ? 'Mapa de red del <b>' + esc(fecha(d.mapa.fecha)) + '</b>. ' + esc(Number(d.mapa.zonas || 0).toLocaleString('es-VE')) + ' zonas.'
       : 'Todavía no hay mapa de red. ' + (yo.rol === 'admin' ? 'Súbelo en <a class="enlace" href="actualizar.html">Actualizar</a>.' : 'Pídele al administrador que lo suba.');
     if(!d.filas.length){
-      $('faLista').innerHTML = vacio(filtro === 'abiertas' ? 'Todavía no hay consultas' : 'Nada por aquí', filtro === 'abiertas' ? 'Toca Nueva consulta y pega el enlace de la ubicación que te mandó el cliente.' : 'Prueba con otro atajo.');
+      $('faLista').innerHTML = vacio(filtro === 'abiertas' ? 'Todavía no hay consultas' : 'Nada por aquí', filtro === 'abiertas' ? 'Toca ' + (esTel() ? 'Consultar' : 'Nueva consulta') + ' y pega el enlace de la ubicación que te mandó el cliente.' : 'Prueba con otro atajo.');
       return;
     }
     $('faLista').innerHTML = '<div class="fa-lista">' + d.filas.map((p) => {
@@ -111,9 +111,9 @@
   const esTel = () => window.matchMedia('(max-width:899px)').matches;
   function formulario(o){
     montarHojas(); soltarMapa('chico'); C = null;
-    F = Object.assign({ texto: '', tipo: F.tipo || 'pyme', error: '', copiado: '' }, o || {});
+    F = Object.assign({ texto: '', tipo: F.tipo || 'pyme', error: '', copiado: esIos && !(o && o.texto) }, o || {});
     $('tFact').textContent = 'Nueva consulta'; $('sFact').textContent = 'Pega el enlace, escribe las coordenadas o usa tu ubicación';
-    $('cFact').innerHTML = (F.copiado ? '<div class="fa-copiado"><b>Tienes un enlace copiado</b>Toca Pegar y se consulta solo.</div>' : '') +
+    $('cFact').innerHTML = (F.copiado ? '<div class="fa-copiado"><b>¿Copiaste el enlace en WhatsApp?</b>Toca Pegar y se consulta solo.</div>' : '') +
       '<label class="rotulo arriba" for="faEnlace">Enlace de Google Maps o coordenadas</label>' +
       '<div class="fa-campo-fila"><input class="campo" id="faEnlace" type="text" inputmode="url" autocomplete="off" autocapitalize="none" spellcheck="false" maxlength="600" value="' + esc(F.texto) + '"' + (F.error ? ' aria-invalid="true"' : '') + ' aria-describedby="faAyuda eEnlace">' +
       '<button type="button" class="fa-pegar" id="faPegar">Pegar</button></div>' +
@@ -341,14 +341,55 @@
   });
   document.addEventListener('change', (e) => { if(['gNom', 'gTel', 'gRif'].indexOf(e.target.id) >= 0){ clearTimeout(tDatos); tDatos = setTimeout(guardarDatos, 150); } });
 
+  // ---------- Entrar desde WhatsApp ----------
+  // Android: la app instalada sale en Compartir (manifest.json, share_target) y llega con ?texto=, ?enlace= o ?titulo=.
+  // iPhone no lo permite: se copia el enlace en WhatsApp y aquí se toca Pegar.
+  const UA = navigator.userAgent || '';
+  const esAndroid = /Android/i.test(UA);
+  const esIos = /iPhone|iPad|iPod/i.test(UA) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const instalada = () => { try { return window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true; } catch (e) { return false; } };
+  const K_AYUDA = 'ae_ayuda_compartir';
+  let promptInstalar = null;
+  window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); promptInstalar = e; pintarAyuda(); });
+  function leerCompartido(){
+    let t = '';
+    try {
+      const u = new URL(location.href); const q = u.searchParams;
+      t = [q.get('enlace'), q.get('texto'), q.get('titulo')].filter(Boolean).join(' ').trim();
+      if(t){ ['enlace', 'texto', 'titulo'].forEach((k) => u.searchParams.delete(k)); history.replaceState(history.state, '', u.toString()); try { sessionStorage.setItem('ae_compartido', t.slice(0, 600)); } catch (e) {} }
+    } catch (e) {}
+    return t;
+  }
+  function tomarCompartido(){ let t = ''; try { t = sessionStorage.getItem('ae_compartido') || ''; sessionStorage.removeItem('ae_compartido'); } catch (e) {} return t; }
+  function pintarAyuda(){
+    const z = $('faAyudaApp'); if(!z) return;
+    let visto = false; try { visto = localStorage.getItem(K_AYUDA) === '1'; } catch (e) {}
+    if(visto || !(esAndroid || esIos) || (esAndroid && instalada())){ z.innerHTML = ''; return; }
+    z.innerHTML = esAndroid
+      ? '<div class="fa-bloque fa-ayuda"><b>Consulta desde WhatsApp</b>Instala la app una sola vez. Después, en WhatsApp mantén presionado el enlace de la ubicación, toca Compartir y elige Empresas.' +
+        (promptInstalar ? '' : ' En Chrome toca el menú ⋮ y luego Instalar app.') +
+        '<div class="acc">' + (promptInstalar ? '<button type="button" class="btn btn-chico" id="faInstalar">Instalar</button>' : '') + '<button type="button" class="btn btn-chico btn-2" id="faAyudaOk">Entendido</button></div></div>'
+      : '<div class="fa-bloque fa-ayuda"><b>Consulta desde WhatsApp</b>En WhatsApp mantén presionado el enlace de la ubicación y toca Copiar. Vuelve aquí y toca Pegar: se consulta solo.' +
+        '<div class="acc"><button type="button" class="btn btn-chico" id="faPegarAyuda">Pegar</button><button type="button" class="btn btn-chico btn-2" id="faAyudaOk">Entendido</button></div></div>';
+  }
+  document.addEventListener('click', async (e) => {
+    const t = e.target;
+    if(t.closest('#faAyudaOk')){ try { localStorage.setItem(K_AYUDA, '1'); } catch (x) {} pintarAyuda(); return; }
+    if(t.closest('#faInstalar') && promptInstalar){ const pr = promptInstalar; promptInstalar = null; try { await pr.prompt(); const r = await pr.userChoice; if(r && r.outcome === 'accepted'){ try { localStorage.setItem(K_AYUDA, '1'); } catch (x) {} toast('Listo. Ahora Empresas sale en Compartir de WhatsApp'); } } catch (x) {} pintarAyuda(); return; }
+    if(t.closest('#faPegarAyuda')){ formulario({ copiado: true }); pegar(); }
+  });
+
   window.Factibilidad = { _textoOdoo: textoOdoo, VER };
   (async function(){
+    leerCompartido();   // se guarda antes de exigir la sesión: si hay que entrar, se retoma después
     yo = await S.requerir(['admin', 'analista', 'lider']);
     if(!yo) return;
     window.Armazon.montar(yo, { activo: 'factibilidad' });
     $('faSub').textContent = yo.rol === 'lider' ? 'Tus consultas. Se revisan solas con cada mapa nuevo.' : 'Las consultas de todos los líderes. Se revisan solas con cada mapa nuevo.';
     let f = 'abiertas'; try { f = new URL(location.href).searchParams.get('f') || 'abiertas'; } catch (e) {}
     filtro = ATAJOS.some((a) => a[0] === f) ? f : 'abiertas';
-    montarHojas(); cargar();
+    montarHojas(); cargar(); pintarAyuda();
+    const compartido = tomarCompartido();
+    if(compartido){ formulario({ texto: compartido }); const a = $('faAyuda'); if(a) a.textContent = 'Llegó desde WhatsApp. Elige el tipo de cliente y toca Consultar.'; }
   })();
 })();

@@ -34,7 +34,7 @@ const esperaResultado = (p) => p.waitForSelector('#hojaFact .fa-veredicto');
     ok(nombre + ': Inicio trae Factibilidad como módulo activo', (await p.locator('a.mod[data-modulo="factibilidad"]').count()) === 1);
     await p.click('a.mod[data-modulo="factibilidad"]'); await p.waitForURL('**/factibilidad.html'); await p.waitForSelector('#faLista .vacio');
     ok(nombre + ': la navegación marca Factibilidad', (await p.locator((tel ? '#navAbajo' : '.navpc') + ' a.on[href="factibilidad.html"]').count()) === 1);
-    ok(nombre + ': sin consultas explica qué hacer', (await p.textContent('#faLista')).includes('Nueva consulta') && (await p.textContent('#faFecha')).includes('Todavía no hay mapa'));
+    ok(nombre + ': sin consultas explica qué hacer', /Toca (Consultar|Nueva consulta)/.test(await p.textContent('#faLista')) && (await p.textContent('#faFecha')).includes('Todavía no hay mapa'));
     await consultar(p, '10.005, -71.005', 'pyme'); await p.waitForFunction(() => /mapa de red/.test((document.getElementById('eEnlace') || {}).textContent || ''));
     ok(nombre + ': sin mapa lo dice debajo del campo', (await p.textContent('#eEnlace')).includes('Pide al administrador'));
     await cerrarTodo(p);
