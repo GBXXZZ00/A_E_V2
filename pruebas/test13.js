@@ -107,6 +107,10 @@ const esperaResultado = (p) => p.waitForSelector('#hojaFact .fa-veredicto');
     await p.click('#faCopiarCliente'); await p.waitForFunction(() => /por ahora/.test(window.__copiado || ''));
     ok(nombre + ': sin nombre el mensaje dice Estimado cliente', (await p.evaluate(() => window.__copiado)).includes('Estimado cliente, revisamos') && (await p.evaluate(() => window.__copiado)).includes('*Resultado: sin cobertura por ahora.*'));
     await cerrarTodo(p);
+    const antes = mundo.llamadas.filter((l) => l[0] === 'resolver').length;
+    await consultar(p, '10.005, -71.005\nhttps://maps.app.goo.gl/NoSirve', 'pyme'); await esperaResultado(p);
+    ok(nombre + ': con coordenadas y enlace juntos usa las coordenadas sin abrir el enlace', (await p.textContent('#hojaFact')).includes('Hay red') && mundo.llamadas.filter((l) => l[0] === 'resolver').length === antes);
+    await cerrarTodo(p);
     await consultar(p, 'https://maps.app.goo.gl/NoSirve', 'pyme'); await p.waitForFunction(() => /coordenadas/.test((document.getElementById('eEnlace') || {}).textContent || ''));
     ok(nombre + ': si el enlace corto falla, pide las coordenadas', (await p.textContent('#eEnlace')).includes('copia las coordenadas'));
 
@@ -127,7 +131,7 @@ const esperaResultado = (p) => p.waitForSelector('#hojaFact .fa-veredicto');
     // Lista y atajos
     await p.waitForSelector('.fa-pro');
     const n = await p.locator('.fa-pro').count();
-    ok(nombre + ': la lista trae todas las consultas abiertas, cada una en su bandeja', n === 6 && (await p.locator('.fa-pro').first().evaluate((x) => getComputedStyle(x).borderTopWidth)) === '1px', n);
+    ok(nombre + ': la lista trae todas las consultas abiertas, cada una en su bandeja', n === 7 && (await p.locator('.fa-pro').first().evaluate((x) => getComputedStyle(x).borderTopWidth)) === '1px', n);
     ok(nombre + ': el nombre en la lista sale como texto', (await p.textContent('#faLista')).includes('onerror') && !(await p.evaluate(() => window.__xss)));
     await p.click('[data-filtro="espera"]'); await p.waitForFunction(() => document.querySelectorAll('.fa-pro').length === 1);
     ok(nombre + ': atajo En espera', (await p.textContent('#faLista')).includes('En espera'));

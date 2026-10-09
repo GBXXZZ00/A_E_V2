@@ -133,7 +133,7 @@
     try { r = await fetch(db.supabaseUrl + '/functions/v1/resolver_enlace', { method: 'POST', headers: { Authorization: 'Bearer ' + tk, apikey: db.supabaseKey, 'Content-Type': 'application/json' }, body: JSON.stringify({ url }) }); }
     catch (e) { throw new Error('Sin conexión. Revisa el internet'); }
     let j = {}; try { j = await r.json(); } catch (e) {}
-    const p = r.ok && j.url ? CO.desdeUrl(j.url) : null;
+    const p = !r.ok ? null : isFinite(j.lat) && isFinite(j.lng) && j.lat !== null ? { lat: Math.round(j.lat * 1e6) / 1e6, lng: Math.round(j.lng * 1e6) / 1e6 } : j.url ? CO.desdeUrl(j.url) : null;
     if(!p) throw new Error('No pude abrir ese enlace corto. Abre el enlace en Google Maps, copia las coordenadas y pégalas aquí');
     return p;
   }

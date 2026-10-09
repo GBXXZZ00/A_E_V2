@@ -38,6 +38,10 @@
     const t = String(texto || '').trim();
     if(!t) return { error: 'Pega el enlace o escribe las coordenadas' };
     const url = (/https?:\/\/[^\s<>"']+/i.exec(t) || [])[0];
+    // Si además del enlace vienen las coordenadas escritas, mandan ellas: no hace falta abrir el enlace
+    const suelto = t.replace(/https?:\/\/[^\s<>"']+/gi, ' ');
+    const directo = gms(suelto) || decimal(suelto);
+    if(directo) return directo;
     if(url){
       const r = desdeUrl(url); if(r) return r;
       if(CORTOS.test(url)) return { corto: url.replace(/[).,;]+$/, '') };

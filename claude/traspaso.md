@@ -1,6 +1,6 @@
 # Traspaso (se actualiza al cerrar cada sesión)
 
-Actualizado: 09/10/2026. Publicado: `?v=19` (Factibilidad simplificada según la maqueta F2).
+Actualizado: 09/10/2026. Publicado: `?v=20` (Factibilidad simplificada; coordenadas pegadas junto al enlace mandan).
 
 ## Estado
 - Publicado y con pruebas (test01 a test14 en TODO OK): acceso con PIN, Usuarios, Inicio, Clientes, expediente como hoja (`assets/js/ficha.js`), Comisiones (`comisiones.js`), Actualizar con cruce (`actualizar.js`), proforma y carta en PDF (`documentos.js`, `marca.js`), bienvenidas por enviar (`bienvenidas.js`), ZIP y Excel sin librerías (`archivos.js`), página de privacidad (`privacidad.html`), Enviar pendientes en Comisiones y Factibilidad (`factibilidad.js`, `coordenadas.js`, `mapared.js`, `kmz-lector.js`).
@@ -65,6 +65,7 @@ Antes de cada una: explicar en simple y esperar el OK.
 - PDF sin librerías: Helvetica estándar, anchos de letra en una tabla dentro de `documentos.js`, texto en hexadecimal; el QR es una imagen de un bit idéntica a la original.
 - Drive devuelve como máximo 460 elementos por página cuando se piden los padres.
 - No dejar funciones de borde abiertas (`verify_jwt` apagado) después de una prueba. `drive_prueba` quedó abierta y se apagó el 09/10 (devuelve 404 y pide sesión); `drive_inventario` también está apagada.
+- Factibilidad, enlaces: si el texto pegado trae coordenadas y enlace, mandan las coordenadas (no se abre el enlace). `resolver_enlace` v2 busca coordenadas también dentro de la página de Google y deja en el registro cada salto ("salto" y "pagina") para ver dónde falla. El 09/10 falló un maps.app.goo.gl real con la v1; falta confirmar con la v2.
 - Leaflet: fijar la vista antes de agregar zonas y sin animaciones; si no, falla al cerrar la hoja (`_leaflet_pos`, `_clipPoints`).
 - Las pruebas sirven Leaflet desde `pruebas/vendor/leaflet` y los mosaicos con una imagen de mentira (por eso el mapa se ve rojo en las capturas).
 - Chromium ignora el atributo `download` de un enlace dentro de una hoja: se descarga con un enlace suelto en la página (ver `#bajarArch` en `ficha.js`).
