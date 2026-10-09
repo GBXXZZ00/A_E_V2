@@ -51,6 +51,19 @@ Sin nombres reales: el repo es público. "Analista Senior" es el responsable de 
 - Los documentos de la app vieja aparecen en la app como si se hubieran subido en ella, y conservan el estatus legal que ya tenía el cliente.
 - Estatus legal y revisión de la IA son dos marcas distintas. La IA entra "sin revisar", lee el expediente completo, solo propone, y se compara contra lo que Legal ya decidió. Se ejecuta cuando el administrador lo decida.
 
+## Revisión de documentos con IA (definiéndose desde el 09/10)
+- Proveedor: Gemini. Mientras tanto se usa la clave de la cuenta personal del administrador; cuando active la de la cuenta de ventas (pago previsto para el 03/11) se cambia el secreto en Supabase, sin tocar código. La clave nunca va en el repo.
+- Se lanza por lote, porque es un acumulado. La lanzan el administrador y el abogado.
+- Las reglas salen de la app vieja (App-Airtek-Empresas) y del script de Apps Script que el administrador va a pasar. No funcionaban al 100 %: hay que adaptarlas a esta app y mejorarlas.
+- Lo que revisaba la app vieja: por representante, cédula y RIF vigentes, nombre igual en los dos, que esté en la junta directiva vigente (si no está pero otro sí firma, no bloquea) y documentos duplicados; RIF de la empresa vigente y con el mismo nombre del sistema; acta constitutiva (fecha de inscripción, empresa vigente, régimen de firma, junta vigente y hasta cuándo, domicilio igual al del RIF); actas de asamblea (cambio de nombre, de domicilio, de directores o presidente, ratificación de junta, prórroga, aumento de capital); faltantes críticos y no críticos, incluidos Conatel, correo y teléfono.
+- Veredicto de la app vieja: aprobado, con observaciones o no apto. Desde ahí Legal aprobaba o mandaba los faltantes al líder.
+- La cuenta personal de Gemini ya es de pago.
+- Referencia de cómo funcionaban aliados e IA en las apps viejas: `claude/aliados-app-vieja.md`.
+- Un solo motor de lectura para todo: el mismo que revisa expedientes de clientes sirve para las solicitudes de aliados. Primero se arma el motor; aliados va después.
+- El administrador elige qué clientes se corren; nunca se corre toda la base de una vez. Volumen: unos 80 clientes nuevos al mes, más los viejos que falta recopilar.
+- Proveedor por decidir con una prueba: Gemini contra Claude sobre los mismos clientes que Legal ya decidió.
+- Reglas de revisión decididas el 09/10 (detalle en `claude/ia-reglas.md`): cédula vencida y junta vencida bloquean, con excepción del administrador; domicilio parecido al del RIF en 65 % o se pide acta de cambio de domicilio; duración de la empresa: si no aparece, 30 años desde la inscripción, y si está vencida y hay asambleas, se renueva 10 años desde la última (criterio de la oficina); la cláusula de permanencia vale hasta 10 años desde la inscripción del acta que designó la junta; el poder notariado es excepción del administrador.
+
 ## Aliados
 - "Aliado Comercial" es el nombre de la cartera: instalaciones de canales más las de los aliados. Hay que mostrar quién instaló cada una.
 - Los aliados no suben a Odoo: piden permiso, se revisan sus documentos y de ahí sigue todo. Un aliado puede instalar lo que otro registró.
