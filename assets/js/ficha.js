@@ -523,6 +523,22 @@
     const q = $('subidaCom'); if(q){ q.classList.remove('hidden'); q.lastChild.textContent = texto; }
     const p = $('progLote'); if(p) p.textContent = texto;
   }
+  // Cada archivo va a Drive por la función drive_subir: carpeta "RIF - NOMBRE" del cliente (se crea sola) y subcarpeta por tipo de servicio
+  async function subirADrive(cli, pr, original){
+    let tk = '';
+    try { const s = await db.auth.getSession(); tk = (s.data && s.data.session && s.data.session.access_token) || ''; } catch (e) {}
+    if(!tk) throw new Error('Tu sesión venció. Entra de nuevo');
+    const fd = new FormData();
+    const seguro = nombreSeguro(pr.nombre, pr.mime); const base = String(original || pr.nombre || 'archivo').replace(/\.[a-z0-9]{2,5}$/i, '').trim().slice(0, 140) || 'archivo';
+    fd.append('cliente', String(cli)); fd.append('nombre', base + seguro.slice(seguro.lastIndexOf('.')));   // en Drive con su nombre original y la extensión de lo que de verdad se sube
+    fd.append('archivo', pr.blob.type === pr.mime ? pr.blob : pr.blob.slice(0, pr.blob.size, pr.mime), seguro);   // un PDF sin tipo se reconoce por el nombre
+    let r;
+    try { r = await fetch(db.supabaseUrl + '/functions/v1/drive_subir', { method: 'POST', headers: { Authorization: 'Bearer ' + tk, apikey: db.supabaseKey }, body: fd }); }
+    catch (e) { throw new Error('Sin conexión. "' + original + '" no se subió. Revisa el internet e intenta de nuevo'); }
+    let d = {}; try { d = await r.json(); } catch (e) {}
+    if(!r.ok || !d.drive_id) throw new Error(String(d.error || 'No se pudo subir "' + original + '". Intenta de nuevo').replace(/\.$/, ''));
+    return d;
+  }
   // items: [{ files:[File], casillas:[{casilla,numero}], vence_en, firmado_en }]
   async function guardarItems(items){
     if(ocupado) return false;
@@ -536,10 +552,8 @@
         for(const file of it.files){
           hecho++; avance('Subiendo ' + hecho + ' de ' + total + '…');
           const pr = await preparar(file);
-          const ruta = cli + '/' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8) + '-' + nombreSeguro(pr.nombre, pr.mime);
-          const r = await db.storage.from('expedientes').upload(ruta, pr.blob, { contentType: pr.mime, upsert: false });
-          if(r.error) throw new Error(C.mensajeError(r.error, 'No se pudo subir "' + file.name + '". Intenta de nuevo'));
-          archivos.push({ ruta, nombre: file.name.slice(0, 200), mime: pr.mime, tamano: pr.tamano });
+          const r = await subirADrive(cli, pr, file.name);
+          archivos.push({ drive_id: r.drive_id });
         }
         envio.push({ archivos, casillas: it.casillas, vence_en: it.vence_en || null, firmado_en: it.firmado_en || null });
       }
@@ -688,7 +702,7 @@
   function mostrarArchivo(){
     const d = docVer(); const z = $('visor'); if(!d || !z) return;
     const a = (d.archivos || [])[ver.archivo]; const url = ver.url[ver.archivo]; const ab = $('abrirCompleto');
-    if(!a || !url){ z.innerHTML = papel(a && !a.ruta && !a.url_externa ? 'Archivo de ejemplo. No tiene imagen guardada.' : ((ver.fallo || {})[ver.archivo] ? ver.fallo[ver.archivo] + '.' : 'No se pudo abrir el archivo. Cierra y vuelve a intentar.')); return; }
+    if(!a || !url){ z.innerHTML = papel(a && !a.url_externa ? 'Archivo de ejemplo. No tiene imagen guardada.' : ((ver.fallo || {})[ver.archivo] ? ver.fallo[ver.archivo] + '.' : 'No se pudo abrir el archivo. Cierra y vuelve a intentar.')); return; }
     if(ab){ ab.href = url; ab.classList.remove('hidden'); }
     const pdf = a.mime === 'application/pdf' || /\.pdf$/i.test(a.nombre || '');
     const imagen = /^image\//i.test(a.mime || '') || /\.(jpe?g|png|gif|webp)$/i.test(a.nombre || '');
@@ -712,16 +726,14 @@
     try { b = await r.blob(); } catch (e) { throw new Error('Se cortó la conexión mientras bajaba el archivo'); }
     const u = URL.createObjectURL(b); blobs.push(u); return u;
   }
-  // Pide un enlace temporal al almacenamiento privado, o el archivo a Drive
+  // Todos los archivos viven en Drive: se piden a la función drive_archivo
   async function cargarArchivo(){
     const d = docVer(); if(!d) return;
     const n = ver.archivo; const a = (d.archivos || [])[n]; const mio = ver;
     if(!a){ ver.url[n] = ''; mostrarArchivo(); return; }
     if(ver.url[n] !== undefined){ mostrarArchivo(); return; }
     let url = '';
-    if(a.ruta){
-      try { const r = await db.storage.from('expedientes').createSignedUrl(a.ruta, 600); if(!r.error && r.data) url = r.data.signedUrl || ''; } catch (e) {}
-    } else if(a.url_externa && a.id){
+    if((a.url_externa || a.drive_id) && a.id){
       try { url = await bajarDeDrive(a); }
       catch (e) { if(mio === ver){ ver.fallo = ver.fallo || {}; ver.fallo[n] = e.message; } }
     }

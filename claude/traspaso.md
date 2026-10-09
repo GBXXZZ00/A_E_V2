@@ -1,10 +1,11 @@
 # Traspaso (se actualiza al cerrar cada sesión)
 
-Actualizado: 09/10/2026. Publicado: `?v=20` (Factibilidad simplificada; coordenadas pegadas junto al enlace mandan).
+Actualizado: 09/10/2026. Publicado: `?v=21` (subidas nuevas directo a Drive).
 
 ## Estado
 - Publicado y con pruebas (test01 a test14 en TODO OK): acceso con PIN, Usuarios, Inicio, Clientes, expediente como hoja (`assets/js/ficha.js`), Comisiones (`comisiones.js`), Actualizar con cruce (`actualizar.js`), proforma y carta en PDF (`documentos.js`, `marca.js`), bienvenidas por enviar (`bienvenidas.js`), ZIP y Excel sin librerías (`archivos.js`), página de privacidad (`privacidad.html`), Enviar pendientes en Comisiones y Factibilidad (`factibilidad.js`, `coordenadas.js`, `mapared.js`, `kmz-lector.js`).
 - Base: lotes 1 a 12 aplicados. Corte de referencia para probar comisiones: septiembre 2026 = 59 filas y 49 cumplen; octubre = 48 filas. Si un cambio mueve esos números sin razón, está mal.
+- Documentos nuevos (v21): van directo a Drive, nada al almacenamiento de Supabase (ver punto 6 de la corrida del 09/10).
 - Documentos: los de la app vieja ya están registrados en `archivos` (con `drive_id` y `url_externa`), `documentos` y `documento_archivos`. Son unos 2.000 archivos de unos 390 clientes. Los de clientes ya aprobados por Legal entraron aprobados; el resto por revisar. Desde v13 se ven dentro de la app: `ficha.js` (`bajarDeDrive`) pide el archivo a la función de borde `drive_archivo` (copia en `supabase/funciones/drive_archivo/`), que revisa el permiso con `public.archivo_drive` (mismas reglas de `cliente_ficha`) y entrega el archivo desde Drive. El enlace de Drive ya no se abre. Word y ZIP se ofrecen para descargar.
 - Drive: los tres secretos de Google están en Supabase (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REFRESH_TOKEN`; hacer `.trim()` a los tres). El permiso está en modo Prueba y vence cada 7 días hasta que se publique la app de OAuth, que exige página principal y política de privacidad.
 - No verificado: nada de la última corrida se ha probado con usuarios reales; el arreglo del pago quitado a mano no se probó con una carga real del TAD; `actualizar.js` solo tuvo revisión por encima.
@@ -27,12 +28,20 @@ Actualizado: 09/10/2026. Publicado: `?v=20` (Factibilidad simplificada; coordena
    - Mensaje para el cliente con negritas de WhatsApp ("Notificación de cobertura"), firmado por el líder.
    - Texto de Odoo dentro de "Datos del cliente", solo PYME y con nombre y RIF: Hay red, `INST. PROMO PYME|EVENTO NOMBRE RIF`; Posible excepción, `FACTIBILIDAD NOMBRE RIF`. Dedicado sin texto hasta el módulo de dedicados.
 
+6. **Subidas nuevas directo a Drive** (v21). Falta que el administrador suba un documento real en web y teléfono.
+   - Función de borde `drive_subir` (copia en `supabase/funciones/drive_subir/`): revisa el permiso con `public.drive_destino` (sesión del usuario), busca la carpeta del cliente en `privado.drive_carpetas`; si no hay o ya no existe, la busca en Drive por el RIF dentro de la raíz de expedientes y, si no está, crea "RIF - NOMBRE" (bitácora `drive_carpeta_creada`). Dentro usa o crea la subcarpeta por tipo (`privado.drive_subcarpeta`: PYMES, DEDICADO CORPORATIVO, DEDICADO ISP, DEDICADO ... + PYME, PERSONA NATURAL). Sube el archivo con su nombre original y lo anota en `privado.drive_subidas`.
+   - `documentos_registrar` ahora solo acepta `drive_id` anotados en `privado.drive_subidas` para ese cliente y ese usuario (nombre, tipo y tamaño salen del servidor). Rechaza `ruta`. `drive_carpeta_fijar` y `drive_subida_anotar` solo las puede llamar la función (llave de servicio).
+   - La raíz es la carpeta de contratos vieja (en `privado.drive_estado`, clave `raiz_expedientes`). 1.740 clientes quedaron enlazados a su carpeta existente; si había dos con el mismo RIF, la de más archivos.
+   - Almacenamiento: el bucket `expedientes` estaba vacío; una política restrictiva (`expedientes_cerrado`) ya no deja subir ahí. `ficha.js` ya no lo usa para nada.
+   - Probado en la base con función temporal (deshecha): sin subida, de otro cliente, con `ruta` y llamadas de usuario a las funciones de servicio se rechazan; el registro crea el archivo con su enlace de Drive y deja bitácora; septiembre siguió en 59 y 49 antes, durante y después.
+   - No probado contra Google desde aquí (la terminal no llega a Supabase). Si el permiso de Google fuera solo de lectura, la app dice "Google no dio permiso para guardar en Drive": habría que volver a autorizar con permiso de escritura.
+
 ## Siguientes tareas para Claude Code, en orden
 Antes de cada una: explicar en simple y esperar el OK.
 
 1. Lo que salga de las pruebas del administrador de lo hecho el 09/10.
 2. **Factibilidad paso 6**: avisos al teléfono y cierre automático a "Vendida" cuando aparezca una orden de Odoo con ese RIF.
-3. **Subidas nuevas directo a Drive** (después de que el administrador pruebe con el Analista Senior). Carpeta "RIF - NOMBRE" creada sola, subcarpeta por tipo de servicio como ya existe. La app deja de usar el bucket `expedientes`. Es el cambio con más riesgo: toca `guardarItems` en `ficha.js` y `documentos_registrar`. test04, test05, test07 y test08 deben seguir pasando. Espera decisión del administrador.
+3. Lo que salga de la prueba real de subir a Drive (v21).
 4. **Revisión de documentos con IA.** Falta la columna para la marca de la IA (separada del estatus legal). La IA corre en una función de borde que lee de Drive; nunca pasan documentos reales por este repo. Necesita la clave de la API de IA como secreto en Supabase. Espera decisión del administrador.
 5. **Módulo de aliados**: consultas viejas con el indicador de instaladas, y sus documentos. Fuente: `privado.aliados_appsheet`.
 
@@ -56,6 +65,7 @@ Antes de cada una: explicar en simple y esperar el OK.
 - Factibilidad: bajo el texto de Odoo sigue la nota del código de vendedor cuando la orden la crea otra persona.
 - Enviar pendientes: el saludo cambia según la hora (Buenos días, Buenas tardes, Buenas noches); el mensaje se puede editar antes de enviarlo; "más de 12" cuenta los clientes pendientes, no todos.
 - Enviar pendientes: si el documento está subido pero sin aprobar, dice "documentos en revisión con Legal"; si lo devolvieron, "corregir ... (lo devolvió Legal)".
+- Drive: la carpeta nueva se llama con el RIF en solo dígitos y el nombre en mayúsculas, como las viejas; el archivo conserva su nombre original (no se renombra por casilla); una PYME + Dedicado va a "DEDICADO CORPORATIVO + PYME" o "DEDICADO ISP + PYME".
 - Privacidad: el contacto es "el administrador de la app" (sin correo, porque el repo es público).
 
 ## Problemas ya resueltos (no repetir)

@@ -1,7 +1,7 @@
 // Supabase de mentira para las pruebas: no toca la base real y los PIN son inventados.
 const { chromium, devices } = require(require('child_process').execSync('npm root -g').toString().trim() + '/playwright');
 const H = 'http://127.0.0.1:8765/';
-const { baseDatos, RPC, archivoDrive } = require('./mundo');
+const { baseDatos, RPC, archivoDrive, driveSubir } = require('./mundo');
 // Imagen PNG de 1 x 1 para simular un archivo guardado
 const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
 const PDF_MIN = Buffer.from('%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj 2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj 3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 200 200]>>endobj\ntrailer<</Root 1 0 R>>\n%%EOF');
@@ -55,22 +55,20 @@ async function contexto(navegador, opciones, mundo){
       }
       return j(sesionDe(p).user);
     }
-    // Almacenamiento privado: subir, pedir enlace temporal y ver
-    if(u.includes('/storage/v1/object/sign/expedientes/')){
-      if(!quien(req)) return j({ message: 'no' }, 401);
-      const ruta = u.split('/storage/v1/object/sign/expedientes/')[1].split('?')[0];
-      m.llamadas.push(['firmar', ruta]);
-      if(!m.datos.objetos.includes(ruta)) return j({ statusCode: '404', error: 'not_found', message: 'Object not found' }, 400);
-      return j({ signedURL: '/object/sign/expedientes/' + ruta + '?token=prueba' });
+    // La app ya no usa el almacenamiento de Supabase: cualquier llamada queda anotada para que la prueba falle
+    if(u.includes('/storage/v1/')){ m.llamadas.push(['storage', u]); return j({ statusCode: '403', error: 'cerrado', message: 'cerrado' }, 403); }
+    // Subidas nuevas a Drive: la función drive_subir recibe el archivo en un formulario
+    if(u.includes('/functions/v1/drive_subir')){
+      const yo = quien(req); const buf = req.postDataBuffer() || Buffer.alloc(0); const txt = buf.toString('latin1');
+      const campo = (n) => { const x = new RegExp('name="' + n + '"\\r\\n\\r\\n([^\\r]*)').exec(txt); return x ? Buffer.from(x[1], 'latin1').toString('utf8') : ''; };
+      const tipo = (/name="archivo"[^\r]*\r\nContent-Type: ([^\r]+)/.exec(txt) || [])[1] || '';
+      m.llamadas.push(['subir', campo('cliente'), campo('nombre'), tipo, buf.length]);
+      if(!yo || !yo.activo) return j({ error: 'Tu sesión venció. Entra de nuevo' }, 401);
+      if(m.fallaSubida) return j({ error: m.fallaSubida === true ? 'Drive no recibió el archivo. Intenta de nuevo' : m.fallaSubida }, 502);
+      if(m.lento) await new Promise((ok) => setTimeout(ok, m.lento));
+      const r2 = driveSubir(m, yo, campo('cliente'), campo('nombre'), tipo, buf.length);
+      return r2.error ? j({ error: r2.error }, r2.status) : j(r2);
     }
-    if(u.includes('/storage/v1/object/expedientes/') && req.method() === 'POST'){
-      if(!quien(req)) return j({ message: 'no' }, 401);
-      const ruta = u.split('/storage/v1/object/expedientes/')[1].split('?')[0];
-      if(m.fallaSubida) return j({ statusCode: '500', error: 'x', message: 'fallo' }, 500);
-      m.datos.objetos.push(ruta); m.llamadas.push(['subir', ruta, (req.postDataBuffer() || Buffer.alloc(0)).length]);
-      return j({ Key: 'expedientes/' + ruta, Id: 'x' });
-    }
-    if(u.includes('/storage/v1/object/sign/') && req.method() === 'GET') return r.fulfill({ status: 200, contentType: 'image/png', headers: cab, body: PNG });
     const rp = u.match(/\/rest\/v1\/rpc\/([a-z0-9_]+)/);
     if(rp && rp[1] !== 'pin_cambiado'){
       const yo = quien(req); const args = cuerpo(); m.llamadas.push(['rpc', rp[1], args]);

@@ -100,7 +100,7 @@ function baseDatos(){
     if(n === 10){ c.instalaciones[0].confirmada = false; c.instalaciones[0].cruce = 'sin_orden'; c.instalaciones[0].orden = null; c.instalaciones[0].dueno = null; }
     cs.push(c);
   }
-  return { clientes: cs, objetos: [] };
+  return { clientes: cs, subidas: {}, carpetas: {} };
 }
 
 // ----- Reglas (igual que en el servidor) -----
@@ -383,8 +383,9 @@ const RPC = {
     let n = 0; const etiquetas = [];
     for(const it of items){
       if(!(it.casillas || []).length) return error('Marca qué trae cada archivo');
-      for(const ar of it.archivos){ if(!m.datos.objetos.includes(ar.ruta)) return error('El archivo no terminó de subir. Intenta de nuevo'); if(!new RegExp('^' + c.id + '/[A-Za-z0-9._-]{1,140}$').test(ar.ruta)) return error('Archivo no válido'); }
-      const archivos = it.archivos.map((ar) => ({ id: ++sec, ruta: ar.ruta, url_externa: null, nombre: ar.nombre, mime: ar.mime, tamano: ar.tamano }));
+      // Solo acepta lo que drive_subir dejó en Drive para ese cliente y ese usuario
+      for(const ar of it.archivos){ const s = m.datos.subidas[ar.drive_id]; if(!s || s.cliente !== c.id || s.usuario !== yo.id) return error('El archivo no terminó de subir. Intenta de nuevo'); }
+      const archivos = it.archivos.map((ar) => { const s = m.datos.subidas[ar.drive_id]; return { id: ++sec, ruta: null, drive_id: ar.drive_id, url_externa: 'https://drive.google.com/file/d/' + ar.drive_id + '/view', nombre: s.nombre, mime: s.mime, tamano: s.tamano }; });
       for(const ca of it.casillas){
         let num = Number(ca.numero || 0);
         if(/^contrato_/.test(ca.casilla) && !['admin', 'abogado'].includes(yo.rol)) return error('El contrato lo sube Legal');
@@ -590,6 +591,19 @@ const RPC_FACT = {
 Object.assign(RPC, RPC_FACT);
 
 // Lo mismo que public.archivo_drive: el archivo solo sale si quien lo pide puede ver al cliente
+// La función drive_subir: carpeta "RIF - NOMBRE" que se crea sola con el primer documento y subcarpeta por tipo de servicio
+const SUBCARPETA = { 'PYME': 'PYMES', 'Dedicado ISP': 'DEDICADO ISP', 'Dedicado corporativo': 'DEDICADO CORPORATIVO', 'Natural': 'PERSONA NATURAL' };
+function driveSubir(m, yo, cliente, nombre, mime, tamano){
+  const c = visibles(m, yo).find((x) => x.id === Number(cliente)); if(!c) return { error: 'No tienes acceso a este cliente', status: 403 };
+  if(['application/pdf', 'image/jpeg', 'image/png', 'image/webp'].indexOf(mime) < 0) return { error: 'Solo se aceptan fotos y PDF', status: 415 };
+  const seg = segmento(c); const sub = SUBCARPETA[seg] || (seg === 'PYME + Dedicado' ? (c.es_isp ? 'DEDICADO ISP + PYME' : 'DEDICADO CORPORATIVO + PYME') : 'PYMES');
+  let k = m.datos.carpetas[c.id]; const nueva = !k;
+  if(!k) k = m.datos.carpetas[c.id] = { nombre: c.doc_numero + ' - ' + String(c.nombre).toUpperCase(), subs: {} };
+  if(!k.subs[sub]) k.subs[sub] = [];
+  const id = 'PRUEBADRIVE' + (++sec) + 'x'; k.subs[sub].push(nombre);
+  m.datos.subidas[id] = { cliente: c.id, usuario: yo.id, nombre, mime, tamano, carpeta: k.nombre, sub, nueva };
+  return { drive_id: id, nombre, mime, tamano };
+}
 function archivoDrive(m, yo, id){
   for(const c of m.datos.clientes) for(const d of c.documentos) for(const a of d.archivos || []){
     if(a.id !== Number(id)) continue;
@@ -599,4 +613,4 @@ function archivoDrive(m, yo, id){
   }
   return { error: 'Ese archivo no existe', status: 404 };
 }
-module.exports = { baseDatos, RPC, LUCIA, archivoDrive };
+module.exports = { baseDatos, RPC, LUCIA, archivoDrive, driveSubir };
