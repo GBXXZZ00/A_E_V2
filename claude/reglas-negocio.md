@@ -62,6 +62,7 @@ Sin nombres reales: el repo es público. "Analista Senior" es el responsable de 
 - Un solo motor de lectura para todo: el mismo que revisa expedientes de clientes sirve para las solicitudes de aliados. Primero se arma el motor; aliados va después.
 - El administrador elige qué clientes se corren; nunca se corre toda la base de una vez. Volumen: unos 80 clientes nuevos al mes, más los viejos que falta recopilar.
 - Proveedor por decidir con una prueba: Gemini contra Claude sobre los mismos clientes que Legal ya decidió.
+- Reglas de revisión decididas el 09/10 (detalle en `claude/ia-reglas.md`): cédula vencida y junta vencida bloquean, con excepción del administrador; domicilio parecido al del RIF en 65 % o se pide acta de cambio de domicilio; duración de la empresa: si no aparece, 30 años desde la inscripción, y si está vencida y hay asambleas, se renueva 10 años desde la última (criterio de la oficina); la cláusula de permanencia vale hasta 10 años desde la inscripción del acta que designó la junta; el poder notariado es excepción del administrador.
 
 ## Aliados
 - "Aliado Comercial" es el nombre de la cartera: instalaciones de canales más las de los aliados. Hay que mostrar quién instaló cada una.
