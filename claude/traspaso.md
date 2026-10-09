@@ -1,6 +1,6 @@
 # Traspaso (se actualiza al cerrar cada sesión)
 
-Actualizado: 09/10/2026. Publicado: `?v=21` (subidas nuevas directo a Drive).
+Actualizado: 09/10/2026. Publicado: `?v=22` (subidas directo a Drive, fila de carpeta en Drive, "Subiendo a Drive" en la casilla y Reemplazar para quien revisa).
 
 ## Estado
 - Publicado y con pruebas (test01 a test14 en TODO OK): acceso con PIN, Usuarios, Inicio, Clientes, expediente como hoja (`assets/js/ficha.js`), Comisiones (`comisiones.js`), Actualizar con cruce (`actualizar.js`), proforma y carta en PDF (`documentos.js`, `marca.js`), bienvenidas por enviar (`bienvenidas.js`), ZIP y Excel sin librerías (`archivos.js`), página de privacidad (`privacidad.html`), Enviar pendientes en Comisiones y Factibilidad (`factibilidad.js`, `coordenadas.js`, `mapared.js`, `kmz-lector.js`).
@@ -36,14 +36,21 @@ Actualizado: 09/10/2026. Publicado: `?v=21` (subidas nuevas directo a Drive).
    - Probado en la base con función temporal (deshecha): sin subida, de otro cliente, con `ruta` y llamadas de usuario a las funciones de servicio se rechazan; el registro crea el archivo con su enlace de Drive y deja bitácora; septiembre siguió en 59 y 49 antes, durante y después.
    - No probado contra Google desde aquí (la terminal no llega a Supabase). Si el permiso de Google fuera solo de lectura, la app dice "Google no dio permiso para guardar en Drive": habría que volver a autorizar con permiso de escritura.
 
+7. **Ajustes de la prueba de Drive** (v22). El administrador subió una foto real el 09/10 y llegó a la carpeta vieja del cliente (no creó otra).
+   - "Subiendo a Drive…" en la misma casilla, con barra y etiqueta "Subiendo" (y "x de y" si son varios); en la hoja de comisión el botón de la casilla dice "Subiendo…". La línea de arriba sigue.
+   - Fila "Carpeta en Drive" en Documentos, solo admin (`public.drive_carpeta_info`, devuelve null a los demás): Abrir y una nota ("Carpeta de la app vieja" o "Creada por la app ... por ..." y "Última subida ..."); sin carpeta: "Se crea sola con el primer documento".
+   - "Reemplazar archivo" también para quien revisa (antes solo el líder).
+   - No se hace "Quitar": decidido que basta con Reemplazar.
+
 ## Siguientes tareas para Claude Code, en orden
 Antes de cada una: explicar en simple y esperar el OK.
 
-1. Lo que salga de las pruebas del administrador de lo hecho el 09/10.
-2. **Factibilidad paso 6**: avisos al teléfono y cierre automático a "Vendida" cuando aparezca una orden de Odoo con ese RIF.
-3. Lo que salga de la prueba real de subir a Drive (v21).
-4. **Revisión de documentos con IA.** Falta la columna para la marca de la IA (separada del estatus legal). La IA corre en una función de borde que lee de Drive; nunca pasan documentos reales por este repo. Necesita la clave de la API de IA como secreto en Supabase. Espera decisión del administrador.
-5. **Módulo de aliados**: consultas viejas con el indicador de instaladas, y sus documentos. Fuente: `privado.aliados_appsheet`.
+1. **Revisión de documentos de una sola vez (pendiente, decidido el 09/10, va primero).** Hoy, al devolver un documento, el cliente pasa en ese momento a Documentos pendientes. Lo nuevo: quien revisa (el administrador o la IA) marca cada documento con su problema y detalle sin que el líder se entere todavía; al final, "Cerrar revisión" cambia el estatus una sola vez (Documentos pendientes o Recibidos), deja una sola entrada en el hilo y arma un solo mensaje al líder con la lista de qué corregir. La IA propone marcas; la persona las confirma en "Cerrar revisión". Toca estatus y Legal de comisiones: probar contra septiembre (59 y 49) antes y después. La IA se está armando en el chat del proyecto con este flujo en mente.
+2. Lo que salga de las pruebas del administrador de lo hecho el 09/10.
+3. **Factibilidad paso 6**: avisos al teléfono y cierre automático a "Vendida" cuando aparezca una orden de Odoo con ese RIF.
+4. **Estado de carga en todo lo que se congela** (pendiente): revisar pantalla por pantalla cada espera (guardar, enviar, cargar) para que siempre se vea que está trabajando, como "Subiendo a Drive".
+5. **Revisión de documentos con IA** (junto con el punto 1). Falta la columna para la marca de la IA (separada del estatus legal). La IA corre en una función de borde que lee de Drive; nunca pasan documentos reales por este repo. Necesita la clave de la API de IA como secreto en Supabase.
+6. **Módulo de aliados**: consultas viejas con el indicador de instaladas, y sus documentos. Fuente: `privado.aliados_appsheet`.
 
 ## Pendientes que NO son de este repo (se hacen en el chat del proyecto)
 - Hecho el 09/10: los expedientes viejos de aliados ya están en la app (unos 440 archivos de 68 clientes, subidos por "Aliado: nombre", por revisar) con correo y teléfono del representante. Falta una carpeta de aliados con códigos AL- sin cliente identificado.

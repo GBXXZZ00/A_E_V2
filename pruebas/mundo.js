@@ -100,7 +100,8 @@ function baseDatos(){
     if(n === 10){ c.instalaciones[0].confirmada = false; c.instalaciones[0].cruce = 'sin_orden'; c.instalaciones[0].orden = null; c.instalaciones[0].dueno = null; }
     cs.push(c);
   }
-  return { clientes: cs, subidas: {}, carpetas: {} };
+  // La primera empresa ya tenía carpeta en Drive desde la app vieja
+  return { clientes: cs, subidas: {}, carpetas: { [cs[0].id]: { nombre: cs[0].doc_numero + ' - VIEJA', subs: {}, vieja: true, id: 'CARPETAVIEJA0001' } } };
 }
 
 // ----- Reglas (igual que en el servidor) -----
@@ -377,6 +378,12 @@ const RPC = {
       if(i){ i.pago_ok_en = a.p_pagada ? (i.pago_ok_en || hace(0)) : null; i.pago_manual = true; c.hilo.push(linea('pago', a.p_pagada ? 'pagada' : 'pendiente', {}, yo.nombre)); return null; } }
     return error('Esa instalación no existe');
   },
+  drive_carpeta_info(m, yo, a){
+    const c = visibles(m, yo).find((x) => x.id === Number(a.p_cliente)); if(!c) return error('No tienes acceso a este cliente');
+    if(yo.rol !== 'admin') return null;
+    const k = m.datos.carpetas[c.id]; const ult = Object.values(m.datos.subidas).filter((x) => x.cliente === c.id).pop();
+    return { url: k ? 'https://drive.google.com/drive/folders/' + k.id : null, creada_por_app: !!(k && !k.vieja), creada_en: k && k.creada_en || null, creada_por: k && k.creada_por || null, ultima_en: ult ? ult.en : null, ultima_por: ult ? ult.quien : null };
+  },
   documentos_registrar(m, yo, a){
     const c = visibles(m, yo).find((x) => x.id === Number(a.p_cliente)); if(!c) return error('No tienes acceso a este cliente');
     const items = a.p_items || []; if(!items.length) return error('No llegó ningún archivo');
@@ -598,10 +605,10 @@ function driveSubir(m, yo, cliente, nombre, mime, tamano){
   if(['application/pdf', 'image/jpeg', 'image/png', 'image/webp'].indexOf(mime) < 0) return { error: 'Solo se aceptan fotos y PDF', status: 415 };
   const seg = segmento(c); const sub = SUBCARPETA[seg] || (seg === 'PYME + Dedicado' ? (c.es_isp ? 'DEDICADO ISP + PYME' : 'DEDICADO CORPORATIVO + PYME') : 'PYMES');
   let k = m.datos.carpetas[c.id]; const nueva = !k;
-  if(!k) k = m.datos.carpetas[c.id] = { nombre: c.doc_numero + ' - ' + String(c.nombre).toUpperCase(), subs: {} };
+  if(!k) k = m.datos.carpetas[c.id] = { nombre: c.doc_numero + ' - ' + String(c.nombre).toUpperCase(), subs: {}, id: 'CARPETANUEVA' + c.id, creada_en: hace(0), creada_por: yo.nombre };
   if(!k.subs[sub]) k.subs[sub] = [];
   const id = 'PRUEBADRIVE' + (++sec) + 'x'; k.subs[sub].push(nombre);
-  m.datos.subidas[id] = { cliente: c.id, usuario: yo.id, nombre, mime, tamano, carpeta: k.nombre, sub, nueva };
+  m.datos.subidas[id] = { cliente: c.id, usuario: yo.id, quien: yo.nombre, en: hace(0), nombre, mime, tamano, carpeta: k.nombre, sub, nueva };
   return { drive_id: id, nombre, mime, tamano };
 }
 function archivoDrive(m, yo, id){

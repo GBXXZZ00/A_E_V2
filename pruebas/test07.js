@@ -50,8 +50,12 @@ const cerrarTodo = async (p) => { for(let i = 0; i < 4; i++){ if(await p.evaluat
     await p.locator('[data-com]').first().click(); await p.waitForSelector('#hojaComision.ver .req');
     const antes = mundo.llamadas.filter((l) => l[1] === 'documentos_registrar').length;
     const [selector] = await Promise.all([p.waitForEvent('filechooser'), p.locator('#hojaComision [data-sube-doc="cedula:1"]').click()]);
+    mundo.lento = 900;
     await selector.setFiles({ name: 'cedula.png', mimeType: 'image/png', buffer: PNG });
+    await p.waitForFunction(() => { const b = document.querySelector('#hojaComision [data-sube-doc="cedula:1"]'); return b && b.disabled && /Subiendo/.test(b.textContent); });
+    ok(nombre + ': en la comisión el botón de la casilla dice Subiendo mientras sube', /Subiendo a Drive/.test(await p.textContent('#subidaCom')));
     await p.waitForFunction(() => document.querySelector('#hojaComision').textContent.includes('Legal lo está revisando'));
+    mundo.lento = 0;
     const reg = mundo.llamadas.filter((l) => l[1] === 'documentos_registrar');
     ok(nombre + ': se sube la cédula desde la comisión, sin abrir el expediente', reg.length === antes + 1 && reg.pop()[2].p_items[0].casillas[0].casilla === 'cedula' && (await abiertas(p)) === 'hojaComision');
     await p.locator('#hojaComision [data-ir-campo="rep:1"]').click(); await p.waitForSelector('#hojaCampo.ver #cCorreo');

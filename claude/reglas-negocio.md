@@ -49,6 +49,9 @@ Sin nombres reales: el repo es público. "Analista Senior" es el responsable de 
 - Todo documento vive en Drive (cuenta de ventas), nada en el almacenamiento de Supabase. No dos lugares.
 - La carpeta del cliente ("RIF - NOMBRE") se crea sola al subir el primer documento.
 - Los documentos de la app vieja aparecen en la app como si se hubieran subido en ella, y conservan el estatus legal que ya tenía el cliente.
+- Un documento subido no se borra: se reemplaza. Pueden reemplazar el líder, el administrador y quien revisa. El archivo viejo queda en Drive como respaldo (09/10).
+- La fila "Carpeta en Drive" del expediente es solo para el administrador, como soporte (09/10).
+- Revisión de una sola vez (09/10, por construir): se revisa el expediente completo, cada documento queda marcado con su problema y detalle, y solo al cerrar la revisión cambia el estatus y se avisa al líder una vez con la lista. No se le avisa por cada documento.
 - Estatus legal y revisión de la IA son dos marcas distintas. La IA entra "sin revisar", lee el expediente completo, solo propone, y se compara contra lo que Legal ya decidió. Se ejecuta cuando el administrador lo decida.
 
 ## Aliados
