@@ -14,6 +14,8 @@
   let hiloTodo = false; let soloNotas = false; let repExtra = 0; let actaExtra = 0;
   let fuera = null;               // { cliente, F, alTerminar }: se sube o se escribe desde otra hoja, sin abrir el expediente
   let ocupado = false;            // hay una subida en curso
+  let subiendo = {};              // casillas que se están subiendo ('cedula:1': true): se ven con su barra en la misma fila
+  let drive;                      // carpeta del cliente en Drive (solo admin): undefined cargando, null sin permiso
   let destino = null;             // casilla a la que va el archivo que se está eligiendo
   let ver = null;                 // { docId, cola, paso, motivo, archivo }
   let lote = [];                  // archivos de "Subir varios"
@@ -34,6 +36,7 @@
       F = r;
       pintarTodo();
       if(primera) alLlegar();
+      cargarDrive(mio);
     } catch (e) {
       if(mio !== id) return;
       if(!F){
@@ -43,6 +46,25 @@
       } else if(!encima()) pintarTodo();   // deja los botones como estaban
       toast(e.message, 'error');
     }
+  }
+  // Fila "Carpeta en Drive" (solo el administrador): soporte para ver dónde quedó cada archivo
+  async function cargarDrive(mio){
+    if(!yo || yo.rol !== 'admin') return;
+    try { const r = await rpc('drive_carpeta_info', { p_cliente: mio }); if(mio !== id) return; drive = r || null; }
+    catch (e) { if(mio !== id) return; drive = { error: true }; }
+    if(F) pintarDocumentos();
+  }
+  function driveHtml(){
+    if(!yo || yo.rol !== 'admin') return '';
+    const k = drive; let sub;
+    if(k === undefined) sub = 'Buscando la carpeta…';
+    else if(!k || k.error) sub = 'No se pudo revisar la carpeta. Cierra y abre el cliente para intentar de nuevo';
+    else if(!k.url) sub = 'Sin carpeta todavía. Se crea sola con el primer documento';
+    else sub = (k.creada_por_app ? 'Creada por la app ' + dia(k.creada_en).toLowerCase().replace(/^(\d)/, 'el $1') + (k.creada_por ? ' por ' + primerNombre(k.creada_por) : '') : 'Carpeta de la app vieja') +
+      (k.ultima_en ? '. Última subida: ' + dia(k.ultima_en).toLowerCase().replace(/^(\d)/, 'el $1') + ' ' + hora(k.ultima_en) + (k.ultima_por ? ' por ' + primerNombre(k.ultima_por) : '') : '');
+    const url = k && !k.error && k.url && /^https:\/\/drive\.google\.com\//.test(k.url) ? k.url : '';
+    return '<div class="casilla doc drive" id="filaDrive"><span class="ico" aria-hidden="true">' + ic('carpeta') + '</span><span class="tx"><b>Carpeta en Drive</b><small>' + esc(sub) + '</small></span>' +
+      (url ? '<a class="mini" href="' + esc(url) + '" target="_blank" rel="noopener">Abrir</a>' : '') + '</div>';
   }
   function pintarTodo(){
     $('tabs').classList.remove('hidden'); $('cuerpoFicha').classList.remove('hidden');
@@ -164,6 +186,7 @@
   function casillaHtml(cas, num, opciones){
     const o = opciones || {}; const d = docDe(cas, num); const nombre = o.nombre || casilla(cas, num); const k = cas + ':' + num;
     const puedeSubir = !(cas.indexOf('contrato_') === 0 && !F.puedo.contrato);
+    if(subiendo[k]) return '<div class="casilla doc subiendo" data-casilla="' + k + '" aria-busy="true"><span class="ico" aria-hidden="true">' + ic('subir') + '</span><span class="tx"><b>' + esc(nombre) + '</b><small class="tx-subida">' + esc(typeof subiendo[k] === 'string' ? subiendo[k] : 'Subiendo a Drive…') + '</small><span class="carga-barra" aria-hidden="true"><i></i></span></span><span class="chip azul">Subiendo</span></div>';
     if(!d){
       const req = esRequerido(cas, num);
       if(!puedeSubir) return '<div class="casilla doc" data-casilla="' + k + '"><span class="ico">' + ic('doc') + '</span><span class="tx"><b>' + esc(nombre) + '</b><small>' + esc(o.sub || 'Lo sube Legal') + '</small></span></div>';
@@ -209,7 +232,7 @@
         (F.puedo.revisar && nr ? '<button type="button" class="btn btn-chico" id="revisarTodo">Revisar ' + nr + '</button>'
           : fal.length ? '<button type="button" class="btn btn-chico" data-paso="pedir:' + pedirM + '">Pedir lo que falta</button>' : '') + '</div>' +
       '<p class="nota-chica solo-pc" style="text-align:center">También puedes arrastrar un archivo desde tu computadora y soltarlo sobre una casilla.</p>' +
-      '<p class="nota-chica' + (ocupado ? '' : ' hidden') + '" id="estadoSubida" role="status"><span class="cargando-linea"><i></i><span id="textoSubida">Subiendo…</span></span></p>';
+      '<p class="nota-chica' + (ocupado ? '' : ' hidden') + '" id="estadoSubida" role="status"><span class="cargando-linea"><i></i><span id="textoSubida">Subiendo…</span></span></p>' + driveHtml();
     for(let n = 1; n <= nReps; n++) h += grupoRep(n, n <= nReq);
     if(!c.es_natural && nReps < 4) h += '<button type="button" class="btn btn-chico btn-2 btn-ancho" id="agregarRep" style="margin-top:12px">Agregar representante</button>';
     if(!c.es_natural){
@@ -522,6 +545,8 @@
     const z = $('estadoSubida'); if(z){ z.classList.remove('hidden'); const t = $('textoSubida'); if(t) t.textContent = texto; }
     const q = $('subidaCom'); if(q){ q.classList.remove('hidden'); q.lastChild.textContent = texto; }
     const p = $('progLote'); if(p) p.textContent = texto;
+    Object.keys(subiendo).forEach((k) => { subiendo[k] = texto; });
+    Array.prototype.forEach.call(document.querySelectorAll('.doc.subiendo .tx-subida'), (x) => { x.textContent = texto; });
   }
   // Cada archivo va a Drive por la función drive_subir: carpeta "RIF - NOMBRE" del cliente (se crea sola) y subcarpeta por tipo de servicio
   async function subirADrive(cli, pr, original){
@@ -545,12 +570,17 @@
     const f = fuera; fuera = null;
     ocupado = true; const total = items.reduce((a, it) => a + it.files.length, 0); let hecho = 0; const cli = f ? f.cliente : id;   // el cliente de esta subida, aunque después se abra otro
     Array.prototype.forEach.call(document.querySelectorAll('[data-subir],#subirVarios'), (b) => { b.disabled = true; });
+    // La casilla que se sube se ve "Subiendo a Drive…" en su propia fila, aquí y en la hoja de comisión
+    subiendo = {};
+    items.forEach((it) => it.casillas.forEach((c) => { subiendo[c.casilla + ':' + (c.numero === 'auto' ? 'auto' : Number(c.numero || 0))] = 'Subiendo a Drive…'; }));
+    Object.keys(subiendo).forEach((k) => Array.prototype.forEach.call(document.querySelectorAll('[data-sube-doc="' + k + '"]'), (b) => { b.disabled = true; b.textContent = 'Subiendo…'; }));
+    if(!f && cli === id && F) pintarDocumentos();
     try {
       const envio = [];
       for(const it of items){
         const archivos = [];
         for(const file of it.files){
-          hecho++; avance('Subiendo ' + hecho + ' de ' + total + '…');
+          hecho++; avance(total > 1 ? 'Subiendo a Drive ' + hecho + ' de ' + total + '…' : 'Subiendo a Drive…');
           const pr = await preparar(file);
           const r = await subirADrive(cli, pr, file.name);
           archivos.push({ drive_id: r.drive_id });
@@ -560,10 +590,10 @@
       avance('Guardando…');
       const n = await rpc('documentos_registrar', { p_cliente: cli, p_items: envio });
       toast(plural(n, 'documento guardado', 'documentos guardados'));
-      ocupado = false; if(f){ if(f.alTerminar) f.alTerminar(); } else if(cli === id) await cargar();
+      ocupado = false; subiendo = {}; if(f){ if(f.alTerminar) f.alTerminar(); } else if(cli === id) await cargar();
       return true;
     } catch (e) {
-      ocupado = false; toast(e.message, 'error'); if(f){ if(f.alTerminar) f.alTerminar(); } else if(cli === id && F) pintarDocumentos();
+      ocupado = false; subiendo = {}; toast(e.message, 'error'); if(f){ if(f.alTerminar) f.alTerminar(); } else if(cli === id && F) pintarDocumentos();
       return false;
     }
   }
@@ -687,6 +717,7 @@
       (!F.puedo.revisar && d.vence_en ? fila('Vence', esc(fecha(d.vence_en, true))) : '') +
       ((d.comparte || []).length ? fila('También trae', esc(C.lista(d.comparte.map((x) => casilla(x.casilla, x.numero))))) : '') +
       (a ? fila('Archivo', esc(a.nombre || '')) : '') + '</div>' +
+      (F.puedo.revisar && !(d.casilla.indexOf('contrato_') === 0 && !F.puedo.contrato) ? '<button type="button" class="btn btn-chico btn-2" id="verReemplazar" style="margin-top:12px">' + ic('subir') + 'Reemplazar archivo</button>' : '') +
       (F.puedo.revisar ? '<label class="rotulo arriba" for="venceDoc">Fecha de vencimiento (opcional)</label><input class="campo" id="venceDoc" type="date" value="' + esc(d.vence_en || '') + '">' +
         '<p class="nota">Sirve para avisar antes de que se venza.</p>' : '');
     const puedeSubir = !(d.casilla.indexOf('contrato_') === 0 && !F.puedo.contrato);
@@ -891,7 +922,7 @@
   function abrir(idCliente, opciones){
     const o = opciones || {};
     montar();
-    yo = o.yo || yo; id = Number(idCliente) || 0; if(!id) return;
+    yo = o.yo || yo; id = Number(idCliente) || 0; drive = undefined; if(!id) return;
     F = null; fuera = null; hiloTodo = false; soloNotas = false; repExtra = 0; actaExtra = 0; llegada = { revisar: o.revisar, pedir: o.pedir, casilla: o.casilla, campo: o.campo, enviar: o.enviar }; alCerrar = o.alCerrar || null;
     $('cabFicha').innerHTML = '<div class="f-cab"><span class="mono sk" aria-hidden="true"></span><div class="tx"><span class="sk" style="width:70%;height:22px"></span><span class="sk" style="width:50%;height:12px;margin-top:8px"></span></div>' +
       '<button type="button" class="cerrar" data-cierra="1" aria-label="Cerrar">' + ic('x') + '</button></div>';

@@ -524,6 +524,13 @@ button.casilla.doc:active{transform:scale(.99)}
 .doc.rev .ico{background:var(--ambar-bg);color:var(--ambar)}
 .doc.dev .ico{background:var(--rojo-bg);color:var(--rojo)}
 .doc.dev .tx small{color:var(--rojo);font-weight:600}
+.doc.subiendo .ico,.doc.drive .ico{background:var(--acc-bg);color:var(--accent)}
+.doc.subiendo .tx small{color:var(--accent);font-weight:600}
+.carga-barra{display:block;height:4px;margin-top:7px;border-radius:2px;background:var(--surface-3);overflow:hidden}
+.carga-barra i{display:block;width:40%;height:100%;border-radius:2px;background:var(--accent);animation:carga 1.1s var(--ease-out) infinite}
+@keyframes carga{from{transform:translateX(-100%)}to{transform:translateX(250%)}}
+.doc.drive a.mini{display:inline-flex;align-items:center}
+@media (prefers-reduced-motion:reduce){ .carga-barra i{animation:none;width:100%;opacity:.5} }
 .doc .tx{flex:1;min-width:0}
 .doc .tx b{display:block;font-size:14.5px;font-weight:600}
 .doc .tx small{display:block;font-size:12.5px;color:var(--text2);line-height:1.3;overflow-wrap:anywhere}
