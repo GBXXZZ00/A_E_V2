@@ -1,0 +1,425 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Maqueta F2 Factibilidad</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<style>
+/* Maqueta F2: Factibilidad simplificada. Nombres, RIF y MDT inventados. */
+:root{
+  --bg:#FFFFFF; --s2:#F5F6F7; --s3:#ECEEF1; --text:#111315; --text2:#5B636E; --text3:#69717C; --line:#E3E6EA;
+  --rojo:#A32117; --rojo-bg:#FCEDEB; --verde:#11734B; --verde-bg:#E7F5EE; --ambar:#8A5A00; --ambar-bg:#FBF1DC; --azul:#1B3A9E; --azul-bg:#E8ECF9;
+  --fondo:#E9EBEE; --velo:rgba(17,19,21,.38); --sombra:0 18px 44px rgba(17,19,21,.16);
+  --red:#3B78E7; --excl:#0091B8; --dis:#C9A400; --mapa:#E4E8E1; --calle:#F7F7F2;
+  --f:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--fondo);color:var(--text);font-family:var(--f);font-size:15px;line-height:1.45;padding:24px 16px 60px}
+button{font:inherit;color:inherit;border:0;background:none;padding:0}
+h1,h2,h3,p{margin:0}
+.guia{max-width:1240px;margin:0 auto 18px}
+.guia h1{font-size:22px;font-weight:800;letter-spacing:-.02em}
+.guia p{color:var(--text2);font-size:14px;margin-top:4px;max-width:80ch}
+.sec{max-width:1240px;margin:28px auto 0}
+.sec > h2{font-size:17px;font-weight:800;margin-bottom:4px}
+.sec > p{font-size:13.5px;color:var(--text2);margin-bottom:12px;max-width:90ch}
+.fila-m{display:flex;gap:22px;flex-wrap:wrap;align-items:flex-start}
+.rot{font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin:0 0 6px 4px}
+
+/* Marcos */
+.tel{position:relative;width:390px;height:800px;background:var(--bg);border:8px solid var(--text);border-radius:34px;overflow:hidden;display:flex;flex-direction:column;flex:none}
+.pc{position:relative;width:1180px;max-width:100%;height:720px;background:var(--bg);border-radius:18px;overflow:hidden;box-shadow:var(--sombra);display:flex;flex-direction:column}
+.barra{display:flex;align-items:center;gap:16px;padding:14px 22px;border-bottom:1px solid var(--line);flex:none}
+.barra b{font-weight:800;letter-spacing:.14em;font-size:14px}
+.barra span{color:var(--text2);font-size:13.5px}
+.barra nav{display:flex;gap:4px;margin-left:10px}
+.barra nav i{font-style:normal;padding:8px 14px;border-radius:999px;font-weight:600;font-size:14px;color:var(--text2)}
+.barra nav i.on{background:var(--azul-bg);color:var(--azul)}
+.barra .av{margin-left:auto;width:36px;height:36px;border-radius:50%;background:var(--azul);color:#fff;display:grid;place-items:center;font-size:12px;font-weight:700}
+.tel .barra nav{display:none}
+.cuerpo{flex:1;overflow:hidden;padding:20px 22px}
+.tel .cuerpo{padding:16px}
+.navab{display:none}
+.tel .navab{display:flex;position:absolute;left:0;right:0;bottom:0;background:rgba(255,255,255,.97);border-top:1px solid var(--line);padding:8px 6px 14px;z-index:4}
+.navab i{flex:1;text-align:center;font-style:normal;font-size:11.5px;font-weight:600;color:var(--text3)}
+.navab i::before{content:"";display:block;width:52px;height:30px;border-radius:999px;margin:0 auto 3px;background:var(--s2)}
+.navab i.on{color:var(--azul)} .navab i.on::before{background:var(--azul)}
+
+/* Lista */
+.cab{display:flex;align-items:center;gap:12px}
+.cab h3{font-size:28px;font-weight:800;letter-spacing:-.025em;flex:1}
+.tel .cab h3{font-size:26px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:48px;padding:0 22px;border-radius:999px;background:var(--azul);color:#fff;font-weight:700;white-space:nowrap}
+.btn.b2{background:var(--s2);color:var(--text)}
+.btn.chico{height:40px;padding:0 16px;font-size:14px}
+.tel .cab .btn{display:none}
+.sub{font-size:13.5px;color:var(--text2);margin-top:4px}
+.atajos{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.atajos i{font-style:normal;height:38px;padding:0 14px;border-radius:999px;background:var(--s2);font-size:13.5px;font-weight:600;color:var(--text2);display:flex;align-items:center;gap:6px}
+.atajos i em{font-style:normal;opacity:.7}
+.atajos i.on{background:var(--azul);color:#fff}
+.atajos i.nv{background:var(--verde-bg);color:var(--verde)}
+.bandejas{display:grid;gap:10px;margin-top:14px}
+.bandeja{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1.6fr) auto;gap:14px;align-items:center;padding:14px 16px;border:1px solid var(--line);border-radius:16px;background:#fff;text-align:left;width:100%}
+.tel .bandeja{grid-template-columns:minmax(0,1fr) auto;gap:6px 10px;padding:13px 14px}
+.tel .bandeja .c2{grid-column:1 / -1}
+.bandeja b{display:flex;gap:8px;align-items:center;font-weight:700;min-width:0}
+.bandeja b span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bandeja small{display:block;font-size:12.5px;color:var(--text2)}
+.bandeja .c2{font-size:13px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bandeja .c2 s{opacity:.7}
+.bandeja.nueva{border-color:var(--verde);box-shadow:0 0 0 1px var(--verde) inset}
+.nuevo{flex:none;font-size:10.5px;font-weight:800;letter-spacing:.04em;background:var(--verde);color:#fff;border-radius:999px;padding:2px 7px}
+.chip{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap;background:var(--s3);color:var(--text2)}
+.chip::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.verde{background:var(--verde-bg);color:var(--verde)} .ambar{background:var(--ambar-bg);color:var(--ambar)} .azul{background:var(--azul-bg);color:var(--azul)} .rojo{background:var(--rojo-bg);color:var(--rojo)}
+.fecha{margin-top:14px;padding:12px 14px;border-radius:14px;background:var(--s2);font-size:13px;color:var(--text2)}
+.fecha b{color:var(--text)}
+
+/* Botón flotante: dos opciones */
+.fabA{position:absolute;right:16px;bottom:92px;z-index:5;height:56px;padding:0 22px 0 18px;border-radius:999px;background:var(--azul);color:#fff;font-weight:800;font-size:16px;display:flex;align-items:center;gap:8px;box-shadow:0 10px 24px rgba(27,58,158,.38),0 2px 6px rgba(27,58,158,.25)}
+.fabA svg{width:22px;height:22px}
+.fabB{position:absolute;left:16px;right:16px;bottom:92px;z-index:5;height:56px;border-radius:18px;background:var(--azul);color:#fff;font-weight:800;font-size:16px;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 10px 24px rgba(27,58,158,.38),0 2px 6px rgba(27,58,158,.25)}
+.fabB svg{width:22px;height:22px}
+
+/* Hojas */
+.velo{position:absolute;inset:0;background:var(--velo);z-index:6}
+.hoja{position:absolute;background:var(--bg);display:flex;flex-direction:column;z-index:7;box-shadow:var(--sombra)}
+.tel .hoja{left:0;right:0;bottom:0;height:93%;border-radius:26px 26px 0 0}
+.pc .hoja{top:0;bottom:0;right:0;width:520px}
+.asa{width:40px;height:5px;border-radius:3px;background:var(--s3);margin:8px auto 0;flex:none}
+.pc .asa{display:none}
+.h-cab{display:flex;align-items:flex-start;gap:12px;padding:14px 18px 10px;flex:none;border-bottom:1px solid var(--line)}
+.h-cab .tx{flex:1;min-width:0}
+.h-cab h4{margin:0;font-size:19px;font-weight:800;letter-spacing:-.02em}
+.h-cab p{font-size:13px;color:var(--text2);margin-top:2px}
+.x{width:40px;height:40px;border-radius:50%;background:var(--s2);font-size:20px;flex:none;display:grid;place-items:center}
+.h-cuerpo{flex:1;overflow:hidden;padding:14px 18px 18px}
+.h-pie{display:flex;gap:10px;padding:12px 18px 16px;border-top:1px solid var(--line);flex:none}
+.h-pie .btn{flex:1;min-width:0;font-size:15px;padding:0 12px}
+.tel .h-pie .btn{font-size:14px;padding:0 10px}
+.tel.alta{height:1180px}
+.lbl{display:block;font-size:13px;font-weight:600;margin:14px 0 8px}
+.lbl:first-child{margin-top:0}
+.tipo{display:flex;gap:8px}
+.tipo i{flex:1;font-style:normal;height:48px;border-radius:999px;border:1.5px solid var(--line);font-weight:700;font-size:14.5px;color:var(--text2);display:grid;place-items:center}
+.tipo i.on{border-color:var(--text);background:var(--text);color:#fff}
+.campo{width:100%;height:52px;padding:0 18px;border:1.5px solid var(--text);border-radius:999px;background:#fff;font:inherit;font-size:15px;color:var(--text3);display:flex;align-items:center}
+.nota{font-size:12.5px;color:var(--text3);margin:8px 4px 0}
+.nota b{color:var(--text2)}
+.err{font-size:12.5px;color:var(--rojo);margin:6px 4px 0;min-height:18px}
+
+.veredicto{padding:16px;border-radius:18px;display:grid;gap:4px}
+.veredicto b{font-size:22px;font-weight:800;letter-spacing:-.02em;line-height:1.15}
+.veredicto p{font-size:14px}
+.veredicto small{font-size:13px;font-weight:600;opacity:.9}
+.mapa{margin-top:12px;border-radius:18px;overflow:hidden;background:var(--mapa);position:relative}
+.mapa svg{display:block;width:100%;height:auto}
+.ley{position:absolute;left:10px;bottom:10px;display:flex;gap:6px;flex-wrap:wrap}
+.ley span{background:rgba(255,255,255,.94);border-radius:999px;padding:3px 9px;font-size:11.5px;font-weight:600;display:flex;gap:5px;align-items:center}
+.ley i{width:9px;height:9px;border-radius:2px;display:block}
+.amplio{position:absolute;right:10px;top:10px;background:#fff;border-radius:999px;height:36px;padding:0 14px;font-size:13px;font-weight:700;color:var(--azul);box-shadow:0 2px 8px rgba(17,19,21,.12)}
+.plegar{display:flex;align-items:center;gap:10px;width:100%;text-align:left;margin-top:14px;padding:14px;border-radius:16px;border:1.5px solid var(--line);font-weight:700;font-size:14px}
+.plegar span{flex:1}
+.plegar small{display:block;font-weight:500;color:var(--text2);font-size:12.5px}
+.campo2{width:100%;height:48px;padding:0 16px;border:1.5px solid var(--text);border-radius:999px;font-size:15px;display:flex;align-items:center}
+.dos{display:grid;grid-template-columns:1fr 1fr;gap:0 10px}
+.tel .dos{grid-template-columns:1fr}
+.odoo{margin-top:12px;padding:14px;border-radius:16px;background:var(--s2)}
+.odoo > b{display:block;font-size:14px}
+.seg{display:flex;padding:4px;border-radius:999px;background:#fff;border:1px solid var(--line);margin-top:10px;width:max-content}
+.seg i{font-style:normal;height:36px;padding:0 14px;border-radius:999px;font-weight:700;font-size:13px;color:var(--text2);display:grid;place-items:center}
+.seg i.on{background:var(--text);color:#fff}
+.cod{display:flex;gap:8px;margin-top:10px}
+.cod code{flex:1;min-width:0;padding:10px 12px;border-radius:12px;background:#fff;border:1px solid var(--line);font:600 13px var(--f);overflow-wrap:anywhere}
+.hist{margin-top:16px}
+.hist > span,.cierre > span{display:block;font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+.mov{display:flex;gap:10px;padding:7px 0;font-size:13.5px}
+.mov::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--s3);margin-top:6px;flex:none}
+.mov.vd::before{background:var(--verde)} .mov.az::before{background:var(--azul)}
+.mov span{flex:1} .mov time{color:var(--text2);font-size:12px}
+.cierre{margin-top:16px}
+.cierre div{display:flex;gap:8px}
+.cierre .btn{flex:1;height:44px;font-size:14px}
+.bloqueV{padding:12px 14px;border-radius:14px;background:var(--verde-bg);color:var(--verde);font-size:13px;margin-bottom:10px}
+.bloqueV b{display:block;font-size:14px}
+
+/* WhatsApp */
+.chat{background:#EFEAE2;border-radius:18px;padding:16px;display:grid;gap:12px;width:390px;flex:none}
+.burb{background:#D9FDD3;border-radius:12px;padding:10px 12px;font-size:14px;white-space:pre-line;box-shadow:0 1px 0 rgba(17,19,21,.08);justify-self:end;max-width:92%}
+.burb strong{font-weight:700}
+.burb time{display:block;text-align:right;font-size:11px;color:var(--text2);margin-top:2px}
+.notas{max-width:1240px;margin:28px auto 0;background:#fff;border-radius:16px;padding:16px 18px;font-size:13.5px;color:var(--text2)}
+.notas b{color:var(--text)}
+.notas li{margin-top:4px}
+</style>
+</head>
+<body>
+<div class="guia">
+  <h1>Maqueta F2: Factibilidad simplificada</h1>
+  <p>Lista con bandejas y botón flotante (dos opciones), hoja de consulta más corta y resultado con lo justo. Teléfono y escritorio. Nombres, RIF y MDT inventados.</p>
+</div>
+
+<!-- ================= LISTA ================= -->
+<section class="sec" id="lista">
+  <h2>1. Lista: cada consulta en su bandeja</h2>
+  <p>Cada consulta va en una bandeja con borde y separación. La que cambió con el mapa nuevo lleva borde verde y la marca NUEVO. En teléfono, dos opciones de botón flotante: los dos azules, con texto y sombra, encima de la barra de abajo.</p>
+  <div class="fila-m">
+    <div><div class="rot">Teléfono · Opción A: botón redondo a la derecha</div>
+      <div class="tel">
+        <div class="barra"><b>EMPRESA</b><span>Empresas</span><span class="av">LF</span></div>
+        <div class="cuerpo">
+          <div class="cab"><h3>Factibilidad</h3></div>
+          <p class="sub">Tus consultas. Se revisan solas con cada mapa nuevo.</p>
+          <div class="atajos"><i class="nv">Ahora con red <em>1</em></i><i class="on">Abiertas <em>4</em></i><i>En espera <em>1</em></i><i>Excepción <em>1</em></i><i>Cerradas <em>2</em></i></div>
+          <div class="bandejas">
+            <div class="bandeja nueva"><span><b><em class="nuevo">NUEVO</em><span>Posada Los Cocos</span></b><small>Ciudad Prueba · hace 3 semanas</small></span><span class="chip verde">Hay red</span><span class="c2"><s>En espera</s> · MDT D-031 · dentro de la zona</span></div>
+            <div class="bandeja"><span><b><span>Ferretería El Tornillo</span></b><small>Ciudad Prueba · hace 1 semana</small></span><span class="chip ambar">Posible excepción</span><span class="c2">MDT A-026 · 240 m de la red</span></div>
+            <div class="bandeja"><span><b><span>Panadería La Espiga</span></b><small>Ciudad Prueba · hoy</small></span><span class="chip verde">Hay red</span><span class="c2">MDT A-013 · dentro de la zona</span></div>
+            <div class="bandeja"><span><b><span>Sin nombre</span></b><small>Ciudad Prueba · hace 2 días</small></span><span class="chip azul">En espera</span><span class="c2">MDT D-031 · 1,2 km de la red</span></div>
+          </div>
+        </div>
+        <button class="fabA"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Consultar</button>
+        <div class="navab"><i>Inicio</i><i>Comisiones</i><i>Clientes</i><i class="on">Factibilidad</i></div>
+      </div>
+    </div>
+    <div><div class="rot">Teléfono · Opción B: barra ancha sobre la navegación</div>
+      <div class="tel">
+        <div class="barra"><b>EMPRESA</b><span>Empresas</span><span class="av">LF</span></div>
+        <div class="cuerpo">
+          <div class="cab"><h3>Factibilidad</h3></div>
+          <p class="sub">Tus consultas. Se revisan solas con cada mapa nuevo.</p>
+          <div class="atajos"><i class="nv">Ahora con red <em>1</em></i><i class="on">Abiertas <em>4</em></i><i>En espera <em>1</em></i><i>Excepción <em>1</em></i><i>Cerradas <em>2</em></i></div>
+          <div class="bandejas">
+            <div class="bandeja nueva"><span><b><em class="nuevo">NUEVO</em><span>Posada Los Cocos</span></b><small>Ciudad Prueba · hace 3 semanas</small></span><span class="chip verde">Hay red</span><span class="c2"><s>En espera</s> · MDT D-031 · dentro de la zona</span></div>
+            <div class="bandeja"><span><b><span>Ferretería El Tornillo</span></b><small>Ciudad Prueba · hace 1 semana</small></span><span class="chip ambar">Posible excepción</span><span class="c2">MDT A-026 · 240 m de la red</span></div>
+            <div class="bandeja"><span><b><span>Panadería La Espiga</span></b><small>Ciudad Prueba · hoy</small></span><span class="chip verde">Hay red</span><span class="c2">MDT A-013 · dentro de la zona</span></div>
+            <div class="bandeja"><span><b><span>Sin nombre</span></b><small>Ciudad Prueba · hace 2 días</small></span><span class="chip azul">En espera</span><span class="c2">MDT D-031 · 1,2 km de la red</span></div>
+          </div>
+        </div>
+        <button class="fabB"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Nueva consulta</button>
+        <div class="navab"><i>Inicio</i><i>Comisiones</i><i>Clientes</i><i class="on">Factibilidad</i></div>
+      </div>
+    </div>
+  </div>
+  <div style="margin-top:22px"><div class="rot">Escritorio</div>
+    <div class="pc">
+      <div class="barra"><b>EMPRESA</b><span>Empresas</span><nav><i>Inicio</i><i>Comisiones</i><i>Clientes</i><i class="on">Factibilidad</i></nav><span class="av">LF</span></div>
+      <div class="cuerpo">
+        <div class="cab"><h3>Factibilidad</h3><span class="btn">Nueva consulta</span></div>
+        <p class="sub">Tus consultas. Se revisan solas con cada mapa nuevo.</p>
+        <div class="atajos"><i class="nv">Ahora con red <em>1</em></i><i class="on">Abiertas <em>4</em></i><i>En espera <em>1</em></i><i>Excepción <em>1</em></i><i>Cerradas <em>2</em></i></div>
+        <div class="bandejas">
+          <div class="bandeja nueva"><span><b><em class="nuevo">NUEVO</em><span>Posada Los Cocos</span></b><small>Ciudad Prueba · hace 3 semanas</small></span><span class="c2"><s>En espera</s> · MDT D-031 · dentro de la zona</span><span class="chip verde">Hay red</span></div>
+          <div class="bandeja"><span><b><span>Ferretería El Tornillo</span></b><small>Ciudad Prueba · hace 1 semana</small></span><span class="c2">MDT A-026 · 240 m de la red</span><span class="chip ambar">Posible excepción</span></div>
+          <div class="bandeja"><span><b><span>Panadería La Espiga</span></b><small>Ciudad Prueba · hoy</small></span><span class="c2">MDT A-013 · dentro de la zona</span><span class="chip verde">Hay red</span></div>
+          <div class="bandeja"><span><b><span>Sin nombre</span></b><small>Ciudad Prueba · hace 2 días</small></span><span class="c2">MDT D-031 · 1,2 km de la red</span><span class="chip azul">En espera</span></div>
+        </div>
+        <div class="fecha">Mapa de red del <b>1 de octubre</b>. 1.961 zonas.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= HOJA DE CONSULTA ================= -->
+<section class="sec" id="consulta">
+  <h2>2. Hoja de consulta</h2>
+  <p>PYME o Dedicado arriba de todo. Un solo campo para el enlace o las coordenadas, sin botón Pegar y sin "Usar mi ubicación". Debajo, una nota corta de cómo pegar.</p>
+  <div class="fila-m">
+    <div><div class="rot">Teléfono</div>
+      <div class="tel">
+        <div class="barra"><b>EMPRESA</b><span>Empresas</span><span class="av">LF</span></div>
+        <div class="cuerpo"><div class="cab"><h3>Factibilidad</h3></div></div>
+        <div class="velo"></div>
+        <div class="hoja">
+          <div class="asa"></div>
+          <div class="h-cab"><div class="tx"><h4>Nueva consulta</h4><p>Pega el enlace de la ubicación o las coordenadas</p></div><span class="x">×</span></div>
+          <div class="h-cuerpo">
+            <span class="lbl">Tipo de cliente</span>
+            <div class="tipo"><i class="on">PYME</i><i>Dedicado</i></div>
+            <span class="lbl">Enlace de Google Maps o coordenadas</span>
+            <div class="campo">https://maps.app.goo.gl/…</div>
+            <div class="err"></div>
+            <p class="nota"><b>Para pegar:</b> en WhatsApp mantén presionado el enlace y toca Copiar. Aquí, mantén presionado el campo y toca Pegar.</p>
+          </div>
+          <div class="h-pie"><span class="btn">Consultar</span></div>
+        </div>
+      </div>
+    </div>
+    <div style="flex:1;min-width:0"><div class="rot">Escritorio</div>
+      <div class="pc" style="height:520px">
+        <div class="barra"><b>EMPRESA</b><span>Empresas</span><nav><i>Inicio</i><i>Comisiones</i><i>Clientes</i><i class="on">Factibilidad</i></nav><span class="av">LF</span></div>
+        <div class="cuerpo"><div class="cab"><h3>Factibilidad</h3><span class="btn">Nueva consulta</span></div></div>
+        <div class="velo"></div>
+        <div class="hoja">
+          <div class="h-cab"><div class="tx"><h4>Nueva consulta</h4><p>Pega el enlace de la ubicación o las coordenadas</p></div><span class="x">×</span></div>
+          <div class="h-cuerpo">
+            <span class="lbl">Tipo de cliente</span>
+            <div class="tipo"><i class="on">PYME</i><i>Dedicado</i></div>
+            <span class="lbl">Enlace de Google Maps o coordenadas</span>
+            <div class="campo">10.0601, -72.5524</div>
+            <div class="err"></div>
+            <p class="nota"><b>Para pegar:</b> copia el enlace en WhatsApp y pégalo aquí con Ctrl+V.</p>
+          </div>
+          <div class="h-pie"><span class="btn">Consultar</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= RESULTADO NUEVO ================= -->
+<section class="sec" id="resultado">
+  <h2>3. Resultado de una consulta nueva</h2>
+  <p>Solo el estado, la frase, el MDT con distancia y capacidad, y el mapa. Abajo, "Copiar mensaje para el cliente" y "Cerrar". Sin historial, sin "Ya lo vendí" y sin texto de Odoo arriba: eso queda dentro de "Datos del cliente", plegado.</p>
+  <div class="fila-m">
+    <div><div class="rot">Teléfono · Hay red</div>
+      <div class="tel">
+        <div class="barra"><b>EMPRESA</b><span>Empresas</span><span class="av">LF</span></div>
+        <div class="velo"></div>
+        <div class="hoja">
+          <div class="asa"></div>
+          <div class="h-cab"><div class="tx"><h4>Consulta</h4><p>Ciudad Prueba · 10.06010, -72.55240</p></div><span class="x">×</span></div>
+          <div class="h-cuerpo">
+            <div class="veredicto verde"><b>Hay red</b><p>Se puede vender. La zona tiene red activa.</p><small>MDT A-013 · dentro de la zona · 792 hogares</small></div>
+            <div class="mapa"><svg viewBox="0 0 320 200" role="img" aria-label="Mapa"><rect width="320" height="200" fill="#E4E8E1"/><path d="M0 70 L320 40 M0 150 L320 135 M92 0 L118 200 M222 0 L244 200" stroke="#F7F7F2" stroke-width="7" fill="none"/>
+              <polygon points="60,58 196,46 226,118 168,156 76,146" fill="#3B78E7" fill-opacity=".32" stroke="#3B78E7" stroke-width="3.5"/><polygon points="206,18 300,28 296,90 232,98" fill="#3B78E7" fill-opacity=".32" stroke="#3B78E7" stroke-width="2"/><polygon points="240,124 312,132 306,196 246,192" fill="#C9A400" fill-opacity=".25" stroke="#C9A400" stroke-width="2"/>
+              <g transform="translate(139,70)"><path d="M11 0C4.9 0 0 4.9 0 11c0 8.25 11 19 11 19s11-10.75 11-19C22 4.9 17.1 0 11 0z" fill="#11734B" stroke="#fff" stroke-width="1.5"/><circle cx="11" cy="11" r="4" fill="#fff"/></g></svg>
+              <div class="ley"><span><i style="background:#3B78E7"></i>Con red</span><span><i style="background:#0091B8"></i>Exclusiva</span><span><i style="background:#C9A400"></i>En diseño</span></div><span class="amplio">Mapa amplio</span></div>
+            <button class="plegar"><span>Datos del cliente<small>Opcional. Si colocas el nombre y el RIF, te armo el texto para la orden de Odoo.</small></span>⌄</button>
+          </div>
+          <div class="h-pie"><span class="btn b2">Copiar mensaje para el cliente</span><span class="btn" style="flex:0 0 108px">Cerrar</span></div>
+        </div>
+      </div>
+    </div>
+    <div style="flex:1;min-width:0"><div class="rot">Escritorio · Posible excepción</div>
+      <div class="pc" style="height:1010px">
+        <div class="barra"><b>EMPRESA</b><span>Empresas</span><nav><i>Inicio</i><i>Comisiones</i><i>Clientes</i><i class="on">Factibilidad</i></nav><span class="av">LF</span></div>
+        <div class="cuerpo"><div class="cab"><h3>Factibilidad</h3><span class="btn">Nueva consulta</span></div></div>
+        <div class="velo"></div>
+        <div class="hoja">
+          <div class="h-cab"><div class="tx"><h4>Consulta</h4><p>Ciudad Prueba · 10.06550, -72.53980</p></div><span class="x">×</span></div>
+          <div class="h-cuerpo">
+            <div class="veredicto ambar"><b>Posible excepción</b><p>Está muy cerca de la red, pero fuera. Confirma con ingeniería antes de vender.</p><small>MDT A-026 · 240 m del borde · 299 hogares</small></div>
+            <div class="mapa"><svg viewBox="0 0 320 200" role="img" aria-label="Mapa"><rect width="320" height="200" fill="#E4E8E1"/><path d="M0 70 L320 40 M0 150 L320 135 M92 0 L118 200 M222 0 L244 200" stroke="#F7F7F2" stroke-width="7" fill="none"/>
+              <polygon points="60,58 196,46 226,118 168,156 76,146" fill="#3B78E7" fill-opacity=".32" stroke="#3B78E7" stroke-width="2"/><polygon points="206,18 300,28 296,90 232,98" fill="#3B78E7" fill-opacity=".32" stroke="#3B78E7" stroke-width="3.5"/><polygon points="240,124 312,132 306,196 246,192" fill="#C9A400" fill-opacity=".25" stroke="#C9A400" stroke-width="2"/>
+              <path d="M232 118 L246 96" stroke="#8A5A00" stroke-width="2.5" stroke-dasharray="5 4"/><text x="250" y="112" font-size="10.5" font-weight="800" fill="#8A5A00" font-family="Inter,sans-serif">240 m</text>
+              <g transform="translate(221,88)"><path d="M11 0C4.9 0 0 4.9 0 11c0 8.25 11 19 11 19s11-10.75 11-19C22 4.9 17.1 0 11 0z" fill="#8A5A00" stroke="#fff" stroke-width="1.5"/><circle cx="11" cy="11" r="4" fill="#fff"/></g></svg>
+              <div class="ley"><span><i style="background:#3B78E7"></i>Con red</span><span><i style="background:#0091B8"></i>Exclusiva</span><span><i style="background:#C9A400"></i>En diseño</span></div><span class="amplio">Mapa amplio</span></div>
+            <button class="plegar"><span>Datos del cliente<small>Opcional. Si colocas el nombre y el RIF, te armo el texto para la orden de Odoo.</small></span>⌃</button>
+            <span class="lbl">Nombre (opcional)</span><div class="campo2">Ferretería El Tornillo</div>
+            <div class="dos"><div><span class="lbl">Teléfono (opcional)</span><div class="campo2">0414 555 0123</div></div><div><span class="lbl">RIF (opcional)</span><div class="campo2">J123456789</div></div></div>
+            <div class="odoo"><b>Texto para la orden de factibilidad</b><div class="cod"><code>FACTIBILIDAD FERRETERÍA EL TORNILLO J123456789</code><span class="btn chico">Copiar</span></div></div>
+          </div>
+          <div class="h-pie"><span class="btn b2">Copiar mensaje para el cliente</span><span class="btn" style="flex:0 0 140px">Cerrar</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= GUARDADA REABIERTA ================= -->
+<section class="sec" id="guardada">
+  <h2>4. Consulta guardada, reabierta desde la lista</h2>
+  <p>El historial aparece solo cuando hubo más de un cambio. "Ya lo vendí" y "Ya no interesa" salen al final, bajo "Cerrar seguimiento". Con Hay red y los datos puestos, el texto de instalación con selector PROMO PYME (marcado) o EVENTO.</p>
+  <div class="fila-m">
+    <div><div class="rot">Teléfono · Hay red con datos (la hoja completa, sin el mapa)</div>
+      <div class="tel alta">
+        <div class="barra"><b>EMPRESA</b><span>Empresas</span><span class="av">LF</span></div>
+        <div class="velo"></div>
+        <div class="hoja">
+          <div class="asa"></div>
+          <div class="h-cab"><div class="tx"><h4>Posada Los Cocos</h4><p>Ciudad Prueba · 10.05770, -72.53520</p></div><span class="x">×</span></div>
+          <div class="h-cuerpo">
+            <div class="bloqueV"><b>Cambió con el mapa del 8 de octubre</b>Antes: En espera. Ahora: Hay red.</div>
+            <div class="veredicto verde"><b>Hay red</b><p>Se puede vender. La zona tiene red activa.</p><small>MDT D-031 · dentro de la zona · 410 hogares</small></div>
+            <button class="plegar"><span>Datos del cliente<small>Opcional. Si colocas el nombre y el RIF, te armo el texto para la orden de Odoo.</small></span>⌃</button>
+            <div class="odoo"><b>Texto para la orden de Odoo</b>
+              <div class="seg"><i class="on">PROMO PYME</i><i>EVENTO</i></div>
+              <div class="cod"><code>INST. PROMO PYME POSADA LOS COCOS J987654321</code><span class="btn chico">Copiar</span></div>
+              <p class="nota" style="margin:8px 0 0">El nodo lo pone Odoo. Si la orden la crea otra persona por ti, agrega al final tu código de vendedor.</p></div>
+            <div class="hist"><span>Historial</span>
+              <div class="mov vd"><span>Mapa del 8 de octubre: <b>Hay red</b></span><time>8 oct</time></div>
+              <div class="mov"><span>Mapa del 1 de octubre: <b>En espera</b> al consultar</span><time>18 sep</time></div>
+              <div class="mov az"><span>Consultada por Lucía</span><time>18 sep</time></div></div>
+            <div class="cierre"><span>Cerrar seguimiento</span><div><span class="btn b2">Ya lo vendí</span><span class="btn b2">Ya no interesa</span></div></div>
+          </div>
+          <div class="h-pie"><span class="btn b2">Copiar mensaje para el cliente</span><span class="btn" style="flex:0 0 108px">Cerrar</span></div>
+        </div>
+      </div>
+    </div>
+    <div><div class="rot">Teléfono · Dedicado: sin texto de Odoo</div>
+      <div class="tel alta">
+        <div class="barra"><b>EMPRESA</b><span>Empresas</span><span class="av">LF</span></div>
+        <div class="velo"></div>
+        <div class="hoja">
+          <div class="asa"></div>
+          <div class="h-cab"><div class="tx"><h4>Clínica San Benito</h4><p>Ciudad Prueba · 10.05120, -72.55010</p></div><span class="x">×</span></div>
+          <div class="h-cuerpo">
+            <div class="veredicto verde"><b>Hay red</b><p>Se puede vender. La zona tiene red activa.</p><small>MDT A-013 · dentro de la zona · 792 hogares · Dedicado</small></div>
+            <div class="mapa"><svg viewBox="0 0 320 170" role="img" aria-label="Mapa"><rect width="320" height="170" fill="#E4E8E1"/><path d="M0 60 L320 40 M92 0 L118 170" stroke="#F7F7F2" stroke-width="7" fill="none"/><polygon points="60,40 196,30 226,100 168,140 76,130" fill="#3B78E7" fill-opacity=".32" stroke="#3B78E7" stroke-width="3.5"/><g transform="translate(130,60)"><path d="M11 0C4.9 0 0 4.9 0 11c0 8.25 11 19 11 19s11-10.75 11-19C22 4.9 17.1 0 11 0z" fill="#11734B" stroke="#fff" stroke-width="1.5"/><circle cx="11" cy="11" r="4" fill="#fff"/></g></svg><span class="amplio">Mapa amplio</span></div>
+            <button class="plegar"><span>Datos del cliente<small>Opcional.</small></span>⌃</button>
+            <span class="lbl">Nombre (opcional)</span><div class="campo2">Clínica San Benito</div>
+            <span class="lbl">RIF (opcional)</span><div class="campo2">J555444333</div>
+            <p class="nota">El texto de Odoo para Dedicado llega con el módulo de dedicados.</p>
+            <div class="cierre"><span>Cerrar seguimiento</span><div><span class="btn b2">Ya lo vendí</span><span class="btn b2">Ya no interesa</span></div></div>
+          </div>
+          <div class="h-pie"><span class="btn b2">Copiar mensaje para el cliente</span><span class="btn" style="flex:0 0 108px">Cerrar</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= MENSAJE ================= -->
+<section class="sec" id="mensaje">
+  <h2>5. Mensaje para el cliente (así se ve al pegarlo en WhatsApp)</h2>
+  <p>Se copia con asteriscos para que WhatsApp lo ponga en negrita. Si la consulta no tiene nombre, dice "Estimado cliente". Firma con el nombre del líder.</p>
+  <div class="fila-m">
+    <div class="chat"><div class="burb"><strong>Notificación de cobertura</strong>
+
+Estimado Panadería La Espiga, revisamos la ubicación que nos envió.
+
+<strong>Resultado: con cobertura.</strong> Su ubicación está dentro de nuestra red.
+
+<strong>Siguiente paso:</strong> le envío la propuesta y los documentos que necesitamos.
+
+Lucía Ferrer
+Airtek Empresas<time>3:14 p. m.</time></div></div>
+    <div class="chat"><div class="burb"><strong>Notificación de cobertura</strong>
+
+Estimado cliente, revisamos la ubicación que nos envió.
+
+<strong>Resultado: en evaluación.</strong> Su ubicación está muy cerca de nuestra red.
+
+<strong>Siguiente paso:</strong> ingeniería evalúa el punto y le confirmo apenas tenga respuesta.
+
+Lucía Ferrer
+Airtek Empresas<time>3:14 p. m.</time></div></div>
+    <div class="chat"><div class="burb"><strong>Notificación de cobertura</strong>
+
+Estimado Posada Los Cocos, revisamos la ubicación que nos envió.
+
+<strong>Resultado: sin cobertura por ahora.</strong> La red todavía no llega a su zona.
+
+<strong>Siguiente paso:</strong> su ubicación queda registrada y le avisamos cuando haya cobertura.
+
+Lucía Ferrer
+Airtek Empresas<time>3:14 p. m.</time></div></div>
+    <div class="chat"><div class="burb"><strong>Notificación de cobertura</strong>
+
+Estimado cliente, revisamos la ubicación que nos envió.
+
+<strong>Resultado: sin cobertura.</strong> No tenemos red cerca de su ubicación.
+
+<strong>Siguiente paso:</strong> queda registrada por si la red llega más adelante.
+
+Lucía Ferrer
+Airtek Empresas<time>3:14 p. m.</time></div></div>
+  </div>
+</section>
+
+<div class="notas"><b>Lo que no cambia:</b> el mapa amplio, los atajos, la marca NUEVO, el aviso "Zona exclusiva de [aliado]", compartir desde Android y la ayuda de iPhone. <b>Texto de Odoo:</b> aparece solo cuando están el nombre y el RIF; con Hay red es de instalación (PROMO PYME o EVENTO), con Posible excepción es "FACTIBILIDAD NOMBRE RIF", con En espera o Sin red no sale, y para Dedicado no sale.</div>
+</body>
+</html>
