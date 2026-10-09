@@ -491,6 +491,104 @@ const RPC = {
   }
 };
 
+// ---------- Factibilidad: las mismas reglas del servidor en pequeño ----------
+function medir(lng, lat, z){
+  const kx = 111320 * Math.cos(lat * Math.PI / 180), ky = 110540; let dentro = false, d = Infinity; const n = z.lngs.length;
+  for(let i = 0, j = n - 1; i < n; j = i++){
+    const xi = (z.lngs[i] - lng) * kx, yi = (z.lats[i] - lat) * ky, xj = (z.lngs[j] - lng) * kx, yj = (z.lats[j] - lat) * ky;
+    if((yi > 0) !== (yj > 0) && 0 < (xj - xi) * (0 - yi) / (yj - yi) + xi) dentro = !dentro;
+    const dx = xj - xi, dy = yj - yi; const t = dx === 0 && dy === 0 ? 0 : Math.max(0, Math.min(1, -(xi * dx + yi * dy) / (dx * dx + dy * dy)));
+    d = Math.min(d, Math.hypot(xi + t * dx, yi + t * dy));
+  }
+  return { dentro, d };
+}
+function evaluar(m, lat, lng, tipo, mapaId){
+  let dOp = Infinity, cerca = null, dOpZ = null, dDis = null;
+  m.zonas.filter((z) => z.mapa_id === mapaId).forEach((z) => {
+    const r = medir(lng, lat, z);
+    if(z.operativa){ if(r.dentro && (!dOpZ || (dOpZ.exclusividad !== 'liberada' && z.exclusividad === 'liberada'))) dOpZ = z; if(!r.dentro && r.d < dOp){ dOp = r.d; cerca = z; } }
+    else if(r.dentro && !dDis) dDis = z;
+  });
+  let res, z, dist;
+  if(dOpZ){ res = 'hay_red'; z = dOpZ; dist = 0; }
+  else if(dDis){ res = (tipo === 'dedicado' && dOp < 2000) || (tipo === 'pyme' && dOp < 400) ? 'excepcion' : 'espera'; z = res === 'excepcion' ? cerca : dDis; dist = dOp; }
+  else if(tipo === 'pyme'){ res = dOp < 400 ? 'excepcion' : dOp <= 2000 ? 'espera' : 'sin_red'; z = cerca; dist = dOp; }
+  else { res = dOp <= 2000 ? 'excepcion' : 'sin_red'; z = cerca; dist = dOp; }
+  z = z || {};
+  return { resultado: res, zona_id: z.id || null, mdt: z.mdt || null, estado: z.estado || null, capacidad: z.capacidad || null, exclusividad: z.exclusividad || null, aliado: z.aliado || null, ciudad: z.ciudad || null, distancia_m: isFinite(dist) ? Math.round(dist) : null };
+}
+const vigente = (m) => (m.mapas || []).filter((x) => x.estado === 'vigente').pop();
+function detalleFact(m, yo, c){
+  const mp = m.mapas.find((x) => x.id === c.mapa_id) || {}; const p = m.personas.find((x) => x.id === c.lider_id) || {};
+  return Object.assign({}, c, { lider: p.nombre, lider_codigo: p.codigo_vendedor || null, mio: c.lider_id === yo.id, puedo_editar: c.lider_id === yo.id || yo.rol === 'admin',
+    mapa: { id: mp.id, fecha: mp.fecha_mapa, vigente: mp.estado === 'vigente' },
+    historial: m.hist.filter((h) => h.consulta_id === c.id).map((h) => Object.assign({ fecha_mapa: (m.mapas.find((x) => x.id === h.mapa_id) || {}).fecha_mapa }, h)).reverse() });
+}
+function consultaDe(m, yo, id, editar){
+  if(!['admin', 'analista', 'lider'].includes(yo.rol)) return { e: error('No tienes permiso para hacer esto') };
+  const c = (m.consultas || []).find((x) => x.id === Number(id)); if(!c) return { e: error('Esa consulta no existe') };
+  if(c.lider_id !== yo.id && (yo.rol === 'lider' || (editar && yo.rol !== 'admin'))) return { e: error('No tienes acceso a esta consulta') };
+  return { c };
+}
+function iniciarFact(m){ m.mapas = m.mapas || []; m.zonas = m.zonas || []; m.consultas = m.consultas || []; m.hist = m.hist || []; m.secF = m.secF || 70000; }
+const RPC_FACT = {
+  mapa_actual(m, yo){ iniciarFact(m); if(!['admin', 'analista', 'lider'].includes(yo.rol)) return error('No tienes permiso para hacer esto'); const v = vigente(m); return v ? { id: v.id, fecha: v.fecha_mapa, zonas: v.poligonos, puntos: v.puntos, reparto: v.reparto, resumen: v.resumen } : null; },
+  mapa_iniciar(m, yo, a){ iniciarFact(m); if(yo.rol !== 'admin') return error('No tienes permiso para hacer esto'); m.mapas.forEach((x) => { if(x.estado === 'cargando') x.estado = 'fallido'; });
+    const x = { id: ++m.secF, fecha_mapa: a.p_fecha, archivo: a.p_archivo, poligonos: a.p_poligonos, puntos: a.p_puntos, estado: 'cargando', reparto: {} }; m.mapas.push(x); return x.id; },
+  mapa_zonas(m, yo, a){ iniciarFact(m); if(yo.rol !== 'admin') return error('No tienes permiso para hacer esto');
+    const mp = m.mapas.find((x) => x.id === a.p_mapa); if(!mp || mp.estado !== 'cargando') return error('Esa carga ya no está abierta. Vuelve a subir el mapa');
+    if(m.fallaZonas){ m.fallaZonas--; return error('Se cortó la conexión'); }
+    let n = 0; a.p_filas.forEach((f) => { if(!['liberado', 'exclusiva', 'diseno', 'construccion', 'permiso_vgt'].includes(f.e) || f.lng.length < 3) return; n++;
+      m.zonas.push({ id: ++m.secF, mapa_id: mp.id, mdt: f.m, nombre: f.n, estado: f.e, operativa: f.e === 'liberado' || f.e === 'exclusiva', exclusividad: f.x || 'liberada', aliado: f.x === 'aliado' ? f.a : null, capacidad: f.c ? Number(f.c) : null, ciudad: f.ci, lngs: f.lng, lats: f.lat, punto: f.p ? [f.p[1], f.p[0]] : null }); });
+    (m.lotesMapa = m.lotesMapa || []).push(a.p_filas); return n; },
+  mapa_cerrar(m, yo, a){ iniciarFact(m); if(yo.rol !== 'admin') return error('No tienes permiso para hacer esto');
+    const mp = m.mapas.find((x) => x.id === a.p_mapa); if(!mp || mp.estado !== 'cargando') return error('Esa carga ya no está abierta. Vuelve a subir el mapa');
+    const zs = m.zonas.filter((z) => z.mapa_id === mp.id); if(zs.length < mp.poligonos * 0.98) return error('La carga quedó incompleta. Vuelve a subir el mapa');
+    const ant = vigente(m); const rep = {}; zs.forEach((z) => { rep[z.estado] = (rep[z.estado] || 0) + 1; });
+    const est = (id) => { const o = {}; m.zonas.filter((z) => z.mapa_id === id).forEach((z) => { o[z.mdt] = z.estado; }); return o; };
+    const N = est(mp.id), V = ant ? est(ant.id) : {}; const op = (e) => e === 'liberado' || e === 'exclusiva';
+    const ej = Object.keys(N).filter((k) => V[k] && V[k] !== N[k]).map((k) => ({ mdt: k, de: V[k], a: N[k] }));
+    m.mapas.forEach((x) => { if(x.estado === 'vigente') x.estado = 'anterior'; }); mp.estado = 'vigente'; mp.reparto = rep; mp.poligonos = zs.length;
+    let rev = 0, cam = 0, red = 0;
+    m.consultas.filter((c) => c.seguimiento === 'abierta').forEach((c) => { rev++; const x = evaluar(m, c.lat, c.lng, c.tipo, mp.id);
+      if(x.resultado !== c.resultado){ cam++; if(x.resultado === 'hay_red') red++; Object.assign(c, { anterior: c.resultado, resultado: x.resultado, cambio_en: new Date().toISOString(), visto: false });
+        m.hist.push({ id: ++m.secF, consulta_id: c.id, mapa_id: mp.id, resultado: x.resultado, mdt: x.mdt, distancia_m: x.distancia_m, en: new Date().toISOString() }); }
+      Object.assign(c, { zona_id: x.zona_id, mdt: x.mdt, estado_zona: x.estado, distancia_m: x.distancia_m, capacidad: x.capacidad, exclusividad: x.exclusividad, aliado: x.aliado, ciudad: x.ciudad, mapa_id: mp.id }); });
+    mp.resumen = { mapa: mp.id, fecha: mp.fecha_mapa, zonas: zs.length, puntos: mp.puntos, reparto: rep, primero: !ant, cambios: { nuevas: Object.keys(N).filter((k) => !V[k]).length, quitadas: Object.keys(V).filter((k) => !N[k]).length,
+      cambio_estado: ej.length, ahora_operativas: ej.filter((x) => op(x.a) && !op(x.de)).length, ejemplos: ej }, consultas: { revisadas: rev, cambiaron: cam, con_red: red } };
+    (m.bitacora = m.bitacora || []).push({ usuario: yo.usuario, accion: 'mapa_red_subido', registro_id: String(mp.id), en: new Date().toISOString() });
+    return mp.resumen; },
+  fact_consultar(m, yo, a){ iniciarFact(m); if(!['admin', 'analista', 'lider'].includes(yo.rol)) return error('No tienes permiso para hacer esto');
+    const mp = vigente(m); if(!mp) return error('Todavía no hay mapa de red. Pide al administrador que lo suba en Actualizar');
+    if(!['pyme', 'dedicado'].includes(a.p_tipo)) return error('Elige si es PYME o Dedicado');
+    const x = evaluar(m, a.p_lat, a.p_lng, a.p_tipo, mp.id);
+    const c = { id: ++m.secF, lider_id: yo.id, creada_en: new Date().toISOString(), lat: a.p_lat, lng: a.p_lng, enlace: a.p_enlace || null, tipo: a.p_tipo, resultado: x.resultado, zona_id: x.zona_id, mdt: x.mdt, estado_zona: x.estado,
+      distancia_m: x.distancia_m, capacidad: x.capacidad, exclusividad: x.exclusividad, aliado: x.aliado, ciudad: x.ciudad, nombre: null, telefono: null, rif_tipo: null, rif: null, seguimiento: 'abierta', mapa_id: mp.id, anterior: null, cambio_en: null, visto: true };
+    m.consultas.push(c); m.hist.push({ id: ++m.secF, consulta_id: c.id, mapa_id: mp.id, resultado: x.resultado, mdt: x.mdt, distancia_m: x.distancia_m, en: c.creada_en });
+    return detalleFact(m, yo, c); },
+  fact_detalle(m, yo, a){ iniciarFact(m); const r = consultaDe(m, yo, a.p_id); return r.e || detalleFact(m, yo, r.c); },
+  fact_cercanas(m, yo, a){ iniciarFact(m); const mp = vigente(m); if(!mp) return { zonas: [] };
+    return { mapa: { id: mp.id, fecha: mp.fecha_mapa }, zonas: m.zonas.filter((z) => z.mapa_id === mp.id).map((z) => { const r = medir(a.p_lng, a.p_lat, z);
+      return { id: z.id, mdt: z.mdt, estado: z.estado, operativa: z.operativa, exclusividad: z.exclusividad, aliado: z.aliado, capacidad: z.capacidad, ciudad: z.ciudad, punto: z.punto, dentro: r.dentro, distancia_m: Math.round(r.d), forma: z.lats.map((la, i) => [la, z.lngs[i]]) }; })
+      .filter((z) => z.dentro || z.distancia_m <= 2000).sort((x, y) => (x.dentro ? 0 : x.distancia_m) - (y.dentro ? 0 : y.distancia_m)) }; },
+  fact_lista(m, yo, a){ iniciarFact(m); if(!['admin', 'analista', 'lider'].includes(yo.rol)) return error('No tienes permiso para hacer esto');
+    const mias = m.consultas.filter((c) => yo.rol !== 'lider' || c.lider_id === yo.id); const conRed = (c) => c.seguimiento === 'abierta' && c.resultado === 'hay_red' && c.anterior && c.anterior !== 'hay_red' && !c.visto;
+    const f = a.p_filtro || 'abiertas'; const pasa = (c) => f === 'con_red' ? conRed(c) : f === 'espera' ? c.seguimiento === 'abierta' && c.resultado === 'espera' : f === 'excepcion' ? c.seguimiento === 'abierta' && c.resultado === 'excepcion' : f === 'cerradas' ? c.seguimiento !== 'abierta' : c.seguimiento === 'abierta';
+    const filt = mias.filter(pasa).sort((x, y) => (x.visto - y.visto) || y.creada_en.localeCompare(x.creada_en)); const mp = vigente(m);
+    return { rol: yo.rol, mapa: mp ? { fecha: mp.fecha_mapa, zonas: mp.poligonos } : null, total: filt.length,
+      conteos: { con_red: mias.filter(conRed).length, abiertas: mias.filter((c) => c.seguimiento === 'abierta').length, espera: mias.filter((c) => c.seguimiento === 'abierta' && c.resultado === 'espera').length, excepcion: mias.filter((c) => c.seguimiento === 'abierta' && c.resultado === 'excepcion').length, cerradas: mias.filter((c) => c.seguimiento !== 'abierta').length },
+      filas: filt.slice(a.p_desde || 0, (a.p_desde || 0) + (a.p_limite || 30)).map((c) => ({ id: c.id, creada_en: c.creada_en, resultado: c.resultado, anterior: c.anterior, nuevo: !c.visto, mdt: c.mdt, distancia_m: c.distancia_m, tipo: c.tipo, nombre: c.nombre, ciudad: c.ciudad, seguimiento: c.seguimiento, exclusividad: c.exclusividad, aliado: c.aliado, lider: yo.rol !== 'lider' ? (m.personas.find((p) => p.id === c.lider_id) || {}).nombre : null })) }; },
+  fact_datos(m, yo, a){ iniciarFact(m); const r = consultaDe(m, yo, a.p_id, true); if(r.e) return r.e;
+    const rif = String(a.p_rif || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); const tel = String(a.p_telefono || '').replace(/\D/g, '');
+    if(rif && !/^[JGVEP]?\d{5,10}$/.test(rif)) return error('Ese RIF no parece válido');
+    if(tel && (tel.length < 10 || tel.length > 15)) return error('Ese teléfono no parece válido');
+    Object.assign(r.c, { nombre: String(a.p_nombre || '').replace(/\s+/g, ' ').trim() || null, telefono: tel || null, rif_tipo: rif ? (/^\d/.test(rif) ? 'J' : rif[0]) : null, rif: rif ? rif.replace(/\D/g, '') : null }); },
+  fact_seguimiento(m, yo, a){ iniciarFact(m); const r = consultaDe(m, yo, a.p_id, true); if(r.e) return r.e; if(!['abierta', 'vendida', 'no_interesa'].includes(a.p_estado)) return error('Estado no válido');
+    r.c.seguimiento = a.p_estado; r.c.visto = true; (m.bitacora = m.bitacora || []).push({ usuario: yo.usuario, accion: 'factibilidad_seguimiento', registro_id: String(r.c.id), despues: { seguimiento: a.p_estado } }); },
+  fact_visto(m, yo, a){ iniciarFact(m); const r = consultaDe(m, yo, a.p_id); if(r.e) return r.e; if(r.c.lider_id === yo.id) r.c.visto = true; }
+};
+Object.assign(RPC, RPC_FACT);
+
 // Lo mismo que public.archivo_drive: el archivo solo sale si quien lo pide puede ver al cliente
 function archivoDrive(m, yo, id){
   for(const c of m.datos.clientes) for(const d of c.documentos) for(const a of d.archivos || []){

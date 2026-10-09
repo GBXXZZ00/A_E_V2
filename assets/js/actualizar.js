@@ -218,7 +218,7 @@
   }
   function pintar(){
     const z = $('zona');
-    const soltar = '<button type="button" class="soltar" id="soltar">' + ICO + '<b>' + (lista.length ? 'Agregar más archivos' : 'Elige los archivos') + '</b>O arrástralos aquí, todos juntos. CSV o Excel (.xlsx).</button>';
+    const soltar = '<button type="button" class="soltar" id="soltar">' + ICO + '<b>' + (lista.length ? 'Agregar más archivos' : 'Elige los archivos') + '</b>O arrástralos aquí, todos juntos. CSV, Excel (.xlsx) o el mapa de red (KMZ).</button>';
     if(!lista.length){ z.innerHTML = soltar; return; }
     const buenos = lista.filter((a) => a.datos && a.estado !== 'lista');
     const filas = '<div class="grupo abierto" id="listaArch" role="status" aria-live="polite">' + lista.map((a, i) =>
@@ -231,7 +231,11 @@
   }
   let conocidos = null;
   async function elegir(files){
-    if(ocupado || !files || !files.length) return;
+    if(!files || !files.length) return;
+    // El mapa de red (KMZ) va a su propio panel
+    const todos = Array.prototype.slice.call(files); const M = window.MapaRed;
+    if(M){ const mapas = todos.filter(M.esMapa); if(mapas.length){ M.recibir(mapas[0]); files = todos.filter((f) => !M.esMapa(f)); if(!files.length) return; } }
+    if(ocupado) return;
     if(fin){ lista = []; fin = null; }
     // Los livianos primero: la base anterior le dice al TAD cuáles RIF son de empresas
     const nuevos = Array.prototype.slice.call(files, 0, 12).sort((x, y) => x.size - y.size).map((f) => ({ nombre: f.name, file: f, leyendo: true, espera: true }));
@@ -373,6 +377,7 @@
     if(!yo) return;
     window.Armazon.montar(yo, { activo: null, volver: { enlace: 'inicio.html', texto: 'Inicio' } });
     pintar(); pintarCruce();
+    if(window.MapaRed) window.MapaRed.montar(yo);
     $('cargas').innerHTML = esqueleto(2);
     cargas();
   })();

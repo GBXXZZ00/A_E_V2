@@ -8,12 +8,12 @@
 <title>Actualizar datos</title>
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="assets/img/icon-192.png">
-<link rel="stylesheet" href="assets/css/base.css?v=15">
-<link rel="stylesheet" href="assets/css/modulos.css?v=15">
-<link rel="stylesheet" href="assets/css/app.css?v=15">
+<link rel="stylesheet" href="assets/css/base.css?v=16">
+<link rel="stylesheet" href="assets/css/modulos.css?v=16">
+<link rel="stylesheet" href="assets/css/app.css?v=16">
 </head>
 <body>
-<header class="barra" id="barra"><a class="marca" href="inicio.html" aria-label="Inicio"><img class="logo" src="assets/img/logo.svg?v=15" alt="Airtek" width="96" height="12"><span>Empresas</span></a></header>
+<header class="barra" id="barra"><a class="marca" href="inicio.html" aria-label="Inicio"><img class="logo" src="assets/img/logo.svg?v=16" alt="Airtek" width="96" height="12"><span>Empresas</span></a></header>
 <main class="pagina">
   <a class="volver solo-pc" href="inicio.html" style="display:inline-flex"><svg class="i ch" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>Inicio</a>
   <h1 class="titulo">Actualizar datos</h1>
@@ -23,7 +23,14 @@
     <span class="tit" id="tArch">Archivos</span>
     <p class="nota-chica">TAD, órdenes de Odoo, órdenes de instalación y la base de la app anterior. <span id="ultimoTad">Todavía no se ha subido ningún TAD.</span></p>
     <div id="zona" style="margin-top:14px"></div>
-    <input type="file" id="archivos" class="hidden" multiple accept=".csv,.xlsx,.txt,text/csv,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" tabindex="-1" aria-hidden="true">
+    <input type="file" id="archivos" class="hidden" multiple accept=".csv,.xlsx,.txt,.kmz,.kml,text/csv,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" tabindex="-1" aria-hidden="true">
+  </section>
+
+  <section class="panel" style="margin-top:14px" aria-labelledby="tMapa">
+    <span class="tit" id="tMapa">Mapa de red</span>
+    <p class="nota-chica">El KMZ de ingeniería para Factibilidad. Súbelo tal como viene, sin cambiarle nada.</p>
+    <div id="mapaRed" style="margin-top:12px" aria-live="polite"></div>
+    <input type="file" id="archivoMapa" class="hidden" accept=".kmz,.kml,application/vnd.google-earth.kmz,application/vnd.google-earth.kml+xml" tabindex="-1" aria-hidden="true">
   </section>
 
   <section class="panel" style="margin-top:14px" aria-labelledby="tCruce">
@@ -37,9 +44,10 @@
 </main>
 <script src="assets/vendor/supabase.js?v=1"></script>
 <script src="assets/js/supabase-client.js?v=1"></script>
-<script src="assets/js/comun.js?v=15"></script>
-<script src="assets/js/sesion.js?v=15"></script>
-<script src="assets/js/armazon.js?v=15"></script>
-<script src="assets/js/actualizar.js?v=15"></script>
+<script src="assets/js/comun.js?v=16"></script>
+<script src="assets/js/sesion.js?v=16"></script>
+<script src="assets/js/armazon.js?v=16"></script>
+<script src="assets/js/mapared.js?v=16"></script>
+<script src="assets/js/actualizar.js?v=16"></script>
 </body>
 </html>
