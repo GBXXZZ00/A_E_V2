@@ -6,7 +6,7 @@ El usuario es el administrador de contratos. No programa, no usa SQL ni el panel
 
 ## 0. Antes de hacer cualquier cosa
 1. Lee `claude/traspaso.md` (estado actual y siguientes tareas) y `claude/reglas-negocio.md`. Lo que dice el traspaso manda.
-2. Corre las pruebas antes de tocar nada (ver `pruebas/LEEME.md`): `python3 -m http.server 8765` en la raíz y, desde `pruebas/`, `node test01.js` hasta `test08.js`. Todas deben terminar en `TODO OK`.
+2. Corre las pruebas antes de tocar nada (ver `pruebas/LEEME.md`): `python3 -m http.server 8765` en la raíz y, desde `pruebas/`, `node test01.js` hasta `test14.js`. Todas deben terminar en `TODO OK`.
 3. Al cerrar la sesión, actualiza `claude/traspaso.md` con lo hecho y lo que sigue, en el mismo commit.
 
 ## 1. Este repositorio es PÚBLICO
