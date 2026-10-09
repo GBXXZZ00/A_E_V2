@@ -1,6 +1,6 @@
 # Traspaso (se actualiza al cerrar cada sesión)
 
-Actualizado: 09/10/2026. Publicado: `?v=25` (revisión con IA que se actualiza sola cuando cambia el expediente).
+Actualizado: 09/10/2026 (noche: lógica de aliados acordada y maqueta A1). Publicado: `?v=25` (revisión con IA que se actualiza sola cuando cambia el expediente).
 
 ## Estado
 - Publicado y con pruebas (test01 a test18 en TODO OK): acceso con PIN, Usuarios, Inicio, Clientes, expediente como hoja (`assets/js/ficha.js`), Comisiones (`comisiones.js`), Actualizar con cruce (`actualizar.js`), proforma y carta en PDF (`documentos.js`, `marca.js`), bienvenidas por enviar (`bienvenidas.js`), ZIP y Excel sin librerías (`archivos.js`), página de privacidad (`privacidad.html`), Enviar pendientes en Comisiones y Factibilidad (`factibilidad.js`, `coordenadas.js`, `mapared.js`, `kmz-lector.js`).
@@ -81,7 +81,7 @@ Antes de cada una: explicar en simple y esperar el OK.
    Decidido 09/10 (tercera tanda): la R2 le gustó; se prueba con sus documentos reales de clientes ya decididos y se ajusta; modelo Gemini Pro, el más avanzado, como ajuste cambiable. Diseño de tablas propuesto en `claude/ia-reglas.md` (ia_lecturas, ia_corridas, ia_marcas), falta OK y pasárselo al chat del proyecto. Encaja con lo de v22 (solo archivos vigentes, motivos de Legal, revisión de una sola vez).
    Decidido 09/10 (cuarta tanda): revisión manual sigue; solo el administrador lanza la IA; bandeja de la abogada en Revisión (recibidos para contrato; "Pendiente por firmar" en las dos bandejas). Costo aproximado por cliente (unas 25 páginas): Gemini Pro 0,10 a 0,20 USD; Claude Sonnet 5.5 0,20 a 0,30; Claude Opus 5.5 0,40 a 0,60; por lotes, la mitad. El proveedor queda como ajuste para poder comparar.
    Proveedor: por ahora solo Gemini (el administrador no tiene saldo en la API de Claude). Falta que el administrador entregue la clave de la API de Gemini de la cuenta de pago para guardarla como secreto `GEMINI_API_KEY` en Supabase (nunca en el repo) y que ponga un tope de gasto en Google. Falta la columna para la marca de la IA.
-6. **Módulo de aliados (EL SIGUIENTE)**: primero proponer la lógica (permisos, bloqueos por cartera y TOP, revisión de sus documentos con el mismo motor de IA, dueño de la instalación) con base en `claude/reglas-negocio.md` (sección Aliados) y `claude/aliados-app-vieja.md`, esperar el OK, luego maqueta y pantalla. Consultas viejas con el indicador de instaladas, y sus documentos. Fuente: `privado.aliados_appsheet`.
+6. **Módulo de aliados (EL SIGUIENTE)**: lógica acordada el 09/10 (ver `claude/reglas-negocio.md`, "Decidido 09/10 (módulo de aliados...)"). Maqueta `claude/maquetas/aliados-a1.html` ESPERA APROBACIÓN. Al aprobarla, el administrador pidió hacer todo en una sola corrida, en este orden: (1) IA más rápida (varios archivos a la vez; probar con los 10 clientes ya revisados, mismo resultado); (2) base de aliados (solicitudes, bloqueos al leer el RIF, etiquetas, excepciones, referidos, pagos, buzón, permisos, bitácora, los 79 de `privado.aliados_appsheet` como consultas viejas), con pruebas y septiembre 59/49 antes y después; (3) pantallas según A1. Para enlazar instaladores falta la lista de aliados y cómo salen en las ODI (la trae el administrador); para pagos, el Excel que usan hoy. Correos con hilo y notificaciones: pendiente super urgente, tarea aparte antes de abrir la app a los aliados. Factibilidad para aliados: después.
 
 ## Pendientes que NO son de este repo (se hacen en el chat del proyecto)
 - Hecho el 09/10: los expedientes viejos de aliados ya están en la app (unos 440 archivos de 68 clientes, subidos por "Aliado: nombre", por revisar) con correo y teléfono del representante. Falta una carpeta de aliados con códigos AL- sin cliente identificado.
@@ -97,7 +97,7 @@ Antes de cada una: explicar en simple y esperar el OK.
 - Los nombres salen con ", C.A." en los documentos.
 - Las bienvenidas pendientes cuentan solo el corte en curso.
 
-- Factibilidad: el líder ve solo sus consultas; admin y analistas todas; abogado y aliado no entran.
+- Factibilidad: el líder ve solo sus consultas; admin y analistas todas; abogado no entra. Aliado: decidido 09/10 que sí la usará, después del módulo de aliados.
 - Factibilidad: un polígono que no está en una carpeta de estado (Liberado, Exclusiva, Diseño, Construcción, Permiso VGT) queda fuera y el resumen lo dice; no se usa el color como respaldo.
 - Factibilidad: en iPhone, la ayuda de la lista ofrece Pegar (la hoja de consulta ya no tiene ese botón, solo la nota); no se lee el portapapeles sin que la persona toque.
 - Factibilidad: bajo el texto de Odoo sigue la nota del código de vendedor cuando la orden la crea otra persona.

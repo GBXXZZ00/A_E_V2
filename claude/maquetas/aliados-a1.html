@@ -1,0 +1,815 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Maqueta A1 Aliados</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<style>
+/* Maqueta A1 para usar con clics: módulo de aliados comerciales, referidos y pagos. Todo inventado, nada se guarda. */
+:root{
+  --bg:#FFFFFF; --s2:#F5F6F7; --s3:#ECEEF1; --text:#111315; --text2:#5B636E; --text3:#69717C; --line:#E3E6EA;
+  --rojo:#A32117; --rojo-bg:#FCEDEB; --verde:#11734B; --verde-bg:#E7F5EE; --ambar:#8A5A00; --ambar-bg:#FBF1DC; --azul:#1B3A9E; --azul-bg:#E8ECF9;
+  --morado:#5B3AA6; --morado-bg:#F0EBFA;
+  --velo:rgba(17,19,21,.38); --sombra:0 18px 44px rgba(17,19,21,.16);
+  --ease-out:cubic-bezier(0.23, 1, 0.32, 1);
+  --f:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:var(--f);font-size:15px;line-height:1.45}
+button,input,textarea,select{font:inherit;color:inherit}
+button{border:0;background:none;padding:0;cursor:pointer}
+h1,h2,h3,h4,p{margin:0}
+
+/* Guía de la maqueta */
+.guia{background:var(--azul-bg);color:var(--azul);font-size:13.5px;padding:10px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.guia b{font-weight:800}
+.guia span{flex:1;min-width:220px}
+.guia .seg{background:#fff}
+.guia .reini{height:36px;padding:0 14px;border-radius:999px;background:#fff;font-weight:700;font-size:13px;color:var(--azul)}
+
+/* Barra y navegación */
+.barra{display:flex;align-items:center;gap:16px;padding:12px 22px;border-bottom:1px solid var(--line);position:sticky;top:0;background:#fff;z-index:5}
+.barra .marca{font-weight:800;letter-spacing:.14em;font-size:14px}
+.barra .marca small{font-weight:500;letter-spacing:0;color:var(--text2);font-size:13.5px;margin-left:10px}
+.navpc{display:flex;gap:4px;margin-left:10px}
+.navpc button{padding:8px 14px;border-radius:999px;font-weight:600;font-size:14px;color:var(--text2);min-height:40px}
+.navpc button.on{background:var(--azul-bg);color:var(--azul)}
+.av{margin-left:auto;width:36px;height:36px;border-radius:50%;background:var(--azul);color:#fff;display:grid;place-items:center;font-size:12px;font-weight:700;flex:none}
+.navab{display:none}
+@media (max-width:760px){
+  .navpc{display:none}
+  .barra{padding:12px 16px}
+  .navab{display:flex;position:fixed;left:0;right:0;bottom:0;background:rgba(255,255,255,.97);border-top:1px solid var(--line);padding:8px 6px calc(10px + env(safe-area-inset-bottom));z-index:5}
+  .navab button{flex:1;font-size:11px;font-weight:600;color:var(--text3);min-height:44px}
+  .navab button::before{content:"";display:block;width:46px;height:28px;border-radius:999px;margin:0 auto 3px;background:var(--s2)}
+  .navab button.on{color:var(--azul)} .navab button.on::before{background:var(--azul)}
+  main{padding-bottom:110px !important}
+}
+
+main{max-width:1180px;margin:0 auto;padding:20px 22px 120px}
+@media (max-width:760px){ main{padding:16px 16px 110px} }
+.cab{display:flex;align-items:center;gap:12px}
+.cab h1{font-size:28px;font-weight:800;letter-spacing:-.025em;flex:1}
+.sub{font-size:13.5px;color:var(--text2);margin-top:4px}
+.atajos{display:flex;gap:8px;margin-top:14px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+.atajos::-webkit-scrollbar{display:none}
+.atajos button{height:40px;padding:0 14px;border-radius:999px;background:var(--s2);font-size:13.5px;font-weight:600;color:var(--text2);white-space:nowrap;flex:none}
+.atajos button em{font-style:normal;opacity:.7;margin-left:4px}
+.atajos button.on{background:var(--azul);color:#fff}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:48px;padding:0 22px;border-radius:999px;background:var(--azul);color:#fff;font-weight:700;white-space:nowrap}
+.btn.b2{background:var(--s2);color:var(--text)}
+.btn.chico{height:44px;padding:0 16px;font-size:14px}
+.btn.mini{height:36px;padding:0 12px;font-size:13px}
+.btn[disabled]{background:var(--s3);color:var(--text3);cursor:default}
+.btn:active,.atajos button:active,.fila:active,.caja:active{transform:scale(.97)}
+.btn,.atajos button,.fila,.caja{transition:transform 160ms var(--ease-out)}
+
+.chip{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap;background:var(--s3);color:var(--text2)}
+.chip::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.verde{background:var(--verde-bg);color:var(--verde)} .ambar{background:var(--ambar-bg);color:var(--ambar)} .azul{background:var(--azul-bg);color:var(--azul)} .rojo{background:var(--rojo-bg);color:var(--rojo)} .morado{background:var(--morado-bg);color:var(--morado)}
+
+/* Listas */
+.lista{display:grid;gap:10px;margin-top:14px}
+.fila{display:grid;grid-template-columns:auto minmax(0,2.2fr) minmax(0,1.3fr) minmax(0,1.5fr) minmax(0,1fr);gap:12px;align-items:center;padding:10px 14px;border:1px solid var(--line);border-radius:16px;background:#fff;text-align:left;width:100%;min-height:64px}
+.fila.sinc{grid-template-columns:minmax(0,2.2fr) minmax(0,1.3fr) minmax(0,1.5fr) minmax(0,1fr)}
+.fila.sel{border-color:var(--azul);box-shadow:0 0 0 1px var(--azul) inset;background:#F7F9FE}
+.fila b{display:block;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fila small{display:block;font-size:12.5px;color:var(--text2)}
+.fila .gris{font-size:13px;color:var(--text2)}
+.nuevos{color:var(--azul);font-weight:700}
+.caja{width:44px;height:44px;display:grid;place-items:center;margin:-10px 0 -10px -10px;flex:none}
+.caja i{width:22px;height:22px;border-radius:7px;border:2px solid #B9BFC8;display:grid;place-items:center;background:#fff}
+.caja.on i{background:var(--azul);border-color:var(--azul)}
+.caja.on i::after{content:"";width:10px;height:6px;border:2.5px solid #fff;border-top:0;border-right:0;transform:translate(0,-1px) rotate(-45deg)}
+.prog{display:block;height:6px;border-radius:3px;background:var(--s3);overflow:hidden;margin-top:5px;width:110px}
+.prog i{display:block;height:100%;width:100%;background:var(--azul);transform-origin:left;transition:transform 280ms var(--ease-out)}
+@media (max-width:760px){
+  .fila{grid-template-columns:auto auto minmax(0,1fr);gap:6px 8px;align-items:start}
+  .fila > :nth-child(2),.fila > .c5{grid-column:2 / -1}
+  .fila > .c3{grid-column:2} .fila > .c4{grid-column:3}
+  .fila.sinc{grid-template-columns:auto minmax(0,1fr)}
+  .fila.sinc > :nth-child(1),.fila.sinc > :nth-child(4){grid-column:1 / -1}
+  .fila.sinc > :nth-child(2){grid-column:1} .fila.sinc > :nth-child(3){grid-column:2}
+  .fila .cs{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+}
+.accion{position:fixed;left:50%;transform:translateX(-50%);bottom:18px;width:min(760px,calc(100% - 32px));display:flex;align-items:center;gap:12px;padding:10px 10px 10px 16px;background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:var(--sombra);z-index:4}
+.accion .tx{flex:1;min-width:0;font-size:13px;color:var(--text2)}
+.accion .tx b{display:block;color:var(--text);font-size:15px}
+@media (max-width:760px){ .accion{bottom:calc(78px + env(safe-area-inset-bottom))} .accion .q{display:none} }
+.vacio{text-align:center;padding:40px 12px}
+.vacio b{display:block;font-size:17px;font-weight:800}
+.vacio p{font-size:13.5px;color:var(--text2);margin:6px auto 14px;max-width:38ch}
+
+/* Hojas */
+.velo{position:fixed;inset:0;background:var(--velo);opacity:0;transition:opacity 240ms var(--ease-out)}
+.velo.on{opacity:1}
+.hoja{position:fixed;background:var(--bg);display:flex;flex-direction:column;box-shadow:var(--sombra);top:0;bottom:0;right:0;width:min(580px,100%);transform:translateX(100%);transition:transform 260ms var(--ease-out)}
+.hoja.on{transform:none}
+.hoja.ancha{width:min(620px,100%)}
+@media (max-width:760px){
+  .hoja,.hoja.ancha{top:auto;left:0;width:100%;max-height:94vh;max-height:94dvh;border-radius:26px 26px 0 0;transform:translateY(100%)}
+  .hoja.on{transform:none}
+}
+.asa{width:40px;height:5px;border-radius:3px;background:var(--s3);margin:8px auto 0;flex:none;display:none}
+@media (max-width:760px){ .asa{display:block} }
+.h-cab{display:flex;align-items:flex-start;gap:12px;padding:14px 18px 10px;flex:none;border-bottom:1px solid var(--line)}
+.h-cab .tx{flex:1;min-width:0}
+.h-cab h2{font-size:19px;font-weight:800;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.h-cab p{font-size:13px;color:var(--text2);margin-top:2px}
+.x{width:44px;height:44px;border-radius:50%;background:var(--s2);font-size:20px;flex:none;display:grid;place-items:center}
+.h-cuerpo{flex:1;overflow-y:auto;padding:14px 18px 22px;overscroll-behavior:contain}
+.h-pie{display:flex;gap:10px;padding:12px 18px calc(14px + env(safe-area-inset-bottom));border-top:1px solid var(--line);flex:none;align-items:center}
+.h-pie .btn{flex:1;min-width:0;padding:0 12px}
+.h-pie .falta{flex:1;font-size:13px;color:var(--morado);font-weight:600}
+@media (prefers-reduced-motion:reduce){ .hoja,.velo,.btn,.prog i,.fila,.caja,.atajos button{transition:none} }
+@media (hover:hover) and (pointer:fine){
+  .fila:hover{border-color:#C9CED6}
+  .btn.b2:hover{background:var(--s3)}
+}
+
+/* Contenido de hojas */
+.secc{font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin:18px 0 6px;display:flex;gap:8px;align-items:center}
+.secc:first-child{margin-top:0}
+.caja-s{border:1px solid var(--line);border-radius:16px;padding:4px 14px}
+.it{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 10px;padding:11px 0;border-top:1px solid var(--line);align-items:start}
+.it:first-child{border-top:0}
+.it b{font-size:14.5px;font-weight:700}
+.it p{grid-column:1 / -1;font-size:13px;color:var(--text2)}
+.it .pg{grid-column:1 / -1;font-size:13px;font-weight:600;color:var(--azul)}
+.it .acc{grid-column:1 / -1;display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:4px}
+.exc{grid-column:1 / -1;font-size:12.5px;padding:8px 10px;border-radius:10px;background:var(--s2);color:var(--text2)}
+.exc b{font-size:12.5px;color:var(--text)}
+.veredicto{padding:14px 16px;border-radius:18px;display:grid;gap:2px}
+.veredicto b{font-size:22px;font-weight:800;letter-spacing:-.02em;line-height:1.15}
+.veredicto p{font-size:14px}
+.borr{display:flex;gap:10px;align-items:center;margin-bottom:10px;padding:10px 14px;border-radius:14px;background:var(--s2);font-size:13px;color:var(--text2)}
+.borr b{color:var(--text)}
+.seg{display:inline-flex;padding:3px;border-radius:999px;background:var(--s2);gap:2px}
+.seg button{height:38px;padding:0 14px;border-radius:999px;font-weight:700;font-size:13px;color:var(--text2);white-space:nowrap}
+.seg button.on{background:var(--text);color:#fff}
+.seg button.on.ap{background:var(--verde)} .seg button.on.dv{background:var(--rojo)}
+.lbl{display:block;font-size:13px;font-weight:600;margin:12px 0 6px}
+.campo{width:100%;min-height:44px;padding:10px 14px;border:1.5px solid var(--text);border-radius:14px;background:#fff;font-size:14.5px}
+textarea.campo{min-height:96px;resize:vertical;line-height:1.45}
+select.campo{appearance:none;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%23111315' stroke-width='2'/%3E%3C/svg%3E") no-repeat right 14px center;padding-right:36px}
+.err{font-size:12.5px;color:var(--rojo);margin:6px 2px 0;min-height:18px}
+.nota{font-size:12.5px;color:var(--text3);margin-top:8px}
+.dos{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.4fr);gap:0 10px}
+@media (max-width:520px){ .dos{grid-template-columns:1fr} }
+.hist{display:grid;gap:0}
+.hi{display:flex;gap:10px;padding:10px 0;border-top:1px solid var(--line);font-size:13.5px}
+.hi:first-child{border-top:0}
+.hi::before{content:"";width:9px;height:9px;border-radius:50%;background:var(--s3);margin-top:6px;flex:none}
+.hi.vd::before{background:var(--verde)} .hi.rj::before{background:var(--rojo)} .hi.az::before{background:var(--azul)}
+.hi div{flex:1;min-width:0}
+.hi small{display:block;color:var(--text2);font-size:12.5px}
+.resumen{padding:12px 14px;border-radius:14px;background:var(--s2);font-size:13.5px}
+.resumen b{display:block;font-size:15px}
+.docs .it{grid-template-columns:minmax(0,1fr) auto}
+.toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,20px);opacity:0;width:min(520px,calc(100% - 32px));padding:12px 14px;border-radius:14px;background:var(--text);color:#fff;font-size:13.5px;z-index:999;display:flex;gap:10px;align-items:center;transition:transform 220ms var(--ease-out),opacity 220ms var(--ease-out);pointer-events:none}
+.toast.on{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+.toast span{flex:1}
+.toast button{color:#9DB4FF;font-weight:700;min-height:36px;white-space:nowrap}
+@media (max-width:760px){ .toast{bottom:calc(90px + env(safe-area-inset-bottom))} }
+
+/* ---------- Propio de la maqueta A1 ---------- */
+.guia select{height:36px;border-radius:999px;border:0;padding:0 12px;font-weight:700;font-size:13px;color:var(--azul);background:#fff}
+.chip.gris,.banda.gris,.veredicto.gris{background:var(--s3);color:var(--text2)}
+.grandes{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:12px;margin-top:16px}
+@media (max-width:620px){ .grandes{grid-template-columns:1fr} }
+.grande{display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:18px;border-radius:20px;border:1px solid var(--line);text-align:left;min-height:104px;transition:transform 160ms var(--ease-out)}
+.grande:active{transform:scale(.97)}
+.grande b{font-size:18px;font-weight:800;letter-spacing:-.015em}
+.grande small{font-size:13px;color:var(--text2)}
+.grande.prin{background:var(--azul);border-color:var(--azul);color:#fff}
+.grande.prin small{color:#DCE3F8}
+.titulo2{font-size:17px;font-weight:800;margin:24px 0 2px;letter-spacing:-.01em}
+.fila.tres{grid-template-columns:minmax(0,2.2fr) minmax(0,1.2fr) minmax(0,1.4fr)}
+.fila.cua{grid-template-columns:minmax(0,2.2fr) minmax(0,1.2fr) minmax(0,1.3fr) minmax(0,1.1fr)}
+@media (max-width:760px){
+  .fila.tres,.fila.cua{grid-template-columns:minmax(0,1fr) auto;gap:4px 10px}
+  .fila.tres > :first-child,.fila.cua > :first-child{grid-column:1 / -1}
+  .fila.cua > :nth-child(4){grid-column:1 / -1}
+}
+.banda{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border-radius:16px;margin-bottom:12px}
+.banda b{display:block;font-size:15px}
+.banda p{font-size:13px;margin-top:2px}
+.banda .btn{margin-left:auto;flex:none}
+@media (max-width:520px){ .banda{flex-wrap:wrap} .banda .btn{margin-left:0;width:100%} }
+.casilla .acc .btn{flex:none}
+.pasos{display:grid;gap:0;margin-top:6px}
+.paso{display:flex;gap:12px;padding:12px 0;border-top:1px solid var(--line);align-items:flex-start}
+.paso:first-child{border-top:0}
+.paso i{width:24px;height:24px;border-radius:50%;flex:none;background:var(--s3);display:grid;place-items:center;margin-top:1px}
+.paso.hecho i{background:var(--verde)}
+.paso.hecho i::after{content:"";width:9px;height:5px;border:2.5px solid #fff;border-top:0;border-right:0;transform:translate(0,-1px) rotate(-45deg)}
+.paso.activo i{background:var(--azul);animation:latir 900ms var(--ease-out) infinite alternate}
+.paso.alto i{background:var(--rojo)}
+@keyframes latir{ from{opacity:1} to{opacity:.45} }
+.paso div{flex:1;min-width:0}
+.paso b{display:block;font-size:14.5px}
+.paso small{display:block;font-size:12.5px;color:var(--text2)}
+.paso.espera{opacity:.55}
+.barraG{height:8px;border-radius:4px;background:var(--s3);overflow:hidden;margin:6px 0 4px}
+.barraG i{display:block;height:100%;width:100%;background:var(--azul);transform-origin:left;transition:transform 280ms var(--ease-out)}
+.pend{font-size:12.5px;padding:8px 10px;border-radius:10px;background:var(--ambar-bg);color:var(--ambar);margin-top:10px}
+.solo-pc{display:inline}
+@media (max-width:760px){ .solo-pc{display:none} }
+@media (prefers-reduced-motion:reduce){ .paso.activo i{animation:none} .grande,.barraG i{transition:none} }
+@media (hover:hover) and (pointer:fine){ .grande:hover{border-color:#C9CED6} .grande.prin:hover{border-color:var(--azul)} }
+</style>
+</head>
+<body>
+<div class="guia">
+  <span><b>Maqueta A1 de aliados.</b> Datos inventados, nada se guarda. Como aliado toca "Nueva solicitud", sube el RIF primero y mira el resultado de cartera. Cambia el caso para ver los demás.</span>
+  <span class="seg" id="rol"><button type="button" class="on" data-rol="aliado">Aliado</button><button type="button" data-rol="admin">Administrador</button><button type="button" data-rol="canales">Coord. canales</button><button type="button" data-rol="lider">Líder</button></span>
+  <select id="caso" aria-label="Caso que simula la próxima solicitud">
+    <option value="libre">Caso: cliente libre y completo</option>
+    <option value="recaudos">Caso: recaudos incompletos</option>
+    <option value="obs">Caso: con observaciones</option>
+    <option value="cartera">Caso: cliente en cartera</option>
+    <option value="otro">Caso: en gestión por otro</option>
+    <option value="ilegible">Caso: RIF que no se lee</option>
+  </select>
+  <button type="button" class="reini" data-acc="reiniciar">Reiniciar</button>
+</div>
+<header class="barra">
+  <span class="marca">EMPRESA<small id="marcaSub">Aliados</small></span>
+  <nav class="navpc" id="navpc"></nav>
+  <span class="av" id="av">RN</span>
+</header>
+<main id="main"></main>
+<nav class="navab" id="navab"></nav>
+<div class="toast" id="toast" role="status" aria-live="polite"><span></span><button type="button" hidden></button></div>
+
+<script>
+(function(){
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+  const rifVer = (r) => r ? r[0] + '-' + r.slice(1, 9) + '-' + r.slice(9) : '';
+  const ahora = () => { const d = new Date(); return 'hoy ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); };
+  const lento = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0.4 : 1;
+
+  // Etiquetas: el color es solo para el estado
+  const ETQ = {
+    analizando: ['Analizando', 'azul'], recaudos: ['Recaudos incompletos', 'ambar'], excepcion: ['Excepción solicitada', 'morado'],
+    lista: ['Lista para instalar', 'verde'], listaobs: ['Lista con observaciones', 'verde'], curso: ['Instalación en curso', 'azul'],
+    instalada: ['Instalada', 'verde'], sininst: ['Sin instalar', 'gris'], noprocede: ['No procede', 'rojo'],
+    cartera: ['Cliente en cartera', 'gris'], otro: ['En gestión por otro', 'gris'],
+    referido: ['Referido', 'azul'], refacept: ['Referido aceptado', 'azul'], refinst: ['Referido instalado', 'verde'], refpag: ['Referido pagado', 'gris'], refrech: ['Referido no aceptado', 'gris']
+  };
+  const chip = (k) => '<span class="chip ' + ETQ[k][1] + '">' + esc(ETQ[k][0]) + '</span>';
+  const SIGUE = {
+    analizando: 'La IA está leyendo los documentos. Puedes cerrar esta pantalla: el resultado queda aquí.',
+    recaudos: 'Sube lo que falta o corrige lo marcado. Si no existe, pide una excepción al administrador.',
+    excepcion: 'El administrador revisa tu motivo. Te respondemos por aquí.',
+    lista: 'Puedes instalar. Marca cuándo vas a instalar para reservar el cliente.',
+    listaobs: 'Puedes instalar. Revisa las observaciones, no te frenan.',
+    curso: 'Cuando llegue la orden de instalación con tu nombre pasa sola a Instalada.',
+    instalada: 'Listo. El cliente quedó en la cartera Aliado Comercial a tu nombre.',
+    sininst: 'El cliente quedó libre para otros.',
+    noprocede: 'Esta solicitud se cerró. Lee la respuesta del administrador abajo.',
+    cartera: 'Este cliente ya es de la oficina. Si lo conseguiste tú, refiérelo y te lo pagamos si se instala.',
+    otro: 'Otra persona ya está gestionando este cliente. No se puede instalar ni referir por ahora.'
+  };
+
+  const CASOS = {
+    libre: { cliente: 'Panadería Ejemplo, C.A.', rif: 'J000000011', fin: 'lista' },
+    recaudos: { cliente: 'Ferretería Modelo 2019, C.A.', rif: 'J000000012', fin: 'recaudos' },
+    obs: { cliente: 'Farmacia Prueba Centro, C.A.', rif: 'J000000013', fin: 'listaobs' },
+    cartera: { cliente: 'Distribuidora Inventada, C.A.', rif: 'J000000014', fin: 'cartera' },
+    otro: { cliente: 'Clínica Demo Norte, C.A.', rif: 'J000000015', fin: 'otro' },
+    ilegible: { cliente: '', rif: '', fin: 'ilegible' }
+  };
+
+  const DOCS_EMP = [
+    { id: 'rif_emp', n: 'RIF de la empresa', nota: 'Se lee primero' },
+    { id: 'acta', n: 'Acta constitutiva' },
+    { id: 'asamb', n: 'Actas de asamblea', nota: 'Si hubo cambios de junta, domicilio o nombre', opc: true },
+    { id: 'ced1', n: 'Cédula del representante' },
+    { id: 'rif1', n: 'RIF del representante' }
+  ];
+  const DOCS_NAT = [
+    { id: 'ced1', n: 'Cédula', nota: 'Se lee primero' },
+    { id: 'rif1', n: 'RIF personal' }
+  ];
+
+  let E;
+  function reiniciar(){
+    E = {
+      rol: 'aliado', vista: 'inicio', hojas: [], filtro: 'para_ti', filtroP: 'inst', caso: $('caso').value,
+      sols: [
+        { id: 'AL-0031', cliente: 'Inversiones Ensayo, C.A.', rif: 'J000000021', tipo: 'empresa', plan: 'PYME', aliado: 'Redes Norte', etq: 'recaudos', fecha: '08/10',
+          docs: [ { n: 'RIF de la empresa', ok: true }, { n: 'Acta constitutiva', ok: false, txt: 'El domicilio no coincide con el del RIF. Falta el acta de asamblea de cambio de domicilio.', exc: true },
+                  { n: 'Cédula del representante', ok: false, txt: 'Cédula vencida en 03/2025.', exc: true }, { n: 'RIF del representante', ok: true },
+                  { n: 'Segundo representante', ok: false, txt: 'La junta firma en forma conjunta: faltan la cédula y el RIF del otro director.' },
+                  { n: 'Correo de la empresa', ok: false, txt: 'Falta. Es obligatorio.' } ],
+          hist: [ { f: '08/10 10:12', t: 'Resultado: Recaudos incompletos (4 por corregir).', c: 'rj' }, { f: '08/10 10:11', t: 'RIF leído. Cliente disponible.', c: 'vd' }, { f: '08/10 10:09', t: 'Redes Norte envió la solicitud.', c: 'az' } ] },
+        { id: 'AL-0029', cliente: 'Comercial Ficticia 88, C.A.', rif: 'J000000022', tipo: 'empresa', plan: 'PYME', aliado: 'Redes Norte', etq: 'excepcion', fecha: '07/10',
+          excep: { punto: 'Cédula vencida en 01/2025', motivo: 'El representante tiene la cita del SAIME el 20/10, adjunto el comprobante.' },
+          docs: [ { n: 'RIF de la empresa', ok: true }, { n: 'Acta constitutiva', ok: true }, { n: 'Cédula del representante', ok: false, txt: 'Cédula vencida en 01/2025.', exc: true }, { n: 'RIF del representante', ok: true }, { n: 'Correos y teléfono', ok: true } ],
+          hist: [ { f: '07/10 16:40', t: 'Pidió excepción: El representante tiene la cita del SAIME el 20/10, adjunto el comprobante.', c: 'az' }, { f: '07/10 16:02', t: 'Resultado: Recaudos incompletos (1 por corregir).', c: 'rj' } ] },
+        { id: 'AL-0027', cliente: 'Taller Supuesto, C.A.', rif: 'J000000023', tipo: 'empresa', plan: 'PYME', aliado: 'Redes Norte', etq: 'curso', fecha: '03/10', inst: '10/10',
+          docs: [ { n: 'Expediente completo', ok: true } ], hist: [ { f: '04/10 09:15', t: 'Marcó instalación en curso para el 10/10.', c: 'az' }, { f: '03/10 18:20', t: 'Resultado: Lista para instalar.', c: 'vd' } ] },
+        { id: 'AL-0022', cliente: 'Óptica Imaginaria, C.A.', rif: 'J000000024', tipo: 'empresa', plan: 'PYME', aliado: 'Redes Norte', etq: 'instalada', fecha: '25/09', inst: '30/09', pagada: false,
+          docs: [ { n: 'Expediente completo', ok: true } ], hist: [ { f: '01/10 08:00', t: 'Llegó la orden de instalación con tu nombre. Instalada.', c: 'vd' } ] },
+        { id: 'AL-0019', cliente: 'Lavandería Prueba, C.A.', rif: 'J000000025', tipo: 'empresa', plan: 'Dedicado', aliado: 'Conecta Sur', etq: 'instalada', fecha: '20/09', inst: '27/09', pagada: false,
+          docs: [ { n: 'Expediente completo', ok: true } ], hist: [ { f: '28/09 08:00', t: 'Instalada.', c: 'vd' } ] },
+        { id: 'AL-0017', cliente: 'Bodegón Ejemplar, C.A.', rif: 'J000000026', tipo: 'empresa', plan: 'PYME', aliado: 'Conecta Sur', etq: 'instalada', fecha: '18/09', inst: '24/09', pagada: false,
+          docs: [ { n: 'Expediente completo', ok: true } ], hist: [ { f: '25/09 08:00', t: 'Instalada.', c: 'vd' } ] },
+        { id: 'AL-0014', cliente: 'Papelería Inventiva, C.A.', rif: 'J000000027', tipo: 'empresa', plan: 'PYME', aliado: 'Conecta Sur', etq: 'sininst', fecha: '01/09', motivoFin: 'Pasaron 30 días sin instalación.',
+          docs: [ { n: 'Expediente completo', ok: true } ], hist: [ { f: '01/10 00:00', t: 'Pasaron 30 días sin instalación. El cliente quedó libre.', c: '' } ] },
+        { id: 'AL-0011', cliente: 'Distribuidora Inventada, C.A.', rif: 'J000000014', tipo: 'empresa', plan: 'PYME', aliado: 'Conecta Sur', etq: 'cartera', fecha: '30/08',
+          docs: [ { n: 'RIF de la empresa', ok: true } ], hist: [ { f: '30/08 11:00', t: 'RIF leído. Cliente en cartera de un líder.', c: '' } ] }
+      ],
+      refs: [
+        { id: 'RF-008', cliente: 'Restaurante Muestra, C.A.', rif: 'J000000031', aliado: 'Redes Norte', etq: 'referido', fecha: '09/10', lider: '', tel: '0412 000 0001' },
+        { id: 'RF-006', cliente: 'Consultora Ficción, C.A.', rif: 'J000000032', aliado: 'Conecta Sur', etq: 'refinst', fecha: '29/09', lider: 'Líder Uno', inst: 'hace 20 horas', horas: 52, porLider: true },
+        { id: 'RF-004', cliente: 'Gimnasio Ejemplo, C.A.', rif: 'J000000033', aliado: 'Redes Norte', etq: 'refinst', fecha: '20/09', lider: 'Líder Dos', inst: 'hace 4 días', horas: -24, porLider: true },
+        { id: 'RF-002', cliente: 'Agencia Prueba, C.A.', rif: 'J000000034', aliado: 'Redes Norte', etq: 'refpag', fecha: '10/09', lider: 'Líder Uno', inst: '15/09' }
+      ],
+      sinPermiso: [ { id: 'SP1', cliente: 'Kiosco Supuesto, C.A.', rif: 'J000000041', inst: 'Conecta Sur', odi: 'ODI 0000481', fecha: '06/10', visto: false } ],
+      viejos: [
+        { cliente: 'Vivero Ejemplo, C.A.', rif: 'J000000051', aliado: 'Redes Norte', sit: 'Instalado' },
+        { cliente: 'Estudio Demo, C.A.', rif: 'J000000052', aliado: 'Conecta Sur', sit: 'Pendiente por instalación' },
+        { cliente: 'Licorería Prueba, C.A.', rif: 'J000000053', aliado: 'Conecta Sur', sit: 'Consulta' }
+      ],
+      nueva: null, n: 32
+    };
+  }
+  const sol = (id) => E.sols.find((s) => s.id === id);
+  const ref = (id) => E.refs.find((r) => r.id === id);
+  const yo = () => E.rol === 'canales' ? 'Canales' : 'Redes Norte';
+
+  // ---------- Navegación ----------
+  const NAV = {
+    aliado: [['inicio', 'Inicio'], ['solicitudes', 'Solicitudes'], ['referidos', 'Referidos']],
+    canales: [['inicio', 'Inicio'], ['solicitudes', 'Solicitudes'], ['pagos', 'Pagos'], ['referidos', 'Referidos']],
+    admin: [['aliados', 'Aliados'], ['pagos', 'Pagos'], ['instalados', 'Instalados por aliados']],
+    lider: [['instalados', 'Instalados por aliados']]
+  };
+  function pintarNav(){
+    const it = NAV[E.rol];
+    const h = it.map((x) => '<button type="button" data-ir="' + x[0] + '" class="' + (E.vista === x[0] ? 'on' : '') + '">' + esc(x[1]) + '</button>').join('');
+    $('navpc').innerHTML = h; $('navab').innerHTML = h;
+    $('av').textContent = { aliado: 'RN', canales: 'CC', admin: 'AD', lider: 'L1' }[E.rol];
+    $('marcaSub').textContent = { aliado: 'Aliados', canales: 'Canales', admin: 'Empresas', lider: 'Empresas' }[E.rol];
+  }
+  function pintar(){
+    pintarNav();
+    const v = E.vista;
+    let h = '';
+    if(v === 'inicio') h = vistaInicio();
+    else if(v === 'solicitudes') h = vistaSolicitudes();
+    else if(v === 'referidos') h = vistaReferidos();
+    else if(v === 'aliados') h = vistaAliados();
+    else if(v === 'pagos') h = vistaPagos();
+    else if(v === 'instalados') h = vistaInstalados();
+    $('main').innerHTML = h;
+  }
+
+  function filaSol(s, conAliado){
+    return '<button type="button" class="fila ' + (conAliado ? 'cua' : 'tres') + '" data-abrir="sol" data-id="' + esc(s.id) + '">' +
+      '<span><b>' + esc(s.cliente || 'RIF sin leer') + '</b><small>' + esc(rifVer(s.rif)) + ' · ' + esc(s.id) + '</small></span>' +
+      (conAliado ? '<span class="gris">' + esc(s.aliado) + '</span>' : '') +
+      '<span class="cs">' + chip(s.etq) + '</span>' +
+      '<span class="gris">' + esc(s.inst && (s.etq === 'curso') ? 'Instala el ' + s.inst : 'Desde el ' + s.fecha) + '</span></button>';
+  }
+  const mias = () => E.sols.filter((s) => s.aliado === yo());
+
+  // ---------- Aliado y coordinación de canales ----------
+  function vistaInicio(){
+    const m = mias();
+    const toca = m.filter((s) => ['recaudos', 'lista', 'listaobs', 'curso'].indexOf(s.etq) >= 0);
+    return '<div class="cab"><h1>Hola, ' + esc(yo()) + '</h1></div><p class="sub">Sube los documentos del cliente y en minutos sabes si puedes instalarlo.</p>' +
+      '<div class="grandes">' +
+      '<button type="button" class="grande prin" data-acc="nueva"><b>Nueva solicitud</b><small>Sube los documentos y te decimos si puedes instalar</small></button>' +
+      '<button type="button" class="grande" data-abrir="referir"><b>Referir cliente</b><small>Pásalo a la oficina y cobra si se instala</small></button>' +
+      '</div>' +
+      '<h2 class="titulo2">Lo que te toca</h2>' +
+      (toca.length ? '<div class="lista">' + toca.map((s) => filaSol(s)).join('') + '</div>'
+        : '<div class="vacio"><b>Nada pendiente</b><p>Cuando una solicitud necesite algo de ti, aparece aquí.</p></div>');
+  }
+  function vistaSolicitudes(){
+    const m = mias();
+    const filtros = [['todas', 'Todas'], ['recaudos', 'Recaudos incompletos'], ['lista', 'Listas'], ['curso', 'En curso'], ['instalada', 'Instaladas'], ['cerradas', 'Cerradas']];
+    const f = E.filtroA || 'todas';
+    const pasa = (s) => f === 'todas' || (f === 'lista' ? ['lista', 'listaobs'].indexOf(s.etq) >= 0 : f === 'cerradas' ? ['sininst', 'noprocede', 'cartera', 'otro'].indexOf(s.etq) >= 0 : s.etq === f);
+    const l = m.filter(pasa);
+    return '<div class="cab"><h1>Mis solicitudes</h1><button type="button" class="btn chico" data-acc="nueva">Nueva solicitud</button></div>' +
+      '<div class="atajos">' + filtros.map((x) => '<button type="button" data-filtroa="' + x[0] + '" class="' + (f === x[0] ? 'on' : '') + '">' + esc(x[1]) + '<em>' + m.filter((s) => x[0] === 'todas' || (x[0] === 'lista' ? ['lista', 'listaobs'].indexOf(s.etq) >= 0 : x[0] === 'cerradas' ? ['sininst', 'noprocede', 'cartera', 'otro'].indexOf(s.etq) >= 0 : s.etq === x[0])).length + '</em></button>').join('') + '</div>' +
+      (l.length ? '<div class="lista">' + l.map((s) => filaSol(s)).join('') + '</div>' : '<div class="vacio"><b>No hay solicitudes aquí</b><p>Cambia el filtro o crea una nueva solicitud.</p></div>');
+  }
+  function filaRef(r, admin){
+    const pago = r.etq === 'refinst' ? (r.horas >= 0 ? 'Quedan ' + r.horas + ' h para pagar' : 'Pago atrasado') : '';
+    return '<button type="button" class="fila cua" data-abrir="ref" data-id="' + esc(r.id) + '">' +
+      '<span><b>' + esc(r.cliente) + '</b><small>' + esc(rifVer(r.rif)) + ' · ' + esc(r.id) + '</small></span>' +
+      '<span class="gris">' + esc(admin ? r.aliado : (r.lider ? 'Lo lleva ' + r.lider : 'Desde el ' + r.fecha)) + '</span>' +
+      '<span class="cs">' + chip(r.etq) + (pago && r.horas < 0 ? ' <span class="chip rojo">Pago atrasado</span>' : '') + '</span>' +
+      '<span class="gris">' + esc(pago && r.horas >= 0 ? pago : 'Desde el ' + r.fecha) + '</span></button>';
+  }
+  function vistaReferidos(){
+    const l = E.refs.filter((r) => r.aliado === yo() || E.rol === 'canales');
+    return '<div class="cab"><h1>Referidos</h1><button type="button" class="btn chico" data-abrir="referir">' + (E.rol === 'canales' ? 'Cargar referido' : 'Referir cliente') + '</button></div>' +
+      '<p class="sub">' + (E.rol === 'canales' ? 'Los referidos de todos los aliados. El hilo sigue con tu correo.' : 'Se paga con dos residenciales cuando el cliente se instala.') + '</p>' +
+      (l.length ? '<div class="lista">' + l.map((r) => filaRef(r, E.rol === 'canales')).join('') + '</div>' : '<div class="vacio"><b>Todavía no has referido clientes</b><p>Si consigues un cliente que ya es de la oficina, refiérelo.</p></div>');
+  }
+
+  // ---------- Administrador ----------
+  const BANDEJAS = [
+    ['para_ti', 'Para ti'], ['analizando', 'Analizando'], ['recaudos', 'Recaudos incompletos'], ['listas', 'Listas para instalar'], ['curso', 'En curso'],
+    ['instalada', 'Instaladas'], ['sininst', 'Sin instalar'], ['bloq', 'Intentos bloqueados'], ['refs', 'Referidos'], ['sinp', 'Instalado sin permiso'], ['viejas', 'Consultas viejas']
+  ];
+  function cuenta(k){
+    if(k === 'para_ti') return E.sols.filter((s) => s.etq === 'excepcion').length + E.refs.filter((r) => r.etq === 'referido').length + E.sinPermiso.filter((x) => !x.visto).length;
+    if(k === 'listas') return E.sols.filter((s) => ['lista', 'listaobs'].indexOf(s.etq) >= 0).length;
+    if(k === 'bloq') return E.sols.filter((s) => ['cartera', 'otro'].indexOf(s.etq) >= 0).length;
+    if(k === 'refs') return E.refs.length;
+    if(k === 'sinp') return E.sinPermiso.length;
+    if(k === 'viejas') return E.viejos.length;
+    return E.sols.filter((s) => s.etq === k).length;
+  }
+  function vistaAliados(){
+    const f = E.filtro;
+    let cuerpo = '';
+    if(f === 'para_ti'){
+      const ex = E.sols.filter((s) => s.etq === 'excepcion'), rf = E.refs.filter((r) => r.etq === 'referido'), sp = E.sinPermiso.filter((x) => !x.visto);
+      cuerpo = (ex.length ? '<h2 class="titulo2">Excepciones por responder</h2><div class="lista">' + ex.map((s) => filaSol(s, true)).join('') + '</div>' : '') +
+        (rf.length ? '<h2 class="titulo2">Referidos por aceptar</h2><div class="lista">' + rf.map((r) => filaRef(r, true)).join('') + '</div>' : '') +
+        (sp.length ? '<h2 class="titulo2">Instalado sin permiso</h2><div class="lista">' + sp.map(filaSinp).join('') + '</div>' : '');
+      if(!cuerpo) cuerpo = '<div class="vacio"><b>No tienes nada por responder</b><p>Las excepciones, referidos e instalaciones sin permiso te aparecen aquí.</p></div>';
+    } else if(f === 'refs') cuerpo = '<div class="lista">' + E.refs.map((r) => filaRef(r, true)).join('') + '</div>';
+    else if(f === 'sinp') cuerpo = '<p class="sub">Órdenes de instalación de un aliado sin solicitud aprobada. Llegan solas con cada carga en Actualizar.</p>' + (E.sinPermiso.length ? '<div class="lista">' + E.sinPermiso.map(filaSinp).join('') + '</div>' : '<div class="vacio"><b>Ninguna</b><p>Todo lo que instalaron los aliados tenía permiso.</p></div>');
+    else if(f === 'viejas') cuerpo = '<p class="sub">Los 79 casos de la app vieja (aquí, tres de ejemplo). Sus documentos ya están en el expediente.</p><div class="lista">' + E.viejos.map((x) =>
+      '<div class="fila tres"><span><b>' + esc(x.cliente) + '</b><small>' + esc(rifVer(x.rif)) + '</small></span><span class="gris">' + esc(x.aliado) + '</span><span class="cs"><span class="chip ' + (x.sit === 'Instalado' ? 'verde' : x.sit === 'Consulta' ? 'gris' : 'ambar') + '">' + esc(x.sit) + '</span></span></div>').join('') + '</div>';
+    else {
+      const l = E.sols.filter((s) => f === 'listas' ? ['lista', 'listaobs'].indexOf(s.etq) >= 0 : f === 'bloq' ? ['cartera', 'otro'].indexOf(s.etq) >= 0 : s.etq === f);
+      cuerpo = l.length ? '<div class="lista">' + l.map((s) => filaSol(s, true)).join('') + '</div>' : '<div class="vacio"><b>No hay solicitudes aquí</b><p>Prueba con otra bandeja.</p></div>';
+    }
+    return '<div class="cab"><h1>Aliados comerciales</h1></div><p class="sub">Solo tú ves las solicitudes de todos los aliados.</p>' +
+      '<div class="atajos">' + BANDEJAS.map((b) => '<button type="button" data-filtro="' + b[0] + '" class="' + (f === b[0] ? 'on' : '') + '">' + esc(b[1]) + '<em>' + cuenta(b[0]) + '</em></button>').join('') + '</div>' + cuerpo;
+  }
+  function filaSinp(x){
+    return '<button type="button" class="fila cua" data-abrir="sinp" data-id="' + esc(x.id) + '"><span><b>' + esc(x.cliente) + '</b><small>' + esc(rifVer(x.rif)) + ' · ' + esc(x.odi) + '</small></span>' +
+      '<span class="gris">Instaló ' + esc(x.inst) + '</span><span class="cs">' + (x.visto ? '<span class="chip gris">Revisado</span>' : '<span class="chip rojo">Sin permiso</span>') + '</span><span class="gris">' + esc(x.fecha) + '</span></button>';
+  }
+
+  // ---------- Pagos (administrador y coordinación de canales) ----------
+  const porPagar = () => E.sols.filter((s) => s.etq === 'instalada' && s.plan === 'PYME' && !s.pagada);
+  function vistaPagos(){
+    const f = E.filtroP;
+    const inst = porPagar(), refs = E.refs.filter((r) => r.etq === 'refinst');
+    let cuerpo;
+    if(f === 'inst'){
+      cuerpo = '<div class="banda azul"><div><b>Solo PYME instaladas por el mismo aliado de la solicitud</b><p>No entran dedicados, eventos ni lo que instaló un líder u otro aliado.</p></div><button type="button" class="btn chico b2" data-acc="excel">Descargar Excel</button></div>' +
+        (inst.length ? '<div class="lista">' + inst.map((s) => '<div class="fila cua"><span><b>' + esc(s.cliente) + '</b><small>' + esc(rifVer(s.rif)) + ' · ' + esc(s.id) + '</small></span><span class="gris">' + esc(s.aliado) + '</span><span class="gris">Instalada el ' + esc(s.inst) + '</span><span><button type="button" class="btn mini" data-acc="pagarInst" data-id="' + esc(s.id) + '">Marcar pagado</button></span></div>').join('') + '</div>'
+          : '<div class="vacio"><b>No hay instalaciones por pagar</b><p>Aparecen solas cuando llega la orden de instalación del aliado.</p></div>');
+    } else {
+      cuerpo = '<p class="sub">Se pagan con dos residenciales. Hay 72 horas desde que se instala el cliente.</p>' +
+        (refs.length ? '<div class="lista">' + refs.map((r) => '<div class="fila cua"><span><b>' + esc(r.cliente) + '</b><small>' + esc(rifVer(r.rif)) + ' · ' + esc(r.id) + '</small></span><span class="gris">' + esc(r.aliado) + '</span><span class="cs">' + (r.horas >= 0 ? '<span class="chip azul">Quedan ' + r.horas + ' h</span>' : '<span class="chip rojo">Pago atrasado</span>') + '</span><span><button type="button" class="btn mini" data-acc="pagarRef" data-id="' + esc(r.id) + '">Marcar pagado</button></span></div>').join('') + '</div>'
+          : '<div class="vacio"><b>No hay referidos por pagar</b><p>Aparecen cuando el cliente referido se instala.</p></div>');
+    }
+    return '<div class="cab"><h1>Pagos de aliados</h1></div><p class="sub">Lo pagan el administrador y la coordinación de canales. Aparte del corte de los líderes.</p>' +
+      '<div class="atajos"><button type="button" data-filtrop="inst" class="' + (f === 'inst' ? 'on' : '') + '">Instalaciones PYME por pagar<em>' + inst.length + '</em></button><button type="button" data-filtrop="refs" class="' + (f === 'refs' ? 'on' : '') + '">Referidos por pagar<em>' + refs.length + '</em></button></div>' + cuerpo;
+  }
+
+  // ---------- Equipo ----------
+  function vistaInstalados(){
+    const l = E.sols.filter((s) => s.etq === 'instalada');
+    return '<div class="cab"><h1>Instalados por aliados</h1></div><p class="sub">Para que todo el equipo sepa qué clientes instalaron los aliados. Solo para ver.</p>' +
+      '<div class="lista">' + l.map((s) => '<div class="fila cua"><span><b>' + esc(s.cliente) + '</b><small>' + esc(rifVer(s.rif)) + '</small></span><span class="gris">' + esc(s.aliado) + '</span><span class="cs"><span class="chip verde">Instalada</span></span><span class="gris">' + esc(s.inst) + ' · ' + esc(s.plan) + '</span></div>').join('') + '</div>';
+  }
+
+  // ---------- Hojas ----------
+  function abrirHoja(tipo, id, extra){
+    const z = 20 + E.hojas.length * 2;
+    const velo = document.createElement('div'); velo.className = 'velo'; velo.style.zIndex = z; velo.dataset.acc = 'cerrarArriba';
+    const h = document.createElement('section'); h.className = 'hoja' + (tipo === 'sol' || tipo === 'nueva' ? ' ancha' : ''); h.style.zIndex = z + 1; h.setAttribute('role', 'dialog'); h.setAttribute('aria-modal', 'true');
+    document.body.appendChild(velo); document.body.appendChild(h);
+    const hoja = { tipo, id, extra: extra || {}, el: h, velo };
+    E.hojas.push(hoja);
+    pintarHoja(hoja);
+    requestAnimationFrame(() => requestAnimationFrame(() => { velo.classList.add('on'); h.classList.add('on'); }));
+    history.pushState({ hoja: E.hojas.length }, '');
+  }
+  function cerrarArriba(desdeAtras){
+    const hoja = E.hojas.pop(); if(!hoja) return;
+    if(hoja.tipo === 'nueva') E.nueva = null;
+    hoja.el.classList.remove('on'); hoja.velo.classList.remove('on');
+    setTimeout(() => { hoja.el.remove(); hoja.velo.remove(); }, 270);
+    if(!desdeAtras){ ignorarAtras++; history.back(); }
+  }
+  let ignorarAtras = 0;
+  window.addEventListener('popstate', () => { if(ignorarAtras){ ignorarAtras--; return; } if(E.hojas.length) cerrarArriba(true); });
+  function refrescarHojas(){ E.hojas.forEach((h) => { const c = h.el.querySelector('.h-cuerpo'); const y = c ? c.scrollTop : 0; pintarHoja(h); const c2 = h.el.querySelector('.h-cuerpo'); if(c2) c2.scrollTop = y; }); }
+  function cab(t, s){ return '<div class="asa"></div><div class="h-cab"><div class="tx"><h2>' + esc(t) + '</h2><p>' + esc(s) + '</p></div><button type="button" class="x" data-acc="cerrarArriba" aria-label="Cerrar">×</button></div>'; }
+  function pintarHoja(h){
+    const m = { nueva: hojaNueva, sol: hojaSol, excep: hojaExcep, responder: hojaResponder, curso: hojaCurso, noinst: hojaNoInst, referir: hojaReferir, ref: hojaRef, sinp: hojaSinp };
+    h.el.innerHTML = m[h.tipo](h);
+  }
+
+  // Nueva solicitud: el RIF se lee primero y el resultado de cartera sale mientras se suben los demás
+  function nuevaVacia(){
+    const caso = CASOS[E.caso];
+    return { tipo: 'empresa', caso: E.caso, est: {}, rifEstado: null, campos: { correo: '', tel: '', correoEmp: '' }, cliente: caso.cliente, rif: caso.rif };
+  }
+  function bandaCartera(n){
+    if(!n.rifEstado) return '<div class="banda gris"><div><b>Empieza por el ' + (n.tipo === 'empresa' ? 'RIF de la empresa' : 'la cédula') + '</b><p>Con eso te decimos al momento si el cliente está disponible, mientras subes lo demás.</p></div></div>';
+    if(n.rifEstado === 'leyendo') return '<div class="banda azul"><div><b>Leyendo el RIF y revisando la cartera…</b><p>Puedes seguir subiendo los demás documentos.</p></div></div>';
+    if(n.rifEstado === 'ilegible') return '<div class="banda ambar"><div><b>No pudimos leer el RIF</b><p>Sube una foto más clara, con buena luz y sin cortes.</p></div></div>';
+    if(n.rifEstado === 'libre') return '<div class="banda verde"><div><b>Cliente disponible: ' + esc(n.cliente) + '</b><p>' + esc(rifVer(n.rif)) + '. Sigue subiendo los documentos; la IA ya los está leyendo.</p></div></div>';
+    if(n.rifEstado === 'cartera') return '<div class="banda gris"><div><b>Cliente en cartera</b><p>' + esc(n.cliente) + ' ya es de la oficina. No hace falta subir más: refiérelo y te lo pagamos si se instala.</p></div><button type="button" class="btn chico" data-acc="referirDesde">Referir cliente</button></div>';
+    return '<div class="banda gris"><div><b>En gestión por otro</b><p>Otra persona ya está gestionando ' + esc(n.cliente.replace(/\.$/, '')) + '. No se puede instalar ni referir por ahora.</p></div></div>';
+  }
+  function hojaNueva(){
+    const n = E.nueva;
+    const docs = n.tipo === 'empresa' ? DOCS_EMP : DOCS_NAT;
+    const bloq = n.rifEstado === 'cartera' || n.rifEstado === 'otro';
+    const primero = docs[0].id;
+    const fila = (d) => {
+      const st = n.est[d.id];
+      const off = bloq || (d.id !== primero && !n.rifEstado);
+      const estado = st === 'leyendo' ? '<span class="chip azul">Leyendo</span>' : st === 'ok' ? '<span class="chip verde">Leído</span>' : st === 'mal' ? '<span class="chip ambar">No se lee</span>' : (d.opc ? '<span class="chip gris">Si aplica</span>' : '<span class="chip gris">Falta</span>');
+      return '<div class="it casilla"><b>' + esc(d.n) + '</b>' + estado + (d.nota ? '<p>' + esc(d.nota) + '</p>' : '') +
+        '<div class="acc"><button type="button" class="btn mini ' + (st ? 'b2' : '') + '" data-acc="subir" data-d="' + d.id + '"' + (off || st === 'leyendo' ? ' disabled' : '') + '>' + (st === 'leyendo' ? 'Subiendo…' : st ? 'Subir de nuevo' : 'Subir') + '</button></div></div>';
+    };
+    const campos = n.tipo === 'empresa'
+      ? [['correo', 'Correo del representante', 'email'], ['tel', 'Teléfono del representante', 'tel'], ['correoEmp', 'Correo de la empresa', 'email']]
+      : [['tel', 'Teléfono', 'tel'], ['correo', 'Correo', 'email']];
+    const faltan = docs.filter((d) => !d.opc && n.est[d.id] !== 'ok').map((d) => d.n).concat(campos.filter((c) => !n.campos[c[0]].trim()).map((c) => c[1]));
+    return cab('Nueva solicitud', 'Sube los documentos del cliente') +
+      '<div class="h-cuerpo">' +
+      '<span class="seg" style="margin-bottom:12px"><button type="button" data-tipo="empresa" class="' + (n.tipo === 'empresa' ? 'on' : '') + '"' + (n.rifEstado ? ' disabled' : '') + '>Empresa</button><button type="button" data-tipo="natural" class="' + (n.tipo === 'natural' ? 'on' : '') + '"' + (n.rifEstado ? ' disabled' : '') + '>Persona natural</button></span>' +
+      bandaCartera(n) +
+      '<div class="secc">Documentos</div><div class="caja-s">' + docs.map(fila).join('') +
+      (n.tipo === 'empresa' ? '<div class="it"><b>Otro representante</b><p>Si la junta firma en forma conjunta o quien firma es otro director, súbelo aquí.</p><div class="acc"><button type="button" class="btn mini b2" data-acc="otroRep"' + (bloq || !n.rifEstado ? ' disabled' : '') + '>Agregar representante</button></div></div>' : '') + '</div>' +
+      '<div class="secc">Contacto</div>' +
+      campos.map((c) => '<label class="lbl" for="c_' + c[0] + '">' + esc(c[1]) + '</label><input class="campo" id="c_' + c[0] + '" data-campo="' + c[0] + '" type="' + c[2] + '" value="' + esc(n.campos[c[0]]) + '"' + (bloq ? ' disabled' : '') + '><div class="err"></div>').join('') +
+      '</div>' +
+      '<div class="h-pie">' + (bloq ? '<span class="falta">Este cliente no se puede pedir.</span><button type="button" class="btn b2" data-acc="cerrarArriba">Cerrar</button>'
+        : '<span class="falta" id="faltaTx">' + (faltan.length ? 'Falta: ' + esc(faltan.slice(0, 2).join(', ')) + (faltan.length > 2 ? ' y ' + (faltan.length - 2) + ' más' : '') : '') + '</span><button type="button" class="btn" data-acc="enviar"' + (n.rifEstado === 'libre' ? '' : ' disabled') + '>Enviar solicitud</button>') +
+      '</div>';
+  }
+
+  // Detalle de la solicitud (aliado y administrador)
+  function hojaSol(h){
+    const s = sol(h.id);
+    const admin = E.rol === 'admin';
+    const k = s.etq;
+    let acciones = '';
+    if(s.carga){
+      const c = s.carga;
+      return cab(s.cliente, rifVer(s.rif) + ' · ' + s.id) + '<div class="h-cuerpo">' +
+        '<div class="veredicto verde"><b>Cliente disponible</b><p>El RIF se leyó primero. Ahora revisamos lo demás.</p></div>' +
+        '<div class="secc">Revisando tu solicitud</div><div class="barraG"><i style="transform:scaleX(' + (c.paso / 4).toFixed(2) + ')"></i></div>' +
+        '<div class="pasos">' +
+        paso(c.paso, 0, 'RIF leído', esc(s.cliente) + ', ' + esc(rifVer(s.rif))) +
+        paso(c.paso, 1, 'Cartera revisada', 'No es TOP, no tiene orden abierta ni otro aliado') +
+        paso(c.paso, 2, 'Leyendo documentos', c.paso >= 2 ? (c.leidos + ' de ' + c.total + ' leídos') : 'Los que ya se leyeron mientras subías no se vuelven a leer') +
+        paso(c.paso, 3, 'Revisando firmantes, junta y actas', 'Mismas reglas de los contratos') +
+        paso(c.paso, 4, 'Armando el resultado', '') +
+        '</div><p class="nota">Puedes cerrar esta pantalla. El resultado queda en Mis solicitudes.</p></div>' +
+        '<div class="h-pie"><button type="button" class="btn b2" data-acc="cerrarArriba">Seguir en otra cosa</button></div>';
+    }
+    if(!admin){
+      if(k === 'recaudos') acciones = '<button type="button" class="btn chico" data-acc="pedirExc">Pedir excepción</button><button type="button" class="btn chico b2" data-acc="whats">Escribir al administrador</button>';
+      else if(k === 'lista' || k === 'listaobs') acciones = '<button type="button" class="btn chico" data-abrir="curso" data-id="' + esc(s.id) + '">Marcar instalación en curso</button>';
+      else if(k === 'curso') acciones = s.vencio ? '<button type="button" class="btn chico" data-acc="siInst">Sí, ya instalé</button><button type="button" class="btn chico b2" data-abrir="noinst" data-id="' + esc(s.id) + '">No se instaló</button>'
+        : '<button type="button" class="btn chico b2" data-abrir="curso" data-id="' + esc(s.id) + '">Cambiar fecha</button><button type="button" class="btn chico b2" data-abrir="noinst" data-id="' + esc(s.id) + '">No se instaló</button><button type="button" class="btn chico b2" data-acc="simFecha">Simular: llegó la fecha</button>';
+      else if(k === 'cartera') acciones = '<button type="button" class="btn chico" data-acc="referirSol">Referir cliente</button>';
+      else if(k === 'excepcion') acciones = '<button type="button" class="btn chico b2" data-acc="whats">Escribir al administrador</button>';
+    } else {
+      if(k === 'excepcion') acciones = '<button type="button" class="btn chico" data-abrir="responder" data-id="' + esc(s.id) + '" data-modo="admitir">Admitir excepción</button><button type="button" class="btn chico b2" data-abrir="responder" data-id="' + esc(s.id) + '" data-modo="negar">Negar</button>';
+      else if(['recaudos', 'lista', 'listaobs', 'curso'].indexOf(k) >= 0) acciones = '<button type="button" class="btn chico b2" data-abrir="responder" data-id="' + esc(s.id) + '" data-modo="noprocede">Marcar No procede</button>';
+    }
+    const color = ETQ[k][1] === 'gris' ? 'gris' : ETQ[k][1];
+    const malos = s.docs.filter((d) => !d.ok).length;
+    return cab(s.cliente, rifVer(s.rif) + ' · ' + s.id + (admin ? ' · ' + s.aliado : '')) +
+      '<div class="h-cuerpo">' +
+      '<div class="veredicto ' + color + '"><b>' + esc(ETQ[k][0]) + '</b><p>' + esc(k === 'recaudos' ? malos + ' por corregir. ' + SIGUE[k] : k === 'curso' ? 'Instalas el ' + s.inst + '. ' + SIGUE[k] : k === 'sininst' ? (s.motivoFin || '') + ' ' + SIGUE[k] : SIGUE[k]) + '</p></div>' +
+      (s.excep ? '<div class="exc" style="margin-top:10px"><b>Excepción pedida: ' + esc(s.excep.punto) + '.</b> ' + esc(s.excep.motivo) + '</div>' : '') +
+      (s.resp ? '<div class="exc" style="margin-top:10px"><b>Respuesta del administrador:</b> ' + esc(s.resp) + '</div>' : '') +
+      (acciones ? '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">' + acciones + '</div>' : '') +
+      (admin && (k === 'lista' || k === 'listaobs') ? '<div class="pend">Correo de aprobación al aliado: pendiente urgente, llega con las notificaciones.</div>' : '') +
+      '<div class="secc">Documentos</div><div class="caja-s docs">' + s.docs.map((d, i) =>
+        '<div class="it"><b>' + esc(d.n) + '</b>' + (d.ok ? '<span class="chip verde">Bien</span>' : d.leyendo ? '<span class="chip azul">Leyendo</span>' : '<span class="chip ' + (d.obs ? 'verde' : 'ambar') + '">' + (d.obs ? 'Observación' : 'Por corregir') + '</span>') +
+        (d.txt && !d.ok ? '<p>' + esc(d.txt) + '</p>' : '') +
+        (!admin && !d.ok && !d.obs && k === 'recaudos' ? '<div class="acc"><button type="button" class="btn mini" data-acc="resubir" data-i="' + i + '"' + (d.leyendo ? ' disabled' : '') + '>' + (d.leyendo ? 'Subiendo…' : 'Subir de nuevo') + '</button></div>' : '') + '</div>').join('') + '</div>' +
+      '<div class="secc">Historial</div><div class="hist">' + s.hist.map((x) => '<div class="hi ' + esc(x.c) + '"><div>' + esc(x.t) + '<small>' + esc(x.f) + '</small></div></div>').join('') + '</div>' +
+      '</div>';
+  }
+  function paso(actual, i, t, s){
+    const cls = actual > i ? 'hecho' : actual === i ? 'activo' : 'espera';
+    return '<div class="paso ' + cls + '"><i></i><div><b>' + esc(t) + '</b>' + (s ? '<small>' + s + '</small>' : '') + '</div></div>';
+  }
+
+  function hojaExcep(h){
+    const s = sol(h.id);
+    const pts = s.docs.filter((d) => !d.ok && d.exc);
+    return cab('Pedir excepción', s.cliente) + '<div class="h-cuerpo">' +
+      (pts.length ? '<label class="lbl" for="exPunto">Qué quieres que se acepte</label><select class="campo" id="exPunto">' + pts.map((d) => '<option>' + esc(d.txt.replace(/\.$/, '')) + '</option>').join('') + '</select>'
+        : '<div class="banda ambar"><div><b>Lo que falta no admite excepción</b><p>Faltan documentos o contactos obligatorios: súbelos. Si igual quieres explicarlo, escribe al administrador.</p></div></div>') +
+      '<label class="lbl" for="exMot">Motivo</label><textarea class="campo" id="exMot"' + (pts.length ? '' : ' disabled') + '></textarea><div class="err" id="exErr"></div>' +
+      '<p class="nota">Al administrador le llega tu pedido. La solicitud queda en espera hasta que responda.</p></div>' +
+      '<div class="h-pie"><button type="button" class="btn b2" data-acc="cerrarArriba">Cancelar</button><button type="button" class="btn" data-acc="enviarExc"' + (pts.length ? '' : ' disabled') + '>Enviar pedido</button></div>';
+  }
+  function hojaResponder(h){
+    const s = sol(h.id); const modo = h.extra.modo;
+    const t = { admitir: 'Admitir excepción', negar: 'Negar excepción', noprocede: 'Marcar No procede' }[modo];
+    const ayuda = { admitir: 'La solicitud queda Lista para instalar y la respuesta le llega al aliado.', negar: 'La solicitud vuelve a Recaudos incompletos. El aliado puede seguir corrigiendo.', noprocede: 'Solo para casos puntuales: documentos de otro cliente o algo que no tiene arreglo. El cliente queda libre.' }[modo];
+    return cab(t, s.cliente + ' · ' + s.aliado) + '<div class="h-cuerpo">' +
+      (s.excep ? '<div class="exc"><b>' + esc(s.excep.punto) + '.</b> ' + esc(s.excep.motivo) + '</div>' : '') +
+      '<label class="lbl" for="rsTx">Respuesta para el aliado</label><textarea class="campo" id="rsTx"></textarea><div class="err" id="rsErr"></div><p class="nota">' + esc(ayuda) + ' Queda en la bitácora.</p></div>' +
+      '<div class="h-pie"><button type="button" class="btn b2" data-acc="cerrarArriba">Cancelar</button><button type="button" class="btn" data-acc="responder" data-modo="' + esc(modo) + '">' + esc(t) + '</button></div>';
+  }
+  function hojaCurso(h){
+    const s = sol(h.id);
+    return cab('Instalación en curso', s.cliente) + '<div class="h-cuerpo"><label class="lbl" for="cuF">Fecha en que vas a instalar</label><input class="campo" id="cuF" type="date" value="2026-10-14"><div class="err" id="cuErr"></div>' +
+      '<p class="nota">El cliente queda reservado para ti. Si llega la fecha y no aparece la orden de instalación, te preguntamos si se instaló.</p></div>' +
+      '<div class="h-pie"><button type="button" class="btn b2" data-acc="cerrarArriba">Cancelar</button><button type="button" class="btn" data-acc="guardarCurso">Guardar</button></div>';
+  }
+  function hojaNoInst(h){
+    const s = sol(h.id);
+    return cab('No se instaló', s.cliente) + '<div class="h-cuerpo"><label class="lbl" for="niM">Motivo</label><select class="campo" id="niM"><option>El cliente desistió</option><option>No hubo factibilidad</option><option>Problema técnico en la instalación</option><option>Otro</option></select>' +
+      '<label class="lbl" for="niN">Nota (si eliges Otro)</label><textarea class="campo" id="niN"></textarea><div class="err" id="niErr"></div><p class="nota">El cliente queda libre para otros y el motivo queda en tu registro.</p></div>' +
+      '<div class="h-pie"><button type="button" class="btn b2" data-acc="cerrarArriba">Cancelar</button><button type="button" class="btn" data-acc="guardarNoInst">Confirmar</button></div>';
+  }
+  function hojaReferir(h){
+    const canales = E.rol === 'canales';
+    const pre = h.extra || {};
+    const c = (id, l, tipo, v) => '<label class="lbl" for="' + id + '">' + l + '</label><input class="campo" id="' + id + '" type="' + tipo + '" value="' + esc(v || '') + '"' + (pre.rif && id === 'rfRif' ? ' disabled' : '') + '><div class="err" id="' + id + 'Err"></div>';
+    return cab(canales ? 'Cargar referido' : 'Referir cliente', pre.cliente || 'Pásalo a la oficina') + '<div class="h-cuerpo">' +
+      c('rfRif', 'RIF del cliente', 'text', pre.rif ? rifVer(pre.rif) : '') +
+      (canales ? c('rfNom', 'Nombre', 'text') + c('rfApe', 'Apellido', 'text') + c('rfTel', 'Teléfono', 'tel') + c('rfCoo', 'Coordenadas', 'text')
+        : c('rfTel', 'Teléfono de contacto (opcional)', 'tel')) +
+      '<p class="nota">El referido le llega al administrador para aceptarlo. Se paga con dos residenciales cuando el cliente se instala.</p></div>' +
+      '<div class="h-pie"><button type="button" class="btn b2" data-acc="cerrarArriba">Cancelar</button><button type="button" class="btn" data-acc="guardarRef">' + (canales ? 'Cargar' : 'Referir') + '</button></div>';
+  }
+  function hojaRef(h){
+    const r = ref(h.id); const admin = E.rol === 'admin';
+    return cab(r.cliente, rifVer(r.rif) + ' · ' + r.id + ' · ' + r.aliado) + '<div class="h-cuerpo">' +
+      '<div class="veredicto ' + ETQ[r.etq][1] + '"><b>' + esc(ETQ[r.etq][0]) + '</b><p>' + esc(r.etq === 'referido' ? 'Esperando que el administrador lo acepte.' : r.etq === 'refacept' ? 'Lo lleva ' + r.lider + '. Se paga cuando se instale.' : r.etq === 'refinst' ? 'Instalado ' + r.inst + '. ' + (r.horas >= 0 ? 'Quedan ' + r.horas + ' h para pagar.' : 'Pago atrasado.') : r.etq === 'refpag' ? 'Pagado con dos residenciales.' : 'No se aceptó.') + '</p></div>' +
+      (r.tel ? '<p class="nota">Teléfono del cliente: ' + esc(r.tel) + '</p>' : '') +
+      (admin && r.etq === 'referido' ? '<label class="lbl" for="rfLid">Pasárselo a</label><select class="campo" id="rfLid"><option>Líder Uno</option><option>Líder Dos</option><option>Líder Tres</option></select><div style="display:flex;gap:8px;margin-top:12px"><button type="button" class="btn chico" data-acc="aceptarRef">Aceptar referido</button><button type="button" class="btn chico b2" data-acc="rechazarRef">No aceptar</button></div>' : '') +
+      '</div>';
+  }
+  function hojaSinp(h){
+    const x = E.sinPermiso.find((y) => y.id === h.id);
+    return cab(x.cliente, rifVer(x.rif) + ' · ' + x.odi) + '<div class="h-cuerpo"><div class="veredicto rojo"><b>Instalado sin permiso</b><p>' + esc(x.inst) + ' lo instaló el ' + esc(x.fecha) + ' sin una solicitud aprobada.</p></div>' +
+      '<p class="nota">No entra en Pagos de aliados. Márcalo como revisado cuando hables con el aliado.</p></div>' +
+      '<div class="h-pie"><button type="button" class="btn b2" data-acc="whats">Escribir al aliado</button><button type="button" class="btn" data-acc="sinpVisto"' + (x.visto ? ' disabled' : '') + '>Marcar revisado</button></div>';
+  }
+
+  // ---------- Simulación de la IA ----------
+  function leerRif(){
+    const n = E.nueva; n.rifEstado = 'leyendo'; n.est[(n.tipo === 'empresa' ? DOCS_EMP : DOCS_NAT)[0].id] = 'leyendo'; refrescarHojas();
+    setTimeout(() => {
+      if(!E.nueva) return;
+      const fin = CASOS[n.caso].fin;
+      const d0 = (n.tipo === 'empresa' ? DOCS_EMP : DOCS_NAT)[0].id;
+      if(fin === 'ilegible'){ n.rifEstado = 'ilegible'; n.est[d0] = 'mal'; n.caso = 'libre'; n.cliente = 'Comercio Nuevo Ejemplo, C.A.'; n.rif = 'J000000016'; }
+      else { n.rifEstado = fin === 'cartera' ? 'cartera' : fin === 'otro' ? 'otro' : 'libre'; n.est[d0] = 'ok'; }
+      refrescarHojas();
+    }, 1600 * lento);
+  }
+  function subirDoc(id){
+    const n = E.nueva; const docs = n.tipo === 'empresa' ? DOCS_EMP : DOCS_NAT;
+    if(id === docs[0].id){ if(n.rifEstado === 'ilegible') n.rifEstado = null; leerRif(); return; }
+    n.est[id] = 'leyendo'; refrescarHojas();
+    setTimeout(() => { if(E.nueva){ n.est[id] = 'ok'; refrescarHojas(); } }, 1300 * lento);
+  }
+  function enviar(){
+    const n = E.nueva; const docs = n.tipo === 'empresa' ? DOCS_EMP : DOCS_NAT;
+    const fin = CASOS[n.caso].fin === 'ilegible' ? 'lista' : CASOS[n.caso].fin;
+    const id = 'AL-00' + (E.n++);
+    const sinLeer = docs.filter((d) => n.est[d.id] !== 'ok').length;
+    const s = { id, cliente: n.cliente, rif: n.rif, tipo: n.tipo, plan: 'PYME', aliado: yo(), etq: 'analizando', fecha: '09/10', docs: [], hist: [ { f: ahora(), t: yo() + ' envió la solicitud.', c: 'az' }, { f: ahora(), t: 'RIF leído. Cliente disponible.', c: 'vd' } ],
+      carga: { paso: 2, leidos: docs.length - sinLeer, total: docs.length + 1 } };
+    E.sols.unshift(s);
+    while(E.hojas.length) cerrarArriba();
+    E.vista = 'solicitudes'; pintar();
+    setTimeout(() => abrirHoja('sol', id), 300);
+    const t = [ () => { s.carga.leidos = s.carga.total; }, () => { s.carga.paso = 3; }, () => { s.carga.paso = 4; }, () => { terminar(s, fin); } ];
+    t.forEach((f, i) => setTimeout(() => { f(); refrescarHojas(); if(i === t.length - 1) pintar(); }, (1400 + i * 1300) * lento));
+  }
+  function terminar(s, fin){
+    delete s.carga;
+    const base = s.tipo === 'empresa'
+      ? [ { n: 'RIF de la empresa', ok: true }, { n: 'Acta constitutiva', ok: true }, { n: 'Cédula del representante', ok: true }, { n: 'RIF del representante', ok: true }, { n: 'Correos y teléfono', ok: true } ]
+      : [ { n: 'Cédula', ok: true }, { n: 'RIF personal', ok: true }, { n: 'Teléfono y correo', ok: true } ];
+    if(fin === 'recaudos'){
+      base[1] = { n: 'Acta constitutiva', ok: false, txt: 'La junta venció en 2023. Busca el acta de asamblea que la ratificó; si no existe, pide excepción.', exc: true };
+      base.push({ n: 'Segundo representante', ok: false, txt: 'La junta firma en forma conjunta: faltan la cédula y el RIF del otro director.' });
+    }
+    if(fin === 'listaobs') base.push({ n: 'Régimen de firma', ok: false, obs: true, txt: 'Firma separada: basta un director.' });
+    s.docs = base; s.etq = fin;
+    s.hist.unshift({ f: ahora(), t: 'Resultado: ' + ETQ[fin][0] + '.', c: fin === 'recaudos' ? 'rj' : 'vd' });
+  }
+
+  function toast(msg, accion, fn){
+    const t = $('toast'); t.querySelector('span').textContent = msg;
+    const b = t.querySelector('button'); b.hidden = !accion; b.textContent = accion || ''; b.onclick = () => { t.classList.remove('on'); fn && fn(); };
+    t.classList.add('on'); clearTimeout(tTo); tTo = setTimeout(() => t.classList.remove('on'), 5000);
+  }
+  let tTo;
+
+  // ---------- Eventos ----------
+  document.addEventListener('click', (e) => {
+    const el = e.target.closest('[data-acc],[data-ir],[data-filtro],[data-filtroa],[data-filtrop],[data-abrir],[data-rol],[data-tipo]');
+    if(!el || el.disabled) return;
+    const hoja = E.hojas[E.hojas.length - 1];
+    const s = hoja && hoja.tipo !== 'ref' && hoja.tipo !== 'sinp' ? sol(hoja.id) : null;
+    if(el.dataset.rol){ while(E.hojas.length) cerrarArriba(); E.rol = el.dataset.rol; document.querySelectorAll('#rol button').forEach((b) => b.classList.toggle('on', b === el)); E.vista = NAV[E.rol][0][0]; pintar(); return; }
+    if(el.dataset.ir){ E.vista = el.dataset.ir; pintar(); return; }
+    if(el.dataset.filtro){ E.filtro = el.dataset.filtro; pintar(); return; }
+    if(el.dataset.filtroa){ E.filtroA = el.dataset.filtroa; pintar(); return; }
+    if(el.dataset.filtrop){ E.filtroP = el.dataset.filtrop; pintar(); return; }
+    if(el.dataset.tipo){ E.nueva.tipo = el.dataset.tipo; E.nueva.est = {}; refrescarHojas(); return; }
+    if(el.dataset.abrir){ abrirHoja(el.dataset.abrir, el.dataset.id, { modo: el.dataset.modo }); return; }
+    const acc = el.dataset.acc;
+    if(acc === 'reiniciar'){ while(E.hojas.length) cerrarArriba(); reiniciar(); document.querySelectorAll('#rol button').forEach((b, i) => b.classList.toggle('on', i === 0)); pintar(); toast('Maqueta reiniciada.'); }
+    else if(acc === 'cerrarArriba') cerrarArriba();
+    else if(acc === 'nueva'){ E.nueva = nuevaVacia(); abrirHoja('nueva'); }
+    else if(acc === 'subir') subirDoc(el.dataset.d);
+    else if(acc === 'otroRep') toast('Aquí aparecen las casillas de cédula y RIF del otro representante.');
+    else if(acc === 'enviar') enviar();
+    else if(acc === 'referirDesde'){ const n = E.nueva; abrirHoja('referir', null, { rif: n.rif, cliente: n.cliente }); }
+    else if(acc === 'referirSol') abrirHoja('referir', null, { rif: s.rif, cliente: s.cliente });
+    else if(acc === 'pedirExc') abrirHoja('excep', s.id);
+    else if(acc === 'whats') toast('Se abriría WhatsApp con el caso ya escrito.');
+    else if(acc === 'resubir'){
+      const d = s.docs[+el.dataset.i]; d.leyendo = true; refrescarHojas();
+      setTimeout(() => { d.leyendo = false; d.ok = true; s.hist.unshift({ f: ahora(), t: 'Subió de nuevo: ' + d.n + '. Ahora está bien.', c: 'vd' });
+        if(!s.docs.some((x) => !x.ok && !x.obs)){ s.etq = 'lista'; s.hist.unshift({ f: ahora(), t: 'Resultado: Lista para instalar.', c: 'vd' }); toast('Todo quedó bien. Ya puedes instalar.'); }
+        refrescarHojas(); pintar(); }, 1500 * lento);
+    }
+    else if(acc === 'enviarExc'){
+      const m = $('exMot').value.trim();
+      if(m.length < 5){ $('exErr').textContent = 'Escribe el motivo (al menos 5 letras).'; $('exMot').focus(); return; }
+      const ss = sol(hoja.id); ss.etq = 'excepcion'; ss.excep = { punto: $('exPunto').value, motivo: m }; ss.hist.unshift({ f: ahora(), t: 'Pidió excepción: ' + m, c: 'az' });
+      cerrarArriba(); refrescarHojas(); pintar(); toast('Pedido enviado. Te avisamos cuando responda el administrador.');
+    }
+    else if(acc === 'responder'){
+      const tx = $('rsTx').value.trim();
+      if(tx.length < 5){ $('rsErr').textContent = 'Escribe la respuesta (al menos 5 letras).'; $('rsTx').focus(); return; }
+      const ss = sol(hoja.id); const modo = el.dataset.modo;
+      ss.resp = tx;
+      if(modo === 'admitir'){ ss.etq = 'lista'; ss.docs.forEach((d) => { if(!d.ok && d.exc) { d.ok = true; } }); if(ss.docs.some((d) => !d.ok && !d.obs)) ss.etq = 'recaudos'; }
+      else if(modo === 'negar') ss.etq = 'recaudos';
+      else ss.etq = 'noprocede';
+      ss.excep = null;
+      ss.hist.unshift({ f: ahora(), t: { admitir: 'Excepción admitida: ', negar: 'Excepción negada: ', noprocede: 'No procede: ' }[modo] + tx, c: modo === 'admitir' ? 'vd' : 'rj' });
+      cerrarArriba(); refrescarHojas(); pintar(); toast('Respuesta guardada en la bitácora.');
+    }
+    else if(acc === 'guardarCurso'){
+      const v = $('cuF').value; if(!v){ $('cuErr').textContent = 'Escoge la fecha.'; return; }
+      const ss = sol(hoja.id); const p = v.split('-'); ss.inst = p[2] + '/' + p[1]; ss.etq = 'curso'; ss.vencio = false;
+      ss.hist.unshift({ f: ahora(), t: 'Marcó instalación en curso para el ' + ss.inst + '.', c: 'az' });
+      cerrarArriba(); refrescarHojas(); pintar(); toast('Cliente reservado hasta el ' + ss.inst + '.');
+    }
+    else if(acc === 'simFecha'){ s.vencio = true; s.hist.unshift({ f: ahora(), t: 'Llegó la fecha y no ha llegado la orden: ¿se instaló?', c: '' }); refrescarHojas(); }
+    else if(acc === 'siInst'){ s.vencio = false; s.hist.unshift({ f: ahora(), t: 'Dijo que ya instaló. Esperando la orden de instalación.', c: 'az' }); refrescarHojas(); toast('Anotado. Pasa a Instalada cuando llegue la orden.'); }
+    else if(acc === 'guardarNoInst'){
+      const m = $('niM').value, nt = $('niN').value.trim();
+      if(m === 'Otro' && nt.length < 5){ $('niErr').textContent = 'Escribe qué pasó (al menos 5 letras).'; $('niN').focus(); return; }
+      const ss = sol(hoja.id); ss.etq = 'sininst'; ss.motivoFin = m === 'Otro' ? nt : m + '.';
+      ss.hist.unshift({ f: ahora(), t: 'No se instaló: ' + ss.motivoFin, c: '' });
+      cerrarArriba(); refrescarHojas(); pintar(); toast('Listo. El cliente quedó libre.');
+    }
+    else if(acc === 'guardarRef'){
+      const canales = E.rol === 'canales';
+      const rif = (hoja.extra.rif || $('rfRif').value.replace(/[^0-9A-Za-z]/g, '').toUpperCase());
+      let mal = false;
+      if(!/^[JVGEP]\d{9}$/.test(rif)){ $('rfRifErr').textContent = 'Escribe el RIF con su letra, por ejemplo J-12345678-9.'; mal = true; }
+      if(canales){ ['rfNom', 'rfApe', 'rfTel'].forEach((k) => { if(!$(k).value.trim()){ $(k + 'Err').textContent = 'Hace falta.'; mal = true; } }); }
+      if(mal) return;
+      if(E.refs.some((r) => r.rif === rif)){ $('rfRifErr').textContent = 'Ese cliente ya fue referido.'; return; }
+      E.refs.unshift({ id: 'RF-0' + (10 + E.refs.length), cliente: hoja.extra.cliente || (canales ? $('rfNom').value.trim() + ' ' + $('rfApe').value.trim() : 'Cliente ' + rifVer(rif)), rif, aliado: yo(), etq: 'referido', fecha: '09/10', lider: '', tel: $('rfTel').value.trim() });
+      while(E.hojas.length) cerrarArriba(); E.vista = 'referidos'; pintar(); toast('Referido enviado al administrador.');
+    }
+    else if(acc === 'aceptarRef'){ const r = ref(hoja.id); r.etq = 'refacept'; r.lider = $('rfLid').value; cerrarArriba(); pintar(); toast('Referido aceptado y pasado a ' + r.lider + '.'); }
+    else if(acc === 'rechazarRef'){ const r = ref(hoja.id); r.etq = 'refrech'; cerrarArriba(); pintar(); toast('Referido no aceptado. Se le avisa al aliado.'); }
+    else if(acc === 'sinpVisto'){ E.sinPermiso.find((y) => y.id === hoja.id).visto = true; cerrarArriba(); pintar(); toast('Marcado como revisado.'); }
+    else if(acc === 'pagarInst'){ sol(el.dataset.id).pagada = true; pintar(); toast('Marcada como pagada. Queda en la bitácora.'); }
+    else if(acc === 'pagarRef'){ ref(el.dataset.id).etq = 'refpag'; pintar(); toast('Referido pagado. Se le avisa al aliado.'); }
+    else if(acc === 'excel') toast('Se descargaría el Excel de instalaciones PYME por pagar.');
+  });
+  document.addEventListener('input', (e) => {
+    const t = e.target;
+    if(t.dataset.campo && E.nueva){ E.nueva.campos[t.dataset.campo] = t.value; const ft = $('faltaTx'); if(ft){ const n = E.nueva; const docs = n.tipo === 'empresa' ? DOCS_EMP : DOCS_NAT; const cs = n.tipo === 'empresa' ? [['correo', 'Correo del representante'], ['tel', 'Teléfono del representante'], ['correoEmp', 'Correo de la empresa']] : [['tel', 'Teléfono'], ['correo', 'Correo']]; const f = docs.filter((d) => !d.opc && n.est[d.id] !== 'ok').map((d) => d.n).concat(cs.filter((c) => !n.campos[c[0]].trim()).map((c) => c[1])); ft.textContent = f.length ? 'Falta: ' + f.slice(0, 2).join(', ') + (f.length > 2 ? ' y ' + (f.length - 2) + ' más' : '') : ''; } }
+    if(t.id && $(t.id + 'Err')) $(t.id + 'Err').textContent = '';
+    if(t.id === 'exMot') $('exErr').textContent = '';
+    if(t.id === 'rsTx') $('rsErr').textContent = '';
+  });
+  $('caso').addEventListener('change', (e) => { E.caso = e.target.value; toast('La próxima solicitud simula: ' + e.target.selectedOptions[0].textContent.replace('Caso: ', '') + '.'); });
+  document.addEventListener('keydown', (e) => { if(e.key === 'Escape' && E.hojas.length) cerrarArriba(); });
+
+  reiniciar();
+  pintar();
+})();
+</script>
+</body>
+</html>

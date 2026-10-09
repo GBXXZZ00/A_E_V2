@@ -79,6 +79,24 @@ Sin nombres reales: el repo es público. "Analista Senior" es el responsable de 
 - Los registros viejos de aliados que no se instalaron se guardan en el módulo de aliados como consultas viejas, con el indicador de cuáles se lograron instalar. Los dudosos entran como "pendiente por instalación". También se migran sus correos y teléfonos.
 - Si un cliente ya está en gestión de un líder, el aliado queda bloqueado.
 
+### Decidido 09/10 (módulo de aliados, maqueta A1 por aprobar)
+- Pedir un cliente = subir los documentos. No se escribe el RIF: se lee primero el RIF de la empresa (o cédula y RIF si es natural) y el resultado de cartera sale al momento, mientras se leen los demás. Si sale bloqueado, los documentos quedan guardados y no se sigue leyendo (no se gasta IA).
+- Bloqueos al leer el RIF: TOP, cliente en cartera de un líder (también los de Grandes negocios) -> "Cliente en cartera" con botón Referir (el referido le llega al administrador; si es TOP se avisa además al líder dueño). Orden de Odoo abierta u otro aliado con solicitud sin instalar -> "En gestión por otro", sin referir.
+- Documentos: empresa, los mismos que los líderes; natural, cédula, RIF, teléfono y correo. Correo y teléfono del representante y correo de la empresa son obligatorios.
+- Reglas: las mismas de contratos (mismo motor). Firma conjunta exige los documentos del otro representante; si quien sube no está en la junta, los de quien firma. Lo que falte en actas (junta, empresa vencida, domicilio, nombre) bloquea: busca el acta de asamblea o pide excepción.
+- La IA corre sola cuando el aliado envía. Debe ser más rápida sin perder nada (leer varios archivos a la vez, el RIF primero, leer mientras sube); en contratos también, pero ahí la sigue lanzando el administrador.
+- Etiquetas: Analizando, Recaudos incompletos, Excepción solicitada, Lista para instalar, Lista con observaciones, Instalación en curso, Instalada, Sin instalar, No procede, Cliente en cartera, En gestión por otro, Referido, Referido aceptado, Referido instalado, Referido pagado.
+- Cada documento dice qué le pasa, con "Subir de nuevo". Botones del aliado: Pedir excepción (la decide solo el administrador), Escribir al administrador (WhatsApp), Referir, Marcar instalación en curso (con fecha), y al llegar la fecha "¿Se instaló?" (Sí, ya instalé / No se instaló con motivo).
+- "No procede" solo en casos puntuales: documentos de otro cliente, excepción negada sin arreglo o decisión del administrador. Si faltan documentos nunca es No procede.
+- Sin instalar: a los 30 días sin instalación vence, con el motivo visible para el aliado.
+- Instalada: cuando llega la orden de instalación con el nombre del aliado. Hace falta una tabla que une el nombre del instalador en la ODI con el usuario aliado (el administrador trae la lista).
+- Solo el administrador ve las solicitudes de todos los aliados. Sin apelación de los líderes: todo el equipo ve una lista "Instalados por aliados", solo para ver.
+- Buzón "Instalado sin permiso": instalación de aliado sin solicitud aprobada. Lo viejo (ODI contra AppSheet) se cruza en el chat del proyecto y cae al mismo buzón.
+- Coordinadora de canales (rol analista con marca canales): hace solicitudes como un aliado (ve solo las suyas), carga referidos (RIF, nombre, apellido, teléfono, coordenadas; se ajusta después) y con el administrador paga: instalaciones PYME de aliados (solo si instaló el mismo aliado de la solicitud; con Excel) y referidos (dos residenciales, solo cuando el referido está instalado, 72 horas de plazo; sin Excel). Va aparte del corte de los líderes.
+- Referir: desde el resultado "Cliente en cartera" (sin escribir) o desde el inicio escribiendo el RIF. Vale el primero que lo refirió.
+- Correos con hilo (aprobación incluida) y notificaciones al teléfono: PENDIENTE SUPER URGENTE, en la tarea de notificaciones, antes de abrir la app a los aliados.
+- Factibilidad para aliados: sí la usarán, pero después.
+
 ## Proforma y carta de bienvenida
 - Formato original de la app vieja, sin rediseñar. Instalación 60 dólares, día límite 10, descripción "servicio de internet", número de contrato = código.
 - Las hace el analista; al líder le salen como pendiente y puede enviarlas. Solo para clientes nuevos.
