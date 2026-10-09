@@ -473,4 +473,14 @@ const RPC = {
   }
 };
 
-module.exports = { baseDatos, RPC, LUCIA };
+// Lo mismo que public.archivo_drive: el archivo solo sale si quien lo pide puede ver al cliente
+function archivoDrive(m, yo, id){
+  for(const c of m.datos.clientes) for(const d of c.documentos) for(const a of d.archivos || []){
+    if(a.id !== Number(id)) continue;
+    if(!visibles(m, yo).includes(c)) return { error: 'No tienes acceso a este cliente', status: 403 };
+    if(!a.drive_id) return { error: 'Ese archivo no está en Drive', status: 404 };
+    return { archivo: a };
+  }
+  return { error: 'Ese archivo no existe', status: 404 };
+}
+module.exports = { baseDatos, RPC, LUCIA, archivoDrive };

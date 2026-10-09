@@ -645,8 +645,8 @@
   }
 
   // ---------- Ver y revisar un documento ----------
-  function abrirRevision(){ const cola = porRevisar().map((d) => d.id); if(!cola.length) return; irTab('documentos'); ver = { docId: cola[0], cola, paso: 'ver', motivo: null, archivo: 0, url: {} }; pintarVer(); abrirHoja('hojaVer'); cargarArchivo(); }
-  function abrirVer(docId){ ver = { docId, cola: null, paso: 'ver', motivo: null, archivo: 0, url: {} }; pintarVer(); abrirHoja('hojaVer'); cargarArchivo(); }
+  function abrirRevision(){ const cola = porRevisar().map((d) => d.id); if(!cola.length) return; irTab('documentos'); soltarBlobs(); ver = { docId: cola[0], cola, paso: 'ver', motivo: null, archivo: 0, url: {} }; pintarVer(); abrirHoja('hojaVer'); cargarArchivo(); }
+  function abrirVer(docId){ soltarBlobs(); ver = { docId, cola: null, paso: 'ver', motivo: null, archivo: 0, url: {} }; pintarVer(); abrirHoja('hojaVer'); cargarArchivo(); }
   function docVer(){ return (F.documentos || []).find((d) => d.id === ver.docId); }
   function pintarVer(){
     const d = docVer(); const h = $('hojaVer');
@@ -688,14 +688,31 @@
   function mostrarArchivo(){
     const d = docVer(); const z = $('visor'); if(!d || !z) return;
     const a = (d.archivos || [])[ver.archivo]; const url = ver.url[ver.archivo]; const ab = $('abrirCompleto');
-    if(!a || !url){ z.innerHTML = papel(a && !a.ruta && !a.url_externa ? 'Archivo de ejemplo. No tiene imagen guardada.' : 'No se pudo abrir el archivo. Cierra y vuelve a intentar.'); return; }
+    if(!a || !url){ z.innerHTML = papel(a && !a.ruta && !a.url_externa ? 'Archivo de ejemplo. No tiene imagen guardada.' : ((ver.fallo || {})[ver.archivo] ? ver.fallo[ver.archivo] + '.' : 'No se pudo abrir el archivo. Cierra y vuelve a intentar.')); return; }
     if(ab){ ab.href = url; ab.classList.remove('hidden'); }
     const pdf = a.mime === 'application/pdf' || /\.pdf$/i.test(a.nombre || '');
-    if(!pdf) z.innerHTML = '<img src="' + esc(url) + '" alt="' + esc(casilla(d.casilla, d.numero)) + '">';
+    const imagen = /^image\//i.test(a.mime || '') || /\.(jpe?g|png|gif|webp)$/i.test(a.nombre || '');
+    if(!pdf && !imagen){ if(ab) ab.classList.add('hidden'); z.innerHTML = '<div>' + papel('Este archivo no se puede ver aquí') + '<a class="btn btn-chico" id="bajarArch" href="' + esc(url) + '" download="' + esc(a.nombre || 'archivo') + '" style="margin-top:12px">Descargar el archivo</a></div>'; }
+    else if(!pdf) z.innerHTML = '<img src="' + esc(url) + '" alt="' + esc(casilla(d.casilla, d.numero)) + '">';
     else if(window.matchMedia('(min-width:900px)').matches) z.innerHTML = '<iframe src="' + esc(url) + '" title="' + esc(casilla(d.casilla, d.numero)) + '"></iframe>';
     else z.innerHTML = '<div>' + papel('Documento en PDF') + '<a class="btn btn-chico" href="' + esc(url) + '" target="_blank" rel="noopener" style="margin-top:12px">Abrir el PDF</a></div>';
   }
-  // Pide un enlace temporal al almacenamiento privado
+  // Los archivos de Drive los entrega la función drive_archivo (la base revisa el permiso); quedan en memoria mientras el visor esté abierto
+  let blobs = [];
+  function soltarBlobs(){ blobs.forEach((u) => { try { URL.revokeObjectURL(u); } catch (e) {} }); blobs = []; }
+  async function bajarDeDrive(a){
+    let tk = '';
+    try { const s = await db.auth.getSession(); tk = (s.data && s.data.session && s.data.session.access_token) || ''; } catch (e) {}
+    if(!tk) throw new Error('Tu sesión venció. Entra de nuevo');
+    let r;
+    try { r = await fetch(db.supabaseUrl + '/functions/v1/drive_archivo', { method: 'POST', headers: { Authorization: 'Bearer ' + tk, apikey: db.supabaseKey, 'Content-Type': 'application/json' }, body: JSON.stringify({ archivo: a.id }) }); }
+    catch (e) { throw new Error('Sin conexión. Revisa el internet'); }
+    if(!r.ok){ let m = ''; try { m = String((await r.json()).error || ''); } catch (e) {} throw new Error(m.replace(/\.$/, '') || 'No se pudo abrir el archivo'); }
+    let b;
+    try { b = await r.blob(); } catch (e) { throw new Error('Se cortó la conexión mientras bajaba el archivo'); }
+    const u = URL.createObjectURL(b); blobs.push(u); return u;
+  }
+  // Pide un enlace temporal al almacenamiento privado, o el archivo a Drive
   async function cargarArchivo(){
     const d = docVer(); if(!d) return;
     const n = ver.archivo; const a = (d.archivos || [])[n]; const mio = ver;
@@ -704,7 +721,10 @@
     let url = '';
     if(a.ruta){
       try { const r = await db.storage.from('expedientes').createSignedUrl(a.ruta, 600); if(!r.error && r.data) url = r.data.signedUrl || ''; } catch (e) {}
-    } else if(a.url_externa && /^https:\/\//i.test(a.url_externa)) url = a.url_externa;
+    } else if(a.url_externa && a.id){
+      try { url = await bajarDeDrive(a); }
+      catch (e) { if(mio === ver){ ver.fallo = ver.fallo || {}; ver.fallo[n] = e.message; } }
+    }
     if(mio !== ver || ver.docId !== d.id) return;
     ver.url[n] = url; mostrarArchivo();
   }
@@ -728,7 +748,7 @@
       F = await rpc('cliente_ficha', { p_cliente: id });
       // Sigue con el próximo que quede por revisar; si no hay, cierra
       const sig = cola ? cola.slice(cola.indexOf(actual) + 1).find((x) => { const y = (F.documentos || []).find((z) => z.id === x); return y && y.estado === 'por_revisar'; }) : null;
-      if(sig){ ver = { docId: sig, cola, paso: 'ver', motivo: null, archivo: 0, url: {} }; pintarTodo(); cargarArchivo(); }
+      if(sig){ soltarBlobs(); ver = { docId: sig, cola, paso: 'ver', motivo: null, archivo: 0, url: {} }; pintarTodo(); cargarArchivo(); }
       else { ver = null; cerrarHoja(); pintarTodo(); if(cola) toast('Listo. No quedan documentos por revisar'); }
     } catch (e) { ver = null; if(hojaAbierta() === 'hojaVer') cerrarHoja(); toast('Quedó guardado, pero no se pudo actualizar la pantalla. Cierra y abre el cliente', 'error'); }
   }
@@ -785,6 +805,8 @@
       lote.splice.apply(lote, [n, 1].concat(it.files.map((f) => ({ files: [f], marcas: {}, minis: [URL.createObjectURL(f)] })))); pintarVarios(); return; }
     if(t.closest('#guardarLote')){ guardarLote(); return; }
     // Ver y revisar
+    // Dentro de la hoja Chromium pierde el nombre del archivo: se descarga con un enlace suelto en la página
+    if((b = t.closest('#bajarArch'))){ e.preventDefault(); const x = document.createElement('a'); x.href = b.href; x.download = b.getAttribute('download') || 'archivo'; x.rel = 'noopener'; document.body.appendChild(x); x.click(); x.remove(); return; }
     if((b = t.closest('[data-archivo]'))){ ver.archivo = Number(b.dataset.archivo); pintarVer(); cargarArchivo(); return; }
     if(t.closest('#verAprobar')){ revisar('aprobar'); return; }
     if(t.closest('#verDevolver')){ ver.paso = 'devolver'; ver.motivo = null; ver.nota = ''; pintarVer(); return; }
@@ -841,7 +863,7 @@
     $('hojaVarios').addEventListener('dragleave', () => { const s = $('soltar'); if(s) s.classList.remove('sobre'); });
     $('hojaVarios').addEventListener('drop', (e) => { e.preventDefault(); if(e.dataTransfer && e.dataTransfer.files) agregarLote(Array.prototype.slice.call(e.dataTransfer.files)); });
     $('hojaVarios').addEventListener('hoja-cerrada', () => { if(!ocupado){ soltarMinis(); lote = []; } });
-    $('hojaVer').addEventListener('hoja-cerrada', () => { ver = null; });
+    $('hojaVer').addEventListener('hoja-cerrada', () => { ver = null; soltarBlobs(); });
     $('hojaEnviar').addEventListener('hoja-cerrada', () => { env = null; });
     $('hojaEnviar').addEventListener('change', (e) => { if(e.target.id === 'envNum'){ $('envOtroZ').classList.toggle('hidden', !!e.target.value); $('eEnv').textContent = ''; if(!e.target.value) $('envOtro').focus(); } });
     const zona = $('tab-documentos');

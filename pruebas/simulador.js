@@ -1,9 +1,10 @@
 // Supabase de mentira para las pruebas: no toca la base real y los PIN son inventados.
 const { chromium, devices } = require(require('child_process').execSync('npm root -g').toString().trim() + '/playwright');
 const H = 'http://127.0.0.1:8765/';
-const { baseDatos, RPC } = require('./mundo');
+const { baseDatos, RPC, archivoDrive } = require('./mundo');
 // Imagen PNG de 1 x 1 para simular un archivo guardado
 const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
+const PDF_MIN = Buffer.from('%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj 2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj 3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 200 200]>>endobj\ntrailer<</Root 1 0 R>>\n%%EOF');
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64url');
 const ahora = () => Math.floor(Date.now() / 1000);
 const jwt = (id) => b64({ alg: 'HS256', typ: 'JWT' }) + '.' + b64({ sub: id, exp: ahora() + 3600, role: 'authenticated', aud: 'authenticated' }) + '.firma';
@@ -83,6 +84,15 @@ async function contexto(navegador, opciones, mundo){
       const p = quien(req); if(!p) return j([]);
       const fila = Object.assign({}, p); delete fila.pin;
       return (req.headers().accept || '').includes('vnd.pgrst.object') ? j(fila) : j([fila]);
+    }
+    // Archivos de Drive: la función drive_archivo con el permiso del expediente
+    if(u.includes('/functions/v1/drive_archivo')){
+      const yo = quien(req); const b = cuerpo(); m.llamadas.push(['drive', b.archivo]);
+      if(!yo || !yo.activo) return j({ error: 'Tu sesión venció. Entra de nuevo' }, 401);
+      if(m.fallaDrive) return j({ error: m.fallaDrive }, 503);
+      const r2 = archivoDrive(m, yo, b.archivo); if(r2.error) return j({ error: r2.error }, r2.status);
+      const a = r2.archivo; const pdf = a.mime === 'application/pdf';
+      return r.fulfill({ status: 200, contentType: /^image\//.test(a.mime) ? 'image/png' : a.mime, headers: cab, body: /^image\//.test(a.mime) ? PNG : pdf ? PDF_MIN : Buffer.from('PK prueba') });
     }
     if(u.includes('/functions/v1/gestionar_usuarios')){
       const yo = quien(req); const b = cuerpo(); m.llamadas.push(['usuarios', b]);

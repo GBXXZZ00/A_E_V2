@@ -17,3 +17,4 @@ Simulan Supabase con datos falsos: no tocan la base real y los PIN son inventado
 Desde la versión 5 el expediente del cliente ya no es una página: es una hoja que sale encima de la lista (`assets/js/ficha.js`), y las hojas se apilan.
 - test03 también cubre la hoja corta de comisión: checklist de Legal, pago, y abrir el expediente encima y volver.
 - test04 cubre la lista en filas, los filtros de lista desplegable, el expediente encima, teléfono y correo como casillas, el botón Atrás y las hojas apiladas.
+- test09: archivos de Drive. El documento viejo se ve dentro de la app pidiéndolo a la función `drive_archivo` (imagen, PDF en visor o con botón en teléfono, Word para descargar con su nombre), nunca abre el enlace de Drive, avisa si Google falla o no hay internet, y un archivo de un cliente ajeno se niega.
