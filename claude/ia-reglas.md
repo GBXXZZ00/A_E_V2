@@ -67,3 +67,17 @@ Fecha de referencia: hoy. Las fechas de actas son siempre las de inscripción en
 1. OK del administrador a la regla 21 y a los casos de prueba.
 2. Prueba con 20 clientes que Legal ya decidió, con Gemini y con Claude: gana la que más acierte. Se mide documento por documento.
 3. Maqueta de la pantalla (resultado por cliente, lista para elegir qué correr, comparación con Legal) y aprobación.
+
+## Encaje con la revisión de una sola vez (v22, 09/10)
+- La IA lee solo los archivos vigentes (`documento_archivos.vigente = true`). Un reemplazo es un archivo nuevo: se lee aparte y lo leído del anterior queda guardado.
+- Motivos: la misma lista de Legal (`vencido`, `ilegible`, `no_corresponde`, `falta_firma`, `otro`).
+- La marca de la IA nunca cambia `documentos.estado` ni avisa al líder. La persona la confirma o corrige y "Cerrar revisión" hace el cambio una sola vez.
+- Modelo: el más avanzado de Gemini (Pro). El nombre del modelo queda como ajuste, no en el código: se cambia sin programar.
+- Prueba: con documentos reales de clientes que Legal ya decidió (decidido 09/10: se ajusta con lo que salga). Los 14 casos quedan solo como pruebas automáticas de las reglas, sin IA y sin costo.
+
+## Diseño de datos (PROPUESTA, falta el OK; aún no aplicado)
+1. `ia_lecturas`: una fila por archivo leído (es la memoria para no pagar dos veces). `archivo_id`, `modelo`, `version_lector`, `leido_en`, `paginas`, `tokens_entrada`, `tokens_salida`, `costo_usd`, `estado` (`ok`, `ilegible`, `error`), `error`, `hallazgos` (jsonb: cada documento que vio en el archivo con su tipo y página, incluidos los no marcados). Única por (`archivo_id`, `version_lector`).
+2. `ia_corridas`: una por cliente cada vez que se manda a revisión. `cliente_id`, `lanzada_por`, `lanzada_en`, `terminada_en`, `estado` (`en_cola`, `leyendo`, `lista`, `error`, `cerrada`), `modelo`, `version_reglas`, `veredicto` (`apto`, `no_apto`, `revisar_a_mano`), `puntos` (jsonb: contacto, firmante en el acta, junta, domicilio, duración, régimen de firma, con detalle y página), `archivos_nuevos`, `archivos_releidos`, `costo_usd`.
+3. `ia_marcas`: una por documento y corrida. `corrida_id`, `documento_id`, `archivo_id`, `propuesta` (`bien`, `problema`, `revisar_a_mano`), `motivo` (lista de Legal), `nota`, `pagina`, `datos` (jsonb: nombre, cédula, RIF, vencimiento, expedición, firma), `creado_en`.
+4. "Cerrar revisión" guarda en su propio registro el `corrida_id` que usó (si hubo IA). Así la comparación con Legal es `ia_marcas` contra lo que quedó en `documentos` al cerrar.
+- RLS: leen admin y abogado; escribe solo la función de borde (llave de servicio). Todo pasa por `bitacora`.
