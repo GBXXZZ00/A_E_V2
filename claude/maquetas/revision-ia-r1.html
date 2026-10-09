@@ -1,0 +1,465 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Maqueta R1 Revisión IA</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<style>
+/* Maqueta R1: Revisión con IA. Nombres, RIF y fechas inventados. */
+:root{
+  --bg:#FFFFFF; --s2:#F5F6F7; --s3:#ECEEF1; --text:#111315; --text2:#5B636E; --text3:#69717C; --line:#E3E6EA;
+  --rojo:#A32117; --rojo-bg:#FCEDEB; --verde:#11734B; --verde-bg:#E7F5EE; --ambar:#8A5A00; --ambar-bg:#FBF1DC; --azul:#1B3A9E; --azul-bg:#E8ECF9;
+  --morado:#5B3AA6; --morado-bg:#F0EBFA;
+  --fondo:#E9EBEE; --velo:rgba(17,19,21,.38); --sombra:0 18px 44px rgba(17,19,21,.16);
+  --f:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--fondo);color:var(--text);font-family:var(--f);font-size:15px;line-height:1.45;padding:24px 16px 60px}
+button{font:inherit;color:inherit;border:0;background:none;padding:0}
+h1,h2,h3,p{margin:0}
+.guia{max-width:1240px;margin:0 auto 18px}
+.guia h1{font-size:22px;font-weight:800;letter-spacing:-.02em}
+.guia p{color:var(--text2);font-size:14px;margin-top:4px;max-width:80ch}
+.sec{max-width:1240px;margin:28px auto 0}
+.sec > h2{font-size:17px;font-weight:800;margin-bottom:4px}
+.sec > p{font-size:13.5px;color:var(--text2);margin-bottom:12px;max-width:90ch}
+.fila-m{display:flex;gap:22px;flex-wrap:wrap;align-items:flex-start}
+.fila-m > div{max-width:100%;min-width:0}
+.rot{font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin:0 0 6px 4px}
+
+/* Marcos */
+.tel{position:relative;width:390px;max-width:100%;height:800px;background:var(--bg);border:8px solid var(--text);border-radius:34px;overflow:hidden;display:flex;flex-direction:column;flex:none}
+.pc{position:relative;width:1180px;max-width:100%;height:720px;background:var(--bg);border-radius:18px;overflow:hidden;box-shadow:var(--sombra);display:flex;flex-direction:column}
+.barra{display:flex;align-items:center;gap:16px;padding:14px 22px;border-bottom:1px solid var(--line);flex:none}
+.barra b{font-weight:800;letter-spacing:.14em;font-size:14px}
+.barra span{color:var(--text2);font-size:13.5px}
+.barra nav{display:flex;gap:4px;margin-left:10px}
+.barra nav i{font-style:normal;padding:8px 14px;border-radius:999px;font-weight:600;font-size:14px;color:var(--text2)}
+.barra nav i.on{background:var(--azul-bg);color:var(--azul)}
+.barra .av{margin-left:auto;width:36px;height:36px;border-radius:50%;background:var(--azul);color:#fff;display:grid;place-items:center;font-size:12px;font-weight:700}
+.tel .barra nav{display:none}
+.cuerpo{flex:1;overflow:hidden;padding:20px 22px}
+.tel .cuerpo{padding:16px}
+.navab{display:none}
+.tel .navab{display:flex;position:absolute;left:0;right:0;bottom:0;background:rgba(255,255,255,.97);border-top:1px solid var(--line);padding:8px 6px 14px;z-index:4}
+.navab i{flex:1;text-align:center;font-style:normal;font-size:11px;font-weight:600;color:var(--text3)}
+.navab i::before{content:"";display:block;width:46px;height:30px;border-radius:999px;margin:0 auto 3px;background:var(--s2)}
+.navab i.on{color:var(--azul)} .navab i.on::before{background:var(--azul)}
+
+/* Cabecera y atajos */
+.cab{display:flex;align-items:center;gap:12px}
+.cab h3{font-size:28px;font-weight:800;letter-spacing:-.025em;flex:1}
+.tel .cab h3{font-size:26px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:48px;padding:0 22px;border-radius:999px;background:var(--azul);color:#fff;font-weight:700;white-space:nowrap}
+.btn.b2{background:var(--s2);color:var(--text)}
+.btn.chico{height:40px;padding:0 16px;font-size:14px}
+.btn.off{background:var(--s3);color:var(--text3)}
+.sub{font-size:13.5px;color:var(--text2);margin-top:4px}
+.atajos{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.atajos i{font-style:normal;height:38px;padding:0 14px;border-radius:999px;background:var(--s2);font-size:13.5px;font-weight:600;color:var(--text2);display:flex;align-items:center;gap:6px;white-space:nowrap}
+.atajos i em{font-style:normal;opacity:.7}
+.atajos i.on{background:var(--azul);color:#fff}
+.tel .atajos{flex-wrap:nowrap;overflow:hidden}
+.buscar{height:44px;border:1.5px solid var(--line);border-radius:999px;padding:0 16px;display:flex;align-items:center;color:var(--text3);font-size:14px;margin-top:12px;max-width:380px}
+.tel .buscar{max-width:none}
+
+.chip{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap;background:var(--s3);color:var(--text2)}
+.chip::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.verde{background:var(--verde-bg);color:var(--verde)} .ambar{background:var(--ambar-bg);color:var(--ambar)} .azul{background:var(--azul-bg);color:var(--azul)} .rojo{background:var(--rojo-bg);color:var(--rojo)} .morado{background:var(--morado-bg);color:var(--morado)}
+
+/* Lista para elegir */
+.tabla{margin-top:14px;border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.tf{display:grid;grid-template-columns:44px minmax(0,2.2fr) minmax(0,1.5fr) minmax(0,1.4fr) minmax(0,1fr) minmax(0,.9fr);gap:12px;align-items:center;padding:0 14px;min-height:56px;border-top:1px solid var(--line);font-size:13.5px}
+.tf:first-child{border-top:0}
+.tf.th{min-height:40px;background:var(--s2);font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.04em}
+.tf.sel{background:#F7F9FE}
+.tf b{display:block;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tf small{display:block;font-size:12px;color:var(--text2)}
+.tf .gris{color:var(--text2)}
+.nuevos{color:var(--azul);font-weight:700}
+.caja{width:22px;height:22px;border-radius:7px;border:2px solid #B9BFC8;display:grid;place-items:center;background:#fff}
+.caja.on{background:var(--azul);border-color:var(--azul)}
+.caja.on::after{content:"";width:10px;height:6px;border:2.5px solid #fff;border-top:0;border-right:0;transform:translate(0,-1px) rotate(-45deg)}
+.prog{display:block;height:6px;border-radius:3px;background:var(--s3);overflow:hidden;margin-top:5px;width:110px}
+.prog i{display:block;height:100%;width:100%;background:var(--azul);transform-origin:left;transform:scaleX(.6)}
+
+.tarjetas{display:grid;gap:10px;margin-top:12px}
+.tarj{display:grid;grid-template-columns:28px minmax(0,1fr) auto;gap:4px 10px;align-items:start;padding:12px 14px;border:1px solid var(--line);border-radius:16px}
+.tarj.sel{border-color:var(--azul);box-shadow:0 0 0 1px var(--azul) inset;background:#F7F9FE}
+.tarj .caja{margin-top:1px}
+.tarj b{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.tarj small{display:block;font-size:12.5px;color:var(--text2)}
+.tarj .fila2{grid-column:2 / -1;display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+
+.accion{position:absolute;left:0;right:0;bottom:0;display:flex;align-items:center;gap:14px;padding:12px 22px;background:#fff;border-top:1px solid var(--line);z-index:3}
+.accion .tx{flex:1;min-width:0;font-size:13.5px;color:var(--text2)}
+.accion .tx b{color:var(--text);display:block;font-size:15px}
+.tel .accion{bottom:74px;left:10px;right:10px;border:1px solid var(--line);border-radius:18px;padding:10px 10px 10px 14px;box-shadow:0 10px 24px rgba(17,19,21,.12)}
+.tel .accion .btn{height:46px;padding:0 16px;font-size:14.5px}
+
+/* Hojas */
+.velo{position:absolute;inset:0;background:var(--velo);z-index:6}
+.hoja{position:absolute;background:var(--bg);display:flex;flex-direction:column;z-index:7;box-shadow:var(--sombra)}
+.tel .hoja{left:0;right:0;bottom:0;height:93%;border-radius:26px 26px 0 0}
+.pc .hoja{top:0;bottom:0;right:0;width:560px}
+.hoja.h2{z-index:9}
+.tel .hoja.h2{height:62%}
+.pc .hoja.h2{width:480px}
+.velo.v2{z-index:8}
+.asa{width:40px;height:5px;border-radius:3px;background:var(--s3);margin:8px auto 0;flex:none}
+.pc .asa{display:none}
+.h-cab{display:flex;align-items:flex-start;gap:12px;padding:14px 18px 10px;flex:none;border-bottom:1px solid var(--line)}
+.h-cab .tx{flex:1;min-width:0}
+.h-cab h4{margin:0;font-size:19px;font-weight:800;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.h-cab p{font-size:13px;color:var(--text2);margin-top:2px}
+.x{width:40px;height:40px;border-radius:50%;background:var(--s2);font-size:20px;flex:none;display:grid;place-items:center}
+.h-cuerpo{flex:1;overflow:hidden;padding:14px 18px 18px}
+.h-pie{display:flex;gap:10px;padding:12px 18px 16px;border-top:1px solid var(--line);flex:none}
+.h-pie .btn{flex:1;min-width:0;font-size:15px;padding:0 12px}
+.tel .h-pie .btn{font-size:14px;padding:0 10px}
+.tel.alta{height:1320px}
+.pc.alta{height:1060px}
+
+/* Resultado */
+.veredicto{padding:14px 16px;border-radius:18px;display:grid;gap:2px}
+.veredicto b{font-size:22px;font-weight:800;letter-spacing:-.02em;line-height:1.15}
+.veredicto p{font-size:14px}
+.veredicto small{font-size:12.5px;font-weight:600;opacity:.9}
+.legal{display:flex;align-items:center;gap:10px;margin-top:10px;padding:10px 14px;border-radius:14px;border:1.5px solid var(--ambar);background:#fff;font-size:13.5px}
+.legal span{flex:1;min-width:0}
+.legal b{font-weight:700}
+.legal.igual{border-color:var(--line)}
+.grupo{margin-top:16px}
+.grupo > span{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
+.grupo > span em{font-style:normal;border-radius:999px;padding:1px 8px;font-size:11.5px}
+.punto{padding:11px 0;border-top:1px solid var(--line);display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;align-items:start}
+.grupo > span + .punto{border-top:0;padding-top:4px}
+.punto b{font-size:14.5px;font-weight:700}
+.punto p{font-size:13px;color:var(--text2);grid-column:1 / -1}
+.punto a{font-size:13px;font-weight:600;color:var(--azul);text-decoration:none;grid-column:1 / -1}
+.punto .btn{height:36px;padding:0 14px;font-size:13px}
+.exc{grid-column:1 / -1;font-size:12.5px;padding:8px 10px;border-radius:10px;background:var(--s2);color:var(--text2)}
+.exc b{font-size:12.5px;color:var(--text)}
+.plegar{display:flex;align-items:center;gap:10px;width:100%;text-align:left;margin-top:12px;padding:12px 14px;border-radius:14px;border:1.5px solid var(--line);font-weight:700;font-size:14px}
+.plegar span{flex:1}
+.plegar small{display:block;font-weight:500;color:var(--text2);font-size:12.5px}
+.plegar i{font-style:normal;color:var(--text3)}
+.leido{margin-top:8px;border:1px solid var(--line);border-radius:14px;padding:4px 14px}
+.leido div{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;padding:9px 0;border-top:1px solid var(--line);font-size:13px}
+.leido div:first-child{border-top:0}
+.leido div b{font-size:13.5px}
+.leido div small{grid-column:1 / -1;color:var(--text2);font-size:12.5px}
+.leido div em{font-style:normal;color:var(--text3);font-size:12px}
+
+/* Formulario */
+.lbl{display:block;font-size:13px;font-weight:600;margin:14px 0 8px}
+.lbl:first-child{margin-top:0}
+.area{width:100%;height:96px;padding:12px 16px;border:1.5px solid var(--text);border-radius:18px;font-size:14.5px;color:var(--text)}
+.err{font-size:12.5px;color:var(--rojo);margin:6px 4px 0;min-height:18px}
+.nota{font-size:12.5px;color:var(--text3);margin:8px 4px 0}
+.resumenx{padding:12px 14px;border-radius:14px;background:var(--s2);font-size:13.5px}
+.resumenx b{display:block;font-size:14.5px}
+
+/* Comparación */
+.seg{display:flex;padding:4px;border-radius:999px;background:#fff;border:1px solid var(--line);width:max-content}
+.seg i{font-style:normal;height:36px;padding:0 16px;border-radius:999px;font-weight:700;font-size:13px;color:var(--text2);display:grid;place-items:center}
+.seg i.on{background:var(--text);color:#fff}
+.cifras{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+.cifra{padding:12px 16px;border-radius:16px;background:var(--s2);min-width:0}
+.cifra.grande{flex:1.6}
+.cifra{flex:1}
+.cifra b{display:block;font-size:24px;font-weight:800;letter-spacing:-.02em;line-height:1.1}
+.cifra small{font-size:12.5px;color:var(--text2)}
+.cifra .barrita{display:flex;height:8px;border-radius:4px;overflow:hidden;margin-top:8px;gap:2px}
+.cifra .barrita i{display:block;height:100%}
+.tc{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1.1fr) minmax(0,1.2fr) minmax(0,.9fr) minmax(0,2.4fr);gap:12px;align-items:center;padding:0 14px;min-height:54px;border-top:1px solid var(--line);font-size:13.5px}
+.tc:first-child{border-top:0}
+.tc.th{min-height:40px;background:var(--s2);font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.04em}
+.tc b{display:block;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tc small{display:block;font-size:12px;color:var(--text2)}
+.tc .gris{color:var(--text2);font-size:13px}
+.si{color:var(--verde);font-weight:700} .no{color:var(--rojo);font-weight:700}
+.filtro{display:flex;align-items:center;gap:10px;margin-top:14px;flex-wrap:wrap}
+.interr{display:flex;align-items:center;gap:8px;font-size:13.5px;font-weight:600}
+.interr i{width:40px;height:24px;border-radius:999px;background:var(--azul);position:relative}
+.interr i::after{content:"";position:absolute;right:3px;top:3px;width:18px;height:18px;border-radius:50%;background:#fff}
+
+/* Estados */
+.esq{height:14px;border-radius:7px;background:var(--s3)}
+.esqf{display:grid;grid-template-columns:28px minmax(0,1fr) 90px;gap:10px;align-items:center;padding:14px;border:1px solid var(--line);border-radius:16px}
+.vacio{text-align:center;padding:30px 12px}
+.vacio b{display:block;font-size:17px;font-weight:800}
+.vacio p{font-size:13.5px;color:var(--text2);margin:6px auto 14px;max-width:34ch}
+.toast{position:absolute;left:16px;right:16px;bottom:90px;padding:12px 14px;border-radius:14px;background:var(--text);color:#fff;font-size:13.5px;z-index:5;display:flex;gap:10px;align-items:center}
+.toast span{flex:1}
+.toast b{color:#9DB4FF;white-space:nowrap}
+.mini{height:560px}
+
+.notas{max-width:1240px;margin:28px auto 0;background:#fff;border-radius:16px;padding:16px 18px;font-size:13.5px;color:var(--text2)}
+.notas b{color:var(--text)}
+.notas ol,.notas ul{margin:6px 0 0;padding-left:20px}
+.notas li{margin-top:4px}
+</style>
+</head>
+<body>
+<div class="guia">
+  <h1>Maqueta R1: Revisión con IA</h1>
+  <p>Un módulo nuevo, "Revisión", para el administrador y el abogado. Tres partes: elegir qué clientes correr, el resultado de cada cliente como hoja, y la comparación con lo que Legal ya decidió. Teléfono y escritorio. Nombres, RIF y fechas inventados.</p>
+</div>
+
+<!-- ================= 1. ELEGIR ================= -->
+<section class="sec" id="elegir">
+  <h2>1. Elegir qué clientes correr</h2>
+  <p>La lista muestra la marca de Legal y la de la IA lado a lado, y cuántos archivos nuevos tiene cada cliente (lo único que se paga). Se marcan los clientes y abajo sale cuánto se va a leer. Los ya leídos se vuelven a calcular sin costo. Mientras corre, la fila muestra el avance y la lista sigue usable.</p>
+  <div class="pc" style="height:640px">
+    <div class="barra"><b>EMPRESA</b><span>Empresas</span><nav><i>Inicio</i><i>Comisiones</i><i>Clientes</i><i>Factibilidad</i><i class="on">Revisión</i></nav><span class="av">AD</span></div>
+    <div class="cuerpo">
+      <div class="cab"><h3>Revisión</h3><span class="btn b2 chico">Comparar con Legal</span></div>
+      <p class="sub">Elige los clientes que quieres revisar con IA. Solo se pagan los archivos que nunca se han leído.</p>
+      <div class="atajos"><i class="on">Con archivos nuevos <em>12</em></i><i>Sin revisar <em>38</em></i><i>Revisados <em>54</em></i><i>Distinto a Legal <em>6</em></i><i>Revisar a mano <em>3</em></i></div>
+      <div class="tabla">
+        <div class="tf th"><span></span><span>Cliente</span><span>Legal</span><span>IA</span><span>Archivos</span><span>Última revisión</span></div>
+        <div class="tf sel"><span class="caja on"></span><span><b>Comercial Ejemplo 2020, C.A.</b><small>J-00000001-0 · PYME</small></span><span><span class="chip azul">En revisión</span></span><span><span class="chip">Sin revisar</span></span><span>9 · <span class="nuevos">9 nuevos</span></span><span class="gris">Nunca</span></div>
+        <div class="tf sel"><span class="caja on"></span><span><b>Distribuidora Prueba, C.A.</b><small>J-00000002-0 · Dedicado</small></span><span><span class="chip verde">Recibidos</span></span><span><span class="chip ambar">Con observaciones</span></span><span>14 · <span class="nuevos">2 nuevos</span></span><span class="gris">02/10/2026</span></div>
+        <div class="tf sel"><span class="caja on"></span><span><b>Inversiones Modelo, C.A.</b><small>J-00000003-0 · PYME</small></span><span><span class="chip ambar">Devuelto</span></span><span><span class="chip rojo">No apto</span></span><span>11 · <span class="nuevos">1 nuevo</span></span><span class="gris">28/09/2026</span></div>
+        <div class="tf"><span class="caja"></span><span><b>Servicios Ficticios, C.A.</b><small>J-00000004-0 · PYME</small></span><span><span class="chip azul">En revisión</span></span><span><span class="chip azul">Leyendo 4 de 7</span><span class="prog"><i></i></span></span><span>7 · <span class="nuevos">7 nuevos</span></span><span class="gris">Ahora</span></div>
+        <div class="tf"><span class="caja"></span><span><b>Ana Prueba</b><small>V-00000005 · Persona natural</small></span><span><span class="chip azul">En revisión</span></span><span><span class="chip">Sin revisar</span></span><span>2 · <span class="nuevos">2 nuevos</span></span><span class="gris">Nunca</span></div>
+        <div class="tf"><span class="caja"></span><span><b>Talleres Ejemplo, C.A.</b><small>J-00000006-0 · PYME</small></span><span><span class="chip azul">Documentos solicitados</span></span><span><span class="chip morado">Revisar a mano</span></span><span>8 · <span class="nuevos">1 nuevo</span></span><span class="gris">01/10/2026</span></div>
+      </div>
+    </div>
+    <div class="accion"><span class="tx"><b>3 clientes marcados</b>12 archivos nuevos por leer y 25 ya leídos que se recalculan sin costo. Hasta 25 clientes por corrida.</span><span class="btn b2 chico">Quitar marcas</span><span class="btn">Revisar 3 clientes</span></div>
+  </div>
+
+  <div class="fila-m" style="margin-top:22px">
+    <div><div class="rot">Teléfono · eligiendo</div>
+      <div class="tel">
+        <div class="barra"><b>EMPRESA</b><span>Empresas</span><span class="av">AD</span></div>
+        <div class="cuerpo">
+          <div class="cab"><h3>Revisión</h3></div>
+          <p class="sub">Marca los clientes y toca Revisar. Solo se pagan archivos nuevos.</p>
+          <div class="atajos"><i class="on">Con archivos nuevos <em>12</em></i><i>Sin revisar <em>38</em></i><i>Revisados <em>54</em></i></div>
+          <div class="tarjetas">
+            <div class="tarj sel"><span class="caja on"></span><span><b>Comercial Ejemplo 2020, C.A.</b><small>J-00000001-0 · 9 archivos, <span class="nuevos">9 nuevos</span></small></span><span></span><span class="fila2"><span class="chip azul">Legal: En revisión</span><span class="chip">IA: Sin revisar</span></span></div>
+            <div class="tarj sel"><span class="caja on"></span><span><b>Distribuidora Prueba, C.A.</b><small>J-00000002-0 · 14 archivos, <span class="nuevos">2 nuevos</span></small></span><span></span><span class="fila2"><span class="chip verde">Legal: Recibidos</span><span class="chip ambar">IA: Con observaciones</span></span></div>
+            <div class="tarj"><span class="caja"></span><span><b>Servicios Ficticios, C.A.</b><small>J-00000004-0 · 7 archivos</small></span><span></span><span class="fila2"><span class="chip azul">Legal: En revisión</span><span class="chip azul">Leyendo 4 de 7</span></span></div>
+            <div class="tarj"><span class="caja"></span><span><b>Ana Prueba</b><small>V-00000005 · 2 archivos, <span class="nuevos">2 nuevos</span></small></span><span></span><span class="fila2"><span class="chip azul">Legal: En revisión</span><span class="chip">IA: Sin revisar</span></span></div>
+          </div>
+        </div>
+        <div class="accion"><span class="tx"><b>2 marcados</b>11 archivos por leer</span><span class="btn">Revisar 2</span></div>
+        <div class="navab"><i>Inicio</i><i>Comisiones</i><i>Clientes</i><i>Factib.</i><i class="on">Revisión</i></div>
+      </div>
+    </div>
+    <div><div class="rot">Teléfono · confirmar antes de gastar</div>
+      <div class="tel">
+        <div class="barra"><b>EMPRESA</b><span>Empresas</span><span class="av">AD</span></div>
+        <div class="cuerpo"><div class="cab"><h3>Revisión</h3></div></div>
+        <div class="velo"></div>
+        <div class="hoja" style="height:52%">
+          <div class="asa"></div>
+          <div class="h-cab"><div class="tx"><h4>Revisar 2 clientes</h4><p>Lo que va a hacer la IA</p></div><span class="x">×</span></div>
+          <div class="h-cuerpo">
+            <div class="resumenx"><b>11 archivos nuevos por leer</b>Comercial Ejemplo 2020 (9) y Distribuidora Prueba (2). Los 12 ya leídos de Distribuidora se recalculan sin costo.</div>
+            <p class="nota">Puedes seguir trabajando: el resultado sale en la lista cuando termine y te llega un aviso. No cambia el estatus de Legal.</p>
+          </div>
+          <div class="h-pie"><span class="btn b2">Cancelar</span><span class="btn">Revisar</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 2. RESULTADO ================= -->
+<section class="sec" id="resultado">
+  <h2>2. Resultado por cliente</h2>
+  <p>Se abre como hoja encima de la lista (o desde el expediente). Arriba el veredicto y, al lado, lo que dijo Legal. Debajo, en este orden: lo que bloquea, lo que hay que revisar a mano, las observaciones y los avisos. Cada punto dice qué regla falló, con qué dato y en qué página lo vio, y qué hacer. Lo que cumple y lo que leyó la IA quedan plegados.</p>
+  <div class="fila-m">
+    <div><div class="rot">Teléfono</div>
+      <div class="tel alta">
+        <div class="barra"><b>EMPRESA</b><span>Empresas</span><span class="av">AD</span></div>
+        <div class="cuerpo"><div class="cab"><h3>Revisión</h3></div></div>
+        <div class="velo"></div>
+        <div class="hoja" style="height:96%">
+          <div class="asa"></div>
+          <div class="h-cab"><div class="tx"><h4>Comercial Ejemplo 2020, C.A.</h4><p>J-00000001-0 · PYME · firma conjunta y/o separada</p></div><span class="x">×</span></div>
+          <div class="h-cuerpo">
+            <div class="veredicto rojo"><b>No apto</b><p>2 cosas bloquean. La decisión es de Legal.</p><small>Revisado hoy 10:42 · 9 archivos leídos</small></div>
+            <div class="legal"><span>Legal: <b>Recibidos</b> el 12/08/2026. <b>No coincide</b> con la IA.</span></div>
+
+            <div class="grupo"><span>Bloquea <em class="rojo">2</em></span>
+              <div class="punto"><b>Junta vencida</b><span class="btn b2">Excepción</span><p>Designada en el acta inscrita el 14/03/2012 por 5 años. Tiene cláusula de permanencia, pero ya pasaron 10 años. Pide un acta de ratificación de junta.</p><a href="#">Acta constitutiva · página 6</a></div>
+              <div class="punto"><b>Cédula vencida · Pedro Ejemplo</b><span class="btn b2">Excepción</span><p>Venció el 31/05/2026. Pide la cédula nueva o concede la excepción si está en trámite.</p><a href="#">Cédula · página 1</a></div>
+            </div>
+
+            <div class="grupo"><span>Revisar a mano <em class="morado">1</em></span>
+              <div class="punto"><b>Cédula de María Ejemplo</b><span></span><p>El vencimiento (2031) no cuadra con la expedición (2016 más 10 años da 2026). Puede estar mal leída. Mírala y corrige el dato.</p><a href="#">Ver la cédula</a></div>
+            </div>
+
+            <div class="grupo"><span>Observaciones <em class="ambar">1</em></span>
+              <div class="punto"><b>Domicilio distinto al del RIF</b><span></span><p>Se parece en un 48 %. Falta un acta de cambio de domicilio.</p><a href="#">Acta constitutiva · página 2</a></div>
+            </div>
+
+            <div class="grupo"><span>Avisos <em class="azul">1</em></span>
+              <div class="punto"><b>Documento sin marcar</b><span></span><p>El archivo de la cédula de Pedro Ejemplo trae también su RIF en la página 2. Márcalo en el expediente para que cuente.</p><a href="#">Abrir expediente</a></div>
+            </div>
+
+            <button class="plegar"><span>Cumple<small>12 puntos: RIF de la empresa, razón social, duración, Conatel no aplica…</small></span><i>Ver</i></button>
+            <button class="plegar"><span>Lo que leyó la IA<small>9 archivos, 11 documentos, con su página</small></span><i>Ver</i></button>
+          </div>
+          <div class="h-pie"><span class="btn b2">Ver expediente</span><span class="btn">Volver a revisar</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="flex:1 1 100%;min-width:0"><div class="rot">Escritorio · con "Lo que leyó la IA" abierto</div>
+      <div class="pc alta">
+        <div class="barra"><b>EMPRESA</b><span>Empresas</span><nav><i>Inicio</i><i>Comisiones</i><i>Clientes</i><i>Factibilidad</i><i class="on">Revisión</i></nav><span class="av">AD</span></div>
+        <div class="cuerpo"><div class="cab"><h3>Revisión</h3></div><p class="sub">La lista queda quieta detrás.</p></div>
+        <div class="velo"></div>
+        <div class="hoja">
+          <div class="h-cab"><div class="tx"><h4>Distribuidora Prueba, C.A.</h4><p>J-00000002-0 · Dedicado corporativo · firma separada</p></div><span class="x">×</span></div>
+          <div class="h-cuerpo">
+            <div class="veredicto ambar"><b>Con observaciones</b><p>Nada bloquea. Hay 1 observación.</p><small>Revisado hoy 10:44 · 2 archivos nuevos leídos, 12 recalculados</small></div>
+            <div class="legal igual"><span>Legal: <b>Recibidos</b> el 20/09/2026. <span class="si">Coincide</span> con la IA.</span></div>
+
+            <div class="grupo"><span>Observaciones <em class="ambar">1</em></span>
+              <div class="punto"><b>Falta correo del firmante</b><span></span><p>Luis Prueba firma, pero no tiene correo en el expediente. Lo revisa la app, no la IA.</p><a href="#">Abrir expediente</a></div>
+            </div>
+
+            <div class="grupo"><span>Excepciones concedidas <em class="azul">1</em></span>
+              <div class="punto"><b>Cédula vencida · Luis Prueba</b><span class="btn b2">Quitar</span><div class="exc"><b>Motivo:</b> cédula en trámite, presentó constancia. Concedida por Administrador el 03/10/2026.</div></div>
+            </div>
+
+            <button class="plegar"><span>Cumple<small>14 puntos</small></span><i>Ver</i></button>
+            <button class="plegar"><span>Lo que leyó la IA<small>14 archivos, 15 documentos</small></span><i>Ocultar</i></button>
+            <div class="leido">
+              <div><b>Cédula · Luis Prueba</b><em>pág. 1</em><small>V 00.000.007 · vence 31/03/2026 · expedición 03/2016 (cuadra)</small></div>
+              <div><b>RIF personal · Luis Prueba</b><em>pág. 2 del mismo archivo</em><small>V000000070 · vence 15/02/2028 · nombre igual a la cédula (100 %)</small></div>
+              <div><b>RIF de la empresa</b><em>pág. 1</em><small>J000000020 · vence 10/01/2028 · razón social igual al acta</small></div>
+              <div><b>Acta constitutiva</b><em>12 págs.</em><small>Inscrita 05/06/2019 · duración 50 años (pág. 3) · junta de 10 años (pág. 7) · firma separada (pág. 8)</small></div>
+              <div><b>Acta de asamblea</b><em>4 págs.</em><small>Inscrita 11/04/2024 · aumento de capital · no cambia junta ni domicilio</small></div>
+              <div><b>Conatel</b><em>No aplica</em><small>Dedicado corporativo, no ISP</small></div>
+            </div>
+          </div>
+          <div class="h-pie"><span class="btn b2">Ver expediente</span><span class="btn">Volver a revisar</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="fila-m" style="margin-top:22px">
+    <div><div class="rot">Teléfono · conceder excepción (hoja apilada, solo administrador)</div>
+      <div class="tel">
+        <div class="barra"><b>EMPRESA</b><span>Empresas</span><span class="av">AD</span></div>
+        <div class="cuerpo"><div class="cab"><h3>Revisión</h3></div></div>
+        <div class="velo"></div>
+        <div class="hoja" style="height:93%"><div class="asa"></div><div class="h-cab"><div class="tx"><h4>Comercial Ejemplo 2020, C.A.</h4><p>J-00000001-0</p></div><span class="x">×</span></div><div class="h-cuerpo"><div class="veredicto rojo"><b>No apto</b><p>2 cosas bloquean.</p></div></div></div>
+        <div class="velo v2"></div>
+        <div class="hoja h2">
+          <div class="asa"></div>
+          <div class="h-cab"><div class="tx"><h4>Excepción: junta vencida</h4><p>Comercial Ejemplo 2020, C.A.</p></div><span class="x">×</span></div>
+          <div class="h-cuerpo">
+            <label class="lbl">Motivo</label>
+            <div class="area">El acta de ratificación está en el Registro, la traen la próxima semana.</div>
+            <div class="err"></div>
+            <p class="nota">Queda en la bitácora con tu nombre y la fecha. El punto deja de bloquear y se ve como excepción. Se puede quitar después.</p>
+          </div>
+          <div class="h-pie"><span class="btn b2">Cancelar</span><span class="btn">Conceder</span></div>
+        </div>
+      </div>
+    </div>
+    <div style="flex:1;min-width:300px;max-width:520px">
+      <div class="notas" style="margin:22px 0 0">
+        <b>Qué no hace la IA:</b> no cambia el estatus de Legal, no escribe faltantes al líder y no aprueba por suposición. Si un dato no se lee, el punto va a "Revisar a mano".<br><br>
+        <b>Quién ve qué:</b> el administrador corre, ve y concede excepciones. El abogado corre y ve, pero no concede. El RIF personal vencido nunca muestra el botón Excepción.<br><br>
+        <b>Desde el expediente:</b> la misma hoja se abre con un enlace "Revisión IA" en el expediente del cliente, sin tocar la pantalla de subida.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 3. COMPARAR ================= -->
+<section class="sec" id="comparar">
+  <h2>3. Comparación con Legal</h2>
+  <p>Mide si la IA acierta contra lo que Legal ya decidió. Sirve para la prueba de 20 clientes (Gemini contra Claude, con el selector arriba) y después para vigilar. Cuenta por cliente y por documento. Por defecto muestra solo las diferencias; cada fila abre la hoja del resultado.</p>
+  <div class="pc" style="height:640px">
+    <div class="barra"><b>EMPRESA</b><span>Empresas</span><nav><i>Inicio</i><i>Comisiones</i><i>Clientes</i><i>Factibilidad</i><i class="on">Revisión</i></nav><span class="av">AD</span></div>
+    <div class="cuerpo">
+      <div class="cab"><h3>Comparar con Legal</h3><span class="seg"><i class="on">Gemini</i><i>Claude</i></span></div>
+      <p class="sub">Prueba con 20 clientes que Legal ya decidió. Mismos archivos para las dos.</p>
+      <div class="cifras">
+        <div class="cifra grande"><b>16 de 20 clientes</b><small>coinciden con Legal (80 %)</small><div class="barrita"><i style="flex:16;background:var(--verde)"></i><i style="flex:3;background:var(--rojo)"></i><i style="flex:1;background:var(--morado)"></i></div></div>
+        <div class="cifra"><b>172 de 181</b><small>documentos bien leídos (95 %)</small></div>
+        <div class="cifra"><b>1</b><small>a revisar a mano</small></div>
+        <div class="cifra"><b>9 min</b><small>en leer los 181</small></div>
+      </div>
+      <div class="filtro"><span class="interr"><i></i>Solo diferencias</span><span class="gris" style="font-size:13px;color:var(--text2)">4 clientes</span></div>
+      <div class="tabla">
+        <div class="tc th"><span>Cliente</span><span>Legal</span><span>IA</span><span>Coincide</span><span>Dónde difiere</span></div>
+        <div class="tc"><span><b>Comercial Ejemplo 2020, C.A.</b><small>J-00000001-0</small></span><span><span class="chip verde">Aprobó</span></span><span><span class="chip rojo">No apto</span></span><span class="no">No</span><span class="gris">Junta vencida (Legal la aceptó por la cláusula de permanencia)</span></div>
+        <div class="tc"><span><b>Inversiones Modelo, C.A.</b><small>J-00000003-0</small></span><span><span class="chip ambar">Devolvió</span></span><span><span class="chip verde">Apto</span></span><span class="no">No</span><span class="gris">Legal pidió acta de cambio de domicilio; la IA vio 71 % de parecido</span></div>
+        <div class="tc"><span><b>Comercios Prueba, C.A.</b><small>J-00000008-0</small></span><span><span class="chip verde">Aprobó</span></span><span><span class="chip rojo">No apto</span></span><span class="no">No</span><span class="gris">Leyó mal la fecha del RIF (2025 en vez de 2028) · pág. 1</span></div>
+        <div class="tc"><span><b>Talleres Ejemplo, C.A.</b><small>J-00000006-0</small></span><span><span class="chip verde">Aprobó</span></span><span><span class="chip morado">Revisar a mano</span></span><span class="gris">Sin veredicto</span><span class="gris">Cédula borrosa, no leyó el vencimiento</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="fila-m" style="margin-top:22px">
+    <div><div class="rot">Teléfono</div>
+      <div class="tel">
+        <div class="barra"><b>EMPRESA</b><span>Empresas</span><span class="av">AD</span></div>
+        <div class="cuerpo">
+          <div class="cab"><h3>Comparar</h3><span class="seg"><i class="on">Gemini</i><i>Claude</i></span></div>
+          <div class="cifras">
+            <div class="cifra grande" style="flex-basis:100%"><b>16 de 20 clientes</b><small>coinciden con Legal · 172 de 181 documentos bien leídos</small><div class="barrita"><i style="flex:16;background:var(--verde)"></i><i style="flex:3;background:var(--rojo)"></i><i style="flex:1;background:var(--morado)"></i></div></div>
+          </div>
+          <div class="filtro"><span class="interr"><i></i>Solo diferencias</span></div>
+          <div class="tarjetas">
+            <div class="tarj" style="grid-template-columns:minmax(0,1fr) auto"><span><b>Comercial Ejemplo 2020, C.A.</b><small>Junta vencida (Legal la aceptó por la cláusula)</small></span><span class="no">No</span><span class="fila2" style="grid-column:1 / -1"><span class="chip verde">Legal: Aprobó</span><span class="chip rojo">IA: No apto</span></span></div>
+            <div class="tarj" style="grid-template-columns:minmax(0,1fr) auto"><span><b>Inversiones Modelo, C.A.</b><small>Domicilio: la IA vio 71 % de parecido</small></span><span class="no">No</span><span class="fila2" style="grid-column:1 / -1"><span class="chip ambar">Legal: Devolvió</span><span class="chip verde">IA: Apto</span></span></div>
+            <div class="tarj" style="grid-template-columns:minmax(0,1fr) auto"><span><b>Comercios Prueba, C.A.</b><small>Leyó mal la fecha del RIF · pág. 1</small></span><span class="no">No</span><span class="fila2" style="grid-column:1 / -1"><span class="chip verde">Legal: Aprobó</span><span class="chip rojo">IA: No apto</span></span></div>
+          </div>
+        </div>
+        <div class="navab"><i>Inicio</i><i>Comisiones</i><i>Clientes</i><i>Factib.</i><i class="on">Revisión</i></div>
+      </div>
+    </div>
+
+    <div><div class="rot">Teléfono · cargando (muestra lo último visto)</div>
+      <div class="tel mini">
+        <div class="barra"><b>EMPRESA</b><span>Empresas</span><span class="av">AD</span></div>
+        <div class="cuerpo">
+          <div class="cab"><h3>Revisión</h3></div>
+          <div class="tarjetas">
+            <div class="esqf"><span class="esq" style="height:22px"></span><span class="esq"></span><span class="esq"></span></div>
+            <div class="esqf"><span class="esq" style="height:22px"></span><span class="esq"></span><span class="esq"></span></div>
+            <div class="esqf"><span class="esq" style="height:22px"></span><span class="esq"></span><span class="esq"></span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div><div class="rot">Teléfono · vacío y error de red</div>
+      <div class="tel mini">
+        <div class="barra"><b>EMPRESA</b><span>Empresas</span><span class="av">AD</span></div>
+        <div class="cuerpo">
+          <div class="cab"><h3>Revisión</h3></div>
+          <div class="atajos"><i class="on">Con archivos nuevos <em>0</em></i><i>Sin revisar <em>38</em></i></div>
+          <div class="vacio"><b>No hay archivos nuevos</b><p>Todo lo subido ya se leyó. Mira "Sin revisar" o vuelve cuando los líderes suban documentos.</p><span class="btn b2 chico">Ver sin revisar</span></div>
+        </div>
+        <div class="toast"><span>No se pudo iniciar la revisión. Revisa la conexión; no se gastó nada.</span><b>Reintentar</b></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="notas">
+  <b>Lo que propongo con esta maqueta (dime si algo no va):</b>
+  <ol>
+    <li>"Revisión" es un módulo propio en la navegación, solo para administrador y abogado. En teléfono el administrador pasa a 5 botones abajo (Factibilidad se acorta a "Factib."). Líder, analista y aliado no lo ven.</li>
+    <li>Hasta 25 clientes por corrida, para no correr toda la base de una vez.</li>
+    <li>Antes de gastar, una hoja de confirmación dice cuántos archivos nuevos se van a leer.</li>
+    <li>La marca de la IA (Sin revisar, Apto, Con observaciones, No apto, Revisar a mano) va en su propia columna, aparte del estatus de Legal.</li>
+    <li>La comparación con Legal usa las decisiones que ya están en la base; no hay que cargar nada a mano.</li>
+  </ol>
+</div>
+</body>
+</html>
