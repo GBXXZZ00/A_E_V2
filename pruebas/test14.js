@@ -59,7 +59,7 @@ const ANDROID = Object.assign({}, TEL, { userAgent: 'Mozilla/5.0 (Linux; Android
     ok('iphone: Pegar consulta sola', (await p.textContent('#hojaFact')).includes('Hay red'));
     await p.keyboard.press('Escape'); await p.waitForFunction(() => !window.Comun.hojaAbierta());
     await p.click('.fa-fab'); await p.waitForSelector('#hojaFact.ver #faEnlace');
-    ok('iphone: la consulta nueva recuerda que se puede pegar', (await p.textContent('#hojaFact')).includes('¿Copiaste el enlace en WhatsApp?'));
+    ok('iphone: la consulta nueva explica cómo pegar, sin botón Pegar', (await p.textContent('#faAyuda')).includes('mantén presionado el campo y toca Pegar') && (await p.locator('#faPegar').count()) === 0);
     await ctx.close(); }
 
   // En la computadora no sale la ayuda de teléfono

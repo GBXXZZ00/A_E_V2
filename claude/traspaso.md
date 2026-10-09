@@ -1,6 +1,6 @@
 # Traspaso (se actualiza al cerrar cada sesión)
 
-Actualizado: 09/10/2026. Publicado: `?v=18` (Drive desde la app, privacidad, Enviar pendientes y Factibilidad completa).
+Actualizado: 09/10/2026. Publicado: `?v=19` (Factibilidad simplificada según la maqueta F2).
 
 ## Estado
 - Publicado y con pruebas (test01 a test14 en TODO OK): acceso con PIN, Usuarios, Inicio, Clientes, expediente como hoja (`assets/js/ficha.js`), Comisiones (`comisiones.js`), Actualizar con cruce (`actualizar.js`), proforma y carta en PDF (`documentos.js`, `marca.js`), bienvenidas por enviar (`bienvenidas.js`), ZIP y Excel sin librerías (`archivos.js`), página de privacidad (`privacidad.html`), Enviar pendientes en Comisiones y Factibilidad (`factibilidad.js`, `coordenadas.js`, `mapared.js`, `kmz-lector.js`).
@@ -19,6 +19,13 @@ Actualizado: 09/10/2026. Publicado: `?v=18` (Drive desde la app, privacidad, Env
    - Pantalla: `factibilidad.html` con lista, atajos, hoja de consulta, resultado con Leaflet (OpenStreetMap y Esri satélite), mapa amplio, datos del cliente, texto de Odoo plegado, Ya lo vendí y Ya no interesa.
    - WhatsApp: `share_target` en `manifest.json` (Android instalada), retoma lo compartido después del PIN, ayuda de una sola vez, Pegar en iPhone. Enlaces cortos con la función `resolver_enlace` (no confirmado que Google no la bloquee: si falla, pide coordenadas).
    - **Falta probar con el KMZ real**: subirlo en Actualizar y verificar el reparto (Liberado 1.507, Exclusiva 36, Diseño 416, Construcción 1, Permiso VGT 1; 1.961 polígonos). El resumen de la carga lo muestra.
+
+5. **Factibilidad simplificada** (v19), según `claude/maquetas/factibilidad-f2.html` aprobada:
+   - Lista con cada consulta en su bandeja; en teléfono, botón ancho "Nueva consulta" encima de la barra de abajo (opción B).
+   - Hoja de consulta: PYME o Dedicado arriba, un solo campo y una nota para pegar. Sin botón Pegar y sin "Usar mi ubicación".
+   - Resultado nuevo: estado, frase, MDT con distancia y capacidad, mapa, "Copiar mensaje para el cliente" y "Cerrar". El historial sale solo con más de un cambio; "Ya lo vendí" y "Ya no interesa" solo en una consulta guardada, bajo "Cerrar seguimiento".
+   - Mensaje para el cliente con negritas de WhatsApp ("Notificación de cobertura"), firmado por el líder.
+   - Texto de Odoo dentro de "Datos del cliente", solo PYME y con nombre y RIF: Hay red, `INST. PROMO PYME|EVENTO NOMBRE RIF`; Posible excepción, `FACTIBILIDAD NOMBRE RIF`. Dedicado sin texto hasta el módulo de dedicados.
 
 ## Siguientes tareas para Claude Code, en orden
 Antes de cada una: explicar en simple y esperar el OK.
@@ -44,12 +51,9 @@ Antes de cada una: explicar en simple y esperar el OK.
 - Las bienvenidas pendientes cuentan solo el corte en curso.
 
 - Factibilidad: el líder ve solo sus consultas; admin y analistas todas; abogado y aliado no entran.
-- Factibilidad: el tipo de cliente viene marcado en PYME; se puede cambiar antes de consultar.
-- Factibilidad: lo compartido desde WhatsApp abre la consulta con el enlace puesto y espera un toque en Consultar (para elegir el tipo).
 - Factibilidad: un polígono que no está en una carpeta de estado (Liberado, Exclusiva, Diseño, Construcción, Permiso VGT) queda fuera y el resumen lo dice; no se usa el color como respaldo.
-- Factibilidad: solo se revisan con el mapa nuevo las consultas abiertas (no las vendidas ni las cerradas).
-- Factibilidad: texto de Odoo para Dedicado: "INST. DEDICADO NOMBRE RIF".
-- Factibilidad: en iPhone, la ayuda y el formulario ofrecen Pegar; no se lee el portapapeles sin que la persona toque.
+- Factibilidad: en iPhone, la ayuda de la lista ofrece Pegar (la hoja de consulta ya no tiene ese botón, solo la nota); no se lee el portapapeles sin que la persona toque.
+- Factibilidad: bajo el texto de Odoo sigue la nota del código de vendedor cuando la orden la crea otra persona.
 - Enviar pendientes: el saludo cambia según la hora (Buenos días, Buenas tardes, Buenas noches); el mensaje se puede editar antes de enviarlo; "más de 12" cuenta los clientes pendientes, no todos.
 - Enviar pendientes: si el documento está subido pero sin aprobar, dice "documentos en revisión con Legal"; si lo devolvieron, "corregir ... (lo devolvió Legal)".
 - Privacidad: el contacto es "el administrador de la app" (sin correo, porque el repo es público).

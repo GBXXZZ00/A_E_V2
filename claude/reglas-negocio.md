@@ -68,6 +68,9 @@ Sin nombres reales: el repo es público. "Analista Senior" es el responsable de 
 - Zona exclusiva de aliado: se puede instalar, solo se avisa. Planta Externa: aviso para el aliado de que ahí no puede instalar.
 - Cada consulta se vuelve a revisar sola cuando se sube un mapa nuevo y avisa si cambió. El mapa se sube por la pantalla Actualizar.
 - Vista amplia de los MDT cercanos, como en la app vieja.
+- Confirmado el 09/10: el tipo de cliente viene marcado en PYME; lo compartido desde WhatsApp espera un toque en Consultar; con un mapa nuevo solo se revisan las consultas abiertas.
+- El mensaje para el cliente sale con el formato "Notificación de cobertura" (resultado y siguiente paso en negrita) y lo firma el líder.
+- Texto de Odoo en Factibilidad: Hay red, instalación PROMO PYME (por defecto) o EVENTO; Posible excepción, "FACTIBILIDAD NOMBRE RIF"; Dedicado no lleva texto hasta el módulo de dedicados.
 
 ## Generales
 - Ingreso con PIN; se recuerda equipo y usuario. Roles: admin, abogado, líder, aliado, analista (el Analista Senior es analista con marca `senior`).

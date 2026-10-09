@@ -9,18 +9,20 @@
     espera: { c: 'azul', t: 'En espera', f: 'Todavía no hay red aquí. Queda en seguimiento: te avisamos si un mapa nuevo trae red.' },
     sin_red: { c: 'rojo', t: 'Sin red', f: 'No hay red cerca. Queda guardada por si la red llega más adelante.' }
   };
+  // Mensaje para el cliente: se copia con asteriscos para que WhatsApp lo ponga en negrita
   const CLIENTE = {
-    hay_red: 'Buenas noticias: su ubicación tiene cobertura de nuestra red. Le preparo la propuesta para instalar.',
-    excepcion: 'Su ubicación está muy cerca de nuestra red. Lo confirmo con ingeniería y le aviso apenas tenga respuesta.',
-    espera: 'Por ahora su ubicación no tiene cobertura. La dejamos registrada y le avisamos apenas llegue la red a su zona.',
-    sin_red: 'Por ahora no tenemos cobertura en su ubicación. La dejamos registrada por si la red llega más adelante.'
+    hay_red: ['con cobertura', 'Su ubicación está dentro de nuestra red.', 'le envío la propuesta y los documentos que necesitamos.'],
+    excepcion: ['en evaluación', 'Su ubicación está muy cerca de nuestra red.', 'ingeniería evalúa el punto y le confirmo apenas tenga respuesta.'],
+    espera: ['sin cobertura por ahora', 'La red todavía no llega a su zona.', 'su ubicación queda registrada y le avisamos cuando haya cobertura.'],
+    sin_red: ['sin cobertura', 'No tenemos red cerca de su ubicación.', 'queda registrada por si la red llega más adelante.']
   };
+  const ODOO_TIPOS = ['PROMO PYME', 'EVENTO'];
   const ATAJOS = [['con_red', 'Ahora con red'], ['abiertas', 'Abiertas'], ['espera', 'En espera'], ['excepcion', 'Excepción'], ['cerradas', 'Cerradas']];
   const COLOR = { red: '#3B78E7', excl: '#0091B8', dis: '#C9A400' };
   const PAGINA = 30;
   let yo = null; let filtro = 'abiertas'; let L = null; let pedido = 0;
   let C = null;   // consulta abierta en la hoja
-  let F = { texto: '', tipo: 'pyme', error: '', copiado: '' };   // formulario
+  let F = { texto: '', tipo: 'pyme', error: '' };   // formulario
   let mapas = {};   // mapas de Leaflet vivos
   const VER = ((document.currentScript && /[?&]v=(\d+)/.exec(document.currentScript.src)) || [])[1] || '1';
 
@@ -59,7 +61,7 @@
     $('faLista').innerHTML = '<div class="fa-lista">' + d.filas.map((p) => {
       const nombre = p.nombre || 'Sin nombre';
       const zona = p.resultado === 'hay_red' ? (p.mdt ? 'MDT ' + p.mdt + ' · dentro de la zona' : 'Dentro de la zona') : p.mdt ? 'MDT ' + p.mdt + (p.distancia_m !== null ? ' · ' + km(p.distancia_m) + ' de la red' : '') : 'Sin red a 2 km';
-      return '<button type="button" class="fa-pro" data-consulta="' + esc(p.id) + '"><span><b>' + (p.nuevo ? '<em class="fa-nuevo">NUEVO</em>' : '') + '<span>' + esc(nombre) + '</span></b>' +
+      return '<button type="button" class="fa-pro' + (p.nuevo ? ' nueva' : '') + '" data-consulta="' + esc(p.id) + '"><span><b>' + (p.nuevo ? '<em class="fa-nuevo">NUEVO</em>' : '') + '<span>' + esc(nombre) + '</span></b>' +
         '<small>' + esc((p.ciudad ? p.ciudad + ' · ' : '') + haceCuanto(p.creada_en) + (p.lider ? ' · ' + p.lider : '')) + '</small></span>' +
         '<span class="c2">' + (p.anterior && p.nuevo ? '<s>' + esc((EST[p.anterior] || {}).t || '') + '</s> · ' : '') + esc(zona) + (p.exclusividad === 'aliado' && p.aliado ? ' · Exclusiva de ' + esc(p.aliado) : '') + '</span>' +
         chip(p.resultado, p.seguimiento) + '</button>';
@@ -111,16 +113,14 @@
   const esTel = () => window.matchMedia('(max-width:899px)').matches;
   function formulario(o){
     montarHojas(); soltarMapa('chico'); C = null;
-    F = Object.assign({ texto: '', tipo: F.tipo || 'pyme', error: '', copiado: esIos && !(o && o.texto) }, o || {});
-    $('tFact').textContent = 'Nueva consulta'; $('sFact').textContent = 'Pega el enlace, escribe las coordenadas o usa tu ubicación';
-    $('cFact').innerHTML = (F.copiado ? '<div class="fa-copiado"><b>¿Copiaste el enlace en WhatsApp?</b>Toca Pegar y se consulta solo.</div>' : '') +
+    F = Object.assign({ texto: '', tipo: F.tipo || 'pyme', error: '' }, o || {});
+    $('tFact').textContent = 'Nueva consulta'; $('sFact').textContent = 'Pega el enlace de la ubicación o las coordenadas';
+    $('cFact').innerHTML = '<span class="rotulo" id="rTipo">Tipo de cliente</span><div class="fa-tipo" role="radiogroup" aria-labelledby="rTipo">' +
+      [['pyme', 'PYME'], ['dedicado', 'Dedicado']].map((t) => '<button type="button" role="radio" aria-checked="' + (F.tipo === t[0]) + '" data-tipo="' + t[0] + '">' + t[1] + '</button>').join('') + '</div>' +
       '<label class="rotulo arriba" for="faEnlace">Enlace de Google Maps o coordenadas</label>' +
-      '<div class="fa-campo-fila"><input class="campo" id="faEnlace" type="text" inputmode="url" autocomplete="off" autocapitalize="none" spellcheck="false" maxlength="600" value="' + esc(F.texto) + '"' + (F.error ? ' aria-invalid="true"' : '') + ' aria-describedby="faAyuda eEnlace">' +
-      '<button type="button" class="fa-pegar" id="faPegar">Pegar</button></div>' +
-      '<div class="error" id="eEnlace" role="alert">' + esc(F.error) + '</div><p class="nota" id="faAyuda">Ejemplos: https://maps.app.goo.gl/… o 10.0601, -72.5524</p>' +
-      (esTel() ? '<div class="fa-otra"><button type="button" class="btn btn-2 btn-chico" id="faUbic">' + ic('wifi') + 'Usar mi ubicación</button></div>' : '') +
-      '<span class="rotulo arriba" id="rTipo">Tipo de cliente</span><div class="fa-tipo" role="radiogroup" aria-labelledby="rTipo">' +
-      [['pyme', 'PYME'], ['dedicado', 'Dedicado']].map((t) => '<button type="button" role="radio" aria-checked="' + (F.tipo === t[0]) + '" data-tipo="' + t[0] + '">' + t[1] + '</button>').join('') + '</div>';
+      '<input class="campo" id="faEnlace" type="text" inputmode="url" autocomplete="off" autocapitalize="none" spellcheck="false" maxlength="600" value="' + esc(F.texto) + '"' + (F.error ? ' aria-invalid="true"' : '') + ' aria-describedby="eEnlace faAyuda">' +
+      '<div class="error" id="eEnlace" role="alert">' + esc(F.error) + '</div>' +
+      '<p class="nota" id="faAyuda"><b>Para pegar:</b> ' + (esTel() ? 'en WhatsApp mantén presionado el enlace y toca Copiar. Aquí, mantén presionado el campo y toca Pegar.' : 'copia el enlace en WhatsApp y pégalo aquí con Ctrl+V.') + '</p>';
     $('pFact').innerHTML = '<button type="button" class="btn" id="faConsultar">Consultar</button>';
     if(hojaAbierta() !== 'hojaFact') abrirHoja('hojaFact');
   }
@@ -150,7 +150,7 @@
     try {
       if(r.corto) p = await resolverCorto(r.corto);
       const d = await rpc('fact_consultar', { p_lat: p.lat, p_lng: p.lng, p_tipo: F.tipo, p_enlace: /^https?:/i.test(F.texto) ? F.texto : null });
-      cache.borrarTodo(); resultado(d); cargar();
+      cache.borrarTodo(); resultado(d, true); cargar();
     } catch (e) {
       if(hojaAbierta() !== 'hojaFact') return;
       formulario({ texto: F.texto, tipo: F.tipo }); errorCampo(e.message);
@@ -174,40 +174,56 @@
       $('cFact').innerHTML = '<div class="vacio" role="alert"><b>No se pudo abrir la consulta</b><p>' + esc(e.message) + '</p><button type="button" class="btn btn-chico" data-consulta="' + esc(id) + '">Reintentar</button></div>';
     }
   }
-  function textoOdoo(d, nombre, rif){
-    const n = String(nombre || '').trim().toUpperCase() || 'NOMBRE DEL CLIENTE';
+  // Texto para Odoo: solo PYME, con nombre y RIF. Hay red: instalación (PROMO PYME o EVENTO). Posible excepción: orden de factibilidad.
+  function textoOdoo(d, nombre, rif, tipoOdoo){
+    if(d.tipo !== 'pyme' || (d.resultado !== 'hay_red' && d.resultado !== 'excepcion')) return '';
+    const n = String(nombre || '').replace(/\s+/g, ' ').trim().toUpperCase();
     const r = String(rif || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
-    const doc = r ? (/^\d/.test(r) ? 'J' + r : r) : 'J000000000';
-    return (d.tipo === 'dedicado' ? 'INST. DEDICADO ' : 'INST. PROMO PYME ') + n + ' ' + doc;
+    if(!n || !/^[JGVEP]?\d{5,10}$/.test(r)) return '';
+    const doc = /^\d/.test(r) ? 'J' + r : r;
+    return d.resultado === 'excepcion' ? 'FACTIBILIDAD ' + n + ' ' + doc : 'INST. ' + (ODOO_TIPOS.indexOf(tipoOdoo) >= 0 ? tipoOdoo : 'PROMO PYME') + ' ' + n + ' ' + doc;
   }
-  function resultado(d){
-    C = { id: d.id, d, cercanas: null, plegado: { datos: !!(d.nombre || d.telefono || d.rif), odoo: false } };
+  function pintarOdoo(){
+    const z = $('faOdoo'); if(!z || !C || !C.d) return;
+    const d = C.d; const tx = textoOdoo(d, $('gNom') ? $('gNom').value : d.nombre, $('gRif') ? $('gRif').value : '', C.odooTipo);
+    if(!tx){ z.innerHTML = ''; return; }
+    z.innerHTML = '<div class="fa-bloque fa-odoo-b"><b>' + (d.resultado === 'excepcion' ? 'Texto para la orden de factibilidad' : 'Texto para la orden de Odoo') + '</b>' +
+      (d.resultado === 'hay_red' ? '<div class="fa-seg" role="radiogroup" aria-label="Tipo de orden">' + ODOO_TIPOS.map((t) => '<button type="button" role="radio" aria-checked="' + (C.odooTipo === t) + '" data-odoo="' + t + '">' + t + '</button>').join('') + '</div>' : '') +
+      '<div class="fa-odoo"><code id="txOdoo">' + esc(tx) + '</code><button type="button" class="btn btn-chico" id="faCopiaOdoo">Copiar</button></div>' +
+      '<p class="nota" style="margin:8px 0 0">El nodo lo pone Odoo.' + (d.lider_codigo ? ' Si la orden la crea otra persona por ti, agrega al final tu código de vendedor: ' + esc(d.lider_codigo) + '.' : '') + '</p></div>';
+  }
+  function mensajeCliente(d){
+    const m = CLIENTE[d.resultado] || CLIENTE.sin_red;
+    const nombre = String(($('gNom') ? $('gNom').value : d.nombre) || '').replace(/\s+/g, ' ').trim();
+    return '*Notificación de cobertura*\n\nEstimado ' + (nombre || 'cliente') + ', revisamos la ubicación que nos envió.\n\n*Resultado: ' + m[0] + '.* ' + m[1] + '\n\n*Siguiente paso:* ' + m[2] + '\n\n' + (d.lider ? d.lider + '\n' : '') + 'Airtek Empresas';
+  }
+  // nueva: recién consultada. Sin historial ni cierre de seguimiento.
+  function resultado(d, nueva){
+    C = { id: d.id, d, cercanas: null, odooTipo: 'PROMO PYME', nueva: !!nueva };
     const e = EST[d.resultado] || EST.sin_red; const abierta = d.seguimiento === 'abierta';
     $('tFact').textContent = d.nombre || 'Consulta'; $('sFact').textContent = lugar(d);
     const rif = d.rif ? (d.rif_tipo || 'J') + d.rif : '';
+    const conDatos = !!(d.nombre || d.telefono || d.rif);
+    const conOdoo = d.tipo === 'pyme' && (d.resultado === 'hay_red' || d.resultado === 'excepcion');
+    const hist = d.historial || [];
     $('cFact').innerHTML =
-      (d.anterior && d.cambio_en && d.visto === false ? '<div class="fa-bloque verde" style="margin:0 0 10px"><b>Cambió con el mapa del ' + esc(fecha(d.mapa.fecha)) + '</b>Antes: ' + esc((EST[d.anterior] || {}).t || '') + '. Ahora: ' + esc(e.t) + '.</div>' : '') +
+      (!nueva && d.anterior && d.cambio_en && d.visto === false ? '<div class="fa-bloque verde" style="margin:0 0 10px"><b>Cambió con el mapa del ' + esc(fecha(d.mapa.fecha)) + '</b>Antes: ' + esc((EST[d.anterior] || {}).t || '') + '. Ahora: ' + esc(e.t) + '.</div>' : '') +
       (d.seguimiento === 'vendida' ? '<div class="fa-bloque" style="margin:0 0 10px"><b>Vendida</b>La cerraste como vendida' + (d.seguimiento_en ? ' el ' + esc(fecha(d.seguimiento_en)) : '') + '.</div>' : d.seguimiento === 'no_interesa' ? '<div class="fa-bloque" style="margin:0 0 10px"><b>Cerrada</b>Al cliente ya no le interesa. Ya no se revisa con los mapas nuevos.</div>' : '') +
-      '<div class="fa-veredicto ' + e.c + '"><b>' + esc(e.t) + '</b><p>' + esc(e.f) + '</p><small>' + esc(zonaTexto(d)) + ' · ' + (d.tipo === 'dedicado' ? 'Dedicado' : 'PYME') + '</small></div>' +
+      '<div class="fa-veredicto ' + e.c + '"><b>' + esc(e.t) + '</b><p>' + esc(e.f) + '</p><small>' + esc(zonaTexto(d)) + (d.tipo === 'dedicado' ? ' · Dedicado' : '') + '</small></div>' +
       (d.exclusividad === 'aliado' ? '<div class="fa-aviso"><b>Zona exclusiva de ' + esc(d.aliado || 'un aliado') + '</b><small>Se puede instalar. Solo ten en cuenta que esa zona tiene aliado asignado.</small></div>' : '') +
       (d.exclusividad === 'planta_externa' ? '<div class="fa-aviso"><b>Zona de Planta Externa</b><small>El equipo propio puede instalar. Un aliado no puede instalar aquí.</small></div>' : '') +
       '<div class="fa-mapa" id="faMapa"><div class="fa-sin">Cargando el mapa…</div></div>' +
-      '<div class="fa-cerca" id="faCerca"></div>' +
-      (d.resultado === 'hay_red' ? '<button type="button" class="fa-plegar" data-plegar="odoo" aria-expanded="false"><span>Texto para la orden de Odoo<small>Opcional. Cópialo al crear la orden.</small></span>' + ic('abajo') + '</button>' +
-        '<div id="plOdoo" hidden><div class="fa-bloque" style="margin-top:8px"><div class="fa-odoo"><code id="txOdoo">' + esc(textoOdoo(d, d.nombre, rif)) + '</code><button type="button" class="btn btn-chico" id="faCopiaOdoo">Copiar</button></div>' +
-        '<p class="nota" style="margin:8px 0 0">' + (rif ? 'RIF sin guiones, con su letra.' : 'Pon el RIF del cliente en lugar de J000000000, sin guiones.') + ' El nodo lo pone Odoo.' + (d.lider_codigo ? ' Si la orden la crea otra persona por ti, agrega al final tu código de vendedor: ' + esc(d.lider_codigo) + '.' : '') + '</p></div></div>' :
-        '<div class="fa-bloque"><b>' + (abierta ? 'Queda en seguimiento' : 'Sin seguimiento') + '</b>' + (abierta ? 'Cada vez que se suba un mapa nuevo la revisamos. Si cambia, sale marcada como Nuevo.' : 'Está cerrada: los mapas nuevos ya no la revisan.') + '</div>') +
-      '<button type="button" class="fa-plegar" data-plegar="datos" aria-expanded="' + C.plegado.datos + '"><span>Datos del cliente<small>Opcional. Se guarda solo.</small></span>' + ic('abajo') + '</button>' +
-      '<div id="plDatos"' + (C.plegado.datos ? '' : ' hidden') + '>' + (d.puedo_editar ? '' : '<p class="nota">Solo quien hizo la consulta puede cambiar estos datos.</p>') +
+      '<button type="button" class="fa-plegar" data-plegar="datos" aria-expanded="' + conDatos + '"><span>Datos del cliente<small>' + (conOdoo ? 'Opcional. Si colocas el nombre y el RIF, te armo el texto para la orden de Odoo.' : 'Opcional. Se guarda solo.') + '</small></span>' + ic('abajo') + '</button>' +
+      '<div id="plDatos"' + (conDatos ? '' : ' hidden') + '>' + (d.puedo_editar ? '' : '<p class="nota">Solo quien hizo la consulta puede cambiar estos datos.</p>') +
         '<label class="rotulo arriba" for="gNom">Nombre (opcional)</label><input class="campo" id="gNom" maxlength="120" autocomplete="off" value="' + esc(d.nombre || '') + '"' + (d.puedo_editar ? '' : ' disabled') + '>' +
         '<div class="fa-dos"><div><label class="rotulo arriba" for="gTel">Teléfono (opcional)</label><input class="campo" id="gTel" type="tel" inputmode="tel" maxlength="20" value="' + esc(d.telefono || '') + '"' + (d.puedo_editar ? '' : ' disabled') + '></div>' +
         '<div><label class="rotulo arriba" for="gRif">RIF (opcional)</label><input class="campo" id="gRif" maxlength="14" autocapitalize="characters" value="' + esc(rif) + '"' + (d.puedo_editar ? '' : ' disabled') + '></div></div>' +
-        '<div class="error" id="eDatos" role="alert"></div></div>' +
-      '<div class="fa-hist"><span>Historial</span>' + (d.historial || []).map((h, i) => '<div class="fa-mov' + (h.resultado === 'hay_red' ? ' vd' : '') + '"><span>Mapa del ' + esc(fecha(h.fecha_mapa)) + ': <b>' + esc((EST[h.resultado] || {}).t || h.resultado) + '</b>' + (i === (d.historial.length - 1) ? ' al consultar' : '') + '</span><time>' + esc(fecha(h.en)) + '</time></div>').join('') +
-        '<div class="fa-mov az"><span>Consultada por ' + esc(primerNombre(d.lider || '')) + '</span><time>' + esc(fecha(d.creada_en)) + '</time></div></div>' +
-      (d.puedo_editar ? '<div class="fa-cierre">' + (abierta ? '<button type="button" class="btn btn-2" data-seguir="vendida">Ya lo vendí</button><button type="button" class="btn btn-2" data-seguir="no_interesa">Ya no interesa</button>' : '<button type="button" class="btn btn-2" data-seguir="abierta">Reabrir</button>') + '</div>' : '');
-    $('pFact').innerHTML = '<button type="button" class="btn btn-2" id="faCopiarCliente">Copiar para el cliente</button><button type="button" class="btn" data-cierra="1">Listo</button>';
-    cargarCercanas(d);
+        '<div class="error" id="eDatos" role="alert"></div><div id="faOdoo"></div></div>' +
+      (!nueva && hist.length > 1 ? '<div class="fa-hist"><span>Historial</span>' + hist.map((h, i) => '<div class="fa-mov' + (h.resultado === 'hay_red' ? ' vd' : '') + '"><span>Mapa del ' + esc(fecha(h.fecha_mapa)) + ': <b>' + esc((EST[h.resultado] || {}).t || h.resultado) + '</b>' + (i === hist.length - 1 ? ' al consultar' : '') + '</span><time>' + esc(fecha(h.en)) + '</time></div>').join('') +
+        '<div class="fa-mov az"><span>Consultada por ' + esc(primerNombre(d.lider || '')) + '</span><time>' + esc(fecha(d.creada_en)) + '</time></div></div>' : '') +
+      (!nueva && d.puedo_editar ? '<div class="fa-cierre"><span>' + (abierta ? 'Cerrar seguimiento' : 'Seguimiento') + '</span><div>' + (abierta ? '<button type="button" class="btn btn-2" data-seguir="vendida">Ya lo vendí</button><button type="button" class="btn btn-2" data-seguir="no_interesa">Ya no interesa</button>' : '<button type="button" class="btn btn-2" data-seguir="abierta">Reabrir</button>') + '</div></div>' : '');
+    $('pFact').innerHTML = '<button type="button" class="btn btn-2" id="faCopiarCliente">Copiar mensaje para el cliente</button><button type="button" class="btn fa-cerrar" data-cierra="1">Cerrar</button>';
+    pintarOdoo(); cargarCercanas(d);
   }
   async function cargarCercanas(d){
     let z;
@@ -215,8 +231,6 @@
     catch (e) { if(C && C.id === d.id){ $('faMapa').innerHTML = '<div class="fa-sin">No se pudo cargar el mapa. ' + esc(e.message) + '</div>'; } return; }
     if(!C || C.id !== d.id) return;
     C.cercanas = z.zonas || [];
-    const cer = C.cercanas.slice(0, 6);
-    $('faCerca').innerHTML = cer.length ? '<span>MDT cercanos</span>' + cer.map(filaMdt).join('') : '';
     const zs = C.cercanas; const mio = C;
     setTimeout(() => { if(C === mio) dibujar('chico', $('faMapa'), d, zs, false); }, esTel() ? 320 : 300);
   }
@@ -283,17 +297,6 @@
     if(!t || !t.trim()){ errorCampo('No hay nada copiado. En WhatsApp mantén presionado el enlace y toca Copiar'); return; }
     $('faEnlace').value = t.trim(); consultar();
   }
-  function ubicacion(){
-    if(!navigator.geolocation){ errorCampo('Este teléfono no da la ubicación. Pega el enlace o escribe las coordenadas'); return; }
-    const b = $('faUbic'); if(b){ b.disabled = true; b.textContent = 'Buscando tu ubicación…'; }
-    navigator.geolocation.getCurrentPosition((p) => {
-      if(!$('faEnlace')) return;
-      $('faEnlace').value = p.coords.latitude.toFixed(6) + ', ' + p.coords.longitude.toFixed(6); consultar();
-    }, (e) => {
-      if(b && document.contains(b)){ b.disabled = false; b.innerHTML = ic('wifi') + 'Usar mi ubicación'; }
-      errorCampo(e && e.code === 1 ? 'No diste permiso de ubicación. Actívalo en el teléfono o pega el enlace' : 'No se pudo saber dónde estás. Intenta otra vez o pega el enlace');
-    }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 60000 });
-  }
   let tDatos = null;
   async function guardarDatos(){
     if(!C || !C.d || !C.d.puedo_editar || !$('gNom')) return;
@@ -322,14 +325,13 @@
     if(t.closest('#faMas')){ cargar(true); return; }
     if(t.closest('#faReintentar')){ cargar(); return; }
     if((b = t.closest('[data-consulta]'))){ abrirConsulta(b.dataset.consulta); return; }
-    if(t.closest('#faPegar')){ pegar(); return; }
-    if(t.closest('#faUbic')){ ubicacion(); return; }
     if((b = t.closest('[data-tipo]'))){ F.tipo = b.dataset.tipo; Array.prototype.forEach.call(document.querySelectorAll('[data-tipo]'), (x) => x.setAttribute('aria-checked', String(x === b))); return; }
     if(t.closest('#faConsultar')){ consultar(); return; }
     if(t.closest('#faAmplio')){ mapaAmplio(); return; }
-    if((b = t.closest('[data-plegar]'))){ const id = b.dataset.plegar === 'odoo' ? 'plOdoo' : 'plDatos'; const abre = b.getAttribute('aria-expanded') !== 'true'; b.setAttribute('aria-expanded', String(abre)); $(id).hidden = !abre; return; }
+    if((b = t.closest('[data-odoo]')) && C){ C.odooTipo = b.dataset.odoo; pintarOdoo(); return; }
+    if((b = t.closest('[data-plegar]'))){ const id = 'plDatos'; const abre = b.getAttribute('aria-expanded') !== 'true'; b.setAttribute('aria-expanded', String(abre)); $(id).hidden = !abre; return; }
     if(t.closest('#faCopiaOdoo')){ copiar($('txOdoo').textContent, 'Texto para Odoo copiado'); return; }
-    if(t.closest('#faCopiarCliente') && C && C.d){ copiar(CLIENTE[C.d.resultado] || CLIENTE.sin_red, 'Mensaje copiado. Pégalo en el chat del cliente'); return; }
+    if(t.closest('#faCopiarCliente') && C && C.d){ copiar(mensajeCliente(C.d), 'Mensaje copiado. Pégalo en el chat del cliente'); return; }
     if((b = t.closest('[data-seguir]'))){ seguir(b.dataset.seguir, b); return; }
     if((b = t.closest('[data-capa]')) && mapas.grande){ const on = b.getAttribute('aria-pressed') !== 'true'; b.setAttribute('aria-pressed', String(on)); const g = mapas.grande._fa.capas[b.dataset.capa]; if(on) g.addTo(mapas.grande); else mapas.grande.removeLayer(g); return; }
     if((b = t.closest('#faSat')) && mapas.grande){ const on = b.getAttribute('aria-pressed') !== 'true'; b.setAttribute('aria-pressed', String(on)); const f = mapas.grande._fa; if(on){ mapas.grande.removeLayer(f.calles); f.sat.addTo(mapas.grande); } else { mapas.grande.removeLayer(f.sat); f.calles.addTo(mapas.grande); } }
@@ -337,7 +339,7 @@
   document.addEventListener('keydown', (e) => { if(e.key === 'Enter' && e.target.id === 'faEnlace'){ e.preventDefault(); consultar(); } });
   document.addEventListener('input', (e) => {
     if(!C || !C.d) return;
-    if(['gNom', 'gRif'].indexOf(e.target.id) >= 0 && $('txOdoo')) $('txOdoo').textContent = textoOdoo(C.d, $('gNom').value, $('gRif').value);
+    if(['gNom', 'gRif'].indexOf(e.target.id) >= 0) pintarOdoo();
   });
   document.addEventListener('change', (e) => { if(['gNom', 'gTel', 'gRif'].indexOf(e.target.id) >= 0){ clearTimeout(tDatos); tDatos = setTimeout(guardarDatos, 150); } });
 
@@ -376,7 +378,7 @@
     const t = e.target;
     if(t.closest('#faAyudaOk')){ try { localStorage.setItem(K_AYUDA, '1'); } catch (x) {} pintarAyuda(); return; }
     if(t.closest('#faInstalar') && promptInstalar){ const pr = promptInstalar; promptInstalar = null; try { await pr.prompt(); const r = await pr.userChoice; if(r && r.outcome === 'accepted'){ try { localStorage.setItem(K_AYUDA, '1'); } catch (x) {} toast('Listo. Ahora Empresas sale en Compartir de WhatsApp'); } } catch (x) {} pintarAyuda(); return; }
-    if(t.closest('#faPegarAyuda')){ formulario({ copiado: true }); pegar(); }
+    if(t.closest('#faPegarAyuda')){ formulario(); pegar(); }
   });
 
   window.Factibilidad = { _textoOdoo: textoOdoo, VER };
