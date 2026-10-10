@@ -42,6 +42,16 @@ Actualizado: 09/10/2026 (noche: módulo de aliados construido, v26). Publicado: 
    - "Reemplazar archivo" también para quien revisa (antes solo el líder).
    - No se hace "Quitar": decidido que basta con Reemplazar.
 
+## Pedidos del 10/10 para la próxima corrida (martes; planificar antes en el chat del proyecto)
+Orden pedido por el administrador, ANTES de notificaciones y correos:
+1. **Aliados, ajustes de vista**: al entrar debe verse el registro completo (todas las solicitudes), no la bandeja "Para ti"; poder abrir cualquier registro y ver todo. Agrupar por aliado como en Comisiones (grupo por aliado con sus solicitudes, referidos, instalaciones y lo histórico: consultas viejas de AppSheet e instalado sin permiso). Propuesta: pestaña principal "Registro" agrupada por aliado con chips de etiqueta como filtro; "Para ti" pasa a ser un aviso con contador arriba.
+2. **Bandeja del analista** (por definir en el chat del proyecto).
+3. **Cambios de categoría y cambios de titularidad** (por definir).
+4. **Vista previa de toda la app para la gerencia** (por definir: con datos de ejemplo o reales, y en qué formato).
+5. Lo que salió de la reunión del 10/10 (el administrador lo trae escrito desde el chat del proyecto).
+Después: notificaciones y correos con hilo (súper urgente para abrir aliados) y factibilidad para aliados.
+Forma de trabajo acordada: decidir y escribir el lote completo en el chat del proyecto; en Claude Code, sesión nueva, pegar ese texto y construir todo en una corrida.
+
 ## Hecho el 09/10 (v26): módulo de aliados comerciales (falta que el administrador lo pruebe con datos reales)
 - Aprobado sin ver la maqueta ("confío en ti"). Reglas en `claude/reglas-negocio.md` (Decidido 09/10, módulo de aliados).
 - **IA más rápida** (`ia_revisar` v5): lee hasta 4 archivos a la vez (sin pasar ~45 MB por llamada); mismo modelo, mismas instrucciones, mismas reglas, cada lectura se guarda igual. Probado con simulación (test19); NO se volvió a correr con clientes reales para no gastar: lo ya leído queda guardado y daría lo mismo. Medir el tiempo real con el próximo cliente que lance el administrador.
