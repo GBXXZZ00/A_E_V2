@@ -3,7 +3,7 @@
 // la coordinación de canales paga instalaciones y referidos; el equipo ve los instalados por aliados.
 (function(){
   'use strict';
-  const { $, esc, ic, rpc, toast, vacio, esqueleto, abrirHoja, cerrarHoja, hojaAbierta, fecha, hora, plural, docFmt, casilla, enlaceWa, cache } = window.Comun;
+  const { $, esc, ic, rpc, toast, vacio, esqueleto, abrirHoja, cerrarHoja, hojaAbierta, fecha, hora, plural, docFmt, casilla, enlaceWa, cache, capital } = window.Comun;
   const S = window.Sesion;
   const POR_PAGINA = 40;
   const MAX = 15 * 1024 * 1024;
@@ -42,11 +42,9 @@
   // ---------- Secciones según el rol ----------
   const TABS = {
     aliado: [['inicio', 'Inicio'], ['solicitudes', 'Mis solicitudes'], ['referidos', 'Referidos']],
-    canales: [['inicio', 'Inicio'], ['solicitudes', 'Mis solicitudes'], ['referidos', 'Referidos'], ['pagos', 'Pagos'], ['instalados', 'Instalados por aliados']],
-    admin: [['para_ti', 'Para ti'], ['analizando', 'Analizando'], ['recaudos', 'Recaudos incompletos'], ['listas', 'Listas para instalar'], ['curso', 'En curso'],
-      ['instaladas', 'Instaladas'], ['cerradas', 'Sin instalar'], ['bloq', 'Intentos bloqueados'], ['refs', 'Referidos'], ['sinp', 'Instalado sin permiso'],
-      ['viejas', 'Consultas viejas'], ['pagos', 'Pagos'], ['instalados', 'Instalados por aliados'], ['aliados', 'Aliados y usuarios']],
-    equipo: [['instalados', 'Instalados por aliados']]
+    canales: [['inicio', 'Inicio'], ['solicitudes', 'Mis solicitudes'], ['referidos', 'Referidos'], ['registro', 'Registro'], ['pagos', 'Pagos'], ['instalados', 'Instalados por aliados']],
+    admin: [['registro', 'Registro'], ['pagos', 'Pagos'], ['instalados', 'Instalados por aliados'], ['aliados', 'Aliados y usuarios']],
+    equipo: [['registro', 'Registro'], ['instalados', 'Instalados por aliados']]
   };
   const AYUDA = {
     inicio: 'Sube los documentos del cliente y en minutos sabes si puedes instalarlo.', solicitudes: 'Todas tus solicitudes con su etiqueta.',
@@ -57,7 +55,8 @@
     bloq: 'Pidieron un cliente que ya es de la oficina o que otra persona gestiona.', refs: 'Clientes referidos por los aliados.',
     sinp: 'Instalaciones de aliados sin solicitud aprobada. Las nuevas llegan solas con cada carga de órdenes de instalación.',
     viejas: 'Los casos de la app vieja (AppSheet), con su situación.', pagos: 'Solo PYME instaladas por el mismo aliado de la solicitud, y referidos instalados. Aparte del corte de los líderes.',
-    instalados: 'Clientes que instalaron los aliados. Solo para ver.', aliados: 'Enlaza cada aliado con su usuario. Los usuarios se crean en Usuarios con el rol Aliado.'
+    instalados: 'Clientes que instalaron los aliados. Solo para ver.',
+    registro: 'Todo lo de los aliados, agrupado por aliado y con lo más reciente arriba. Toca cualquier registro para ver todo.', aliados: 'Enlaza cada aliado con su usuario. Los usuarios se crean en Usuarios con el rol Aliado.'
   };
   const tabs = () => TABS[modo] || [];
 
@@ -96,7 +95,8 @@
   function pintarTabs(){
     $('filtros').innerHTML = tabs().length > 1 ? tabs().map((x) => { const c = cuenta(x[0]);
       return '<button type="button" data-tab="' + x[0] + '" class="' + (x[0] === tab ? 'on' : '') + '" aria-pressed="' + (x[0] === tab) + '">' + esc(x[1]) + (c !== null ? ' <em>' + c + '</em>' : '') + '</button>'; }).join('') : '';
-    $('ayuda').textContent = AYUDA[tab] || '';
+    $('ayuda').textContent = (AYUDA[tab] || '') + (tab === 'registro' && modo !== 'admin' ? ' Solo para ver: las decisiones las toma el administrador.' : '');
+    $('zonaRegistro').classList.toggle('hidden', tab !== 'registro');
     $('accionCab').innerHTML = (modo === 'aliado' || modo === 'canales') && tab !== 'pagos' && tab !== 'instalados' ? '<button type="button" class="btn btn-chico solo-pc" data-acc="nueva">Nueva solicitud</button>' : '';
   }
   const clave = () => 'aliados:' + modo;
@@ -105,11 +105,12 @@
     if(tab === 'pagos') return cargarPagos(mio);
     if(tab === 'instalados') return cargarInstalados(mio);
     if(tab === 'aliados') return cargarAliadosAdm(mio);
+    if(tab === 'registro' && modo !== 'admin') return cargarRegistro(mio);
     if(!D){ const g = cache.leer(clave()); if(g){ D = g; pintarTabs(); pintar(); } else { $('lista').innerHTML = esqueleto(6); $('cuentaLista').textContent = 'Cargando…'; } }
     try {
-      const d = await rpc(modo === 'admin' ? 'aliados_bandeja' : 'aliado_inicio', {});
+      const d = await rpc(modo === 'admin' ? 'aliados_registro' : 'aliado_inicio', {});
       if(mio !== pedido) return;
-      D = d; cache.guardar(clave(), d); pintarTabs(); pintar(); vigilar();
+      D = d; if(modo === 'admin') R = d; cache.guardar(clave(), d); pintarTabs(); pintar(); vigilar();
     } catch (e) {
       if(mio !== pedido) return;
       if(!D) $('lista').innerHTML = errorCaja('No se pudo cargar', e.message);
@@ -153,6 +154,7 @@
       (filas.length > mostrar ? '<div class="pie-lista"><span>Mostrando ' + mostrar + ' de ' + filas.length + '.</span><button type="button" class="btn btn-chico btn-2" data-acc="mas">Ver más</button></div>' : '');
   }
   function pintar(){
+    if(tab === 'registro'){ if(modo === 'admin') R = D; pintarRegistro(); return; }
     const s = sols(); let h = ''; let n = 0;
     const de = (f) => s.filter(f);
     if(tab === 'inicio'){
@@ -188,6 +190,79 @@
     }
     $('cuentaLista').textContent = tab === 'inicio' || tab === 'para_ti' ? '' : plural(n, 'registro', 'registros');
     $('lista').innerHTML = h;
+  }
+  // ---------- Registro: todo agrupado por aliado (C1 a C6) ----------
+  let R = null; let chipAl = 'todo'; let buscaAl = ''; const abiertosAl = {}; const masAl = {};
+  async function cargarRegistro(mio){
+    if(!R){ const g = cache.leer('aliados:registro:' + modo); if(g){ R = g; pintarRegistro(); } else { $('lista').innerHTML = esqueleto(6); $('cuentaLista').textContent = 'Cargando…'; } }
+    try { const d = await rpc('aliados_registro', {}); if(mio !== pedido) return; R = d; cache.guardar('aliados:registro:' + modo, d); pintarRegistro(); }
+    catch (e) { if(mio !== pedido) return; if(!R) $('lista').innerHTML = errorCaja('No se pudo cargar el registro', e.message); toast(e.message, 'error'); }
+  }
+  const fuente = () => (tab === 'registro' && R ? R : D) || {};
+  function itemsAl(){
+    const r = R || {}; const it = [];
+    (r.solicitudes || []).forEach((x) => it.push({ t: 'sol', id: x.id, aliado: x.aliado, cliente: x.cliente || 'RIF por leer', rif: rifFmt(x.rif), fecha: x.actualizada_en || x.creada_en, k: x.etiqueta, x, tu: !!x.tu_cliente }));
+    (r.referidos || []).forEach((x) => it.push({ t: 'ref', id: x.id, aliado: x.aliado, cliente: x.cliente || 'Cliente ' + rifFmt(x.rif), rif: rifFmt(x.rif), fecha: x.pagado_en || x.instalado_en || x.creado_en, k: 'rf', x, tu: !!x.tu_cliente }));
+    (r.sin_permiso || []).forEach((x) => it.push({ t: 'sinp', id: x.id, aliado: x.aliado, cliente: x.cliente || 'Sin nombre', rif: x.rif ? docFmt(/^\d/.test(x.rif) ? '' : x.rif.charAt(0), /^\d/.test(x.rif) ? x.rif : x.rif.slice(1)) : '', fecha: x.instalada_en, k: 'sinp', x, tu: !!x.tu_cliente }));
+    (r.viejas || []).forEach((x) => it.push({ t: 'vieja', id: x.id, aliado: x.aliado, cliente: x.cliente || 'Sin nombre', rif: x.rif || '', fecha: null, k: 'vieja', x, tu: !!x.tu_cliente }));
+    it.forEach((i) => { i.aliado = String(i.aliado || 'Sin aliado').trim() || 'Sin aliado'; });
+    return it;
+  }
+  const paraTi = (i) => (i.t === 'sol' && (i.k === 'excepcion' || i.k === 'revision')) || (i.t === 'ref' && i.x.etiqueta === 'referido') || (i.t === 'sinp' && i.x.origen === 'carga' && !i.x.revisado_en);
+  const CHIPS_AL = [
+    ['todo', 'Todo', () => true], ['para_ti', 'Esperan tu decisión', paraTi], ['mio', 'Lo mío', (i) => i.tu],
+    ['analizando', 'Analizando', (i) => i.t === 'sol' && i.k === 'analizando'], ['recaudos', 'Recaudos incompletos', (i) => i.t === 'sol' && i.k === 'recaudos'],
+    ['decidir', 'Excepción o revisión', (i) => i.t === 'sol' && (i.k === 'excepcion' || i.k === 'revision')], ['listas', 'Listas para instalar', (i) => i.t === 'sol' && (i.k === 'lista' || i.k === 'listaobs')],
+    ['curso', 'Instalación en curso', (i) => i.t === 'sol' && i.k === 'curso'], ['instaladas', 'Instaladas', (i) => i.t === 'sol' && i.k === 'instalada'],
+    ['cerradas', 'Sin instalar o no procede', (i) => i.t === 'sol' && (i.k === 'sininst' || i.k === 'noprocede')], ['bloq', 'Bloqueadas', (i) => i.t === 'sol' && (i.k === 'cartera' || i.k === 'otro')],
+    ['refs', 'Referidos', (i) => i.t === 'ref'], ['sinp', 'Instalado sin permiso', (i) => i.t === 'sinp'], ['viejas', 'Consultas viejas', (i) => i.t === 'vieja']
+  ];
+  const visto = () => { try { return JSON.parse(localStorage.getItem('ae_al_visto_' + (yo && yo.id)) || 'null'); } catch (e) { return null; } };
+  const guardarVisto = (v) => { try { localStorage.setItem('ae_al_visto_' + (yo && yo.id), JSON.stringify(v)); } catch (e) {} };
+  function chipItem(i){
+    if(i.t === 'sol') return chip(i.k);
+    if(i.t === 'ref') return chipRf(i.x.etiqueta);
+    if(i.t === 'sinp') return i.x.revisado_en ? '<span class="chip">Sin permiso, revisado</span>' : '<span class="chip punto rojo">Instalado sin permiso</span>';
+    return '<span class="chip punto ' + (/^instalado/.test(i.x.situacion) ? 'verde' : i.x.situacion === 'consulta' ? '' : 'ambar') + '">' + esc((VIEJA[i.x.situacion] || i.x.situacion) + ' (app vieja)') + '</span>';
+  }
+  const TIPO_AL = { sol: 'Solicitud', ref: 'Referido', sinp: 'Instalación', vieja: 'Consulta vieja' };
+  function filaAl(i){
+    const dato = 'data-' + (i.t === 'vieja' ? 'vieja' : i.t) + '="' + esc(i.id) + '"';
+    const sub = [TIPO_AL[i.t], i.rif, i.fecha ? fecha(i.fecha) : '', i.t === 'sinp' && i.x.origen === 'historico' ? 'Antes del módulo' : ''].filter(Boolean).join(' · ');
+    return '<button type="button" class="fila" ' + dato + '><span class="tx"><b>' + esc(i.cliente) + '</b><small>' + esc(sub) + '</small>' + (i.tu ? '<small class="etqs"><span class="tagn azul">Tu cliente</span></small>' : '') + '</span>' +
+      '<span class="par-m">' + chipItem(i) + '</span></button>';
+  }
+  function pintarRegistro(){
+    if(!R) return;
+    const todos = itemsAl(); const P = R.puedo || {};
+    const chips = CHIPS_AL.filter((c) => (c[0] !== 'para_ti' || P.decidir) && (c[0] !== 'mio' || modo !== 'admin'));
+    if(!chips.some((c) => c[0] === chipAl)) chipAl = 'todo';
+    const pend = todos.filter(paraTi).length;
+    $('avisoAl').innerHTML = P.decidir && pend && chipAl !== 'para_ti' ? '<button type="button" class="franja ambar" data-chipal="para_ti">' + ic('alerta') + '<span><b>' + plural(pend, 'espera tu decisión', 'esperan tu decisión') + '</b>Excepciones, revisiones, referidos e instalaciones sin permiso.</span>' + ic('derecha') + '</button>' : '';
+    $('chipsAl').innerHTML = chips.map((c) => { const n = todos.filter(c[2]).length; if(!n && c[0] !== 'todo' && c[0] !== chipAl) return '';
+      return '<button type="button" data-chipal="' + c[0] + '" class="' + (c[0] === chipAl ? 'on' : '') + '" aria-pressed="' + (c[0] === chipAl) + '">' + esc(c[1]) + ' <em>' + n + '</em></button>'; }).join('');
+    const f = chips.find((c) => c[0] === chipAl)[2]; const b = window.Comun.normalizeStr(buscaAl); const dg = buscaAl.replace(/\D/g, '');
+    const lista = todos.filter(f).filter((i) => !b || window.Comun.normalizeStr(i.cliente).indexOf(b) >= 0 || window.Comun.normalizeStr(i.aliado).indexOf(b) >= 0 || (dg.length >= 4 && String(i.rif).replace(/\D/g, '').indexOf(dg) >= 0));
+    // Grupos por aliado, ordenados por el registro más reciente
+    const g = {}; lista.forEach((i) => { (g[i.aliado] = g[i.aliado] || []).push(i); });
+    const ultimo = (l) => l.reduce((a, i) => (i.fecha && i.fecha > a ? i.fecha : a), '');
+    Object.keys(g).forEach((k) => g[k].sort((x, y) => String(y.fecha || '').localeCompare(String(x.fecha || ''))));
+    const orden = Object.keys(g).sort((x, y) => ultimo(g[y]).localeCompare(ultimo(g[x])) || x.localeCompare(y));
+    let v = visto(); if(!v){ v = {}; const ahora = new Date().toISOString(); Object.keys(g).forEach((k) => { v[k] = ahora; }); guardarVisto(v); }
+    $('cuentaLista').textContent = plural(lista.length, 'registro', 'registros') + ' de ' + plural(orden.length, 'aliado', 'aliados');
+    if(!lista.length){ $('lista').innerHTML = vacio(buscaAl ? 'Sin resultados' : 'Nada en esta etiqueta', buscaAl ? 'Nadie coincide con "' + buscaAl + '".' : 'Prueba con otra etiqueta o mira todo.'); return; }
+    const solo = orden.length === 1 || !!buscaAl || chipAl !== 'todo';   // con un filtro o una búsqueda, todo a la vista
+    $('lista').innerHTML = orden.map((k) => {
+      const l = g[k]; const ab = solo || !!abiertosAl[k];
+      const nuevo = !ab && ultimo(l) && (!v[k] || ultimo(l) > v[k]);
+      const cnt = [[l.filter((i) => i.t === 'sol' && ABIERTA.indexOf(i.k) >= 0).length, 'abierta', 'abiertas'], [l.filter((i) => (i.t === 'sol' && i.k === 'instalada') || i.t === 'sinp' || (i.t === 'vieja' && /^instalado/.test(i.x.situacion))).length, 'instalada', 'instaladas'],
+        [l.filter((i) => i.t === 'ref').length, 'referido', 'referidos'], [l.filter((i) => (i.t === 'sol' && i.k === 'instalada' && !i.x.pagada_en) || (i.t === 'ref' && i.x.etiqueta === 'instalado')).length, 'pago pendiente', 'pagos pendientes']]
+        .filter((c) => c[0]).map((c) => plural(c[0], c[1], c[2])).join(' · ');
+      const ver = masAl[k] ? l : l.slice(0, 30);
+      return '<div class="grupo' + (ab ? ' abierto' : '') + '"><button type="button" class="grupo-cab" data-grupoal="' + esc(k) + '" aria-expanded="' + ab + '"><span class="tx"><b>' + esc(k) + (nuevo ? ' <span class="tagn azul">Nuevo</span>' : '') + '</b><small>' + esc(cnt || 'Sin movimiento') + '</small></span>' +
+        '<span class="num">' + l.length + '</span>' + ic('abajo') + '</button><div class="grupo-cuerpo">' + ver.map(filaAl).join('') +
+        (l.length > ver.length ? '<button type="button" class="fila mas" data-masal="' + esc(k) + '">Ver ' + (l.length - ver.length) + ' más</button>' : '') + '</div></div>';
+    }).join('');
   }
   const VIEJA = { instalado: 'Instalado', instalado_sin_cliente: 'Instalado sin cliente', pendiente_por_instalacion: 'Pendiente por instalación', consulta: 'Consulta' };
 
@@ -467,9 +542,10 @@
     const h = $('hojaSol'); if(!h) return;
     h.querySelector('.hoja-cab b').textContent = d.cliente || 'Solicitud';
     h.querySelector('.hoja-cab small').textContent = [rifFmt(d.rif), d.codigo, adm ? d.aliado : ''].filter(Boolean).join(' · ');
-    const aliadoPuede = !adm && k === 'recaudos';
+    const solo = !!d.solo_ver; const aliadoPuede = !adm && !solo && k === 'recaudos';
     let acc = '';
-    if(!adm){
+    if(solo){ acc = ''; }
+    else if(!adm){
       if(k === 'recaudos') acc = '<button type="button" class="btn btn-chico" data-acc="revisarDeNuevo">Revisar de nuevo</button><button type="button" class="btn btn-chico btn-2" data-form="excepcion">Pedir excepción</button><button type="button" class="btn btn-chico btn-2" data-acc="whats">Escribir al administrador</button>';
       else if(k === 'lista' || k === 'listaobs') acc = '<button type="button" class="btn btn-chico" data-form="curso">Marcar instalación en curso</button><button type="button" class="btn btn-chico btn-2" data-form="noinst">No se instaló</button>';
       else if(k === 'curso') acc = (d.fecha_instalacion && d.fecha_instalacion < window.Comun.hoyClave() ? '<button type="button" class="btn btn-chico" data-acc="yaInstale"' + (d.ya_instale_en ? ' disabled' : '') + '>' + (d.ya_instale_en ? 'Ya avisaste que instalaste' : 'Sí, ya instalé') + '</button>' : '<button type="button" class="btn btn-chico btn-2" data-form="curso">Cambiar fecha</button>') + '<button type="button" class="btn btn-chico btn-2" data-form="noinst">No se instaló</button>';
@@ -492,8 +568,20 @@
       (adm && (k === 'lista' || k === 'listaobs') ? '<p class="nota">Correo de aprobación al aliado: pendiente, llega con las notificaciones.</p>' : '') +
       (k === 'cartera' || k === 'otro' ? '' : '<div class="h2 al-h2">Documentos</div>' + docsSol(d, aliadoPuede) + puntosSol(d)) +
       (aliadoPuede ? contactoSol(d) : '')) +
-      '<div class="h2 al-h2">Historial</div><div class="al-hilo">' + (d.hilo || []).map((x) => '<div class="al-hi ' + esc(x.color) + '"><div>' + esc(x.texto) + '<small>' + esc(fecha(x.en) + ' ' + hora(x.en)) + '</small></div></div>').join('') + '</div>';
+      '<div class="h2 al-h2">Historial</div><div class="al-hilo">' + (d.hilo || []).map((x) => '<div class="al-hi ' + esc(x.color) + '"><div>' + esc(x.texto) + '<small>' + esc(fecha(x.en) + ' ' + hora(x.en)) + '</small></div></div>').join('') + '</div>' +
+      fechasSol(d) + bitacoraSol(d);
     if(k === 'analizando'){ sondeoS = setTimeout(() => { if(hojaAbierta() === 'hojaSol') cargarSol(); }, 3000); }
+  }
+  function fechasSol(d){
+    const f = [['Creada', d.creada_en], ['Aprobada', d.aprobada_en], ['Instalación prevista', d.fecha_instalacion], ['Instalada', d.instalada_en], ['Cerrada', d.cerrada_en], ['Vence', d.vence_en]].filter((x) => x[1]);
+    if(!f.length) return '';
+    return '<div class="h2 al-h2">Fechas</div><div class="al-casillas">' + f.map((x) => '<div class="al-cas"><div class="tx"><b>' + esc(x[0]) + '</b></div><span>' + esc(fecha(x[1], true)) + '</span></div>').join('') + '</div>';
+  }
+  const ACCION_AL = { aliado_decision: 'Decisión del administrador', solicitud_enviada: 'Solicitud enviada', solicitud_creada: 'Solicitud creada', solicitud_excepcion: 'Pidió excepción', solicitud_instalacion: 'Marcó instalación en curso', solicitud_no_instalo: 'No se instaló', pago_marcado: 'Pago marcado' };
+  function bitacoraSol(d){
+    if(!d.bitacora || !d.bitacora.length) return d.bitacora ? '<div class="h2 al-h2">Bitácora</div><p class="nota">Sin movimientos registrados todavía.</p>' : '';
+    return '<div class="h2 al-h2">Bitácora</div><div class="al-hilo">' + d.bitacora.map((b) => '<div class="al-hi"><div>' + esc(ACCION_AL[b.accion] || capital(String(b.accion || '').replace(/_/g, ' '))) + (b.por ? ', ' + esc(b.por) : '') +
+      (b.despues && b.despues.texto ? '. "' + esc(b.despues.texto) + '"' : '') + '<small>' + esc(fecha(b.en) + ' ' + hora(b.en)) + '</small></div></div>').join('') + '</div>';
   }
   function contactoSol(d){
     const c = d.contacto || {}; const falta = ((d.ia && d.ia.puntos) || []).some((p) => /^falta_(correo|telefono|correo_empresa)_/.test(p.id));
@@ -536,17 +624,22 @@
       cuerpo = c('fRif', 'RIF del cliente', 'text', x.rif ? rifFmt(x.rif) : '', !!x.sol) + (can ? c('fNombre', 'Nombre', 'text') + c('fApellido', 'Apellido', 'text') + c('fTel', 'Teléfono', 'tel') + c('fCoord', 'Coordenadas', 'text') : c('fTel', 'Teléfono de contacto (opcional)', 'tel')) +
         '<div class="error" id="eForm" role="alert"></div><p class="nota">El referido le llega al administrador para aceptarlo. Se paga con dos residenciales cuando el cliente se instala.</p>';
     } else if(tipo === 'ref'){
-      const r = refs().find((y) => y.id === x.id); if(!r) return;
+      const r = (fuente().referidos || []).find((y) => y.id === x.id); if(!r) return;
       t = r.cliente || 'Referido'; s = [rifFmt(r.rif), r.codigo, r.aliado].join(' · '); boton = r.etiqueta === 'referido' && modo === 'admin' ? 'Aceptar referido' : '';
       cuerpo = '<div class="estado ' + (ETQ_RF[r.etiqueta][1] || 'al-gris') + '"><b>' + esc(ETQ_RF[r.etiqueta][0]) + '</b><small>' + esc(r.etiqueta === 'referido' ? 'Esperando respuesta del administrador.' : r.etiqueta === 'aceptado' ? 'Lo lleva ' + r.lider + '. Se paga cuando se instale.' : r.etiqueta === 'instalado' ? 'Instalado el ' + fecha(r.instalado_en) + '. ' + (r.horas >= 0 ? 'Quedan ' + r.horas + ' h para pagar.' : 'Pago atrasado.') : r.etiqueta === 'pagado' ? 'Pagado con dos residenciales.' : (r.respuesta || 'No se aceptó.')) + '</small></div>' +
         (r.telefono ? '<p class="nota">Teléfono del cliente: ' + esc(r.telefono) + (r.coordenadas ? ' · ' + esc(r.coordenadas) : '') + '</p>' : '') +
         (r.etiqueta === 'referido' && modo === 'admin' ? '<label class="rotulo arriba" for="fLider">Pasárselo a</label><select class="campo" id="fLider"><option value="">Elige el líder</option>' + ((D && D.lideres) || []).map((l) => '<option>' + esc(l) + '</option>').join('') + '</select>' +
           '<label class="rotulo arriba" for="fTexto">Si no lo aceptas, por qué</label><textarea class="campo al-area" id="fTexto" maxlength="1000"></textarea><div class="error" id="eForm" role="alert"></div>' : '');
     } else if(tipo === 'sinp'){
-      const p = ((D && D.sin_permiso) || []).find((y) => y.id === x.id); if(!p) return;
-      t = p.cliente || 'Instalación'; s = 'Instaló ' + (p.aliado || 'sin enlazar'); boton = p.revisado_en ? '' : 'Marcar revisado';
+      const p = (fuente().sin_permiso || []).find((y) => y.id === x.id); if(!p) return;
+      t = p.cliente || 'Instalación'; s = 'Instaló ' + (p.aliado || 'sin enlazar'); boton = p.revisado_en || modo !== 'admin' ? '' : 'Marcar revisado';
       cuerpo = '<div class="estado rojo"><b>Instalado sin permiso</b><small>' + esc((p.aliado || 'Un aliado') + ' lo instaló el ' + fecha(p.instalada_en, true) + ' sin una solicitud aprobada' + (p.origen === 'historico' ? ' (antes del módulo, no aparece en AppSheet).' : '.')) + '</small></div>' +
-        (p.revisado_en ? '<p class="nota">Revisado el ' + esc(fecha(p.revisado_en, true)) + (p.nota ? ': ' + esc(p.nota) : '') + '</p>' : '<label class="rotulo arriba" for="fTexto">Nota (opcional)</label><textarea class="campo al-area" id="fTexto" maxlength="500"></textarea><div class="error" id="eForm" role="alert"></div><p class="nota">No entra en Pagos. Márcalo revisado cuando hables con el aliado.</p>');
+        (p.revisado_en ? '<p class="nota">Revisado el ' + esc(fecha(p.revisado_en, true)) + (p.nota ? ': ' + esc(p.nota) : '') + '</p>' : modo !== 'admin' ? '<p class="nota">Lo revisa el administrador.</p>' : '<label class="rotulo arriba" for="fTexto">Nota (opcional)</label><textarea class="campo al-area" id="fTexto" maxlength="500"></textarea><div class="error" id="eForm" role="alert"></div><p class="nota">No entra en Pagos. Márcalo revisado cuando hables con el aliado.</p>');
+    } else if(tipo === 'vieja'){
+      const v = (fuente().viejas || []).find((y) => y.id === x.id); if(!v) return;
+      t = v.cliente || 'Consulta vieja'; s = [v.rif, v.aliado].filter(Boolean).join(' · '); boton = '';
+      cuerpo = '<div class="estado ' + (/^instalado/.test(v.situacion) ? 'verde' : 'al-gris') + '"><b>' + esc(VIEJA[v.situacion] || v.situacion) + '</b><small>Caso de la app vieja (AppSheet), antes del módulo de aliados.</small></div>' +
+        '<p class="nota">Aliado: ' + esc(v.aliado || 'Sin aliado') + (v.rif ? '. RIF leído entonces: ' + esc(v.rif) : '') + '.</p>';
     } else if(tipo === 'pagar'){
       t = 'Marcar pagado'; s = x.cliente || ''; boton = 'Marcar pagado';
       cuerpo = '<p class="nota">' + esc(x.tipo === 'referido' ? 'Referido pagado con dos residenciales.' : 'Instalación PYME del aliado pagada.') + ' Queda en la bitácora con tu nombre.</p><div class="error" id="eForm" role="alert"></div>';
@@ -592,6 +685,12 @@
     if((b = t.closest('[data-sol]'))){ if(hojaAbierta() === 'hojaNueva') cerrarHoja(true); abrirSol(Number(b.dataset.sol)); return; }
     if((b = t.closest('[data-ref]'))){ abrirForm('ref', { id: Number(b.dataset.ref) }); return; }
     if((b = t.closest('[data-sinp]'))){ abrirForm('sinp', { id: Number(b.dataset.sinp) }); return; }
+    if((b = t.closest('[data-vieja]'))){ abrirForm('vieja', { id: Number(b.dataset.vieja) }); return; }
+    if((b = t.closest('[data-chipal]'))){ chipAl = b.dataset.chipal; pintarRegistro(); return; }
+    if((b = t.closest('[data-masal]'))){ masAl[b.dataset.masal] = true; pintarRegistro(); return; }
+    if((b = t.closest('[data-grupoal]'))){ const k = b.dataset.grupoal; abiertosAl[k] = !b.parentNode.classList.contains('abierto');
+      if(abiertosAl[k]){ const v = visto() || {}; v[k] = new Date().toISOString(); guardarVisto(v); }
+      pintarRegistro(); return; }
     if((b = t.closest('[data-pagar]'))){ const l = b.dataset.pagar === 'referido' ? (pagos.referidos || []) : (pagos.instalaciones || []); const f = l.find((y) => String(y.id) === b.dataset.id) || {}; abrirForm('pagar', { tipo: b.dataset.pagar, id: Number(b.dataset.id), cliente: f.cliente }); return; }
     if((b = t.closest('[data-form]'))){ abrirForm(b.dataset.form, { modo: b.dataset.modo }); return; }
     if((b = t.closest('[data-tipon]'))){ if(!N || b.disabled) return; const tp = b.dataset.tipon; try { await rpc('solicitud_crear', { p_tipo: tp }); N.tipo = tp; N.cas = {}; N.estado = null; pintarNueva(); } catch (e) { toast(e.message, 'error'); } return; }
@@ -628,6 +727,8 @@
     if(el.id === 'fTexto' && $('eForm')) $('eForm').textContent = '';
   });
   document.addEventListener('change', (ev) => { const el = ev.target; if(el.dataset && el.dataset.enlazar) enlazar(el); });
+  let tBuscaAl = null;
+  $('buscaAl').addEventListener('input', () => { clearTimeout(tBuscaAl); tBuscaAl = setTimeout(() => { buscaAl = $('buscaAl').value.trim().slice(0, 60); pintarRegistro(); }, 160); });
   $('alArchivo').addEventListener('change', () => { const f = ($('alArchivo').files || [])[0]; const fn = destino; destino = null; if(f && fn) fn(f); });
   document.addEventListener('visibilitychange', () => { if(!document.hidden && yo && !hojaAbierta()) cargar(); });
   document.addEventListener('hoja-cerrada', () => {});
@@ -636,9 +737,9 @@
     yo = p;
     modo = yo.rol === 'admin' ? 'admin' : yo.rol === 'aliado' ? 'aliado' : yo.rol === 'analista' && yo.canales ? 'canales' : 'equipo';
     if(window.Ficha && modo === 'admin'){ window.Ficha.montar(); }
-    $('titulo').textContent = modo === 'equipo' ? 'Instalados por aliados' : modo === 'admin' ? 'Aliados comerciales' : 'Hola, ' + (window.Comun.primerNombre(yo.nombre) || yo.nombre);
+    $('titulo').textContent = modo === 'equipo' || modo === 'admin' ? 'Aliados comerciales' : 'Hola, ' + (window.Comun.primerNombre(yo.nombre) || yo.nombre);
     leerUrl(); pintarTabs(); cargar();
     const s = Number(new URLSearchParams(location.search).get('s')) || 0;
-    if(s && modo !== 'equipo') abrirSol(s);
+    if(s) abrirSol(s);
   }, (p) => { yo = p; });
 })();

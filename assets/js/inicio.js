@@ -90,7 +90,7 @@
     ];
     if(['admin', 'lider', 'analista'].indexOf(rol) >= 0) activos.push({ id: 'factibilidad', nombre: 'Factibilidad', icono: 'wifi', enlace: 'factibilidad.html', texto: 'Si una ubicación tiene red' });
     activos.push({ id: 'aliados', nombre: 'Aliados', icono: 'usuarios', enlace: 'aliados.html',
-      texto: rol === 'admin' ? 'Solicitudes, referidos y pagos de aliados' : canales ? 'Tus solicitudes, referidos y pagos' : 'Clientes instalados por aliados' });
+      texto: rol === 'admin' ? 'Solicitudes, referidos y pagos de aliados' : canales ? 'Tus solicitudes, referidos y pagos' : 'Registro de aliados e instalados, para ver' });
     if(rol === 'admin' || rol === 'abogado') activos.push({ id: 'revision', nombre: 'Revisión', icono: 'doc', enlace: 'revision.html', texto: rol === 'admin' ? 'Documentos por revisar, también con IA' : 'Tus contratos por hacer y por firmar' });
     const pronto = PRONTO.filter((m) => m.roles.indexOf(rol) >= 0);
     $('zonaModulos').innerHTML = '<div class="h2 primero">Módulos</div><div class="mods">' +

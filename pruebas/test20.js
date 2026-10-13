@@ -24,19 +24,25 @@ function mundoAliados(m){
   const sol = (id) => A.sols.find((s) => s.id === Number(id));
   Object.assign(RPC, {
     aliado_inicio(m, yo){ if(!deAliado(yo)) return err('Tu usuario no está enlazado a un aliado. Avísale al administrador'); if(m.fallaInicio) return err('No se pudo leer'); return { aliado: yo.nombre, solicitudes: A.sols.filter((s) => s.aliado_id === deAliado(yo)), referidos: A.refs.filter((r) => r.aliado_id === deAliado(yo)) }; },
+    aliados_registro(m, yo){ if(['admin', 'analista', 'lider', 'abogado'].indexOf(yo.rol) < 0) return err('No tienes permiso para hacer esto');
+      const tu = (c) => yo.rol === 'lider' && c === 9003;
+      return { solicitudes: A.sols.map((x) => Object.assign({ tu_cliente: tu(x.cliente_id) }, x)), referidos: A.refs.map((x) => Object.assign({ tu_cliente: false }, x)), sin_permiso: A.sinp.map((x) => Object.assign({ tu_cliente: false }, x)),
+        viejas: [{ id: 41, cliente: 'Licorería Prueba', rif: 'J000000053', aliado: 'Conecta Sur Ejemplo', situacion: 'consulta' }], lideres: yo.rol === 'admin' ? ['Lucía Ferrer', 'Líder Dos'] : [], puedo: { decidir: yo.rol === 'admin' } }; },
     aliados_bandeja(m, yo){ if(yo.rol !== 'admin') return err('No tienes permiso para hacer esto'); return { solicitudes: A.sols, referidos: A.refs, sin_permiso: A.sinp, viejas: [{ id: 'v1', cliente: 'Licorería Prueba', rif: 'J000000053', aliado: 'Conecta Sur', situacion: 'consulta' }], lideres: ['Lucía Ferrer', 'Líder Dos'] }; },
     solicitud_crear(m, yo, a){ const ya = A.sols.find((s) => s.aliado_id === deAliado(yo) && s.etiqueta === 'borrador' && !s.rif); if(ya){ ya.tipo = a.p_tipo; return { id: ya.id, codigo: ya.codigo }; }
       const id = ++A.n; A.sols.push({ id, codigo: 'AL-00' + id, tipo: a.p_tipo, etiqueta: 'borrador', aliado: yo.nombre, aliado_id: deAliado(yo), creada_en: hoy, actualizada_en: hoy }); return { id, codigo: 'AL-00' + id }; },
     solicitud_estado(m, yo, a){
       const s = sol(a.p_sol); if(!s) return err('No se encontró la solicitud');
-      if(yo.rol !== 'admin' && s.aliado_id !== deAliado(yo)) return err('No tienes acceso a esta solicitud');
+      const solo = yo.rol !== 'admin' && s.aliado_id !== deAliado(yo);
+      if(solo && ['lider', 'analista', 'abogado'].indexOf(yo.rol) < 0) return err('No tienes acceso a esta solicitud');
+      const bit = yo.rol === 'aliado' ? undefined : [{ accion: 'aliado_decision', en: hoy, por: 'Marcos Rivas', despues: { texto: 'Aceptada mientras renueva.' } }];
       if(s.etiqueta === 'analizando'){ A.analizar++; if(A.analizar >= 2){ s.etiqueta = 'lista'; s.ia = { estado: 'lista', veredicto: 'apto', total: 4, avance: 4, puntos: [], marcas: [] }; } }
       const docs = (A.docs[s.id] || []).map((d, i) => ({ id: 500 + i, casilla: d.casilla, numero: d.numero, estado: 'por_revisar', archivos: [{ id: 700 + i, nombre: 'x.pdf', lectura: 'ok' }] }));
-      if(s.id === 31) return Object.assign({}, s, { es_admin: yo.rol === 'admin', docs: [{ id: 81, casilla: 'acta_constitutiva', numero: 0, archivos: [{ id: 1, lectura: 'ok' }] }, { id: 82, casilla: 'cedula', numero: 1, archivos: [{ id: 2, lectura: 'ok' }] }],
+      if(s.id === 31) return Object.assign({}, s, { es_admin: yo.rol === 'admin', solo_ver: solo, bitacora: bit, docs: [{ id: 81, casilla: 'acta_constitutiva', numero: 0, archivos: [{ id: 1, lectura: 'ok' }] }, { id: 82, casilla: 'cedula', numero: 1, archivos: [{ id: 2, lectura: 'ok' }] }],
         ia: { estado: 'lista', veredicto: 'no_apto', total: 3, avance: 3, marcas: [{ documento: 81, propuesta: 'problema', nota: 'La junta venció en 2023. Busca el acta de asamblea que la ratificó.' }, { documento: 82, propuesta: 'bien', nota: 'Vigente.' }],
           puntos: [{ id: 'falta_rif_personal_1', titulo: 'Falta RIF personal', estado: 'bloquea', detalle: 'No está en el expediente.' }, { id: 'falta_correo_empresa_0', titulo: 'Falta correo de la empresa', estado: 'bloquea', detalle: 'Hay que escribirlo en el expediente.' }] },
         contacto: { correo: 'rep@ejemplo.test', telefono: '04140000000' }, hilo: [{ texto: 'Resultado: Recaudos incompletos.', color: 'rj', en: hoy }] });
-      return Object.assign({ docs, ia: s.ia || (s.etiqueta === 'analizando' ? { estado: 'leyendo', total: 4, avance: 1 } : null), hilo: [{ texto: 'Envió la solicitud.', color: 'az', en: hoy }], es_admin: yo.rol === 'admin' }, s);
+      return Object.assign({ docs, ia: s.ia || (s.etiqueta === 'analizando' ? { estado: 'leyendo', total: 4, avance: 1 } : null), hilo: [{ texto: 'Envió la solicitud.', color: 'az', en: hoy }], es_admin: yo.rol === 'admin', solo_ver: solo, bitacora: bit }, s);
     },
     solicitud_contacto(m, yo, a){ A.contacto = a; return null; },
     solicitud_enviar(m, yo, a){ const s = sol(a.p_sol); s.etiqueta = 'analizando'; A.analizar = 0; return { corrida: 1 }; },
@@ -176,10 +182,21 @@ const entrarAliado = (ctx, persona) => entrarComo(ctx, persona, 'aliados');
     const a = await entrarComo(ctx, { usuario: 'marcos', pin: '482913' }, 'ventas'); a.on('pageerror', (e) => errores.push(e.message));
     await a.waitForSelector('[data-modulo="aliados"]');
     ok(nombre + ': Inicio del admin tiene el módulo Aliados', (await a.textContent('[data-modulo="aliados"]')).includes('referidos'));
-    await a.goto(H + 'aliados.html'); await a.waitForSelector('[data-tab="para_ti"].on'); await a.waitForSelector('#lista .rv');
+    await a.goto(H + 'aliados.html'); await a.waitForSelector('[data-tab="registro"].on'); await a.waitForSelector('#lista .grupo');
+    ok(nombre + ': entra al Registro agrupado por aliado, con el más reciente arriba', (await a.locator('#lista .grupo').count()) >= 3 && (await a.textContent('#lista .grupo-cab')).length > 0);
+    ok(nombre + ': la cabecera del aliado dice abiertas, instaladas, referidos y pagos pendientes', /abiertas?|instaladas?|referidos?|pagos? pendientes?/.test(await a.textContent('#lista')));
+    ok(nombre + ': Para ti pasó a un aviso con contador', /\d+ esperan tu decisión/.test(await a.textContent('#avisoAl')));
+    // "Nuevo": lo que no se ha visto desde la última entrada; se quita al abrir el grupo
+    await a.evaluate(() => { const k = Object.keys(localStorage).find((x) => x.indexOf('ae_al_visto_') === 0); const v = JSON.parse(localStorage.getItem(k)); Object.keys(v).forEach((x) => { v[x] = '2000-01-01T00:00:00Z'; }); localStorage.setItem(k, JSON.stringify(v)); });
+    await a.reload(); await a.waitForSelector('#lista .grupo-cab .tagn');
+    const nNuevo = await a.locator('#lista .grupo-cab .tagn', { hasText: 'Nuevo' }).count();
+    await a.locator('#lista .grupo-cab').first().click(); await a.waitForTimeout(200);
+    ok(nombre + ': marca Nuevo en lo no visto y se quita al abrir el grupo', nNuevo >= 1 && (await a.locator('#lista .grupo-cab .tagn', { hasText: 'Nuevo' }).count()) === nNuevo - 1);
+    await a.locator('#lista .grupo-cab').first().click();
+    await a.screenshot({ path: 'capturas/t20-' + nombre + '-admin.png', fullPage: true });
+    await a.click('#avisoAl [data-chipal="para_ti"]'); await a.waitForSelector('#chipsAl [data-chipal="para_ti"].on');
     const pt = await a.textContent('#lista');
-    ok(nombre + ': Para ti junta excepciones, referidos y sin permiso nuevo', pt.includes('Excepciones') && pt.includes('Referidos por aceptar') && pt.includes('Kiosco Supuesto') && !pt.includes('Vivero Ejemplo'));
-    await a.screenshot({ path: 'capturas/t20-' + nombre + '-admin.png' });
+    ok(nombre + ': el aviso filtra lo que espera decisión', pt.includes('Comercial Ficticia 88') && pt.includes('Restaurante Muestra') && pt.includes('Kiosco Supuesto') && !pt.includes('Vivero Ejemplo'));
     await a.click('[data-sol="29"]'); await a.waitForSelector('#hojaSol.ver [data-modo="aprobar"]');
     ok(nombre + ': el admin ve el pedido de excepción', (await a.textContent('#cSol')).includes('Tiene cita para renovarla'));
     await a.click('[data-modo="aprobar"]'); await a.waitForSelector('#hojaForm.ver #fTexto'); await a.fill('#fTexto', 'Aceptada mientras renueva.'); await a.click('#hojaForm [data-acc="guardarForm"]');
@@ -190,8 +207,13 @@ const entrarAliado = (ctx, persona) => entrarComo(ctx, persona, 'aliados');
     await a.click('#hojaForm [data-acc="guardarForm"]'); ok(nombre + ': aceptar referido exige el líder', (await a.textContent('#eForm')).includes('líder'));
     await a.selectOption('#fLider', 'Lucía Ferrer'); await a.click('#hojaForm [data-acc="guardarForm"]'); await a.waitForTimeout(400);
     ok(nombre + ': referido aceptado y pasado al líder', llamo('referido_decidir').length === 1 && llamo('referido_decidir')[0][2].p_lider === 'Lucía Ferrer');
-    await a.click('[data-tab="sinp"]'); await a.waitForSelector('[data-sinp="6"]');
-    ok(nombre + ': el buzón muestra lo histórico marcado', (await a.textContent('#lista')).includes('Antes del módulo'));
+    await a.click('#chipsAl [data-chipal="sinp"]'); await a.click('[data-grupoal="Pulse"]'); await a.waitForSelector('[data-sinp="6"]');
+    ok(nombre + ': el chip Instalado sin permiso muestra lo histórico marcado', (await a.textContent('#lista')).includes('Antes del módulo'));
+    await a.click('#chipsAl [data-chipal="todo"]'); await a.fill('#buscaAl', 'Licorería'); await a.waitForSelector('[data-vieja="41"]');
+    ok(nombre + ': el buscador encuentra por cliente y lo histórico va en la misma lista', (await a.locator('#lista [data-sol], #lista [data-ref]').count()) === 0);
+    await a.click('[data-vieja="41"]'); await a.waitForSelector('#hojaForm.ver');
+    ok(nombre + ': una consulta vieja también abre su hoja', (await a.textContent('#hojaForm')).includes('app vieja'));
+    await a.click('#hojaForm [data-cierra]'); await a.waitForTimeout(350); await a.fill('#buscaAl', '');
     await a.click('[data-tab="pagos"]'); await a.waitForSelector('[data-pagar="instalacion"]');
     ok(nombre + ': Pagos con Excel y el referido atrasado', (await a.locator('[data-acc="excel"]').count()) === 1 && (await a.textContent('#lista')).includes('Pago atrasado'));
     const [dl] = await Promise.all([a.waitForEvent('download'), a.click('[data-acc="excel"]')]);
@@ -204,11 +226,19 @@ const entrarAliado = (ctx, persona) => entrarComo(ctx, persona, 'aliados');
     ok(nombre + ': sin desborde (admin)', await sinDesborde(a));
     await a.close();
 
-    // ----- Líder: solo ve los instalados -----
+    // ----- Líder: ve el registro completo solo para ver, con "Tu cliente" y "Lo mío" -----
     const l = await entrarComo(ctx, { usuario: 'lucia', pin: '739105' }, 'ventas'); await l.waitForSelector('[data-modulo="aliados"]');
-    ok(nombre + ': el líder ve el módulo como Instalados por aliados', (await l.textContent('[data-modulo="aliados"]')).includes('instalados por aliados'));
-    await l.goto(H + 'aliados.html'); await l.waitForSelector('#lista .rv');
-    ok(nombre + ': lista de instalados, sin pestañas ni bandeja', (await l.textContent('#titulo')).includes('Instalados') && (await l.locator('#filtros button').count()) === 0 && llamo('aliados_bandeja').filter((x) => true).length === llamo('aliados_bandeja').length);
+    await l.goto(H + 'aliados.html'); await l.waitForSelector('#lista .grupo');
+    ok(nombre + ': el líder entra al Registro y tiene Instalados', (await l.locator('#filtros [data-tab]').count()) === 2 && (await l.textContent('#ayuda')).includes('Solo para ver'));
+    ok(nombre + ': el líder no ve el aviso de decisiones', (await l.textContent('#avisoAl')).trim() === '');
+    await l.click('#chipsAl [data-chipal="mio"]'); await l.waitForSelector('#lista .tagn');
+    ok(nombre + ': "Lo mío" deja sus clientes con la marca Tu cliente', (await l.textContent('#lista')).includes('Óptica Imaginaria') && (await l.locator('#lista .tagn', { hasText: 'Tu cliente' }).count()) >= 1 && !(await l.textContent('#lista')).includes('Comercial Ficticia'));
+    await l.click('#chipsAl [data-chipal="todo"]'); await l.click('[data-grupoal="Conecta Sur Ejemplo"]'); await l.click('[data-sol="29"]'); await l.waitForSelector('#hojaSol.ver .estado');
+    ok(nombre + ': el líder abre la solicitud con todo y sin ningún botón de acción', (await l.locator('#hojaSol [data-form], #hojaSol [data-acc="revisarDeNuevo"], #hojaSol [data-acc="expediente"]').count()) === 0 && (await l.textContent('#cSol')).includes('Bitácora'));
+    await l.click('#hojaSol [data-cierra]'); await l.waitForTimeout(350);
+    await l.click('#chipsAl [data-chipal="refs"]'); await l.click('[data-grupoal="Conecta Sur Ejemplo"]').catch(() => {}); await l.waitForSelector('[data-ref="8"]'); await l.click('[data-ref="8"]'); await l.waitForSelector('#hojaForm.ver');
+    ok(nombre + ': el referido se ve sin poder aceptarlo', (await l.locator('#hojaForm [data-acc="guardarForm"], #hojaForm #fLider').count()) === 0);
+    await l.screenshot({ path: 'capturas/t20-' + nombre + '-lider-registro.png' });
     await l.close();
 
     // ----- Coordinación de canales: solicitudes, referidos y pagos -----
