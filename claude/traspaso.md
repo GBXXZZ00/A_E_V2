@@ -1,8 +1,59 @@
 # Traspaso (se actualiza al cerrar cada sesión)
 
-Actualizado: 13/10/2026 (Lote 2 hecho: A, D, E, B, C y F). Publicado: `?v=32`.
+Actualizado: 13/10/2026 noche (Lote 2 hecho; corrida del 14/10 aprobada: Lotes 3 a 7). Publicado: `?v=32`.
 
-## LOTE 3 (BORRADOR, 13/10 noche): ajustes tras probar el Lote 2. NO ejecutar hasta que el administrador lo apruebe en el chat del proyecto
+## CORRIDA DEL 14/10 (APROBADA por el administrador el 13/10 noche): Lote 3 + Lote 4 + Lote 5 + Lote 6 + Lote 7
+Antes de tocar código: lee los cinco lotes completos y dile al administrador, en pocas líneas, qué puedes ejecutar y qué no (y por qué). Si todo es ejecutable, arranca sin esperar más. Orden: Lote 3, 5, 4, 6, 7. Publica por lote (pruebas, capturas, `?v=`, commit y push). Septiembre certificado (59/49) no se mueve; corre la referencia de comisiones antes y después de cada lote que toque comisiones. Las pantallas siguen el estilo ya aprobado (maquetas en `claude/maquetas/`, Clientes y Comisiones como modelo); no hace falta maqueta nueva. Fuera de esta corrida: notificaciones, ingresos y bandeja de dedicados, propuesta de servicio, proforma y carta para nuevo titular, subidas por guardias.
+
+### LOTE 4: cambios de categoría y de titularidad
+1. Pestaña **"Cambios"** dentro de Comisiones. El líder crea la solicitud ahí (un solo canal, reemplaza el WhatsApp).
+2. **Buscador de servicios** por nombre, cédula o RIF (con `normalizeStr()` y RIF en dígitos). Muestra todos los servicios del titular con código, PON, plan, sucursal, dirección y estado; se eligen uno o varios. Fuente: un **índice liviano del TAD completo** (tabla nueva solo con esas columnas; el TAD trae unas 400 mil filas y se sube completo). La subida reemplaza el índice entero en lotes, sin bloquear la pantalla.
+3. Tipo: **categoría**, **titularidad** o **ambos**.
+4. Documentos según el tipo:
+   - Categoría sola: sin documentos. Va directo al analista.
+   - Titularidad natural a natural: planilla firmada + cédula (o RIF) de ambos.
+   - Natural a jurídico, jurídico a jurídico, jurídico a natural: todo lo legal del nuevo titular (casillas de siempre) + planilla + identidad del titular actual.
+5. **Planilla** generada por la app, idéntica a la plantilla oficial de "Solicitud de cambio de titular" pero más nítida (PDF sin librerías, `documentos.js`): tipo de solicitud con 4 casillas (natural a natural, natural a jurídico, jurídico a natural, jurídico a jurídico); texto "Yo ___ ... traspasar el servicio identificado con el número ___ a nombre de ___, ubicación"; tabla del titular actual y del nuevo (nombre, cédula o RIF, natural o jurídico, ubicación, correo, teléfono); nota de copias de identidad; firmas y huellas (pulgar derecho e izquierdo) de ambos. Botón para enviarla por WhatsApp (enlace `wa.me` con el PDF descargado o enlace temporal). Se devuelve firmada y se sube a su casilla. La IA revisa los documentos (solo propone).
+6. Flujo: solicitud → **aprobación del administrador** (titularidad o ambos) → **"Por emitir"** en la bandeja del analista del líder → el analista marca **"Emitido"** → queda **"Por confirmar"** hasta que el TAD lo refleje → **"Confirmado"**. Todo con bitácora.
+7. **Confirmación**: con el archivo de cambios de categoría (columnas Código, Nombre, Fecha dd-mm-aaaa, Categoría anterior, Categoría actual, Operador, Comentario) y con el TAD. Peculiaridad del TAD: si primero se cambia la categoría y después la titularidad, aparece un registro nuevo con el plan nuevo; al revés, cambia el mismo registro. Se unen por **PON**. Las filas del operador RADIUS ("056 → PYME-1GB", activación automática de instalaciones nuevas) se ignoran.
+8. Bandeja **"Sin solicitud"**: todo cambio hacia PYME o desde PYME que aparezca en el archivo o en el TAD sin solicitud en la app. Opciones: vincular a un líder (entra a comisión), "Fue un error" (no comisiona) o "Revertido". Pasa a menudo porque aliados o instaladores registran mal el plan.
+9. **Comisión**: el cambio a PYME comisiona con la regla de siempre y la etiqueta "Cambio de categoría"; categoría sola pasa directo, sin regla extra. Titularidad sola no comisiona. Ambos: comisiona por la categoría.
+10. Cambio de PYME a otra categoría: **indicador negativo**.
+11. Subidas: dos actualizaciones al día (mañana y tarde) de TAD + archivo de cambios de categoría, Odoo y órdenes. En la pantalla de subidas, mostrar fecha y hora de la última de cada archivo.
+
+### LOTE 5: arreglos de aliados y coordinación de canales
+1. La coordinadora (rol Analista con `canales`) **sube y solicita exactamente igual que un aliado**, con el mismo bloqueo por cartera (TOP, líder, Grandes negocios, con servicio → solo referir).
+2. Comprobar con datos inventados la cadena completa: solicitud → documentos al expediente del mismo cliente (casillas y Drive) → instalación por la orden → Instalada / Instalado sin permiso → pago. Agregar la prueba.
+3. "Escribir al administrador" abre WhatsApp sin número: tomar el número de un ajuste editable por el administrador.
+4. Cliente bloqueado: el aviso debe decir claro que sus archivos no se guardaron.
+5. En la pestaña "Aliados y usuarios", la fila de coordinación lista los usuarios con rol Analista (ya es así); hoy no existe ninguno, así que mostrar el texto "Crea primero el usuario en Usuarios con rol Analista" cuando la lista esté vacía.
+
+### LOTE 6: pendientes y bandejas (una sola fuente)
+1. **Una sola fuente de pendientes en el servidor** (función o vista). De ella salen: el resumen de Inicio (contadores que llevan a la bandeja), las bandejas y, más adelante, las notificaciones. Nada se cuenta dos veces.
+2. **Usuarios**: en la ficha de cada líder, campo "Analista" (lista de usuarios con rol Analista). Lo elige el administrador. Cada pendiente de un cliente le llega solo al analista de su líder. Sin "Tomar": la asignación es fija.
+3. **Bandeja del analista ("Mi trabajo")**, pestañas con contador: Hoy (todo, ordenado: vencido, vence hoy, nuevo) · Cambios por emitir · Por instalar (órdenes de Odoo desde el 01/10 sin instalar, con días) · Por enviar (cartas de bienvenida y proformas pendientes) · Sin IP · Datos por corregir (RIF por verificar, cliente sin servicio enlazado, instalación sin cliente) · Sin solicitud. Cada pendiente: color por tiempo (verde, ámbar, rojo), "Hecho" con nota opcional (bitácora) y toque que abre la ficha como hoja.
+4. **Analista senior** (marca en Usuarios): además la pestaña "Para certificar" (lo que le falta al corte del mes: legal, documentos, IP) y revisión de IP de todos.
+5. **Coordinadora**: ve las bandejas de todos los analistas (filtro por analista), puede resolver cualquier pendiente, y además su pestaña Aliados (solicitudes, referidos, pagos, instalado sin permiso).
+6. **Bandeja del líder**: documentos faltantes, devueltos, contratos por firmar, planillas de titularidad sin firmar o incompletas, referidos asignados, dedicados con requisitos VGT incompletos, clientes sin gestión.
+7. **Administrador**: ve todas las bandejas con filtro por persona.
+8. Días límite iniciales (ajustes editables): orden sin instalar 15 días, cliente sin documentos 30 días, por enviar 3 días, cambio por emitir 2 días.
+
+### LOTE 7: resumen de gerencia (primera versión, se discute mañana la estructura final)
+1. Pantalla "Gerencia". La ven todos los roles; un rol nuevo **Gerencia** (solo lectura) y el administrador ven todo, incluidos montos, instalaciones de aliados y negativos. Los demás, sin montos.
+2. Filtros arriba: mes o rango, líder, segmento (Dedicado, Dedicado ISP, PYME, Combinado). Botón "Descargar Excel" (`archivos.js`).
+3. **Todo número o barra se toca**: abre hoja con la lista y de ahí la ficha.
+4. Secciones (Chart.js, estilo de la app, en teléfono una debajo de otra):
+   1. Portada en bloques asimétricos: clientes activos por segmento, instalaciones del mes contra el anterior, comisiones del mes (cumplen contra total), % expedientes completos, total de negativos.
+   2. Comisiones: barras mensuales cumplen contra no cumplen, por líder, causas (falta legal, falta documento, excepción). Meses certificados con su foto fija.
+   3. Instalaciones: por mes y segmento, por líder, por aliado; días promedio de orden a instalación.
+   4. Expedientes y Legal: embudo por estatus, días promedio a Legal listo, devueltos, casillas que más faltan.
+   5. Cambios de plan: categoría a PYME, PYME a otra, titularidades, mes contra mes.
+   6. Aliados: solicitudes, aprobadas, instaladas, referidos, pagos.
+   7. Dedicados: contratos por estatus, VGT con requisitos completos, pólizas por vencer (ingresos después).
+   8. **Negativos**, siempre visibles: instalado sin permiso, excepción pagada con documentos por subir, PYME a otra categoría, cambio sin solicitud o por error, comisión quitada, orden sin instalar más de 15 días, cliente sin documentos más de 30 días, póliza VGT vencida.
+
+## LOTE 3 (APROBADO el 13/10 noche, va en la corrida del 14/10): ajustes tras probar el Lote 2
+Agregado: los documentos que suban aliados o la coordinadora en una solicitud llegan al expediente del cliente (verificar en el punto 7).
 Reglas de la corrida: igual que el Lote 2 (una sola pasada, calidad primero, publicar por parte, Comisiones sin moverse salvo lo indicado).
 
 ### 1. Comisiones y Legal (regla nueva del administrador)
