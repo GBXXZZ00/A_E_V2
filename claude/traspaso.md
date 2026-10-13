@@ -2,6 +2,57 @@
 
 Actualizado: 13/10/2026 (Lote 1 completo: fluidez, comisiones y aliados). Publicado: `?v=30`.
 
+## LOTE 2 del 13/10 (APROBADO por el administrador en el chat del proyecto): documentos primero, dedicados, aliados y arreglos
+Ejecútalo completo, en este orden, con pruebas, capturas y publicación por parte. Única pausa: antes de crear las tablas de dedicados (parte D), explica el diseño en palabras simples y espera el OK. Datos reales: el administrador te adjunta los archivos; guárdalos en `pruebas/capturas/` (no se publica). Nada de nombres, RIF, teléfonos ni correos en el repo.
+
+Archivos que adjunta: `DEDICADO_01-10.xlsx` (analista: hoja RESUMEN, 497 enlaces de 114 clientes por RIF; hoja "base de contacto" con correos), `BD_Dedicados_Estatus_Legal_01OCT2026.xlsx` (hojas Maestra Dedicados, Detalle VGT, Detalle Colocation, Correcciones), `Dedicados_analisis_feedback_13OCT2026.xlsx` (hoja Todos con la ruta de documentos; hoja Correcciones), `x_servicios_corporativos.xlsx` (Odoo, sin RIF, con filas de encabezado de grupo que hay que saltar) y las órdenes de instalación desde enero 2026.
+
+### A. Subida de documentos (urgente: el administrador está subiendo ya)
+1. **Arrastrar y soltar deja el recuadro azul puesto** en toda la pestaña Documentos. Causa: en `ficha.js` el `dragover` pone `sobre` en `#tab-documentos` (la zona misma) y `limpiarSobre()` solo busca descendientes (`#tab-documentos .sobre`). Arreglo: quitar también la clase de la zona. Revisar que tampoco quede al soltar fuera de una casilla ni al cancelar el arrastre.
+2. **Bloque de IP en "Proforma y carta"**: plegable (cerrado por defecto, con el estado "Falta IP" visible en la cabecera) y con letras y botones más pequeños; hoy se ve pesado.
+3. **Estatus mal puestos.** 81 clientes en `documentos_recibidos`: 50 correctos (la app vieja decía DOCUMENTOS RECIBIDOS y tienen documentos). 31 los subió la migración del 08/10 (`bitacora.accion = 'cambio_estatus'`, `despues.como = 'migracion'`) sin que la app vieja los tuviera recibidos (en la carga 6 de la base vieja, `estatus_legal`: 16 GRANDES NEGOCIOS, 7 PERSONA NATURAL, 5 DOCUMENTOS EN REVISION, 3 PENDIENTE POR FIRMAR; 20 sin ningún documento en la app).
+   - Septiembre ya se pagó con la certificación manual de Emmanuel; en la app `cortes_certificados` está vacío. Antes de mover estatus, certificar septiembre en la app (confirmar con el administrador quién da el botón) y verificar 59 y 49.
+   - Devolver a esos 31 el estatus de la app vieja SIN quitar `legal_ok_en` y con la marca visible "Aprobado, documentos por subir" (usar lo que ya existe de `por_subir` / `archivos_por_subir`). Con bitácora.
+   - Regla nueva en el servidor: a `documentos_recibidos` solo se llega con documentos reales en la app o porque la app vieja ya lo decía. Subir documentos a un cliente ya aprobado no le quita la aprobación ni cambia su comisión.
+   - Los clientes de septiembre son un caso particular (aprobados, solo falta subir); de ahí en adelante el flujo es el normal.
+4. **Pestaña "Por instalar" de Comisiones**: el administrador dice que no la ve, aunque `por_instalar()` devuelve filas para él. Revisar con captura (versión guardada por `sw.js`, permiso o pestaña oculta). Revisar también que el cliente que muestra cada orden coincida con el título: hay al menos un caso donde el cliente enlazado no es el de la orden (enlace por parecido).
+
+### B. Actualizar
+1. Un solo cuadro para subir todo (TAD, Odoo, órdenes de instalación, base vieja, archivo de dedicados y el KMZ). Quitar el panel aparte "Mapa de red" (el cuadro de arriba ya acepta el KMZ); dejar visible el resumen del mapa vigente.
+2. Un solo paso: hoy se sube, se ve el cruce de prueba y hay que darle "Aplicar cruce", y el administrador no lo entendió. Que la pantalla diga claro qué pasó y qué falta, con un solo botón para guardar el cruce.
+3. Historial de cargas: fecha, hora, quién y si el cruce quedó aplicado.
+4. Explicar con texto corto en pantalla qué hace "Ver clientes" o quitarlo si no aporta.
+
+### C. Comisiones, textos
+"Debe instalación" (falta el pago de la instalación según el TAD) y "Por asignar" (no se sabe el dueño de la instalación) necesitan una línea de ayuda en pantalla: el administrador no los entendió.
+
+### D. Dedicados (base y pantalla)
+Cotejo ya hecho en el chat del proyecto (verifícalo con los archivos):
+- Los 88 clientes de la maestra están en el archivo de la analista con el mismo RIF. La analista suma 26 más; solo 3 con algo activo (2 ISP). Universo: 114 clientes por RIF, 85 con algo activo, 22 ISP. La app tiene 95; los 19 que faltan entran todos (decisión: todo dedicado que no esté en la base entra para gestionarlo).
+- Documentos de la app vieja ya migrados: 14 dedicados, 86 documentos. Faltan 16 archivos de Drive en subcarpetas "DEDICADO (ISP)" y "DEDICADO (CORPORATIVO)" (con paréntesis) que no entraron a `privado.drive_mapa`.
+- 6 RIF malos (también en el archivo de la analista; ver hoja Correcciones): 3 clientes con el mismo RIF, 2 con RIF distinto entre la maestra y la app, 1 duplicado en la app. Estatus "Pendiente por verificar"; igual se puede subir.
+- Fecha de inicio por enlace: solo en el archivo de la analista (284 de 296 activos). Se guarda tal cual y no se usa: se evalúa después.
+- Contactos de la analista: son de la empresa (presidencia, administración, tecnología), no del representante legal. Van en Datos.
+- Odoo no trae RIF: se enlaza por código de enlace (CRM-SRV-AIRTEK-...) y código Proham normalizado (solo dígitos, sin ceros a la izquierda, sin prefijo 824).
+Qué construir:
+1. Segmento por cliente, calculado: Dedicado ISP, Dedicado corporativo, PYME, Combinado (dedicado + PYME). Filtro de segmento en Clientes.
+2. Enlaces dedicados (código de enlace, Internet o Transporte, nodo, capacidades, tarifa, estado, fecha de inicio cruda, ejecutivo). Contratos dedicados por cliente: servicio, VGT y colocation, con estatus, fecha de firma y vencimiento escrito a mano (contrato de servicio uno por cliente, por confirmar). Detalle VGT por proyecto y colocation por sitio. Contactos de empresa.
+3. Carga única del estatus legal anterior, el feedback y la ruta de documentos (cargar, completar, pedir, validar). Carga del archivo de la analista desde Actualizar (arrastrar), repetible.
+4. Pantalla Dedicados con el patrón aprobado (lista quieta y hoja): ISP primero, filtro por ejecutiva y por ruta, marca "Pendiente por verificar". Hoja con Datos (enlaces, contactos), Documentos (casillas de siempre + Conatel para ISP) y Contratos. Cada ejecutiva ve sus clientes.
+5. No comisionan. Plazo de documentos ISP: semana del 19/10.
+
+### E. Cuentas
+Las 4 ejecutivas del archivo de la analista (columna EJECUTIVO; el administrador te confirma nombres): rol líder, PIN 123456 y cambio obligatorio al primer ingreso. Mínimo de seguridad antes de que suban: bloqueo por intentos y perfiles solo fila propia (sección de seguridad pendiente del traspaso viejo). WhatsApp y correo se agregan después.
+
+### F. Aliados
+El administrador entra y no ve el registro. En el servidor `aliados_registro()` devuelve 79 consultas viejas y 61 instaladas sin permiso (03/03 a 02/10). Lo que pide:
+1. Que se vean los registros viejos, las pendientes y las instaladas sin consultar, en una vista general (es poco volumen).
+2. "Instalaciones de aliados por mes", como en Comisiones, desde enero (cargar las órdenes de instalación que adjunta sin tocar las comisiones; verificar septiembre 59/49 y octubre igual antes y después).
+3. Poder subir una solicitud de prueba como administrador para probar la IA: hoy `solicitud_crear` exige usuario aliado o analista enlazado. Crear un "Aliado de prueba" enlazado al administrador y borrarlo al terminar (o dar el SQL de borrado).
+
+### G. Más tarde hoy (no en esta corrida salvo que lo pida)
+Drive: el permiso de Google está en modo Prueba y vence cada 7 días (se dio el 09/10). Lo arregla el administrador al final de la tarde. Después: bandeja de la analista de dedicados (con sus notas de la reunión), fecha de instalación de dedicados y duración de contratos.
+
 ## Lote 1 del 13/10 (fluidez, comisiones y aliados): HECHO, falta que el administrador lo pruebe con datos reales
 - **Parte C, aliados: HECHA en v30.** Base: `public.aliados_registro()` (admin, analistas, líderes y Legal; `puedo.decidir` solo admin; cada fila con `tu_cliente`), `privado.al_tu_cliente`, `privado.eventos_tu_cliente()` y tabla `privado.avisos_hechos` (listo para la tarea de notificaciones, sin disparadores), `solicitud_estado` ahora deja leer al equipo con `solo_ver` y trae `bitacora` y `aprobada_en`. Probado con función temporal (deshecha) haciendo líder al único usuario: ve 61 sin permiso y 79 viejas, sin líderes ni decidir, y el servidor le niega revisar, decidir y enlazar; septiembre 59/49. Pantalla (`aliados.js`, `aliados.html`): pestaña Registro (admin, equipo y canales), aviso, chips, buscador, grupos con contadores y Nuevo (en `localStorage` por usuario), hoja de consulta vieja, hoja de solicitud con Fechas y Bitácora y sin botones para el equipo. Las bandejas viejas del administrador (Para ti, Analizando, etc.) pasaron a chips del Registro. Prueba test20 ampliada.
 - Hoy la base solo tiene el usuario administrador: los líderes, analistas y aliados todavía no tienen cuenta, así que "Tu cliente", "Lo mío" y el registro de solo lectura se ven cuando se creen.
