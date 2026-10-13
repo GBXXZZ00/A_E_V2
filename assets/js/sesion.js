@@ -23,7 +23,7 @@
   // Perfil guardado en el dispositivo (rol y marcas, nunca el PIN) para dibujar la navegación al instante.
   // Solo vale si hay una sesión abierta del mismo usuario; el servidor sigue decidiendo los permisos.
   const K_PERFIL = 'ae_perfil';
-  const CAMPOS = ['id', 'usuario', 'nombre', 'rol', 'senior', 'canales', 'cargo', 'equipo', 'codigo_vendedor'];
+  const CAMPOS = ['id', 'usuario', 'nombre', 'rol', 'senior', 'canales', 'dedicados', 'cargo', 'equipo', 'codigo_vendedor'];
   function firma(p){ return p ? JSON.stringify(CAMPOS.map((k) => p[k] === undefined ? null : p[k])) : ''; }
   function guardarPerfil(p){
     if(!p){ guardar(K_PERFIL, null); return; }
@@ -53,16 +53,50 @@
     const s = await sesionActual();
     if(!s) return null;
     const { data, error } = await db.from('perfiles')
-      .select('id, usuario, nombre, rol, senior, canales, cargo, equipo, codigo_vendedor, activo, debe_cambiar_pin')
+      .select('id, usuario, nombre, rol, senior, canales, dedicados, cargo, equipo, codigo_vendedor, activo, debe_cambiar_pin')
       .eq('id', s.user.id).maybeSingle();
     if(error) throw error;
     perfilActual = data || null;
     guardarPerfil(perfilActual && perfilActual.activo && !perfilActual.debe_cambiar_pin ? perfilActual : null);
     return perfilActual;
   }
-  async function entrar(usuario, pin){
+  // Entrada segura (lote 2, E): pasa por la función "entrar", que cuenta los intentos y bloquea.
+  // Para volver a la entrada de antes: poner ENTRADA_SEGURA en false y publicar (ver claude/traspaso.md).
+  const ENTRADA_SEGURA = true;
+  async function porEntrada(cuerpo){
+    let r;
+    try { r = await db.functions.invoke('entrar', { body: cuerpo }); } catch (e) { r = { error: e }; }
+    if(!r.error){ if(r.data && r.data.error) throw new Error(r.data.error); return r.data || {}; }
+    const st = r.error.context && r.error.context.status; let j = null;
+    try { j = await r.error.context.json(); } catch (e) {}
+    const msj = (j && j.error) || '';
+    if(st === 401) throw Object.assign(new Error('Invalid login credentials'), { status: 401, quedan: j ? j.quedan : null });
+    if(st === 403) throw Object.assign(new Error('User is banned'), { status: 403 });
+    if(st === 429) throw Object.assign(new Error(msj || 'Demasiados intentos. Espera unos minutos'), { status: 429 });
+    if(st === 400 && msj) throw Object.assign(new Error(msj), { status: 400 });
+    // La función no respondió (caída o sin publicar): se marca para usar la entrada de respaldo
+    throw Object.assign(new Error(msj || 'No se pudo entrar. Intenta de nuevo'), { status: st || 0, caida: true });
+  }
+  async function entrarDirecto(usuario, pin){
     const { data, error } = await db.auth.signInWithPassword({ email: usuario + DOMINIO, password: pin });
     if(error) throw error;
+    return data.session;
+  }
+  async function entrar(usuario, pin){
+    let sesion = null;
+    if(ENTRADA_SEGURA){
+      try {
+        const d = await porEntrada({ accion: 'entrar', usuario, pin });
+        const { data, error } = await db.auth.setSession(d.session || {});
+        if(error) throw error;
+        sesion = data.session;
+      } catch (e) {
+        // Respaldo: si la función no responde, se intenta la entrada de antes (solo sirve a cuentas que no han pasado a la nueva)
+        if(!e.caida) throw e;
+        sesion = await entrarDirecto(usuario, pin);
+      }
+    } else sesion = await entrarDirecto(usuario, pin);
+    const data = { session: sesion };
     perfilActual = null; guardarPerfil(null);
     // Lo que quedó en pantalla de otra persona no se le muestra a quien entra
     if(window.Comun && window.Comun.cache) window.Comun.cache.borrarTodo();
@@ -78,11 +112,19 @@
   }
   // Comprueba el PIN actual de quien ya entró (para el cambio voluntario)
   async function verificarPin(usuario, pin){
+    if(ENTRADA_SEGURA){
+      try { await porEntrada({ accion: 'verificar', usuario, pin }); return; }
+      catch (e) { if(!e.caida) throw e; }
+    }
     const { error } = await db.auth.signInWithPassword({ email: usuario + DOMINIO, password: pin });
     if(error) throw error;
   }
   async function cambiarPin(pin){
-    const { error } = await db.auth.updateUser({ password: pin });
+    let error = null;
+    if(ENTRADA_SEGURA){
+      try { await porEntrada({ accion: 'cambiar', pin_nuevo: pin }); }
+      catch (e) { if(!e.caida) throw e; error = (await db.auth.updateUser({ password: pin })).error; }
+    } else error = (await db.auth.updateUser({ password: pin })).error;
     // Si el PIN ya quedó guardado en un intento anterior que se cortó, solo falta avisar al servidor
     const yaEstaba = error && /same|different/i.test(error.message || '') && perfilActual && perfilActual.debe_cambiar_pin;
     if(error && !yaEstaba) throw error;

@@ -126,7 +126,7 @@
       catch (e) {
         bloquear(false);
         const m = String((e && e.message) || '').toLowerCase();
-        return fallar(m.includes('invalid') ? 'Ese no es tu PIN actual' : mensajeError(e, 'No se pudo comprobar. Intenta de nuevo'));
+        return fallar(m.includes('invalid') ? 'Ese no es tu PIN actual' : e && e.status === 429 ? e.message : mensajeError(e, 'No se pudo comprobar. Intenta de nuevo'));
       }
     }
     if(modo === 'nuevo1'){
@@ -174,9 +174,10 @@
       if(dentro) await S.salir();
       bloquear(false);
       const m = String((e && e.message) || '').toLowerCase();
-      if(m.includes('invalid login') || m.includes('invalid_credentials')) return fallar('Usuario o PIN incorrecto');
+      if(m.includes('invalid login') || m.includes('invalid_credentials')) return fallar('Usuario o PIN incorrecto' + (e && e.quedan > 0 && e.quedan <= 2 ? '. Te ' + (e.quedan === 1 ? 'queda 1 intento' : 'quedan 2 intentos') + ' antes de bloquear la cuenta' : ''));
       if(m.includes('banned')) return fallar('Tu cuenta está desactivada. Habla con el administrador');
-      if(m.includes('rate limit') || (e && e.status === 429)) return fallar('Demasiados intentos. Espera un momento');
+      if(e && e.status === 429) return fallar(e.message && /espera/i.test(e.message) ? e.message : 'Demasiados intentos. Espera unos minutos');
+      if(m.includes('rate limit')) return fallar('Demasiados intentos. Espera un momento');
       fallar(mensajeError(e, 'No se pudo entrar. Intenta de nuevo'));
     }
   }

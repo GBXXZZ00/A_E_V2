@@ -11,7 +11,7 @@
   // Atajos a los que se llega desde un pendiente de Inicio
   const EXTRA = { devueltos: 'Con documentos devueltos', ultimo_corte: 'En su último corte', por_firmar: 'Por firmar', firmados: 'Firmados' };
   const SELS = [
-    { k: 'lider', t: 'Líder' }, { k: 'estatus', t: 'Estatus legal' }, { k: 'tipo', t: 'Tipo de servicio' }, { k: 'sucursal', t: 'Sucursal' }, { k: 'servicio', t: 'Estado del servicio' }
+    { k: 'lider', t: 'Líder' }, { k: 'estatus', t: 'Estatus legal' }, { k: 'tipo', t: 'Segmento' }, { k: 'sucursal', t: 'Sucursal' }, { k: 'servicio', t: 'Estado del servicio' }
   ];
   let yo = null; let rol = ''; let filtro = 'en_curso'; let q = ''; let sel = {}; let filas = []; let total = 0; let conteos = null; let opciones = null;
   let pedido = 0; let reloj = null; let cargando = false; let marcado = 0;

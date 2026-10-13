@@ -27,7 +27,7 @@ function mundoAliados(m){
     aliados_registro(m, yo){ if(['admin', 'analista', 'lider', 'abogado'].indexOf(yo.rol) < 0) return err('No tienes permiso para hacer esto');
       const tu = (c) => yo.rol === 'lider' && c === 9003;
       return { solicitudes: A.sols.map((x) => Object.assign({ tu_cliente: tu(x.cliente_id) }, x)), referidos: A.refs.map((x) => Object.assign({ tu_cliente: false }, x)), sin_permiso: A.sinp.map((x) => Object.assign({ tu_cliente: false }, x)),
-        viejas: [{ id: 41, cliente: 'Licorería Prueba', rif: 'J000000053', aliado: 'Conecta Sur Ejemplo', situacion: 'consulta' }], lideres: yo.rol === 'admin' ? ['Lucía Ferrer', 'Líder Dos'] : [], puedo: { decidir: yo.rol === 'admin' } }; },
+        viejas: [{ id: 41, cliente: 'Licorería Prueba', rif: 'J000000053', aliado: 'Conecta Sur Ejemplo', situacion: 'consulta' }], lideres: yo.rol === 'admin' ? ['Lucía Ferrer', 'Líder Dos'] : [], puedo: { decidir: yo.rol === 'admin', prueba: yo.rol === 'admin' } }; },
     aliados_bandeja(m, yo){ if(yo.rol !== 'admin') return err('No tienes permiso para hacer esto'); return { solicitudes: A.sols, referidos: A.refs, sin_permiso: A.sinp, viejas: [{ id: 'v1', cliente: 'Licorería Prueba', rif: 'J000000053', aliado: 'Conecta Sur', situacion: 'consulta' }], lideres: ['Lucía Ferrer', 'Líder Dos'] }; },
     solicitud_crear(m, yo, a){ const ya = A.sols.find((s) => s.aliado_id === deAliado(yo) && s.etiqueta === 'borrador' && !s.rif); if(ya){ ya.tipo = a.p_tipo; return { id: ya.id, codigo: ya.codigo }; }
       const id = ++A.n; A.sols.push({ id, codigo: 'AL-00' + id, tipo: a.p_tipo, etiqueta: 'borrador', aliado: yo.nombre, aliado_id: deAliado(yo), creada_en: hoy, actualizada_en: hoy }); return { id, codigo: 'AL-00' + id }; },
@@ -53,6 +53,10 @@ function mundoAliados(m){
     referido_decidir(m, yo, a){ const r = A.refs.find((x) => x.id === a.p_ref); r.etiqueta = a.p_aceptar ? 'aceptado' : 'no_aceptado'; r.lider = a.p_lider; return null; },
     aliados_pagos(m, yo){ if(yo.rol !== 'admin' && !yo.canales) return err('No tienes permiso para hacer esto'); return { instalaciones: A.sols.filter((s) => s.etiqueta === 'instalada' && !s.pagada_en).map((s) => Object.assign({ equipo: 'EQ1', servicio: '824-00000001' }, s)), referidos: [{ id: 7, codigo: 'RF-0007', rif: 'J000000033', cliente: 'Gimnasio Ejemplo', aliado: 'Redes Norte Ejemplo', etiqueta: 'instalado', horas: -5, instalado_en: hoy }] }; },
     pago_marcar(m, yo, a){ if(a.p_tipo === 'instalacion') sol(a.p_id).pagada_en = hoy; return null; },
+    aliados_por_mes(m, yo){ if(['admin', 'analista', 'lider', 'abogado'].indexOf(yo.rol) < 0) return err('No tienes permiso para hacer esto');
+      return { total: 3, meses: [{ mes: '2026-10-01', total: 1, aliados: [{ aliado: 'Pulse', n: 1 }], filas: [{ dia: '2026-10-02', aliado: 'Pulse', cliente: 'Panadería Inventada', codigo: '001-00000099', categoria: 'PYME-1GB', con_permiso: false }] },
+        { mes: '2026-02-01', total: 2, aliados: [{ aliado: 'Conecta Sur Ejemplo', n: 2 }], filas: [{ dia: '2026-02-10', aliado: 'Conecta Sur Ejemplo', cliente: 'Farmacia Ficticia', codigo: '001-00000098', categoria: 'PYME-1GB', con_permiso: true }, { dia: '2026-02-03', aliado: 'Conecta Sur Ejemplo', cliente: 'Taller Supuesto', codigo: '001-00000097', categoria: 'PYME-1GB', con_permiso: true }] }],
+        cargas: [{ archivo: 'ordenes_enero.xlsx', en: hoy, solo_aliados: true }] }; },
     instalados_aliados(m, yo){ return [{ id: 1, cliente: 'Óptica Imaginaria, C.A.', rif: 'J000000024', aliado: 'Redes Norte Ejemplo', instalada_en: hoy, categoria: 'PYME-1GB', con_permiso: yo.rol === 'admin' ? true : null }]; },
     sin_permiso_revisar(m, yo, a){ A.sinp.find((p) => p.id === a.p_id).revisado_en = hoy; return null; },
     aliados_lista(m, yo){ return { aliados: [{ id: 1, nombre: 'REDES NORTE EJEMPLO', codigo: '027', perfil: null }, { id: 3, nombre: 'Canales', es_canales: true, perfil: null }], perfiles: [{ id: ALIADO.id, nombre: ALIADO.nombre, usuario: ALIADO.usuario, rol: 'aliado' }, { id: CANALES.id, nombre: CANALES.nombre, usuario: CANALES.usuario, rol: 'analista' }] }; },
@@ -182,7 +186,12 @@ const entrarAliado = (ctx, persona) => entrarComo(ctx, persona, 'aliados');
     const a = await entrarComo(ctx, { usuario: 'marcos', pin: '482913' }, 'ventas'); a.on('pageerror', (e) => errores.push(e.message));
     await a.waitForSelector('[data-modulo="aliados"]');
     ok(nombre + ': Inicio del admin tiene el módulo Aliados', (await a.textContent('[data-modulo="aliados"]')).includes('referidos'));
-    await a.goto(H + 'aliados.html'); await a.waitForSelector('[data-tab="registro"].on'); await a.waitForSelector('#lista .grupo');
+    await a.goto(H + 'aliados.html'); await a.waitForSelector('[data-tab="registro"].on'); await a.waitForSelector('#lista .al-secc');
+    const gen = await a.textContent('#lista');
+    ok(nombre + ': el Registro abre con todo a la vista por secciones (decisión, pendientes, sin consultar, viejos)', ['Esperan tu decisión', 'Instaladas sin consultar', 'Registros viejos (app anterior)'].every((x) => gen.includes(x)) && gen.includes('Licorería Prueba') && gen.includes('Vivero Ejemplo'));
+    ok(nombre + ': cada registro dice de qué aliado es', (await a.textContent('#lista .al-secc .fila small')).length > 0 && gen.includes('Pulse'));
+    await a.screenshot({ path: 'capturas/20-' + nombre + '-registro-general.png', fullPage: true });
+    await a.click('[data-vistaal="aliado"]'); await a.waitForSelector('#lista .grupo-cab');
     ok(nombre + ': entra al Registro agrupado por aliado, con el más reciente arriba', (await a.locator('#lista .grupo').count()) >= 3 && (await a.textContent('#lista .grupo-cab')).length > 0);
     ok(nombre + ': la cabecera del aliado dice abiertas, instaladas, referidos y pagos pendientes', /abiertas?|instaladas?|referidos?|pagos? pendientes?/.test(await a.textContent('#lista')));
     ok(nombre + ': Para ti pasó a un aviso con contador', /\d+ esperan tu decisión/.test(await a.textContent('#avisoAl')));
@@ -223,17 +232,27 @@ const entrarAliado = (ctx, persona) => entrarComo(ctx, persona, 'aliados');
     await a.click('[data-tab="aliados"]'); await a.waitForSelector('[data-enlazar="1"]');
     await a.selectOption('[data-enlazar="1"]', ALIADO.id); await a.waitForTimeout(400);
     ok(nombre + ': enlaza el aliado con su usuario', llamo('aliado_enlazar').length === 1 && llamo('aliado_enlazar')[0][2].p_perfil === ALIADO.id);
+    await a.click('#filtros [data-tab="registro"]'); await a.waitForSelector('#accionCab [data-acc="nueva"]').catch(() => {});
+    ok(nombre + ': el administrador enlazado a un aliado de prueba ve "Solicitud de prueba"', (await a.locator('#accionCab [data-acc="nueva"]').count()) === 1);
+    await a.click('#filtros [data-tab="mes"]'); await a.waitForSelector('#lista .grupo[class] [data-mes]');
+    const mes = await a.textContent('#lista');
+    ok(nombre + ': "Por mes" muestra instalaciones de aliados por mes desde enero, con indicadores y permiso', mes.includes('Desde enero') && mes.includes('Octubre 2026') && mes.includes('Febrero 2026') && mes.includes('Sin permiso') && mes.includes('solo para aliados'));
+    await a.click('[data-mes="2026-02-01"]');
+    ok(nombre + ': se abre un mes y se ven sus instalaciones', (await a.textContent('#lista')).includes('Farmacia Ficticia'));
+    await a.screenshot({ path: 'capturas/20-' + nombre + '-por-mes.png', fullPage: true });
+    await a.click('#filtros [data-tab="registro"]'); await a.waitForSelector('#lista .grupo');
     ok(nombre + ': sin desborde (admin)', await sinDesborde(a));
     await a.close();
 
     // ----- Líder: ve el registro completo solo para ver, con "Tu cliente" y "Lo mío" -----
     const l = await entrarComo(ctx, { usuario: 'lucia', pin: '739105' }, 'ventas'); await l.waitForSelector('[data-modulo="aliados"]');
     await l.goto(H + 'aliados.html'); await l.waitForSelector('#lista .grupo');
-    ok(nombre + ': el líder entra al Registro y tiene Instalados', (await l.locator('#filtros [data-tab]').count()) === 2 && (await l.textContent('#ayuda')).includes('Solo para ver'));
+    ok(nombre + ': el líder entra al Registro y tiene Instalados', (await l.locator('#filtros [data-tab]').count()) === 3 && (await l.textContent('#ayuda')).includes('Solo para ver'));
     ok(nombre + ': el líder no ve el aviso de decisiones', (await l.textContent('#avisoAl')).trim() === '');
     await l.click('#chipsAl [data-chipal="mio"]'); await l.waitForSelector('#lista .tagn');
     ok(nombre + ': "Lo mío" deja sus clientes con la marca Tu cliente', (await l.textContent('#lista')).includes('Óptica Imaginaria') && (await l.locator('#lista .tagn', { hasText: 'Tu cliente' }).count()) >= 1 && !(await l.textContent('#lista')).includes('Comercial Ficticia'));
-    await l.click('#chipsAl [data-chipal="todo"]'); await l.click('[data-grupoal="Conecta Sur Ejemplo"]'); await l.click('[data-sol="29"]'); await l.waitForSelector('#hojaSol.ver .estado');
+    await l.click('#chipsAl [data-chipal="todo"]'); if(!(await l.locator('[data-grupoal]').count())){ await l.click('[data-vistaal="aliado"]'); await l.waitForSelector('[data-grupoal]'); }
+    await l.click('[data-grupoal="Conecta Sur Ejemplo"]'); await l.click('[data-sol="29"]'); await l.waitForSelector('#hojaSol.ver .estado');
     ok(nombre + ': el líder abre la solicitud con todo y sin ningún botón de acción', (await l.locator('#hojaSol [data-form], #hojaSol [data-acc="revisarDeNuevo"], #hojaSol [data-acc="expediente"]').count()) === 0 && (await l.textContent('#cSol')).includes('Bitácora'));
     await l.click('#hojaSol [data-cierra]'); await l.waitForTimeout(350);
     await l.click('#chipsAl [data-chipal="refs"]'); await l.click('[data-grupoal="Conecta Sur Ejemplo"]').catch(() => {}); await l.waitForSelector('[data-ref="8"]'); await l.click('[data-ref="8"]'); await l.waitForSelector('#hojaForm.ver');

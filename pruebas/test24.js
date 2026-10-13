@@ -58,6 +58,15 @@ async function arrastrar(p, sobre){
     await p.fill('#busca', 'Yunque'); await p.waitForFunction(() => document.querySelectorAll('#lista [data-cliente]').length === 1);
     ok(nombre + ': en Clientes sale la etiqueta "Aprobado, documentos por subir"', (await p.textContent('#lista')).includes('Aprobado, documentos por subir'));
 
+    // C: Debe instalación y Por asignar se explican en una línea al elegirlos
+    await p.goto(H + 'comisiones.html'); await p.waitForSelector('#filtros [data-filtro="pago"]');
+    await p.click('#filtros [data-filtro="pago"]'); await p.waitForSelector('#ayudaFiltro .ayuda-filtro');
+    ok(nombre + ': "Debe instalación" dice qué es (falta el pago según el TAD)', /según el TAD.*no ha pagado la instalación/.test(await p.textContent('#ayudaFiltro .ayuda-filtro')));
+    await p.click('#filtros [data-filtro="asignar"]'); await p.waitForFunction(() => /qué líder/.test((document.querySelector('#ayudaFiltro .ayuda-filtro') || {}).textContent || ''));
+    ok(nombre + ': "Por asignar" dice qué es (no se sabe el dueño) y quién lo resuelve', /Analista Senior/.test(await p.textContent('#ayudaFiltro .ayuda-filtro')));
+    await p.screenshot({ path: 'capturas/24-' + nombre + '-ayuda-filtro.png' });
+    await p.click('#filtros [data-filtro="todos"]');
+    ok(nombre + ': sin filtro no se repite la ayuda', (await p.locator('#ayudaFiltro .ayuda-filtro').count()) === 0);
     // Por instalar: indicadores arriba y dos bandejas con título y contador
     await p.goto(H + 'comisiones.html?t=instalar'); await p.waitForSelector('.ins-kpis');
     const k = await p.textContent('.ins-kpis');

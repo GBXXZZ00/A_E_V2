@@ -11,9 +11,12 @@
     { id: 'clientes', texto: 'Clientes', icono: 'edificio', enlace: 'clientes.html' },
     { id: 'factibilidad', texto: 'Factibilidad', icono: 'wifi', enlace: 'factibilidad.html', roles: ['admin', 'analista', 'lider'] },
     { id: 'revision', texto: 'Revisión', icono: 'doc', enlace: 'revision.html', roles: ['admin', 'abogado'] },
+    { id: 'dedicados', texto: 'Dedicados', icono: 'servidor', enlace: 'dedicados.html', roles: ['admin', 'analista', 'abogado'], marca: 'dedicados', pcSalvoMarca: true },
     { id: 'aliados', texto: 'Aliados', icono: 'usuarios', enlace: 'aliados.html', roles: ['admin', 'analista', 'lider', 'abogado'], soloPc: true }
   ];
 
+  // Un módulo se ve por rol o, para un líder, por su marca (la ejecutiva de dedicados)
+  const puedeVer = (n, p) => !n.roles || n.roles.indexOf(p.rol) >= 0 || (n.marca && p.rol === 'lider' && !!p[n.marca]);
   // opciones: { activo: 'inicio'|'comisiones'|'clientes'|'factibilidad'|'revision'|'aliados'|null, sinNav: bool, volver: {enlace, texto}, acciones: html }
   let montado = null;   // { clave, res }: lo que ya está dibujado, para no repetirlo al confirmar la sesión
   function montar(p, opciones){
@@ -28,7 +31,7 @@
     barra.innerHTML =
       (o.volver ? '<a class="barra-volver" href="' + esc(o.volver.enlace) + '">' + ic('volver', 'ch') + esc(o.volver.texto) + '</a>' : '') +
       '<a class="marca" href="inicio.html" aria-label="Inicio"><img class="logo" src="assets/img/logo.svg?v=5" alt="Airtek" width="96" height="12"><span>Empresas</span></a>' +
-      (conNav ? '<nav class="navpc" aria-label="Navegación">' + NAV.filter((n) => !n.roles || n.roles.indexOf(p.rol) >= 0).map((n) => '<a href="' + n.enlace + '"' + (o.activo === n.id ? ' class="on" aria-current="page"' : '') + '>' + n.texto + '</a>').join('') + '</nav>' : '') +
+      (conNav ? '<nav class="navpc" aria-label="Navegación">' + NAV.filter((n) => puedeVer(n, p)).map((n) => '<a href="' + n.enlace + '"' + (o.activo === n.id ? ' class="on" aria-current="page"' : '') + '>' + n.texto + '</a>').join('') + '</nav>' : '') +
       '<span class="sep"></span>' +
       (o.acciones ? '<div class="acciones-bar" id="accionesBar">' + o.acciones + '</div>' : '') +
       '<button type="button" class="cuenta" id="cuenta" data-abre="hojaCuenta" aria-label="Mi cuenta">' +
@@ -39,7 +42,7 @@
       document.body.classList.add('con-nav');
       let nav = $('navAbajo');
       if(!nav){ nav = document.createElement('nav'); nav.id = 'navAbajo'; nav.className = 'nav'; nav.setAttribute('aria-label', 'Navegación'); document.body.appendChild(nav); }
-      nav.innerHTML = NAV.filter((n) => (!n.roles || n.roles.indexOf(p.rol) >= 0) && !n.soloPc).map((n) => '<a href="' + n.enlace + '"' + (o.activo === n.id ? ' class="on" aria-current="page"' : '') + '><span>' + ic(n.icono) + '</span>' + n.texto + '</a>').join('');
+      nav.innerHTML = NAV.filter((n) => puedeVer(n, p) && !n.soloPc && !(n.pcSalvoMarca && !(p.rol === 'lider' && p[n.marca]))).map((n) => '<a href="' + n.enlace + '"' + (o.activo === n.id ? ' class="on" aria-current="page"' : '') + '><span>' + ic(n.icono) + '</span>' + n.texto + '</a>').join('');
     }
 
     let hoja = $('hojaCuenta');

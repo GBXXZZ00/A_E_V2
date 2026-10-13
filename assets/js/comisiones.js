@@ -67,6 +67,7 @@
       const n = conteo(f.id);
       return '<button type="button" role="tab" data-filtro="' + f.id + '" class="' + (f.id === filtro ? 'on' : '') + '" aria-selected="' + (f.id === filtro) + '">' + esc(f.t) + (n === '' ? '' : ' <em>' + esc(n) + '</em>') + '</button>';
     }).join('');
+    const ay = $('ayudaFiltro'); if(ay) ay.innerHTML = ayudaFiltro();
   }
   function pintarMets(){
     const propias = d.filas.filter((f) => f.origen === 'corte'); const ult = d.filas.filter((f) => f.origen === 'anterior');
@@ -112,6 +113,12 @@
       ver.map(fila).join('') +
       (todo ? '' : '<button type="button" class="fila mas" data-mas="' + esc(clave) + '">Ver ' + (filas.length - TOPE) + ' más</button>');
   }
+  // Qué quiere decir cada filtro que confunde (lote 2, C)
+  const AYUDA = {
+    pago: 'Debe instalación: según el TAD, el cliente todavía no ha pagado la instalación. Mientras no la pague, no comisiona. Se quita sola cuando el TAD trae el pago.',
+    asignar: 'Por asignar: no se sabe de qué líder es la instalación (la orden no tiene código de vendedor o la creó otra persona). No comisiona hasta que el Analista Senior le pone dueño.'
+  };
+  function ayudaFiltro(){ return AYUDA[filtro] ? '<p class="ayuda-filtro" role="note">' + esc(AYUDA[filtro]) + '</p>' : ''; }
   function pintarLista(){
     if(filtro === 'eventos'){
       const p = (d.eventos || []).filter(coincide);
@@ -256,7 +263,7 @@
     if(d.certificado) h += '<div class="franja verde">' + ic('check') + '<span><b>Corte certificado</b>' + esc((d.certificado.por ? 'Por ' + primerNombre(d.certificado.por) + ', el ' : 'El ') + fecha(d.certificado.en)) + '. Lo que ves quedó fijo.</span>' +
       (P.quitar_certificado ? '<button type="button" class="mini" id="quitarCert">Quitar</button>' : '') + '</div>';
     if(n && filtro !== 'asignar') h += '<button type="button" class="franja ambar" data-filtro="asignar">' + ic('alerta') + '<span><b>' + plural(n, 'pendiente', 'pendientes') + ' por asignar</b>' +
-      (P.asignar ? 'No comisionan hasta que confirmes la orden y a quién pertenecen.' : 'No comisionan hasta que el Analista Senior las asigne.') + '</span>' + ic('derecha') + '</button>';
+      'No se sabe de qué líder son. ' + (P.asignar ? 'No comisionan hasta que confirmes la orden y a quién pertenecen.' : 'No comisionan hasta que el Analista Senior las asigne.') + '</span>' + ic('derecha') + '</button>';
     $('avisos').innerHTML = h;
     $('acciones').innerHTML = (d.filas.length ? '<button type="button" class="mini" id="bajarExcel">' + ic('doc') + 'Bajar Excel</button>' : '') +
       (P.certificar ? '<button type="button" class="mini pri" id="abrirCert">' + ic('check') + 'Certificar corte</button>' : '');

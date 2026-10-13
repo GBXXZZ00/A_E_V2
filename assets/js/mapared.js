@@ -22,8 +22,8 @@
       '<label class="rotulo arriba" for="mapaFecha">Fecha del mapa</label><input class="campo" id="mapaFecha" type="date" value="' + esc(leido.fecha) + '" max="' + esc(hoyClave()) + '" style="max-width:260px"><div class="error" id="eMapa" role="alert">' + esc(error) + '</div>' +
       '<div class="acc"><button type="button" class="btn btn-2" id="mapaQuitar">Quitar</button><button type="button" class="btn" id="mapaCargar">Cargar mapa</button></div>' +
       '<p class="nota-chica">Reemplaza el mapa vigente y vuelve a revisar todas las consultas abiertas.</p>';
-    else cuerpo = (error ? '<div class="error" role="alert">' + esc(error) + '</div>' : '') + '<button type="button" class="soltar" id="mapaSoltar"><svg class="i g" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5M5 20h14"/></svg><b>Elige el mapa (KMZ)</b>O arrástralo aquí. También puedes soltarlo junto con los demás archivos.</button>';
-    z.innerHTML = info + '<div style="margin-top:12px">' + cuerpo + '</div>';
+    else cuerpo = error ? '<div class="error" role="alert">' + esc(error) + '</div>' : '';
+    z.innerHTML = info + (cuerpo ? '<div style="margin-top:12px">' + cuerpo + '</div>' : '');
   }
   function pintarResumen(r){
     const c = r.cambios || {}; const k = r.consultas || {};

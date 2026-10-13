@@ -153,9 +153,10 @@ function recalcular(c, autor){
 }
 const gestion = (c, yo) => { c.ug_en = hace(0); c.ug_por = yo.nombre; };
 const porInstalar = (c) => !c.servicios.length && !c.instalaciones.length;
+function segmentoFiltro(c){ const s = segmento(c); return s === 'PYME + Dedicado' ? 'Combinado' : s === 'Natural' ? 'PYME' : s; }
 function segmento(c){
-  const ded = c.servicios.some((s) => /(dedicad|conectiv)/.test(norm(s.categoria))); const pyme = c.servicios.some((s) => !/(dedicad|conectiv)/.test(norm(s.categoria)));
-  return ded && pyme ? 'PYME + Dedicado' : ded ? (c.es_isp ? 'Dedicado ISP' : 'Dedicado corporativo') : c.es_natural ? 'Natural' : 'PYME';
+  const ded = !!c.dedicado || c.servicios.some((s) => /(dedicad|conectiv)/.test(norm(s.categoria))); const pyme = c.servicios.some((s) => !/(dedicad|conectiv)/.test(norm(s.categoria)));
+  return ded && pyme ? 'PYME + Dedicado' : ded ? (c.es_isp || (c.dedicado && c.dedicado.tipo === 'isp') ? 'Dedicado ISP' : 'Dedicado corporativo') : c.es_natural ? 'Natural' : 'PYME';
 }
 const visibles = (m, yo) => m.datos.clientes.filter((c) => !c.unido_a && (['admin', 'abogado', 'analista'].includes(yo.rol) || (yo.rol === 'lider' && c.lider_id === yo.id)));
 // Reloj de las órdenes abiertas: solo cuenta de 8:00 a 22:00 de Caracas, todos los días (igual que privado.horas_reloj)
@@ -182,6 +183,7 @@ const ordenOk = (c, i) => !!(i.confirmada && (i.orden || i.cruce === 'manual') &
 // B4: motivo en una frase; B8: aprobado por Legal con casillas obligatorias sin archivo
 const motivoDe = (c, i) => (ordenOk(c, i) ? null : i.de_otro ? 'Orden creada por otra persona, sin código' : i.cruce === 'nombre_parecido' ? 'Nombre parecido: confirma que la orden es de este cliente'
   : !i.orden && i.orden_vieja ? 'Orden vieja: se creó más de 45 días antes de instalar' : !i.orden ? 'Sin orden de Odoo reciente' : !duenoDe(c, i) ? 'Falta a quién pertenece' : 'Por confirmar');
+const casillasVacias = (c) => faltantes(c).filter((x) => x.e === 'falta' && !x.dato).length;
 function faltanArchivos(c){ return requeridos(c).some((q) => { const d = busca(c, q.casilla, q.numero); return !d || !(d.archivos || []).length; }); }
 const porSubir = (c) => (LEGAL_OK.includes(c.estatus) || !!c.legal_ok_en) && faltanArchivos(c);
 const aprobadoPorSubir = (c) => !!c.legal_ok_en && faltanArchivos(c);
@@ -314,13 +316,13 @@ const RPC = {
   // Igual que clientes_lista, con los filtros de las listas desplegables y sus opciones
   clientes_lista2(m, yo, a){
     const f = a.p_filtros || {}; const todos = visibles(m, yo);
-    const pasa = (c) => (!f.lider || (c.lider || 'Sin líder') === f.lider) && (!f.estatus || c.estatus === f.estatus) && (!f.tipo || segmento(c) === f.tipo) &&
+    const pasa = (c) => (!f.lider || (c.lider || 'Sin líder') === f.lider) && (!f.estatus || c.estatus === f.estatus) && (!f.tipo || segmentoFiltro(c) === f.tipo) &&
       (!f.sucursal || c.servicios.some((s) => s.sucursal === f.sucursal)) && (!f.servicio || c.servicios.some((s) => norm(s.estado) === norm(f.servicio)));
     const m2 = Object.assign({}, m, { datos: Object.assign({}, m.datos, { clientes: m.datos.clientes.filter(pasa) }) });
     const r = RPC.clientes_lista(m2, yo, a); if(r && r.__error) return r;
     const un = (l) => Array.from(new Set(l)).sort();
     r.opciones = { lider: un(todos.map((c) => c.lider || 'Sin líder')), sucursal: un([].concat.apply([], todos.map((c) => c.servicios.map((s) => s.sucursal)))),
-      servicio: un([].concat.apply([], todos.map((c) => c.servicios.map((s) => norm(s.estado).replace(/^./, (x) => x.toUpperCase()))))), tipo: ['PYME', 'PYME + Dedicado', 'Dedicado corporativo', 'Dedicado ISP', 'Natural'] };
+      servicio: un([].concat.apply([], todos.map((c) => c.servicios.map((s) => norm(s.estado).replace(/^./, (x) => x.toUpperCase()))))), tipo: ['PYME', 'Dedicado ISP', 'Dedicado corporativo', 'Combinado'] };
     return r;
   },
   clientes_lista(m, yo, a){
@@ -341,12 +343,43 @@ const RPC = {
           serv: s ? { codigo: s.codigo, sucursal: s.sucursal, plan: s.plan, categoria: s.categoria, estado: s.estado, telefono: s.telefono } : null,
           tel: rp.telefono || c.telefono || (s && s.telefono) || null, correo: rp.correo || c.correo_empresa || null, falta: faltantes(c), por_revisar: c.documentos.filter((d) => d.estado === 'por_revisar').length, por_subir: porSubir(c), aprobado_por_subir: aprobadoPorSubir(c) }; }) };
   },
+  // Dedicados (lote 2, D): la ejecutiva ve los suyos; solo el administrador edita
+  dedicados_lista(m, yo){
+    if(!['admin', 'abogado', 'analista', 'lider'].includes(yo.rol)) return error('No tienes permiso para hacer esto');
+    const filas = m.datos.clientes.filter((c) => c.dedicado && (yo.rol !== 'lider' || c.dedicado.ejecutiva_id === yo.id || c.lider_id === yo.id))
+      .sort((x, y) => (y.dedicado.tipo === 'isp') - (x.dedicado.tipo === 'isp') || (y.dedicado.activo !== false) - (x.dedicado.activo !== false) || x.nombre.localeCompare(y.nombre))
+      .map((c) => { const d = c.dedicado; return { id: c.id, nombre: c.nombre, doc_tipo: c.doc_tipo, doc_numero: c.doc_numero, provisional: !!c.provisional, tipo: d.tipo, seg: segmento(c), estatus: c.estatus,
+        activo: d.activo !== false, ejecutiva: d.ejecutiva || null, verificar: !!d.verificar, verificar_motivo: d.verificar_motivo || null, ruta_documentos: d.ruta_documentos || null, ruta_contrato: d.ruta_contrato || null,
+        plazo: d.plazo || null, vacias: casillasVacias(c), por_revisar: c.documentos.filter((x) => x.estado === 'por_revisar').length, enlaces: (d.enlaces || []).filter((e) => e.activo).length,
+        contrato: ((d.contratos || []).find((k) => k.tipo === 'servicio') || {}).estatus || null, vgt: (d.contratos || []).some((k) => k.tipo === 'vgt'), colocation: (d.contratos || []).some((k) => k.tipo === 'colocation') }; });
+    return { rol: yo.rol, hoy: hoy(), puedo: { editar: yo.rol === 'admin' }, filas };
+  },
+  dedicado_editar(m, yo, a){
+    if(yo.rol !== 'admin') return error('No tienes permiso para hacer esto');
+    const c = m.datos.clientes.find((x) => x.id === Number(a.p_cliente)); if(!c || !c.dedicado) return error('Este cliente no está en Dedicados');
+    const k = a.p_campos || {}; const d = c.dedicado;
+    if(k.ruta_documentos && !['cargar', 'completar', 'pedir', 'validar'].includes(k.ruta_documentos)) return error('Ruta de documentos no válida');
+    if('ruta_documentos' in k) d.ruta_documentos = k.ruta_documentos || null; if('ruta_contrato' in k) d.ruta_contrato = k.ruta_contrato || null;
+    if('verificar' in k) d.verificar = !!k.verificar; if('verificar_motivo' in k) d.verificar_motivo = k.verificar_motivo || null;
+    if('tipo' in k) d.tipo = k.tipo; if('plazo_documentos' in k) d.plazo = k.plazo_documentos || null;
+    if(d.tipo === 'isp') c.es_isp = true;
+    return null;
+  },
+  dedicado_contrato_editar(m, yo, a){
+    if(yo.rol !== 'admin') return error('No tienes permiso para hacer esto');
+    let k = null; m.datos.clientes.forEach((c) => { if(c.dedicado) (c.dedicado.contratos || []).forEach((x) => { if(x.id === Number(a.p_id)) k = x; }); });
+    if(!k) return error('No encontré ese contrato');
+    const v = a.p_campos || {}; if(v.firmado_en && v.firmado_en > hoy()) return error('La fecha de firma no puede ser futura');
+    if('estatus' in v) k.estatus = v.estatus; if('firmado_en' in v) k.firmado_en = v.firmado_en || null; if('vence' in v) k.vence = v.vence || null; if('nota' in v) k.nota = v.nota || null;
+    k.editado_por = yo.nombre; k.editado_en = hace(0); return null;
+  },
   cliente_ficha(m, yo, a){
     const c = m.datos.clientes.filter((x) => ['admin', 'abogado', 'analista'].includes(yo.rol) || (yo.rol === 'lider' && x.lider_id === yo.id)).find((x) => x.id === Number(a.p_cliente)); if(!c) return error('No tienes acceso a este cliente');
     const actual = enCurso(); const rp = c.representantes.find((x) => x.orden === 1) || {}; const s0 = c.servicios[0];
     const r = yo.rol;
     return { rol: r, hoy: hoy(), yo: { id: yo.id, nombre: yo.nombre }, corte: { etiqueta: actual, fin: corteFin(actual), limite: corteLimite(actual), dias: dias(hoy(), corteLimite(actual)) },
       cliente: { id: c.id, nombre: c.nombre, doc_tipo: c.doc_tipo, doc_numero: c.doc_numero, es_natural: c.es_natural, seg: segmento(c), estatus: c.estatus, estatus_desde: c.estatus_desde, legal_ok_en: c.legal_ok_en, aprobado_por_subir: aprobadoPorSubir(c), por_subir: porSubir(c),
+        dedicado: c.dedicado ? Object.assign({}, c.dedicado, { vacias: casillasVacias(c) }) : null,
         lider: c.lider, es_top: c.es_top, regimen_firma: c.regimen_firma, es_isp: c.es_isp, correo_empresa: c.correo_empresa, telefono: c.telefono, direccion: c.direccion,
         proforma_en: c.proforma_en, proforma_por: c.proforma_por, bienvenida_en: c.bienvenida_en, bienvenida_por: c.bienvenida_por, ug_en: c.ug_en, ug_por: c.ug_por, creado_en: c.creado_en, es_demo: c.es_demo,
         tel: rp.telefono || c.telefono || (s0 && s0.telefono) || null, correo: rp.correo || c.correo_empresa || null, por_instalar: porInstalar(c), por_subir: porSubir(c), aprobado_por_subir: aprobadoPorSubir(c), provisional: !!c.provisional, unido_a: c.unido_a || null },
@@ -676,10 +709,39 @@ const RPC = {
   },
   clientes_rifs(m, yo){ return m.datos.clientes.map((c) => c.doc_numero); },
   cruce_probar(m, yo){ return cruceFalso(m, yo); },
-  cruce_aplicar(m, yo){ const r = cruceFalso(m, yo); if(!r.error) m.cruceAplicado = true; return r; },
+  cruce_aplicar(m, yo){ const r = cruceFalso(m, yo); if(!r.error){ m.cruceAplicado = true; m.ultimoCruce = { en: new Date().toISOString(), por: yo.nombre }; } return r; },
+  cruce_estado(m, yo){
+    if(!['admin', 'analista'].includes(yo.rol)) return error('No tienes permiso para hacer esto');
+    const u = m.ultimoCruce || null;
+    return { ultimo_en: u && u.en, ultimo_por: u && u.por, pendientes: (m.cargas || []).filter((c) => ['odoo', 'instalaciones', 'base_vieja'].includes(c.fuente) && c.estado !== 'procesando' && !(c.resumen || {}).solo_aliados && (!u || c.en > u.en)).length };
+  },
   cargas_ultimas(m, yo){
     if(!['admin', 'analista'].includes(yo.rol)) return error('No tienes permiso para hacer esto');
-    return (m.cargas || []).filter((c) => c.estado !== 'procesando').slice().reverse();
+    const u = m.ultimoCruce || null;
+    return (m.cargas || []).filter((c) => c.estado !== 'procesando').slice().reverse()
+      .map((c) => Object.assign({}, c, { cruce: (c.resumen || {}).solo_aliados ? 'aliados' : ['tad', 'dedicados'].includes(c.fuente) ? 'directo' : u && u.en >= c.en ? 'aplicado' : 'pendiente' }));
+  },
+  carga_solo_aliados(m, yo, a){
+    const c = (m.cargas || []).find((x) => x.id === a.p_carga && x.estado === 'procesando' && x.fuente === 'instalaciones'); if(!c) return error('Esa carga ya no está abierta');
+    c.resumen = Object.assign({}, c.resumen, { solo_aliados: true }); return null;
+  },
+  // Archivo de dedicados de la analista (lote 2, B)
+  dedicados_iniciar(m, yo, a){
+    if(yo.rol !== 'admin') return error('No tienes permiso para hacer esto');
+    m.cargas = m.cargas || []; const c = { id: m.cargas.length + 1, fuente: 'dedicados', archivo: a.p_archivo, en: new Date().toISOString(), por: yo.nombre, estado: 'procesando', filas: 0, hojas: {} };
+    m.cargas.push(c); return c.id;
+  },
+  dedicados_parte(m, yo, a){
+    const c = (m.cargas || []).find((x) => x.id === a.p_carga && x.estado === 'procesando' && x.fuente === 'dedicados'); if(!c) return error('Esa carga ya no está abierta');
+    if(!['RESUMEN (enlaces)', 'RESUMEN (clientes y contactos)', 'base de contacto'].includes(a.p_hoja)) return error('Hoja no reconocida');
+    (c.hojas[a.p_hoja] = c.hojas[a.p_hoja] || { cols: a.p_cols, filas: [] }).filas.push(...a.p_filas); return null;
+  },
+  dedicados_cerrar(m, yo, a){
+    const c = (m.cargas || []).find((x) => x.id === a.p_carga && x.estado === 'procesando' && x.fuente === 'dedicados'); if(!c) return error('Esa carga ya no está abierta');
+    if(!c.hojas['RESUMEN (enlaces)'] || !c.hojas['RESUMEN (clientes y contactos)']) return error('Al archivo le falta la hoja RESUMEN (enlaces)');
+    c.estado = 'lista'; c.filas = Object.keys(c.hojas).reduce((s, h) => s + c.hojas[h].filas.length, 0);
+    m.dedicadosCargados = c;
+    return { dedicados: c.hojas['RESUMEN (clientes y contactos)'].filas.length, nuevos: 1, enlaces: c.hojas['RESUMEN (enlaces)'].filas.length, verificar: 0, contactos: 2 };
   },
   pendientes_lider(m, yo, a){
     if(yo.rol !== 'admin') return error('No tienes permiso para hacer esto');

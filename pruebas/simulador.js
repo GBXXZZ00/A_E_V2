@@ -7,7 +7,7 @@ const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR
 const PDF_MIN = Buffer.from('%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj 2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj 3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 200 200]>>endobj\ntrailer<</Root 1 0 R>>\n%%EOF');
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64url');
 const ahora = () => Math.floor(Date.now() / 1000);
-const jwt = (id) => b64({ alg: 'HS256', typ: 'JWT' }) + '.' + b64({ sub: id, exp: ahora() + 3600, role: 'authenticated', aud: 'authenticated' }) + '.firma';
+const jwt = (id) => b64({ alg: 'HS256', typ: 'JWT' }) + '.' + b64({ sub: id, exp: ahora() + 3600, role: 'authenticated', aud: 'authenticated' }) + '.firma0';
 
 function basePersonas(){
   return [
@@ -46,6 +46,28 @@ async function contexto(navegador, opciones, mundo){
       if(p && p.pin === b.password && !p.activo) return j({ code: 400, error_code: 'user_banned', msg: 'User is banned' }, 400);
       if(!p || p.pin !== b.password) return j({ code: 400, error_code: 'invalid_credentials', msg: 'Invalid login credentials' }, 400);
       return j(sesionDe(p));
+    }
+    // Entrada segura (lote 2, E): la función "entrar" cuenta los fallos y bloquea a los 5
+    if(u.includes('/functions/v1/entrar')){
+      const b = cuerpo(); m.intentos = m.intentos || {};
+      if(m.entradaCaida){ m.llamadas.push(['entrar', (b.usuario || '') + '@aev2.app', 'caida']); return j({ error: 'No se pudo entrar. Intenta de nuevo' }, 500); }
+      if(b.accion === 'cambiar'){
+        const p = quien(req); if(!p) return j({ error: 'Tu sesión venció. Entra de nuevo' }, 401);
+        if(!/^\d{6}$/.test(b.pin_nuevo || '') || /^(\d)\1{5}$/.test(b.pin_nuevo) || b.pin_nuevo === '123456' || b.pin_nuevo === '654321') return j({ error: 'El PIN debe tener 6 números y no ser uno fácil de adivinar' }, 400);
+        m.llamadas.push(['pin', p.usuario, b.pin_nuevo]); p.pin = b.pin_nuevo; return j({ ok: true });
+      }
+      const p = m.personas.find((x) => x.usuario === b.usuario); const k = b.usuario || '';
+      m.llamadas.push(['entrar', k + '@aev2.app', 'segura']);
+      const est = m.intentos[k] || (m.intentos[k] = { fallos: 0, hasta: 0 });
+      if(est.hasta > Date.now()) return j({ error: 'Demasiados intentos. Espera 15 minutos o pide al administrador que te restablezca el PIN', espera_min: 15 }, 429);
+      if(!p || p.pin !== b.pin){
+        est.fallos++; if(est.fallos % 5 === 0){ est.hasta = Date.now() + 15 * 60000; return j({ error: 'Demasiados intentos. Espera 15 minutos o pide al administrador que te restablezca el PIN', espera_min: 15 }, 429); }
+        return j({ error: 'Usuario o PIN incorrecto', quedan: 5 - (est.fallos % 5) }, 401);
+      }
+      if(!p.activo) return j({ error: 'Esta cuenta está desactivada. Habla con el administrador' }, 403);
+      est.fallos = 0;
+      if(b.accion === 'verificar') return j({ ok: true });
+      const ses = sesionDe(p); return j({ session: { access_token: ses.access_token, refresh_token: ses.refresh_token } });
     }
     if(u.includes('/auth/v1/logout')) return r.fulfill({ status: 204, headers: cab, body: '' });
     if(u.includes('/auth/v1/user')){
@@ -115,7 +137,7 @@ async function contexto(navegador, opciones, mundo){
         return j({ ok: true });
       }
       const p = m.personas.find((x) => x.id === b.id); if(!p) return j({ error: 'Falta el usuario' }, 400);
-      if(b.accion === 'editar'){ Object.assign(p, { nombre: b.nombre, rol: b.rol, cargo: b.cargo || null, equipo: b.equipo, codigo_vendedor: b.codigo_vendedor, nombre_odoo: b.nombre_odoo || null, senior: b.rol === 'analista' && b.senior === true, whatsapp: b.whatsapp || null, correo: b.correo || null }); return j({ ok: true }); }
+      if(b.accion === 'editar'){ Object.assign(p, { nombre: b.nombre, rol: b.rol, cargo: b.cargo || null, equipo: b.equipo, codigo_vendedor: b.codigo_vendedor, nombre_odoo: b.nombre_odoo || null, senior: b.rol === 'analista' && b.senior === true, whatsapp: b.whatsapp || null, correo: b.correo || null, dedicados: b.rol === 'lider' && b.dedicados === true }); return j({ ok: true }); }
       if(b.accion === 'pin'){ p.pin = b.pin; p.debe_cambiar_pin = true; return j({ ok: true }); }
       if(b.accion === 'activo'){ p.activo = b.activo; return j({ ok: true }); }
       return j({ error: 'Acción no reconocida' }, 400);

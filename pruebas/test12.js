@@ -16,11 +16,11 @@ const archivo = (nombre, buffer) => ({ name: nombre, mimeType: 'application/vnd.
       await o.ctx.close(); }
 
     const p = await entrar(ctx, 'marcos', '482913'); p.on('pageerror', (e) => errores.push(e.message));
-    await p.goto(H + 'actualizar.html'); await p.waitForSelector('#mapaSoltar');
+    await p.goto(H + 'actualizar.html'); await p.waitForSelector('#mapaRed .nota-chica');
     ok(nombre + ': sin mapa avisa que Factibilidad no puede consultar', (await p.textContent('#mapaRed')).includes('Factibilidad no puede consultar'));
 
     // Un archivo que no es un KMZ
-    await p.setInputFiles('#archivoMapa', archivo('malo.kmz', Buffer.from('esto no es un zip')));
+    await p.setInputFiles('#archivos', archivo('malo.kmz', Buffer.from('esto no es un zip')));
     await p.waitForFunction(() => /no es un KMZ/.test(document.getElementById('mapaRed').textContent));
     ok(nombre + ': un archivo dañado dice por qué no sirve', true);
 
@@ -56,7 +56,7 @@ const archivo = (nombre, buffer) => ({ name: nombre, mimeType: 'application/vnd.
     RPC.fact_consultar(mundo, mundo.personas[1], { p_lat: 10.005, p_lng: -70.991, p_tipo: 'pyme' });
     ok(nombre + ': la consulta queda en espera con el primer mapa', mundo.consultas[0].resultado === 'espera');
     await p.click('#mapaOtro');
-    await p.setInputFiles('#archivoMapa', archivo('Mapa Proyectos 2.kmz', kmz({ disenoLiberado: true })));
+    await p.setInputFiles('#archivos', archivo('Mapa Proyectos 2.kmz', kmz({ disenoLiberado: true })));
     await p.waitForSelector('#mapaCargar'); await p.click('#mapaCargar');
     await p.waitForFunction(() => /Mapa cargado/.test(document.getElementById('mapaRed').textContent), null, { timeout: 20000 });
     r = await p.textContent('#mapaRed');

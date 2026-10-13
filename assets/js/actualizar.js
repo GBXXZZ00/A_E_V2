@@ -82,12 +82,23 @@
       for(;;){ const r = await lector.read(); if(r.done) break; if(alTrozo(r.value) === false){ await lector.cancel().catch(() => {}); break; } }
     } finally { try { lector.releaseLock(); } catch (x) { /* ya liberado */ } }
   }
-  async function leerXlsx(file, alFila, alAvance){
+  async function textoParte(file, e){ let t = ''; await recorrer(file, e, (x) => { t += x; }); return t; }
+  // Nombres de las hojas y la parte del zip de cada una
+  async function hojasXlsx(file){
+    const dentro = await indiceZip(file); const wb = dentro['xl/workbook.xml']; const rel = dentro['xl/_rels/workbook.xml.rels'];
+    if(!wb || !rel) return [];
+    const tw = await textoParte(file, wb); const tr = await textoParte(file, rel); const destino = {};
+    tr.replace(/<Relationship\b([^>]*)\/?>/g, (m, at) => { const id = /\bId="([^"]+)"/.exec(at); const t = /\bTarget="([^"]+)"/.exec(at); if(id && t) destino[id[1]] = t[1].replace(/^\/?(xl\/)?/, 'xl/'); return m; });
+    const r = [];
+    tw.replace(/<sheet\b([^>]*)\/?>/g, (m, at) => { const n = /\bname="([^"]*)"/.exec(at); const id = /\br:id="([^"]+)"/.exec(at); if(n && id && dentro[destino[id[1]]]) r.push({ nombre: sinEnt(n[1]), parte: dentro[destino[id[1]]] }); return m; });
+    return r;
+  }
+  async function leerXlsx(file, alFila, alAvance, parteHoja){
     if(typeof DecompressionStream === 'undefined' || typeof TextDecoderStream === 'undefined') throw new Error('Este navegador no abre Excel. Guárdalo como CSV');
     const dentro = await indiceZip(file);
     const hojas = Object.keys(dentro).filter((x) => /^xl\/worksheets\/sheet\d+\.xml$/.test(x)).sort((x, y) => parseInt(x.replace(/\D/g, ''), 10) - parseInt(y.replace(/\D/g, ''), 10));
     if(!hojas.length) throw new Error('El Excel no trae hojas');
-    const hoja = dentro[hojas[0]]; const sst = dentro['xl/sharedStrings.xml'];
+    const hoja = parteHoja || dentro[hojas[0]]; const sst = dentro['xl/sharedStrings.xml'];
     const total = (hoja.real || 1) + (sst ? sst.real : 0); let leido = 0; let buf = '';
     const textos = [];
     if(sst){
@@ -138,9 +149,10 @@
     tad: { nombre: 'TAD', pide: ['sucursal', 'cliente', 'documento', 'nombre'] },
     instalaciones: { nombre: 'Órdenes de instalación', pide: ['codcliente', 'feccump', 'cedula'] },
     odoo: { nombre: 'Órdenes de Odoo', pide: ['etapa', 'cliente'], alguna: ['odt', 'cod_orden_de_trabajo'] },
-    base_vieja: { nombre: 'Base de la app anterior', pide: ['razon_social', 'rif', 'estatus_legal'] }
+    base_vieja: { nombre: 'Base de la app anterior', pide: ['razon_social', 'rif', 'estatus_legal'] },
+    dedicados: { nombre: 'Dedicados (archivo de la analista)', pide: ['__por_hojas__'] }
   };
-  const ORDEN = ['tad', 'base_vieja', 'odoo', 'instalaciones'];
+  const ORDEN = ['tad', 'base_vieja', 'odoo', 'instalaciones', 'dedicados'];
   const clave = (h) => normalizeStr(h).replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
   function reconocer(cab){
     return ORDEN.find((t) => TIPOS[t].pide.every((c) => cab.indexOf(c) >= 0) && (!TIPOS[t].alguna || TIPOS[t].alguna.some((c) => cab.indexOf(c) >= 0))) || null;
@@ -154,9 +166,34 @@
     const n = +v; const x = new Date(Date.UTC(1899, 11, 30) + Math.round(n * 86400000));
     return isNaN(x) ? v : x.toISOString().slice(0, n % 1 ? 19 : 10).replace('T', ' ');
   }
+  // Archivo de dedicados de la analista: tres hojas, se suben tal cual (encabezado y filas) y el servidor las cruza
+  const HOJAS_DED = [['RESUMEN (enlaces)', /enlace/], ['RESUMEN (clientes y contactos)', /client/], ['base de contacto', /base.*contact|contacto$/]];
+  async function prepararDedicados(file, hojas, alAvance){
+    if(!yo || yo.rol !== 'admin') throw new Error('Solo el administrador sube el archivo de dedicados');
+    const out = {}; let total = 0; let k = 0;
+    for(const [canon, re] of HOJAS_DED){
+      const h = hojas.find((x) => re.test(normalizeStr(x.nombre))); if(!h) continue;
+      let cols = null; const filas = [];
+      await leerXlsx(file, (f) => {
+        const v = f.map((x) => limpio(x));
+        if(!cols){ if(v.filter(Boolean).length >= 3 && v.some((x) => /^(rif|cod)/i.test(normalizeStr(x)))) cols = v.map((x, j) => x || 'col' + j); return true; }
+        if(!v.some(Boolean)) return true;
+        filas.push(v.map((x, j) => (x && /^\d{5}(\.\d+)?$/.test(x) && /fecha/i.test(cols[j] || '') ? fechaHora(x) : x || null)));
+        return filas.length < 5000;
+      }, (p) => alAvance((k + p) / HOJAS_DED.length), h.parte);
+      k++;
+      if(cols && filas.length){ out[canon] = { cols, filas }; total += filas.length; }
+    }
+    if(!out['RESUMEN (enlaces)'] || !out['RESUMEN (clientes y contactos)']) throw new Error('No encuentro las hojas de enlaces y de clientes de la analista');
+    return { tipo: 'dedicados', hojas: out, datos: [].concat(out['RESUMEN (clientes y contactos)'].filas), enlaces: out['RESUMEN (enlaces)'].filas.length, malas: 0, fuera: 0, clientes: out['RESUMEN (clientes y contactos)'].filas.length, total };
+  }
   async function preparar(file, conocidos, alAvance){
+    if(/\.xlsx$/i.test(file.name)){
+      const hojas = await hojasXlsx(file).catch(() => []);
+      if(hojas.some((h) => /enlace/.test(normalizeStr(h.nombre))) && hojas.some((h) => /client/.test(normalizeStr(h.nombre)))) return prepararDedicados(file, hojas, alAvance);
+    }
     let cab = null; let tipo = null; let vistas = 0; let total = 0; let malas = 0; let fuera = 0; let idx = null;
-    let datos = []; let dudosas = []; const clientes = new Set(); let filtrando = false; const rifs = [];
+    let datos = []; let dudosas = []; const clientes = new Set(); let filtrando = false; const rifs = []; let desde = '';
     await leerFilas(file, (f) => {
       if(!cab){
         const c = f.map(clave); tipo = reconocer(c);
@@ -185,6 +222,7 @@
       }
       if(!hay){ total--; return true; }
       if(tipo === 'instalaciones' && !esEmpresa(o.categoria, o.profile, soloDoc(o.cedula), conocidos)){ fuera++; return true; }
+      if(tipo === 'instalaciones' && /^\d{4}-\d\d-\d\d/.test(o.feccump || '') && (!desde || o.feccump < desde)) desde = o.feccump.slice(0, 10);
       if(tipo === 'base_vieja'){ const r = soloDoc(o.rif); if(r) rifs.push(r); }
       datos.push(o);
       if(datos.length > 60000) throw new Error('Trae demasiadas filas. Expórtalo con menos fechas');
@@ -195,8 +233,11 @@
     if(datos.length > TOPE_TAD) throw new Error('Trae más de ' + TOPE_TAD.toLocaleString('es-VE') + ' filas de empresas. Avísame para revisarlo');
     if(!datos.length) throw new Error(total ? 'Ninguna fila es de empresas o se pudo leer' : 'El archivo no trae filas');
     rifs.forEach((r) => conocidos.add(r));
-    return { tipo, datos, malas, fuera, clientes: clientes.size, total };
+    // Órdenes de instalación con fechas de antes del período de comisiones: es el histórico para aliados (no entra al cruce)
+    const soloAliados = tipo === 'instalaciones' && !!desde && desde < INICIO_COMISIONES;
+    return { tipo, datos, malas, fuera, clientes: clientes.size, total, desde, soloAliados };
   }
+  const INICIO_COMISIONES = '2026-08-21';
 
   // ---------- Pantalla ----------
   const num = (n) => Number(n || 0).toLocaleString('es-VE');
@@ -205,8 +246,12 @@
     if(a.error) return '<small style="color:var(--rojo)">' + esc(a.error) + '</small>';
     if(a.leyendo) return '<small>' + (a.espera ? 'En espera' : 'Leyendo' + (a.avance ? ' ' + a.avance + ' %' : '...')) + '</small>';
     if(a.resultado) return '<small>' + esc(a.resultado) + '</small>';
+    if(a.tipo === 'dedicados') return '<small>' + plural(a.clientes, 'cliente', 'clientes') + ' y ' + plural(a.enlaces, 'enlace', 'enlaces') + '. Se aplica al subirlo; no toca comisiones</small>';
     if(a.tipo === 'tad') return '<small>' + num(a.datos.length) + ' servicios de ' + num(a.clientes) + ' clientes' + (a.fuera ? ' · ' + num(a.fuera) + ' residenciales quedan fuera' : '') + (a.malas ? ' · ' + plural(a.malas, 'fila', 'filas') + ' sin RIF, nombre o código' : '') + '</small>';
-    return '<small>' + plural(a.datos.length, 'fila', 'filas') + (a.fuera ? ' de empresas · ' + num(a.fuera) + ' residenciales quedan fuera' : '') + '</small>';
+    if(a.tipo === 'instalaciones' && !a.estado) return '<small>' + plural(a.datos.length, 'fila', 'filas') + (a.fuera ? ' de empresas' : '') + (a.desde ? ' · desde el ' + esc(fecha(a.desde)) : '') + '</small>' +
+      '<small class="para-que">' + (a.soloAliados ? '<b>Va solo a Aliados</b> (instalaciones por mes). No entra al cruce ni toca comisiones.' : '<b>Va a comisiones</b> y entra al cruce.') +
+      ' <button type="button" class="enlace" data-para="' + lista.indexOf(a) + '">' + (a.soloAliados ? 'Usarlo para comisiones' : 'Solo para aliados') + '</button></small>';
+    return '<small>' + plural(a.datos.length, 'fila', 'filas') + (a.fuera ? ' de empresas · ' + num(a.fuera) + ' residenciales quedan fuera' : '') + (a.soloAliados ? ' · solo aliados' : '') + '</small>';
   }
   function marca(a){
     if(a.error) return '<span class="m rojo">No sirve</span>';
@@ -225,7 +270,7 @@
       '<div class="fila carga-f"' + (i === 0 ? ' style="border-top:0"' : '') + ' data-i="' + i + '"><span class="tx"><b>' + esc(a.tipo ? TIPOS[a.tipo].nombre : 'Sin reconocer') + ' · ' + esc(a.nombre) + '</b>' + detalle(a) + '</span>' + marca(a) + '</div>').join('') + '</div>';
     let pie;
     if(ocupado) pie = '<p class="nota-chica">' + (lista.some((a) => a.leyendo) ? 'Leyendo los archivos. Los más pesados pueden tardar un par de minutos.' : 'No cierres esta pantalla hasta que termine.') + '</p>';
-    else if(fin) pie = '<div class="aviso" style="margin-top:14px"><b>' + esc(fin.titulo) + '</b><p>' + esc(fin.texto) + '</p><p style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap"><a class="btn btn-chico" href="clientes.html?f=todos">Ver clientes</a><button type="button" class="btn btn-chico btn-2" id="otro">Subir otros</button></p></div>';
+    else if(fin) pie = '<div class="aviso" style="margin-top:14px"><b>' + esc(fin.titulo) + '</b><p>' + esc(fin.texto) + '</p><p style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap"><button type="button" class="btn btn-chico btn-2" id="otro">Subir otros</button></p></div>';
     else pie = '<div class="acc" style="margin-top:14px"><button type="button" class="btn btn-2" id="limpiar">Quitar todos</button>' + (buenos.length ? '<button type="button" class="btn" id="cargarTodo">Cargar ' + plural(buenos.length, 'archivo', 'archivos') + '</button>' : '') + '</div><p class="nota-chica">No borra nada. Agrega lo nuevo y actualiza lo que ya está.</p>';
     z.innerHTML = filas + (ocupado || fin ? '' : '<div style="margin-top:12px">' + soltar + '</div>') + pie;
   }
@@ -248,7 +293,7 @@
       try {
         if(a.file.size > 200 * 1024 * 1024) throw new Error('Pesa más de 200 MB');
         const p = await preparar(a.file, conocidos, (parte) => { const ahora = Date.now(); if(ahora - ultimo > 400){ ultimo = ahora; a.avance = Math.min(99, Math.round(parte * 100)); pintar(); } });
-        const rep = lista.find((x) => x !== a && x.tipo === p.tipo && x.datos && x.estado !== 'lista');
+        const rep = lista.find((x) => x !== a && x.tipo === p.tipo && !!x.soloAliados === !!p.soloAliados && x.datos && x.estado !== 'lista');
         if(rep){ a.tipo = p.tipo; throw new Error('Ya hay otro archivo de ' + TIPOS[p.tipo].nombre + ' en la lista'); }
         Object.assign(a, p);
       } catch (e) { a.error = e.message || 'No se pudo leer'; }
@@ -258,11 +303,28 @@
     const malos = nuevos.filter((a) => a.error).length;
     if(malos) toast(plural(malos, 'archivo no se pudo usar', 'archivos no se pudieron usar') + '. Mira el motivo en la lista', 'error');
   }
+  async function subirDedicados(a){
+    a.estado = 'subiendo'; a.hecho = 0; pintar();
+    const carga = await rpc('dedicados_iniciar', { p_archivo: a.nombre }); const tot = Object.keys(a.hojas).reduce((s, h) => s + a.hojas[h].filas.length, 0); let hecho = 0;
+    for(const h of Object.keys(a.hojas)){
+      const x = a.hojas[h];
+      for(let i = 0, parte = 1; i < x.filas.length; i += LOTE_CRUDO, parte++){
+        await conReintento(() => rpc('dedicados_parte', { p_carga: carga, p_hoja: h, p_parte: parte, p_cols: x.cols, p_filas: x.filas.slice(i, i + LOTE_CRUDO) }));
+        hecho += Math.min(LOTE_CRUDO, x.filas.length - i); a.hecho = Math.round(hecho * a.datos.length / Math.max(1, tot)); pintar();
+      }
+    }
+    const r = await rpc('dedicados_cerrar', { p_carga: carga });
+    a.estado = 'lista'; a.hojas = null; a.datos = null;
+    a.resultado = plural(r.dedicados, 'dedicado', 'dedicados') + ' · ' + plural(r.nuevos, 'cliente nuevo', 'clientes nuevos') + ' · ' + plural(r.enlaces, 'enlace', 'enlaces') + (r.verificar ? ' · ' + r.verificar + ' por verificar' : '');
+    return r;
+  }
   async function subir(a){
+    if(a.tipo === 'dedicados') return subirDedicados(a);
     a.estado = 'subiendo'; a.hecho = 0; pintar();
     const tad = a.tipo === 'tad'; const paso = tad ? LOTE : LOTE_CRUDO;
     const carga = tad ? await rpc('tad_iniciar', { p_archivo: a.nombre, p_total: a.datos.length + a.malas })
       : await rpc('crudo_iniciar', { p_fuente: a.tipo, p_archivo: a.nombre, p_total: a.datos.length });
+    if(a.soloAliados) await rpc('carga_solo_aliados', { p_carga: carga });
     for(let i = 0; i < a.datos.length; i += paso){
       const lote = a.datos.slice(i, i + paso);
       if(tad){
@@ -277,12 +339,12 @@
     a.estado = 'lista';
     a.resultado = tad ? plural(r.clientes_nuevos, 'cliente nuevo', 'clientes nuevos') + ', ' + plural(r.servicios_nuevos, 'servicio nuevo', 'servicios nuevos') + ' y ' + plural(r.servicios_actualizados, 'actualizado', 'actualizados') +
         (r.pagos_marcados ? ' · ' + plural(r.pagos_marcados, 'instalación pagada', 'instalaciones pagadas') : '') + ((r.invalidas || 0) + a.malas ? ' · ' + plural((r.invalidas || 0) + a.malas, 'fila no se pudo leer', 'filas no se pudieron leer') : '')
-      : plural(r.guardadas, 'fila guardada', 'filas guardadas');
+      : plural(r.guardadas, 'fila guardada', 'filas guardadas') + (a.soloAliados ? ' · solo para aliados, no toca comisiones' : '');
     a.datos = null; return r;
   }
   async function cargarTodo(){
     if(ocupado) return;
-    const cola = ORDEN.map((t) => lista.find((a) => a.tipo === t && a.datos && a.estado !== 'lista')).filter(Boolean);
+    const cola = [].concat.apply([], ORDEN.map((t) => lista.filter((a) => a.tipo === t && a.datos && a.estado !== 'lista')));
     if(!cola.length) return;
     ocupado = true; fin = null; let total = null; let fallo = null;
     for(const a of cola){
@@ -292,10 +354,11 @@
     ocupado = false; cache.borrarTodo();
     if(fallo){ pintar(); toast('La carga se detuvo. ' + fallo.message + '. Puedes volver a intentarlo: no se duplica nada', 'error'); }
     else {
-      const crudos = cola.some((a) => a.tipo !== 'tad');
-      fin = { titulo: plural(cola.length, 'archivo cargado', 'archivos cargados'), texto: (total !== null ? 'Ahora hay ' + num(total) + ' clientes en total. ' : '') + 'Sigue con Revisar cruce, aquí abajo.' };
-      cruce = null; pintarCruce();
-      pintar(); toast('Carga completa');
+      const crudos = cola.some((a) => a.tipo !== 'tad' && a.tipo !== 'dedicados' && !a.soloAliados);
+      fin = { titulo: plural(cola.length, 'archivo cargado', 'archivos cargados'), texto: (total !== null ? 'Ahora hay ' + num(total) + ' clientes en total. ' : '') +
+        (crudos ? 'Falta un paso: revisa abajo lo que cambia y toca Guardar cruce.' : 'Ya quedó aplicado. No hace falta cruce.') };
+      cruce = null; pintar(); toast('Carga completa');
+      if(crudos) correrCruce(false); else estadoCruce();
     }
     cargas();
   }
@@ -309,13 +372,14 @@
     throw ultimo;
   }
   const FUENTES = { tad: 'TAD', odoo: 'Órdenes de Odoo', instalaciones: 'Órdenes de instalación', dedicados: 'Dedicados', base_vieja: 'Base de la app anterior' };
+  const marcaCruce = (c) => c.cruce === 'aliados' ? '<span class="m azul">Solo aliados</span>' : c.cruce === 'aplicado' ? '<span class="m verde">Cruce aplicado</span>' : c.cruce === 'pendiente' ? '<span class="m ambar">Falta el cruce</span>' : '<span class="m verde">Aplicada al subir</span>';
   async function cargas(){
     try {
       const l = await rpc('cargas_ultimas', {});
       const t = l.find((x) => x.fuente === 'tad');
       $('ultimoTad').textContent = t ? 'Último TAD: ' + fecha(t.en) + ' a las ' + hora(t.en) + (t.por ? ', por ' + t.por : '') + '.' : 'Todavía no se ha subido ningún TAD.';
-      $('cargas').innerHTML = l.length ? '<div class="grupo abierto">' + l.map((c, i) => '<div class="fila"' + (i === 0 ? ' style="border-top:0"' : '') + '><span class="tx"><b>' + esc(FUENTES[c.fuente] || c.fuente) + ' · ' + esc(c.archivo) + '</b><small>' + esc(fecha(c.en)) + ' ' + esc(hora(c.en)) + (c.por ? ' · ' + esc(c.por) : '') + ' · ' + esc(plural(c.filas, 'fila', 'filas')) + '</small></span>' +
-        '<span class="m ' + (c.estado === 'lista' ? 'verde' : 'ambar') + '">' + (c.estado === 'lista' ? 'Completa' : 'Con filas sin leer') + '</span></div>').join('') + '</div>'
+      $('cargas').innerHTML = l.length ? '<div class="grupo abierto">' + l.map((c, i) => '<div class="fila"' + (i === 0 ? ' style="border-top:0"' : '') + '><span class="tx"><b>' + esc(FUENTES[c.fuente] || c.fuente) + ' · ' + esc(c.archivo) + '</b><small>' + esc(fecha(c.en)) + ' a las ' + esc(hora(c.en)) + (c.por ? ' · ' + esc(c.por) : '') + ' · ' + esc(plural(c.filas, 'fila', 'filas')) +
+        (c.estado !== 'lista' ? ' · con filas sin leer' : '') + '</small></span>' + marcaCruce(c) + '</div>').join('') + '</div>'
         : '<div class="vacio"><b>Aún no hay cargas</b><p>Cuando subas el primer archivo aparecerá aquí con su fecha y quién lo subió.</p></div>';
     } catch (e) {
       $('cargas').innerHTML = '<div class="vacio" role="alert"><b>No se pudo ver el historial</b><p>' + esc(e.message) + '</p></div>';
@@ -337,13 +401,24 @@
     h += lin('Comisiones de ' + mesDe(r.anterior.mes), num(r.anterior.filas) + ' filas, ' + num(r.anterior.cumplen) + ' cumplen.');
     return h + '</div>';
   }
+  let estado = null;   // { ultimo_en, ultimo_por, pendientes }
+  async function estadoCruce(){
+    try { estado = await rpc('cruce_estado', {}); } catch (e) { estado = { error: e.message }; }
+    if(!cruce && estado && estado.pendientes > 0) return correrCruce(false);   // hay cargas sin cruzar: se prepara solo
+    pintarCruce();
+  }
   function pintarCruce(){
     const z = $('cruce');
     if(cruzando){ z.innerHTML = esqueleto(2); return; }
-    if(!cruce){ z.innerHTML = '<button type="button" class="btn" id="revisarCruce">Revisar cruce</button>'; return; }
-    z.innerHTML = '<b style="font-size:15.5px">' + (cruce.aplicado ? 'Cruce aplicado' : 'Esto es lo que va a cambiar') + '</b><div style="margin-top:10px">' + resumenCruce(cruce.r) + '</div>' +
-      (cruce.aplicado ? '<p style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap"><a class="btn btn-chico" href="comisiones.html">Ver comisiones</a><a class="btn btn-chico btn-2" href="clientes.html?f=todos">Ver clientes</a></p>'
-        : '<div class="acc" style="margin-top:14px"><button type="button" class="btn btn-2" id="cancelarCruce">Ahora no</button><button type="button" class="btn" id="aplicarCruce">Aplicar cruce</button></div><p class="nota-chica">Todavía no se ha guardado nada.</p>');
+    const ult = estado && estado.ultimo_en ? 'Último cruce guardado el ' + fecha(estado.ultimo_en) + ' a las ' + hora(estado.ultimo_en) + (estado.ultimo_por ? ', por ' + estado.ultimo_por : '') + '.' : 'Todavía no se ha guardado ningún cruce.';
+    if(!cruce){
+      z.innerHTML = estado && estado.error ? '<div class="vacio" role="alert"><b>No se pudo ver el cruce</b><p>' + esc(estado.error) + '</p><button type="button" class="btn btn-chico" id="reintentarCruce">Reintentar</button></div>'
+        : '<p class="cruce-ok"><b>Todo cruzado.</b> ' + esc(ult) + ' Cuando subas órdenes de Odoo, instalaciones o la base anterior, el cruce se prepara solo.</p>';
+      return;
+    }
+    z.innerHTML = '<b style="font-size:15.5px">' + (cruce.aplicado ? 'Cruce guardado' : 'Esto cambia al guardar el cruce') + '</b><div style="margin-top:10px">' + resumenCruce(cruce.r) + '</div>' +
+      (cruce.aplicado ? '<p class="nota-chica">Listo. Comisiones, Clientes y Por instalar ya tienen lo nuevo.</p><p style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap"><a class="btn btn-chico" href="comisiones.html">Ver comisiones</a></p>'
+        : '<div class="acc" style="margin-top:14px"><button type="button" class="btn" id="aplicarCruce">Guardar cruce</button></div><p class="nota-chica">Todavía no se ha guardado nada. ' + esc(ult) + '</p>');
   }
   async function correrCruce(aplicar){
     if(cruzando || ocupado) return;
@@ -351,8 +426,8 @@
     try {
       const r = await rpc(aplicar ? 'cruce_aplicar' : 'cruce_probar', {});
       cruce = { r, aplicado: aplicar };
-      if(aplicar){ cache.borrarTodo(); toast('Cruce aplicado'); }
-    } catch (e) { toast('No se pudo ' + (aplicar ? 'aplicar' : 'revisar') + ' el cruce. ' + e.message, 'error'); if(aplicar) cruce = null; }
+      if(aplicar){ cache.borrarTodo(); toast('Cruce guardado'); estado = null; cargas(); }
+    } catch (e) { toast('No se pudo ' + (aplicar ? 'guardar' : 'preparar') + ' el cruce. ' + e.message, 'error'); if(!aplicar) cruce = null; }
     cruzando = false; pintarCruce();
   }
 
@@ -361,9 +436,9 @@
     if(t.closest('#soltar')){ if(ocupado) return; const i = $('archivos'); i.value = ''; i.click(); return; }
     if(t.closest('#limpiar') || t.closest('#otro')){ if(ocupado) return; lista = []; fin = null; pintar(); return; }
     if(t.closest('#cargarTodo')){ cargarTodo(); return; }
-    if(t.closest('#revisarCruce')){ correrCruce(false); return; }
     if(t.closest('#aplicarCruce')){ correrCruce(true); return; }
-    if(t.closest('#cancelarCruce')){ cruce = null; pintarCruce(); }
+    const pq = t.closest('[data-para]'); if(pq){ const a = lista[Number(pq.dataset.para)]; if(a && !ocupado && !a.estado){ a.soloAliados = !a.soloAliados; pintar(); } return; }
+    if(t.closest('#reintentarCruce')){ estadoCruce(); }
   });
   $('archivos').addEventListener('change', () => elegir($('archivos').files));
   const zona = $('zona');
@@ -374,7 +449,7 @@
 
   window.Armazon.arrancar(['admin', 'analista'], { activo: null, volver: { enlace: 'inicio.html', texto: 'Inicio' } }, (p) => {
     yo = p;
-    pintar(); pintarCruce();
+    pintar(); $('cruce').innerHTML = esqueleto(1); estadoCruce();
     if(window.MapaRed) window.MapaRed.montar(yo);
     $('cargas').innerHTML = esqueleto(2);
     cargas();

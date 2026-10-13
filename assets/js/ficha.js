@@ -5,7 +5,7 @@
   const { $, esc, ic, rpc, toast, fecha, hora, dia, mes, diasEntre, plural, capital, primerNombre, docFmt, sucursal, chipEstatus, estadoServicio, casilla, faltaTexto, devueltoFrase, normalizeStr, abrirHoja, cerrarHoja, hojaAbierta, iniciales } = C;
   const S = window.Sesion;
   const db = window.db;
-  const TABS = ['datos', 'documentos', 'hilo', 'comision'];
+  const TABS = ['datos', 'documentos', 'hilo', 'contratos', 'comision'];
   const MAX_ARCHIVO = 15 * 1024 * 1024;
   const TIPOS = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
 
@@ -86,7 +86,7 @@
   }
   function pintarTodo(){
     $('tabs').classList.remove('hidden'); $('cuerpoFicha').classList.remove('hidden');
-    pintarCab(); pintarHilo(); pintarDocumentos(); pintarDatos(); pintarComision();
+    pintarCab(); pintarHilo(); pintarDocumentos(); pintarDatos(); pintarComision(); pintarDedicado();
     if(hojaAbierta() === 'hojaVer' && ver) pintarVer();
   }
   // Atajos que llegan en la dirección: pestaña, revisar o pedir
@@ -134,11 +134,13 @@
   function clienteContacto(){ const c = F.cliente; return { id: c.id, nombre: c.nombre, es_natural: c.es_natural, estatus: c.estatus, falta: F.faltantes, tel: c.tel, correo: c.correo }; }
   function pintarCab(){
     const c = F.cliente; const p = paso(); const s0 = (F.servicios || [])[0];
-    const dat = [rifDe(c), c.lider || 'Sin líder', c.por_instalar ? 'Sin instalar' : plural((F.servicios || []).length, 'servicio', 'servicios')].join(' · ');
+    const nEnl = c.dedicado ? (c.dedicado.enlaces || []).filter((e) => e.activo).length : 0;
+    const pinst = c.por_instalar && !c.dedicado;   // un dedicado sin servicios PYME no está "por instalar": tiene enlaces
+    const dat = [rifDe(c), c.lider || 'Sin líder', c.dedicado && !(F.servicios || []).length ? plural(nEnl, 'enlace activo', 'enlaces activos') : pinst ? 'Sin instalar' : plural((F.servicios || []).length, 'servicio', 'servicios')].join(' · ');
     const sub = p ? (p.sub || subCorte()) : '';
     $('cabFicha').innerHTML = '<div class="f-cab"><span class="mono" aria-hidden="true">' + esc(iniciales(c.nombre).charAt(0)) + '</span><div class="tx"><h1 class="nom" id="tFicha">' + esc(c.nombre) + '</h1><p class="dat">' + esc(dat) + '</p></div>' +
         '<button type="button" class="cerrar" data-cierra="1" aria-label="Cerrar">' + ic('x') + '</button></div>' +
-      '<div class="chips">' + chipEstatus(c.estatus) + '<span class="seg">' + esc(c.seg) + '</span>' + (s0 ? estadoServicio(s0.estado) : '') + (c.por_instalar ? '<span class="chip azul">Por instalar</span>' : '') +
+      '<div class="chips">' + chipEstatus(c.estatus) + '<span class="seg">' + esc(c.seg) + '</span>' + (s0 ? estadoServicio(s0.estado) : '') + (pinst ? '<span class="chip azul">Por instalar</span>' : '') +
         (c.es_top ? '<span class="chip">Cliente TOP</span>' : '') + (c.es_demo ? '<span class="chip">Dato de ejemplo</span>' : '') + '</div>' +
       '<div class="contacto">' + window.Pedir.iconos(clienteContacto()) + '</div>' +
       (p ? '<div class="paso ' + p.tono + '" id="paso"><span class="tx">' + esc(p.texto) + (sub ? '<small>' + esc(sub) + '</small>' : '') + '</span>' +
@@ -174,7 +176,8 @@
         glo = '<div class="glo rojo">' + esc((C.MOTIVOS[d.motivo] || 'Devuelto') + (d.nota ? '. ' + d.nota : '')) + '</div>'; break;
       case 'dato': t = quien + ' ' + ({ representante: 'actualizó el contacto del representante ' + (d.orden || 1), correo_empresa: 'actualizó el correo de la empresa', telefono: 'actualizó el teléfono', direccion: 'actualizó la dirección',
         regimen_firma: 'puso el régimen de firma en ' + (d.valor === 'conjunta' ? 'Conjunta' : d.valor === 'individual' ? 'Individual' : 'Sin definir'),
-        ip: 'actualizó la IP' + (d.codigo ? ' del servicio ' + d.codigo : ''), es_top: d.valor === 'true' ? 'lo marcó como Cliente TOP' : 'le quitó la marca de Cliente TOP', es_isp: d.valor === 'true' ? 'lo marcó como proveedor de internet' : 'le quitó la marca de proveedor de internet' }[h.texto] || 'actualizó un dato'); break;
+        ip: 'actualizó la IP' + (d.codigo ? ' del servicio ' + d.codigo : ''), es_top: d.valor === 'true' ? 'lo marcó como Cliente TOP' : 'le quitó la marca de Cliente TOP', es_isp: d.valor === 'true' ? 'lo marcó como proveedor de internet' : 'le quitó la marca de proveedor de internet',
+        dedicado_creado: 'entró como cliente dedicado desde el archivo de la analista' }[h.texto] || 'actualizó un dato'); break;
       case 'gestion': { const que = h.texto === 'ambas' ? 'la proforma y la carta de bienvenida' : h.texto === 'bienvenida' ? 'la carta de bienvenida' : 'la proforma';
         if(d.canal === 'whatsapp' || d.canal === 'correo'){ tono = 'azul'; t = quien + ' envió ' + que + (d.canal === 'correo' ? ' por correo' : ' por WhatsApp'); }
         else t = quien + (d.hecho ? ' marcó ' : ' quitó la marca de ') + que + (d.hecho ? (h.texto === 'ambas' ? ' como enviadas' : ' como enviada') : '');
@@ -471,8 +474,9 @@
       tj(c.es_natural ? 'Contacto' : 'Representante', esc(r1.nombre || (c.es_natural ? c.nombre : 'Sin nombre todavía')), [esc(r1.telefono || c.telefono || s0.telefono || 'Sin teléfono'), esc(r1.correo || c.correo_empresa || 'Sin correo')]) +
       tj('Líder', esc(c.lider || 'Sin asignar'), [c.estatus === 'contrato_firmado' ? 'Gestión cerrada' : 'En gestión hace ' + esc(plural(diasGestion, 'día', 'días'))]) +
       tj('Estatus legal', chipEstatus(c.estatus), [], F.puedo.estatus ? '<button type="button" class="enlace" id="cambiarEstatus" style="margin-top:8px">Cambiar</button>' : '') + '</div>';
-    h += '<div class="serv-n"><b>' + s.length + '</b><span>' + (s.length === 1 ? 'Servicio' : 'Servicios') + ' en este ' + (c.es_natural ? 'documento' : 'RIF') + '</span></div><div class="tarjs">';
-    if(!s.length) h += '<div class="tj"><span class="tj-t">Sin instalar<span class="chip azul">Por instalar</span></span><b>Todavía sin servicio</b><small>' +
+    const soloDed = !!c.dedicado && !s.length;   // dedicado sin servicios PYME: sus enlaces van abajo
+    h += soloDed ? '<div>' : '<div class="serv-n"><b>' + s.length + '</b><span>' + (s.length === 1 ? 'Servicio' : 'Servicios') + ' en este ' + (c.es_natural ? 'documento' : 'RIF') + '</span></div><div class="tarjs">';
+    if(!s.length && !soloDed) h += '<div class="tj"><span class="tj-t">Sin instalar<span class="chip azul">Por instalar</span></span><b>Todavía sin servicio</b><small>' +
       (F.orden ? 'Orden de Odoo ' + esc(F.orden.numero) + ' del ' + esc(fecha(F.orden.creada_en)) + ' · ' + esc(F.orden.etapa || '') : 'Puedes adelantar los documentos mientras se instala.') + '</small></div>';
     s.forEach((x) => {
       h += '<div class="tj"><span class="tj-t">' + esc(x.sucursal + '-' + x.codigo) + estadoServicio(x.estado) + '</span><b>' + esc(x.plan || x.categoria || 'Servicio') + '</b>' +
@@ -484,6 +488,7 @@
         (F.puedo.enviar ? '<div class="ip-l env-l"><span>' + esc(estadoEnvio(x)) + '</span><button type="button" class="mini" data-enviar="' + esc(x.id) + '">Proforma y carta</button></div>' : '') + '</div>';
     });
     h += '</div>';
+    if(c.dedicado && window.FichaDedicado) h += window.FichaDedicado.datos(F, yo);
     if(!c.es_natural){
       const r = c.regimen_firma || ''; const dis = F.puedo.regimen ? '' : ' disabled';
       h += '<div class="secc">Régimen de firma' + (F.puedo.regimen ? '' : '<span class="der">Lo define Legal</span>') + '</div><div class="tres" role="radiogroup" aria-label="Régimen de firma">' +
@@ -637,8 +642,18 @@
   }
 
   // ---------- Pestañas ----------
+  // Dedicados: pestaña Contratos; sin Comisión cuando solo es dedicado (no comisionan)
+  function pintarDedicado(){
+    const D = F && F.cliente.dedicado; const tb = $('tabs');
+    const bc = tb.querySelector('[data-tab="contratos"]'); const bm = tb.querySelector('[data-tab="comision"]');
+    const sinCom = !!D && F.cliente.seg !== 'PYME + Dedicado' && !(F.comision || []).length;
+    bc.classList.toggle('hidden', !D); bm.classList.toggle('hidden', sinCom);
+    $('tab-contratos').innerHTML = D && window.FichaDedicado ? window.FichaDedicado.contratos(F, yo) : '';
+    if((tab === 'contratos' && !D) || (tab === 'comision' && sinCom)) irTab('datos', true);
+  }
+  function tabVisible(t){ const b = $('tabs').querySelector('[data-tab="' + t + '"]'); return !!b && !b.classList.contains('hidden'); }
   function irTab(t, sinUrl){
-    if(TABS.indexOf(t) < 0) t = 'datos';
+    if(TABS.indexOf(t) < 0 || (F && !tabVisible(t))) t = 'datos';
     tab = t;
     Array.prototype.forEach.call($('tabs').querySelectorAll('button'), (b) => { const on = b.dataset.tab === t; b.classList.toggle('on', on); b.setAttribute('aria-selected', String(on)); });
     TABS.forEach((x) => $('tab-' + x).classList.toggle('on', x === t));
@@ -1202,9 +1217,9 @@
     h.innerHTML = '<div class="asa" aria-hidden="true"></div><div class="ficha-cab" id="cabFicha"></div>' +
       '<div class="tabs" id="tabs" role="tablist" aria-label="Secciones del cliente">' +
         '<button type="button" role="tab" data-tab="datos">Datos</button><button type="button" role="tab" data-tab="documentos">Documentos</button>' +
-        '<button type="button" role="tab" data-tab="hilo">Hilo</button><button type="button" role="tab" data-tab="comision">Comisión</button></div>' +
+        '<button type="button" role="tab" data-tab="hilo">Hilo</button><button type="button" role="tab" data-tab="contratos" class="hidden">Contratos</button><button type="button" role="tab" data-tab="comision">Comisión</button></div>' +
       '<div class="ficha-cuerpo" id="cuerpoFicha"><section class="panel-tab" id="tab-datos" aria-label="Datos"></section><section class="panel-tab" id="tab-documentos" aria-label="Documentos"></section>' +
-        '<section class="panel-tab" id="tab-hilo" aria-label="Hilo"></section><section class="panel-tab" id="tab-comision" aria-label="Comisión"></section></div>';
+        '<section class="panel-tab" id="tab-hilo" aria-label="Hilo"></section><section class="panel-tab" id="tab-contratos" aria-label="Contratos"></section><section class="panel-tab" id="tab-comision" aria-label="Comisión"></section></div>';
     document.body.appendChild(h);
     const mas = document.createElement('div');
     mas.innerHTML = '<input type="file" id="archivo" class="hidden" multiple accept="image/*,application/pdf" tabindex="-1" aria-hidden="true">' +

@@ -862,3 +862,27 @@ button.franja:active{transform:scale(.97)}
   .ins-kpis{grid-template-columns:1.6fr 1fr 1fr 1fr}
   .ik.grande{grid-column:auto}
 }
+/* Dedicados (lote 2, D): enlaces, contactos y contratos en el expediente */
+.ded-enl{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px;margin-top:8px}
+.ded-e{padding:12px 14px;border-radius:16px;background:var(--surface-2);min-width:0}
+.ded-e.apagado{opacity:.72}
+.ded-e1{display:flex;align-items:center;gap:8px;justify-content:space-between}
+.ded-e1 b{font-size:14px;min-width:0;overflow-wrap:anywhere}
+.ded-e small{display:block;font-size:12.5px;color:var(--text2);margin-top:2px;overflow-wrap:anywhere}
+.ded-gris{font-weight:500;color:var(--text3)}
+.ded-nota{margin-top:8px}
+.tres.dos{grid-template-columns:repeat(2,1fr)}
+.cli.apagado .quien b{color:var(--text2)}
+/* Actualizar (lote 2, B): el mapa vigente dentro del cuadro único */
+.sub-mapa{margin-top:16px;padding-top:14px;box-shadow:0 -1px 0 var(--line)}
+.tit-chico{display:block;font-size:13px;font-weight:700;color:var(--text2);margin-bottom:6px}
+.cruce-ok{font-size:13.5px;color:var(--text2);padding:12px 14px;border-radius:14px;background:var(--surface-2)}
+.cruce-ok b{color:var(--verde)}
+.ayuda-filtro{margin-top:10px;padding:10px 14px;border-radius:14px;background:var(--azul-bg);color:var(--text);font-size:13px;line-height:1.45}
+main.vista-instalar #ayudaFiltro{display:none}
+.al-vista{max-width:320px;margin-top:10px}
+.al-secc{margin-top:16px}
+.al-secc .grupo{margin-top:8px}
+.fila .tx small.para-que,.para-que{display:block;margin-top:4px;font-size:12.5px;color:var(--text2);white-space:normal;overflow:visible}
+.para-que .enlace{font-size:12.5px}
+.para-que .enlace{display:inline-flex;align-items:center;vertical-align:middle;min-height:40px}
