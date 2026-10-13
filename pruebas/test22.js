@@ -45,7 +45,7 @@ async function cerrarHojas(p){ for(let i = 0; i < 4 && await p.evaluate(() => !!
     // Archivos por subir: filtro con contador y etiqueta
     await p.click('[data-filtro="subir"]'); await p.waitForFunction(() => /Tornillos El Yunque/.test(document.getElementById('lista').textContent));
     ok(nombre + ': filtro Archivos por subir con contador', /Archivos por subir\s*\d+/.test(await p.textContent('[data-filtro="subir"]')) && (await p.textContent('#lista')).includes('Tornillos El Yunque'));
-    ok(nombre + ': la fila lleva la etiqueta Archivos por subir sin cambiar la comisión', (await p.locator('#lista .tagn.ambar', { hasText: 'Archivos por subir' }).count()) === (await p.locator('#lista [data-com]').count()) && (await p.locator('#lista [data-com]', { hasText: 'Tornillos El Yunque' }).locator('.m.verde').count()) >= 1);
+    ok(nombre + ': la fila lleva la etiqueta Archivos por subir sin cambiar la comisión', (await p.locator('#lista .tagn.ambar', { hasText: /por subir/ }).count()) === (await p.locator('#lista [data-com]').count()) && (await p.locator('#lista [data-com]', { hasText: 'Tornillos El Yunque' }).locator('.m.verde').count()) >= 1);
     await p.click('[data-filtro="todos"]'); await p.waitForSelector('.grupo');
     await p.locator('.grupo-cab').filter({ hasText: 'Lucía Ferrer' }).click();
     ok(nombre + ': la fila dice Bienvenida por enviar', (await p.locator('.grupo.abierto .tagn', { hasText: 'Bienvenida por enviar' }).count()) >= 1);
@@ -57,6 +57,9 @@ async function cerrarHojas(p){ for(let i = 0; i < 4 && await p.evaluate(() => !!
     const prof = await p.textContent('#hojaComision .prof');
     ok(nombre + ': bloque Proforma y carta arriba con Descargar y Enviar', prof.includes('Proforma y carta') && (await p.locator('#profBajar').count()) === 1 && (await p.locator('#profEnviar').count()) === 1);
     ok(nombre + ': sin IP el bloque dice Falta IP', prof.includes('Falta IP'));
+    ok(nombre + ': Proforma y carta sale plegada con Falta IP y el estado en la cabecera', await p.evaluate(() => { const d = document.querySelector('#hojaComision details.prof'); const s = d && d.querySelector('summary'); return !!d && !d.open && /Falta IP/.test(s.textContent) && /Por enviar/.test(s.textContent); }));
+    await p.click('#hojaComision details.prof > summary');
+    ok(nombre + ': al tocar la cabecera se abre', await p.evaluate(() => document.querySelector('#hojaComision details.prof').open));
     ok(nombre + ': el bloque va antes que la orden y Legal', await p.evaluate(() => { const c = document.querySelector('#cuerpoCom'); const a = [...c.children]; return a.indexOf(c.querySelector('.prof')) < a.findIndex((x) => /Legal/.test(x.textContent) && x.classList.contains('req') && !x.classList.contains('prof')); }));
     await p.screenshot({ path: 'capturas/22-' + nombre + '-hoja-proforma.png' });
     const [pdf] = await Promise.all([p.waitForEvent('download'), p.click('#profBajar')]);
@@ -116,7 +119,7 @@ async function cerrarHojas(p){ for(let i = 0; i < 4 && await p.evaluate(() => !!
     await r.goto(H + 'clientes.html'); await r.waitForSelector('[data-filtro="por_subir"]');
     ok(nombre + ': Clientes ya no tiene el atajo Por instalar', (await r.locator('[data-filtro="por_instalar"]').count()) === 0);
     await r.click('[data-filtro="por_subir"]'); await r.waitForFunction(() => /Tornillos El Yunque/.test(document.getElementById('lista').textContent));
-    ok(nombre + ': Clientes filtra los que tienen archivos por subir, con la etiqueta', (await r.locator('#lista .tagn', { hasText: 'Archivos por subir' }).count()) === (await r.locator('#lista [data-cliente]').count()));
+    ok(nombre + ': Clientes filtra los que tienen archivos por subir, con la etiqueta', (await r.locator('#lista .tagn', { hasText: /por subir/ }).count()) === (await r.locator('#lista [data-cliente]').count()));
     // Lo que sube el administrador a un cliente aprobado entra aprobado y no cambia el estatus
     const y = cliente(a.mundo, 'Tornillos El Yunque, C.A.'); const antes = y.estatus;
     a.mundo.datos.subidas['DRV-PRUEBA'] = { cliente: y.id, usuario: '11111111-1111-4111-8111-111111111111', nombre: 'acta.pdf', mime: 'application/pdf', tamano: 1000 };

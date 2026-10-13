@@ -133,6 +133,8 @@ function faltantes(c){
 }
 function ponerEstatus(c, nuevo, autor, como){
   if(c.estatus === nuevo) return false;
+  // A recibidos solo con todos los archivos (como el servidor)
+  if(nuevo === 'documentos_recibidos' && faltanArchivos(c)){ if(como === 'auto' || como === 'migracion') return false; throw new Error('Para pasar a Documentos recibidos deben estar subidos todos los documentos en la app'); }
   const ant = c.estatus; c.estatus = nuevo; c.estatus_desde = hace(0);
   c.legal_ok_en = LEGAL_OK.includes(nuevo) ? (c.legal_ok_en || hace(0)) : null;
   c.hilo.push(linea('estatus', nuevo, { antes: ant, como }, como === 'manual' ? autor.nombre : null));
@@ -146,6 +148,7 @@ function recalcular(c, autor){
   else if(['grandes_negocios', 'documentos_pendientes', 'documentos_solicitados', 'documentos_en_revision', 'documentos_recibidos'].includes(c.estatus)){
     if(dev) nuevo = 'documentos_pendientes'; else if(!falta) nuevo = rev ? 'documentos_en_revision' : 'documentos_recibidos'; else if(c.documentos.length) nuevo = 'documentos_pendientes';
   }
+  if(c.legal_ok_en && !dev && !LEGAL_OK.includes(nuevo)) nuevo = c.estatus;
   ponerEstatus(c, nuevo, autor, 'auto');
 }
 const gestion = (c, yo) => { c.ug_en = hace(0); c.ug_por = yo.nombre; };
@@ -179,7 +182,9 @@ const ordenOk = (c, i) => !!(i.confirmada && (i.orden || i.cruce === 'manual') &
 // B4: motivo en una frase; B8: aprobado por Legal con casillas obligatorias sin archivo
 const motivoDe = (c, i) => (ordenOk(c, i) ? null : i.de_otro ? 'Orden creada por otra persona, sin código' : i.cruce === 'nombre_parecido' ? 'Nombre parecido: confirma que la orden es de este cliente'
   : !i.orden && i.orden_vieja ? 'Orden vieja: se creó más de 45 días antes de instalar' : !i.orden ? 'Sin orden de Odoo reciente' : !duenoDe(c, i) ? 'Falta a quién pertenece' : 'Por confirmar');
-const porSubir = (c) => LEGAL_OK.includes(c.estatus) && requeridos(c).some((q) => { const d = busca(c, q.casilla, q.numero); return !d || !(d.archivos || []).length; });
+function faltanArchivos(c){ return requeridos(c).some((q) => { const d = busca(c, q.casilla, q.numero); return !d || !(d.archivos || []).length; }); }
+const porSubir = (c) => (LEGAL_OK.includes(c.estatus) || !!c.legal_ok_en) && faltanArchivos(c);
+const aprobadoPorSubir = (c) => !!c.legal_ok_en && faltanArchivos(c);
 const comisionaEvento = (i) => !i.es_evento || !!i.evento_comisiona;
 const DUENOS = ['Lucía Ferrer', 'Rosa Paredes', 'Tomás Guerra'];
 // Dueño de un servicio para la carta: el de su instalación; si no hay, el líder de la cartera
@@ -215,7 +220,7 @@ function filasComision(m, yo, corte){
       estatus: c.estatus, codigo: i.codigo, sucursal: i.sucursal, revisar_pago: pag === null && c.servicios.length > 1,
       orden_ok: ook, orden: i.orden ? i.orden.numero : null, orden_id: i.orden ? i.orden.id : null, orden_titulo: i.orden ? i.orden.titulo : null, orden_creador: i.orden ? i.orden.creador : null, cruce: i.cruce,
       es_natural: c.es_natural, instalador: i.instalador, excepcion: exc, excepcion_motivo: i.excepcion_motivo, dueno_manual: !!i.manual,
-      motivo: motivoDe(c, i), por_subir: porSubir(c), es_evento: !!i.es_evento, servicio_id: (c.servicios.find((sv) => sv.codigo === i.codigo) || {}).id || null,
+      motivo: motivoDe(c, i), por_subir: porSubir(c), aprobado_por_subir: aprobadoPorSubir(c), es_evento: !!i.es_evento, servicio_id: (c.servicios.find((sv) => sv.codigo === i.codigo) || {}).id || null,
       bienvenida_en: ((ultimoEnvio(c.servicios.find((sv) => sv.codigo === i.codigo) || {}, 'bienvenida')) || {}).en || null,
       sin_ip: !!c.servicios.find((sv) => sv.codigo === i.codigo && !sv.ip && !sv.ip6) });
   }));
@@ -334,17 +339,17 @@ const RPC = {
         return { id: c.id, nombre: c.nombre, doc_tipo: c.doc_tipo, doc_numero: c.doc_numero, es_natural: c.es_natural, seg: segmento(c), estatus: c.estatus, estatus_desde: c.estatus_desde, lider: c.lider,
           ug_en: c.ug_en, ug_por: c.ug_por, creado_en: c.creado_en, es_top: c.es_top, ultimo_corte: ultimoCorte(c), por_instalar: porInstalar(c), provisional: !!c.provisional, n_serv: c.servicios.length,
           serv: s ? { codigo: s.codigo, sucursal: s.sucursal, plan: s.plan, categoria: s.categoria, estado: s.estado, telefono: s.telefono } : null,
-          tel: rp.telefono || c.telefono || (s && s.telefono) || null, correo: rp.correo || c.correo_empresa || null, falta: faltantes(c), por_revisar: c.documentos.filter((d) => d.estado === 'por_revisar').length, por_subir: porSubir(c) }; }) };
+          tel: rp.telefono || c.telefono || (s && s.telefono) || null, correo: rp.correo || c.correo_empresa || null, falta: faltantes(c), por_revisar: c.documentos.filter((d) => d.estado === 'por_revisar').length, por_subir: porSubir(c), aprobado_por_subir: aprobadoPorSubir(c) }; }) };
   },
   cliente_ficha(m, yo, a){
     const c = m.datos.clientes.filter((x) => ['admin', 'abogado', 'analista'].includes(yo.rol) || (yo.rol === 'lider' && x.lider_id === yo.id)).find((x) => x.id === Number(a.p_cliente)); if(!c) return error('No tienes acceso a este cliente');
     const actual = enCurso(); const rp = c.representantes.find((x) => x.orden === 1) || {}; const s0 = c.servicios[0];
     const r = yo.rol;
     return { rol: r, hoy: hoy(), yo: { id: yo.id, nombre: yo.nombre }, corte: { etiqueta: actual, fin: corteFin(actual), limite: corteLimite(actual), dias: dias(hoy(), corteLimite(actual)) },
-      cliente: { id: c.id, nombre: c.nombre, doc_tipo: c.doc_tipo, doc_numero: c.doc_numero, es_natural: c.es_natural, seg: segmento(c), estatus: c.estatus, estatus_desde: c.estatus_desde, legal_ok_en: c.legal_ok_en,
+      cliente: { id: c.id, nombre: c.nombre, doc_tipo: c.doc_tipo, doc_numero: c.doc_numero, es_natural: c.es_natural, seg: segmento(c), estatus: c.estatus, estatus_desde: c.estatus_desde, legal_ok_en: c.legal_ok_en, aprobado_por_subir: aprobadoPorSubir(c), por_subir: porSubir(c),
         lider: c.lider, es_top: c.es_top, regimen_firma: c.regimen_firma, es_isp: c.es_isp, correo_empresa: c.correo_empresa, telefono: c.telefono, direccion: c.direccion,
         proforma_en: c.proforma_en, proforma_por: c.proforma_por, bienvenida_en: c.bienvenida_en, bienvenida_por: c.bienvenida_por, ug_en: c.ug_en, ug_por: c.ug_por, creado_en: c.creado_en, es_demo: c.es_demo,
-        tel: rp.telefono || c.telefono || (s0 && s0.telefono) || null, correo: rp.correo || c.correo_empresa || null, por_instalar: porInstalar(c), por_subir: porSubir(c), provisional: !!c.provisional, unido_a: c.unido_a || null },
+        tel: rp.telefono || c.telefono || (s0 && s0.telefono) || null, correo: rp.correo || c.correo_empresa || null, por_instalar: porInstalar(c), por_subir: porSubir(c), aprobado_por_subir: aprobadoPorSubir(c), provisional: !!c.provisional, unido_a: c.unido_a || null },
       orden: c.orden, servicios: c.servicios.map((sv) => Object.assign({}, sv, { envios: undefined, carta: cartaDe(m, c, sv), proforma_envio: ultimoEnvio(sv, 'proforma'), bienvenida_envio: ultimoEnvio(sv, 'bienvenida') })), representantes: c.representantes,
       documentos: c.documentos.slice().sort((x, y) => x.casilla.localeCompare(y.casilla) || x.numero - y.numero), requeridos: requeridos(c), faltantes: faltantes(c),
       hilo: c.hilo.slice().sort((x, y) => y.en.localeCompare(x.en) || y.id - x.id).map((h) => Object.assign({ mio: h.autor === yo.nombre }, h)), hilo_total: c.hilo.length,
@@ -373,7 +378,7 @@ const RPC = {
   cliente_estatus(m, yo, a){
     if(!['admin', 'abogado'].includes(yo.rol)) return error('No tienes permiso para hacer esto');
     const c = visibles(m, yo).find((x) => x.id === Number(a.p_cliente)); if(!c) return error('No tienes acceso a este cliente');
-    if(ponerEstatus(c, a.p_estatus, yo, 'manual')) gestion(c, yo); return null;
+    try { if(ponerEstatus(c, a.p_estatus, yo, 'manual')) gestion(c, yo); } catch (e) { return error(e.message); } return null;
   },
   cliente_dato(m, yo, a){
     const c = visibles(m, yo).find((x) => x.id === Number(a.p_cliente)); if(!c) return error('No tienes acceso a este cliente');

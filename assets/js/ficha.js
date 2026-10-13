@@ -278,6 +278,7 @@
       '<div class="acc"><button type="button" class="btn btn-chico btn-2" id="subirVarios"' + (ocupado ? ' disabled' : '') + '>' + ic('subir') + 'Subir varios</button>' +
         (F.puedo.revisar && nr ? '<button type="button" class="btn btn-chico" id="revisarTodo">Revisar ' + nr + '</button>'
           : fal.length ? '<button type="button" class="btn btn-chico" data-paso="pedir:' + pedirM + '">Pedir lo que falta</button>' : '') + '</div>' +
+      (c.aprobado_por_subir ? '<div class="al-banda ambar" role="note"><b>Aprobado, documentos por subir</b><p>Legal ya lo aprobó. Sube lo que falta: no cambia su aprobación ni su comisión.</p></div>' : '') +
       bloqueIA() + barraRevision() +
       '<p class="nota-chica solo-pc" style="text-align:center">También puedes arrastrar un archivo desde tu computadora y soltarlo sobre una casilla.</p>' +
       '<p class="nota-chica' + (ocupado ? '' : ' hidden') + '" id="estadoSubida" role="status"><span class="cargando-linea"><i></i><span id="textoSubida">Subiendo…</span></span></p>' + driveHtml();
@@ -1179,8 +1180,8 @@
 
   // Arrastrar desde la computadora: sobre una casilla la llena; fuera de ellas abre Subir varios
   function soltarEn(e){
-    const files = Array.prototype.slice.call((e.dataTransfer && e.dataTransfer.files) || []); if(!files.length || !F) return;
     e.preventDefault(); limpiarSobre();
+    const files = Array.prototype.slice.call((e.dataTransfer && e.dataTransfer.files) || []); if(!files.length || !F) return;
     if(ocupado){ toast('Espera a que termine la subida'); return; }
     const c = e.target.closest('[data-suelta]');
     if(c){ const p = c.dataset.casilla.split(':'); const d = { casilla: p[0], numero: Number(p[1]) };
@@ -1188,7 +1189,11 @@
       guardarItems([{ files, casillas: [d] }]); return; }
     abrirVarios(); agregarLote(files);
   }
-  function limpiarSobre(){ Array.prototype.forEach.call(document.querySelectorAll('#tab-documentos .sobre'), (x) => x.classList.remove('sobre')); }
+  // Quita el recuadro de la zona misma y de cualquier casilla (también al soltar fuera o cancelar)
+  function limpiarSobre(){
+    const z = document.getElementById('tab-documentos'); if(z) z.classList.remove('sobre');
+    Array.prototype.forEach.call(document.querySelectorAll('#tab-documentos .sobre'), (x) => x.classList.remove('sobre'));
+  }
 
   function montar(){
     if(montada) return; montada = true;
@@ -1228,6 +1233,12 @@
     zona.addEventListener('dragover', (e) => { e.preventDefault(); limpiarSobre(); const c = e.target.closest('[data-suelta]'); (c || zona).classList.add('sobre'); });
     zona.addEventListener('dragleave', (e) => { if(!zona.contains(e.relatedTarget)) limpiarSobre(); });
     zona.addEventListener('drop', soltarEn);
+    // Soltar fuera de la zona, cancelar con Esc o salir de la ventana: no queda el recuadro puesto
+    const conArchivos = (e) => !!(e.dataTransfer && Array.prototype.indexOf.call(e.dataTransfer.types || [], 'Files') >= 0);
+    window.addEventListener('dragover', (e) => { if(conArchivos(e)) e.preventDefault(); });
+    window.addEventListener('drop', (e) => { limpiarSobre(); if(conArchivos(e)) e.preventDefault(); });
+    window.addEventListener('dragend', limpiarSobre);
+    document.addEventListener('dragleave', (e) => { if(!e.relatedTarget) limpiarSobre(); });
     h.addEventListener('hoja-cerrada', () => { const f = alCerrar; id = 0; F = null; alCerrar = null; ver = null; clearTimeout(sondeo); sondeo = null; if(f) f(); });
     window.Pedir.alContactar(() => { if(id) cargar(); else if(externo) externo(); });
   }

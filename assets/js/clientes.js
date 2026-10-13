@@ -81,7 +81,7 @@
     const s = c.serv; const sig = siguiente(c);
     const sub = [c.provisional ? 'Provisional, sin RIF' : docFmt(c.doc_tipo, c.doc_numero), c.seg, s ? (sucursal(s.sucursal) === s.sucursal ? 'Suc. ' + s.sucursal : sucursal(s.sucursal)) : '', c.n_serv > 1 ? c.n_serv + ' servicios' : ''].filter(Boolean).join(' · ');
     return '<button type="button" class="cli' + (marcado === c.id ? ' sel' : '') + '" data-cliente="' + esc(c.id) + '">' +
-      '<span class="quien"><span class="mono" aria-hidden="true">' + esc(iniciales(c.nombre).charAt(0)) + '</span><span><b>' + esc(c.nombre) + '</b><small>' + (c.por_subir ? '<span class="tagn ambar">Archivos por subir</span>' : '') + esc(sub) + '</small></span></span>' +
+      '<span class="quien"><span class="mono" aria-hidden="true">' + esc(iniciales(c.nombre).charAt(0)) + '</span><span><b>' + esc(c.nombre) + '</b><small>' + (c.por_subir ? '<span class="tagn ambar">' + (c.aprobado_por_subir ? 'Aprobado, documentos por subir' : 'Archivos por subir') + '</span>' : '') + esc(sub) + '</small></span></span>' +
       '<span class="c2">' + esc(c.lider || 'Sin líder') + '</span><span class="c3">' + chipEstatus(c.estatus) + '</span>' +
       '<span class="sig ' + sig[0] + '">' + (c.ultimo_corte ? 'Último corte. ' : '') + esc(sig[1]) + '</span>' + ic('derecha', 'ch fl') + '</button>';
   }

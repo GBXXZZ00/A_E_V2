@@ -91,7 +91,7 @@
   // Etiquetas informativas de la fila: archivos por subir y la carta de bienvenida
   function etiquetas(f){
     let h = '';
-    if(f.por_subir) h += '<span class="tagn ambar">Archivos por subir</span>';
+    if(f.por_subir) h += '<span class="tagn ambar">' + (f.aprobado_por_subir ? 'Aprobado, documentos por subir' : 'Archivos por subir') + '</span>';
     if(f.servicio_id) h += f.bienvenida_en ? '<span class="tagn verde">Enviada ' + esc(diaMes(f.bienvenida_en)) + '</span>' : '<span class="tagn">Bienvenida por enviar</span>';
     return h;
   }
@@ -196,13 +196,28 @@
     if(PI.puedo && PI.puedo.asignar && o.provisional && o.lider === 'Por asignar') acc += '<div class="ins-acc"><span>La orden la creó otra persona sin código.</span><button type="button" class="mini pri" data-dueno-prov="' + esc(o.cliente_id) + '" data-nombre="' + esc(o.cliente) + '">Elegir dueño</button></div>';
     return '<div class="ins">' + (o.cliente_id && !o.parecido_id ? '<button type="button" class="fila" data-exp="' + esc(o.cliente_id) + '">' + cuerpo + '</button>' : '<div class="fila">' + cuerpo + '</div>') + acc + '</div>';
   }
+  // Indicadores arriba (mismo dato que la lista): faltan, en rojo, horas promedio, la más vieja, reprogramadas y por líder
+  function kpisInstalar(todas){
+    if(!todas.length) return '';
+    const rojas = todas.filter((o) => o.color === 'rojo').length; const rep = todas.filter((o) => o.veces > 0).length;
+    const hs = todas.map((o) => Number(o.horas) || 0); const prom = Math.round(hs.reduce((a, x) => a + x, 0) / hs.length);
+    const vieja = todas.reduce((m, o) => ((Number(o.horas) || 0) > (Number(m.horas) || 0) ? o : m), todas[0]);
+    const g = {}; todas.forEach((o) => { g[o.lider || 'Por asignar'] = (g[o.lider || 'Por asignar'] || 0) + 1; });
+    const lid = yo.rol === 'lider' ? '' : '<div class="ik lideres"><small>Faltan por líder</small><div class="ik-chips">' +
+      Object.keys(g).sort((x, y) => g[y] - g[x] || x.localeCompare(y)).map((l) => '<span class="ik-chip' + (l === 'Por asignar' ? ' rojo' : '') + '">' + esc(l) + ' <b>' + g[l] + '</b></span>').join('') + '</div></div>';
+    return '<div class="ins-kpis" role="group" aria-label="Resumen de órdenes por instalar">' +
+      '<div class="ik grande"><small>Faltan por instalar</small><b>' + todas.length + '</b><span>' + (rojas ? '<em class="ik-rojo">' + plural(rojas, 'en rojo', 'en rojo') + '</em> · pasadas de 24 h de reloj' : 'Ninguna en rojo') + '</span></div>' +
+      '<div class="ik"><small>Promedio</small><b>' + prom + ' h</b><span>de reloj</span></div>' +
+      '<div class="ik"><small>La más vieja</small><b>' + esc(horasTexto(vieja.horas)) + '</b><span>' + esc(vieja.cliente || 'Cliente nuevo') + '</span></div>' +
+      '<div class="ik"><small>Reprogramadas</small><b>' + rep + '</b><span>' + (rep ? 'movidas en Odoo' : 'ninguna') + '</span></div>' + lid + '</div>';
+  }
   function pintarInstalar(){
     if(!PI) return;
     const ok = (o) => { const b = normalizeStr(busca); return !b || normalizeStr(o.cliente).indexOf(b) >= 0 || normalizeStr(o.lider).indexOf(b) >= 0 || String(o.numero || '').indexOf(busca) >= 0; };
-    const filas = (PI.filas || []).filter(ok); let h = '';
-    const rojas = filas.filter((o) => o.color === 'rojo').length; const ambar = filas.filter((o) => o.color === 'ambar').length;
-    h += '<p class="nota-chica ins-ayuda">El reloj cuenta de 8:00 a 22:00, todos los días, desde la primera orden. Ámbar a las 16 horas y rojo a las 24. Se apaga cuando llega la instalación o Odoo la cancela.' +
-      (rojas || ambar ? ' Hoy: ' + [rojas ? plural(rojas, 'en rojo', 'en rojo') : '', ambar ? plural(ambar, 'en ámbar', 'en ámbar') : ''].filter(Boolean).join(' y ') + '.' : '') + '</p>';
+    const filas = (PI.filas || []).filter(ok); let h = kpisInstalar(PI.filas || []);
+    // Bandeja 1: órdenes abiertas en Odoo que todavía no se instalan
+    h += '<section class="bandeja-ins" aria-labelledby="bIns1"><div class="bandeja-cab"><h3 id="bIns1">Órdenes abiertas sin instalar</h3><span class="n">' + filas.length + '</span></div>' +
+      '<p class="nota-chica ins-ayuda">El reloj cuenta de 8:00 a 22:00, todos los días, desde la primera orden. Ámbar a las 16 horas y rojo a las 24. Se apaga cuando llega la instalación o Odoo la cancela.</p>';
     if(!filas.length) h += vacio(busca ? 'Sin resultados' : 'Nada por instalar', busca ? 'Nadie coincide con "' + busca + '".' : 'No hay órdenes abiertas sin instalación. Cuando un líder monte una orden en Odoo, aparece aquí.');
     else if(yo.rol === 'lider') h += '<div class="grupo abierto">' + filas.map(filaInstalar).join('') + '</div>';
     else {
@@ -215,13 +230,16 @@
           plural(g[l].length, 'orden abierta', 'órdenes abiertas') + (r ? ' · <span class="mal">' + r + ' en rojo</span>' : '') + '</small></span>' + ic('abajo') + '</button><div class="grupo-cuerpo">' + g[l].map(filaInstalar).join('') + '</div></div>';
       }).join('');
     }
+    h += '</section>';
+    // Bandeja 2: Odoo dice realizada pero la instalación no llegó (solo quien puede verla)
     const re = (PI.realizadas || []).filter((o) => ok(Object.assign({ numero: o.numero }, o)));
-    if(PI.puedo && PI.puedo.realizadas && re.length){
-      const ab = !!abiertos['i|__realizadas'];
-      h += '<div class="grupo' + (ab ? ' abierto' : '') + '" style="margin-top:18px"><button type="button" class="grupo-cab" data-grupo="i|__realizadas" aria-expanded="' + ab + '"><span class="tx"><b>Realizada en Odoo sin instalación</b><small>' +
-        plural(re.length, 'orden', 'órdenes') + ' en 60 días. Revisa si falta cargar la instalación o falló el cruce</small></span>' + ic('abajo') + '</button><div class="grupo-cuerpo">' +
+    if(PI.puedo && PI.puedo.realizadas){
+      h += '<section class="bandeja-ins" aria-labelledby="bIns2"><div class="bandeja-cab"><h3 id="bIns2">Realizadas en Odoo sin instalación</h3><span class="n">' + re.length + '</span></div>' +
+        '<p class="nota-chica ins-ayuda">Órdenes de los últimos 60 días que Odoo marca como realizadas y no tienen instalación en el TAD. Revisa si falta cargar el TAD o falló el cruce.</p>';
+      h += !re.length ? vacio('Todo cuadra', 'Cada orden realizada en Odoo tiene su instalación.') : '<div class="grupo abierto">' +
         re.map((o) => '<' + (o.cliente_id ? 'button type="button" data-exp="' + esc(o.cliente_id) + '"' : 'div') + ' class="fila"><span class="tx"><b>' + esc(o.cliente) + '</b><small>' + esc(ordenCorta(o.numero)) + ' · ' + esc(o.lider || 'Sin líder') +
-          ' · Realizada el ' + esc(fecha(o.ejecutada_en || o.creada_en)) + '</small></span><span class="m azul">Realizado</span></' + (o.cliente_id ? 'button' : 'div') + '>').join('') + '</div></div>';
+          ' · Realizada el ' + esc(fecha(o.ejecutada_en || o.creada_en)) + '</small></span><span class="m azul">Realizado</span></' + (o.cliente_id ? 'button' : 'div') + '>').join('') + '</div>';
+      h += '</section>';
     }
     $('lista').innerHTML = h;
   }
@@ -389,18 +407,20 @@
 
   // ---------- Hoja corta de comisión: solo lo que decide la comisión, con gestión ----------
   let K = null;   // { inst, cliente, F }
+  let profAbierto = false; // Proforma y carta plegada hasta que se abra
   function montarHoja(){
     if($('hojaComision')) return;
     const h = document.createElement('section'); h.id = 'hojaComision'; h.className = 'hoja lado corta';
     h.setAttribute('role', 'dialog'); h.setAttribute('aria-modal', 'true'); h.setAttribute('aria-labelledby', 'tCom'); h.setAttribute('aria-hidden', 'true');
     h.innerHTML = '<div class="asa" aria-hidden="true"></div><div class="ficha-cab" id="cabCom"></div><div class="ficha-cuerpo" id="cuerpoCom"></div>';
     document.body.appendChild(h); window.Comun.prepararHojas();
-    h.addEventListener('hoja-cerrada', () => { K = null; });
+    h.addEventListener('hoja-cerrada', () => { K = null; profAbierto = false; });
+    h.addEventListener('toggle', (e) => { if(e.target.classList && e.target.classList.contains('prof')) profAbierto = e.target.open; }, true);
   }
   function abrirComision(inst, cliente){
     montarHoja();
     const f = d.filas.find((x) => String(x.instalacion_id) === String(inst)) || (d.eventos || []).find((x) => String(x.instalacion_id) === String(inst)) || {};
-    K = { inst: Number(inst), cliente: Number(cliente), F: null };
+    K = { inst: Number(inst), cliente: Number(cliente), F: null }; profAbierto = false;
     $('cabCom').innerHTML = '<div class="f-cab"><div class="tx"><h2 class="nom" id="tCom">' + esc(f.nombre || 'Cliente') + '</h2><p class="dat">' + esc([f.sucursal && f.codigo ? f.sucursal + '-' + f.codigo : f.codigo, f.instalada_en ? 'Instalado el ' + fecha(f.instalada_en) : ''].filter(Boolean).join(' · ')) + '</p></div>' +
       '<button type="button" class="cerrar" data-cierra="1" aria-label="Cerrar">' + ic('x') + '</button></div>';
     $('cuerpoCom').innerHTML = '<div class="sk-bloque"><span class="sk" style="height:64px;border-radius:16px"></span><span class="sk" style="height:150px;border-radius:16px"></span><span class="sk" style="height:90px;border-radius:16px"></span></div>';
@@ -502,10 +522,12 @@
     const sinIp = !sv.ip && !sv.ip6; const b = sv.bienvenida_envio; const p = sv.proforma_envio;
     const una = (e, que) => (e ? que + ' enviada por ' + (e.por || 'alguien del equipo') + ', ' + diaMes(e.en) : '');
     const estado = [una(b, 'Carta'), una(p, 'Proforma')].filter(Boolean).join('. ');
-    return '<div class="req prof"><div class="req-t">Proforma y carta<span class="m ' + (b ? 'verde' : 'ambar') + '">' + (b ? 'Enviada ' + esc(diaMes(b.en)) : 'Por enviar') + '</span></div>' +
+    // Plegado por defecto: la cabecera dice si falta la IP y si ya se envió; se recuerda abierto mientras la hoja siga
+    return '<details class="req prof"' + (profAbierto ? ' open' : '') + '><summary class="req-t">Proforma y carta' +
+      (sinIp ? '<span class="m rojo">Falta IP</span>' : '') + '<span class="m ' + (b ? 'verde' : 'ambar') + '">' + (b ? 'Enviada ' + esc(diaMes(b.en)) : 'Por enviar') + '</span>' + ic('abajo') + '</summary>' +
       '<p>' + esc(estado ? estado + '.' : 'Todavía no se ha enviado. Lo puede enviar el analista o el líder.') + '</p>' +
       (sinIp ? '<div class="chk"><i class="no"></i><span>Falta IP<small class="mal">Sin IP, la carta dice "Pendiente por asignar"</small></span>' + (F.puedo.ip ? '<button type="button" class="mini pri" id="profIp">Escribir IP</button>' : '') + '</div>' : '') +
-      '<div class="acc-prof"><button type="button" class="mini" id="profBajar">' + ic('doc') + 'Descargar</button><button type="button" class="mini pri" id="profEnviar">' + ic('wa') + (b ? 'Reenviar' : 'Enviar') + '</button></div></div>';
+      '<div class="acc-prof"><button type="button" class="mini" id="profBajar">' + ic('doc') + 'Descargar</button><button type="button" class="mini pri" id="profEnviar">' + ic('wa') + (b ? 'Reenviar' : 'Enviar') + '</button></div></details>';
   }
   function bajarProforma(){
     const F = K && K.F; const i = F && (F.comision || []).find((x) => Number(x.id) === K.inst);

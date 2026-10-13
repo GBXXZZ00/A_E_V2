@@ -594,6 +594,20 @@ button.fila{width:100%;text-align:left;background:none}
 .req-t .m{margin-left:auto}
 .req p{margin-top:4px;font-size:13px;color:var(--text2)}
 .req .sec{margin:14px 0 0}
+/* Proforma y carta plegable y liviana (lote 2, A2) */
+details.prof{padding:0 14px}
+details.prof > summary{list-style:none;cursor:pointer;min-height:48px;font-size:14px;font-weight:700}
+details.prof > summary::-webkit-details-marker{display:none}
+details.prof > summary .m{margin-left:0} details.prof > summary .m:first-of-type{margin-left:auto}
+details.prof > summary .i{width:16px;height:16px;flex:none;color:var(--text3);transition:transform 160ms var(--ease-out)}
+details.prof[open] > summary .i{transform:rotate(180deg)}
+details.prof[open]{padding-bottom:12px}
+details.prof p{margin-top:0;font-size:12.5px}
+details.prof .chk{min-height:40px;font-size:13px}
+details.prof .chk small{font-size:12px}
+details.prof .mini,details.prof .acc-prof .mini{height:34px;min-height:0;padding:0 12px;font-size:12.5px}
+@media (max-width:899px){ details.prof .mini,details.prof .acc-prof .mini{min-height:44px} }
+@media (prefers-reduced-motion:reduce){ details.prof > summary .i{transition:none} }
 .chk{display:flex;align-items:center;gap:10px;min-height:48px;padding:8px 0 0;margin-top:8px;box-shadow:0 -1px 0 var(--line);font-size:14px;font-weight:600}
 .chk > span{flex:1;min-width:0}
 .chk small{display:block;font-weight:500;font-size:12.5px;color:var(--text2);overflow-wrap:anywhere}
@@ -820,3 +834,31 @@ button.franja:active{transform:scale(.97)}
 .ins-acc span{flex:1 1 200px}
 .ins-acc .mini{min-height:44px}
 .ins-ayuda{margin:14px 0 10px}
+/* Por instalar: indicadores tipo bento y dos bandejas separadas (lote 2, A4) */
+.ins-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:14px 0 6px}
+.ik{padding:12px 14px;border-radius:16px;background:var(--surface-2);min-width:0}
+.ik small{display:block;font-size:12px;font-weight:600;color:var(--text2)}
+.ik b{display:block;font-size:22px;font-weight:800;letter-spacing:-.02em;line-height:1.2}
+.ik > span{display:block;font-size:12.5px;color:var(--text2);overflow-wrap:anywhere}
+.ik em{font-style:normal;font-weight:700}
+.ik em.ik-rojo{color:var(--rojo)}
+.ik.grande{grid-column:1 / -1;background:var(--text);color:#fff}
+.ik.grande small,.ik.grande > span{color:#B9BFC7}
+.ik.grande b{font-size:34px}
+.ik.grande em.ik-rojo{color:#FF9B93}
+.ik.lideres{grid-column:1 / -1}
+.ik-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.ik-chip{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-radius:var(--pill);background:#fff;border:1px solid var(--line);font-size:12.5px;font-weight:600}
+.ik-chip b{display:inline;font-size:12.5px;font-weight:800;letter-spacing:0;line-height:1}
+.ik-chip.rojo{border-color:var(--rojo);color:var(--rojo)}
+@media (max-width:899px){ .ik{padding:10px 12px} .ik b{font-size:19px} .ik small,.ik > span{font-size:11.5px} }
+.bandeja-ins{margin-top:18px}
+.bandeja-ins + .bandeja-ins{padding-top:18px;box-shadow:0 -1px 0 var(--line)}
+.bandeja-cab{display:flex;align-items:center;gap:8px}
+.bandeja-cab h3{font-size:16px;font-weight:800}
+.bandeja-cab .n{display:inline-grid;place-items:center;min-width:26px;height:24px;padding:0 8px;border-radius:var(--pill);background:var(--surface-2);font-size:12.5px;font-weight:700}
+.bandeja-ins .ins-ayuda{margin:4px 0 10px}
+@media (min-width:900px){
+  .ins-kpis{grid-template-columns:1.6fr 1fr 1fr 1fr}
+  .ik.grande{grid-column:auto}
+}
