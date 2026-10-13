@@ -170,11 +170,8 @@
   $('hojaFiltros').addEventListener('hoja-cerrada', () => setTimeout(guardarUrl, 60));
   document.addEventListener('visibilitychange', () => { if(!document.hidden && yo && filas.length && !window.Comun.hojaAbierta()) refrescar(); });
 
-  (async function(){
-    yo = await S.requerir(['admin', 'abogado', 'lider', 'analista']);
-    if(!yo) return;
-    rol = yo.rol;
-    window.Armazon.montar(yo, { activo: 'clientes' });
+  window.Armazon.arrancar(['admin', 'abogado', 'lider', 'analista'], { activo: 'clientes' }, (p) => {
+    yo = p; rol = yo.rol;
     window.Ficha.montar(); window.Ficha.alContactarFuera(refrescar);
     const u = leerUrl(); $('busca').value = q; pintarAtajos(); pintarSels();
     cargar(false);
@@ -182,5 +179,5 @@
     if(u.c){ guardarUrl(); abrirCliente(u.c, { tab: u.t, revisar: u.revisar, pedir: u.pedir }); }
     // Desde Inicio: la lista de bienvenidas por enviar
     else if(new URLSearchParams(location.search).get('bienvenidas')){ try { history.replaceState(history.state, '', location.pathname); } catch (e) {} window.Bienvenidas.abrir({ yo, alCerrar: refrescar }); }
-  })();
+  }, (p) => { yo = p; });
 })();

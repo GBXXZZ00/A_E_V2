@@ -200,10 +200,5 @@
   $('alternar').addEventListener('click', alternar);
   $('hojaUsuario').addEventListener('hoja-cerrada', () => { editando = null; desarmar(); });
 
-  (async function(){
-    yo = await S.requerir(['admin']);
-    if(!yo) return;
-    window.Armazon.montar(yo, { activo: null, volver: { enlace: 'inicio.html', texto: 'Inicio' } });
-    cargar();
-  })();
+  window.Armazon.arrancar(['admin'], { activo: null, volver: { enlace: 'inicio.html', texto: 'Inicio' } }, (p) => { yo = p; cargar(); }, (p) => { yo = p; });
 })();

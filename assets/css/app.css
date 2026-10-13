@@ -780,3 +780,14 @@ button.franja:active{transform:scale(.97)}
 @media (min-width:900px){ .al-enlace .campo-s{padding-bottom:0;max-width:320px} }
 @media (prefers-reduced-motion:reduce){ .al-grande,.al-barra i{transition:none} .al-paso.activo i,.al-barra.corre i{animation:none} }
 @media (hover:hover) and (pointer:fine){ .al-grande:hover{border-color:#C9CED6} .al-grande.prin:hover{border-color:var(--accent)} }
+
+/* Paso entre módulos (View Transitions entre páginas): la barra y la navegación quedan quietas y el contenido cambia con un fundido corto */
+@view-transition{navigation:auto}
+.barra{view-transition-name:ae-barra}
+.nav{view-transition-name:ae-nav}
+::view-transition-old(root),::view-transition-new(root){animation-duration:180ms;animation-timing-function:var(--ease-out)}
+::view-transition-group(ae-barra),::view-transition-group(ae-nav),::view-transition-new(ae-barra),::view-transition-new(ae-nav){animation:none}
+::view-transition-old(ae-barra),::view-transition-old(ae-nav){display:none}
+@media (prefers-reduced-motion:reduce){
+  @view-transition{navigation:none}
+}

@@ -2,7 +2,9 @@
 
 Actualizado: 09/10/2026 (noche: módulo de aliados construido, v26). Publicado: `?v=26` (módulo de aliados comerciales e IA más rápida).
 
-## Estado
+## Lote 1 del 13/10 (fluidez, comisiones y aliados), en curso
+- **Parte A, fluidez: HECHA en v27.** Perfil guardado en el dispositivo (`ae_perfil`: rol y marcas, sin PIN; solo vale con la sesión abierta del mismo usuario) y `Armazon.temprano`/`Armazon.arrancar`: la barra y la navegación se dibujan al cargar y `S.requerir()` confirma (si cambió, recarga; si la sesión no vale, sale y limpia). Cada página retiene el primer cuadro hasta `#navListo` (`<link rel="expect" blocking="render">`). Lo último visto (`Comun.cache`) pasó de sessionStorage a localStorage y se borra al salir o al entrar otra persona. Fundido entre páginas con `@view-transition` (180 ms, barra y navegación fijas, apagado con reducir movimiento). `sw.js` guarda también las páginas y las sirve desde el dispositivo solo si todos sus archivos con versión están guardados; se actualizan por detrás. Prueba test21.
+
 - Publicado y con pruebas (test01 a test18 en TODO OK): acceso con PIN, Usuarios, Inicio, Clientes, expediente como hoja (`assets/js/ficha.js`), Comisiones (`comisiones.js`), Actualizar con cruce (`actualizar.js`), proforma y carta en PDF (`documentos.js`, `marca.js`), bienvenidas por enviar (`bienvenidas.js`), ZIP y Excel sin librerías (`archivos.js`), página de privacidad (`privacidad.html`), Enviar pendientes en Comisiones y Factibilidad (`factibilidad.js`, `coordenadas.js`, `mapared.js`, `kmz-lector.js`).
 - Base: lotes 1 a 12 aplicados. Corte de referencia para probar comisiones: septiembre 2026 = 59 filas y 49 cumplen; octubre = 48 filas. Si un cambio mueve esos números sin razón, está mal.
 - Documentos nuevos (v21): van directo a Drive, nada al almacenamiento de Supabase (ver punto 6 de la corrida del 09/10).

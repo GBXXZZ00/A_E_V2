@@ -215,15 +215,12 @@
   function buscar(){ const v = $('busca').value.trim(); if(v === q) return; q = v; guardarUrl(); cargar(false); }
   document.addEventListener('visibilitychange', () => { if(!document.hidden && yo && !hojaAbierta()) refrescar(); });
 
-  (async function(){
-    yo = await S.requerir(['admin', 'abogado']);
-    if(!yo) return;
-    rol = yo.rol;
-    window.Armazon.montar(yo, { activo: 'revision' });
+  window.Armazon.arrancar(['admin', 'abogado'], { activo: 'revision' }, (p) => {
+    yo = p; rol = yo.rol;
     window.Ficha.montar(); window.Ficha.alContactarFuera(refrescar);
     leerUrl(); $('busca').value = q; pintarAtajos();
     cargar(false);
     const c = Number(new URLSearchParams(location.search).get('c')) || 0;
     if(c) abrirCliente(c);
-  })();
+  }, (p) => { yo = p; });
 })();

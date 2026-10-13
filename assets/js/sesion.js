@@ -20,6 +20,29 @@
   }
   function guardarUsuario(p){ guardar(K_USUARIO, p ? JSON.stringify({ usuario: p.usuario, nombre: p.nombre, cargo: p.cargo || '' }) : null); }
 
+  // Perfil guardado en el dispositivo (rol y marcas, nunca el PIN) para dibujar la navegación al instante.
+  // Solo vale si hay una sesión abierta del mismo usuario; el servidor sigue decidiendo los permisos.
+  const K_PERFIL = 'ae_perfil';
+  const CAMPOS = ['id', 'usuario', 'nombre', 'rol', 'senior', 'canales', 'cargo', 'equipo', 'codigo_vendedor'];
+  function firma(p){ return p ? JSON.stringify(CAMPOS.map((k) => p[k] === undefined ? null : p[k])) : ''; }
+  function guardarPerfil(p){
+    if(!p){ guardar(K_PERFIL, null); return; }
+    const o = {}; CAMPOS.forEach((k) => { o[k] = p[k] === undefined ? null : p[k]; }); o.activo = true; o.debe_cambiar_pin = false;
+    guardar(K_PERFIL, JSON.stringify(o));
+  }
+  function idSesionGuardada(){
+    try {
+      const k = Object.keys(sessionStorage).find((x) => /^sb-.+-auth-token$/.test(x)); if(!k) return null;
+      const s = JSON.parse(sessionStorage.getItem(k) || 'null'); return s && s.user ? s.user.id : null;
+    } catch (e) { return null; }
+  }
+  function perfilGuardado(roles){
+    let p = null; try { p = JSON.parse(leer(K_PERFIL) || 'null'); } catch (e) { p = null; }
+    if(!p || !p.id || !p.rol || p.id !== idSesionGuardada()) return null;
+    if(roles && roles.indexOf(p.rol) < 0) return null;
+    return p;
+  }
+
   async function sesionActual(){
     if(!db) return null;
     const { data } = await db.auth.getSession();
@@ -34,18 +57,20 @@
       .eq('id', s.user.id).maybeSingle();
     if(error) throw error;
     perfilActual = data || null;
+    guardarPerfil(perfilActual && perfilActual.activo && !perfilActual.debe_cambiar_pin ? perfilActual : null);
     return perfilActual;
   }
   async function entrar(usuario, pin){
     const { data, error } = await db.auth.signInWithPassword({ email: usuario + DOMINIO, password: pin });
     if(error) throw error;
-    perfilActual = null;
+    perfilActual = null; guardarPerfil(null);
     // Lo que quedó en pantalla de otra persona no se le muestra a quien entra
     if(window.Comun && window.Comun.cache) window.Comun.cache.borrarTodo();
     return data.session;
   }
   async function salir(){
-    perfilActual = null;
+    perfilActual = null; guardarPerfil(null);
+    if(window.Comun && window.Comun.cache) window.Comun.cache.borrarTodo();
     try { await db.auth.signOut(); } catch (e) {}
   }
   // Comprueba el PIN actual de quien ya entró (para el cambio voluntario)
@@ -83,5 +108,5 @@
   }
 
   window.Sesion = { EQUIPOS, ROLES, equipoGuardado, guardarEquipo, usuarioGuardado, guardarUsuario,
-    sesionActual, perfil, entrar, salir, verificarPin, cambiarPin, pinFacil, puedeEntrar, requerir };
+    sesionActual, perfil, perfilGuardado, firma, entrar, salir, verificarPin, cambiarPin, pinFacil, puedeEntrar, requerir };
 })();

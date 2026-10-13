@@ -632,15 +632,13 @@
   document.addEventListener('visibilitychange', () => { if(!document.hidden && yo && !hojaAbierta()) cargar(); });
   document.addEventListener('hoja-cerrada', () => {});
 
-  (async function(){
-    yo = await S.requerir(['admin', 'aliado', 'analista', 'lider', 'abogado']);
-    if(!yo) return;
+  window.Armazon.arrancar(['admin', 'aliado', 'analista', 'lider', 'abogado'], { activo: 'aliados' }, (p) => {
+    yo = p;
     modo = yo.rol === 'admin' ? 'admin' : yo.rol === 'aliado' ? 'aliado' : yo.rol === 'analista' && yo.canales ? 'canales' : 'equipo';
-    window.Armazon.montar(yo, { activo: 'aliados' });
     if(window.Ficha && modo === 'admin'){ window.Ficha.montar(); }
     $('titulo').textContent = modo === 'equipo' ? 'Instalados por aliados' : modo === 'admin' ? 'Aliados comerciales' : 'Hola, ' + (window.Comun.primerNombre(yo.nombre) || yo.nombre);
     leerUrl(); pintarTabs(); cargar();
     const s = Number(new URLSearchParams(location.search).get('s')) || 0;
     if(s && modo !== 'equipo') abrirSol(s);
-  })();
+  }, (p) => { yo = p; });
 })();

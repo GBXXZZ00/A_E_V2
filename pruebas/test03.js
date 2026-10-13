@@ -60,7 +60,7 @@ const { ok, cerrar } = marcador();
     ok(nombre + ': el líder solo ve sus instalaciones', (await q.textContent('.mets .negro')).includes('de 3') && (await q.locator('[data-filtro="ultimo"].on').count()) === 1);
     await q.click('[data-filtro="todos"]'); await q.waitForSelector('.grupo.abierto');
     ok(nombre + ': con un solo líder el grupo ya viene abierto', (await q.locator('[data-com]').count()) === 3);
-    b.mundo.fallaRpc = 'comisiones_corte'; await q.evaluate(() => Object.keys(sessionStorage).filter((k) => k.indexOf('ae_c_') === 0).forEach((k) => sessionStorage.removeItem(k))); await q.reload();
+    b.mundo.fallaRpc = 'comisiones_corte'; await q.evaluate(() => Object.keys(localStorage).filter((k) => k.indexOf('ae_c_') === 0).forEach((k) => localStorage.removeItem(k))); await q.reload();
     await q.waitForSelector('#reintentar');
     ok(nombre + ': si falla muestra error y Reintentar', (await q.locator('.toast').count()) >= 1);
     b.mundo.fallaRpc = null; await q.click('#reintentar'); await q.waitForSelector('.grupo');

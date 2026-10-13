@@ -37,6 +37,8 @@ async function contexto(navegador, opciones, mundo){
     const j = (x, st = 200) => r.fulfill({ status: st, contentType: 'application/json', headers: cab, body: JSON.stringify(x) });
     if(req.method() === 'OPTIONS') return r.fulfill({ status: 200, headers: cab, body: '' });
     if(m.sinRed) return r.abort('failed');
+    // Red lenta simulada (VPN): todo lo que no es entrar tarda
+    if(m.lentoTodo && !u.includes('/auth/v1/token')) await new Promise((ok) => setTimeout(ok, m.lentoTodo));
     const cuerpo = () => { try { return JSON.parse(req.postData() || '{}'); } catch (e) { return {}; } };
     if(u.includes('/auth/v1/token')){
       const b = cuerpo(); const p = m.personas.find((x) => x.usuario + '@aev2.app' === b.email);

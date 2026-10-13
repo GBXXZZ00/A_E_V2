@@ -15,8 +15,11 @@
   ];
 
   // opciones: { activo: 'inicio'|'comisiones'|'clientes'|'factibilidad'|'revision'|'aliados'|null, sinNav: bool, volver: {enlace, texto}, acciones: html }
+  let montado = null;   // { clave, res }: lo que ya está dibujado, para no repetirlo al confirmar la sesión
   function montar(p, opciones){
     const o = opciones || {};
+    const clave = S.firma(p) + '|' + S.equipoGuardado() + '|' + JSON.stringify(o);
+    if(montado && montado.clave === clave && $('barra').querySelector('.cuenta')) return montado.res;
     let equipo = S.equipoGuardado();
     if(!S.puedeEntrar(p, equipo)) equipo = p.equipo === 'ambos' ? 'ventas' : p.equipo;
     const conNav = !o.sinNav && equipo !== 'aliados' && p.rol !== 'aliado';
@@ -64,7 +67,40 @@
       '<button type="button" class="op salir" id="salir"><span class="ic">' + ic('salir') + '</span><span class="tx">Salir</span></button>';
     prepararHojas();
     $('salir').addEventListener('click', async () => { cache.borrarTodo(); await S.salir(); location.replace('index.html'); });
-    return { equipo, conNav };
+    montado = { clave, res: { equipo, conNav } };
+    return montado.res;
+  }
+
+  // Opciones de cada página, para dibujar la navegación antes de que responda el servidor
+  function opcionesPagina(){
+    const pag = (location.pathname.split('/').pop() || '').replace('.html', '');
+    if(pag === 'usuarios' || pag === 'actualizar') return { activo: null, volver: { enlace: 'inicio.html', texto: 'Inicio' } };
+    if(NAV.some((n) => n.id === pag)) return { activo: pag };
+    return null;
+  }
+  // Con el perfil guardado se dibuja todo al instante; S.requerir() confirma después y montar() corrige si algo cambió.
+  // Devuelve ese perfil si sirve para esta página (para pintar lo último visto mientras llega lo nuevo).
+  function temprano(roles){
+    const o = opcionesPagina(); if(!o) return null;
+    // Nunca en blanco: mientras corre el módulo, la lista muestra su esqueleto
+    const l = $('lista'); if(l && !l.innerHTML.trim()) l.innerHTML = window.Comun.esqueleto(6);
+    const p = S.perfilGuardado(roles); if(!p) return null;
+    try { montar(p, o); } catch (e) { return null; }
+    return p;
+  }
+  temprano();
+
+  // Arranque de un módulo: con perfil guardado, iniciar() corre al instante (lista con lo último visto);
+  // si no, espera a S.requerir(). Si el servidor dice algo distinto del perfil guardado, se recarga con el bueno.
+  async function arrancar(roles, o, iniciar, alConfirmar){
+    const pre = temprano(roles);
+    if(pre){ montar(pre, o); iniciar(pre); }
+    const p = await S.requerir(roles);
+    if(!p) return null;
+    if(pre && S.firma(pre) !== S.firma(p)){ location.reload(); return null; }
+    montar(p, o);
+    if(!pre) iniciar(p); else if(alConfirmar) alConfirmar(p);
+    return p;
   }
 
   // Actualiza los textos del menú cuando llegan los datos de Inicio
@@ -74,5 +110,5 @@
     const t = $('dTad'); if(t) t.textContent = ini.tad_en ? 'Último TAD: ' + fecha(ini.tad_en) : 'Odoo, instalaciones y TAD';
   }
 
-  window.Armazon = { montar, datosMenu, cerrarCuenta: cerrarHoja, abrirCuenta: () => abrirHoja('hojaCuenta') };
+  window.Armazon = { montar, temprano, arrancar, datosMenu, cerrarCuenta: cerrarHoja, abrirCuenta: () => abrirHoja('hojaCuenta') };
 })();

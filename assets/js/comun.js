@@ -227,11 +227,11 @@
   }
 
   // Lo último que se vio de una pantalla, para pintarla al instante mientras llega lo nuevo.
-  // Vive solo mientras la pestaña esté abierta y se borra al salir.
+  // Queda en el dispositivo (también al reabrir la app) y se borra al salir o cuando entra otra persona.
   const cache = {
-    leer(k){ try { const v = sessionStorage.getItem('ae_c_' + k); return v ? JSON.parse(v) : null; } catch (e) { return null; } },
-    guardar(k, v){ try { sessionStorage.setItem('ae_c_' + k, JSON.stringify(v)); } catch (e) {} },
-    borrarTodo(){ try { Object.keys(sessionStorage).filter((k) => k.indexOf('ae_c_') === 0).forEach((k) => sessionStorage.removeItem(k)); } catch (e) {} }
+    leer(k){ try { const v = localStorage.getItem('ae_c_' + k); return v ? JSON.parse(v) : null; } catch (e) { return null; } },
+    guardar(k, v){ try { v === null ? localStorage.removeItem('ae_c_' + k) : localStorage.setItem('ae_c_' + k, JSON.stringify(v)); } catch (e) {} },
+    borrarTodo(){ [window.localStorage, window.sessionStorage].forEach((m) => { try { Object.keys(m).filter((k) => k.indexOf('ae_c_') === 0).forEach((k) => m.removeItem(k)); } catch (e) {} }); }
   };
 
   // Filas grises con la forma de lo que viene

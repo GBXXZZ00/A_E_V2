@@ -384,14 +384,14 @@
   window.Factibilidad = { _textoOdoo: textoOdoo, VER };
   (async function(){
     leerCompartido();   // se guarda antes de exigir la sesión: si hay que entrar, se retoma después
-    yo = await S.requerir(['admin', 'analista', 'lider']);
-    if(!yo) return;
-    window.Armazon.montar(yo, { activo: 'factibilidad' });
+    await window.Armazon.arrancar(['admin', 'analista', 'lider'], { activo: 'factibilidad' }, (p) => { yo = p; iniciar(); }, (p) => { yo = p; });
+  })();
+  function iniciar(){
     $('faSub').textContent = yo.rol === 'lider' ? 'Tus consultas. Se revisan solas con cada mapa nuevo.' : 'Las consultas de todos los líderes. Se revisan solas con cada mapa nuevo.';
     let f = 'abiertas'; try { f = new URL(location.href).searchParams.get('f') || 'abiertas'; } catch (e) {}
     filtro = ATAJOS.some((a) => a[0] === f) ? f : 'abiertas';
     montarHojas(); cargar(); pintarAyuda();
     const compartido = tomarCompartido();
     if(compartido){ formulario({ texto: compartido }); const a = $('faAyuda'); if(a) a.textContent = 'Llegó desde WhatsApp. Elige el tipo de cliente y toca Consultar.'; }
-  })();
+  }
 })();

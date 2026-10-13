@@ -104,9 +104,8 @@
     $('zonaModulos').innerHTML = '<div class="h2 primero">Módulos</div><div class="mods"><div class="sk" style="height:132px;border-radius:22px"></div><div class="sk" style="height:132px;border-radius:22px"></div></div>';
   }
 
-  async function arrancar(){
-    const p = await S.requerir();
-    if(!p) return;
+  function arrancar(){ window.Armazon.arrancar(null, { activo: 'inicio' }, iniciar); }
+  async function iniciar(p){
     const { equipo } = window.Armazon.montar(p, { activo: 'inicio' });
     $('saludo').textContent = 'Hola, ' + (primerNombre(p.nombre) || p.nombre);
     $('subSaludo').textContent = fechaDia(new Date().toISOString());

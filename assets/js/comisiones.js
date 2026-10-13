@@ -519,12 +519,10 @@
   $('busca').addEventListener('input', () => { clearTimeout(tBusca); tBusca = setTimeout(() => { busca = $('busca').value.trim(); guardarUrl(); if(d) pintarLista(); }, 140); });
   $('corte').addEventListener('change', () => { corte = $('corte').value; d = null; cargar(); });
 
-  (async function(){
-    yo = await S.requerir(['admin', 'abogado', 'lider', 'analista']);
-    if(!yo) return;
-    window.Armazon.montar(yo, { activo: 'comisiones' });
+  window.Armazon.arrancar(['admin', 'abogado', 'lider', 'analista'], { activo: 'comisiones' }, (p) => {
+    yo = p;
     window.Ficha.montar();
     leerUrl(); $('busca').value = busca; pintarFiltros();
     cargar();
-  })();
+  }, (p) => { yo = p; });
 })();

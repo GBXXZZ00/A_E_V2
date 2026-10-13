@@ -372,13 +372,11 @@
   zona.addEventListener('drop', (e) => { e.preventDefault(); const s = $('soltar'); if(s) s.classList.remove('sobre'); if(e.dataTransfer && e.dataTransfer.files) elegir(e.dataTransfer.files); });
   window.addEventListener('beforeunload', (e) => { if(ocupado){ e.preventDefault(); e.returnValue = ''; } });
 
-  (async function(){
-    yo = await S.requerir(['admin', 'analista']);
-    if(!yo) return;
-    window.Armazon.montar(yo, { activo: null, volver: { enlace: 'inicio.html', texto: 'Inicio' } });
+  window.Armazon.arrancar(['admin', 'analista'], { activo: null, volver: { enlace: 'inicio.html', texto: 'Inicio' } }, (p) => {
+    yo = p;
     pintar(); pintarCruce();
     if(window.MapaRed) window.MapaRed.montar(yo);
     $('cargas').innerHTML = esqueleto(2);
     cargas();
-  })();
+  }, (p) => { yo = p; });
 })();
