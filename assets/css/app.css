@@ -791,3 +791,16 @@ button.franja:active{transform:scale(.97)}
 @media (prefers-reduced-motion:reduce){
   @view-transition{navigation:none}
 }
+
+/* Comisiones (13/10): motivo, etiquetas informativas y bloque Proforma y carta */
+.fila small.motivo{color:var(--ambar);font-weight:600}
+.fila small.etqs{margin-top:4px}
+.tagn.ambar{background:var(--ambar-bg);color:var(--ambar)}
+.tagn.verde{background:var(--verde-bg);color:var(--verde)}
+.tagn.azul{background:var(--azul-bg);color:var(--azul)}
+.tagn.rojo{background:var(--rojo-bg);color:var(--rojo)}
+.acc-prof{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.acc-prof .mini{min-height:44px;padding:0 16px}
+.creadores{margin-top:32px;max-width:720px}
+.creadores .sub{margin-bottom:6px}
+.creadores .interr .sw{min-width:50px}

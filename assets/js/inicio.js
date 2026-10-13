@@ -13,8 +13,8 @@
   function pintarCorte(d){
     const c = d.corte; if(!c){ $('zonaCorte').innerHTML = ''; return; }
     const m = mes(c.etiqueta); const com = d.comision || {};
-    const titulo = c.dias <= 0 ? 'Hoy cierra el corte de ' + m : (c.dias === 1 ? 'día' : 'días') + ' para el corte de ' + m;
-    const detalle = 'Del ' + fecha(c.inicio) + ' al ' + fecha(c.fin) + '.' +
+    const titulo = c.dias <= 0 ? 'Hoy es el límite del corte de ' + m : (c.dias === 1 ? 'día' : 'días') + ' para el límite del corte de ' + m;
+    const detalle = 'Instalaciones del ' + fecha(c.inicio) + ' al ' + fecha(c.fin) + '. Legal y pago hasta el ' + fecha(c.limite || c.fin).split(' de ')[0] + '.' +
       (com.total ? ' ' + com.cumplen + ' de ' + plural(com.total, 'instalación', 'instalaciones') + ' ya ' + (com.cumplen === 1 ? 'cumple' : 'cumplen') + '.' : '');
     $('zonaCorte').innerHTML = '<a class="corte" href="comisiones.html" data-ir="corte">' +
       '<div class="dias">' + (c.dias <= 0 ? ic('reloj', 'g') : esc(c.dias)) + '</div>' +
@@ -48,7 +48,7 @@
     }
     if(com.ultimo > 0){
       r.push({ c: 'azul', i: 'reloj', t: plural(com.ultimo, 'instalación', 'instalaciones') + ' en su último corte',
-        s: 'Si no ' + (com.ultimo === 1 ? 'cumple' : 'cumplen') + ' el ' + (d.corte ? fecha(d.corte.fin).split(' de ')[0] : '20') + ', se pierde la comisión', e: 'comisiones.html?f=ultimo', k: 'ultimo' });
+        s: 'Si no ' + (com.ultimo === 1 ? 'cumple' : 'cumplen') + ' el ' + (d.corte ? fecha(d.corte.limite || d.corte.fin).split(' de ')[0] : '18') + ', se pierde la comisión', e: 'comisiones.html?f=ultimo', k: 'ultimo' });
     }
     if((lider || analista || admin) && c.sin_gestion > 0){
       r.push({ c: 'gris', i: 'alerta', t: plural(c.sin_gestion, 'cliente', 'clientes') + ' sin gestión',
@@ -79,7 +79,7 @@
     const c = d.clientes || {}; const com = d.comision || {};
     const activos = [
       { id: 'comisiones', nombre: 'Comisiones', icono: 'barras', enlace: 'comisiones.html',
-        texto: d.comision ? (com.total ? plural(com.total, 'instalación', 'instalaciones') + ' en este corte' : 'Sin instalaciones en este corte') : 'Legal, pago y corte del 21 al 20' },
+        texto: d.comision ? (com.total ? plural(com.total, 'instalación', 'instalaciones') + ' en este corte' : 'Sin instalaciones en este corte') : 'Legal, pago y corte del 18 al 17' },
       { id: 'clientes', nombre: 'Clientes', icono: 'edificio', enlace: 'clientes.html',
         texto: d.clientes ? (c.en_curso ? c.en_curso + ' con documentos en curso' : 'Sin expedientes en curso') : 'Expediente, documentos e hilo' }
     ];

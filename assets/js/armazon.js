@@ -84,6 +84,7 @@
     const o = opcionesPagina(); if(!o) return null;
     // Nunca en blanco: mientras corre el módulo, la lista muestra su esqueleto
     const l = $('lista'); if(l && !l.innerHTML.trim()) l.innerHTML = window.Comun.esqueleto(6);
+    const z = $('zonaCorte'); if(z && !z.innerHTML.trim()) z.innerHTML = '<div class="sk" style="height:92px;border-radius:22px;margin-top:18px"></div>';
     const p = S.perfilGuardado(roles); if(!p) return null;
     try { montar(p, o); } catch (e) { return null; }
     return p;

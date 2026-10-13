@@ -71,7 +71,10 @@
   async function salir(){
     perfilActual = null; guardarPerfil(null);
     if(window.Comun && window.Comun.cache) window.Comun.cache.borrarTodo();
-    try { await db.auth.signOut(); } catch (e) {}
+    // Se avisa al servidor, pero sin quedar esperando si tarda: la sesión del dispositivo se borra igual
+    const fuera = db ? db.auth.signOut().catch(() => {}) : Promise.resolve();
+    await Promise.race([fuera, new Promise((ok) => setTimeout(ok, 1500))]);
+    try { Object.keys(sessionStorage).filter((k) => /^sb-.+-auth-token$/.test(k)).forEach((k) => sessionStorage.removeItem(k)); } catch (e) {}
   }
   // Comprueba el PIN actual de quien ya entró (para el cambio voluntario)
   async function verificarPin(usuario, pin){

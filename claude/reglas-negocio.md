@@ -12,7 +12,7 @@ Sin nombres reales: el repo es público. "Analista Senior" es el responsable de 
 - Una PYME instalada como residencial es un error: queda como pendiente con aviso.
 
 ## Comisiones
-- Corte del 21 al 20, hora de Caracas. Requisitos: Legal y pago. Si no cumple pasa al corte siguiente; si tampoco cumple, se pierde y queda constancia. Los que vienen del corte anterior se marcan como prioritarios.
+- Corte del 21 al 20 hasta septiembre 2026; desde octubre 2026 del 18 al 17 con límite el 18 (ver Decidido 13/10). Hora de Caracas. Requisitos: Legal y pago. Si no cumple pasa al corte siguiente; si tampoco cumple, se pierde y queda constancia. Los que vienen del corte anterior se marcan como prioritarios.
 - El dueño de la comisión lo manda la orden de instalación: comisiona quien instala, aunque el cliente esté en cartera de otro. Si instaló un aliado, es del aliado aunque la orden la haya montado un líder.
 - La orden de Odoo es obligatoria, debe ser nueva (creada hasta 45 días antes de la instalación) y va siempre a la vista. Sin orden clara: "pendiente por asignar" hasta que el Analista Senior confirme o asigne.
 - Pago: lo dice el TAD (deuda por RIF). El Analista Senior puede marcarlo o quitarlo a mano y eso se respeta en la siguiente carga.
@@ -22,6 +22,17 @@ Sin nombres reales: el repo es público. "Analista Senior" es el responsable de 
 - Dedicados, conectividad, aliados y reemplazos no comisionan. Los eventos comisionan a veces: decide el Analista Senior.
 - Naturales: también salen en el corte y se pagan. Solo cédula y RIF personal; contacto opcional; sin contrato.
 - Canales comisiona con las mismas reglas de documentos.
+
+### Decidido 13/10 (Lote 1: comisiones)
+- Período desde el corte de octubre 2026: instalaciones del 18 del mes anterior al 17, hora de Caracas. El 18 es la fecha límite fija para Legal y pago (no se mueve por fin de semana). El 19 se puede certificar y el 20 el Analista Senior certifica y envía. Una instalación del 18, 19 o 20 es el primer corte del ciclo siguiente. Lo que no cumple al límite pasa al corte siguiente y, si tampoco, se pierde.
+- Transición: octubre del 21/09 al 17/10; noviembre del 18/10 al 17/11. Los cortes hasta septiembre conservan la regla del 21 al 20. La regla vive en la base con fecha de inicio (`privado.corte_reglas`), no fija en el código. La tarjeta de días cuenta hacia el límite; hasta el día límite inclusive el corte anterior sigue "en curso".
+- Evento a mano: mientras no haya nomenclatura, el Analista Senior marca o desmarca Evento en la hoja de comisión y decide si comisiona (bitácora y hilo). EVENTO en el título lo marca solo; la marca a mano no la pisa el cruce. Los eventos que no comisionan salen en el filtro "Eventos".
+- Órdenes creadas por otra persona: lista "Crean órdenes por otros" en Usuarios (por el nombre de Odoo, porque muchos líderes aún no tienen usuario). Toda orden de esa persona sin código de vendedor al final del título queda SIEMPRE por asignar, aunque el nombre coincida, con el motivo "Orden creada por otra persona, sin código". Con código, el dueño es el vendedor de ese código. Lo ya confirmado solo desde octubre volvió a por asignar (fueron 4); los cortes certificados no se tocan.
+- Cada fila por confirmar o por asignar dice su motivo en una frase (nombre parecido, sin orden, orden de otra persona, orden vieja, falta a quién pertenece).
+- IP a mano: se escribe desde la hoja de comisión y desde la hoja de envío; la escriben el administrador y los analistas (incluido el Analista Senior). Queda marcada como escrita a mano (`servicios.ip_mano`): una carga posterior vacía no la borra (hoy ninguna carga toca la IP).
+- Proforma y carta: bloque arriba en la hoja de comisión, con Descargar y Enviar, "Enviada por <nombre>, fecha" y "Falta IP". El PDF sale siempre con los datos del momento y se puede reenviar; cada envío queda anotado. En la fila solo la etiqueta "Bienvenida por enviar" o "Enviada dd/mm". Envían el administrador, los analistas (incluido el Senior) y el líder.
+- Excel del corte (para planta externa): agrega técnico o instalador y número de orden de Odoo. El formato definitivo llega con un histórico; las columnas están en una sola lista para reordenarlas.
+- Archivos por subir: marca aparte del estatus legal para clientes con Legal aprobado (documentos recibidos o más adelante) con casillas obligatorias sin archivo, según natural o jurídico. No toca estatus, comisión ni corte certificado. Etiqueta y filtro con contador en Comisiones; filtro en Clientes (reemplaza el atajo "Por instalar"). Lo que sube el administrador a un cliente ya aprobado entra aprobado y no cambia el estatus (salvo contratos, que siguen su flujo). La marca se quita sola al completar. El 13/10 eran 26 clientes del corte de septiembre.
 
 ## Nomenclatura de Odoo (arranca el lunes 12/10/2026)
 - Formato del texto que escribe el líder: `INST. [TIPO] NOMBRE J000000000` y, solo si la orden la crea otra persona por él, su código de vendedor en número al final. El MDT o nodo lo pone Odoo solo.

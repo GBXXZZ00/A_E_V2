@@ -124,7 +124,7 @@
   function subCorte(){
     const i = (F.comision || []).find((x) => x.estado === 'ultimo_corte') || (F.comision || []).find((x) => x.estado === 'en_curso');
     if(!i) return '';
-    return i.estado === 'ultimo_corte' ? 'Último corte: cierra el ' + fecha(F.corte.fin) : 'Corte de ' + mes(F.corte.etiqueta) + ': ' + (F.corte.dias <= 0 ? 'cierra hoy' : 'faltan ' + plural(F.corte.dias, 'día', 'días'));
+    return i.estado === 'ultimo_corte' ? 'Último corte: límite el ' + fecha(F.corte.limite || F.corte.fin) : 'Corte de ' + mes(F.corte.etiqueta) + ': ' + (F.corte.dias <= 0 ? 'el límite es hoy' : 'faltan ' + plural(F.corte.dias, 'día', 'días'));
   }
   function clienteContacto(){ const c = F.cliente; return { id: c.id, nombre: c.nombre, es_natural: c.es_natural, estatus: c.estatus, falta: F.faltantes, tel: c.tel, correo: c.correo }; }
   function pintarCab(){
@@ -179,6 +179,7 @@
         if(h.texto === 'asignada'){ t = quien + ' asignó la comisión a <b>' + esc(d.dueno || '') + '</b>' + (d.orden ? ', con la orden ' + esc(String(d.orden).split('/').pop()) : ', sin orden de Odoo'); }
         else if(h.texto === 'excepcion'){ tono = 'verde'; t = quien + ' dio una excepción de comisión'; glo = d.motivo ? '<div class="glo gris">' + esc(d.motivo) + '</div>' : ''; }
         else if(h.texto === 'excepcion_quitada') t = quien + ' quitó la excepción de comisión';
+        else if(h.texto === 'evento') t = quien + (d.evento ? ' marcó la instalación como evento: ' + (d.comisiona ? 'comisiona' : 'no comisiona') : ' quitó la marca de evento');
         else t = 'Se instaló el servicio';
         break;
       case 'correo': tono = 'azul'; t = '<b>Correo del cliente</b>'; glo = h.texto ? '<div class="glo gris">' + esc(h.texto) + '</div>' : ''; break;
@@ -495,8 +496,11 @@
     return [una(x.bienvenida_envio, 'Carta'), una(x.proforma_envio, 'Proforma')].filter(Boolean).join(' · ') || 'Proforma y carta sin enviar';
   }
   let env = null;   // { servicio, tipo }
+  let envF = null; let envFin = null;   // envío desde otra hoja (Comisiones), sin abrir el expediente
+  const EF = () => envF || F;
   const saludoHora = () => { const h = new Date().getHours(); return h < 12 ? 'Buenos días' : h < 19 ? 'Buenas tardes' : 'Buenas noches'; };
   function telefonosDe(sv){
+    const F = EF();
     const D = window.Documentos; const vistos = {}; const r = [];
     const pon = (t, de) => { const n = D.waNumero(t); if(n.length < 11 || vistos[n]) return; vistos[n] = 1; r.push({ n: String(t), t: D.telFmt(t) + ' · ' + de }); };
     (F.representantes || []).forEach((x) => pon(x.telefono, F.cliente.es_natural ? 'titular' : 'representante ' + x.orden));
@@ -505,6 +509,7 @@
     return r;
   }
   function abrirEnviar(servicioId){
+    const F = EF();
     const sv = (F.servicios || []).find((x) => String(x.id) === String(servicioId)); if(!sv || !F.puedo.enviar) return;
     const k = sv.carta || {}; const tels = telefonosDe(sv); const sinIp = !sv.ip && !sv.ip6;
     env = { servicio: sv.id, tipo: k.puede ? 'ambas' : 'proforma' };
@@ -533,6 +538,7 @@
     try { return window.matchMedia('(pointer: coarse)').matches && !!navigator.canShare && navigator.canShare({ files: [new File(['x'], 'x.pdf', { type: 'application/pdf' })] }); } catch (e) { return false; }
   }
   function archivosEnvio(tipo, telefono){
+    const F = EF();
     const sv = (F.servicios || []).find((x) => x.id === env.servicio); const D = window.Documentos; const x = D.datosDe(F, sv, telefono); const r = [];
     if(tipo !== 'bienvenida') r.push(new File([D.proforma(x)], D.nombreArchivo('proforma', x.nombre), { type: 'application/pdf' }));
     if(tipo !== 'proforma') r.push(new File([D.carta(x)], D.nombreArchivo('bienvenida', x.nombre), { type: 'application/pdf' }));
@@ -543,8 +549,9 @@
     const mio = id;
     try { await rpc('envio_registrar', { p_servicio: env.servicio, p_tipos: tiposDe(tipo), p_canal: canal, p_destino: destino || null }); toast(canal === 'manual' ? 'Marcado como enviado' : 'Quedó anotado en el hilo'); }
     catch (e) { toast(e.message, 'error'); return; }
+    const fin = envFin;
     if(hojaAbierta() === 'hojaEnviar') cerrarHoja();
-    if(mio === id) cargar();
+    if(fin) fin(); else if(mio === id) cargar();
   }
   function numeroEnvio(){
     const s = $('envNum'); const v = s && s.value ? s.value : $('envOtro').value.trim();
@@ -553,6 +560,7 @@
   }
   const copiar = (t) => { try { if(navigator.clipboard) navigator.clipboard.writeText(t).catch(() => {}); } catch (e) {} };
   async function enviarWhatsapp(){
+    const F = EF();
     $('eEnv').textContent = ''; const num = numeroEnvio(); if(!num) return;
     const D = window.Documentos; const tipo = env.tipo; let files;
     try { files = archivosEnvio(tipo, num); } catch (e) { toast('No se pudo armar el PDF. Intenta de nuevo', 'error'); return; }
@@ -571,6 +579,7 @@
     anotarEnvio(tipo, 'whatsapp', D.telFmt(num));
   }
   async function enviarCorreo(){
+    const F = EF();
     $('eEnv').textContent = ''; const c = F.cliente; const sv = (F.servicios || []).find((x) => x.id === env.servicio); const k = sv.carta || {};
     if(!c.correo){ $('eEnv').textContent = 'Este cliente no tiene correo guardado. Escríbelo en Documentos, en Contacto.'; return; }
     const tipo = k.puede ? 'ambas' : 'proforma'; const D = window.Documentos; let files;
@@ -610,8 +619,8 @@
     lista.forEach((i) => {
       const e = ET[i.estado] || ['', i.estado]; const legalOk = !!c.legal_ok_en;
       const corteTxt = i.estado === 'no_comisiona' ? 'Los dedicados no comisionan' : i.estado === 'cumple' ? 'Entra en el corte de ' + mes(i.corte_pago || i.corte)
-        : i.estado === 'perdida' ? 'No cumplió en ' + mes(i.corte) + ' ni en el corte siguiente' : i.estado === 'ultimo_corte' ? 'Era de ' + mes(i.corte) + '. Cierra el ' + fecha(F.corte.fin)
-        : 'Corte de ' + mes(i.corte) + ', cierra el ' + fecha(F.corte.fin).split(' de ')[0];
+        : i.estado === 'perdida' ? 'No cumplió en ' + mes(i.corte) + ' ni en el corte siguiente' : i.estado === 'ultimo_corte' ? 'Era de ' + mes(i.corte) + '. Límite el ' + fecha(F.corte.limite || F.corte.fin)
+        : 'Corte de ' + mes(i.corte) + ', límite el ' + fecha(F.corte.limite || F.corte.fin).split(' de ')[0];
       h += '<div class="secc">' + esc(i.sucursal + '-' + i.codigo) + '<span class="der">Instalado el ' + esc(fecha(i.instalada_en)) + '</span></div><div class="datos" data-instalacion="' + i.id + '">' +
         fila('Estado', '<span class="chip ' + e[0] + '">' + e[1] + '</span>') + fila('Corte', esc(capital(corteTxt))) +
         (i.comisiona ? fila('Legal', legalOk ? '<span class="chip verde">Cumple</span> ' + esc(fecha(c.legal_ok_en)) : chipEstatus(c.estatus)) +
@@ -1089,7 +1098,7 @@
     if((b = t.closest('[data-env-ver]')) && env){ verPdf(b.dataset.envVer); return; }
     if(t.closest('#envWa') && env){ enviarWhatsapp(); return; }
     if(t.closest('#envCorreo') && env){ enviarCorreo(); return; }
-    if(t.closest('#envIp') && env){ const sid = env.servicio; cerrarHoja(); fuera = null; abrirCampo('ip:' + sid); return; }
+    if(t.closest('#envIp') && env){ const sid = env.servicio; const fe = envF ? { cliente: envF.cliente.id, F: envF, alTerminar: envFin } : null; cerrarHoja(); fuera = fe; abrirCampo('ip:' + sid); return; }
     if((b = t.closest('#envManual')) && env){ if(b.dataset.armado !== '1'){ b.dataset.armado = '1'; b.textContent = '¿Seguro? Toca otra vez'; setTimeout(() => { if(document.contains(b)){ b.dataset.armado = ''; b.textContent = 'Ya se envió por fuera'; } }, 4000); return; }
       b.disabled = true; anotarEnvio(env.tipo, 'manual', null); return; }
     if(t.closest('#agregarActa')){ actaExtra = Math.min(4, actaExtra + 1); pintarDocumentos(); const cs = document.querySelectorAll('[data-grupo="empresa"] [data-casilla^="acta_asamblea"]'); if(cs.length) cs[cs.length - 1].scrollIntoView({ block: 'center' }); return; }
@@ -1195,7 +1204,7 @@
     $('hojaVarios').addEventListener('drop', (e) => { e.preventDefault(); if(e.dataTransfer && e.dataTransfer.files) agregarLote(Array.prototype.slice.call(e.dataTransfer.files)); });
     $('hojaVarios').addEventListener('hoja-cerrada', () => { if(!ocupado){ soltarMinis(); lote = []; } });
     $('hojaVer').addEventListener('hoja-cerrada', () => { ver = null; soltarBlobs(); });
-    $('hojaEnviar').addEventListener('hoja-cerrada', () => { env = null; });
+    $('hojaEnviar').addEventListener('hoja-cerrada', () => { env = null; envF = null; envFin = null; });
     $('hojaEnviar').addEventListener('change', (e) => { if(e.target.id === 'envNum'){ $('envOtroZ').classList.toggle('hidden', !!e.target.value); $('eEnv').textContent = ''; if(!e.target.value) $('envOtro').focus(); } });
     const zona = $('tab-documentos');
     zona.addEventListener('dragover', (e) => { e.preventDefault(); limpiarSobre(); const c = e.target.closest('[data-suelta]'); (c || zona).classList.add('sobre'); });
@@ -1226,6 +1235,8 @@
     fuera = { cliente: ficha.cliente.id, F: ficha, alTerminar }; destino = { casilla: cas, numero: num };
     const inp = $('archivo'); inp.value = ''; inp.click();
   }
+  // Proforma y carta desde otra hoja: siempre con los datos del momento (la ficha recién leída)
+  function enviarDesde(ficha, servicioId, alTerminar){ montar(); envF = ficha; envFin = alTerminar || null; abrirEnviar(servicioId); }
   function editarCampo(ficha, clave, alTerminar){ montar(); fuera = { cliente: ficha.cliente.id, F: ficha, alTerminar }; abrirCampo(clave); }
-  window.Ficha = { subirA, editarCampo, lineaHilo, abrir, montar, abierta: () => id, alContactarFuera: (f) => { externo = f; }, recargar: () => { if(id) cargar(); } };
+  window.Ficha = { subirA, editarCampo, enviarDesde, lineaHilo, abrir, montar, abierta: () => id, alContactarFuera: (f) => { externo = f; }, recargar: () => { if(id) cargar(); } };
 })();

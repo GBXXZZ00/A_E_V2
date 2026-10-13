@@ -1,7 +1,7 @@
 // Usuarios (solo administrador): crear, editar, restablecer PIN y activar o desactivar.
 (function(){
   'use strict';
-  const { $, esc, toast, mensajeError, iniciales, normalizeStr, abrirHoja, cerrarHoja, cache, esqueleto } = window.Comun;
+  const { $, esc, toast, mensajeError, iniciales, normalizeStr, abrirHoja, cerrarHoja, cache, esqueleto, rpc } = window.Comun;
   const S = window.Sesion;
   const db = window.db;
   const EQ = { ventas: 'Ventas corporativas', aliados: 'Aliados comerciales', ambos: 'Los dos' };
@@ -200,5 +200,32 @@
   $('alternar').addEventListener('click', alternar);
   $('hojaUsuario').addEventListener('hoja-cerrada', () => { editando = null; desarmar(); });
 
-  window.Armazon.arrancar(['admin'], { activo: null, volver: { enlace: 'inicio.html', texto: 'Inicio' } }, (p) => { yo = p; cargar(); }, (p) => { yo = p; });
+  // ---------- Quienes crean órdenes por otros (por su nombre en Odoo) ----------
+  let creadores = null;
+  async function cargarCreadores(){
+    const z = $('listaCreadores');
+    if(!creadores){ const g = cache.leer('creadores'); if(g){ creadores = g; pintarCreadores(); } else z.innerHTML = '<div class="lista">' + esqueleto(3) + '</div>'; }
+    try { creadores = await rpc('creadores_odoo'); cache.guardar('creadores', creadores); pintarCreadores(); }
+    catch (e) { if(!creadores) z.innerHTML = '<div class="vacio"><b>No se pudo cargar</b><p>' + esc(e.message) + '</p><button type="button" class="btn btn-chico" id="reintentarCreadores">Reintentar</button></div>'; toast(e.message, 'error'); }
+  }
+  function pintarCreadores(){
+    const z = $('listaCreadores');
+    if(!creadores.length){ z.innerHTML = '<div class="vacio"><b>Sin órdenes recientes</b><p>Cuando cargues Odoo en Actualizar, aquí salen quienes crean las órdenes.</p></div>'; return; }
+    z.innerHTML = '<div class="lista">' + creadores.map((c) => '<div class="interr"><span class="tx">' + esc(c.nombre) + '<small>' + (c.ordenes ? c.ordenes + (c.ordenes === 1 ? ' orden' : ' órdenes') + ' en 120 días' : 'Sin órdenes recientes') + '</small></span>' +
+      '<button type="button" class="sw" role="switch" aria-checked="' + !!c.marcado + '" data-creador="' + esc(c.nombre) + '" aria-label="' + esc(c.nombre) + ' crea órdenes por otros"></button></div>').join('') + '</div>';
+  }
+  document.addEventListener('click', async (e) => {
+    if(e.target.closest('#reintentarCreadores')){ cargarCreadores(); return; }
+    const b = e.target.closest('[data-creador]'); if(!b || b.disabled) return;
+    const valor = b.getAttribute('aria-checked') !== 'true'; b.disabled = true;
+    try {
+      await rpc('creador_por_otros', { p_nombre: b.dataset.creador, p_valor: valor });
+      const c = creadores.find((x) => x.nombre === b.dataset.creador); if(c) c.marcado = valor;
+      b.setAttribute('aria-checked', String(valor)); cache.guardar('creadores', creadores);
+      toast(valor ? 'Marcado. Sus órdenes sin código quedan por asignar' : 'Quitado. Sus órdenes vuelven a asignarse solas');
+    } catch (err) { toast(err.message, 'error'); }
+    b.disabled = false;
+  });
+
+  window.Armazon.arrancar(['admin'], { activo: null, volver: { enlace: 'inicio.html', texto: 'Inicio' } }, (p) => { yo = p; cargar(); cargarCreadores(); }, (p) => { yo = p; });
 })();

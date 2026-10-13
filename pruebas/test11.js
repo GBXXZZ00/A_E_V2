@@ -33,7 +33,7 @@ const cerrarTodo = async (p) => { for(let i = 0; i < 4; i++){ if(await p.evaluat
     await p.waitForTimeout(300); await p.screenshot({ path: 'capturas/11-' + nombre + '-grupo.png' });
     await p.click('[data-pend="Lucía Ferrer"]'); await p.waitForSelector('#hojaPend.ver #pendMsj');
     let msj = await p.inputValue('#pendMsj');
-    ok(nombre + ': saluda al líder y dice el corte y los días', /^(Buenos días|Buenas tardes|Buenas noches), Lucía\. Te paso tus pendientes del corte de [a-z]+\. Cierra (el 20 y falta|hoy)/.test(msj), msj.slice(0, 120));
+    ok(nombre + ': saluda al líder y dice el corte y los días', /^(Buenos días|Buenas tardes|Buenas noches), Lucía\. Te paso tus pendientes del corte de [a-z]+\. (El límite para Legal y pago es el \d+ y falta|Hoy, el \d+, es el límite)/.test(msj), msj.slice(0, 120));
     ok(nombre + ': numera los clientes y dice qué falta', /\n1\. [^\n]+\(\d+\): /.test(msj) && /falta |debe la instalación|pendiente por asignar/.test(msj), msj);
     ok(nombre + ': cierra con Ya cumplen y la despedida aprobada', /Ya cumplen: \d+ de \d+\./.test(msj) && msj.endsWith('Cualquier documento me lo envías por aquí o lo subes en la app. Gracias.'));
     ok(nombre + ': sin enlaces ni guion largo', !/https?:|www\./.test(msj) && !msj.includes('—'));

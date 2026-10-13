@@ -4,19 +4,27 @@ const LUCIA = '22222222-2222-4222-8222-222222222222';
 const DIA = 86400000;
 const hace = (dias, horas) => new Date(Date.now() - dias * DIA - (horas || 0) * 3600000).toISOString();
 
-// ----- Corte: del 21 al 20, hora de Caracas -----
+// ----- Corte con regla por vigencia (igual que privado.corte_reglas), hora de Caracas -----
+// Hasta septiembre 2026: del 21 al 20. Desde octubre 2026: del 18 al 17, límite el 18 y se certifica desde el 19.
+const REGLAS = [['2000-01-01', 21, 20, 20], ['2026-10-01', 18, 18, 19]];
 const caracas = (iso) => new Date(new Date(iso).getTime() - 4 * 3600000);
 const fechaClave = (d) => d.getUTCFullYear() + '-' + String(d.getUTCMonth() + 1).padStart(2, '0') + '-' + String(d.getUTCDate()).padStart(2, '0');
-const hoy = () => fechaClave(caracas(new Date().toISOString()));
-function corteDe(clave){ // AAAA-MM-DD -> AAAA-MM-01 del corte
-  let a = Number(clave.slice(0, 4)), m = Number(clave.slice(5, 7)); const d = Number(clave.slice(8, 10));
-  if(d >= 21){ m++; if(m > 12){ m = 1; a++; } }
-  return a + '-' + String(m).padStart(2, '0') + '-01';
-}
+let hoyFijo = null;   // las pruebas de bordes fijan el día
+const hoy = () => hoyFijo || fechaClave(caracas(new Date().toISOString()));
+const regla = (c) => REGLAS.filter((r) => r[0] <= c.slice(0, 8) + '01').slice(-1)[0];
 function masMeses(corte, n){ const d = new Date(Date.UTC(Number(corte.slice(0, 4)), Number(corte.slice(5, 7)) - 1 + n, 1)); return fechaClave(d); }
-const corteInicio = (c) => { const p = masMeses(c, -1); return p.slice(0, 8) + '21'; };
-const corteFin = (c) => c.slice(0, 8) + '20';
-const cierre = (c) => new Date(Date.UTC(Number(c.slice(0, 4)), Number(c.slice(5, 7)) - 1, 21, 4)).getTime(); // 21 a las 00:00 de Caracas
+const conDia = (c, d) => c.slice(0, 8) + String(d).padStart(2, '0');
+function corteDe(clave){ // AAAA-MM-DD -> AAAA-MM-01 del corte
+  const c0 = clave.slice(0, 8) + '01';
+  return Number(clave.slice(8, 10)) >= regla(c0)[1] ? masMeses(c0, 1) : c0;
+}
+const corteInicio = (c) => { const p = masMeses(c, -1); return conDia(p, regla(p)[1]); };
+const corteFin = (c) => conDia(c, regla(c)[1] - 1);
+const corteLimite = (c) => conDia(c, regla(c)[2]);
+const corteCertifica = (c) => conDia(c, regla(c)[3]);
+const enCurso = () => { const c = corteDe(hoy()); const p = masMeses(c, -1); return hoy() <= corteLimite(p) ? p : c; };
+const cierre = (c) => new Date(Date.UTC(Number(c.slice(0, 4)), Number(c.slice(5, 7)) - 1, regla(c)[1], 4)).getTime(); // inicio del período siguiente, 00:00 de Caracas
+const limiteTs = (c) => new Date(Date.UTC(Number(c.slice(0, 4)), Number(c.slice(5, 7)) - 1, regla(c)[2] + 1, 4)).getTime(); // fin del día límite
 const dias = (a, b) => Math.round((Date.UTC(+b.slice(0, 4), +b.slice(5, 7) - 1, +b.slice(8, 10)) - Date.UTC(+a.slice(0, 4), +a.slice(5, 7) - 1, +a.slice(8, 10))) / DIA);
 
 const LEGAL_OK = ['documentos_recibidos', 'contrato_en_curso', 'por_firmar', 'contrato_firmado'];
@@ -42,7 +50,7 @@ const linea = (tipo, texto, detalle, autor, en) => ({ id: ++sec, tipo, texto: te
 function baseDatos(){
   sec = 1000;
   // Días desde el inicio del corte actual, para poner instalaciones dentro y antes de él
-  const actual = corteDe(hoy()); const dentro = Math.max(1, Math.min(8, dias(corteInicio(actual), hoy())));
+  const actual = enCurso(); const dentro = Math.max(1, Math.min(8, dias(corteInicio(actual), hoy())));
   const antes = dias(corteInicio(actual), hoy()) + 6;
   const cs = [];
   // 1. En revisión, con escaneo que trae dos documentos. De la líder Lucía.
@@ -152,6 +160,11 @@ const error = (mensaje) => ({ __error: { code: 'P0001', message: mensaje } });
 const esSenior = (yo) => yo.rol === 'admin' || (yo.rol === 'analista' && !!yo.senior);
 const duenoDe = (c, i) => (i.dueno !== undefined ? i.dueno : c.lider);
 const ordenOk = (c, i) => !!(i.confirmada && (i.orden || i.cruce === 'manual') && duenoDe(c, i));
+// B4: motivo en una frase; B8: aprobado por Legal con casillas obligatorias sin archivo
+const motivoDe = (c, i) => (ordenOk(c, i) ? null : i.de_otro ? 'Orden creada por otra persona, sin código' : i.cruce === 'nombre_parecido' ? 'Nombre parecido: confirma que la orden es de este cliente'
+  : !i.orden && i.orden_vieja ? 'Orden vieja: se creó más de 45 días antes de instalar' : !i.orden ? 'Sin orden de Odoo reciente' : !duenoDe(c, i) ? 'Falta a quién pertenece' : 'Por confirmar');
+const porSubir = (c) => LEGAL_OK.includes(c.estatus) && requeridos(c).some((q) => { const d = busca(c, q.casilla, q.numero); return !d || !(d.archivos || []).length; });
+const comisionaEvento = (i) => !i.es_evento || !!i.evento_comisiona;
 const DUENOS = ['Lucía Ferrer', 'Rosa Paredes', 'Tomás Guerra'];
 // Dueño de un servicio para la carta: el de su instalación; si no hay, el líder de la cartera
 function cartaDe(m, c, sv){
@@ -161,7 +174,7 @@ function cartaDe(m, c, sv){
 }
 const ultimoEnvio = (sv, tipo) => (sv.envios || []).filter((e) => e.tipo === tipo).slice(-1)[0] || null;
 function bienvenidasFilas(m, yo){
-  const ini = cierre(masMeses(corteDe(hoy()), -1)); const r = [];
+  const ini = cierre(masMeses(enCurso(), -1)); const r = [];
   visibles(m, yo).forEach((c) => c.instalaciones.forEach((i) => {
     if(new Date(i.instalada_en).getTime() < ini) return;
     const sv = c.servicios.find((x) => x.codigo === i.codigo && x.sucursal === i.sucursal); if(!sv) return;
@@ -174,24 +187,27 @@ function bienvenidasFilas(m, yo){
 function instPorId(m, id){ for(const c of m.datos.clientes){ const i = c.instalaciones.find((x) => x.id === Number(id)); if(i) return { c, i }; } return null; }
 function filasComision(m, yo, corte){
   const cert = (m.certificados || {})[corte]; if(cert) return cert.filas.filter((f) => yo.rol !== 'lider' || f.lider_id === yo.id);
-  const iniAnt = cierre(masMeses(corte, -2)), ini = cierre(masMeses(corte, -1)), fin = cierre(corte); const r = [];
+  const iniAnt = cierre(masMeses(corte, -2)), ini = cierre(masMeses(corte, -1)), fin = cierre(corte); const lAnt = limiteTs(masMeses(corte, -1)), lim = limiteTs(corte); const r = [];
   visibles(m, yo).forEach((c) => c.instalaciones.forEach((i) => {
-    const t = new Date(i.instalada_en).getTime(); if(t < iniAnt || t >= fin || !comisionable(i)) return;
+    const t = new Date(i.instalada_en).getTime(); if(t < iniAnt || t >= fin || !comisionable(i) || !comisionaEvento(i)) return;
     const leg = c.legal_ok_en ? new Date(c.legal_ok_en).getTime() : null; const pag = i.pago_ok_en ? new Date(i.pago_ok_en).getTime() : null;
     const ook = ordenOk(c, i); const exc = !!(i.excepcion_corte && i.excepcion_corte <= corte); const excAntes = !!(i.excepcion_corte && i.excepcion_corte < corte);
-    if(t < ini && ook && ((leg !== null && pag !== null && leg < ini && pag < ini) || excAntes)) return;
+    if(t < ini && ook && ((leg !== null && pag !== null && leg < lAnt && pag < lAnt) || excAntes)) return;
     const dueno = duenoDe(c, i);
     r.push({ instalacion_id: i.id, cliente_id: c.id, nombre: c.nombre, doc: c.doc_tipo + '-' + c.doc_numero, instalada_en: i.instalada_en, lider_id: dueno === c.lider ? c.lider_id : null, lider: dueno || 'Por asignar',
-      origen: t >= ini ? 'corte' : 'anterior', legal_ok: leg !== null && leg < fin, pago_ok: pag !== null && pag < fin, cumple: ook && ((leg !== null && pag !== null && leg < fin && pag < fin) || exc),
+      origen: t >= ini ? 'corte' : 'anterior', legal_ok: leg !== null && leg < lim, pago_ok: pag !== null && pag < lim, cumple: ook && ((leg !== null && pag !== null && leg < lim && pag < lim) || exc),
       estatus: c.estatus, codigo: i.codigo, sucursal: i.sucursal, revisar_pago: pag === null && c.servicios.length > 1,
       orden_ok: ook, orden: i.orden ? i.orden.numero : null, orden_id: i.orden ? i.orden.id : null, orden_titulo: i.orden ? i.orden.titulo : null, orden_creador: i.orden ? i.orden.creador : null, cruce: i.cruce,
-      es_natural: c.es_natural, instalador: i.instalador, excepcion: exc, excepcion_motivo: i.excepcion_motivo, dueno_manual: !!i.manual });
+      es_natural: c.es_natural, instalador: i.instalador, excepcion: exc, excepcion_motivo: i.excepcion_motivo, dueno_manual: !!i.manual,
+      motivo: motivoDe(c, i), por_subir: porSubir(c), es_evento: !!i.es_evento, servicio_id: (c.servicios.find((sv) => sv.codigo === i.codigo) || {}).id || null,
+      bienvenida_en: ((ultimoEnvio(c.servicios.find((sv) => sv.codigo === i.codigo) || {}, 'bienvenida')) || {}).en || null,
+      sin_ip: !!c.servicios.find((sv) => sv.codigo === i.codigo && !sv.ip && !sv.ip6) });
   }));
   return r.sort((a, b) => a.lider.localeCompare(b.lider) || a.origen.localeCompare(b.origen) || a.instalada_en.localeCompare(b.instalada_en));
 }
 const sinGestion = (c) => ['grandes_negocios', 'documentos_solicitados', 'documentos_pendientes'].includes(c.estatus) && !porInstalar(c) && new Date(c.ug_en || c.creado_en).getTime() < Date.now() - 3 * DIA;
 function ultimoCorte(c){
-  const actual = corteDe(hoy()); const iniAnt = cierre(masMeses(actual, -2)), ini = cierre(masMeses(actual, -1));
+  const actual = enCurso(); const iniAnt = cierre(masMeses(actual, -2)), ini = cierre(masMeses(actual, -1));
   return c.instalaciones.some((i) => { const t = new Date(i.instalada_en).getTime(); return comisionable(i) && t >= iniAnt && t < ini && (!c.legal_ok_en || !i.pago_ok_en); });
 }
 
@@ -231,9 +247,9 @@ function avanzarIA(m, c){
 const RPC = {
   inicio_datos(m, yo){
     if(yo.rol === 'aliado') return { rol: yo.rol, hoy: hoy() };
-    const actual = corteDe(hoy()); const f = filasComision(m, yo, actual); const v = visibles(m, yo);
+    const actual = enCurso(); const f = filasComision(m, yo, actual); const v = visibles(m, yo);
     const rev = v.filter((c) => c.estatus === 'documentos_en_revision');
-    return { rol: yo.rol, hoy: hoy(), corte: { etiqueta: actual, inicio: corteInicio(actual), fin: corteFin(actual), dias: dias(hoy(), corteFin(actual)), avance: Math.round(100 * (dias(corteInicio(actual), hoy()) + 1) / (dias(corteInicio(actual), corteFin(actual)) + 1)) },
+    return { rol: yo.rol, hoy: hoy(), corte: { etiqueta: actual, inicio: corteInicio(actual), fin: corteFin(actual), limite: corteLimite(actual), dias: dias(hoy(), corteLimite(actual)), avance: Math.min(100, Math.round(100 * (dias(corteInicio(actual), hoy()) + 1) / (dias(corteInicio(actual), corteLimite(actual)) + 1))) },
       senior: esSenior(yo), bienvenidas: ['admin', 'analista', 'lider'].includes(yo.rol) ? bienvenidasFilas(m, yo).length : null,
       comision: { total: f.length, cumplen: f.filter((x) => x.cumple).length, ultimo: f.filter((x) => x.origen === 'anterior' && !x.cumple && x.orden_ok).length, por_asignar: f.filter((x) => !x.orden_ok).length },
       clientes: { en_curso: v.filter((c) => c.estatus !== 'contrato_firmado' && !porInstalar(c)).length, por_revisar: rev.length,
@@ -258,42 +274,42 @@ const RPC = {
     if(yo.rol === 'aliado') return error('No tienes permiso para hacer esto');
     const v = visibles(m, yo); const b = norm(a.p_busca); let bd = String(a.p_busca || '').replace(/\D/g, ''); if(bd.length < 4) bd = '';
     const filtros = { en_curso: (c) => c.estatus !== 'contrato_firmado' && !porInstalar(c), por_revisar: (c) => c.estatus === 'documentos_en_revision', por_instalar: porInstalar, sin_gestion: sinGestion,
-      devueltos: (c) => c.documentos.some((d) => d.estado === 'devuelto'), ultimo_corte: ultimoCorte, por_firmar: (c) => ['contrato_en_curso', 'por_firmar'].includes(c.estatus), firmados: (c) => c.estatus === 'contrato_firmado', todos: () => true };
+      devueltos: (c) => c.documentos.some((d) => d.estado === 'devuelto'), ultimo_corte: ultimoCorte, por_firmar: (c) => ['contrato_en_curso', 'por_firmar'].includes(c.estatus), firmados: (c) => c.estatus === 'contrato_firmado', por_subir: porSubir, todos: () => true };
     const sel = (b || bd) ? v.filter((c) => (b && norm(c.nombre).includes(b)) || (bd && (c.doc_numero.includes(bd) || c.servicios.some((s) => (s.sucursal + s.codigo).includes(bd) || String(s.telefono || '').replace(/\D/g, '').includes(bd)))))
       : v.filter(filtros[a.p_filtro] || filtros.todos);
     sel.sort((x, y) => (ultimoCorte(y) - ultimoCorte(x)) || y.estatus_desde.localeCompare(x.estatus_desde) || y.id - x.id);
     const lim = Math.min(Math.max(a.p_limite || 20, 1), 60), des = Math.max(a.p_desde || 0, 0);
     const cuenta = (k) => v.filter(filtros[k]).length;
-    return { conteos: { en_curso: cuenta('en_curso'), por_revisar: cuenta('por_revisar'), por_instalar: cuenta('por_instalar'), sin_gestion: cuenta('sin_gestion'), por_firmar: cuenta('por_firmar'), firmados: cuenta('firmados'), todos: v.length },
+    return { conteos: { en_curso: cuenta('en_curso'), por_revisar: cuenta('por_revisar'), por_instalar: cuenta('por_instalar'), sin_gestion: cuenta('sin_gestion'), por_firmar: cuenta('por_firmar'), firmados: cuenta('firmados'), por_subir: cuenta('por_subir'), todos: v.length },
       total: sel.length, desde: des, rol: yo.rol, hoy: hoy(),
       filas: sel.slice(des, des + lim).map((c) => { const s = c.servicios[0]; const rp = c.representantes.find((x) => x.orden === 1) || {};
         return { id: c.id, nombre: c.nombre, doc_tipo: c.doc_tipo, doc_numero: c.doc_numero, es_natural: c.es_natural, seg: segmento(c), estatus: c.estatus, estatus_desde: c.estatus_desde, lider: c.lider,
           ug_en: c.ug_en, ug_por: c.ug_por, creado_en: c.creado_en, es_top: c.es_top, ultimo_corte: ultimoCorte(c), por_instalar: porInstalar(c), n_serv: c.servicios.length,
           serv: s ? { codigo: s.codigo, sucursal: s.sucursal, plan: s.plan, categoria: s.categoria, estado: s.estado, telefono: s.telefono } : null,
-          tel: rp.telefono || c.telefono || (s && s.telefono) || null, correo: rp.correo || c.correo_empresa || null, falta: faltantes(c), por_revisar: c.documentos.filter((d) => d.estado === 'por_revisar').length }; }) };
+          tel: rp.telefono || c.telefono || (s && s.telefono) || null, correo: rp.correo || c.correo_empresa || null, falta: faltantes(c), por_revisar: c.documentos.filter((d) => d.estado === 'por_revisar').length, por_subir: porSubir(c) }; }) };
   },
   cliente_ficha(m, yo, a){
     const c = visibles(m, yo).find((x) => x.id === Number(a.p_cliente)); if(!c) return error('No tienes acceso a este cliente');
-    const actual = corteDe(hoy()); const rp = c.representantes.find((x) => x.orden === 1) || {}; const s0 = c.servicios[0];
+    const actual = enCurso(); const rp = c.representantes.find((x) => x.orden === 1) || {}; const s0 = c.servicios[0];
     const r = yo.rol;
-    return { rol: r, hoy: hoy(), yo: { id: yo.id, nombre: yo.nombre }, corte: { etiqueta: actual, fin: corteFin(actual), dias: dias(hoy(), corteFin(actual)) },
+    return { rol: r, hoy: hoy(), yo: { id: yo.id, nombre: yo.nombre }, corte: { etiqueta: actual, fin: corteFin(actual), limite: corteLimite(actual), dias: dias(hoy(), corteLimite(actual)) },
       cliente: { id: c.id, nombre: c.nombre, doc_tipo: c.doc_tipo, doc_numero: c.doc_numero, es_natural: c.es_natural, seg: segmento(c), estatus: c.estatus, estatus_desde: c.estatus_desde, legal_ok_en: c.legal_ok_en,
         lider: c.lider, es_top: c.es_top, regimen_firma: c.regimen_firma, es_isp: c.es_isp, correo_empresa: c.correo_empresa, telefono: c.telefono, direccion: c.direccion,
         proforma_en: c.proforma_en, proforma_por: c.proforma_por, bienvenida_en: c.bienvenida_en, bienvenida_por: c.bienvenida_por, ug_en: c.ug_en, ug_por: c.ug_por, creado_en: c.creado_en, es_demo: c.es_demo,
-        tel: rp.telefono || c.telefono || (s0 && s0.telefono) || null, correo: rp.correo || c.correo_empresa || null, por_instalar: porInstalar(c) },
+        tel: rp.telefono || c.telefono || (s0 && s0.telefono) || null, correo: rp.correo || c.correo_empresa || null, por_instalar: porInstalar(c), por_subir: porSubir(c) },
       orden: c.orden, servicios: c.servicios.map((sv) => Object.assign({}, sv, { envios: undefined, carta: cartaDe(m, c, sv), proforma_envio: ultimoEnvio(sv, 'proforma'), bienvenida_envio: ultimoEnvio(sv, 'bienvenida') })), representantes: c.representantes,
       documentos: c.documentos.slice().sort((x, y) => x.casilla.localeCompare(y.casilla) || x.numero - y.numero), requeridos: requeridos(c), faltantes: faltantes(c),
       hilo: c.hilo.slice().sort((x, y) => y.en.localeCompare(x.en) || y.id - x.id).map((h) => Object.assign({ mio: h.autor === yo.nombre }, h)), hilo_total: c.hilo.length,
       comision: c.instalaciones.map((i) => { const cp = corteDe(fechaClave(caracas(i.instalada_en))); const com = comisionable(i);
         const ok = c.legal_ok_en && i.pago_ok_en ? Math.max(new Date(c.legal_ok_en).getTime(), new Date(i.pago_ok_en).getTime()) : null;
-        const ook = ordenOk(c, i);
-        const estado = !com ? 'no_comisiona' : !ook ? 'por_asignar' : i.excepcion_corte ? 'cumple' : ok !== null && ok < cierre(masMeses(cp, 1)) ? 'cumple' : Date.now() < cierre(cp) ? 'en_curso' : Date.now() < cierre(masMeses(cp, 1)) ? 'ultimo_corte' : 'perdida';
-        return { id: i.id, codigo: i.codigo, sucursal: i.sucursal, categoria: i.categoria, instalada_en: i.instalada_en, pago_ok_en: i.pago_ok_en, pago_manual: i.pago_manual, corte: cp, comisiona: com, estado,
+        const ook = ordenOk(c, i); const comE = com && comisionaEvento(i);
+        const estado = !comE ? 'no_comisiona' : !ook ? 'por_asignar' : i.excepcion_corte ? 'cumple' : ok !== null && ok < limiteTs(masMeses(cp, 1)) ? 'cumple' : Date.now() < limiteTs(cp) ? 'en_curso' : Date.now() < limiteTs(masMeses(cp, 1)) ? 'ultimo_corte' : 'perdida';
+        return { id: i.id, codigo: i.codigo, sucursal: i.sucursal, categoria: i.categoria, instalada_en: i.instalada_en, pago_ok_en: i.pago_ok_en, pago_manual: i.pago_manual, corte: cp, comisiona: comE, estado, es_evento: !!i.es_evento, evento_comisiona: i.es_evento ? !!i.evento_comisiona : null, evento_manual: !!i.evento_manual, motivo: motivoDe(c, i),
           servicio_id: (c.servicios.find((sv) => sv.codigo === i.codigo) || {}).id || null, es_aliado: i.es_aliado, instalador: i.instalador, orden: i.orden ? i.orden.numero : null, orden_ok: ook, dueno: duenoDe(c, i),
           dueno_whatsapp: m.personas.filter((p) => p.nombre === duenoDe(c, i)).map((p) => p.whatsapp)[0] || null, dueno_correo: m.personas.filter((p) => p.nombre === duenoDe(c, i)).map((p) => p.correo)[0] || null,
           excepcion_corte: i.excepcion_corte, excepcion_motivo: i.excepcion_motivo, excepcion_por: i.excepcion_por,
-          corte_pago: i.excepcion_corte ? i.excepcion_corte : ok === null ? null : ok < cierre(cp) ? cp : masMeses(cp, 1) }; }),
-      puedo: { revisar: ['admin', 'abogado'].includes(r), estatus: ['admin', 'abogado'].includes(r), contrato: ['admin', 'abogado'].includes(r), regimen: ['admin', 'abogado'].includes(r), top: r === 'admin', gestion: ['admin', 'analista'].includes(r), pago: esSenior(yo), asignar: esSenior(yo), excepcion: r === 'admin', ip: ['admin', 'analista'].includes(r), enviar: ['admin', 'analista', 'lider'].includes(r) } };
+          corte_pago: i.excepcion_corte ? i.excepcion_corte : ok === null ? null : ok < limiteTs(cp) ? cp : masMeses(cp, 1) }; }),
+      puedo: { revisar: ['admin', 'abogado'].includes(r), estatus: ['admin', 'abogado'].includes(r), contrato: ['admin', 'abogado'].includes(r), regimen: ['admin', 'abogado'].includes(r), top: r === 'admin', gestion: ['admin', 'analista'].includes(r), pago: esSenior(yo), asignar: esSenior(yo), evento: esSenior(yo), excepcion: r === 'admin', ip: ['admin', 'analista'].includes(r), enviar: ['admin', 'analista', 'lider'].includes(r) } };
   },
   cliente_nota(m, yo, a){
     const c = visibles(m, yo).find((x) => x.id === Number(a.p_cliente)); if(!c) return error('No tienes acceso a este cliente');
@@ -388,7 +404,7 @@ const RPC = {
   corte_certificar(m, yo, a){
     if(!esSenior(yo)) return error('Esto lo hace el Analista Senior o el administrador');
     const c = String(a.p_corte).slice(0, 8) + '01'; m.certificados = m.certificados || {};
-    if(hoy() < corteFin(c)) return error('Este corte se certifica desde el día 20');
+    if(hoy() < corteCertifica(c)) return error('Este corte se certifica desde el ' + corteCertifica(c).slice(8, 10) + '/' + corteCertifica(c).slice(5, 7));
     if(m.certificados[c]) return error('Ese corte ya está certificado');
     const admin = m.personas.find((p) => p.rol === 'admin'); const filas = filasComision(m, admin, c);
     m.certificados[c] = { en: hace(0), por: yo.nombre, total: filas.length, cumplen: filas.filter((f) => f.cumple).length, filas };
@@ -414,7 +430,8 @@ const RPC = {
   documentos_registrar(m, yo, a){
     const c = visibles(m, yo).find((x) => x.id === Number(a.p_cliente)); if(!c) return error('No tienes acceso a este cliente');
     const items = a.p_items || []; if(!items.length) return error('No llegó ningún archivo');
-    let n = 0; const etiquetas = [];
+    let n = 0; const etiquetas = []; let recalc = false;
+    const aprob = yo.rol === 'admin' && LEGAL_OK.includes(c.estatus);   // lo del admin a un cliente aprobado entra aprobado
     for(const it of items){
       if(!(it.casillas || []).length) return error('Marca qué trae cada archivo');
       // Solo acepta lo que drive_subir dejó en Drive para ese cliente y ese usuario
@@ -427,13 +444,14 @@ const RPC = {
         else if(!['cedula', 'rif_personal', 'acta_asamblea'].includes(ca.casilla)) num = 0;
         let d = busca(c, ca.casilla, num);
         if(!d){ d = { id: ++sec, casilla: ca.casilla, numero: num }; c.documentos.push(d); }
-        Object.assign(d, { estado: 'por_revisar', motivo: null, nota: null, vence_en: it.vence_en || null, firmado_en: it.firmado_en || null, subido_en: hace(0), subido_por: yo.nombre, revisado_en: null, revisado_por: null, archivos, comparte: [] });
+        const ok = aprob && !/^contrato_/.test(ca.casilla); if(!ok) recalc = true;
+        Object.assign(d, { estado: ok ? 'aprobado' : 'por_revisar', motivo: null, nota: null, vence_en: it.vence_en || null, firmado_en: it.firmado_en || null, subido_en: hace(0), subido_por: yo.nombre, revisado_en: ok ? hace(0) : null, revisado_por: ok ? yo.nombre : null, archivos, comparte: [] });
         if(c.marcas) delete c.marcas[d.id];   // archivo nuevo: la marca anterior ya no vale (disparador marca_al_subir)
         etiquetas.push({ casilla: ca.casilla, numero: num }); n++;
       }
       if(it.casillas.length > 1) it.casillas.forEach((ca) => { const d = c.documentos.find((x) => x.archivos === archivos && x.casilla === ca.casilla); if(d) d.comparte = c.documentos.filter((x) => x.archivos === archivos && x !== d).map((x) => ({ casilla: x.casilla, numero: x.numero })); });
     }
-    c.hilo.push(linea('documento_subido', String(n), { casillas: etiquetas }, yo.nombre)); gestion(c, yo); recalcular(c, yo); return n;
+    c.hilo.push(linea('documento_subido', String(n), { casillas: etiquetas }, yo.nombre)); gestion(c, yo); if(recalc) recalcular(c, yo); return n;
   },
   documento_revisar(m, yo, a){
     if(!['admin', 'abogado'].includes(yo.rol)) return error('No tienes permiso para hacer esto');
@@ -612,12 +630,12 @@ const RPC = {
   },
   pendientes_lider(m, yo, a){
     if(yo.rol !== 'admin') return error('No tienes permiso para hacer esto');
-    const actual = corteDe(hoy()); const filas = filasComision(m, yo, actual).filter((f) => f.lider === a.p_lider);
+    const actual = enCurso(); const filas = filasComision(m, yo, actual).filter((f) => f.lider === a.p_lider);
     if(!filas.length) return error('Ese líder no tiene instalaciones en este corte');
     const txt = (x) => (x.k === 'cedula' || x.k === 'rif_personal') && x.n > 1 ? x.t + ' del representante ' + x.n : x.t;
     const p = m.personas.find((x) => x.activo && norm(x.nombre) === norm(a.p_lider));
     const ult = (m.bitacora || []).filter((b) => b.accion === 'pendientes_enviados' && b.registro_id === a.p_lider).pop();
-    return { lider: a.p_lider, nombre: p ? p.nombre : a.p_lider, whatsapp: p ? p.whatsapp || null : null, corte: actual, fin: corteFin(actual), dias: dias(hoy(), corteFin(actual)), ultimo: ult ? ult.en : null,
+    return { lider: a.p_lider, nombre: p ? p.nombre : a.p_lider, whatsapp: p ? p.whatsapp || null : null, corte: actual, fin: corteFin(actual), limite: corteLimite(actual), dias: dias(hoy(), corteLimite(actual)), ultimo: ult ? ult.en : null,
       filas: filas.slice().sort((x, y) => (x.origen === 'corte') - (y.origen === 'corte') || x.instalada_en.localeCompare(y.instalada_en)).map((f) => {
         const c = m.datos.clientes.find((x) => x.id === f.cliente_id); const fl = faltantes(c);
         return { instalacion_id: f.instalacion_id, cliente_id: f.cliente_id, nombre: f.nombre, codigo: f.codigo, origen: f.origen, cumple: f.cumple, orden_ok: f.orden_ok, legal_ok: f.legal_ok, pago_ok: f.pago_ok,
@@ -628,9 +646,30 @@ const RPC = {
     if(yo.rol !== 'admin') return error('No tienes permiso para hacer esto');
     (m.bitacora = m.bitacora || []).push({ usuario: yo.usuario, accion: 'pendientes_enviados', registro_id: a.p_lider, despues: { pendientes: a.p_pendientes, pdf: a.p_pdf }, en: new Date().toISOString() });
   },
+  instalacion_evento(m, yo, a){
+    if(!esSenior(yo)) return error('Solo el Analista Senior puede hacer esto');
+    const x = instPorId(m, a.p_instalacion); if(!x) return error('Esa instalación no existe');
+    if(!comisionable(x.i)) return error('Esta instalación no comisiona: es de aliado o dedicado');
+    const cp = corteDe(fechaClave(caracas(x.i.instalada_en))); if((m.certificados || {})[cp]) return error('Ese corte ya está certificado');
+    x.i.es_evento = !!a.p_evento; x.i.evento_comisiona = a.p_evento ? !!a.p_comisiona : null; x.i.evento_manual = true;
+    (m.bitacora = m.bitacora || []).push({ usuario: yo.usuario, accion: 'instalacion_evento', registro_id: String(x.i.id), despues: { es_evento: x.i.es_evento, comisiona: x.i.evento_comisiona }, en: new Date().toISOString() });
+    x.c.hilo.push(linea('instalacion', 'evento', { instalacion: x.i.id, evento: x.i.es_evento, comisiona: x.i.evento_comisiona }, yo.nombre));
+    return null;
+  },
+  creadores_odoo(m, yo){
+    if(yo.rol !== 'admin') return error('No tienes permiso para hacer esto');
+    const k = m.creadores = m.creadores || { 'Ana Creadora': true };
+    return ['Ana Creadora', 'Lucía Ferrer', 'Rosa Paredes'].map((n, j) => ({ nombre: n, ordenes: 9 - j * 3, marcado: !!k[n] }));
+  },
+  creador_por_otros(m, yo, a){
+    if(yo.rol !== 'admin') return error('No tienes permiso para hacer esto');
+    (m.creadores = m.creadores || { 'Ana Creadora': true })[a.p_nombre] = !!a.p_valor;
+    (m.bitacora = m.bitacora || []).push({ usuario: yo.usuario, accion: 'creador_por_otros', registro_id: a.p_nombre, despues: { crea_por_otros: !!a.p_valor }, en: new Date().toISOString() });
+    return null;
+  },
   comisiones_corte(m, yo, a){
     if(yo.rol === 'aliado') return error('No tienes permiso para hacer esto');
-    const actual = corteDe(hoy()); let c = a.p_corte ? String(a.p_corte).slice(0, 8) + '01' : actual; if(c > actual) c = actual;
+    const actual = enCurso(); const vmax = corteDe(hoy()); let c = a.p_corte ? String(a.p_corte).slice(0, 8) + '01' : actual; if(c > vmax) c = vmax;
     const filas = filasComision(m, yo, c);
     const pinst = c === actual ? visibles(m, yo).filter((x) => x.orden && porInstalar(x)).map((x) => ({ orden: x.orden.numero, cliente_id: x.id, nombre: x.nombre, creada_en: x.orden.creada_en, etapa: x.orden.etapa, lider: x.lider })) : [];
     const comp = [5, 4, 3, 2, 1, 0].map((n) => { const k = masMeses(actual, -n); const f = filasComision(m, yo, k); return { corte: k, total: f.filter((x) => x.origen === 'corte').length, cumplen: f.filter((x) => x.cumple).length }; });
@@ -638,9 +677,11 @@ const RPC = {
     const A = cuenta(filas), B = cuenta(filasComision(m, yo, masMeses(c, -1)));
     const lideres = Array.from(new Set(Object.keys(A).concat(Object.keys(B)))).map((l) => ({ lider: l, actual: A[l] || 0, anterior: B[l] || 0 })).sort((x, y) => y.actual - x.actual || x.lider.localeCompare(y.lider));
     const cert = (m.certificados || {})[c]; const sen = esSenior(yo);
-    return { corte: c, actual, hoy: hoy(), inicio: corteInicio(c), fin: corteFin(c), dias: dias(hoy(), corteFin(c)), rol: yo.rol, filas, por_instalar: pinst, comparativa: comp, lideres,
+    return { corte: c, actual, hoy: hoy(), inicio: corteInicio(c), fin: corteFin(c), limite: corteLimite(c), certifica: corteCertifica(c), dias: dias(hoy(), corteLimite(c)), rol: yo.rol, filas, por_instalar: pinst, comparativa: comp, lideres,
+      eventos: yo.rol === 'abogado' ? [] : [].concat.apply([], visibles(m, yo).map((x) => x.instalaciones.filter((i) => { const t = new Date(i.instalada_en).getTime();
+        return i.es_evento && !i.evento_comisiona && comisionable(i) && t >= cierre(masMeses(c, -1)) && t < cierre(c); }).map((i) => ({ instalacion_id: i.id, cliente_id: x.id, nombre: x.nombre, instalada_en: i.instalada_en, codigo: i.codigo, sucursal: i.sucursal, lider: duenoDe(x, i) || 'Por asignar', evento_manual: !!i.evento_manual })))),
       duenos: sen ? DUENOS : [], certificado: cert ? { en: cert.en, por: cert.por, total: cert.total, cumplen: cert.cumplen } : null,
-      puedo: { asignar: sen && !cert, pago: sen, excepcion: yo.rol === 'admin' && !cert, certificar: sen && !cert && hoy() >= corteFin(c), quitar_certificado: yo.rol === 'admin' && !!cert } };
+      puedo: { asignar: sen && !cert, pago: sen, excepcion: yo.rol === 'admin' && !cert, certificar: sen && !cert && hoy() >= corteCertifica(c), quitar_certificado: yo.rol === 'admin' && !!cert } };
   }
 };
 
@@ -765,4 +806,4 @@ function archivoDrive(m, yo, id){
   }
   return { error: 'Ese archivo no existe', status: 404 };
 }
-module.exports = { baseDatos, RPC, LUCIA, archivoDrive, driveSubir };
+module.exports = { baseDatos, RPC, LUCIA, archivoDrive, driveSubir, corte: { corteDe, corteInicio, corteFin, corteLimite, corteCertifica, enCurso, fijarHoy: (d) => { hoyFijo = d; } } };

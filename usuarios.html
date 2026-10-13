@@ -9,12 +9,12 @@
 <link rel="expect" href="#navListo" blocking="render">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="assets/img/icon-192.png">
-<link rel="stylesheet" href="assets/css/base.css?v=27">
-<link rel="stylesheet" href="assets/css/modulos.css?v=27">
-<link rel="stylesheet" href="assets/css/app.css?v=27">
+<link rel="stylesheet" href="assets/css/base.css?v=28">
+<link rel="stylesheet" href="assets/css/modulos.css?v=28">
+<link rel="stylesheet" href="assets/css/app.css?v=28">
 </head>
 <body>
-<header class="barra" id="barra"><a class="marca" href="inicio.html" aria-label="Inicio"><img class="logo" src="assets/img/logo.svg?v=27" alt="Airtek" width="96" height="12"><span>Empresas</span></a></header>
+<header class="barra" id="barra"><a class="marca" href="inicio.html" aria-label="Inicio"><img class="logo" src="assets/img/logo.svg?v=28" alt="Airtek" width="96" height="12"><span>Empresas</span></a></header>
 <main class="pagina">
   <a class="volver solo-pc" href="inicio.html" style="display:inline-flex"><svg class="i ch" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>Inicio</a>
   <div class="encabezado">
@@ -23,6 +23,11 @@
   </div>
   <div class="lista-cab" aria-hidden="true"><span>Persona</span><span>Rol</span><span>Equipo</span><span>Nombre en Odoo</span><span>Vendedor</span><span>Estado</span></div>
   <div id="lista" aria-live="polite"></div>
+  <section class="creadores" aria-labelledby="tCreadores">
+    <h2 class="h2" id="tCreadores">Crean órdenes por otros</h2>
+    <p class="sub">Personas que montan órdenes de Odoo para otro líder. Si su orden no trae el código de vendedor, la instalación queda por asignar hasta que el Analista Senior elija el dueño.</p>
+    <div id="listaCreadores" aria-live="polite"></div>
+  </section>
 </main>
 
 <section class="hoja" id="hojaUsuario" role="dialog" aria-modal="true" aria-labelledby="tHoja" aria-hidden="true">
@@ -61,10 +66,10 @@
 
 <script src="assets/vendor/supabase.js?v=1"></script>
 <script src="assets/js/supabase-client.js?v=1"></script>
-<script src="assets/js/comun.js?v=27"></script>
-<script src="assets/js/sesion.js?v=27"></script>
-<script src="assets/js/armazon.js?v=27"></script>
+<script src="assets/js/comun.js?v=28"></script>
+<script src="assets/js/sesion.js?v=28"></script>
+<script src="assets/js/armazon.js?v=28"></script>
 <i id="navListo" hidden></i>
-<script src="assets/js/usuarios.js?v=27"></script>
+<script src="assets/js/usuarios.js?v=28"></script>
 </body>
 </html>

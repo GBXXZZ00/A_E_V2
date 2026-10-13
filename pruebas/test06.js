@@ -57,7 +57,7 @@ const cerrarHojas = async (p) => { for(let i = 0; i < 4; i++){ if(await p.evalua
     // Buscador y marca Natural
     await p.fill('#busca', 'kiosco'); await p.waitForFunction(() => document.querySelectorAll('#lista [data-com]').length === 1);
     ok(nombre + ': el buscador filtra y abre el grupo', (await p.locator('.grupo.abierto').count()) === 1 && p.url().includes('q=kiosco'));
-    ok(nombre + ': marca Natural y orden a la vista', (await p.locator('#lista .tagn').textContent()) === 'Natural' && /Orden \d+/.test(await p.textContent('#lista [data-com] small')));
+    ok(nombre + ': marca Natural y orden a la vista', (await p.locator('#lista .tagn').first().textContent()) === 'Natural' && /Orden \d+/.test(await p.textContent('#lista [data-com] small')));
     await p.fill('#busca', 'zzzz'); await p.waitForSelector('#lista .vacio');
     ok(nombre + ': sin resultados lo dice claro', (await p.textContent('#lista .vacio')).includes('Sin resultados'));
     await p.fill('#busca', 'kiosco'); await p.waitForSelector('#lista [data-com]');

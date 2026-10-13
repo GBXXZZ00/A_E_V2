@@ -58,12 +58,18 @@ const PRIMER_CUADRO = () => {
     mundo.personas[0].cargo = 'Jefe de contratos';
     await p.goto(H + 'clientes.html'); await p.waitForFunction(() => document.querySelector('#barra .cuenta small') && document.querySelector('#barra .cuenta small').textContent === 'Jefe de contratos', null, { timeout: 5000 }).catch(() => {});
     ok(nombre + ': un cambio del perfil en el servidor se corrige solo', (await p.textContent('#barra .cuenta small')) === 'Jefe de contratos');
-    // Sesión que ya no vale: sale como hoy
-    mundo.personas[0].activo = false;
-    await p.goto(H + 'comisiones.html'); await p.waitForURL('**/index.html', { timeout: 5000 }).catch(() => {});
-    ok(nombre + ': sesión que no vale sale a la entrada', p.url().includes('index.html')); await p.waitForTimeout(800); await p.waitForLoadState('networkidle');
-    ok(nombre + ': al salir no queda el perfil ni lo último visto', await p.evaluate(() => !localStorage.getItem('ae_perfil') && !Object.keys(localStorage).some((k) => k.indexOf('ae_c_') === 0)));
     await ctx.close();
+    // Sesión que ya no vale: sale como hoy y limpia el dispositivo (en una sesión nueva, con lo último visto guardado)
+    const z = await contexto(nav, dispositivo); const q = await entrar(z.ctx, 'marcos', '482913'); q.on('pageerror', (e) => errores.push(e.message));
+    await q.goto(H + 'comisiones.html'); await q.waitForSelector('.grupo'); await q.waitForLoadState('networkidle');
+    z.mundo.personas[0].activo = false;
+    // Se mide que la app pida la entrada (el servidor de pruebas a veces tarda en servirla)
+    const sale = q.waitForRequest((r) => /\/index\.html/.test(r.url()) && r.isNavigationRequest(), { timeout: 10000 }).then(() => true).catch(() => false);
+    await q.goto(H + 'comisiones.html');
+    ok(nombre + ': sesión que no vale sale a la entrada', await sale);
+    await q.waitForURL('**/index.html', { timeout: 30000 }).catch(() => {}); await q.waitForLoadState('networkidle');
+    ok(nombre + ': al salir no queda el perfil ni lo último visto', await q.evaluate(() => !localStorage.getItem('ae_perfil') && !Object.keys(localStorage).some((k) => k.indexOf('ae_c_') === 0)));
+    await z.ctx.close();
   }
   // El service worker: páginas desde el dispositivo solo si todos sus archivos están guardados
   global.self = { addEventListener(){}, location: { origin: 'https://x' } };
