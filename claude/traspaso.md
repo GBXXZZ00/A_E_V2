@@ -9,7 +9,7 @@ Reglas de la corrida: igual que el Lote 2 (una sola pasada, calidad primero, pub
 1. Cuando el líder pasa un cliente a "Documentos en revisión", Legal cuenta como listo para la comisión hasta que el administrador le quite el check.
 2. Excepción manual de Legal: el administrador aprueba Legal aunque falten documentos (botón único con motivo y bitácora). Simplificar: un solo lugar para el check de Legal en la hoja de comisión, sin botones repetidos.
 3. Si un cambio (manual o de la IA) baja a pendiente a un cliente que comisiona en un corte abierto, preguntar antes: "Este cliente comisiona en el corte X. ¿Quitarle la comisión?". Un cambio de estatus nunca toca un corte certificado.
-4. Contrato presencial: opción en el expediente "Contrato presencial". Comisiona; el correo del representante legal deja de ser obligatorio.
+4. Contrato presencial: opción en el expediente "Contrato presencial". Comisiona; se piden todos los documentos menos el correo del representante legal.
 5. Clientes con excepción pagada en el corte anterior (el administrador los nombra; no tienen instalación desde el 21/08): marca de cliente "Excepción pagada, documentos por subir" para que salgan en "Archivos por subir" y se gestionen este mes, sin tocar cortes.
 6. Septiembre: desde el chat del proyecto se devuelve cada cliente al estado de la certificación manual (archivo del proyecto) y se certifica en la app. Aquí solo verificar 59/49 al empezar y al terminar.
 
@@ -22,10 +22,15 @@ Mostrar solo órdenes creadas desde el 01/10/2026 (las anteriores no; opcional e
 3. Rediseñar el bloque (sigue amontonado): una línea "IP: falta · Escribir" con enlace chico, y Descargar / Enviar como botones chicos en una sola fila.
 
 ### 4. Dedicados
-1. Filtros: dejar arriba Todos, ISP, Corporativo, Faltan documentos, Por verificar y agregar "VGT pendiente". En "Filtros": Ejecutiva, "Qué hacer" (renombrar "Ruta de documentos": Cargar a la app, Completar en la app, Pedir al cliente, Validar con la analista) y Enlaces (activos o suspendidos). Una línea de ayuda debajo de cada filtro.
-2. VGT (ya cargado en `dedicado_contratos`): marca visible "Gestión VGT" y "VGT pendiente por contrato" en lista y hoja; bloque VGT con proyectos, postes, número de contrato, en uso y estatus. Los clientes con VGT piden casillas extra: acta de asamblea de cambios sustanciales, poder de representación (si aplica), correo para notificaciones, habilitación con atributos de internet y transporte en las zonas, póliza de responsabilidad civil general (≥ US$20.000, aseguradora top 10 SUDEASEG, mención al contrato), póliza de responsabilidad patronal (mismas condiciones), propuesta comercial firmada y sellada, planilla de solicitud de tendido aprobada, aprobación de factibilidad técnica (correo).
-3. Dedicado + PYME (combinado): un cliente con varios contratos, cada uno con su estatus: dedicado, PYME, VGT, colocation. Si el dedicado está firmado y falta el PYME, se ve "Contrato PYME por elaborar". Los documentos son los mismos.
-4. Servicios en la hoja del dedicado: solo los PYME del TAD si es combinado; los enlaces dedicados van aparte. Más detalle de Odoo después.
+0. En toda la app se dice "Líder", nunca "Ejecutiva".
+1. Filtros IGUALES a Clientes (Grandes negocios): arriba En curso, Por revisar, Sin gestión, Faltan documentos, Todos. En "Filtros": Líder, Tipo (ISP, Corporativo, Combinado), Estatus legal, VGT (Con VGT, VGT por firmar), Enlaces (activos o suspendidos). Quitar "Ruta de documentos" como filtro; se queda solo como nota dentro de la hoja ("Qué hacer: cargar a la app / pedir al cliente / validar con la analista"). Los avisos de ISP con plazo y de RIF por verificar se quedan arriba.
+2. VGT (datos ya en `dedicado_contratos`, tipo vgt):
+   - Lista: etiqueta "VGT" en la fila; si el contrato VGT no está firmado, "VGT por firmar" en ámbar.
+   - Hoja, pestaña Contratos: una tarjeta por contrato (Servicio dedicado, PYME si es combinado, VGT, Colocation). Tarjeta VGT: estatus (mismos de Legal), número de contrato, fecha de firma, vencimiento, y la lista de proyectos (nombre, estado, postes, en uso: sí / en proyecto / no, ODT de infraestructura) con el total de postes. Colocation igual, por sitio.
+   - Hoja, pestaña Documentos: si tiene VGT aparece un grupo aparte "Requisitos VGT" (los comunes no se repiten: acta constitutiva, actas, RIF, cédulas, Conatel se reutilizan). Casillas extra: acta de asamblea de cambios sustanciales (agregable), poder de representación (opcional), correo para notificaciones (campo), habilitación con atributos de internet y transporte en las zonas, póliza de responsabilidad civil general (con vencimiento; ≥ US$20.000, aseguradora top 10 SUDEASEG, mención al contrato), póliza de responsabilidad patronal (mismas condiciones), propuesta comercial firmada y sellada, planilla de solicitud de tendido aprobada, aprobación de factibilidad técnica (correo).
+   - El grupo VGT tiene su propio contador de faltantes. El contrato VGT no pasa a "Por firmar" mientras falten requisitos VGT. Pólizas: aviso 30 días antes de vencer.
+3. Dedicado + PYME (combinado): un cliente, varios contratos con estatus propio (dedicado, PYME, VGT, colocation). Si el dedicado está firmado y falta el PYME: "Contrato PYME por elaborar". Documentos comunes una sola vez.
+4. Servicios en la hoja del dedicado: solo los PYME del TAD si es combinado; los enlaces dedicados aparte. Más detalle de Odoo después.
 5. Futuro (no ahora): propuesta de servicio automática para PYME y dedicados.
 
 ### 5. Revisión con IA (más simple)
@@ -37,16 +42,13 @@ Mostrar solo órdenes creadas desde el 01/10/2026 (las anteriores no; opcional e
 ### 6. Archivos en Drive
 Renombrar al subir: "RIF - Casilla - fecha" (si trae varias: "Cédula + RIF personal"). El nombre original queda guardado en la base.
 
-### 7. Avisos al teléfono
-Al cerrar una revisión, el líder recibe notificación en el teléfono (Web Push con `sw.js` y función del servidor), además del WhatsApp opcional. Requiere su cuenta (ya creadas).
-
-### 8. Aliados
-1. Pestañas del administrador: Registro, Por mes, Pagos, Aliados y usuarios. "Instalados por aliados" se une a "Por mes".
+### 7. Aliados
+1. Pestañas del administrador: Registro, Por mes, Sin autorización, Pagos, Aliados y usuarios. "Instalados por aliados" se une a "Por mes". Las instalaciones hechas sin consultar salen del Registro y van solas en "Sin autorización".
 2. "Esperan tu decisión": cada registro con una acción simple "Revisado" y nota (por ejemplo "aprobada por correo"), para el barrido de solicitudes que se hicieron fuera de la app.
 3. Verificar que los documentos que sube un aliado en una solicitud instalada entren al expediente del cliente (concatenado) y que lo nuevo también.
 
 ### Después del Lote 3 (por definir en el chat del proyecto)
-Migraciones y cambios de titularidad, bandeja de la analista (PYME y dedicados), propuesta de servicio, cobranza.
+Migraciones y cambios de titularidad, bandeja de la analista (PYME y dedicados), notificaciones (al teléfono cuando se devuelve algo o falta algo), resumen de gerencia, propuesta de servicio, cobranza.
 
 ## LOTE 2 del 13/10 (APROBADO por el administrador en el chat del proyecto): documentos primero, dedicados, aliados y arreglos
 Ejecútalo completo, en este orden, con pruebas, capturas y publicación por parte. SIN PAUSAS (decisión del 13/10, 13:54): el administrador pide todo en una sola pasada, incluido dedicados. No hay maqueta aparte: Dedicados sigue el diseño ya aprobado de Clientes y del expediente (lista quieta y hoja encima); al final le muestras capturas. Si algo no se alcanza, lo dices al final, no a mitad. Quiere que quede excelente. Datos reales: el administrador te adjunta los archivos; guárdalos en `pruebas/capturas/` (no se publica). Nada de nombres, RIF, teléfonos ni correos en el repo.
