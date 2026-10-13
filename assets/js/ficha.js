@@ -44,6 +44,8 @@
       const [r, rv] = await Promise.all([rpc('cliente_ficha', { p_cliente: mio }), leerRevision(mio)]);
       if(mio !== id) return;   // ya se abrió otro cliente: esta respuesta no es de él
       F = r; rev = rv;
+      // Un provisional que ya se unió: se abre el cliente real
+      if(F.cliente.unido_a){ id = Number(F.cliente.unido_a); toast('Ese cliente provisional ya se unió a su cliente real'); cargar(primera); return; }
       pintarTodo(); vigilar();
       if(primera) alLlegar();
       cargarDrive(mio);
@@ -98,9 +100,12 @@
   }
 
   // ---------- Encabezado y paso siguiente ----------
+  // El cliente provisional (de una orden sin RIF) muestra "Provisional, sin RIF" en vez del número interno
+  const rifDe = (c) => (c.provisional ? 'Provisional, sin RIF' : docFmt(c.doc_tipo, c.doc_numero));
   function paso(){
     const c = F.cliente; const f = F.faltantes || []; const n = F.puedo.revisar ? sinMarcar().length : porRevisar().length;
     const dev = f.some((x) => x.e === 'devuelto'); const fal = f.some((x) => x.e === 'falta');
+    if(c.provisional && F.rol !== 'abogado') return { tono: 'azul', texto: 'Cliente provisional, todavía sin RIF', sub: 'Salió de una orden de Odoo. Sube sus documentos desde ya; al conocer el RIF se une al cliente real o queda como cliente normal', boton: 'Escribir RIF', accion: 'rif' };
     if(c.estatus === 'contrato_firmado') return { tono: 'verde', texto: 'Contrato firmado', sub: 'El expediente está completo' };
     if(F.puedo.revisar && iaActiva()) return { tono: 'azul', texto: 'La IA está leyendo el expediente', sub: rev.ia.avance + ' de ' + rev.ia.total + ' archivos. El resultado sale en Documentos' };
     if(F.puedo.revisar && marcas().length){
@@ -129,7 +134,7 @@
   function clienteContacto(){ const c = F.cliente; return { id: c.id, nombre: c.nombre, es_natural: c.es_natural, estatus: c.estatus, falta: F.faltantes, tel: c.tel, correo: c.correo }; }
   function pintarCab(){
     const c = F.cliente; const p = paso(); const s0 = (F.servicios || [])[0];
-    const dat = [docFmt(c.doc_tipo, c.doc_numero), c.lider || 'Sin líder', c.por_instalar ? 'Sin instalar' : plural((F.servicios || []).length, 'servicio', 'servicios')].join(' · ');
+    const dat = [rifDe(c), c.lider || 'Sin líder', c.por_instalar ? 'Sin instalar' : plural((F.servicios || []).length, 'servicio', 'servicios')].join(' · ');
     const sub = p ? (p.sub || subCorte()) : '';
     $('cabFicha').innerHTML = '<div class="f-cab"><span class="mono" aria-hidden="true">' + esc(iniciales(c.nombre).charAt(0)) + '</span><div class="tx"><h1 class="nom" id="tFicha">' + esc(c.nombre) + '</h1><p class="dat">' + esc(dat) + '</p></div>' +
         '<button type="button" class="cerrar" data-cierra="1" aria-label="Cerrar">' + ic('x') + '</button></div>' +
@@ -461,7 +466,7 @@
     const r1 = (F.representantes || []).find((x) => x.orden === 1) || {};
     const tj = (titulo, fuerte, lineas, extra) => '<div class="tj"><span class="tj-t">' + titulo + '</span><b>' + fuerte + '</b>' + lineas.filter(Boolean).map((l) => '<small>' + l + '</small>').join('') + (extra || '') + '</div>';
     let h = '<div class="tarjs">' +
-      tj(c.es_natural ? 'Titular' : 'Empresa', esc(c.nombre), [esc(docFmt(c.doc_tipo, c.doc_numero)) + ' · ' + esc(c.seg), esc(c.direccion || s0.direccion || 'Sin dirección')]) +
+      tj(c.es_natural ? 'Titular' : 'Empresa', esc(c.nombre), [esc(rifDe(c)) + ' · ' + esc(c.seg), esc(c.direccion || s0.direccion || 'Sin dirección')]) +
       tj(c.es_natural ? 'Contacto' : 'Representante', esc(r1.nombre || (c.es_natural ? c.nombre : 'Sin nombre todavía')), [esc(r1.telefono || c.telefono || s0.telefono || 'Sin teléfono'), esc(r1.correo || c.correo_empresa || 'Sin correo')]) +
       tj('Líder', esc(c.lider || 'Sin asignar'), [c.estatus === 'contrato_firmado' ? 'Gestión cerrada' : 'En gestión hace ' + esc(plural(diasGestion, 'día', 'días'))]) +
       tj('Estatus legal', chipEstatus(c.estatus), [], F.puedo.estatus ? '<button type="button" class="enlace" id="cambiarEstatus" style="margin-top:8px">Cambiar</button>' : '') + '</div>';
@@ -669,6 +674,13 @@
         '<div class="error" id="eCampo" role="alert"></div><div class="acciones"><button type="submit" class="btn btn-ancho" id="guardarCampo">Guardar</button></div></form>';
       abrirHoja('hojaCampo'); return;
     }
+    if(clave === 'rif'){
+      campo = { tipo: 'rif' };
+      h.innerHTML = cabHoja('tCampo', 'RIF del cliente', F.cliente.nombre) + '<form id="formCampo" novalidate><label class="rotulo" for="cRif">RIF de la empresa o cédula</label>' +
+        '<input class="campo" id="cRif" autocapitalize="characters" autocomplete="off" spellcheck="false" maxlength="16" data-foco><p class="nota">Con su letra: J, V, E o G. Si ya existe un cliente con ese RIF, este se une a él con sus documentos.</p><div class="error" id="eCampo" role="alert"></div>' +
+        '<div class="acciones"><button type="submit" class="btn btn-ancho" id="guardarCampo">Guardar</button></div></form>';
+      abrirHoja('hojaCampo'); return;
+    }
     if(clave === 'correo_empresa'){
       campo = { tipo: 'empresa' };
       h.innerHTML = cabHoja('tCampo', 'Correo de la empresa', F.cliente.nombre) + '<form id="formCampo" novalidate><label class="rotulo" for="cCorreo">Correo de la empresa</label>' +
@@ -694,6 +706,12 @@
     const f = fuera; const cli = f ? f.cliente : id;
     b.disabled = true; b.textContent = 'Guardando…';
     try {
+      if(campo.tipo === 'rif'){
+        const v = $('cRif').value.trim(); if(!/^[VEJGPCvejgpc]?[\s.-]*\d[\d.\s-]{4,12}$/.test(v)){ $('eCampo').textContent = 'Escribe el RIF con su letra. Ejemplo: J-401234567'; b.disabled = false; b.textContent = 'Guardar'; return; }
+        const nuevo = await rpc('provisional_rif', { p_cliente: cli, p_rif: v });
+        toast(Number(nuevo) !== Number(cli) ? 'Ya existía: se unió a ese cliente con sus documentos' : 'Listo: ya es un cliente normal'); if(hojaAbierta() === 'hojaCampo') cerrarHoja();
+        if(Number(nuevo) !== Number(cli)){ id = Number(nuevo); } await cargar(); return;
+      }
       if(campo.tipo === 'ip') await rpc('servicio_ip', { p_servicio: campo.servicio, p_ip: $('cIp').value.trim(), p_ip6: $('cIp6').value.trim() });
       else if(campo.tipo === 'empresa') await rpc('cliente_dato', { p_cliente: cli, p_campo: 'correo_empresa', p_valor: co });
       else await rpc('cliente_representante', { p_cliente: cli, p_orden: campo.orden, p_correo: co, p_telefono: $('cTel').value.trim() });
@@ -1037,7 +1055,7 @@
     (F.faltantes || []).filter((x) => x.e === 'falta').forEach((x) => lis.push('• Falta ' + x.t));
     if(!lis.length) return '';
     const quien = primerNombre(c.lider);
-    return saludoHora() + (quien ? ', ' + quien : '') + '. Del cliente ' + c.nombre + ' (' + docFmt(c.doc_tipo, c.doc_numero) + ') hace falta:\n' + lis.join('\n') + '\nCuando lo tengas, súbelo a la app. Gracias.';
+    return saludoHora() + (quien ? ', ' + quien : '') + '. Del cliente ' + c.nombre + (c.provisional ? '' : ' (' + docFmt(c.doc_tipo, c.doc_numero) + ')') + ' hace falta:\n' + lis.join('\n') + '\nCuando lo tengas, súbelo a la app. Gracias.';
   }
   function abrirCerrar(){
     if(!rev || !rev.puede_cerrar || !marcas().length) return;
@@ -1086,7 +1104,7 @@
     if((b = t.closest('#tabs [data-tab]'))){ irTab(b.dataset.tab); return; }
     if((b = t.closest('[data-paso]'))){
       const a = b.dataset.paso;
-      if(a === 'revisar') abrirRevision(); else if(a === 'cerrarrev') abrirCerrar(); else if(a === 'estatus') abrirEstatus(); else if(a.indexOf('pedir:') === 0) pedir(a.slice(6)); else if(a.indexOf('tab:') === 0){ irTab(a.slice(4)); const g = document.querySelector('[data-grupo="contrato"]'); if(g) g.scrollIntoView({ block: 'center' }); }
+      if(a === 'rif') abrirCampo('rif'); else if(a === 'revisar') abrirRevision(); else if(a === 'cerrarrev') abrirCerrar(); else if(a === 'estatus') abrirEstatus(); else if(a.indexOf('pedir:') === 0) pedir(a.slice(6)); else if(a.indexOf('tab:') === 0){ irTab(a.slice(4)); const g = document.querySelector('[data-grupo="contrato"]'); if(g) g.scrollIntoView({ block: 'center' }); }
       return;
     }
     if(t.closest('#hiloMas')){ hiloTodo = true; pintarHilo(); return; }

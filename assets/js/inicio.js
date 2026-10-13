@@ -42,6 +42,11 @@
       r.push({ c: 'ambar', i: 'alerta', t: plural(com.por_asignar, 'instalación', 'instalaciones') + ' por asignar',
         s: 'No comisionan hasta confirmar la orden y a quién pertenecen', e: 'comisiones.html?f=asignar', k: 'asignar' });
     }
+    const ins = d.instalar || {};
+    if((analista || admin || lider) && (ins.rojo > 0 || ins.ambar > 0)){
+      r.push({ c: ins.rojo ? 'rojo' : 'ambar', i: 'reloj', t: ins.rojo ? plural(ins.rojo, 'orden en rojo', 'órdenes en rojo') : plural(ins.ambar, 'orden en ámbar', 'órdenes en ámbar'),
+        s: (ins.rojo ? 'Llevan 24 horas o más sin instalación' : 'Llevan 16 horas o más sin instalación') + (ins.rojo && ins.ambar ? '. Y ' + ins.ambar + ' en ámbar' : ''), e: 'comisiones.html?t=instalar', k: 'instalar' });
+    }
     if((analista || admin || lider) && d.bienvenidas > 0){
       r.push({ c: 'azul', i: 'enviar', t: plural(d.bienvenidas, 'bienvenida', 'bienvenidas') + ' por enviar',
         s: 'Instalaciones de este corte sin su carta de bienvenida', e: 'clientes.html?bienvenidas=1', k: 'bienvenidas' });

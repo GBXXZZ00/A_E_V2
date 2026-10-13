@@ -804,3 +804,19 @@ button.franja:active{transform:scale(.97)}
 .creadores{margin-top:32px;max-width:720px}
 .creadores .sub{margin-bottom:6px}
 .creadores .interr .sw{min-width:50px}
+
+/* Comisiones: pestañas Corte y Por instalar (13/10) */
+.vistas{display:inline-flex;gap:4px;margin-top:14px;padding:4px;border-radius:var(--pill);background:var(--surface-2)}
+.vistas:empty{display:none}
+.vistas button{min-height:40px;padding:0 18px;border-radius:var(--pill);font-size:14px;font-weight:700;color:var(--text2);white-space:nowrap;transition:transform 120ms var(--ease-out)}
+.vistas button.on{background:#fff;color:var(--text);box-shadow:0 1px 3px rgba(17,19,21,.10)}
+.vistas button:active{transform:scale(0.97)}
+.vistas em{font-style:normal;font-size:11.5px;background:var(--rojo-bg);color:var(--rojo);border-radius:var(--pill);padding:1px 7px;margin-left:4px}
+.vista-instalar #rango,.vista-instalar #mets,.vista-instalar #avisos,.vista-instalar #acciones,.vista-instalar #filtros,.vista-instalar #lado,.vista-instalar .selector-corte{display:none}
+@media (min-width:900px){ .vista-instalar .cols.comisiones{grid-template-columns:1fr} }
+.ins + .ins{border-top:1px solid var(--line)}
+.ins > .fila{border-top:0;width:100%;text-align:left}
+.ins-acc{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:0 14px 12px;font-size:13px;color:var(--text2)}
+.ins-acc span{flex:1 1 200px}
+.ins-acc .mini{min-height:44px}
+.ins-ayuda{margin:14px 0 10px}

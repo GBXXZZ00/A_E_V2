@@ -1,27 +1,29 @@
 // Comisiones: quién cumple en el corte, qué le falta a cada cliente y cómo viene el mes.
 (function(){
   'use strict';
-  const { $, esc, ic, rpc, toast, cache, esqueleto, vacio, fecha, mes, capital, plural, chipEstatus, docFmt, abrirHoja, cerrarHoja, hojaAbierta, casilla, MOTIVOS, primerNombre, dia, normalizeStr } = window.Comun;
+  const { $, esc, ic, rpc, toast, cache, esqueleto, vacio, fecha, mes, capital, plural, chipEstatus, docFmt, abrirHoja, cerrarHoja, hojaAbierta, casilla, MOTIVOS, primerNombre, dia, hora, normalizeStr } = window.Comun;
   const S = window.Sesion;
   const FILTROS = [
     { id: 'todos', t: 'Todos' }, { id: 'asignar', t: 'Por asignar' }, { id: 'ultimo', t: 'Último corte' }, { id: 'legal', t: 'Falta legal' },
-    { id: 'pago', t: 'Debe instalación' }, { id: 'subir', t: 'Archivos por subir' }, { id: 'eventos', t: 'Eventos' }, { id: 'instalar', t: 'Por instalar' }
+    { id: 'pago', t: 'Debe instalación' }, { id: 'subir', t: 'Archivos por subir' }, { id: 'eventos', t: 'Eventos' }
   ];
   // Filtros que solo salen cuando tienen algo (o están elegidos)
   const OPCIONALES = ['asignar', 'subir', 'eventos'];
   const TOPE = 8;   // filas por bloque antes de "Ver más"
-  let yo = null; let d = null; let filtro = 'todos'; let corte = ''; let pedido = 0; let busca = '';
+  let yo = null; let d = null; let vista = 'corte'; let PI = null; let pedidoPI = 0; let filtro = 'todos'; let corte = ''; let pedido = 0; let busca = '';
   const abiertos = {}; const completos = {};
 
   function leerUrl(){
     const u = new URLSearchParams(location.search);
     const f = u.get('f'); filtro = FILTROS.some((x) => x.id === f) ? f : 'todos';
     busca = (u.get('q') || '').slice(0, 60);
+    vista = u.get('t') === 'instalar' ? 'instalar' : 'corte';
     const c = u.get('c'); corte = /^\d{4}-(0[1-9]|1[0-2])/.test(c || '') ? c.slice(0, 7) + '-01' : '';
   }
   function guardarUrl(){
     const u = new URLSearchParams();
-    if(filtro !== 'todos') u.set('f', filtro);
+    if(vista === 'instalar') u.set('t', 'instalar');
+    if(filtro !== 'todos' && vista === 'corte') u.set('f', filtro);
     if(busca) u.set('q', busca);
     if(d && corte && corte !== d.actual) u.set('c', corte.slice(0, 7));
     const s = u.toString();
@@ -49,7 +51,6 @@
   }
   function conteo(id){
     if(!d) return '';
-    if(id === 'instalar') return d.corte === d.actual ? (d.por_instalar || []).length : '';
     if(id === 'todos') return d.filas.length;
     if(id === 'eventos') return (d.eventos || []).length;
     const g = filtro; filtro = id; const n = d.filas.filter(pasa).length; filtro = g; return n;
@@ -62,7 +63,7 @@
     $('corte').innerHTML = ops.map((c, i) => '<option value="' + c + '"' + (c === (d ? d.corte : corte) ? ' selected' : '') + '>' + esc(nombreCorte(c)) + (i === 0 ? ' (en curso)' : '') + '</option>').join('');
   }
   function pintarFiltros(){
-    $('filtros').innerHTML = FILTROS.filter((f) => (f.id !== 'instalar' || !d || d.corte === d.actual) && (OPCIONALES.indexOf(f.id) < 0 || filtro === f.id || Number(conteo(f.id)) > 0)).map((f) => {
+    $('filtros').innerHTML = FILTROS.filter((f) => (OPCIONALES.indexOf(f.id) < 0 || filtro === f.id || Number(conteo(f.id)) > 0)).map((f) => {
       const n = conteo(f.id);
       return '<button type="button" role="tab" data-filtro="' + f.id + '" class="' + (f.id === filtro ? 'on' : '') + '" aria-selected="' + (f.id === filtro) + '">' + esc(f.t) + (n === '' ? '' : ' <em>' + esc(n) + '</em>') + '</button>';
     }).join('');
@@ -119,13 +120,6 @@
         p.map((o) => '<button type="button" class="fila" data-com="' + esc(o.instalacion_id) + '" data-cliente="' + esc(o.cliente_id) + '"><span class="tx"><b>' + esc(o.nombre) + '</b><small>' + esc(o.codigo || '') + ' · ' + esc(fecha(o.instalada_en)) + ' · ' + esc(o.lider) + '</small></span><span class="m azul">Evento</span></button>').join('') + '</div>';
       return;
     }
-    if(filtro === 'instalar'){
-      const p = d.por_instalar || [];
-      if(!p.length){ $('lista').innerHTML = vacio('Nada por instalar', 'No hay órdenes abiertas en este momento.'); return; }
-      $('lista').innerHTML = '<div class="grupo abierto"><div class="sub-bloque liso" style="border-top:0">Órdenes abiertas<span class="n2">Aún no cuentan para el corte</span></div>' +
-        p.map((o) => '<button type="button" class="fila" data-exp="' + esc(o.cliente_id) + '"><span class="tx"><b>' + esc(o.nombre) + '</b><small>' + esc(o.orden || '') + ' · ' + esc(o.lider || 'Sin líder') + ' · Creada el ' + esc(fecha(o.creada_en)) + '</small></span><span class="m azul">' + esc(o.etapa || 'Sin etapa') + '</span></button>').join('') + '</div>';
-      return;
-    }
     const filas = d.filas.filter(pasa).filter(coincide);
     if(!filas.length){
       $('lista').innerHTML = busca && d.filas.filter(pasa).length ? vacio('Sin resultados', 'Nadie coincide con "' + busca + '". Revisa cómo está escrito o busca por código o número de orden.')
@@ -160,8 +154,83 @@
     $('lado').innerHTML = h;
   }
   function pintar(){
-    if(filtro === 'instalar' && d.corte !== d.actual) filtro = 'todos';
-    pintarCorte(); pintarMets(); pintarAvisos(); pintarFiltros(); pintarLista(); pintarLado();
+    pintarCorte(); pintarMets(); pintarAvisos(); pintarFiltros(); pintarVistas();
+    if(vista === 'corte'){ pintarLista(); pintarLado(); }
+  }
+
+  // ---------- Pestaña Por instalar: órdenes de Odoo abiertas sin instalación, con su reloj ----------
+  const conInstalar = () => !!yo && ['admin', 'analista', 'lider'].indexOf(yo.rol) >= 0;
+  function pintarVistas(){
+    if(!conInstalar()){ $('vistas').innerHTML = ''; return; }
+    const rojas = PI ? (PI.filas || []).filter((o) => o.color === 'rojo').length : 0;
+    $('vistas').innerHTML = [['corte', 'Corte'], ['instalar', 'Por instalar']].map((x) => '<button type="button" role="tab" data-vista="' + x[0] + '" aria-selected="' + (vista === x[0]) + '" class="' + (vista === x[0] ? 'on' : '') + '">' + x[1] +
+      (x[0] === 'instalar' && rojas ? ' <em>' + rojas + '</em>' : '') + '</button>').join('');
+    document.querySelector('main').classList.toggle('vista-instalar', vista === 'instalar');
+  }
+  function cambiarVista(v){
+    if(v === vista) return; vista = v; guardarUrl(); pintarVistas();
+    if(vista === 'instalar') cargarInstalar(); else if(d){ pintarLista(); pintarLado(); } else cargar();
+  }
+  async function cargarInstalar(){
+    const mio = ++pedidoPI; const clave = 'instalar:' + yo.rol;
+    if(!PI){ const g = cache.leer(clave); if(g){ PI = g; pintarInstalar(); } else if(vista === 'instalar') $('lista').innerHTML = esqueleto(5); }
+    try {
+      const r = await rpc('por_instalar'); if(mio !== pedidoPI) return;
+      PI = r; PI.filas = PI.filas || []; cache.guardar(clave, PI); pintarVistas(); if(vista === 'instalar') pintarInstalar();
+    } catch (e) {
+      if(mio !== pedidoPI) return;
+      if(!PI && vista === 'instalar') $('lista').innerHTML = '<div class="vacio" role="alert"><b>No se pudieron cargar las órdenes</b><p>' + esc(e.message) + '</p><button type="button" class="btn btn-chico" id="reintentarPI">Reintentar</button></div>';
+      toast(e.message, 'error');
+    }
+  }
+  const horasTexto = (h) => { const n = Math.floor(Number(h) || 0); return n < 1 ? 'Recién' : n + ' h'; };
+  function filaInstalar(o){
+    const tono = o.color === 'rojo' ? 'rojo' : o.color === 'ambar' ? 'ambar' : 'gris';
+    const etq = (o.veces ? '<span class="tagn ambar">Reprogramada ' + (o.veces === 1 ? '1 vez' : o.veces + ' veces') + '</span>' : '') +
+      (o.provisional ? '<span class="tagn azul">Provisional</span>' : '') + (o.lider === 'Por asignar' ? '<span class="tagn rojo">Dueño por asignar</span>' : '');
+    const sub = esc(ordenCorta(o.numero)) + ' · ' + esc(o.etapa || 'Sin etapa') + ' · Registrada el ' + esc(fecha(o.inicio)) + ', ' + esc(hora(o.inicio));
+    const cuerpo = '<span class="tx"><b>' + esc(o.cliente || 'Cliente nuevo') + '</b><small>' + sub + '</small>' + (etq ? '<small class="etqs">' + etq + '</small>' : '') + '</span>' +
+      '<span class="m ' + tono + '" title="Horas contadas de 8:00 a 22:00">' + ic('reloj') + esc(horasTexto(o.horas)) + '</span>';
+    let acc = '';
+    if(o.parecido_id) acc += '<div class="ins-acc"><span>¿Es este cliente? <b>' + esc(o.parecido || '') + '</b></span><button type="button" class="mini pri" data-es-cli="si" data-orden="' + esc(o.orden_id) + '" data-cli="' + esc(o.parecido_id) + '">Sí, es ese</button><button type="button" class="mini" data-es-cli="no" data-orden="' + esc(o.orden_id) + '">No, es otro</button></div>';
+    if(PI.puedo && PI.puedo.asignar && o.provisional && o.lider === 'Por asignar') acc += '<div class="ins-acc"><span>La orden la creó otra persona sin código.</span><button type="button" class="mini pri" data-dueno-prov="' + esc(o.cliente_id) + '" data-nombre="' + esc(o.cliente) + '">Elegir dueño</button></div>';
+    return '<div class="ins">' + (o.cliente_id && !o.parecido_id ? '<button type="button" class="fila" data-exp="' + esc(o.cliente_id) + '">' + cuerpo + '</button>' : '<div class="fila">' + cuerpo + '</div>') + acc + '</div>';
+  }
+  function pintarInstalar(){
+    if(!PI) return;
+    const ok = (o) => { const b = normalizeStr(busca); return !b || normalizeStr(o.cliente).indexOf(b) >= 0 || normalizeStr(o.lider).indexOf(b) >= 0 || String(o.numero || '').indexOf(busca) >= 0; };
+    const filas = (PI.filas || []).filter(ok); let h = '';
+    const rojas = filas.filter((o) => o.color === 'rojo').length; const ambar = filas.filter((o) => o.color === 'ambar').length;
+    h += '<p class="nota-chica ins-ayuda">El reloj cuenta de 8:00 a 22:00, todos los días, desde la primera orden. Ámbar a las 16 horas y rojo a las 24. Se apaga cuando llega la instalación o Odoo la cancela.' +
+      (rojas || ambar ? ' Hoy: ' + [rojas ? plural(rojas, 'en rojo', 'en rojo') : '', ambar ? plural(ambar, 'en ámbar', 'en ámbar') : ''].filter(Boolean).join(' y ') + '.' : '') + '</p>';
+    if(!filas.length) h += vacio(busca ? 'Sin resultados' : 'Nada por instalar', busca ? 'Nadie coincide con "' + busca + '".' : 'No hay órdenes abiertas sin instalación. Cuando un líder monte una orden en Odoo, aparece aquí.');
+    else if(yo.rol === 'lider') h += '<div class="grupo abierto">' + filas.map(filaInstalar).join('') + '</div>';
+    else {
+      const g = {}; filas.forEach((o) => { (g[o.lider] = g[o.lider] || []).push(o); });
+      const peso = (l) => g[l].filter((o) => o.color === 'rojo').length * 1000 + g[l].filter((o) => o.color === 'ambar').length;
+      h += Object.keys(g).sort((a, b) => peso(b) - peso(a) || a.localeCompare(b)).map((l) => {
+        const ab = abiertos['i|' + l] !== undefined ? abiertos['i|' + l] : true;   // es una lista de trabajo corta: abre con todo a la vista
+        const r = g[l].filter((o) => o.color === 'rojo').length;
+        return '<div class="grupo' + (ab ? ' abierto' : '') + '"><button type="button" class="grupo-cab" data-grupo="i|' + esc(l) + '" aria-expanded="' + ab + '"><span class="tx"><b>' + esc(l) + '</b><small>' +
+          plural(g[l].length, 'orden abierta', 'órdenes abiertas') + (r ? ' · <span class="mal">' + r + ' en rojo</span>' : '') + '</small></span>' + ic('abajo') + '</button><div class="grupo-cuerpo">' + g[l].map(filaInstalar).join('') + '</div></div>';
+      }).join('');
+    }
+    const re = (PI.realizadas || []).filter((o) => ok(Object.assign({ numero: o.numero }, o)));
+    if(PI.puedo && PI.puedo.realizadas && re.length){
+      const ab = !!abiertos['i|__realizadas'];
+      h += '<div class="grupo' + (ab ? ' abierto' : '') + '" style="margin-top:18px"><button type="button" class="grupo-cab" data-grupo="i|__realizadas" aria-expanded="' + ab + '"><span class="tx"><b>Realizada en Odoo sin instalación</b><small>' +
+        plural(re.length, 'orden', 'órdenes') + ' en 60 días. Revisa si falta cargar la instalación o falló el cruce</small></span>' + ic('abajo') + '</button><div class="grupo-cuerpo">' +
+        re.map((o) => '<' + (o.cliente_id ? 'button type="button" data-exp="' + esc(o.cliente_id) + '"' : 'div') + ' class="fila"><span class="tx"><b>' + esc(o.cliente) + '</b><small>' + esc(ordenCorta(o.numero)) + ' · ' + esc(o.lider || 'Sin líder') +
+          ' · Realizada el ' + esc(fecha(o.ejecutada_en || o.creada_en)) + '</small></span><span class="m azul">Realizado</span></' + (o.cliente_id ? 'button' : 'div') + '>').join('') + '</div></div>';
+    }
+    $('lista').innerHTML = h;
+  }
+  function abrirDuenoProv(cliente, nombre){
+    const h = hojaChica('hojaDueno', 'tDueno');
+    h.innerHTML = cabHoja('tDueno', 'Dueño del cliente', nombre) + '<form id="formDueno" novalidate data-cliente="' + esc(cliente) + '"><label class="rotulo" for="duenoSel">Pertenece a</label><select class="campo" id="duenoSel"><option value="">Elige el líder</option>' +
+      ((PI && PI.duenos) || []).map((x) => '<option>' + esc(x) + '</option>').join('') + '</select><div class="error" id="eDueno" role="alert"></div>' +
+      '<p class="nota">La orden la creó otra persona sin código de vendedor. El cliente queda a nombre del líder que elijas.</p><div class="acciones"><button type="submit" class="btn btn-ancho" id="guardarDueno">Guardar</button></div></form>';
+    abrirHoja('hojaDueno');
   }
   // Lo que pide atención en el corte y lo que se puede hacer con él
   function pintarAvisos(){
@@ -305,7 +374,7 @@
     const mio = ++pedido; const clave = 'comisiones3:' + (corte || 'actual');
     const guardado = cache.leer(clave);
     if(guardado && guardado.rol === yo.rol){ d = guardado; pintar(); }
-    else { $('lista').innerHTML = esqueleto(5); $('mets').innerHTML = '<span class="sk" style="height:76px;border-radius:18px"></span><span class="sk" style="height:76px;border-radius:18px"></span><span class="sk" style="height:76px;border-radius:18px"></span>'; $('lado').innerHTML = ''; }
+    else { if(vista === 'corte') $('lista').innerHTML = esqueleto(5); $('mets').innerHTML = '<span class="sk" style="height:76px;border-radius:18px"></span><span class="sk" style="height:76px;border-radius:18px"></span><span class="sk" style="height:76px;border-radius:18px"></span>'; $('lado').innerHTML = ''; }
     try {
       const r = await rpc('comisiones_corte', { p_corte: corte || null });
       if(mio !== pedido) return;
@@ -313,7 +382,7 @@
       pintar(); guardarUrl(); if(K && K.F) pintarComision();
     } catch (e) {
       if(mio !== pedido) return;
-      if(!d) $('lista').innerHTML = '<div class="vacio" role="alert"><b>No se pudieron cargar las comisiones</b><p>' + esc(e.message) + '</p><button type="button" class="btn btn-chico" id="reintentar">Reintentar</button></div>';
+      if(!d && vista === 'corte') $('lista').innerHTML = '<div class="vacio" role="alert"><b>No se pudieron cargar las comisiones</b><p>' + esc(e.message) + '</p><button type="button" class="btn btn-chico" id="reintentar">Reintentar</button></div>';
       toast(e.message, 'error');
     }
   }
@@ -525,7 +594,7 @@
   }
   // Lo que se gestiona desde aquí abre el expediente encima; al cerrarlo se vuelve a esta hoja ya actualizada
   function alExpediente(o){ if(!K) return; window.Ficha.abrir(K.cliente, Object.assign({ yo, alCerrar: tras }, o || {})); }
-  function tras(){ cache.borrarTodo(); if(K) cargarComision(); cargar(); }
+  function tras(){ cache.borrarTodo(); if(K) cargarComision(); cargar(); if(vista === 'instalar') cargarInstalar(); }
 
   document.addEventListener('click', (e) => {
     const f = e.target.closest('#filtros [data-filtro], #avisos [data-filtro]');
@@ -535,6 +604,14 @@
     const m = e.target.closest('[data-mas]');
     if(m){ completos[m.dataset.mas] = true; const l = m.closest('.grupo').dataset.lider; abiertos[l] = true; pintarLista(); return; }
     if(e.target.closest('#lista #reintentar')){ cargar(); return; }
+    const vv = e.target.closest('#vistas [data-vista]'); if(vv){ cambiarVista(vv.dataset.vista); return; }
+    if(e.target.closest('#reintentarPI')){ cargarInstalar(); return; }
+    const ec = e.target.closest('[data-es-cli]');
+    if(ec){ const si = ec.dataset.esCli === 'si'; Array.prototype.forEach.call(ec.parentNode.querySelectorAll('button'), (x) => { x.disabled = true; });
+      rpc('orden_es_cliente', { p_orden: Number(ec.dataset.orden), p_cliente: si ? Number(ec.dataset.cli) : null })
+        .then(() => { toast(si ? 'Listo: la orden quedó en ese cliente' : 'Listo: se creó el cliente provisional'); cache.borrarTodo(); PI = null; cargarInstalar(); })
+        .catch((err) => { toast(err.message, 'error'); Array.prototype.forEach.call(ec.parentNode.querySelectorAll('button'), (x) => { x.disabled = false; }); }); return; }
+    const dp = e.target.closest('[data-dueno-prov]'); if(dp){ abrirDuenoProv(Number(dp.dataset.duenoProv), dp.dataset.nombre); return; }
     const t = e.target; let b;
     if((b = t.closest('[data-com]'))){ abrirComision(b.dataset.com, b.dataset.cliente); return; }
     if((b = t.closest('[data-exp]'))){ window.Ficha.abrir(Number(b.dataset.exp), { yo, alCerrar: tras }); return; }
@@ -577,6 +654,12 @@
       rpc('instalacion_pago', { p_instalacion: K.inst, p_pagada: pagada }).then(() => { toast(pagada ? 'Instalación marcada como pagada' : 'Pago quitado'); tras(); }).catch((err) => { toast(err.message, 'error'); if(document.contains(b)) b.disabled = false; }); }
   });
   document.addEventListener('submit', (e) => {
+    if(e.target.id === 'formDueno'){ e.preventDefault(); const v = $('duenoSel').value; $('eDueno').textContent = '';
+      if(!v){ $('eDueno').textContent = 'Elige el líder'; return; }
+      const b = $('guardarDueno'); b.disabled = true; b.textContent = 'Guardando…';
+      rpc('provisional_dueno', { p_cliente: Number(e.target.dataset.cliente), p_dueno: v })
+        .then(() => { toast('Listo: el cliente quedó a nombre de ' + v); if(hojaAbierta() === 'hojaDueno') cerrarHoja(); cache.borrarTodo(); PI = null; cargarInstalar(); })
+        .catch((err) => { $('eDueno').textContent = err.message; b.disabled = false; b.textContent = 'Guardar'; }); return; }
     if(e.target.id === 'formAsig' && A && K){ e.preventDefault(); const er = $('eAsig'); er.textContent = '';
       const m = document.querySelector('#asigOrdenes input:checked'); const dueno = $('asigDueno').value;
       if(!m){ er.textContent = 'Elige la orden o marca Sin orden de Odoo'; return; }
@@ -599,13 +682,13 @@
   });
   document.addEventListener('keydown', (e) => { if(e.key === 'Enter' && e.target.id === 'asigBusca'){ e.preventDefault(); if(A) buscarOrdenes(e.target.value.trim()); } });
   let tBusca = null;
-  $('busca').addEventListener('input', () => { clearTimeout(tBusca); tBusca = setTimeout(() => { busca = $('busca').value.trim(); guardarUrl(); if(d) pintarLista(); }, 140); });
+  $('busca').addEventListener('input', () => { clearTimeout(tBusca); tBusca = setTimeout(() => { busca = $('busca').value.trim(); guardarUrl(); if(vista === 'instalar') pintarInstalar(); else if(d) pintarLista(); }, 140); });
   $('corte').addEventListener('change', () => { corte = $('corte').value; d = null; cargar(); });
 
   window.Armazon.arrancar(['admin', 'abogado', 'lider', 'analista'], { activo: 'comisiones' }, (p) => {
     yo = p;
     window.Ficha.montar();
-    leerUrl(); $('busca').value = busca; pintarFiltros();
-    cargar();
+    leerUrl(); $('busca').value = busca; pintarFiltros(); pintarVistas();
+    cargar(); if(conInstalar()) cargarInstalar();
   }, (p) => { yo = p; });
 })();

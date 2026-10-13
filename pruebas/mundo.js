@@ -154,7 +154,23 @@ function segmento(c){
   const ded = c.servicios.some((s) => /(dedicad|conectiv)/.test(norm(s.categoria))); const pyme = c.servicios.some((s) => !/(dedicad|conectiv)/.test(norm(s.categoria)));
   return ded && pyme ? 'PYME + Dedicado' : ded ? (c.es_isp ? 'Dedicado ISP' : 'Dedicado corporativo') : c.es_natural ? 'Natural' : 'PYME';
 }
-const visibles = (m, yo) => m.datos.clientes.filter((c) => ['admin', 'abogado', 'analista'].includes(yo.rol) || (yo.rol === 'lider' && c.lider_id === yo.id));
+const visibles = (m, yo) => m.datos.clientes.filter((c) => !c.unido_a && (['admin', 'abogado', 'analista'].includes(yo.rol) || (yo.rol === 'lider' && c.lider_id === yo.id)));
+// Reloj de las órdenes abiertas: solo cuenta de 8:00 a 22:00 de Caracas, todos los días (igual que privado.horas_reloj)
+function horasReloj(desde, hasta){
+  const a = new Date(desde).getTime() - 4 * 3600000, b = new Date(hasta || Date.now()).getTime() - 4 * 3600000; if(b <= a) return 0;
+  let h = 0; for(let d = Math.floor(a / DIA) * DIA; d <= b; d += DIA){ const ini = Math.max(a, d + 8 * 3600000), fin = Math.min(b, d + 22 * 3600000); if(fin > ini) h += (fin - ini) / 3600000; }
+  return Math.round(h * 100) / 100;
+}
+function ordenesAbiertas(m, yo){
+  const r = visibles(m, yo).filter((c) => c.orden && porInstalar(c)).map((c) => { const o = c.orden; const ini = o.inicio || o.creada_en; const h = horasReloj(ini);
+    return { orden_id: o.id || c.id, numero: o.numero, titulo: o.titulo || '', etapa: o.etapa, creada_en: o.creada_en, inicio: ini, veces: o.veces || 0, horas: h, color: h >= 24 ? 'rojo' : h >= 16 ? 'ambar' : 'verde',
+      cliente_id: c.id, cliente: c.nombre, provisional: !!c.provisional, parecido_id: null, parecido: null, lider: c.lider || 'Por asignar', de_otro: !!o.de_otro }; });
+  if(['admin', 'analista'].includes(yo.rol)) (m.datos.sueltas || []).forEach((o) => { const h = horasReloj(o.creada_en); const p = m.datos.clientes.find((x) => x.id === o.parecido_id);
+    r.push({ orden_id: o.id, numero: o.numero, titulo: o.titulo, etapa: o.etapa, creada_en: o.creada_en, inicio: o.creada_en, veces: 0, horas: h, color: h >= 24 ? 'rojo' : h >= 16 ? 'ambar' : 'verde',
+      cliente_id: null, cliente: o.nombre, provisional: false, parecido_id: o.parecido_id, parecido: p ? p.nombre : null, lider: o.lider || 'Por asignar', de_otro: false }); });
+  const rango = { rojo: 0, ambar: 1, verde: 2 };
+  return r.sort((x, y) => rango[x.color] - rango[y.color] || y.horas - x.horas);
+}
 const error = (mensaje) => ({ __error: { code: 'P0001', message: mensaje } });
 
 const esSenior = (yo) => yo.rol === 'admin' || (yo.rol === 'analista' && !!yo.senior);
@@ -256,7 +272,39 @@ const RPC = {
         por_revisar_dias: rev.reduce((a, c) => Math.max(a, dias(fechaClave(caracas(c.estatus_desde)), hoy())), 0),
         devueltos: v.filter((c) => c.documentos.some((d) => d.estado === 'devuelto')).length, sin_gestion: v.filter(sinGestion).length,
         por_firmar: v.filter((c) => ['contrato_en_curso', 'por_firmar'].includes(c.estatus)).length, por_instalar: v.filter(porInstalar).length },
-      tad_en: null, tad_dias: null, usuarios: yo.rol === 'admin' ? m.personas.filter((p) => p.activo).length : null, hay_demo: false };
+      tad_en: null, tad_dias: null, usuarios: yo.rol === 'admin' ? m.personas.filter((p) => p.activo).length : null, hay_demo: false,
+      instalar: ['admin', 'analista', 'lider'].includes(yo.rol) ? (() => { const o = ordenesAbiertas(m, yo); return { total: o.length, rojo: o.filter((x) => x.color === 'rojo').length, ambar: o.filter((x) => x.color === 'ambar').length }; })() : null };
+  },
+  por_instalar(m, yo){
+    if(!['admin', 'analista', 'lider'].includes(yo.rol)) return error('No tienes permiso para hacer esto');
+    const sen = esSenior(yo);
+    return { rol: yo.rol, ahora: new Date().toISOString(), filas: ordenesAbiertas(m, yo), realizadas: yo.rol === 'admin' || sen ? (m.datos.realizadas || []) : null, duenos: sen ? DUENOS : [],
+      puedo: { asignar: sen, realizadas: yo.rol === 'admin' || sen } };
+  },
+  orden_es_cliente(m, yo, a){
+    if(!['admin', 'analista', 'lider'].includes(yo.rol)) return error('No tienes permiso para hacer esto');
+    const i = (m.datos.sueltas || []).findIndex((o) => o.id === Number(a.p_orden)); if(i < 0) return error('Esa orden ya tiene cliente');
+    const o = m.datos.sueltas.splice(i, 1)[0]; let c;
+    if(a.p_cliente){ if(Number(a.p_cliente) !== o.parecido_id) return error('Ese no es el cliente propuesto'); c = m.datos.clientes.find((x) => x.id === o.parecido_id); }
+    else { c = cliente({ nombre: o.nombre, doc_numero: String(9900000000 + o.id), provisional: true, lider: o.lider || null, lider_id: null }); c.orden = { id: o.id, numero: o.numero, titulo: o.titulo, creada_en: o.creada_en, etapa: o.etapa }; m.datos.clientes.push(c); }
+    (m.bitacora = m.bitacora || []).push({ usuario: yo.usuario, accion: 'orden_cliente', registro_id: String(o.id), despues: { es_ese: !!a.p_cliente, cliente: c.id }, en: new Date().toISOString() });
+    return c.id;
+  },
+  provisional_dueno(m, yo, a){
+    if(!esSenior(yo)) return error('Solo el Analista Senior puede hacer esto');
+    const c = m.datos.clientes.find((x) => x.id === Number(a.p_cliente)); if(!c || !c.provisional) return error('Ese cliente no es provisional');
+    if(DUENOS.indexOf(a.p_dueno) < 0) return error('Ese nombre no está en la lista de líderes');
+    c.lider = a.p_dueno; if(c.orden) c.orden.de_otro = false;
+    (m.bitacora = m.bitacora || []).push({ usuario: yo.usuario, accion: 'provisional_dueno', registro_id: String(c.id), despues: { lider: a.p_dueno }, en: new Date().toISOString() });
+    return null;
+  },
+  provisional_rif(m, yo, a){
+    const c = visibles(m, yo).find((x) => x.id === Number(a.p_cliente)); if(!c) return error('No tienes acceso a este cliente');
+    if(!c.provisional) return error('Ese cliente ya no es provisional');
+    const num = String(a.p_rif || '').replace(/\D/g, '').replace(/^0+/, ''); if(!/^[1-9][0-9]{4,9}$/.test(num)) return error('Ese RIF no parece válido');
+    const real = m.datos.clientes.find((x) => x.doc_numero === num && x.id !== c.id);
+    if(real){ c.documentos.forEach((d) => { if(!busca(real, d.casilla, d.numero)) real.documentos.push(d); }); c.documentos = []; c.unido_a = real.id; real.hilo.push(linea('dato', 'provisional_unido', { provisional: c.id }, yo.nombre)); return real.id; }
+    c.doc_numero = num; c.doc_tipo = (String(a.p_rif).trim().charAt(0).toUpperCase().match(/[VEJGPC]/) || ['J'])[0]; c.provisional = false; return c.id;
   },
   // Igual que clientes_lista, con los filtros de las listas desplegables y sus opciones
   clientes_lista2(m, yo, a){
@@ -284,19 +332,19 @@ const RPC = {
       total: sel.length, desde: des, rol: yo.rol, hoy: hoy(),
       filas: sel.slice(des, des + lim).map((c) => { const s = c.servicios[0]; const rp = c.representantes.find((x) => x.orden === 1) || {};
         return { id: c.id, nombre: c.nombre, doc_tipo: c.doc_tipo, doc_numero: c.doc_numero, es_natural: c.es_natural, seg: segmento(c), estatus: c.estatus, estatus_desde: c.estatus_desde, lider: c.lider,
-          ug_en: c.ug_en, ug_por: c.ug_por, creado_en: c.creado_en, es_top: c.es_top, ultimo_corte: ultimoCorte(c), por_instalar: porInstalar(c), n_serv: c.servicios.length,
+          ug_en: c.ug_en, ug_por: c.ug_por, creado_en: c.creado_en, es_top: c.es_top, ultimo_corte: ultimoCorte(c), por_instalar: porInstalar(c), provisional: !!c.provisional, n_serv: c.servicios.length,
           serv: s ? { codigo: s.codigo, sucursal: s.sucursal, plan: s.plan, categoria: s.categoria, estado: s.estado, telefono: s.telefono } : null,
           tel: rp.telefono || c.telefono || (s && s.telefono) || null, correo: rp.correo || c.correo_empresa || null, falta: faltantes(c), por_revisar: c.documentos.filter((d) => d.estado === 'por_revisar').length, por_subir: porSubir(c) }; }) };
   },
   cliente_ficha(m, yo, a){
-    const c = visibles(m, yo).find((x) => x.id === Number(a.p_cliente)); if(!c) return error('No tienes acceso a este cliente');
+    const c = m.datos.clientes.filter((x) => ['admin', 'abogado', 'analista'].includes(yo.rol) || (yo.rol === 'lider' && x.lider_id === yo.id)).find((x) => x.id === Number(a.p_cliente)); if(!c) return error('No tienes acceso a este cliente');
     const actual = enCurso(); const rp = c.representantes.find((x) => x.orden === 1) || {}; const s0 = c.servicios[0];
     const r = yo.rol;
     return { rol: r, hoy: hoy(), yo: { id: yo.id, nombre: yo.nombre }, corte: { etiqueta: actual, fin: corteFin(actual), limite: corteLimite(actual), dias: dias(hoy(), corteLimite(actual)) },
       cliente: { id: c.id, nombre: c.nombre, doc_tipo: c.doc_tipo, doc_numero: c.doc_numero, es_natural: c.es_natural, seg: segmento(c), estatus: c.estatus, estatus_desde: c.estatus_desde, legal_ok_en: c.legal_ok_en,
         lider: c.lider, es_top: c.es_top, regimen_firma: c.regimen_firma, es_isp: c.es_isp, correo_empresa: c.correo_empresa, telefono: c.telefono, direccion: c.direccion,
         proforma_en: c.proforma_en, proforma_por: c.proforma_por, bienvenida_en: c.bienvenida_en, bienvenida_por: c.bienvenida_por, ug_en: c.ug_en, ug_por: c.ug_por, creado_en: c.creado_en, es_demo: c.es_demo,
-        tel: rp.telefono || c.telefono || (s0 && s0.telefono) || null, correo: rp.correo || c.correo_empresa || null, por_instalar: porInstalar(c), por_subir: porSubir(c) },
+        tel: rp.telefono || c.telefono || (s0 && s0.telefono) || null, correo: rp.correo || c.correo_empresa || null, por_instalar: porInstalar(c), por_subir: porSubir(c), provisional: !!c.provisional, unido_a: c.unido_a || null },
       orden: c.orden, servicios: c.servicios.map((sv) => Object.assign({}, sv, { envios: undefined, carta: cartaDe(m, c, sv), proforma_envio: ultimoEnvio(sv, 'proforma'), bienvenida_envio: ultimoEnvio(sv, 'bienvenida') })), representantes: c.representantes,
       documentos: c.documentos.slice().sort((x, y) => x.casilla.localeCompare(y.casilla) || x.numero - y.numero), requeridos: requeridos(c), faltantes: faltantes(c),
       hilo: c.hilo.slice().sort((x, y) => y.en.localeCompare(x.en) || y.id - x.id).map((h) => Object.assign({ mio: h.autor === yo.nombre }, h)), hilo_total: c.hilo.length,
@@ -806,4 +854,4 @@ function archivoDrive(m, yo, id){
   }
   return { error: 'Ese archivo no existe', status: 404 };
 }
-module.exports = { baseDatos, RPC, LUCIA, archivoDrive, driveSubir, corte: { corteDe, corteInicio, corteFin, corteLimite, corteCertifica, enCurso, fijarHoy: (d) => { hoyFijo = d; } } };
+module.exports = { baseDatos, RPC, LUCIA, archivoDrive, driveSubir, horasReloj, corte: { corteDe, corteInicio, corteFin, corteLimite, corteCertifica, enCurso, fijarHoy: (d) => { hoyFijo = d; } } };
