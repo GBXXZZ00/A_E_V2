@@ -273,7 +273,7 @@
   function mesAnio(fecha){ const m = /^(\d{4})-(\d{2})/.exec(String(fecha || '')); return m ? MESES[Number(m[2]) - 1] + ' ' + m[1] : ''; }
   function nombreArchivo(tipo, nombre){
     const base = String(nombre || 'cliente').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^A-Za-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 60) || 'cliente';
-    return (tipo === 'bienvenida' ? 'Carta_Bienvenida_' : 'Proforma_') + base + '.pdf';
+    return (tipo === 'bienvenida' ? 'Carta_Bienvenida_' : tipo === 'cambio-de-titular' ? 'Cambio_de_Titular_' : 'Proforma_') + base + '.pdf';
   }
   // F: lo que devuelve cliente_ficha; s: el servicio elegido; hoy: AAAA-MM-DD
   function datosDe(F, s, telefono){
@@ -341,5 +341,61 @@
     return armarPaginas(hojas, 'Pendientes de ' + x.lider + ', corte de ' + x.corte);
   }
 
-  window.Documentos = { proforma, carta, pendientes, datosDe, nombreArchivo, telFmt, limpiarNombre, waNumero, PORTAL, _ancho: ancho, _partir: partir };
+  // ---------- Planilla de cambio de titular (lote 4): misma plantilla oficial, más nítida ----------
+  // x: { tipo: 'natural_natural'|'natural_juridico'|'juridico_natural'|'juridico_juridico', servicio, ubicacion, fecha,
+  //      actual: { nombre, doc, natural, direccion, correo, telefono }, nuevo: { igual } }
+  const TIPOS_PLANILLA = [['natural_natural', 'Persona natural a persona natural'], ['natural_juridico', 'Persona natural a persona jurídica'],
+    ['juridico_natural', 'Persona jurídica a persona natural'], ['juridico_juridico', 'Persona jurídica a persona jurídica']];
+  function planillaTitular(x){
+    const d = new Lapiz(); let y = ARRIBA; const vacio = '______________________________';
+    y += d.logo(X0, y, 170) + 18;
+    y += d.texto(X0, y, 'Solicitud de cambio de titular', { tam: 20, negrita: true }) + 4;
+    y += d.texto(X0, y, 'Fecha: ' + (x.fecha || '____/____/________'), { tam: 10.5, color: '#555555' }) + 16;
+    // Tipo de solicitud: cuatro casillas
+    y += titulo(d, y, 'Tipo de solicitud', 8);
+    const col = W / 2;
+    TIPOS_PLANILLA.forEach((t, i) => {
+      const cx = X0 + (i % 2) * col; const cy = y + Math.floor(i / 2) * 26;
+      d.marco(cx, cy, 15, 15, '#333333', 1.2);
+      if(t[0] === x.tipo){ d.texto(cx + 2.5, cy - 1, 'X', { tam: 14, negrita: true }); }
+      d.texto(cx + 24, cy, t[1], { tam: 11 });
+    });
+    y += 2 * 26 + 12;
+    // Texto de la solicitud
+    const a = x.actual || {}; const n = x.nuevo || {};
+    const parrafo = 'Yo, ' + (a.nombre || vacio) + ', titular de la cédula o RIF ' + (a.doc || '____________') + ', solicito traspasar el servicio identificado con el número ' +
+      (x.servicio || '____________') + ' a nombre de ' + (n.nombre || vacio) + ', cédula o RIF ' + (n.doc || '____________') + ', ubicado en ' + (x.ubicacion || vacio) + '.';
+    y += d.texto(X0, y, parrafo, { tam: 11.5, alto: 1.55, max: W }) + 18;
+    // Tabla: titular actual y nuevo titular
+    const filas = [['Nombre o razón social', a.nombre, n.nombre], ['Cédula o RIF', a.doc, n.doc], ['Persona', a.natural === undefined ? '' : a.natural ? 'Natural' : 'Jurídica', n.natural === undefined ? '' : n.natural ? 'Natural' : 'Jurídica'],
+      ['Ubicación', a.direccion, n.direccion], ['Correo', a.correo, n.correo], ['Teléfono', a.telefono, n.telefono]];
+    const c0 = 150; const c1 = (W - c0) / 2;
+    d.caja(X0, y, W, 26, '#F2F3F5');
+    d.texto(X0 + c0 + 10, y + 6, 'Titular actual', { tam: 10.5, negrita: true, color: GRIS }); d.texto(X0 + c0 + c1 + 10, y + 6, 'Nuevo titular', { tam: 10.5, negrita: true, color: GRIS });
+    y += 26;
+    filas.forEach((f) => {
+      const h = Math.max(30, 12 + Math.max(partir(String(f[1] || ''), 10.5, false, c1 - 20).length, partir(String(f[2] || ''), 10.5, false, c1 - 20).length) * 15);
+      d.marco(X0, y, W, h, '#C9CED6', 0.8);
+      d.texto(X0 + 8, y + 8, f[0], { tam: 9.5, color: '#555555', max: c0 - 12 });
+      d.texto(X0 + c0 + 10, y + 7, String(f[1] || ''), { tam: 10.5, negrita: true, max: c1 - 20, alto: 1.4 });
+      d.texto(X0 + c0 + c1 + 10, y + 7, String(f[2] || ''), { tam: 10.5, negrita: true, max: c1 - 20, alto: 1.4 });
+      y += h;
+    });
+    y += 12;
+    y += d.texto(X0, y, 'Anexar copia de la cédula de identidad o del RIF de ambos titulares. Si el nuevo titular es una empresa, también sus documentos legales (RIF, acta constitutiva y cédula del representante).', { tam: 10, color: '#444444', max: W, alto: 1.45 }) + 22;
+    // Firmas y huellas de ambos
+    const ancho2 = (W - 24) / 2;
+    [['Titular actual', a], ['Nuevo titular', n]].forEach((t, i) => {
+      const x0 = X0 + i * (ancho2 + 24); let yy = y;
+      d.texto(x0, yy, t[0], { tam: 11, negrita: true }); yy += 22;
+      d.caja(x0, yy + 50, ancho2, 0.9, '#333333'); d.texto(x0, yy + 56, 'Firma', { tam: 9.5, color: '#555555' });
+      d.texto(x0, yy + 72, 'Nombre: ' + (t[1].nombre || ''), { tam: 9.5, color: '#555555', max: ancho2 });
+      const lado = (ancho2 - 16) / 2; const yh = yy + 100;
+      d.marco(x0, yh, lado, 86, '#999999', 0.8); d.marco(x0 + lado + 16, yh, lado, 86, '#999999', 0.8);
+      d.texto(x0, yh + 92, 'Pulgar derecho', { tam: 9, color: '#555555' }); d.texto(x0 + lado + 16, yh + 92, 'Pulgar izquierdo', { tam: 9, color: '#555555' });
+    });
+    return armarPaginas([d], 'Solicitud de cambio de titular');
+  }
+
+  window.Documentos = { planillaTitular, proforma, carta, pendientes, datosDe, nombreArchivo, telFmt, limpiarNombre, waNumero, PORTAL, _ancho: ancho, _partir: partir };
 })();

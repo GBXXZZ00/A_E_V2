@@ -17,12 +17,12 @@
     const u = new URLSearchParams(location.search);
     const f = u.get('f'); filtro = FILTROS.some((x) => x.id === f) ? f : 'todos';
     busca = (u.get('q') || '').slice(0, 60);
-    vista = u.get('t') === 'instalar' ? 'instalar' : 'corte';
+    vista = u.get('t') === 'instalar' ? 'instalar' : u.get('t') === 'cambios' ? 'cambios' : 'corte';
     const c = u.get('c'); corte = /^\d{4}-(0[1-9]|1[0-2])/.test(c || '') ? c.slice(0, 7) + '-01' : '';
   }
   function guardarUrl(){
     const u = new URLSearchParams();
-    if(vista === 'instalar') u.set('t', 'instalar');
+    if(vista === 'instalar') u.set('t', 'instalar'); else if(vista === 'cambios') u.set('t', 'cambios');
     if(filtro !== 'todos' && vista === 'corte') u.set('f', filtro);
     if(busca) u.set('q', busca);
     if(d && corte && corte !== d.actual) u.set('c', corte.slice(0, 7));
@@ -92,6 +92,7 @@
   // Etiquetas informativas de la fila: archivos por subir y la carta de bienvenida
   function etiquetas(f){
     let h = '';
+    if(f.instalador === 'Cambio de categoría') h += '<span class="tagn verde">Cambio de categoría</span>';
     if(f.por_subir) h += '<span class="tagn ambar">' + (f.aprobado_por_subir ? 'Aprobado, documentos por subir' : 'Archivos por subir') + '</span>';
     if(f.servicio_id) h += f.bienvenida_en ? '<span class="tagn verde">Enviada ' + esc(diaMes(f.bienvenida_en)) + '</span>' : '<span class="tagn">Bienvenida por enviar</span>';
     return h;
@@ -174,13 +175,15 @@
   function pintarVistas(){
     if(!conInstalar()){ $('vistas').innerHTML = ''; return; }
     const rojas = PI ? vigentes(PI.filas).filter((o) => o.color === 'rojo').length : 0;
-    $('vistas').innerHTML = [['corte', 'Corte'], ['instalar', 'Por instalar']].map((x) => '<button type="button" role="tab" data-vista="' + x[0] + '" aria-selected="' + (vista === x[0]) + '" class="' + (vista === x[0] ? 'on' : '') + '">' + x[1] +
-      (x[0] === 'instalar' && rojas ? ' <em>' + rojas + '</em>' : '') + '</button>').join('');
-    document.querySelector('main').classList.toggle('vista-instalar', vista === 'instalar');
+    const nCam = window.Cambios ? window.Cambios.pendientes() : 0;
+    $('vistas').innerHTML = [['corte', 'Corte'], ['instalar', 'Por instalar'], ['cambios', 'Cambios']].map((x) => '<button type="button" role="tab" data-vista="' + x[0] + '" aria-selected="' + (vista === x[0]) + '" class="' + (vista === x[0] ? 'on' : '') + '">' + x[1] +
+      (x[0] === 'instalar' && rojas ? ' <em>' + rojas + '</em>' : '') + (x[0] === 'cambios' && nCam ? ' <em class="az">' + nCam + '</em>' : '') + '</button>').join('');
+    document.querySelector('main').classList.toggle('vista-instalar', vista !== 'corte');
   }
   function cambiarVista(v){
     if(v === vista) return; vista = v; guardarUrl(); pintarVistas();
-    if(vista === 'instalar') cargarInstalar(); else if(d){ pintarLista(); pintarLado(); } else cargar();
+    if(vista !== 'cambios' && window.Cambios) window.Cambios.ocultar();
+    if(vista === 'instalar') cargarInstalar(); else if(vista === 'cambios') window.Cambios.mostrar(yo); else if(d){ pintarLista(); pintarLado(); } else cargar();
   }
   async function cargarInstalar(){
     const mio = ++pedidoPI; const clave = 'instalar:' + yo.rol;
@@ -226,7 +229,7 @@
   let verAnt = false;
   const vigentes = (l) => (l || []).filter((o) => verAnt || !o.anterior);
   function pintarInstalar(){
-    if(!PI) return;
+    if(!PI || vista !== 'instalar') return;
     const ok = (o) => { const b = normalizeStr(busca); return !b || normalizeStr(o.cliente).indexOf(b) >= 0 || normalizeStr(o.lider).indexOf(b) >= 0 || String(o.numero || '').indexOf(busca) >= 0; };
     const filas = vigentes(PI.filas).filter(ok); let h = kpisInstalar(vigentes(PI.filas));
     const nAnt = (PI.filas || []).concat(PI.realizadas || []).filter((o) => o.anterior).length;
@@ -646,7 +649,7 @@
   }
   // Lo que se gestiona desde aquí abre el expediente encima; al cerrarlo se vuelve a esta hoja ya actualizada
   function alExpediente(o){ if(!K) return; window.Ficha.abrir(K.cliente, Object.assign({ yo, alCerrar: tras }, o || {})); }
-  function tras(){ cache.borrarTodo(); if(K) cargarComision(); cargar(); if(vista === 'instalar') cargarInstalar(); }
+  function tras(){ cache.borrarTodo(); if(K) cargarComision(); cargar(); if(vista === 'instalar') cargarInstalar(); if(vista === 'cambios') window.Cambios.cargar(); }
 
   document.addEventListener('click', (e) => {
     const f = e.target.closest('#filtros [data-filtro], #avisos [data-filtro]');
@@ -742,13 +745,14 @@
   });
   document.addEventListener('keydown', (e) => { if(e.key === 'Enter' && e.target.id === 'asigBusca'){ e.preventDefault(); if(A) buscarOrdenes(e.target.value.trim()); } });
   let tBusca = null;
-  $('busca').addEventListener('input', () => { clearTimeout(tBusca); tBusca = setTimeout(() => { busca = $('busca').value.trim(); guardarUrl(); if(vista === 'instalar') pintarInstalar(); else if(d) pintarLista(); }, 140); });
+  $('busca').addEventListener('input', () => { clearTimeout(tBusca); tBusca = setTimeout(() => { busca = $('busca').value.trim(); guardarUrl(); if(vista === 'instalar') pintarInstalar(); else if(vista === 'cambios') window.Cambios.buscar(busca); else if(d) pintarLista(); }, 140); });
   $('corte').addEventListener('change', () => { corte = $('corte').value; d = null; cargar(); });
 
   window.Armazon.arrancar(['admin', 'abogado', 'lider', 'analista'], { activo: 'comisiones' }, (p) => {
     yo = p;
     window.Ficha.montar();
     leerUrl(); $('busca').value = busca; pintarFiltros(); pintarVistas();
-    cargar(); if(conInstalar()) cargarInstalar();
+    cargar(); if(conInstalar()){ cargarInstalar(); if(vista === 'cambios') window.Cambios.mostrar(yo); else window.Cambios.pre(yo); }
   }, (p) => { yo = p; });
+  document.addEventListener('cambios-contador', () => pintarVistas());
 })();
