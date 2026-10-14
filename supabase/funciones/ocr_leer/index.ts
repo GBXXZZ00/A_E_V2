@@ -1,7 +1,8 @@
 // OCR con Google Drive: copia el archivo convirtiéndolo a documento de Google (Drive hace el OCR), saca el texto y borra la copia.
 // Guarda el texto y lo que sacan los lectores con reglas fijas (lectores.mjs) en public.ocr_lecturas: un archivo se lee una sola vez.
 // Si algo falla (permiso, tamaño, archivo ilegible) queda "sin_lectura" y la app sigue por el camino de siempre (la IA).
-// Dos entradas: la app (sesión del usuario, un archivo, responde enseguida) y la base (token interno x-tarea, varios en segundo plano).
+// Tres entradas: la app con un archivo ya guardado (sesión del usuario, responde enseguida), la app con un archivo recién elegido
+// (formulario de titular y aliados: se sube convertido, se lee y se borra; no se guarda) y la base (token interno x-tarea, varios en segundo plano).
 // Copia del código publicado en Supabase. Sin claves: los secretos de Google viven en Supabase.
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
@@ -38,14 +39,29 @@ async function tokenGoogle(): Promise<string> {
 }
 
 // Drive: copia convertida (OCR en español), texto plano y la copia se borra siempre
+const META = JSON.stringify({ name: "ocr-temporal", mimeType: "application/vnd.google-apps.document" });
 async function ocrDrive(driveId: string): Promise<string> {
+  return convertir((H) => fetch("https://www.googleapis.com/drive/v3/files/" + encodeURIComponent(driveId) + "/copy?supportsAllDrives=true&ocrLanguage=es&fields=id", {
+    method: "POST", headers: { ...H, "Content-Type": "application/json" }, body: META,
+  }));
+}
+// Un archivo que todavía no está en Drive (formulario de titular, aliados): se sube ya convertido y se borra
+async function ocrSuelto(bytes: Uint8Array, mime: string): Promise<string> {
+  return convertir((H) => {
+    const limite = "ocr" + crypto.randomUUID().replace(/-/g, "");
+    const enc = new TextEncoder();
+    const cuerpo = new Blob([enc.encode("--" + limite + "\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n" + META + "\r\n--" + limite + "\r\nContent-Type: " + mime + "\r\n\r\n"), bytes, enc.encode("\r\n--" + limite + "--")]);
+    return fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&ocrLanguage=es&fields=id", { method: "POST", headers: { ...H, "Content-Type": "multipart/related; boundary=" + limite }, body: cuerpo });
+  });
+}
+async function convertir(crear: (H: Record<string, string>) => Promise<Response>): Promise<string> {
   const tk = await tokenGoogle();
   if (!tk) throw new Error("El permiso de Google venció");
   const H = { Authorization: "Bearer " + tk };
-  const c = await fetch("https://www.googleapis.com/drive/v3/files/" + encodeURIComponent(driveId) + "/copy?supportsAllDrives=true&ocrLanguage=es&fields=id", {
-    method: "POST", headers: { ...H, "Content-Type": "application/json" },
-    body: JSON.stringify({ name: "ocr-temporal", mimeType: "application/vnd.google-apps.document" }),
-  });
+  const copiar = () => crear(H);
+  let c = await copiar();
+  // Google a veces falla por su lado (500): un segundo intento
+  if (c.status >= 500) { await new Promise((r) => setTimeout(r, 1500)); c = await copiar(); }
   const cj = await c.json().catch(() => ({}));
   if (!c.ok || !cj.id) {
     if (c.status === 401) permiso = { token: "", vence: 0 };
@@ -66,7 +82,7 @@ type Archivo = { id: number; drive_id: string; mime: string; tamano: number; cas
 // Lee un archivo (o devuelve lo ya leído) y guarda el resultado
 async function procesar(a: Archivo): Promise<Record<string, unknown>> {
   const { data: ya } = await db.from("ocr_lecturas").select("estado, tipo, datos, dudosa, error, lector, texto").eq("archivo_id", a.id).maybeSingle();
-  if (ya && (ya.estado === "sin_lectura" || ya.lector === VERSION)) return ya;
+  if (ya && ya.lector === VERSION) return ya;   // ya leído con esta versión (también lo que quedó sin lectura)
   let fila: Record<string, unknown>;
   if (ya && ya.estado === "ok" && ya.texto) {
     // Ya se leyó con Google: solo se vuelven a correr los lectores nuevos (gratis)
@@ -106,10 +122,33 @@ async function lote(ids: number[]) {
   for (let i = 0; i < cola.length; i += 3) await Promise.all(cola.slice(i, i + 3).map((a) => procesar(a).catch((e) => console.error("ocr", a.id, e))));
 }
 
+// Archivo suelto: cualquiera con sesión (también un aliado). No se guarda nada: solo devuelve lo leído
+async function suelto(req: Request): Promise<Response> {
+  const sesion = req.headers.get("Authorization") || "";
+  if (!/^Bearer\s+\S+/i.test(sesion)) return respuesta({ error: "Tu sesión venció. Entra de nuevo" }, 401);
+  const { data: u } = await db.auth.getUser(sesion.replace(/^Bearer\s+/i, ""));
+  if (!u?.user) return respuesta({ error: "Tu sesión venció. Entra de nuevo" }, 401);
+  const form = await req.formData().catch(() => null);
+  const archivo = form ? form.get("archivo") : null;
+  if (!(archivo instanceof File) || !archivo.size) return respuesta({ estado: "sin_lectura", error: "No llegó el archivo" });
+  if (!TIPOS.test(archivo.type)) return respuesta({ estado: "sin_lectura", error: "El OCR solo lee PDF, JPG y PNG" });
+  if (archivo.size > 10 * 1024 * 1024) return respuesta({ estado: "sin_lectura", error: "Archivo muy grande para el OCR" });
+  const t0 = Date.now();
+  try {
+    const texto = await ocrSuelto(new Uint8Array(await archivo.arrayBuffer()), archivo.type);
+    if (texto.replace(/\s/g, "").length < 15) return respuesta({ estado: "sin_lectura", error: "Google no encontró texto legible", ms: Date.now() - t0 });
+    const l = leer(texto);
+    return respuesta({ estado: "ok", tipo: l.tipo, datos: l.datos, dudosa: l.dudosa, error: null, ms: Date.now() - t0 });
+  } catch (e) {
+    return respuesta({ estado: "sin_lectura", error: (e as Error).message, ms: Date.now() - t0 });
+  }
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return respuesta({ error: "Método no permitido" }, 405);
   try {
+    if (/multipart\/form-data/i.test(req.headers.get("Content-Type") || "")) return await suelto(req);
     const b = (await req.json().catch(() => ({}))) as Record<string, unknown>;
     const tarea = req.headers.get("x-tarea") || "";
     if (tarea) {
@@ -118,6 +157,8 @@ Deno.serve(async (req: Request) => {
       if (valido !== true) return respuesta({ error: "No autorizado" }, 401);
       const ids = (Array.isArray(b.archivos) ? b.archivos : []).map(Number).filter((n) => Number.isInteger(n) && n > 0).slice(0, 60);
       if (!ids.length) return respuesta({ error: "Faltan los archivos" }, 400);
+      // La revisión con IA espera la lectura de un archivo suelto antes de decidir si gasta Gemini
+      if (b.esperar === true && ids.length <= 4) { await lote(ids); return respuesta({ ok: true, archivos: ids.length }); }
       EdgeRuntime.waitUntil(lote(ids));
       return respuesta({ ok: true, archivos: ids.length }, 202);
     }

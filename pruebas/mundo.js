@@ -213,6 +213,8 @@ function pendientesBase(m){
   return m.datos.pendientes.concat(pendDecidir(m));
 }
 // Corrida 14/10 tarde: módulo de cada tipo (como privado.modulo_de) y sin "Hecho"
+// Corrida 14/10 tarde: categorías del TAD (como privado.categorias_tad)
+const CATEGORIAS = ['PYME-1GB', 'DEDICADO', 'EXONERADO', '1 GB', 'PROMO-1GB', 'RESIDENCIAL'];
 function moduloDe(t){
   return ['docs_faltan', 'devuelto', 'por_firmar', 'sin_gestion', 'rif_verificar'].includes(t) ? 'expedientes'
     : ['por_instalar', 'por_enviar', 'sin_ip', 'por_asignar', 'certificar', 'sin_cliente', 'sin_servicio'].includes(t) ? 'comisiones'
@@ -560,15 +562,22 @@ const RPC = {
   cambio_crear(m, yo, a){ const k = m.datos.cambiosK; const p = a.p_datos || {}; if(!k || !k.vigente) return error('Todavía no se ha subido el TAD completo');
     const sv = (p.servicios || []).map((cl) => k.idx[cl]).filter(Boolean); if(!sv.length) return error('Elige al menos un servicio');
     if(new Set(sv.map((x) => x.doc_numero)).size > 1) return error('Los servicios deben ser del mismo titular');
-    if(p.tipo !== 'titularidad' && !p.categoria_nueva) return error('Escribe la categoría nueva');
+    if(p.tipo !== 'titularidad' && !p.categoria_nueva) return error('Elige la categoría nueva');
+    if(p.tipo !== 'titularidad' && !CATEGORIAS.includes(String(p.categoria_nueva).toUpperCase())) return error('Elige una categoría de la lista');
+    if(p.tipo !== 'categoria' && !['natural_natural', 'natural_juridico', 'juridico_natural', 'juridico_juridico'].includes(p.tipo_solicitud)) return error('Elige el tipo de solicitud');
     let cli = null;
     if(p.tipo !== 'categoria'){ const d = String(p.nuevo.doc).replace(/\D/g, '').replace(/^0+/, ''); cli = m.datos.clientes.find((c) => c.doc_numero === d);
       if(!cli){ cli = Object.assign({}, { id: 90000 + (++k.sec), nombre: p.nuevo.nombre.toUpperCase(), doc_tipo: p.nuevo.tipo, doc_numero: d, es_natural: !!p.nuevo.natural, estatus: 'documentos_solicitados', lider: yo.nombre, lider_id: yo.rol === 'lider' ? yo.id : null,
         servicios: [], representantes: [], documentos: [], hilo: [], instalaciones: [], orden: null, creado_en: new Date().toISOString(), direccion: null, correo_empresa: null, telefono: null }); m.datos.clientes.push(cli); } }
     const c = { id: ++k.sec, tipo: p.tipo, estado: p.tipo === 'categoria' ? 'por_emitir' : 'por_aprobar', origen: 'app', creado_en: new Date().toISOString(), creado_por: yo.nombre, creado_por_id: yo.id, lider_id: yo.rol === 'lider' ? yo.id : null, lider: yo.rol === 'lider' ? yo.nombre : null,
-      titular: { tipo: sv[0].doc_tipo, doc: sv[0].doc_numero, nombre: sv[0].nombre, natural: ['V', 'E'].includes(sv[0].doc_tipo) }, nuevo: cli ? { tipo: p.nuevo.tipo, doc: cli.doc_numero, nombre: cli.nombre, natural: !!p.nuevo.natural, cliente_id: cli.id } : null,
+      titular: { tipo: sv[0].doc_tipo, doc: sv[0].doc_numero, nombre: sv[0].nombre, natural: p.tipo_solicitud ? p.tipo_solicitud.indexOf('natural_') === 0 : ['V', 'E'].includes(sv[0].doc_tipo) }, tipo_solicitud: p.tipo_solicitud || null, ocr: p.nuevo && p.nuevo.ocr || null, nuevo: cli ? { tipo: p.nuevo.tipo, doc: cli.doc_numero, nombre: cli.nombre, natural: !!p.nuevo.natural, cliente_id: cli.id } : null,
       categoria_anterior: sv[0].categoria, categoria_nueva: p.categoria_nueva, servicios: sv, nota: p.nota, bitacora: [{ accion: 'cambio_creado', en: new Date().toISOString(), por: yo.nombre }] };
     k.filas.push(c); return c.id; },
+  // Corrida 14/10 tarde: ajustes del OCR (arrancan en NO)
+  ocr_ajustes(m){ return Object.assign({ aliados: false, revision: false, expediente: false }, m.datos.ocrAjustes || {}); },
+  ocr_ajuste_guardar(m, yo, a){ if(yo.rol !== 'admin') return error('No tienes permiso para hacer esto');
+    m.datos.ocrAjustes = Object.assign({ aliados: false, revision: false, expediente: false }, m.datos.ocrAjustes || {}, { [a.p_clave]: !!a.p_si }); (m.bitacora = m.bitacora || []).push({ accion: 'ajuste', clave: 'ocr_' + a.p_clave, valor: a.p_si ? 'si' : 'no' }); return Object.assign({}, m.datos.ocrAjustes); },
+  cambio_categorias(m, yo){ if(!['admin', 'analista', 'lider'].includes(yo.rol)) return error('No tienes permiso para hacer esto'); return CATEGORIAS.slice(); },
   cambio_detalle(m, yo, a){ const c = ((m.datos.cambiosK || {}).filas || []).find((x) => x.id === Number(a.p_id)); if(!c) return error('No encontré ese cambio');
     return Object.assign(cambioJson(m, c), { nuevo_contacto: c.nuevo ? { correo: null, telefono: null, direccion: null } : null, bitacora: c.bitacora }); },
   cambio_accion(m, yo, a){ const c = ((m.datos.cambiosK || {}).filas || []).find((x) => x.id === Number(a.p_id)); if(!c) return error('No encontré ese cambio');
@@ -648,6 +657,8 @@ const RPC = {
     else if(a.p_campo === 'regimen_firma'){ if(!['admin', 'abogado'].includes(yo.rol)) return error('No tienes permiso para hacer esto'); c.regimen_firma = v; }
     else if(a.p_campo === 'es_isp'){ if(!['admin', 'abogado'].includes(yo.rol)) return error('No tienes permiso para hacer esto'); c.es_isp = v === 'true'; }
     else if(a.p_campo === 'es_top'){ if(yo.rol !== 'admin') return error('No tienes permiso para hacer esto'); c.es_top = v === 'true'; }
+    else if(a.p_campo === 'direccion'){ c.direccion = v; }
+    else if(a.p_campo === 'nombre'){ if(!['admin', 'analista', 'abogado'].includes(yo.rol)) return error('No tienes permiso para hacer esto'); if(!v || v.length < 3) return error('Escribe la razón social completa'); c.nombre = v.toUpperCase(); }
     else return error('Ese dato no se puede cambiar aquí');
     c.hilo.push(linea('dato', a.p_campo, { valor: v }, yo.nombre)); recalcular(c, yo); return null;
   },

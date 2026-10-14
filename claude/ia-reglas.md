@@ -17,12 +17,12 @@ Estado: SEGUIR = se queda como estaba; CAMBIAR = propongo otra cosa; CONFIRMAR =
 ### Identidad
 1. **Cédula vigente.** Vence el último día del mes impreso. Bloquea si está vencida. Viene de: los dos scripts. SEGUIR.
 2. **Cruce de la cédula.** Expedición más 10 años debe dar el mismo año de vencimiento; si no, se toma como mal leída y va a revisión a mano. La cédula venezolana dura 10 años. Viene de: aliados. SEGUIR y aplicarlo a todos.
-3. **RIF personal vigente** según la fecha impresa. Bloquea. SEGUIR.
+3. **RIF personal vigente** según la fecha impresa. Bloquea. SEGUIR. Desde el 14/10: el RIF viejo vale si su vencimiento no pasó; el **RIF Digital v2.0** (sin fecha de vencimiento, con inscripción y última actualización) vale siempre. La IA y el OCR marcan el formato (`rif_viejo` o `rif_digital`). DECIDIDO 14/10.
 4. **Nombre de la cédula igual al del RIF.** Lo compara el código por palabras (60 %). El umbral es práctico, no es norma. SEGUIR y medirlo en la prueba.
 5. **Cédula vencida.** Bloquea, pero el administrador puede conceder la excepción (por ejemplo, en trámite). El RIF vencido no la admite. DECIDIDO 09/10.
 
 ### Empresa
-6. **RIF de la empresa vigente.** Bloquea. SEGUIR.
+6. **RIF de la empresa vigente.** Bloquea. SEGUIR. Igual que la regla 3: el viejo según su vencimiento, el **RIF Digital v2.0** siempre vigente. DECIDIDO 14/10.
 7. **Razón social del acta igual a la del RIF** (o una asamblea que cambió el nombre). Bloquea. SEGUIR.
 8. **Domicilio.** La dirección vigente (la del acta, o la de la última asamblea de cambio de domicilio) debe parecerse a la del RIF en un 65 % o más. Si no se parece, falta un acta de asamblea de cambio de domicilio. Se mantiene la excepción del acta con cláusula de sucursales. Si el acta solo trae la ciudad, se mira en las otras páginas antes de concluir. Bloquea: hace falta el acta de asamblea de cambio de domicilio. DECIDIDO 09/10.
 9. **Fechas de las asambleas:** cuenta la de inscripción en el Registro, no la de la reunión. Las reformas tienen efecto ante terceros desde que se inscriben. SEGUIR.

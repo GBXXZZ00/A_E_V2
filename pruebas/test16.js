@@ -153,6 +153,13 @@ const M = (r, doc) => r.marcas.find((m) => m.documento === doc) || {};
   ok('firmante: si la cédula no trae nombre, se busca con el RIF personal', P(r, 'firmantes').estado === 'ok', P(r, 'firmantes'));
   ok('fechas: la cédula vence el último día del mes', fecha('2030-02', true) === '2030-02-28' && fecha('15/03/2031', true) === '2031-03-31' && fecha('15/03/2031') === '2031-03-15');
   ok('parecido: por palabras, sin tildes ni C.A.', parecido('Inversiones Ñandú, C.A.', 'INVERSIONES NANDU CA') === 1);
+  // Corrida 14/10 tarde: RIF Digital v2.0 (sin vencimiento) vale siempre; el viejo sin vencimiento sigue a mano
+  r = evaluar(base((e) => { Object.assign(e.lecturas[3].documentos[0], { fecha_vencimiento: null, formato: 'rif_digital' }); Object.assign(e.lecturas[2].documentos[0], { fecha_vencimiento: null, formato: 'rif_digital' }); }));
+  ok('RIF Digital v2.0 de la empresa y personal: vigentes sin vencimiento', M(r, 13).propuesta === 'bien' && /no vence/.test(M(r, 13).nota) && M(r, 12).propuesta === 'bien', [M(r, 12), M(r, 13)]);
+  r = evaluar(base((e) => { Object.assign(e.lecturas[3].documentos[0], { fecha_vencimiento: '2020-01-10', formato: 'rif_viejo' }); }));
+  ok('RIF viejo vencido sigue siendo problema', M(r, 13).propuesta === 'problema');
+  r = evaluar(base((e) => { e.lecturas[3].documentos[0].fecha_vencimiento = null; }));
+  ok('RIF sin vencimiento y sin formato nuevo: a mano', M(r, 13).propuesta === 'revisar_a_mano');
   ok('sin guion largo en los textos', !JSON.stringify(evaluar(base((e) => { Object.assign(acta(e), { fecha_inscripcion: '1990-02-01', duracion_anos: null }); }))).includes('—'));
   cerrar();
 })();

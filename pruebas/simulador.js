@@ -88,6 +88,14 @@ async function contexto(navegador, opciones, mundo){
     }
     // La app ya no usa el almacenamiento de Supabase: cualquier llamada queda anotada para que la prueba falle
     if(u.includes('/storage/v1/')){ m.llamadas.push(['storage', u]); return j({ statusCode: '403', error: 'cerrado', message: 'cerrado' }, 403); }
+    // Corrida 14/10 tarde: OCR de un archivo recién elegido (m.ocr dice qué devuelve Google; por defecto, no lee)
+    if(u.includes('/functions/v1/ocr_leer')){
+      const yo = quien(req); const buf = req.postDataBuffer() || Buffer.alloc(0);
+      m.llamadas.push(['ocr', buf.length]);
+      if(!yo || !yo.activo) return j({ error: 'Tu sesión venció. Entra de nuevo' }, 401);
+      if(m.lento) await new Promise((ok) => setTimeout(ok, m.lento));
+      return j(m.ocr || { estado: 'sin_lectura', error: 'Drive no lo pudo convertir (500)' });
+    }
     // Subidas nuevas a Drive: la función drive_subir recibe el archivo en un formulario
     if(u.includes('/functions/v1/drive_subir')){
       const yo = quien(req); const buf = req.postDataBuffer() || Buffer.alloc(0); const txt = buf.toString('latin1');

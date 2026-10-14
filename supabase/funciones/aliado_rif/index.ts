@@ -1,4 +1,5 @@
 // Lectura rápida del RIF de una solicitud de aliado: el aliado lo sube y en segundos sabe si el cliente está disponible.
+// Con el ajuste "Usar OCR en aliados" lo lee primero el OCR de Google Drive; si no queda claro, la IA (Gemini Flash).
 // La IA solo lee el número y el nombre; decide la base (public.solicitud_rif_leido): bloqueos por TOP, cartera, Odoo u otro aliado.
 // El archivo no se guarda aquí: si el cliente queda libre, la pantalla lo sube después a Drive como cualquier documento.
 // Copia del código publicado en Supabase. Sin claves: GEMINI_API_KEY vive en Supabase.
@@ -94,6 +95,24 @@ Deno.serve(async (req: Request) => {
       const m = error.code === "P0001" ? error.message : "No tienes acceso a esta solicitud";
       return fallo(m, /venci/i.test(m) ? 401 : 403);
     }
+    const srv = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false, autoRefreshToken: false } });
+    // Corrida 14/10 tarde: con el ajuste "Usar OCR en aliados", primero el OCR de Google Drive (sin costo).
+    // Solo un RIF con lectura clara (dígito verificador y sello cuadran) evita la IA; dudoso, otro documento o falla: Gemini como siempre.
+    const { data: oa } = await srv.rpc("ocr_ajustes");
+    if (oa && oa.aliados === true) {
+      const fo = new FormData(); fo.append("archivo", archivo, archivo.name || "rif");
+      const ro = await fetch(Deno.env.get("SUPABASE_URL")! + "/functions/v1/ocr_leer", { method: "POST", headers: { Authorization: sesion, apikey: Deno.env.get("SUPABASE_ANON_KEY")! }, body: fo }).catch(() => null);
+      const o = ro && ro.ok ? await ro.json().catch(() => null) : null;
+      const d = o && o.datos;
+      if (o && o.estado === "ok" && !o.dudosa && /^rif_/.test(o.tipo || "") && d && d.rif) {
+        const natural = /^[VE]/.test(d.rif);
+        const datosOcr = { documentos: [{ tipo: natural ? "rif_personal" : "rif_empresa", legible: true, numero: d.rif, razon_social: natural ? null : d.razon_social, nombre: natural ? d.razon_social : null }] };
+        const { data: res, error: e2 } = await srv.rpc("solicitud_rif_leido", { p_sol: sol, p_datos: datosOcr });
+        await srv.rpc("ia_rif_costo", { p_sol: sol, p_datos: { modelo: "ocr-drive", tokens_entrada: 0, tokens_salida: 0, costo_usd: 0, estado: res?.estado || "error" } });
+        if (e2) { console.error("rif_leido", e2); return fallo("No se pudo revisar la cartera. Intenta de nuevo", 500); }
+        return json(res);
+      }
+    }
     if (!CLAVE()) return fallo("Falta la clave de Gemini. Avísale al administrador", 500);
     const aj = (p && p.ajustes) || {};
     const modelo = await elegirModelo(aj.modelo_rapido);
@@ -119,7 +138,6 @@ Deno.serve(async (req: Request) => {
     }
     if (!datos) { console.error("gemini", ultimo); return fallo("No se pudo leer el RIF ahora. Intenta de nuevo en un momento", 502); }
 
-    const srv = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false, autoRefreshToken: false } });
     const entrada = Number(u.promptTokenCount) || 0; const salida = (Number(u.candidatesTokenCount) || 0) + (Number(u.thoughtsTokenCount) || 0);
     const costo = Math.round(((entrada * (Number(aj.precio_rapido_entrada) || 0) + salida * (Number(aj.precio_rapido_salida) || 0)) / 1e6) * 1e5) / 1e5;
     const { data: res, error: e2 } = await srv.rpc("solicitud_rif_leido", { p_sol: sol, p_datos: datos });

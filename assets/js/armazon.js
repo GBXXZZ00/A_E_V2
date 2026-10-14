@@ -1,7 +1,7 @@
 // Armazón común de los módulos: barra de arriba, navegación y menú de cuenta.
 (function(){
   'use strict';
-  const { $, esc, ic, iniciales, fecha, abrirHoja, cerrarHoja, prepararHojas, cache, rpc } = window.Comun;
+  const { $, esc, ic, iniciales, fecha, abrirHoja, cerrarHoja, prepararHojas, cache, rpc, toast } = window.Comun;
   const S = window.Sesion;
   window.ACTUALIZAR_LISTO = true;   // la pantalla Actualizar ya existe
 
@@ -71,6 +71,7 @@
         (ini.usuarios ? esc(ini.usuarios) + ' con acceso' : 'Cuentas, roles y PIN del equipo') + '</small></span>' + ic('derecha', 'ch') + '</a>' : '') +
       (equipo !== 'aliados' && sube && window.ACTUALIZAR_LISTO ? '<a class="op" href="actualizar.html" data-ir="actualizar"><span class="ic">' + ic('actualizar') + '</span><span class="tx">Actualizar datos<small id="dTad">' +
         (ini.tad_en ? 'Último TAD: ' + esc(fecha(ini.tad_en)) : 'Odoo, instalaciones y TAD') + '</small></span>' + ic('derecha', 'ch') + '</a>' : '') +
+      (equipo !== 'aliados' && admin ? '<button type="button" class="op" data-ocr-aj="1"><span class="ic">' + ic('doc') + '</span><span class="tx">Lectura con OCR<small>Qué se lee sin IA</small></span>' + ic('derecha', 'ch') + '</button>' : '') +
       '<div class="rot">Mi cuenta</div>' +
       '<a class="op" href="index.html#cambiar" data-foco><span class="ic">' + ic('candado') + '</span><span class="tx">Cambiar PIN</span>' + ic('derecha', 'ch') + '</a>' +
       '<button type="button" class="op salir" id="salir"><span class="ic">' + ic('salir') + '</span><span class="tx">Salir</span></button>';
@@ -112,6 +113,32 @@
     catch (e) { /* el contador es de ayuda: si falla, la página sigue y su propia carga avisa del error */ }
     finally { pidiendo = false; }
   }
+
+  // Corrida 14/10 tarde: ajustes del OCR (solo el administrador). Arrancan en NO; con NO todo sigue como antes (la IA)
+  const AJ_OCR = [['aliados', 'Usar OCR en aliados', 'El RIF de una solicitud se lee con OCR; si es dudoso, con la IA'],
+    ['revision', 'Usar OCR en la revisión', 'RIF y cédulas claros no van a la IA; combinados, actas y dudosos sí'],
+    ['expediente', 'Llenar datos del expediente con OCR', 'Al subir el RIF propone razón social y domicilio para confirmar']];
+  async function abrirAjOcr(){
+    let h = $('hojaOcrAj');
+    if(!h){ h = document.createElement('section'); h.id = 'hojaOcrAj'; h.className = 'hoja'; h.setAttribute('role', 'dialog'); h.setAttribute('aria-modal', 'true'); h.setAttribute('aria-labelledby', 'tOcrAj'); h.setAttribute('aria-hidden', 'true'); document.body.appendChild(h); prepararHojas(); }
+    const pinta = (v, err) => { h.innerHTML = '<div class="cab"><div><h2 id="tOcrAj">Lectura con OCR</h2><p class="sub-hoja">Google Drive lee el texto gratis; la IA queda para lo que hay que entender.</p></div><button type="button" class="cerrar" data-cierra="1" aria-label="Cerrar">' + ic('x') + '</button></div>' +
+      (err ? '<div class="vacio" role="alert"><b>No se pudieron leer los ajustes</b><p>' + esc(err) + '</p><button type="button" class="btn btn-chico" data-ocr-aj="1">Reintentar</button></div>'
+        : !v ? '<div class="sk-bloque"><span class="sk" style="height:60px;border-radius:16px"></span><span class="sk" style="height:60px;border-radius:16px"></span><span class="sk" style="height:60px;border-radius:16px"></span></div>'
+        : AJ_OCR.map((x) => '<div class="interr"><span class="tx">' + esc(x[1]) + '<small>' + esc(x[2]) + '</small></span><button type="button" class="sw" role="switch" data-ocr-sw="' + x[0] + '" aria-checked="' + !!v[x[0]] + '" aria-label="' + esc(x[1]) + '"></button></div>').join('') +
+          '<p class="nota-chica">Si el OCR falla o lee algo dudoso, siempre sigue la IA. Cada cambio queda en la bitácora.</p>'); };
+    pinta(null); abrirHoja('hojaOcrAj');
+    try { pinta(await rpc('ocr_ajustes', {})); } catch (e) { pinta(null, e.message); }
+  }
+  document.addEventListener('click', async (ev) => {
+    const t = ev.target; let b;
+    if(t.closest('[data-ocr-aj]')){ abrirAjOcr(); return; }
+    if((b = t.closest('[data-ocr-sw]'))){
+      if(b.disabled) return; const si = b.getAttribute('aria-checked') !== 'true'; b.disabled = true;
+      try { const v = await rpc('ocr_ajuste_guardar', { p_clave: b.dataset.ocrSw, p_si: si }); b.setAttribute('aria-checked', String(!!v[b.dataset.ocrSw])); toast(si ? 'Prendido' : 'Apagado'); }
+      catch (e) { toast(e.message, 'error'); }
+      finally { b.disabled = false; }
+    }
+  });
 
   // Opciones de cada página, para dibujar la navegación antes de que responda el servidor
   function opcionesPagina(){

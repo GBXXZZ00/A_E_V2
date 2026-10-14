@@ -1,6 +1,6 @@
 # Traspaso (se actualiza al cerrar cada sesión)
 
-Actualizado: 14/10/2026 (corrida 14/10 tarde en curso). Publicado: `?v=41`.
+Actualizado: 14/10/2026 (corrida 14/10 tarde hecha). Publicado: `?v=43`.
 
 ## CORRIDA 14/10 TARDE (APROBADA por el administrador): texto completo
 
@@ -69,6 +69,23 @@ Respuesta final corta: qué quedó por parte, la tabla OCR contra Gemini, qué s
   - **Pendientes que no se resuelven solos (informe):** "RIF por verificar" (alguien tiene que corregir el RIF y quitar la marca); "Para certificar"/"Por asignar" que no cumplen se quedan hasta que cierra el corte; un referido sin cliente en la app solo sale cuando cambia su etiqueta en Aliados.
   - Queda sin uso: la función temporal `privado.prueba_tmp_sin_gestion` (siempre termina en error, no cambia nada; el conector no deja borrarla).
   - Pruebas: test30 reescrita (módulos, chips, grupos, sin Hecho, contador del menú, enlace viejo); test03, test08 y test32 ajustadas.
+- **Parte 3: HECHA en v43.** Septiembre 59/49 antes y después.
+  - Formulario de cambio (Migraciones, "Nuevo cambio") en secciones: Titular de hoy, Qué cambia, Tipo de solicitud, Nuevo titular, Nota.
+  - Categoría nueva: lista cerrada (`cambio_categorias`). **Decisión propia:** sale de tres fuentes: el TAD completo vigente, los servicios de la app y el archivo de cambios de categoría; así no falta ninguna que ya exista.
+  - Tipo de solicitud con las 4 opciones de la planilla (natural a natural, natural a jurídico, jurídico a natural, jurídico a jurídico). De ahí salen los documentos que se piden y si el titular nuevo lleva V/E o J/G (el servidor lo valida y lo anota en la bitácora).
+  - "Subir RIF": el OCR lee el archivo y llena RIF, razón social y domicilio para confirmar; propone el tipo de solicitud. Si no se lee, avisa y se escribe a mano. El archivo queda en la casilla RIF del nuevo titular (RIF empresa o RIF personal).
+  - **Decisión propia:** en el formulario el OCR va con el archivo suelto (no se guarda el texto en la tabla, porque aún no es un archivo del expediente).
+  - Base: migración `cambio_categorias_y_tipo_solicitud` (`privado.categorias_tad`, `cambio_categorias`, `cambio_crear` con `tipo_solicitud` y domicilio). Prueba: test29 ajustada.
+- **Parte 4: HECHA en v43 (OCR con Google Drive).** Septiembre 59/49 antes y después.
+  - Función `ocr_leer` (código en `supabase/funciones/ocr_leer/`): copia el archivo de Drive convirtiéndolo a documento de Google, saca el texto y borra la copia. Tabla `ocr_lecturas` (un archivo se lee una vez; si cambian los lectores, se vuelven a correr sobre el texto guardado sin llamar a Google). Lectores fijos en `lectores.mjs`: RIF viejo, RIF Digital v2.0, dígito verificador, cédula, póliza, verificación de casilla. Combinados, actas y dudosos van siempre a la IA.
+  - Vigencia del RIF: el viejo vale hasta su vencimiento; el Digital v2.0 vale siempre (`claude/ia-reglas.md` reglas 3 y 6, `reglas.mjs`, y Gemini ya distingue los dos formatos).
+  - Tres ajustes en el menú de la cuenta del administrador ("Lectura con OCR"): aliados, revisión y llenar datos del expediente. **Decisión propia:** van en el menú de la cuenta (como Usuarios y Actualizar), solo el administrador los cambia y cada cambio queda en la bitácora.
+  - Con NO todo funciona igual que antes (test20 y test24 a test28 pasan sin cambios). Con el OCR caído o una lectura dudosa, sigue la IA (test19).
+  - Llenar datos del expediente: al subir el RIF de la empresa propone razón social y domicilio con casillas para confirmar; si el RIF leído es de otro cliente, avisa y no propone nada. **Decisión propia:** la razón social la pueden corregir admin, analista y abogado (`cliente_dato` con `nombre`).
+  - Prueba contra archivos ya aprobados (unos 850 leídos, 7 s por archivo, 69 sin lectura): RIF empresa 172 de 176 claros coinciden con el cliente (97,7%; los 4 restantes son el RIF de otra empresa subido en la casilla, el sello lo confirma). Cédula contra RIF personal de la misma persona: 97 de 109; las diferencias son datos (representantes cruzados, pasaporte, documento de otra persona), lectura real cerca de 98%. OCR contra Gemini en 22 archivos leídos por los dos: tipo 22/22, número 22/22, nombre 21/22; en las 3 fechas distintas acertó el OCR (2 RIF Digital donde Gemini tomó la última actualización como vencimiento y 1 cédula sin vencimiento).
+  - Hallazgo de datos: 100 casillas de cédula tienen un RIF y 80 de RIF personal tienen una cédula (casi la mitad son pares cruzados). Se corrige en el chat del proyecto o al revisar.
+  - Ahorro: un RIF o cédula claro cuesta unos 0,02 USD en Gemini; de lo leído por la IA, cerca del 20% del gasto eran RIF y cédulas claros. Lo caro son las actas.
+  - Pruebas nuevas: test35 (lectores) y test36 (ajustes y propuesta); test16 y test19 ampliadas.
 
 ## CORRIDA DEL 14/10 (APROBADA por el administrador el 13/10 noche): Lote 3 + Lote 4 + Lote 5 + Lote 6 + Lote 7 · HECHA el 14/10 (v33 a v37)
 Antes de tocar código: lee los cinco lotes completos y dile al administrador, en pocas líneas, qué puedes ejecutar y qué no (y por qué). Si todo es ejecutable, arranca sin esperar más. Orden: Lote 3, 5, 4, 6, 7. Publica por lote (pruebas, capturas, `?v=`, commit y push). Septiembre certificado (59/49) no se mueve; corre la referencia de comisiones antes y después de cada lote que toque comisiones. Las pantallas siguen el estilo ya aprobado (maquetas en `claude/maquetas/`, Clientes y Comisiones como modelo); no hace falta maqueta nueva. Fuera de esta corrida: notificaciones, ingresos y bandeja de dedicados, propuesta de servicio, proforma y carta para nuevo titular, subidas por guardias.

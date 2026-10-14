@@ -866,12 +866,55 @@
       const n = await rpc('documentos_registrar', { p_cliente: cli, p_items: envio });
       toast(plural(n, 'documento guardado', 'documentos guardados'));
       ocupado = false; subiendo = {}; if(f){ if(f.alTerminar) f.alTerminar(); } else if(cli === id) await cargar();
+      // El RIF recién subido: con el ajuste "Llenar datos del expediente con OCR" se proponen razón social y domicilio
+      const rifIt = items.find((it) => it.files.length === 1 && it.casillas.length === 1 && (it.casillas[0].casilla === 'rif_empresa' || (it.casillas[0].casilla === 'rif_personal' && (f ? f.F : F) && (f ? f.F : F).cliente.es_natural)));
+      if(rifIt && !f && cli === id) proponerDelRif(cli, rifIt.files[0]);
       return true;
     } catch (e) {
       ocupado = false; subiendo = {}; toast(e.message, 'error'); if(f){ if(f.alTerminar) f.alTerminar(); } else if(cli === id && F) pintarDocumentos();
       return false;
     }
   }
+  // ---------- OCR del RIF (corrida 14/10 tarde): propone razón social y domicilio; la persona confirma ----------
+  let OCRA = null;
+  async function ocrAjustes(){ if(OCRA) return OCRA; try { OCRA = (await rpc('ocr_ajustes', {})) || {}; } catch (e) { OCRA = {}; } return OCRA; }
+  async function proponerDelRif(cli, file){
+    if(!yo || ['admin', 'analista', 'abogado'].indexOf(yo.rol) < 0) return;
+    if(!(await ocrAjustes()).expediente || !/^(application\/pdf|image\/(jpeg|png))$/i.test(file.type)) return;
+    let o = null;
+    try {
+      const s = await window.db.auth.getSession(); const tk = (s.data && s.data.session && s.data.session.access_token) || ''; if(!tk) return;
+      const fd = new FormData(); fd.append('archivo', file, file.name);
+      const r = await fetch(window.db.supabaseUrl + '/functions/v1/ocr_leer', { method: 'POST', headers: { Authorization: 'Bearer ' + tk, apikey: window.db.supabaseKey }, body: fd });
+      o = await r.json().catch(() => null);
+    } catch (e) { return; }   // el OCR es de ayuda: si falla, no estorba
+    if(!o || o.estado !== 'ok' || o.dudosa || !/^rif_/.test(o.tipo || '') || !o.datos || cli !== id || !F) return;
+    const d = o.datos; const c = F.cliente;
+    // El número del RIF leído contra el del cliente (sin ceros a la izquierda)
+    const nr = String(d.rif || '').slice(1).replace(/^0+/, ''); const nc = String(c.doc_numero || '').replace(/^0+/, '');
+    if(nr && nc && nr !== nc){ toast('El RIF del archivo es ' + d.rif.charAt(0) + '-' + d.rif.slice(1) + ' y no el de este cliente. Revisa la casilla', 'error'); return; }
+    const cambia = [];
+    if(d.razon_social && normalizeStr(d.razon_social) !== normalizeStr(c.nombre)) cambia.push(['nombre', 'Razón social', d.razon_social, c.nombre]);
+    if(d.domicilio && normalizeStr(d.domicilio) !== normalizeStr(c.direccion || '')) cambia.push(['direccion', 'Domicilio fiscal', d.domicilio, c.direccion || 'Sin dirección']);
+    if(!cambia.length) return;
+    let h = $('hojaOcr');
+    if(!h){ h = document.createElement('section'); h.id = 'hojaOcr'; h.className = 'hoja'; h.setAttribute('role', 'dialog'); h.setAttribute('aria-modal', 'true'); h.setAttribute('aria-labelledby', 'tOcr'); h.setAttribute('aria-hidden', 'true'); document.body.appendChild(h); C.prepararHojas(); }
+    h.innerHTML = cabHoja('tOcr', 'Datos leídos del RIF', 'Revisa y marca lo que quieras usar') + '<form id="formOcr" novalidate>' +
+      cambia.map((x) => '<label class="cam-srv"><input type="checkbox" data-ocr-campo="' + x[0] + '" checked><span><b>' + esc(x[1]) + '</b><small>Del RIF: ' + esc(x[2]) + '</small><small>Hoy: ' + esc(x[3]) + '</small></span></label>').join('') +
+      '<div class="error" id="eOcr" role="alert"></div><div class="acciones" style="display:flex;gap:10px"><button type="button" class="btn btn-2" data-cierra="1">Dejar como está</button><button type="submit" class="btn" style="flex:1" id="usarOcr">Usar estos datos</button></div></form>';
+    h._cambia = cambia; h._cli = cli;
+    abrirHoja('hojaOcr');
+  }
+  async function usarOcr(ev){
+    ev.preventDefault(); const h = $('hojaOcr'); const b = $('usarOcr'); $('eOcr').textContent = '';
+    const marc = (h._cambia || []).filter((x) => { const k = h.querySelector('[data-ocr-campo="' + x[0] + '"]'); return k && k.checked; });
+    if(!marc.length){ cerrarHoja(); return; }
+    b.disabled = true; b.textContent = 'Guardando…';
+    try { for(const x of marc) await rpc('cliente_dato', { p_cliente: h._cli, p_campo: x[0], p_valor: x[2] }); toast('Datos del RIF guardados'); cerrarHoja(); if(h._cli === id) cargar(); }
+    catch (e) { $('eOcr').textContent = e.message; b.disabled = false; b.textContent = 'Usar estos datos'; }
+  }
+  document.addEventListener('submit', (e) => { if(e.target && e.target.id === 'formOcr') usarOcr(e); });
+
   function elegirPara(cas, num){
     if(ocupado){ toast('Espera a que termine la subida'); return; }
     destino = { casilla: cas, numero: num };
@@ -1359,8 +1402,14 @@
     fuera = { cliente: ficha.cliente.id, F: ficha, alTerminar }; destino = { casilla: cas, numero: num };
     const inp = $('archivo'); inp.value = ''; inp.click();
   }
+  // Un archivo que ya se eligió en otra hoja (el RIF leído en el formulario de cambio de titular) va directo a su casilla
+  function subirArchivoA(ficha, cas, num, file, alTerminar){
+    montar(); if(ocupado){ toast('Espera a que termine la subida'); return; }
+    fuera = { cliente: ficha.cliente.id, F: ficha, alTerminar };
+    guardarItems([{ files: [file], casillas: [{ casilla: cas, numero: num }] }]);
+  }
   // Proforma y carta desde otra hoja: siempre con los datos del momento (la ficha recién leída)
   function enviarDesde(ficha, servicioId, alTerminar){ montar(); envF = ficha; envFin = alTerminar || null; abrirEnviar(servicioId); }
   function editarCampo(ficha, clave, alTerminar){ montar(); fuera = { cliente: ficha.cliente.id, F: ficha, alTerminar }; abrirCampo(clave); }
-  window.Ficha = { subirA, editarCampo, enviarDesde, lineaHilo, abrir, montar, abierta: () => id, alContactarFuera: (f) => { externo = f; }, recargar: () => { if(id) cargar(); } };
+  window.Ficha = { subirA, subirArchivoA, editarCampo, enviarDesde, lineaHilo, abrir, montar, abierta: () => id, alContactarFuera: (f) => { externo = f; }, recargar: () => { if(id) cargar(); } };
 })();

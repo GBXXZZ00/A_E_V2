@@ -97,6 +97,7 @@ const llamo = (m, f) => m.llamadas.filter((l) => l[1] === f);
     ok(nombre + ': la fila lleva la etiqueta VGT', (await p.textContent('.cli[data-cliente="' + a.id + '"]')).includes('VGT'));
     ok(nombre + ': filtros de dedicados: VGT, Enlaces y Pólizas', (await p.locator('[data-sel="vgt"]').count()) >= 1 && (await p.locator('[data-sel="enlaces"]').count()) >= 1 && (await p.locator('[data-sel="poliza"]').count()) >= 1);
     await p.click('.cli[data-cliente="' + a.id + '"]'); await p.waitForSelector('#hojaFicha.ver #tab-datos');
+    await p.waitForFunction(() => (document.querySelector('#tab-datos') || {}).textContent.includes('Requisitos VGT'), null, { timeout: 8000 }).catch(() => {});
     const dts = await p.textContent('#tab-datos');
     ok(nombre + ': Datos dice Líder (no Ejecutiva) y los requisitos VGT', dts.includes('Líder') && !dts.includes('Ejecutiva') && dts.includes('Requisitos VGT'));
     await p.click('#tabs [data-tab="contratos"]'); await p.waitForSelector('#tab-contratos.on .ctr-t');

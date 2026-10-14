@@ -80,6 +80,7 @@ const ESQUEMA = {
           razon_social: S(),
           fecha_expedicion: S({ description: "AAAA-MM-DD o AAAA-MM" }),
           fecha_vencimiento: S({ description: "AAAA-MM-DD o AAAA-MM" }),
+          formato: { type: "STRING", nullable: true, enum: ["rif_viejo", "rif_digital"], description: "Solo RIF: rif_digital si dice 'RIF Digital v2.0' (no trae vencimiento); rif_viejo si trae fecha de vencimiento" },
           direccion: S({ description: "Domicilio completo como aparece" }),
           fecha_inscripcion: S({ description: "Fecha de inscripción en el Registro Mercantil, AAAA-MM-DD" }),
           fecha_asamblea: S({ description: "Fecha de la reunión de la asamblea, AAAA-MM-DD" }),
@@ -107,7 +108,8 @@ El archivo puede traer uno o varios documentos (por ejemplo cédula y RIF en el 
 Reglas:
 - No inventes. Si un dato no se ve o no está, déjalo en null. Si algo se ve borroso o dudoso, pon legible en false o explícalo en observacion.
 - Fechas en formato AAAA-MM-DD; si solo trae mes y año, AAAA-MM. La cédula venezolana trae fecha de expedición y de vencimiento (mes y año).
-- RIF: fecha de vencimiento, razón social o nombre, y el domicilio fiscal completo.
+- RIF: fecha de vencimiento, razón social o nombre, y el domicilio fiscal completo. Hay dos formatos: el viejo trae "FECHA DE VENCIMIENTO" (formato rif_viejo);
+  el nuevo "RIF Digital v2.0" no trae vencimiento, solo inscripción y última actualización (formato rif_digital, fecha_vencimiento en null).
 - Actas (constitutiva o de asamblea): revisa TODAS las páginas, no solo la cláusula. Busca:
   * fecha_inscripcion: la fecha en que el Registro Mercantil inscribió el documento, no la fecha de la reunión. Suele estar en la nota o sello de registro,
     al principio, al final o en el margen, con frases como "quedó inscrito", "inscrito en el Registro Mercantil", "bajo el N°", "Tomo"; las fechas pueden venir en letras;
@@ -205,6 +207,35 @@ function conLimite(p: Promise<{ lectura: Record<string, unknown>; fatal?: Error 
   return Promise.race([p, vence]).finally(() => clearTimeout(t));
 }
 
+// ---------- OCR (corrida 14/10 tarde): RIF y cédulas con lectura clara no van a Gemini ----------
+// Solo con el ajuste ocr_revision = 'si'. Un archivo de una sola casilla (RIF de empresa, RIF personal o cédula) que el OCR
+// leyó claro pasa a las reglas como si lo hubiera leído la IA, sin costo. Combinados, actas, dudosas o sin lectura: Gemini, como siempre.
+const OCR_CASILLAS = ["rif_empresa", "rif_personal", "cedula"];
+type FilaOcr = { estado: string; tipo: string | null; dudosa: boolean; datos: Record<string, string | null> | null };
+async function filaOcr(id: number): Promise<FilaOcr | null> {
+  const ver = async () => (await db.from("ocr_lecturas").select("estado, tipo, dudosa, datos").eq("archivo_id", id).maybeSingle()).data as FilaOcr | null;
+  let f = await ver();
+  if (!f) {
+    // Todavía no se leyó: se lee ya (la función responde cuando termina)
+    await fetch(URL_BASE + "/functions/v1/ocr_leer", { method: "POST", headers: { "Content-Type": "application/json", "x-tarea": TAREA }, body: JSON.stringify({ archivos: [id], esperar: true }) }).catch(() => null);
+    f = await ver();
+  }
+  return f;
+}
+function hallazgoDeOcr(f: FilaOcr | null): Record<string, unknown> | null {
+  if (!f || f.estado !== "ok" || f.dudosa || !f.datos) return null;
+  const d = f.datos;
+  if (f.tipo === "rif_viejo" || f.tipo === "rif_digital") {
+    const rif = String(d.rif || ""); const natural = /^[VE]/.test(rif);
+    return { tipo: natural ? "rif_personal" : "rif_empresa", pagina_inicio: 1, pagina_fin: 1, legible: true, numero: rif,
+      nombre: natural ? d.razon_social : null, razon_social: natural ? null : d.razon_social, fecha_vencimiento: d.vencimiento || null,
+      direccion: d.domicilio || null, formato: f.tipo, observacion: "Leído con el OCR de Google Drive" };
+  }
+  if (f.tipo === "cedula") return { tipo: "cedula", pagina_inicio: 1, pagina_fin: 1, legible: true, numero: (d.letra || "V") + " " + (d.numero || ""),
+    nombre: [d.nombres, d.apellidos].filter(Boolean).join(" "), fecha_vencimiento: d.vencimiento || null, observacion: "Leído con el OCR de Google Drive" };
+  return null;
+}
+
 // ---------- Trabajo ----------
 type Trabajo = {
   corrida: number; hoy: string; ajustes: Record<string, string>; excepciones: unknown[];
@@ -220,7 +251,21 @@ async function trabajar(corrida: number) {
   if (!data) return;   // la tiene otra llamada o ya terminó
   const w = data as Trabajo;
   try {
-    const pendientes = w.archivos.filter((a) => !w.lecturas[String(a.id)]);
+    let pendientes = w.archivos.filter((a) => !w.lecturas[String(a.id)]);
+    if (String(w.ajustes.ocr_revision || "no") === "si" && pendientes.length) {
+      const resueltos = new Set<number>();
+      for (const a of pendientes) {
+        const cas = w.documentos.filter((d) => (d.archivos || []).includes(a.id)).map((d) => d.casilla);
+        if (cas.length !== 1 || !OCR_CASILLAS.includes(cas[0])) continue;   // combinados y actas: Gemini
+        const h = hallazgoDeOcr(await filaOcr(a.id).catch(() => null));
+        if (!h) continue;
+        const lectura = { estado: "ok", hallazgos: [h], paginas: 1, tokens_entrada: 0, tokens_salida: 0, costo_usd: 0, modelo: "ocr-drive" };
+        const { error: eg } = await db.rpc("ia_guardar_lectura", { p_corrida: corrida, p_archivo: a.id, p_datos: lectura });
+        if (eg) continue;   // si no se pudo guardar, lo lee Gemini como siempre
+        w.lecturas[String(a.id)] = { estado: "ok", documentos: [h] }; resueltos.add(a.id);
+      }
+      pendientes = pendientes.filter((a) => !resueltos.has(a.id));
+    }
     let modelo = "";
     if (pendientes.length) {
       if (!CLAVE()) throw new Error("Falta la clave de Gemini en Supabase (GEMINI_API_KEY)");

@@ -98,17 +98,42 @@
   }
   const cab = (idT, t, sub) => '<div class="cab"><div><h2 id="' + idT + '">' + esc(t) + '</h2>' + (sub ? '<p class="sub-hoja">' + esc(sub) + '</p>' : '') + '</div><button type="button" class="cerrar" data-cierra="1" aria-label="Cerrar">' + ic('x') + '</button></div>';
 
-  // Nuevo cambio: buscar el titular, elegir servicios, tipo y datos
+  // Nuevo cambio (corrida 14/10 tarde, Parte 3): titular de hoy y sus servicios, qué cambia, categoría de la lista del TAD,
+  // tipo de solicitud de la planilla oficial (de natural o jurídico a natural o jurídico) y el nuevo titular leído de su RIF con el OCR.
+  const SOL = [['natural_natural', 'Natural a natural'], ['natural_juridico', 'Natural a jurídico'], ['juridico_natural', 'Jurídico a natural'], ['juridico_juridico', 'Jurídico a jurídico']];
+  // Documentos que se piden según el tipo de solicitud (los mismos que exige el servidor en privado.cambio_requisitos)
+  function docsDe(sol){
+    const act = sol.indexOf('natural_') === 0 ? 'Cédula o RIF del titular actual' : 'RIF del titular actual';
+    const l = ['Planilla de cambio de titular firmada por los dos', act];
+    if(sol === 'natural_natural') l.push('Cédula del nuevo titular');
+    else if(sol === 'juridico_natural') l.push('Cédula del nuevo titular', 'RIF personal del nuevo titular');
+    else l.push('RIF de la empresa nueva', 'Acta constitutiva y actas de asamblea', 'Cédula y RIF del representante legal');
+    return l;
+  }
+  let CATS = null; let pidiendoCats = false;
+  async function cargarCats(){
+    if(CATS || pidiendoCats) return; pidiendoCats = true;
+    try { CATS = await rpc('cambio_categorias', {}); } catch (e) { if(N) N.err.cat = 'No se pudo traer la lista de categorías. ' + e.message; }
+    pidiendoCats = false; if(N) pintarNuevo();
+  }
   function abrirNuevo(){
-    N = { res: null, sel: {}, tipo: 'categoria', err: {} };
+    N = { res: null, sel: {}, tipo: 'categoria', err: {}, sol: '', ocr: null, archivo: null };
     hoja('hojaCambioN', 'tCamN').innerHTML = cab('tCamN', 'Nuevo cambio', 'Busca el titular como está en el TAD') + '<div class="hoja-cuerpo" id="cCamN"></div><div class="hoja-pie"><button type="button" class="btn btn-2" data-cierra="1">Cancelar</button><button type="button" class="btn" data-cam="crear" id="camCrear">Pedir cambio</button></div>';
-    pintarNuevo(); abrirHoja('hojaCambioN');
+    pintarNuevo(); abrirHoja('hojaCambioN'); cargarCats();
     setTimeout(() => { const i = $('camBusca'); if(i) i.focus(); }, 300);
+  }
+  // El titular de hoy (el de los servicios marcados) dice de dónde parte la solicitud
+  function titularElegido(){
+    const k = Object.keys(N.sel).find((x) => N.sel[x]); if(!k || !N.res) return null;
+    return N.res.find((t) => t.servicios.some((s) => s.clave === k)) || null;
   }
   function pintarNuevo(){
     const z = $('cCamN'); if(!z || !N) return;
     const e = (k) => '<div class="error" id="eCam_' + k + '" role="alert">' + esc(N.err[k] || '') + '</div>';
-    let h = '<label class="rotulo" for="camBusca">Nombre, cédula o RIF del titular</label><div class="busca-linea"><input class="campo" id="camBusca" maxlength="60" autocomplete="off" enterkeyhint="search" value="' + esc(N.q || '') + '"><button type="button" class="btn btn-2 btn-chico" data-cam="buscar">Buscar</button></div>' + e('busca');
+    const radios = (id, lista, valor, attr, clase) => '<div class="' + clase + '" role="radiogroup" aria-labelledby="' + id + '">' + lista.map((x) =>
+      '<button type="button" role="radio" ' + attr + '="' + x[0] + '" aria-checked="' + (valor === x[0]) + '" class="' + (valor === x[0] ? 'on' : '') + '">' + x[1] + '</button>').join('') + '</div>';
+    // 1. Titular de hoy
+    let h = '<section class="cam-sec"><h3 class="cam-h">Titular de hoy</h3><label class="rotulo" for="camBusca">Nombre, cédula o RIF</label><div class="busca-linea"><input class="campo" id="camBusca" maxlength="60" autocomplete="off" enterkeyhint="search" value="' + esc(N.q || '') + '"><button type="button" class="btn btn-2 btn-chico" data-cam="buscar">Buscar</button></div>' + e('busca');
     if(N.buscando) h += '<p class="nota-chica"><span class="cargando-linea"><i></i>Buscando en el TAD…</span></p>';
     else if(N.res){
       if(!N.res.length) h += '<p class="nota-chica">No aparece en el TAD. Revisa el nombre o escribe el RIF sin guiones.</p>';
@@ -118,24 +143,48 @@
             esc([s.plan, s.categoria, s.estado].filter(Boolean).join(' · ')) + '</small><small>' + esc(s.direccion || 'Sin dirección') + '</small></span></label>').join('') + '</div>';
       });
     }
-    h += e('servicios');
-    h += '<span class="rotulo arriba" id="rCamTipo">Tipo de cambio</span><div class="tres" role="radiogroup" aria-labelledby="rCamTipo">' + [['categoria', 'Categoría'], ['titularidad', 'Titularidad'], ['ambos', 'Ambos']].map((x) =>
-      '<button type="button" role="radio" data-camtipo="' + x[0] + '" aria-checked="' + (N.tipo === x[0]) + '" class="' + (N.tipo === x[0] ? 'on' : '') + '">' + x[1] + '</button>').join('') + '</div>';
-    h += '<p class="nota-chica">' + esc(N.tipo === 'categoria' ? 'Sin documentos: va directo al analista.' : N.tipo === 'titularidad' ? 'Lo aprueba el administrador. Pide la planilla firmada y los documentos de ambos.' : 'Lo aprueba el administrador. Comisiona por la categoría.') + '</p>';
-    if(N.tipo !== 'titularidad') h += '<label class="rotulo arriba" for="camCat">Categoría nueva</label><input class="campo" id="camCat" maxlength="60" list="camCats" autocomplete="off" value="' + esc(N.cat || '') + '"><datalist id="camCats"><option>PYME-1GB</option><option>PYME-500MB</option><option>RESIDENCIAL</option></datalist>' + e('cat');
-    if(N.tipo !== 'categoria'){
-      h += '<div class="secc">Nuevo titular</div><span class="rotulo" id="rCamNat">Es</span><div class="tres dos" role="radiogroup" aria-labelledby="rCamNat">' + [['0', 'Empresa'], ['1', 'Persona natural']].map((x) =>
-        '<button type="button" role="radio" data-camnat="' + x[0] + '" aria-checked="' + (String(+!!N.nat) === x[0]) + '" class="' + (String(+!!N.nat) === x[0] ? 'on' : '') + '">' + x[1] + '</button>').join('') + '</div>' +
-        '<label class="rotulo arriba" for="camDoc">' + (N.nat ? 'Cédula' : 'RIF') + ' del nuevo titular</label><input class="campo" id="camDoc" maxlength="16" autocomplete="off" autocapitalize="characters" value="' + esc(N.doc || '') + '">' + e('doc') +
-        '<label class="rotulo arriba" for="camNom">Nombre o razón social</label><input class="campo" id="camNom" maxlength="120" autocomplete="off" value="' + esc(N.nom || '') + '">' + e('nom');
+    h += e('servicios') + '</section>';
+    // 2. Qué cambia
+    h += '<section class="cam-sec"><h3 class="cam-h" id="rCamTipo">Qué cambia</h3>' + radios('rCamTipo', [['categoria', 'Categoría'], ['titularidad', 'Titular'], ['ambos', 'Los dos']], N.tipo, 'data-camtipo', 'tres') +
+      '<p class="nota-chica">' + esc(N.tipo === 'categoria' ? 'Sin documentos: va directo al analista.' : N.tipo === 'titularidad' ? 'Lo aprueba el administrador. No comisiona.' : 'Lo aprueba el administrador. Comisiona por la categoría.') + '</p>';
+    if(N.tipo !== 'titularidad'){
+      h += '<label class="rotulo arriba" for="camCat">Categoría nueva</label>';
+      if(!CATS && !N.err.cat) h += '<div class="sk" style="height:48px;border-radius:14px" aria-hidden="true"></div>';
+      else h += '<select class="campo" id="camCat"' + (CATS ? '' : ' disabled') + '><option value="">Elige la categoría</option>' + (CATS || []).map((c) => '<option' + (c === N.cat ? ' selected' : '') + '>' + esc(c) + '</option>').join('') + '</select>';
+      h += e('cat');
     }
-    h += '<label class="rotulo arriba" for="camNota">Nota (opcional)</label><textarea class="area corta" id="camNota" maxlength="500">' + esc(N.nota || '') + '</textarea>' + e('general');
+    h += '</section>';
+    if(N.tipo !== 'categoria'){
+      // 3. Tipo de solicitud (planilla oficial) y lo que se va a pedir
+      const tt = titularElegido(); const actNat = tt ? /^[VE]/i.test(tt.doc_tipo || '') : null;
+      h += '<section class="cam-sec"><h3 class="cam-h" id="rCamSol">Tipo de solicitud</h3>' +
+        (tt ? '<p class="nota-chica">Según el TAD, el titular de hoy es ' + (actNat ? 'persona natural' : 'jurídica') + '.</p>' : '') +
+        radios('rCamSol', SOL, N.sol, 'data-camsol', 'cam-sol') + e('sol');
+      if(N.sol) h += '<div class="cam-docs"><b>Se van a pedir</b><ul>' + docsDe(N.sol).map((x) => '<li>' + esc(x) + '</li>').join('') + '</ul></div>';
+      h += '</section>';
+      // 4. Nuevo titular: el RIF se lee con el OCR y la persona confirma
+      const nat = N.sol ? /_natural$/.test(N.sol) : false; const o = N.ocr;
+      h += '<section class="cam-sec"><h3 class="cam-h">Nuevo titular</h3>' +
+        '<div class="cam-rif"><button type="button" class="btn btn-2 btn-ancho" data-cam="rif"' + (N.leyendo ? ' disabled' : '') + '>' + ic('subir') + (N.leyendo ? 'Leyendo el RIF…' : N.archivo ? 'Cambiar el RIF' : 'Subir RIF') + '</button>' +
+        '<input type="file" id="camRifArchivo" accept="application/pdf,image/jpeg,image/png" hidden>' +
+        (N.archivo ? '<p class="nota-chica">' + esc(N.archivo.name) + '. Queda en la casilla ' + (nat ? 'RIF personal' : 'RIF de la empresa') + ' del nuevo titular al pedir el cambio.</p>' : '<p class="nota-chica">Llena el RIF, el nombre y el domicilio. Confírmalos antes de pedir.</p>') + '</div>';
+      if(o && !N.leyendo){
+        if(o.estado === 'ok' && !o.dudosa && /^rif_/.test(o.tipo || '')) h += '<div class="al-banda verde" role="status"><b>Leído del RIF</b><p>Revisa que esté bien y corrige si hace falta.</p></div>';
+        else if(o.estado === 'ok' && /^rif_/.test(o.tipo || '')) h += '<div class="al-banda ambar" role="status"><b>Lectura dudosa</b><p>' + esc((o.datos && o.datos.motivos || []).join(', ') || 'Revisa cada dato') + '. Corrige lo que no esté bien.</p></div>';
+        else if(o.estado === 'ok') h += '<div class="al-banda rojo" role="alert"><b>No corresponde a un RIF</b><p>El archivo parece ' + esc(o.tipo === 'cedula' ? 'una cédula' : 'otro documento') + '. Sube el RIF o escribe los datos.</p></div>';
+        else h += '<div class="al-banda ambar" role="status"><b>No se pudo leer</b><p>' + esc(o.error || 'Google no devolvió el texto') + '. Escribe los datos; el archivo igual se guarda.</p></div>';
+      }
+      h += '<label class="rotulo arriba" for="camDoc">' + (nat ? 'Cédula o RIF' : 'RIF') + '</label><input class="campo" id="camDoc" maxlength="16" autocomplete="off" autocapitalize="characters" inputmode="text" value="' + esc(N.doc || '') + '">' + e('doc') +
+        '<label class="rotulo arriba" for="camNom">' + (nat ? 'Nombre completo' : 'Razón social') + '</label><input class="campo" id="camNom" maxlength="120" autocomplete="off" value="' + esc(N.nom || '') + '">' + e('nom') +
+        '<label class="rotulo arriba" for="camDom">Domicilio fiscal</label><textarea class="area corta" id="camDom" maxlength="300">' + esc(N.dom || '') + '</textarea>' + e('dom') + '</section>';
+    }
+    h += '<section class="cam-sec"><label class="rotulo" for="camNota">Nota (opcional)</label><textarea class="area corta" id="camNota" maxlength="500">' + esc(N.nota || '') + '</textarea>' + e('general') + '</section>';
     z.innerHTML = h;
   }
   function leerCampos(){
     if(!N) return; const v = (id) => { const x = $(id); return x ? x.value : undefined; };
     if(v('camBusca') !== undefined) N.q = v('camBusca'); if(v('camCat') !== undefined) N.cat = v('camCat');
-    if(v('camDoc') !== undefined) N.doc = v('camDoc'); if(v('camNom') !== undefined) N.nom = v('camNom'); if(v('camNota') !== undefined) N.nota = v('camNota');
+    if(v('camDoc') !== undefined) N.doc = v('camDoc'); if(v('camNom') !== undefined) N.nom = v('camNom'); if(v('camDom') !== undefined) N.dom = v('camDom'); if(v('camNota') !== undefined) N.nota = v('camNota');
   }
   async function buscar(){
     leerCampos(); N.err = {}; const t = String(N.q || '').trim();
@@ -145,24 +194,64 @@
     catch (e) { N.err.busca = e.message; }
     N.buscando = false; pintarNuevo();
   }
+  // "Subir RIF": el OCR de Google Drive lo lee (sin IA) y llena RIF, nombre y domicilio para que la persona confirme
+  async function leerRif(file){
+    leerCampos(); N.err = {};
+    if(!/^(application\/pdf|image\/(jpeg|png))$/i.test(file.type)){ N.err.doc = 'Sube el RIF en PDF, JPG o PNG'; pintarNuevo(); return; }
+    if(file.size > 10 * 1024 * 1024){ N.err.doc = 'El archivo pesa más de 10 MB'; pintarNuevo(); return; }
+    N.archivo = file; N.leyendo = true; N.ocr = null; pintarNuevo();
+    let o;
+    try {
+      const s = await window.db.auth.getSession(); const tk = (s.data && s.data.session && s.data.session.access_token) || '';
+      if(!tk) throw new Error('Tu sesión venció. Entra de nuevo');
+      const fd = new FormData(); fd.append('archivo', file, file.name);
+      const r = await fetch(window.db.supabaseUrl + '/functions/v1/ocr_leer', { method: 'POST', headers: { Authorization: 'Bearer ' + tk, apikey: window.db.supabaseKey }, body: fd });
+      o = await r.json().catch(() => ({ estado: 'sin_lectura', error: 'Respuesta inválida' }));
+      if(!r.ok && !o.estado) o = { estado: 'sin_lectura', error: o.error || 'No se pudo leer' };
+    } catch (e) { o = { estado: 'sin_lectura', error: navigator.onLine === false ? 'Sin conexión' : e.message }; }
+    if(!N) return;
+    N.leyendo = false; N.ocr = o;
+    const d = o.datos || {};
+    if(o.estado === 'ok' && /^rif_/.test(o.tipo || '')){
+      if(d.rif){ N.doc = d.rif.charAt(0) + '-' + d.rif.slice(1, 9) + '-' + d.rif.slice(9);
+        if(!N.sol){ const tt = titularElegido(); const de = tt && /^[VE]/i.test(tt.doc_tipo || '') ? 'natural' : 'juridico'; N.sol = de + '_' + (/^[VE]/.test(d.rif) ? 'natural' : 'juridico'); } }
+      if(d.razon_social) N.nom = d.razon_social; if(d.domicilio) N.dom = d.domicilio;
+    }
+    pintarNuevo();
+  }
   async function crear(b){
     leerCampos(); N.err = {};
     const claves = Object.keys(N.sel).filter((k) => N.sel[k]);
     if(!claves.length) N.err.servicios = 'Marca al menos un servicio';
-    if(N.tipo !== 'titularidad' && !String(N.cat || '').trim()) N.err.cat = 'Escribe la categoría nueva';
+    if(N.tipo !== 'titularidad' && !String(N.cat || '').trim()) N.err.cat = 'Elige la categoría nueva';
+    let letra = '';
     if(N.tipo !== 'categoria'){
-      if(String(N.doc || '').replace(/\D/g, '').length < 5) N.err.doc = 'Escribe la ' + (N.nat ? 'cédula' : 'RIF') + ' del nuevo titular';
-      if(String(N.nom || '').trim().length < 3) N.err.nom = 'Escribe el nombre';
+      if(!N.sol) N.err.sol = 'Elige el tipo de solicitud';
+      const nat = /_natural$/.test(N.sol || '');
+      letra = (String(N.doc || '').match(/[VEJGPC]/i) || [nat ? 'V' : 'J'])[0].toUpperCase();
+      if(String(N.doc || '').replace(/\D/g, '').length < 5) N.err.doc = 'Escribe ' + (nat ? 'la cédula o el RIF' : 'el RIF') + ' del nuevo titular';
+      else if(N.sol && nat && 'VE'.indexOf(letra) < 0) N.err.doc = 'Una persona natural lleva V o E';
+      else if(N.sol && !nat && 'VE'.indexOf(letra) >= 0) N.err.doc = 'Una empresa lleva J, G, C o P';
+      if(String(N.nom || '').trim().length < 3) N.err.nom = 'Escribe ' + (nat ? 'el nombre' : 'la razón social');
     }
-    if(Object.keys(N.err).length){ pintarNuevo(); return; }
-    const letra = (String(N.doc || '').match(/[VEJGPC]/i) || [N.nat ? 'V' : 'J'])[0].toUpperCase();
+    if(Object.keys(N.err).length){ pintarNuevo(); const p = document.querySelector('#cCamN .error:not(:empty)'); if(p) p.scrollIntoView({ block: 'center' }); return; }
     b.disabled = true; b.textContent = 'Guardando…';
+    const o = N.ocr; const arch = N.archivo; const nat = /_natural$/.test(N.sol || '');
     try {
-      const id = await rpc('cambio_crear', { p_datos: { tipo: N.tipo, servicios: claves, categoria_nueva: N.tipo === 'titularidad' ? null : String(N.cat).trim(), nota: N.nota || null,
-        nuevo: N.tipo === 'categoria' ? null : { tipo: letra, doc: N.doc, nombre: N.nom, natural: !!N.nat } } });
+      const id = await rpc('cambio_crear', { p_datos: { tipo: N.tipo, servicios: claves, categoria_nueva: N.tipo === 'titularidad' ? null : String(N.cat).trim(), nota: N.nota || null, tipo_solicitud: N.tipo === 'categoria' ? null : N.sol,
+        nuevo: N.tipo === 'categoria' ? null : { tipo: letra, doc: N.doc, nombre: N.nom, natural: nat, domicilio: String(N.dom || '').trim() || null, ocr: o ? { estado: o.estado, tipo: o.tipo || null, dudosa: !!o.dudosa } : null } } });
       toast(N.tipo === 'categoria' ? 'Cambio pedido. Le llega al analista' : 'Cambio pedido. Le llega al administrador para aprobarlo');
       N = null; cerrarHoja(true); D = null; await cargar(); abrirDetalle(Number(id));
+      // El RIF que se leyó queda en la casilla del nuevo titular
+      if(arch) guardarRif(Number(id), arch, nat);
     } catch (e) { N.err.general = e.message; pintarNuevo(); b.disabled = false; b.textContent = 'Pedir cambio'; }
+  }
+  async function guardarRif(idCambio, arch, nat){
+    try {
+      const d = await rpc('cambio_detalle', { p_id: idCambio }); if(!d.nuevo || !d.nuevo.cliente_id) return;
+      const F = await rpc('cliente_ficha', { p_cliente: d.nuevo.cliente_id });
+      window.Ficha.subirArchivoA(F, nat ? 'rif_personal' : 'rif_empresa', nat ? 1 : 0, arch, () => { if(V && V.id === idCambio) cargarDetalle(); cargar(); });
+    } catch (e) { toast('El cambio quedó pedido, pero el RIF no se guardó: ' + e.message + '. Súbelo desde el cambio', 'error'); }
   }
 
   // Detalle: estado, servicios, documentos, planilla, acciones y bitácora
@@ -291,6 +380,7 @@
     const t = ev.target; let b;
     if((b = t.closest('[data-cam]'))){
       const a = b.dataset.cam;
+      if(a === 'rif'){ const i = $('camRifArchivo'); if(i){ i.value = ''; i.click(); } return; }
       if(a === 'nuevo') abrirNuevo(); else if(a === 'buscar') buscar(); else if(a === 'crear') crear(b); else if(a === 'reintentar') cargar(); else if(a === 'reDetalle') cargarDetalle();
       else if(a === 'planilla'){ try { const f = archivoPlanilla(); window.Archivos.descargar(f, f.name); toast('Planilla descargada'); } catch (e) { toast('No se pudo armar la planilla. Intenta de nuevo', 'error'); } }
       else if(a === 'planillaWa') enviarPlanilla();
@@ -303,14 +393,16 @@
     if((b = t.closest('[data-camtab]'))){ tab = b.dataset.camtab; guardarUrl(); pintar(); return; }
     if((b = t.closest('[data-cam-subir]'))){ const p = b.dataset.camSubir.split(':'); subir(p[0], Number(p[1])); return; }
     if((b = t.closest('[data-camtipo]'))){ leerCampos(); N.tipo = b.dataset.camtipo; pintarNuevo(); return; }
-    if((b = t.closest('[data-camnat]'))){ leerCampos(); N.nat = b.dataset.camnat === '1'; pintarNuevo(); return; }
+    if((b = t.closest('[data-camsol]'))){ leerCampos(); N.sol = b.dataset.camsol; N.err.sol = ''; pintarNuevo(); return; }
   });
   document.addEventListener('change', (ev) => {
+    if(ev.target && ev.target.id === 'camRifArchivo' && N){ const f = ev.target.files && ev.target.files[0]; if(f) leerRif(f); return; }
     const x = ev.target.closest('[data-srv]'); if(!x || !N) return;
     // Los servicios de un cambio son de un solo titular
     const tit = x.dataset.tit;
     if(x.checked) Object.keys(N.sel).forEach((k) => { const o = document.querySelector('[data-srv="' + k + '"]'); if(o && o.dataset.tit !== tit){ N.sel[k] = false; o.checked = false; } });
     N.sel[x.dataset.srv] = x.checked; const er = $('eCam_servicios'); if(er) er.textContent = '';
+    if(N.tipo !== 'categoria'){ leerCampos(); pintarNuevo(); }   // el titular elegido dice de dónde parte la solicitud
   });
   document.addEventListener('keydown', (ev) => { if(ev.key === 'Enter' && ev.target && ev.target.id === 'camBusca'){ ev.preventDefault(); buscar(); } });
 

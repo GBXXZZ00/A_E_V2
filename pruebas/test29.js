@@ -33,7 +33,8 @@ function sembrarIndice(m){
     ok(nombre + ': sin marcar servicio no deja pedir', (await p.textContent('#eCam_servicios')).includes('Marca al menos un servicio'));
     await p.check('[data-srv="824-777001"]'); await p.click('[data-cam="crear"]');
     ok(nombre + ': sin categoría nueva da error debajo', (await p.textContent('#eCam_cat')).includes('categoría'));
-    await p.fill('#camCat', 'PYME-1GB');
+    ok(nombre + ': la categoría nueva es una lista cerrada con las categorías del TAD', (await p.evaluate(() => document.getElementById('camCat').tagName)) === 'SELECT' && (await p.locator('#camCat option').count()) >= 6);
+    await p.selectOption('#camCat', 'PYME-1GB');
     await p.screenshot({ path: 'capturas/29-' + nombre + '-nuevo.png', fullPage: true });
     await p.click('[data-cam="crear"]'); await p.waitForSelector('#hojaCambio.ver #cCam .estado');
     ok(nombre + ': queda Por emitir (va directo al analista) y se puede cancelar', (await p.textContent('#cCam .estado')).includes('Por emitir') && (await p.locator('[data-cam-acc="cancelar"]').count()) === 1 && llamo(mundo, 'cambio_crear').length === 1);
@@ -43,10 +44,33 @@ function sembrarIndice(m){
     await p.click('[data-cam="nuevo"]'); await p.waitForSelector('#hojaCambioN.ver #camBusca');
     await p.fill('#camBusca', '9777003'); await p.click('[data-cam="buscar"]'); await p.waitForSelector('[data-srv="824-777003"]');
     await p.check('[data-srv="824-777003"]'); await p.click('[data-camtipo="titularidad"]'); await p.waitForSelector('#camDoc');
+    ok(nombre + ': tipo de solicitud con las cuatro opciones de la planilla (sin "Es")', (await p.locator('[data-camsol]').count()) === 4 && (await p.locator('[data-camnat]').count()) === 0 && /persona natural/.test(await p.textContent('#cCamN')));
     await p.click('[data-cam="crear"]');
-    ok(nombre + ': titularidad sin datos del nuevo titular da errores debajo', (await p.textContent('#eCam_doc')).includes('RIF') && (await p.textContent('#eCam_nom')).includes('nombre'));
-    await p.fill('#camDoc', 'J-41777999-1'); await p.fill('#camNom', 'Nueva Empresa Inventada'); await p.click('[data-cam="crear"]');
+    ok(nombre + ': titularidad sin tipo ni datos del nuevo titular da errores debajo', /tipo de solicitud/.test(await p.textContent('#eCam_sol')) && (await p.textContent('#eCam_doc')).includes('RIF') && /razón social/.test(await p.textContent('#eCam_nom')));
+    // Subir RIF: si Google no lo lee, se escribe a mano y el archivo igual se guarda
+    await p.setInputFiles('#camRifArchivo', { name: 'rif-nuevo.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4 prueba') });
+    await p.waitForFunction(() => /No se pudo leer/.test(document.getElementById('cCamN').textContent));
+    ok(nombre + ': sin lectura del OCR avisa y deja escribir', (await p.inputValue('#camDoc')) === '' && /se guarda/.test(await p.textContent('#cCamN')));
+    // Con lectura clara: llena RIF, razón social y domicilio, y propone el tipo de solicitud
+    mundo.ocr = { estado: 'ok', tipo: 'rif_viejo', dudosa: false, datos: { rif: 'J417779999', razon_social: 'NUEVA EMPRESA INVENTADA, C.A', domicilio: 'CALLE 1 LOCAL 2 CIUDAD PRUEBA ZONA POSTAL 4001', vencimiento: '2028-01-01', motivos: [] } };
+    await p.click('[data-cam="rif"]').catch(() => {});
+    await p.setInputFiles('#camRifArchivo', { name: 'rif-nuevo.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4 prueba') });
+    await p.waitForFunction(() => /Leído del RIF/.test(document.getElementById('cCamN').textContent));
+    ok(nombre + ': el RIF leído llena los datos para confirmar', (await p.inputValue('#camDoc')) === 'J-41777999-9' && (await p.inputValue('#camNom')) === 'NUEVA EMPRESA INVENTADA, C.A' && /ZONA POSTAL 4001/.test(await p.inputValue('#camDom')));
+    ok(nombre + ': propone natural a jurídico y dice qué documentos se piden', (await p.getAttribute('[data-camsol="natural_juridico"]', 'aria-checked')) === 'true' && /RIF de la empresa nueva/.test(await p.textContent('.cam-docs')) && /Planilla/.test(await p.textContent('.cam-docs')));
+    await p.click('[data-camsol="natural_natural"]'); await p.click('[data-cam="crear"]');
+    ok(nombre + ': natural a natural con un RIF J da error debajo', /V o E/.test(await p.textContent('#eCam_doc')));
+    await p.click('[data-camsol="natural_juridico"]');
+    ok(nombre + ': formulario de titular sin desborde', await sinDesborde(p));
+    await p.screenshot({ path: 'capturas/29-' + nombre + '-form-titular.png', fullPage: true });
+    await p.click('[data-cam="crear"]');
     await p.waitForSelector('#hojaCambio.ver [data-cam="planilla"]');
+    const cc = llamo(mundo, 'cambio_crear').slice(-1)[0][2].p_datos;
+    ok(nombre + ': el cambio lleva el tipo de solicitud, el domicilio y que vino del OCR', cc.tipo_solicitud === 'natural_juridico' && /ZONA POSTAL/.test(cc.nuevo.domicilio) && cc.nuevo.ocr.tipo === 'rif_viejo');
+    const conRif = () => (mundo.datos.clientes.find((c) => c.doc_numero === '417779999') || { documentos: [] }).documentos.some((d) => d.casilla === 'rif_empresa');
+    for(let i = 0; i < 100 && !conRif(); i++) await p.waitForTimeout(100);
+    ok(nombre + ': el RIF queda en la casilla RIF de la empresa del nuevo titular', mundo.llamadas.some((l) => l[0] === 'subir') && (mundo.datos.clientes.find((c) => c.doc_numero === '417779999') || { documentos: [] }).documentos.some((d) => d.casilla === 'rif_empresa'));
+    mundo.ocr = null;
     const det = await p.textContent('#cCam');
     ok(nombre + ': titularidad queda por aprobar y pide la planilla y los documentos del nuevo titular', det.includes('Por aprobar') && det.includes('Planilla de cambio de titular firmada') && det.includes('Cédula o RIF del titular actual') && det.includes('Acta constitutiva del nuevo titular'));
     const [dl] = await Promise.all([p.waitForEvent('download'), p.click('[data-cam="planilla"]')]);
