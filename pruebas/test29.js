@@ -1,4 +1,4 @@
-// Lote 4 (14/10): cambios de categoría y de titularidad. Pestaña Cambios en Comisiones, buscador de servicios del TAD completo,
+// Lote 4 (14/10): cambios de categoría y de titularidad. Desde la corrida de Migraciones viven en su propio módulo (migraciones.html), buscador de servicios del TAD completo,
 // pedido del líder, planilla de cambio de titular, aprobación del administrador, Emitido, Sin solicitud con Vincular,
 // archivo de cambios de categoría en Actualizar (RADIUS se ignora) y la última subida de cada archivo.
 const { chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar } = require('./simulador');
@@ -22,8 +22,8 @@ function sembrarIndice(m){
     const { ctx, mundo } = await contexto(nav, dispositivo); sembrarIndice(mundo);
     // ----- El líder pide un cambio de categoría -----
     const p = await entrar(ctx, 'lucia', '739105'); p.on('pageerror', (e) => errores.push(e.message));
-    await p.goto(H + 'comisiones.html?t=cambios'); await p.waitForSelector('[data-cam="nuevo"]');
-    ok(nombre + ': la pestaña Cambios abre marcada y dice cuándo se subió el TAD completo', (await p.getAttribute('#vistas [data-vista="cambios"]', 'aria-selected')) === 'true' && /TAD completo del/.test(await p.textContent('#lista')));
+    await p.goto(H + 'migraciones.html'); await p.waitForSelector('[data-cam="nuevo"]');
+    ok(nombre + ': Migraciones abre con sus pestañas y dice cuándo se subió el TAD completo', (await p.locator('#filtros [data-camtab]').count()) >= 7 && /TAD completo del/.test(await p.textContent('#lista')));
     await p.click('[data-cam="nuevo"]'); await p.waitForSelector('#hojaCambioN.ver #camBusca');
     await p.fill('#camBusca', 'pa'); await p.click('[data-cam="buscar"]');
     ok(nombre + ': búsqueda muy corta da error debajo', (await p.textContent('#eCam_busca')).includes('3 letras'));
@@ -38,7 +38,7 @@ function sembrarIndice(m){
     await p.click('[data-cam="crear"]'); await p.waitForSelector('#hojaCambio.ver #cCam .estado');
     ok(nombre + ': queda Por emitir (va directo al analista) y se puede cancelar', (await p.textContent('#cCam .estado')).includes('Por emitir') && (await p.locator('[data-cam-acc="cancelar"]').count()) === 1 && llamo(mundo, 'cambio_crear').length === 1);
     await cerrarHojas(p);
-    ok(nombre + ': la fila dice que es Cambio de categoría (comisiona)', /Cambio de categoría/.test(await p.textContent('#lista')));
+    ok(nombre + ': la fila está en Por emitir y dice que va a PYME', (await p.getAttribute('#filtros [data-camtab="por_emitir"]', 'aria-selected')) === 'true' && /A PYME/.test(await p.textContent('#lista')));
     // ----- Titularidad: planilla y documentos -----
     await p.click('[data-cam="nuevo"]'); await p.waitForSelector('#hojaCambioN.ver #camBusca');
     await p.fill('#camBusca', '9777003'); await p.click('[data-cam="buscar"]'); await p.waitForSelector('[data-srv="824-777003"]');
@@ -61,10 +61,10 @@ function sembrarIndice(m){
     RPC.cambios_archivo_cargar(mundo, mundo.personas[0], { p_archivo: 'cambios.xlsx', p_filas: [
       { codigo: '777009', nombre: 'X', fecha: '14-10-2026', anterior: '056', actual: 'PYME-1GB', operador: 'RADIUS' },
       { codigo: '777050', nombre: 'Ferreteria Inventada', fecha: '13-10-2026', anterior: 'RESIDENCIAL', actual: 'PYME-1GB', operador: 'Ana' }] });
-    await q.goto(H + 'comisiones.html?t=cambios'); await q.waitForSelector('#lista .bandeja-ins');
-    const lis = await q.textContent('#lista');
-    ok(nombre + ': el administrador ve Por aprobar, Por emitir y Sin solicitud', lis.includes('Por aprobar') && lis.includes('Por emitir') && lis.includes('Sin solicitud') && lis.includes('Ferreteria Inventada'));
-    ok(nombre + ': la pestaña lleva el contador de lo que le toca', /Cambios\s*3/.test(await q.textContent('#vistas [data-vista="cambios"]')));
+    await q.goto(H + 'migraciones.html'); await q.waitForSelector('#lista [data-cambio]');
+    const tabs = await q.textContent('#filtros');
+    ok(nombre + ': el administrador ve Por aprobar, Por emitir y Sin solicitud con su contador', /Por aprobar\s*1/.test(tabs) && /Por emitir\s*1/.test(tabs) && /Sin solicitud\s*1/.test(tabs));
+    ok(nombre + ': arranca en lo que le toca (Por aprobar)', (await q.getAttribute('#filtros [data-camtab="por_aprobar"]', 'aria-selected')) === 'true');
     await q.screenshot({ path: 'capturas/29-' + nombre + '-admin.png', fullPage: true });
     await q.locator('[data-cambio]', { hasText: 'Persona Inventada Dos' }).click(); await q.waitForSelector('[data-cam-acc="aprobar"]');
     await q.click('[data-cam-acc="rechazar"]');
@@ -74,12 +74,12 @@ function sembrarIndice(m){
     await q.click('[data-cam-acc="emitido"]'); await q.waitForFunction(() => /Por confirmar/.test(document.querySelector('#cCam .estado').textContent));
     ok(nombre + ': marcado emitido queda Por confirmar con su bitácora', (await q.textContent('#cCam')).includes('Marcó emitido'));
     await cerrarHojas(q);
-    await q.locator('[data-cambio]', { hasText: 'Ferreteria Inventada' }).click(); await q.waitForSelector('[data-cam-acc="vincular"]');
+    await q.click('#filtros [data-camtab="sin_solicitud"]'); await q.locator('[data-cambio]', { hasText: 'Ferreteria Inventada' }).click(); await q.waitForSelector('[data-cam-acc="vincular"]');
     await q.click('[data-cam-acc="vincular"]');
     ok(nombre + ': vincular sin líder da error debajo', (await q.textContent('#eCamLider')).includes('Elige el líder'));
     await q.selectOption('#camLider', { label: 'Lucía Ferrer' }); await q.click('[data-cam-acc="vincular"]');
     await q.waitForFunction(() => /Confirmado/.test(document.querySelector('#cCam .estado').textContent));
-    ok(nombre + ': vinculado a un líder queda confirmado', llamo(mundo, 'cambio_accion').some((l) => l[2].p_accion === 'vincular' && l[2].p_lider));
+    ok(nombre + ': vinculado a un líder queda confirmado, con la comisión por decidir', llamo(mundo, 'cambio_accion').some((l) => l[2].p_accion === 'vincular' && l[2].p_lider) && /Por decidir/.test(await q.textContent('#cCam')));
     await cerrarHojas(q);
 
     // ----- Actualizar: archivo de cambios de categoría y última subida de cada archivo -----

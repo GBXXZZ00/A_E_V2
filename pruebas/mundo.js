@@ -180,8 +180,19 @@ function ordenesAbiertas(m, yo){
 }
 const error = (mensaje) => ({ __error: { code: 'P0001', message: mensaje } });
 // Lote 6: pendientes inventados como los arma privado.pendientes (analista del líder, líder, senior)
+// Migraciones: los cambios a PYME confirmados esperan la decisión de comisión del Senior (como privado.pendientes)
+function pendDecidir(m){
+  return ((m.datos.cambiosK || {}).filas || []).filter((c) => c.estado === 'confirmado' && c.comision === 'por_decidir' && !soloRegistro(m, c))
+    .map((c) => ({ tipo: 'cambio_comision', clave: String(c.id), cliente_id: null, titulo: c.titular.nombre || 'Cambio de categoría', detalle: (c.categoria_anterior || '?') + ' a ' + (c.categoria_nueva || '?') + ': ¿comisiona?',
+      para: 'senior', lider_id: c.lider_id || null, analista_id: null, desde: c.confirmado_en || new Date().toISOString(), vence: hoy(), ref: { cambio: c.id } }));
+}
+const soloRegistro = (m, c) => !!c.comision && String(c.fecha_cambio || c.confirmado_en || '').slice(0, 10) < (m.cambiosDesde || '2026-09-21');
+function confirmarCambio(m, c, fecha){
+  c.estado = 'confirmado'; c.confirmado_en = new Date().toISOString(); c.fecha_cambio = fecha || c.confirmado_en;
+  if(c.tipo !== 'titularidad' && /pyme/i.test(c.categoria_nueva || '') && !/pyme/i.test(c.categoria_anterior || '')) c.comision = 'por_decidir';
+}
 function pendientesBase(m){
-  if(m.datos.pendientes) return m.datos.pendientes;
+  if(m.datos.pendientes) return m.datos.pendientes.concat(pendDecidir(m));
   const cli = (n) => m.datos.clientes.find((c) => c.nombre === n || c.nombre === n + ', C.A.') || m.datos.clientes[0];
   const lucia = m.personas.find((p) => p.usuario === 'lucia'); const elena = m.personas.find((p) => p.usuario === 'elena');
   const dia = (n) => { const d = new Date(hoy() + 'T12:00:00'); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
@@ -194,7 +205,7 @@ function pendientesBase(m){
     { tipo: 'docs_faltan', clave: String(yun.id), cliente_id: yun.id, titulo: yun.nombre, detalle: 'Faltan 2 documentos', para: 'lider', lider_id: lucia.id, analista_id: elena.id, desde: dia(-40) + 'T12:00:00Z', vence: dia(-10), ref: {} },
     { tipo: 'por_firmar', clave: String(faro.id), cliente_id: faro.id, titulo: faro.nombre, detalle: 'Contrato por firmar', para: 'lider', lider_id: lucia.id, analista_id: elena.id, desde: dia(-2) + 'T12:00:00Z', vence: dia(28), ref: {} }
   ];
-  return m.datos.pendientes;
+  return m.datos.pendientes.concat(pendDecidir(m));
 }
 function misPendientes(m, yo, persona){
   const sen = yo.rol === 'analista' && !!yo.senior; const can = !!yo.canales; const hechos = m.datos.hechos || [];
@@ -217,7 +228,7 @@ function cambioJson(m, c){
     else req.push(['rif_empresa', 0, 'RIF de la empresa del nuevo titular'], ['acta_constitutiva', 0, 'Acta constitutiva del nuevo titular'], ['cedula', 1, 'Cédula del nuevo titular'], ['rif_personal', 1, 'RIF personal del nuevo titular']);
     req = req.map((r) => ({ casilla: r[0], numero: r[1], texto: r[2], ok: tiene(r[0], r[1]) }));
   }
-  return Object.assign({}, c, { comisiona: c.tipo !== 'titularidad' && pyme(c.categoria_nueva) && !pyme(c.categoria_anterior), negativo: pyme(c.categoria_anterior) && !!c.categoria_nueva && !pyme(c.categoria_nueva), requisitos: req });
+  return Object.assign({}, c, { solo_registro: soloRegistro(m, c), comisiona: c.tipo !== 'titularidad' && pyme(c.categoria_nueva) && !pyme(c.categoria_anterior), negativo: pyme(c.categoria_anterior) && !!c.categoria_nueva && !pyme(c.categoria_nueva), requisitos: req });
 }
 
 const esSenior = (yo) => yo.rol === 'admin' || (yo.rol === 'analista' && !!yo.senior);
@@ -507,7 +518,7 @@ const RPC = {
       .forEach((i) => { (g[i.doc_numero] = g[i.doc_numero] || { doc_tipo: i.doc_tipo, doc_numero: i.doc_numero, nombre: i.nombre, servicios: [] }).servicios.push(i); });
     return { sin_indice: false, titulares: Object.values(g) }; },
   cambios_lista(m, yo){ if(!['admin', 'analista', 'lider'].includes(yo.rol)) return error('No tienes permiso para hacer esto'); const k = m.datos.cambiosK || { filas: [], cargas: [] }; const sen = esSenior(yo);
-    return { rol: yo.rol, puedo: { aprobar: yo.rol === 'admin', emitir: ['admin', 'analista'].includes(yo.rol), confirmar: sen, vincular: sen }, indice: k.vigente ? { en: k.cargas[k.vigente - 1].en, filas: k.cargas[k.vigente - 1].filas } : null,
+    return { rol: yo.rol, desde: m.cambiosDesde || '2026-09-21', puedo: { aprobar: yo.rol === 'admin', emitir: ['admin', 'analista'].includes(yo.rol), confirmar: sen, vincular: sen, decidir: sen }, indice: k.vigente ? { en: k.cargas[k.vigente - 1].en, filas: k.cargas[k.vigente - 1].filas } : null,
       archivo: k.archivo, lideres: sen ? m.personas.filter((p) => p.rol === 'lider' && p.activo).map((p) => ({ id: p.id, nombre: p.nombre })) : [],
       filas: (k.filas || []).filter((c) => yo.rol !== 'lider' || c.lider_id === yo.id || c.creado_por_id === yo.id).map((c) => cambioJson(m, c)) }; },
   cambio_crear(m, yo, a){ const k = m.datos.cambiosK; const p = a.p_datos || {}; if(!k || !k.vigente) return error('Todavía no se ha subido el TAD completo');
@@ -531,15 +542,28 @@ const RPC = {
     if(a.p_accion === 'vincular' && !a.p_lider) return error('Elige el líder');
     c.estado = { aprobar: 'por_emitir', emitido: 'emitido', rechazar: 'rechazado', vincular: 'confirmado', error: 'error', revertido: 'revertido', cancelar: 'cancelado', confirmar: 'confirmado' }[a.p_accion];
     if(a.p_lider){ c.lider_id = a.p_lider; c.lider = (m.personas.find((p) => p.id === a.p_lider) || {}).nombre; }
+    if(c.estado === 'confirmado') confirmarCambio(m, c, c.fecha_archivo || null);
     c.bitacora.push({ accion: 'cambio_' + a.p_accion, en: new Date().toISOString(), por: yo.nombre }); return null; },
   cambios_archivo_cargar(m, yo, a){ if(yo.rol !== 'admin') return error('No tienes permiso para hacer esto'); const k = m.datos.cambiosK || (m.datos.cambiosK = { idx: {}, cargas: [], filas: [], sec: 0 });
     let conf = 0; let ign = 0; let sins = 0; let n = 0;
     (a.p_filas || []).forEach((f) => { const pyme = /pyme/i; if(/radius/i.test(f.operador || '') || f.anterior === f.actual || !(pyme.test(f.anterior) || pyme.test(f.actual))){ ign++; return; } n++;
       const c = k.filas.find((x) => ['por_emitir', 'emitido'].includes(x.estado) && x.servicios.some((s) => s.codigo === String(f.codigo).replace(/^0+/, '')));
-      if(c){ c.estado = 'confirmado'; conf++; }
+      const fi = /^\d{1,2}-\d{1,2}-\d{4}/.test(f.fecha || '') ? f.fecha.slice(6, 10) + '-' + f.fecha.slice(3, 5) + '-' + f.fecha.slice(0, 2) + 'T12:00:00Z' : null;
+      if(c){ confirmarCambio(m, c, fi); conf++; }
       else { sins++; k.filas.push({ id: ++k.sec, tipo: 'categoria', estado: 'sin_solicitud', origen: 'archivo', creado_en: new Date().toISOString(), titular: { nombre: f.nombre, doc: null }, categoria_anterior: f.anterior, categoria_nueva: f.actual,
-        servicios: [{ clave: '824-' + f.codigo, sucursal: '824', codigo: String(f.codigo).replace(/^0+/, '') }], bitacora: [] }); } });
+        servicios: [{ clave: '824-' + f.codigo, sucursal: '824', codigo: String(f.codigo).replace(/^0+/, '') }], bitacora: [], fecha_archivo: fi }); } });
     k.archivo = { en: new Date().toISOString(), filas: n }; return { filas: n, ignoradas: ign, confirmados: conf, sin_solicitud: sins }; },
+  cambio_comision(m, yo, a){ const c = ((m.datos.cambiosK || {}).filas || []).find((x) => x.id === Number(a.p_id));
+    if(!esSenior(yo)) return error('Solo el Analista Senior o el administrador deciden la comisión');
+    if(!a.p_motivo || String(a.p_motivo).trim().length < 4) return error('Escribe el motivo');
+    if(!c || c.estado !== 'confirmado' || !c.comision) return error('Ese cambio no tiene comisión por decidir');
+    if(soloRegistro(m, c)) return error('Este cambio es de antes del 21/09/2026: queda solo como registro');
+    if(a.p_si && c.comision === 'si') return error('Ya está marcado que comisiona');
+    if(!a.p_si && c.comision === 'no') return error('Ya está marcado que no comisiona');
+    if(a.p_si && !c.lider_id) return error('Primero vincula el cambio a un líder');
+    if(!a.p_si && c.comision === 'si' && c.certificado) return error('Ya está en un corte certificado: no se puede quitar');
+    c.comision = a.p_si ? 'si' : 'no'; c.comision_motivo = a.p_motivo; c.comision_por = yo.nombre; c.comision_en = new Date().toISOString(); if(a.p_si) c.instalacion_id = c.instalacion_id || 5000 + c.id;
+    c.bitacora.push({ accion: 'cambio_comision', en: c.comision_en, por: yo.nombre, despues: { comision: c.comision, motivo: a.p_motivo } }); return null; },
   subidas_ultimas(m){ const k = m.datos.cambiosK || {}; return { tad: null, odoo: null, instalaciones: null, indice: k.vigente ? k.cargas[k.vigente - 1].en : null, cambios: k.archivo ? k.archivo.en : null }; },
   // ----- Lote 6: una sola fuente de pendientes -----
   trabajo(m, yo, a){

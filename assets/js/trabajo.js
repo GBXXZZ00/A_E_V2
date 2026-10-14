@@ -7,12 +7,13 @@
   const { $, esc, ic, rpc, toast, cache, vacio, fecha, plural, abrirHoja, cerrarHoja, prepararHojas } = C;
   const B = {
     hoy: { t: 'Hoy', tipos: null, ayuda: 'Todo lo tuyo: primero lo vencido, después lo que vence hoy y lo nuevo.' },
-    cambios: { t: 'Cambios por emitir', tipos: ['cambio_emitir'], ayuda: 'Hazlos en el sistema y márcalos Emitido en Comisiones > Cambios.' },
+    cambios: { t: 'Cambios por emitir', tipos: ['cambio_emitir'], ayuda: 'Hazlos en el sistema y márcalos Emitido en Migraciones.' },
     instalar: { t: 'Por instalar', tipos: ['por_instalar'], ayuda: 'Órdenes de Odoo desde el 01/10 que todavía no se instalan.' },
     enviar: { t: 'Por enviar', tipos: ['por_enviar'], ayuda: 'Proformas y cartas de bienvenida de este corte que no se han enviado.' },
     ip: { t: 'Sin IP', tipos: ['sin_ip'], ayuda: 'Servicios de este corte sin IP: la carta sale con "Pendiente por asignar".' },
     datos: { t: 'Datos por corregir', tipos: ['rif_verificar', 'sin_cliente', 'sin_servicio'], ayuda: 'RIF por verificar, instalaciones sin cliente y clientes sin servicio enlazado.' },
-    sinsol: { t: 'Sin solicitud', tipos: ['sin_solicitud'], ayuda: 'Cambios hacia o desde PYME sin solicitud en la app. Se resuelven en Comisiones > Cambios.' },
+    sinsol: { t: 'Sin solicitud', tipos: ['sin_solicitud'], ayuda: 'Cambios hacia o desde PYME sin solicitud en la app. Se resuelven en Migraciones.' },
+    decidir: { t: 'Comisión por decidir', tipos: ['cambio_comision'], ayuda: 'Cambios a PYME ya confirmados: decide en Migraciones si comisionan, con su motivo.' },
     certificar: { t: 'Para certificar', tipos: ['certificar'], ayuda: 'Lo que le falta al corte en curso: orden, Legal o pago.' },
     docs: { t: 'Documentos', tipos: ['docs_faltan', 'devuelto'], ayuda: 'Clientes a los que les faltan documentos o Legal se los devolvió.' },
     firmar: { t: 'Por firmar', tipos: ['por_firmar'], ayuda: 'Contratos que esperan la firma del cliente.' },
@@ -29,8 +30,8 @@
   function bandejas(){
     if(!D) return ['hoy'];
     if(D.rol === 'lider') return DEL_LIDER;
-    if(D.rol === 'admin') return DEL_ANALISTA.concat(['certificar'], DEL_LIDER.slice(1), ['aliados']);
-    return DEL_ANALISTA.concat(D.senior ? ['certificar'] : [], D.canales ? ['aliados'] : []);
+    if(D.rol === 'admin') return DEL_ANALISTA.concat(['certificar', 'decidir'], DEL_LIDER.slice(1), ['aliados']);
+    return DEL_ANALISTA.concat(D.senior ? ['certificar', 'decidir'] : [], D.canales ? ['aliados'] : []);
   }
   const deTab = (id) => (D ? D.filas || [] : []).filter((f) => !B[id].tipos || B[id].tipos.indexOf(f.tipo) >= 0);
   function leerUrl(){ const u = new URLSearchParams(location.search); tab = B[u.get('f')] ? u.get('f') : 'hoy'; persona = (u.get('p') || '').slice(0, 40); }
@@ -93,10 +94,10 @@
         '<button type="button" class="btn btn-chico btn-2" data-dias="' + x[0] + '">Guardar</button></div><div class="error" id="e_' + x[0] + '" role="alert"></div></div>').join('') + '</div></details>';
   }
 
-  // Abrir: el expediente encima; los cambios y las órdenes sin cliente, en Comisiones
+  // Abrir: el expediente encima; los cambios en Migraciones; las órdenes sin cliente, en Comisiones
   function abrir(f){
     const ref = f.ref || {};
-    if(ref.cambio){ location.href = 'comisiones.html?t=cambios'; return; }
+    if(ref.cambio){ location.href = 'migraciones.html?f=' + ({ cambio_emitir: 'por_emitir', sin_solicitud: 'sin_solicitud', cambio_comision: 'decidir' }[f.tipo] || '') + '&c=' + encodeURIComponent(ref.cambio); return; }
     if(f.tipo === 'por_instalar' && !f.cliente_id){ location.href = 'comisiones.html?t=instalar'; return; }
     if(!f.cliente_id){ location.href = 'comisiones.html'; return; }
     window.Ficha.abrir(f.cliente_id, { yo, alCerrar: cargar, tab: f.tipo === 'certificar' || f.tipo === 'por_enviar' || f.tipo === 'sin_ip' ? 'comision' : f.tipo === 'docs_faltan' || f.tipo === 'devuelto' || f.tipo === 'vgt' ? 'documentos' : '' });

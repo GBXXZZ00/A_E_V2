@@ -1017,3 +1017,17 @@ button.ge-li{cursor:pointer}
   .ge-fila{grid-template-columns:minmax(0,12em) minmax(0,1fr) 3em}
 }
 @media (prefers-reduced-motion:reduce){ #zonaG,.ge-p{transition:none} }
+
+/* Migraciones: aviso en Comisiones de los cambios con la comisión por decidir */
+.cam-dec{display:flex;align-items:center;gap:12px;margin-top:12px;padding:10px 14px;min-height:56px;border-radius:16px;background:var(--ambar-bg);color:var(--ambar)}
+.cam-dec > svg:first-child{flex:none;width:20px;height:20px}
+.cam-dec span{flex:1;min-width:0;font-weight:700;font-size:14px}
+.cam-dec small{display:block;font-weight:500;font-size:12.5px;color:var(--text2)}
+.cam-dec:active{transform:scale(.97)}
+@media (hover:hover) and (pointer:fine){ .cam-dec:hover{filter:brightness(.98)} }
+@media (prefers-reduced-motion:reduce){ .cam-dec:active{transform:none} }
+/* Hojas de Migraciones: el pie con las acciones queda abajo, a lo ancho y siempre a la vista */
+#hojaCambio .hoja-pie,#hojaCambioN .hoja-pie{position:sticky;bottom:calc(-1 * var(--safe-b, 0px));display:flex;gap:10px;margin:16px -4px 0;padding:12px 4px calc(6px + var(--safe-b, 0px));border-top:1px solid var(--line);background:#fff;z-index:2}
+#hojaCambio .hoja-pie.hidden,#hojaCambioN .hoja-pie.hidden{display:none}
+#hojaCambio .hoja-pie .btn,#hojaCambioN .hoja-pie .btn{flex:1;min-width:0;white-space:nowrap}
+#hojaCambio textarea,#hojaCambio select,#hojaCambio .error,#hojaCambioN input,#hojaCambioN .error{scroll-margin-bottom:120px}

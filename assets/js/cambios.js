@@ -1,11 +1,12 @@
-// Cambios de categoría y de titularidad (lote 4): pestaña "Cambios" de Comisiones.
+// Migraciones (antes la pestaña "Cambios" de Comisiones): cambios de categoría y de titularidad.
 // El líder pide el cambio aquí (reemplaza el WhatsApp); el administrador aprueba las titularidades; el analista marca Emitido;
 // el archivo de cambios de categoría o el TAD lo confirman. Lo que aparece sin solicitud queda en su bandeja.
+// Ningún cambio entra solo a comisión: confirmado a PYME queda "por decidir" y el Analista Senior o el administrador dicen Sí o No.
 (function(){
   'use strict';
   const C = window.Comun;
   const { $, esc, ic, rpc, toast, vacio, abrirHoja, cerrarHoja, hojaAbierta, prepararHojas, fecha, plural, normalizeStr } = C;
-  let yo = null; let D = null; let activo = false; let busca = ''; let pedido = 0; let N = null; let V = null;
+  let yo = null; let D = null; let activo = false; let busca = ''; let pedido = 0; let N = null; let V = null; let tab = ''; let abrirId = 0; let fresco = false;
   const ESTADO = {
     por_aprobar: ['ambar', 'Por aprobar'], por_emitir: ['azul', 'Por emitir'], emitido: ['morado', 'Por confirmar'], confirmado: ['verde', 'Confirmado'],
     sin_solicitud: ['rojo', 'Sin solicitud'], rechazado: ['', 'Rechazado'], cancelado: ['', 'Cancelado'], error: ['', 'Fue un error'], revertido: ['', 'Revertido']
@@ -17,56 +18,76 @@
   async function cargar(){
     const mio = ++pedido;
     if(!D && activo) lista().innerHTML = '<div class="sk-bloque"><span class="sk" style="height:64px;border-radius:16px"></span><span class="sk" style="height:64px;border-radius:16px"></span><span class="sk" style="height:64px;border-radius:16px"></span></div>';
-    try { const r = await rpc('cambios_lista', {}); if(mio !== pedido) return; D = r; C.cache.guardar('cambios:' + (yo && yo.rol), r); pintar(); avisarContador(); }
+    try { const r = await rpc('cambios_lista', {}); if(mio !== pedido) return; D = r; fresco = true; C.cache.guardar('cambios:' + (yo && yo.rol), r); pintar(); avisarContador(); }
     catch (e) {
       if(mio !== pedido) return;
       if(!D && activo) lista().innerHTML = '<div class="vacio" role="alert"><b>No se pudieron cargar los cambios</b><p>' + esc(e.message) + '</p><button type="button" class="btn btn-chico" data-cam="reintentar">Reintentar</button></div>';
       if(activo) toast(e.message, 'error');
     }
   }
-  // Lo que espera a quien mira: el número que sale en la pestaña
+  const decidible = (c) => c.estado === 'confirmado' && c.comision === 'por_decidir' && !c.solo_registro;
+  const TABS = [
+    ['por_aprobar', 'Por aprobar', 'Cambios de titular que esperan la aprobación del administrador.', (c) => c.estado === 'por_aprobar'],
+    ['por_emitir', 'Por emitir', 'El analista del líder lo hace en el sistema y marca Emitido.', (c) => c.estado === 'por_emitir'],
+    ['emitido', 'Por confirmar', 'Se confirman solos con el archivo de cambios de categoría o el TAD.', (c) => c.estado === 'emitido'],
+    ['sin_solicitud', 'Sin solicitud', 'Cambios hacia o desde PYME que aparecieron en el archivo o en el TAD sin pedirse aquí. Vincúlalo a un líder, o márcalo como error o revertido.', (c) => c.estado === 'sin_solicitud'],
+    ['decidir', 'Comisión por decidir', 'Cambios a PYME ya confirmados. El Analista Senior o el administrador deciden si comisionan; solo el Sí entra al corte.', decidible],
+    ['confirmado', 'Confirmados', 'Ningún cambio entra solo a comisión: se decide uno por uno.', (c) => c.estado === 'confirmado'],
+    ['cerrados', 'Cerrados', 'Rechazados, cancelados, errores y revertidos.', (c) => ['rechazado', 'cancelado', 'error', 'revertido'].indexOf(c.estado) >= 0],
+    ['negativos', 'Negativos', 'Servicios que pasaron de PYME a otra categoría.', (c) => !!c.negativo]
+  ];
+  const TAB = (id) => TABS.find((t) => t[0] === id) || TABS[1];
+  // Lo que espera a quien mira (Inicio, Mi trabajo y la pestaña marcada al entrar)
   function pendientes(){
     if(!D) return 0; const P = D.puedo || {};
-    return (D.filas || []).filter((c) => (P.aprobar && c.estado === 'por_aprobar') || (P.emitir && c.estado === 'por_emitir') || (P.vincular && c.estado === 'sin_solicitud')).length;
+    return (D.filas || []).filter((c) => (P.aprobar && c.estado === 'por_aprobar') || (P.emitir && c.estado === 'por_emitir') || (P.vincular && c.estado === 'sin_solicitud') || (P.decidir && decidible(c))).length;
   }
   function avisarContador(){ document.dispatchEvent(new CustomEvent('cambios-contador', { detail: pendientes() })); }
+  // Al entrar sin pestaña elegida: lo primero que le toca a quien mira
+  function tabInicial(){
+    const P = (D && D.puedo) || {}; const fs = (D && D.filas) || [];
+    const orden = [P.decidir && 'decidir', P.aprobar && 'por_aprobar', P.vincular && 'sin_solicitud', 'por_emitir', 'emitido'].filter(Boolean);
+    return orden.find((id) => fs.some(TAB(id)[3])) || 'por_emitir';
+  }
+  function leerUrl(){ const u = new URLSearchParams(location.search); const f = u.get('f'); tab = TABS.some((t) => t[0] === f) ? f : ''; abrirId = Number(u.get('c')) || 0; }
+  function guardarUrl(){ try { const u = new URLSearchParams(); if(tab) u.set('f', tab); if(busca) u.set('q', busca); const q = u.toString(); history.replaceState(history.state, '', location.pathname + (q ? '?' + q : '')); } catch (e) {} }
 
   function filaCambio(c){
     const s = c.servicios || []; const cod = s.map((x) => x.sucursal + '-' + x.codigo).slice(0, 3).join(', ') + (s.length > 3 ? ' y ' + (s.length - 3) + ' más' : '');
     const cat = c.categoria_nueva ? (c.categoria_anterior || '?') + ' a ' + c.categoria_nueva : '';
-    const sub = [TIPO[c.tipo], cod, cat, c.nuevo ? 'A ' + c.nuevo.nombre : '', c.lider || (c.estado === 'sin_solicitud' ? 'Sin líder' : ''), fecha(c.creado_en)].filter(Boolean).join(' · ');
-    const etq = (c.comisiona ? '<span class="tagn verde">Cambio de categoría</span>' : '') + (c.negativo ? '<span class="tagn rojo">PYME a otra categoría</span>' : '') +
+    const sub = [TIPO[c.tipo], cod, cat, c.nuevo ? 'A ' + c.nuevo.nombre : '', c.lider || (c.estado === 'sin_solicitud' ? 'Sin líder' : ''), fecha(c.fecha_cambio || c.creado_en)].filter(Boolean).join(' · ');
+    const etq = comTag(c) + (c.negativo ? '<span class="tagn rojo">PYME a otra categoría</span>' : '') +
       ((c.requisitos || []).some((r) => !r.ok) ? '<span class="tagn ambar">Faltan documentos</span>' : '');
     return '<button type="button" class="fila" data-cambio="' + esc(c.id) + '"><span class="tx"><b>' + esc(c.titular.nombre || 'Titular sin nombre') + '</b><small>' + esc(sub) + '</small>' +
       (etq ? '<small class="etqs">' + etq + '</small>' : '') + '</span><span class="par-m">' + chip(c.estado) + '</span></button>';
   }
+  function comTag(c){
+    if(!c.comision) return c.comisiona && c.estado !== 'confirmado' ? '<span class="tagn">A PYME</span>' : '';
+    if(c.solo_registro) return '<span class="tagn">Solo registro</span>';
+    return { por_decidir: '<span class="tagn ambar">Comisión por decidir</span>', si: '<span class="tagn verde">Comisiona</span>', no: '<span class="tagn">No comisiona</span>' }[c.comision] || '';
+  }
   function pintar(){
     if(!D || !activo) return;
-    const P = D.puedo || {}; const b = normalizeStr(busca);
+    if(!tab) tab = tabInicial();
+    const b = normalizeStr(busca);
     const ok = (c) => !b || normalizeStr(c.titular.nombre).indexOf(b) >= 0 || normalizeStr(c.lider).indexOf(b) >= 0 || (c.servicios || []).some((s) => String(s.codigo).indexOf(busca) >= 0) || String(c.titular.doc || '').indexOf(busca.replace(/\D/g, '') || '-') >= 0;
-    const fs = (D.filas || []).filter(ok);
-    const SEC = [
-      ['por_aprobar', 'Por aprobar', 'Cambios de titular que esperan la aprobación del administrador.'],
-      ['por_emitir', 'Por emitir', 'El analista del líder lo hace en el sistema y marca Emitido.'],
-      ['emitido', 'Por confirmar', 'Se confirman solos con el archivo de cambios de categoría o el TAD.'],
-      ['sin_solicitud', 'Sin solicitud', 'Cambios hacia o desde PYME que aparecieron en el archivo o en el TAD sin pedirse aquí. Vincúlalo a un líder, o márcalo como error o revertido.'],
-      ['confirmado', 'Confirmados', 'Los cambios a PYME comisionan con la regla de siempre en el corte.'],
-      ['cerrados', 'Cerrados', '']
-    ];
+    const fs = (D.filas || []).filter(ok); const P = D.puedo || {};
+    if(tab === 'decidir' && !P.decidir && !fs.some(TAB('decidir')[3])) tab = tabInicial();
+    const f = $('filtros');
+    if(f) f.innerHTML = TABS.filter((t) => t[0] !== 'decidir' || P.decidir || fs.some(t[3])).map((t) => { const n = fs.filter(t[3]).length; const urge = n && ((t[0] === 'decidir' && P.decidir) || (t[0] === 'por_aprobar' && P.aprobar) || (t[0] === 'sin_solicitud' && P.vincular) || (t[0] === 'por_emitir' && P.emitir));
+      return '<button type="button" role="tab" data-camtab="' + t[0] + '" aria-selected="' + (t[0] === tab) + '" class="' + (t[0] === tab ? 'on' : '') + '">' + esc(t[1]) + ' <em' + (urge ? ' class="rj"' : '') + '>' + n + '</em></button>'; }).join('');
+    const T = TAB(tab); const a = $('ayuda'); if(a) a.textContent = T[2];
     let h = '<div class="cam-cab"><div class="cam-info">' + (D.indice ? 'TAD completo del ' + esc(fecha(D.indice.en)) + ' · ' + esc(C.hora(D.indice.en)) : '<span class="mal">Falta subir el TAD completo en Actualizar: sin él no se pueden buscar servicios.</span>') +
       (D.archivo ? '<br>Archivo de cambios del ' + esc(fecha(D.archivo.en)) + ' · ' + esc(C.hora(D.archivo.en)) : '') + '</div>' +
       '<button type="button" class="btn btn-chico" data-cam="nuevo">' + ic('mas') + 'Nuevo cambio</button></div>';
-    let total = 0;
-    SEC.forEach((sc) => {
-      const l = fs.filter((c) => (sc[0] === 'cerrados' ? ['rechazado', 'cancelado', 'error', 'revertido'].indexOf(c.estado) >= 0 : c.estado === sc[0]));
-      if(!l.length && ['por_emitir', 'emitido'].indexOf(sc[0]) < 0 && !(sc[0] === 'por_aprobar' && P.aprobar)) return;
-      total += l.length;
-      h += '<section class="bandeja-ins"><div class="bandeja-cab"><h3>' + esc(sc[1]) + '</h3><span class="n">' + l.length + '</span></div>' + (sc[2] ? '<p class="nota-chica ins-ayuda">' + esc(sc[2]) + '</p>' : '') +
-        (l.length ? '<div class="grupo abierto">' + l.map(filaCambio).join('') + '</div>' : '<p class="nota-chica">Nada aquí.</p>') + '</section>';
-    });
-    if(!total && !b) h += vacio('Sin cambios todavía', 'Toca Nuevo cambio para pedir un cambio de categoría o de titular. Ya no hace falta mandarlo por WhatsApp.');
-    else if(!total) h += vacio('Sin resultados', 'Nada coincide con "' + busca + '".');
+    const l = fs.filter(T[3]);
+    if(l.length) h += '<div class="grupo abierto">' + l.map(filaCambio).join('') + '</div>';
+    else if(b) h += vacio('Sin resultados', 'Nada coincide con "' + busca + '" en ' + T[1] + '.');
+    else if(!(D.filas || []).length) h += vacio('Sin cambios todavía', 'Toca Nuevo cambio para pedir un cambio de categoría o de titular. Ya no hace falta mandarlo por WhatsApp.');
+    else h += vacio('Nada en ' + T[1], 'Mira las otras pestañas.');
     lista().innerHTML = h;
+    // ?c= abre ese cambio; con lo guardado en el dispositivo se espera la carga fresca si todavía no aparece
+    if(abrirId){ const k = abrirId; const esta = (D.filas || []).some((c) => c.id === k); if(esta || fresco) abrirId = 0; if(esta) abrirDetalle(k); }
   }
 
   // ---------- Hojas ----------
@@ -160,7 +181,7 @@
     const d = V.d; const P = (D && D.puedo) || {}; const e = ESTADO[d.estado] || ['', d.estado];
     $('tCam').textContent = TIPO[d.tipo] ? 'Cambio de ' + TIPO[d.tipo].toLowerCase() : 'Cambio';
     const sigue = { por_aprobar: 'Espera la aprobación del administrador.', por_emitir: 'El analista lo hace en el sistema y marca Emitido.', emitido: 'Se confirma solo con el archivo de cambios de categoría o el TAD.',
-      confirmado: d.comisiona ? 'Comisiona en el corte con la regla de siempre (Legal y pago).' : 'Listo.', sin_solicitud: 'Apareció sin pedirse en la app. Vincúlalo a un líder o márcalo.',
+      confirmado: !d.comision ? 'Listo.' : d.solo_registro ? 'Es de antes del ' + fecha(D && D.desde) + ': queda solo como registro.' : d.comision === 'por_decidir' ? 'Falta decidir si comisiona.' : d.comision === 'si' ? 'Comisiona en el corte con la regla de siempre (Legal y pago).' : 'No comisiona.', sin_solicitud: 'Apareció sin pedirse en la app. Vincúlalo a un líder o márcalo.',
       rechazado: d.cierre_nota || '', cancelado: d.cierre_nota || '', error: d.cierre_nota || 'No comisiona.', revertido: d.cierre_nota || 'No comisiona.' }[d.estado] || '';
     let h = '<div class="estado ' + (e[0] || 'gris') + '"><b>' + esc(e[1]) + '</b><small>' + esc(sigue) + '</small></div>';
     if(d.negativo) h += '<div class="al-banda rojo" role="note"><b>PYME a otra categoría</b><p>Cuenta como indicador negativo.</p></div>';
@@ -169,6 +190,7 @@
       (d.categoria_nueva ? fila('Categoría', esc((d.categoria_anterior || '?') + ' a ' + d.categoria_nueva)) : '') +
       fila('Líder', esc(d.lider || 'Sin líder')) + fila('Pedido', esc(d.creado_por ? d.creado_por + ', ' + fecha(d.creado_en) : d.origen === 'archivo' ? 'Archivo o TAD, ' + fecha(d.creado_en) : fecha(d.creado_en))) +
       (d.nota ? fila('Nota', esc(d.nota)) : '') + '</div>';
+    if(d.comision) h += bloqueComision(d, P);
     h += '<div class="secc">Servicios<span class="der">' + (d.servicios || []).length + '</span></div><div class="datos">' + (d.servicios || []).map((s) => fila(s.sucursal + '-' + s.codigo, esc([s.plan, s.categoria, s.pon ? 'PON ' + s.pon : ''].filter(Boolean).join(' · ')) + '<small class="ded-gris"> ' + esc(s.direccion || '') + '</small>')).join('') + '</div>';
     if(d.tipo !== 'categoria'){
       const req = d.requisitos || []; const falta = req.filter((r) => !r.ok).length;
@@ -182,7 +204,7 @@
     if(d.estado === 'sin_solicitud' && P.vincular) h += '<div class="secc">¿De quién es?</div><label class="rotulo" for="camLider">Vincular a un líder</label><select class="campo" id="camLider"><option value="">Elige el líder</option>' +
       ((D && D.lideres) || []).map((l) => '<option value="' + esc(l.id) + '">' + esc(l.nombre) + '</option>').join('') + '</select><div class="error" id="eCamLider" role="alert"></div>';
     if(['por_aprobar', 'por_emitir', 'sin_solicitud'].indexOf(d.estado) >= 0) h += '<label class="rotulo arriba" for="camNotaAcc">Nota' + (d.estado === 'sin_solicitud' ? ' (opcional)' : ' (para rechazar o cancelar)') + '</label><textarea class="area corta" id="camNotaAcc" maxlength="500"></textarea><div class="error" id="eCamAcc" role="alert"></div>';
-    h += '<div class="secc">Qué ha pasado</div>' + ((d.bitacora || []).length ? '<div class="datos">' + d.bitacora.map((x) => fila(fecha(x.en) + ' ' + C.hora(x.en), esc(TEXTO_BIT[x.accion] || x.accion) + (x.por ? ' · ' + esc(C.primerNombre(x.por)) : ''))).join('') + '</div>' : '<p class="nota-chica">Sin movimientos.</p>');
+    h += '<div class="secc">Qué ha pasado</div>' + ((d.bitacora || []).length ? '<div class="datos">' + d.bitacora.map((x) => fila(fecha(x.en) + ' ' + C.hora(x.en), esc(textoBit(x)) + (x.por ? ' · ' + esc(C.primerNombre(x.por)) : ''))).join('') + '</div>' : '<p class="nota-chica">Sin movimientos.</p>');
     $('cCam').innerHTML = h;
     // Acciones según el estado y quién mira
     const acc = []; const es = (r) => yo && yo.rol === r;
@@ -191,8 +213,35 @@
     if((d.estado === 'por_emitir' || d.estado === 'emitido') && P.confirmar) acc.push(['confirmar', 'Confirmar a mano', 'btn-2']);
     if(d.estado === 'sin_solicitud' && P.vincular){ acc.push(['error', 'Fue un error', 'btn-2']); acc.push(['revertido', 'Revertido', 'btn-2']); acc.push(['vincular', 'Vincular', '']); }
     if((d.estado === 'por_aprobar' || d.estado === 'por_emitir') && (es('admin') || d.creado_por === (yo && yo.nombre))) acc.unshift(['cancelar', 'Cancelar pedido', 'btn-2']);
-    const p = $('pCam'); p.classList.toggle('hidden', !acc.length);
-    p.innerHTML = acc.map((a) => '<button type="button" class="btn ' + a[2] + '" data-cam-acc="' + a[0] + '">' + esc(a[1]) + '</button>').join('');
+    // La comisión del cambio: Sí o No con motivo (solo Analista Senior o administrador)
+    const com = [];
+    if(d.estado === 'confirmado' && d.comision && !d.solo_registro && P.decidir){
+      if(d.comision !== 'no') com.push(['no', d.comision === 'si' ? 'Quitar la comisión' : 'No comisiona', 'btn-2']);
+      if(d.comision !== 'si') com.push(['si', 'Sí comisiona', '']);
+    }
+    const p = $('pCam'); p.classList.toggle('hidden', !acc.length && !com.length);
+    p.innerHTML = acc.map((a) => '<button type="button" class="btn ' + a[2] + '" data-cam-acc="' + a[0] + '">' + esc(a[1]) + '</button>').join('') +
+      com.map((a) => '<button type="button" class="btn ' + a[2] + '" data-cam-com="' + a[0] + '">' + esc(a[1]) + '</button>').join('');
+  }
+  function bloqueComision(d, P){
+    const est = d.solo_registro ? ['gris', 'Solo registro', 'El cambio es del ' + fecha(d.fecha_cambio) + ', antes del ' + fecha(D && D.desde) + ' (fecha mínima para comisionar).']
+      : d.comision === 'por_decidir' ? ['ambar', 'Por decidir', P.decidir ? 'Decide si este cambio comisiona. Escribe el motivo y elige abajo.' : 'Lo decide el Analista Senior o el administrador.']
+      : d.comision === 'si' ? ['verde', 'Comisiona', 'Entró al corte como "Cambio de categoría".'] : ['gris', 'No comisiona', ''];
+    let h = '<div class="secc">Comisión</div><div class="estado ' + est[0] + '"><b>' + esc(est[1]) + '</b><small>' + esc(est[2]) + '</small></div>';
+    if(d.comision_motivo && d.comision !== 'por_decidir') h += '<div class="datos">' + fila('Motivo', esc(d.comision_motivo)) + fila('Decidió', esc((d.comision_por || '') + (d.comision_en ? ', ' + fecha(d.comision_en) : ''))) + '</div>';
+    if(d.estado === 'confirmado' && !d.solo_registro && P.decidir) h += '<label class="rotulo arriba" for="camMotivo">Motivo de la decisión</label><textarea class="area corta" id="camMotivo" maxlength="500"></textarea><div class="error" id="eCamMotivo" role="alert"></div>';
+    return h;
+  }
+  const textoBit = (x) => x.accion === 'cambio_comision' ? ((x.despues || {}).comision === 'si' ? 'Marcó que comisiona' : 'Marcó que no comisiona') + ((x.despues || {}).motivo ? ': ' + x.despues.motivo : '') : (TEXTO_BIT[x.accion] || x.accion);
+  async function decidir(b, a){
+    const m = $('camMotivo') ? $('camMotivo').value.trim() : ''; const er = $('eCamMotivo'); if(er) er.textContent = '';
+    if(m.length < 4){ if(er) er.textContent = 'Escribe el motivo'; else toast('Escribe el motivo', 'error'); if($('camMotivo')){ $('camMotivo').focus(); er.scrollIntoView({ block: 'nearest' }); } return; }
+    const txt = b.textContent; b.disabled = true; b.textContent = 'Guardando…';
+    try {
+      await rpc('cambio_comision', { p_id: V.d.id, p_si: a === 'si', p_motivo: m });
+      toast(a === 'si' ? 'Comisiona. Ya está en el corte' : V.d.comision === 'si' ? 'Comisión quitada' : 'Marcado que no comisiona');
+      cargar(); cargarDetalle();
+    } catch (e) { if(er) er.textContent = e.message; else toast(e.message, 'error'); b.disabled = false; b.textContent = txt; }
   }
   const TEXTO_BIT = { cambio_creado: 'Pidió el cambio', cambio_aprobar: 'Aprobó', cambio_rechazar: 'Rechazó', cambio_cancelar: 'Canceló', cambio_emitido: 'Marcó emitido', cambio_confirmar: 'Confirmó a mano',
     cambio_confirmado: 'Quedó confirmado', cambio_vincular: 'Lo vinculó a un líder', cambio_error: 'Marcó que fue un error', cambio_revertido: 'Marcó revertido' };
@@ -206,7 +255,7 @@
       await rpc('cambio_accion', { p_id: d.id, p_accion: a, p_nota: nota || null, p_lider: lider });
       toast({ aprobar: 'Aprobado. Le llega al analista', rechazar: 'Rechazado', cancelar: 'Pedido cancelado', emitido: 'Marcado emitido. Se confirma con el archivo o el TAD', confirmar: 'Confirmado',
         vincular: 'Vinculado y confirmado', error: 'Marcado como error', revertido: 'Marcado como revertido' }[a] || 'Listo');
-      D = null; cargar(); cargarDetalle();
+      cargar(); cargarDetalle();
     } catch (e) { if(er) er.textContent = e.message; else toast(e.message, 'error'); b.disabled = false; b.textContent = txt; }
   }
   // Planilla con los datos del momento
@@ -235,7 +284,7 @@
     const d = V.d; if(!d.nuevo || !d.nuevo.cliente_id) return;
     let F;
     try { F = await rpc('cliente_ficha', { p_cliente: d.nuevo.cliente_id }); } catch (e) { toast(e.message, 'error'); return; }
-    window.Ficha.subirA(F, cas, num, () => { cargarDetalle(); D = null; cargar(); });
+    window.Ficha.subirA(F, cas, num, () => { cargarDetalle(); cargar(); });
   }
 
   document.addEventListener('click', (ev) => {
@@ -250,6 +299,8 @@
     }
     if((b = t.closest('[data-cambio]'))){ abrirDetalle(Number(b.dataset.cambio)); return; }
     if((b = t.closest('[data-cam-acc]'))){ accion(b, b.dataset.camAcc); return; }
+    if((b = t.closest('[data-cam-com]'))){ decidir(b, b.dataset.camCom); return; }
+    if((b = t.closest('[data-camtab]'))){ tab = b.dataset.camtab; guardarUrl(); pintar(); return; }
     if((b = t.closest('[data-cam-subir]'))){ const p = b.dataset.camSubir.split(':'); subir(p[0], Number(p[1])); return; }
     if((b = t.closest('[data-camtipo]'))){ leerCampos(); N.tipo = b.dataset.camtipo; pintarNuevo(); return; }
     if((b = t.closest('[data-camnat]'))){ leerCampos(); N.nat = b.dataset.camnat === '1'; pintarNuevo(); return; }
@@ -263,9 +314,15 @@
   });
   document.addEventListener('keydown', (ev) => { if(ev.key === 'Enter' && ev.target && ev.target.id === 'camBusca'){ ev.preventDefault(); buscar(); } });
 
-  window.Cambios = {
-    ocultar(){ activo = false; },
-    mostrar(p){ yo = p; activo = true; if(!D){ const g = C.cache.leer('cambios:' + p.rol); if(g) D = g; } pintar(); cargar(); },
-    cargar, buscar(t){ busca = t || ''; pintar(); }, pendientes, pre(p){ yo = p; if(!D){ const g = C.cache.leer('cambios:' + p.rol); if(g){ D = g; } } cargar(); }
-  };
+  // Página Migraciones
+  let tBusca = null;
+  const bq = $('busca');
+  const fb = $('formBusca'); if(fb) fb.addEventListener('submit', (e) => { e.preventDefault(); if(bq) bq.blur(); });
+  if(bq) bq.addEventListener('input', () => { clearTimeout(tBusca); tBusca = setTimeout(() => { busca = bq.value.trim(); guardarUrl(); pintar(); }, 140); });
+  window.Armazon.arrancar(['admin', 'analista', 'lider'], { activo: 'migraciones' }, (p) => {
+    yo = p; activo = true; window.Ficha.montar(); leerUrl();
+    busca = (new URLSearchParams(location.search).get('q') || '').slice(0, 60); if(bq) bq.value = busca;
+    if(!D){ const g = C.cache.leer('cambios:' + p.rol); if(g) D = g; }
+    if(D) pintar(); cargar();
+  }, (p) => { yo = p; });
 })();

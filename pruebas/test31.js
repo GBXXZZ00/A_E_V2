@@ -12,6 +12,7 @@ const GINA = { id: '77777777-7777-4777-8777-777777777700', usuario: 'gina', pin:
     const { ctx, mundo } = await contexto(nav, dispositivo); mundo.personas.push(Object.assign({}, GINA));
     // ----- Administrador -----
     const p = await entrar(ctx, 'marcos', '482913'); p.on('pageerror', (e) => errores.push(e.message));
+    await p.waitForSelector('#zonaModulos a.mod');
     ok(nombre + ': Inicio tiene el módulo Gerencia', (await p.locator('#zonaModulos [data-modulo="gerencia"]').count()) === 1);
     await p.goto(H + 'gerencia.html'); await p.waitForSelector('#zonaG .ge-bento .ge-n');
     ok(nombre + ': arranca en el corte en curso del servidor', (await p.inputValue('#gDesde')) === '2026-10-01' && (await p.inputValue('#gHasta')) === '2026-10-01' && /octubre/i.test(await p.textContent('#subG')));

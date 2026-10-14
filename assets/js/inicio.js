@@ -6,7 +6,6 @@
   const K_OCULTO = 'ae_pend_oculto';
 
   const PRONTO = [
-    { id: 'migraciones', nombre: 'Migraciones', icono: 'cambio', roles: ['admin', 'lider', 'analista'] },
     { id: 'dedicados', nombre: 'Dedicados', icono: 'servidor', roles: ['admin', 'abogado', 'analista'] }
   ];
 
@@ -39,13 +38,14 @@
     if(conBandeja){
       const g = T.tipos || {}; const suma = (ts) => ts.reduce((a, k) => [a[0] + ((g[k] || {}).n || 0), a[1] + ((g[k] || {}).rojo || 0)], [0, 0]);
       const GR = lider ? [['docs', ['docs_faltan', 'devuelto'], 'cliente con documentos pendientes', 'clientes con documentos pendientes', 'doc'], ['firmar', ['por_firmar'], 'contrato por firmar', 'contratos por firmar', 'lapiz'],
-          ['titular', ['planilla'], 'cambio de titular con documentos por subir', 'cambios de titular con documentos por subir', 'cambio'], ['referidos', ['referido'], 'referido por contactar', 'referidos por contactar', 'usuarios'],
+          ['titular', ['planilla'], 'cambio de titular con documentos por subir', 'cambios de titular con documentos por subir', 'cambio', 'migraciones.html'], ['referidos', ['referido'], 'referido por contactar', 'referidos por contactar', 'usuarios'],
           ['vgt', ['vgt'], 'dedicado con requisitos VGT', 'dedicados con requisitos VGT', 'servidor'], ['gestion', ['sin_gestion'], 'cliente sin gestión', 'clientes sin gestión', 'alerta']]
-        : [['cambios', ['cambio_emitir'], 'cambio por emitir', 'cambios por emitir', 'cambio'], ['enviar', ['por_enviar'], 'proforma y carta por enviar', 'proformas y cartas por enviar', 'enviar'],
+        : [['cambios', ['cambio_emitir'], 'cambio por emitir', 'cambios por emitir', 'cambio', 'migraciones.html?f=por_emitir'], ['enviar', ['por_enviar'], 'proforma y carta por enviar', 'proformas y cartas por enviar', 'enviar'],
           ['ip', ['sin_ip'], 'servicio sin IP', 'servicios sin IP', 'alerta'], ['datos', ['rif_verificar', 'sin_cliente', 'sin_servicio'], 'dato por corregir', 'datos por corregir', 'lapiz'],
-          ['sinsol', ['sin_solicitud'], 'cambio sin solicitud', 'cambios sin solicitud', 'cambio']].concat(d.senior || admin ? [['certificar', ['certificar'], 'instalación por cumplir para certificar', 'instalaciones por cumplir para certificar', 'barras']] : []);
+          ['sinsol', ['sin_solicitud'], 'cambio sin solicitud', 'cambios sin solicitud', 'cambio', 'migraciones.html?f=sin_solicitud']].concat(d.senior || admin ? [['certificar', ['certificar'], 'instalación por cumplir para certificar', 'instalaciones por cumplir para certificar', 'barras'],
+            ['decidir', ['cambio_comision'], 'cambio con la comisión por decidir', 'cambios con la comisión por decidir', 'cambio', 'migraciones.html?f=decidir']] : []);
       GR.forEach((x) => { const n = suma(x[1]); if(!n[0]) return;
-        r.push({ c: n[1] ? 'rojo' : 'azul', i: x[4], t: plural(n[0], x[2], x[3]), s: n[1] ? plural(n[1], 'vencido', 'vencidos') + '. Míralo en Mi trabajo' : 'En Mi trabajo, a tiempo', e: 'trabajo.html?f=' + x[0], k: 'tr_' + x[0] }); });
+        r.push({ c: n[1] ? 'rojo' : 'azul', i: x[4], t: plural(n[0], x[2], x[3]), s: n[1] ? plural(n[1], 'vencido', 'vencidos') + (x[5] ? '. Míralo en Migraciones' : '. Míralo en Mi trabajo') : x[5] ? 'En Migraciones, a tiempo' : 'En Mi trabajo, a tiempo', e: x[5] || 'trabajo.html?f=' + x[0], k: 'tr_' + x[0] }); });
     }
     if(!conBandeja && (lider || analista || admin) && c.devueltos > 0){
       r.push({ c: 'rojo', i: 'devolver', t: plural(c.devueltos, 'cliente', 'clientes') + ' con documentos devueltos',
@@ -103,6 +103,7 @@
     ];
     if(['admin', 'lider', 'analista'].indexOf(rol) >= 0) activos.unshift({ id: 'trabajo', nombre: 'Mi trabajo', icono: 'check', enlace: 'trabajo.html',
       texto: d.trabajo ? (d.trabajo.total ? plural(d.trabajo.total, 'pendiente', 'pendientes') + (d.trabajo.rojo ? ', ' + plural(d.trabajo.rojo, 'vencido', 'vencidos') : '') : 'Todo al día') : 'Tus pendientes del día' });
+    if(['admin', 'lider', 'analista'].indexOf(rol) >= 0) activos.push({ id: 'migraciones', nombre: 'Migraciones', icono: 'cambio', enlace: 'migraciones.html', texto: 'Cambios de categoría y de titular' });
     if(['admin', 'lider', 'analista'].indexOf(rol) >= 0) activos.push({ id: 'factibilidad', nombre: 'Factibilidad', icono: 'wifi', enlace: 'factibilidad.html', texto: 'Si una ubicación tiene red' });
     activos.push({ id: 'aliados', nombre: 'Aliados', icono: 'usuarios', enlace: 'aliados.html',
       texto: rol === 'admin' ? 'Solicitudes, referidos y pagos de aliados' : canales ? 'Tus solicitudes, referidos y pagos' : 'Registro de aliados e instalados, para ver' });

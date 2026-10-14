@@ -17,12 +17,12 @@
     const u = new URLSearchParams(location.search);
     const f = u.get('f'); filtro = FILTROS.some((x) => x.id === f) ? f : 'todos';
     busca = (u.get('q') || '').slice(0, 60);
-    vista = u.get('t') === 'instalar' ? 'instalar' : u.get('t') === 'cambios' ? 'cambios' : 'corte';
+    vista = u.get('t') === 'instalar' ? 'instalar' : 'corte';
     const c = u.get('c'); corte = /^\d{4}-(0[1-9]|1[0-2])/.test(c || '') ? c.slice(0, 7) + '-01' : '';
   }
   function guardarUrl(){
     const u = new URLSearchParams();
-    if(vista === 'instalar') u.set('t', 'instalar'); else if(vista === 'cambios') u.set('t', 'cambios');
+    if(vista === 'instalar') u.set('t', 'instalar');
     if(filtro !== 'todos' && vista === 'corte') u.set('f', filtro);
     if(busca) u.set('q', busca);
     if(d && corte && corte !== d.actual) u.set('c', corte.slice(0, 7));
@@ -175,15 +175,23 @@
   function pintarVistas(){
     if(!conInstalar()){ $('vistas').innerHTML = ''; return; }
     const rojas = PI ? vigentes(PI.filas).filter((o) => o.color === 'rojo').length : 0;
-    const nCam = window.Cambios ? window.Cambios.pendientes() : 0;
-    $('vistas').innerHTML = [['corte', 'Corte'], ['instalar', 'Por instalar'], ['cambios', 'Cambios']].map((x) => '<button type="button" role="tab" data-vista="' + x[0] + '" aria-selected="' + (vista === x[0]) + '" class="' + (vista === x[0] ? 'on' : '') + '">' + x[1] +
-      (x[0] === 'instalar' && rojas ? ' <em>' + rojas + '</em>' : '') + (x[0] === 'cambios' && nCam ? ' <em class="az">' + nCam + '</em>' : '') + '</button>').join('');
+    $('vistas').innerHTML = [['corte', 'Corte'], ['instalar', 'Por instalar']].map((x) => '<button type="button" role="tab" data-vista="' + x[0] + '" aria-selected="' + (vista === x[0]) + '" class="' + (vista === x[0] ? 'on' : '') + '">' + x[1] +
+      (x[0] === 'instalar' && rojas ? ' <em>' + rojas + '</em>' : '') + '</button>').join('');
+    // Los cambios viven en Migraciones; aquí solo el aviso de los que esperan la decisión de comisión
+    const av = $('avisoCam'); if(av) av.innerHTML = porDecidir ? '<a class="cam-dec" href="migraciones.html?f=decidir">' + ic('cambio') + '<span>' + esc(plural(porDecidir, 'cambio por decidir', 'cambios por decidir')) + '<small>Se deciden en Migraciones</small></span>' + ic('derecha', 'ch') + '</a>' : '';
     document.querySelector('main').classList.toggle('vista-instalar', vista !== 'corte');
   }
   function cambiarVista(v){
     if(v === vista) return; vista = v; guardarUrl(); pintarVistas();
-    if(vista !== 'cambios' && window.Cambios) window.Cambios.ocultar();
-    if(vista === 'instalar') cargarInstalar(); else if(vista === 'cambios') window.Cambios.mostrar(yo); else if(d){ pintarLista(); pintarLado(); } else cargar();
+    if(vista === 'instalar') cargarInstalar(); else if(d){ pintarLista(); pintarLado(); } else cargar();
+  }
+  // Cambios a PYME confirmados que esperan Sí o No de comisión (se deciden en Migraciones). Sale del mismo resumen de Mi trabajo,
+  // así solo lo ven el Analista Senior y el administrador (los que deciden)
+  let porDecidir = 0;
+  async function cargarPorDecidir(){
+    if(!yo || ['admin', 'analista'].indexOf(yo.rol) < 0) return;
+    try { const r = await rpc('trabajo_resumen', {}); porDecidir = ((r && r.tipos && r.tipos.cambio_comision) || {}).n || 0; pintarVistas(); }
+    catch (e) { /* El aviso es secundario: si falla, Comisiones sigue igual y Migraciones lo muestra */ }
   }
   async function cargarInstalar(){
     const mio = ++pedidoPI; const clave = 'instalar:' + yo.rol;
@@ -649,7 +657,7 @@
   }
   // Lo que se gestiona desde aquí abre el expediente encima; al cerrarlo se vuelve a esta hoja ya actualizada
   function alExpediente(o){ if(!K) return; window.Ficha.abrir(K.cliente, Object.assign({ yo, alCerrar: tras }, o || {})); }
-  function tras(){ cache.borrarTodo(); if(K) cargarComision(); cargar(); if(vista === 'instalar') cargarInstalar(); if(vista === 'cambios') window.Cambios.cargar(); }
+  function tras(){ cache.borrarTodo(); if(K) cargarComision(); cargar(); if(vista === 'instalar') cargarInstalar(); cargarPorDecidir(); }
 
   document.addEventListener('click', (e) => {
     const f = e.target.closest('#filtros [data-filtro], #avisos [data-filtro]');
@@ -745,14 +753,13 @@
   });
   document.addEventListener('keydown', (e) => { if(e.key === 'Enter' && e.target.id === 'asigBusca'){ e.preventDefault(); if(A) buscarOrdenes(e.target.value.trim()); } });
   let tBusca = null;
-  $('busca').addEventListener('input', () => { clearTimeout(tBusca); tBusca = setTimeout(() => { busca = $('busca').value.trim(); guardarUrl(); if(vista === 'instalar') pintarInstalar(); else if(vista === 'cambios') window.Cambios.buscar(busca); else if(d) pintarLista(); }, 140); });
+  $('busca').addEventListener('input', () => { clearTimeout(tBusca); tBusca = setTimeout(() => { busca = $('busca').value.trim(); guardarUrl(); if(vista === 'instalar') pintarInstalar(); else if(d) pintarLista(); }, 140); });
   $('corte').addEventListener('change', () => { corte = $('corte').value; d = null; cargar(); });
 
   window.Armazon.arrancar(['admin', 'abogado', 'lider', 'analista'], { activo: 'comisiones' }, (p) => {
     yo = p;
     window.Ficha.montar();
     leerUrl(); $('busca').value = busca; pintarFiltros(); pintarVistas();
-    cargar(); if(conInstalar()){ cargarInstalar(); if(vista === 'cambios') window.Cambios.mostrar(yo); else window.Cambios.pre(yo); }
+    cargar(); if(conInstalar()){ cargarInstalar(); cargarPorDecidir(); }
   }, (p) => { yo = p; });
-  document.addEventListener('cambios-contador', () => pintarVistas());
 })();
