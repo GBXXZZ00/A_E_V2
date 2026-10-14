@@ -2,7 +2,7 @@
 
 Actualizado: 14/10/2026 (corrida del 14/10: Lotes 3, 5 y 4 hechos). Publicado: `?v=35`.
 
-## CORRIDA DEL 14/10 (APROBADA por el administrador el 13/10 noche): Lote 3 + Lote 4 + Lote 5 + Lote 6 + Lote 7
+## CORRIDA DEL 14/10 (APROBADA por el administrador el 13/10 noche): Lote 3 + Lote 4 + Lote 5 + Lote 6 + Lote 7 · HECHA el 14/10 (v33 a v37)
 Antes de tocar código: lee los cinco lotes completos y dile al administrador, en pocas líneas, qué puedes ejecutar y qué no (y por qué). Si todo es ejecutable, arranca sin esperar más. Orden: Lote 3, 5, 4, 6, 7. Publica por lote (pruebas, capturas, `?v=`, commit y push). Septiembre certificado (59/49) no se mueve; corre la referencia de comisiones antes y después de cada lote que toque comisiones. Las pantallas siguen el estilo ya aprobado (maquetas en `claude/maquetas/`, Clientes y Comisiones como modelo); no hace falta maqueta nueva. Fuera de esta corrida: notificaciones, ingresos y bandeja de dedicados, propuesta de servicio, proforma y carta para nuevo titular, subidas por guardias.
 
 **Avance de la corrida del 14/10 (Claude Code):**
@@ -24,6 +24,10 @@ Antes de tocar código: lee los cinco lotes completos y dile al administrador, e
   - Base: una sola fuente, `privado.pendientes()` (por emitir, sin solicitud, por instalar desde el 01/10, por enviar, sin IP, RIF por verificar, instalación sin cliente, cliente sin servicio, para certificar, documentos faltantes y devueltos, por firmar, planillas de titularidad, referidos, VGT incompletos, sin gestión), cada uno con su clave, persona, vencimiento y color (verde, ámbar el día que vence, rojo vencido). `perfiles.analista_id` (analista de cada líder), `privado.pendientes_hechos` (Hecho con nota, queda en bitácora `pendiente_hecho`; un pendiente marcado no vuelve aunque siga la condición), `privado.dias_ajuste`, `analista_de`, `lider_por_nombre`, `privado.trabajo_mio`; públicas `trabajo(p_persona)`, `trabajo_resumen()` (lo que cuenta Inicio), `trabajo_hecho`, `lideres_analistas`, `lider_analista` (admin, bitácora).
   - Pantalla: `trabajo.html` + `assets/js/trabajo.js` ("Mi trabajo"): pestañas con contador (rojo si hay vencidos), Hoy ordenado (vencido, vence hoy, nuevo), Hecho con nota, tocar abre el expediente como hoja. Analista Senior: además Para certificar. Líder: Documentos, Por firmar, Cambio de titular, Referidos, VGT, Sin gestión. Administrador y coordinación: filtro por persona, pestaña Aliados (solicitudes, referidos, pagos, sin autorización) y Días límite editables (administrador). Inicio: los avisos de devueltos, bienvenidas y sin gestión se reemplazan por los contadores de la bandeja (llevan a su pestaña) y el módulo "Mi trabajo" con el total. Usuarios: en la ficha de un líder, campo "Analista". Prueba test30 (test08 ajustada: la lista de bienvenidas se abre desde Clientes).
   - Falta: que el administrador le ponga su analista a cada líder en Usuarios (mientras no tenga, sus pendientes le llegan al Analista Senior).
+- **Lote 7: HECHO en v37 (primera versión).** Septiembre 59/49 antes y después (Gerencia solo lee).
+  - Base: `perfiles.gerencia` (marca); con ella `privado.rol_actual()` devuelve 'gerencia' y todas las funciones que exigen otro rol responden "No tienes permiso", así la cuenta queda de solo lectura. `gestionar_usuarios` v10 acepta el rol "gerencia" (se guarda como abogado + marca). Una sola fuente: `privado.gerencia_hechos(desde, hasta)` (clientes activos por segmento, instalaciones, comisiones por corte con la foto fija de los certificados, embudo de expedientes, días a Legal, devueltos, lo que más falta, cambios de plan, aliados, dedicados, pólizas y negativos); `privado.gerencia_filtrado` (líder: solo lo suyo; aliados y negativos solo administrador y Gerencia); `gerencia()` (contadores agrupados) y `gerencia_lista()` (la lista detrás de cada número). `privado.segmentos_todos()` para que cargue en menos de un segundo. SQL en `supabase/pruebas/gerencia_lote7.sql`.
+  - Pantalla: `gerencia.html` + `assets/js/gerencia.js`. Filtros Desde/Hasta (hasta 6 meses), Líder y Segmento (quedan en la dirección), Descargar Excel. Portada en bloques, Comisiones (por corte con "Certificado", por líder, causas), Instalaciones (por mes y segmento, por líder, días de la orden a la instalación, por aliado), Expedientes y Legal, Cambios de plan, Aliados, Dedicados y Negativos. Cada número o barra abre la lista como hoja y de ahí la ficha. En el menú de escritorio y como módulo en Inicio; la cuenta Gerencia entra directo y solo ve esa pantalla. Usuarios: rol "Gerencia (solo lectura)". Prueba test31.
+  - Falta (se discute la estructura final): montos en dinero (hoy la base no guarda montos de comisión ni de pago a aliados; se muestran cantidades), VGT con requisitos completos y la foto de meses certificados de los otros indicadores.
 
 ### LOTE 4: cambios de categoría y de titularidad
 1. Pestaña **"Cambios"** dentro de Comisiones. El líder crea la solicitud ahí (un solo canal, reemplaza el WhatsApp).
@@ -309,6 +313,11 @@ Antes de cada una: explicar en simple y esperar el OK.
 - Seguridad: migración "endurecer_acceso_y_permisos" (entrada por función de borde con bloqueo, permisos de escritura, sesiones). Con el administrador presente.
 
 ## Decisiones tomadas por Claude que el administrador NO ha confirmado
+- Lote 7: Gerencia es una marca de solo lectura (la base no deja agregar un rol nuevo sin borrar la regla vieja). La cuenta Gerencia ve las listas pero no abre fichas.
+- Lote 7: el aliado no ve Gerencia. Analista y Legal ven todo menos aliados y negativos; el líder ve solo sus números.
+- Lote 7: las barras son de la propia app (botones), no Chart.js: así cada barra se toca y abre su lista, y carga sin internet extra.
+- Lote 7: "Expedientes completos" = clientes en Documentos en revisión, Por firmar, Contrato en curso o Contrato firmado. Las instalaciones no cuentan reemplazos ni cambios de categoría.
+- Lote 7: el rango se limita a 6 meses; la serie mensual muestra los 6 meses que terminan en "Hasta".
 - Lote 6: los pendientes de un líder sin analista asignado le llegan al Analista Senior.
 - Lote 6: "Mi trabajo" está en la barra de arriba en escritorio; en teléfono se entra desde Inicio (la barra de abajo ya está llena).
 - Lote 6: Inicio sigue mostrando aparte las órdenes en rojo y las instalaciones por asignar; lo demás sale de la bandeja.

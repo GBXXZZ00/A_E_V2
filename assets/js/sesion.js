@@ -6,7 +6,7 @@
   const K_EQUIPO = 'ae_equipo';
   const K_USUARIO = 'ae_usuario';
   const EQUIPOS = { ventas: 'Ventas corporativas', aliados: 'Aliados comerciales' };
-  const ROLES = { admin: 'Administrador', abogado: 'Legal', lider: 'Líder', analista: 'Analista', aliado: 'Aliado' };
+  const ROLES = { admin: 'Administrador', abogado: 'Legal', lider: 'Líder', analista: 'Analista', aliado: 'Aliado', gerencia: 'Gerencia' };
   let perfilActual = null;
 
   const leer = (k) => { try { return localStorage.getItem(k); } catch (e) { return null; } };
@@ -23,7 +23,7 @@
   // Perfil guardado en el dispositivo (rol y marcas, nunca el PIN) para dibujar la navegación al instante.
   // Solo vale si hay una sesión abierta del mismo usuario; el servidor sigue decidiendo los permisos.
   const K_PERFIL = 'ae_perfil';
-  const CAMPOS = ['id', 'usuario', 'nombre', 'rol', 'senior', 'canales', 'dedicados', 'cargo', 'equipo', 'codigo_vendedor'];
+  const CAMPOS = ['id', 'usuario', 'nombre', 'rol', 'senior', 'canales', 'dedicados', 'gerencia', 'cargo', 'equipo', 'codigo_vendedor'];
   function firma(p){ return p ? JSON.stringify(CAMPOS.map((k) => p[k] === undefined ? null : p[k])) : ''; }
   function guardarPerfil(p){
     if(!p){ guardar(K_PERFIL, null); return; }
@@ -39,7 +39,7 @@
   function perfilGuardado(roles){
     let p = null; try { p = JSON.parse(leer(K_PERFIL) || 'null'); } catch (e) { p = null; }
     if(!p || !p.id || !p.rol || p.id !== idSesionGuardada()) return null;
-    if(roles && roles.indexOf(p.rol) < 0) return null;
+    if(roles ? roles.indexOf(p.rol) < 0 : p.rol === 'gerencia') return null;
     return p;
   }
 
@@ -53,10 +53,12 @@
     const s = await sesionActual();
     if(!s) return null;
     const { data, error } = await db.from('perfiles')
-      .select('id, usuario, nombre, rol, senior, canales, dedicados, cargo, equipo, codigo_vendedor, activo, debe_cambiar_pin')
+      .select('id, usuario, nombre, rol, senior, canales, dedicados, gerencia, cargo, equipo, codigo_vendedor, activo, debe_cambiar_pin')
       .eq('id', s.user.id).maybeSingle();
     if(error) throw error;
     perfilActual = data || null;
+    // Lote 7: la marca Gerencia es un rol de solo lectura (en la base, privado.rol_actual() dice lo mismo)
+    if(perfilActual && perfilActual.gerencia) perfilActual.rol = 'gerencia';
     guardarPerfil(perfilActual && perfilActual.activo && !perfilActual.debe_cambiar_pin ? perfilActual : null);
     return perfilActual;
   }
@@ -148,6 +150,7 @@
     }
     if(!p || !p.activo){ await salir(); location.replace('index.html'); return null; }
     if(p.debe_cambiar_pin){ location.replace('index.html#cambiar'); return null; }
+    if(p.rol === 'gerencia' && !(roles && roles.indexOf('gerencia') >= 0)){ location.replace('gerencia.html'); return null; }
     if(roles && roles.indexOf(p.rol) < 0){ location.replace('inicio.html'); return null; }
     return p;
   }

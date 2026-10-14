@@ -41,7 +41,7 @@
     $('lista').innerHTML = '<div class="lista">' + usuarios.map((u, i) => {
       const est = !u.activo ? '<span class="chip chip-off">Sin acceso</span>'
         : u.debe_cambiar_pin ? '<span class="chip chip-warn">PIN temporal</span>' : '<span class="chip chip-ok">Activo</span>';
-      const rol = u.rol === 'analista' && u.senior ? 'Analista Senior' : u.rol === 'lider' && u.dedicados ? 'Líder de dedicados' : (S.ROLES[u.rol] || u.rol);
+      const rol = u.gerencia ? 'Gerencia (solo lectura)' : u.rol === 'analista' && u.senior ? 'Analista Senior' : u.rol === 'lider' && u.dedicados ? 'Líder de dedicados' : (S.ROLES[u.rol] || u.rol);
       return '<button type="button" class="persona' + (u.activo ? '' : ' inactiva') + '" data-i="' + i + '">' +
         '<span class="quien"><span class="av" aria-hidden="true">' + esc(iniciales(u.nombre)) + '</span><b>' + esc(u.nombre) + '</b>' +
         '<span class="det"><span class="solo-pc">' + esc(u.usuario) + (u.cargo ? ' · ' + esc(u.cargo) : '') + '</span>' +
@@ -81,7 +81,7 @@
     $('fNombre').value = u ? u.nombre : '';
     $('fUsuario').value = u ? u.usuario : ''; $('fUsuario').disabled = !!u;
     $('fCargo').value = u ? (u.cargo || '') : '';
-    $('fRol').value = u ? (u.rol === 'analista' && u.senior ? 'analista_senior' : u.rol) : 'lider';
+    $('fRol').value = u ? (u.gerencia ? 'gerencia' : u.rol === 'analista' && u.senior ? 'analista_senior' : u.rol) : 'lider';
     $('fWhatsapp').value = u ? (u.whatsapp || '') : ''; $('fCorreo').value = u ? (u.correo || '') : '';
     $('fEquipo').value = u ? u.equipo : 'ventas';
     $('fDed').setAttribute('aria-checked', String(!!(u && u.dedicados))); $('zonaDed').classList.toggle('hidden', $('fRol').value !== 'lider');

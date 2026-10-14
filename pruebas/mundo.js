@@ -310,6 +310,36 @@ function avanzarIA(m, c){
   c.ia.marcas.forEach((k) => { const ant = c.marcas[k.documento]; if(ant && ant.accion && ant.origen !== 'ia') return; if(k.propuesta === 'revisar_a_mano'){ delete c.marcas[k.documento]; return; }
     c.marcas[k.documento] = { documento: k.documento, accion: k.propuesta === 'bien' ? 'aprobar' : 'devolver', motivo: k.propuesta === 'bien' ? null : k.motivo, nota: k.propuesta === 'bien' ? null : k.nota, vence_en: null, por: null, en: hace(0), origen: 'ia', pagina: k.pagina }; });
 }
+
+// ---------- Gerencia (lote 7) ----------
+const efectivo = (yo) => yo && yo.gerencia ? 'gerencia' : yo && yo.rol;
+function gerHechos(m){
+  if(m.gerHechos) return m.gerHechos;
+  const L = '22222222-2222-4222-8222-222222222222'; const O = '77777777-7777-4777-8777-777777777777'; const h = [];
+  const idDe = (n) => ((m.datos && m.datos.clientes) || []).filter((c) => c.nombre === n).map((c) => c.id)[0] || null;
+  const add = (s, k, mes, cliente_id, nombre, lider_id, detalle, n) => h.push({ s, k, mes, cliente_id: cliente_id && idDe(nombre), nombre, lider_id, detalle: detalle || null, n: n === undefined ? null : n });
+  add('seg', 'PYME', null, 1, 'Vidrios El Faro, C.A.', L); add('seg', 'PYME', null, 2, 'Tornillos El Yunque, C.A.', L); add('seg', 'Combinado', null, 3, 'Comercial de Prueba 3, C.A.', O); add('seg', 'Dedicado ISP', null, 4, 'Red Inventada ISP, C.A.', O);
+  add('ins', 'PYME', '2026-10-01', 1, 'Vidrios El Faro, C.A.', L, null, 6); add('ins', 'PYME', '2026-10-01', 2, 'Tornillos El Yunque, C.A.', L, 'Aliado Inventado', 10); add('ins', 'Combinado', '2026-09-01', 3, 'Comercial de Prueba 3, C.A.', O, null, 8);
+  add('ins', 'PYME', '2026-08-01', 5, 'Panaderia Inventada Uno', L, null, 4);
+  add('com', 'cumple', '2026-09-01', 3, 'Comercial de Prueba 3, C.A.', O, 'Cumple'); add('com', 'no', '2026-09-01', 5, 'Panaderia Inventada Uno', L, 'Falta Legal'); add('cert', 'certificado', '2026-09-01', null, null, null);
+  add('com', 'cumple', '2026-10-01', 1, 'Vidrios El Faro, C.A.', L, 'Cumple'); add('com', 'no', '2026-10-01', 2, 'Tornillos El Yunque, C.A.', L, 'Falta pago');
+  add('exp', 'documentos_solicitados', null, 1, 'Vidrios El Faro, C.A.', L); add('exp', 'contrato_firmado', null, 2, 'Tornillos El Yunque, C.A.', L); add('exp', 'por_firmar', null, 3, 'Comercial de Prueba 3, C.A.', O);
+  add('legal', 'listo', '2026-10-01', 2, 'Tornillos El Yunque, C.A.', L, null, 12); add('dev', 'rif', null, 1, 'Vidrios El Faro, C.A.', L, 'Ilegible'); add('fal', 'acta constitutiva', null, 1, 'Vidrios El Faro, C.A.', L);
+  add('cam', 'categoria', '2026-10-01', 5, 'Panaderia Inventada Uno', L, 'por_emitir'); add('cam', 'pyme_otra', '2026-10-01', 2, 'Tornillos El Yunque, C.A.', L, 'PYME-1GB a RESIDENCIAL');
+  add('ali', 'solicitud', '2026-10-01', 2, 'Tornillos El Yunque, C.A.', null, 'Aliado Inventado'); add('ali', 'instalada', '2026-10-01', 2, 'Tornillos El Yunque, C.A.', null, 'Aliado Inventado');
+  add('ded', 'contrato_firmado', null, 4, 'Red Inventada ISP, C.A.', O, 'isp'); add('ded', 'poliza_por_vencer', null, 4, 'Red Inventada ISP, C.A.', O, '30/10/2026', 16);
+  add('neg', 'sin_permiso', '2026-10-01', 2, 'Tornillos El Yunque, C.A.', L, 'Aliado Inventado'); add('neg', 'orden_15', null, 1, 'Vidrios El Faro, C.A.', L, 'Orden sin instalar', 20);
+  m.gerHechos = h; return h;
+}
+function gerFiltrar(m, yo, a){
+  const r = efectivo(yo); if(!['admin', 'analista', 'lider', 'abogado', 'gerencia'].includes(r)) return error('No tienes permiso para hacer esto');
+  if(!a.p_desde || !a.p_hasta || a.p_desde > a.p_hasta) return error('Elige un rango de meses válido');
+  const todo = r === 'admin' || r === 'gerencia'; const lider = r === 'lider' ? yo.id : a.p_lider; const segDe = (id) => (gerHechos(m).find((h) => h.s === 'seg' && h.cliente_id === id) || {}).k || 'PYME';
+  return gerHechos(m).filter((h) => (todo || !['ali', 'neg'].includes(h.s)) && (!lider || h.lider_id === lider || h.s === 'cert')
+    && (!a.p_segmento || h.s === 'cert' || (['seg', 'ins'].includes(h.s) ? h.k === a.p_segmento : !!h.cliente_id && segDe(h.cliente_id) === a.p_segmento)))
+    .map((h) => Object.assign({}, h, { detalle: !todo && h.s === 'ins' ? null : h.detalle }));
+}
+
 const RPC = {
   inicio_datos(m, yo){
     if(yo.rol === 'aliado') return { rol: yo.rol, hoy: hoy() };
@@ -528,6 +558,18 @@ const RPC = {
     (m.datos.hechos = m.datos.hechos || []).push(a.p_tipo + '|' + a.p_clave); (m.bitacora = m.bitacora || []).push({ accion: 'pendiente_hecho', nota: a.p_nota }); return null; },
   lideres_analistas(m, yo){ if(yo.rol !== 'admin') return error('No tienes permiso para hacer esto'); const l = {}; m.personas.filter((p) => p.rol === 'lider').forEach((p) => { l[p.id] = p.analista_id || null; });
     return { lideres: l, analistas: m.personas.filter((p) => p.rol === 'analista' && p.activo).map((p) => ({ id: p.id, nombre: p.nombre })) }; },
+  // Lote 7: Gerencia. Los hechos inventados imitan privado.gerencia_hechos; los filtros y permisos, privado.gerencia_filtrado.
+  gerencia(m, yo, a){ const f = gerFiltrar(m, yo, a); if(f.__error) return f; const r = efectivo(yo);
+    const g = new Map(); f.forEach((h) => { const d = ['com', 'ins', 'ali', 'ded'].includes(h.s) ? h.detalle : null; const k = [h.s, h.k, h.mes, h.lider_id, d].join('|');
+      const x = g.get(k) || { s: h.s, k: h.k, mes: h.mes, l: h.lider_id, ln: (m.personas.find((p) => p.id === h.lider_id) || {}).nombre || null, d, c: 0, n: null, _n: [] }; x.c++; if(h.n !== null && h.n !== undefined) x._n.push(h.n); g.set(k, x); });
+    return { rol: r, todo: r === 'admin' || r === 'gerencia', corte_actual: '2026-10-01',
+      lideres: r === 'lider' ? [] : m.personas.filter((p) => p.rol === 'lider' && p.activo && !p.gerencia).map((p) => ({ id: p.id, nombre: p.nombre })),
+      grupos: [...g.values()].map((x) => { x.n = x._n.length ? Math.round(10 * x._n.reduce((a2, b) => a2 + b, 0) / x._n.length) / 10 : null; delete x._n; return x; }) };
+  },
+  gerencia_lista(m, yo, a){ const f = gerFiltrar(m, yo, a); if(f.__error) return f; const r = efectivo(yo);
+    return f.filter((h) => h.s === a.p_s && (!a.p_k || h.k === a.p_k) && (a.p_mes ? h.mes === a.p_mes : (!h.mes || (h.mes >= a.p_desde && h.mes <= a.p_hasta))) && (!a.p_detalle || h.detalle === a.p_detalle) && (!a.p_lider_fila || h.lider_id === a.p_lider_fila))
+      .map((h) => ({ cliente_id: h.cliente_id, nombre: h.nombre, lider: (m.personas.find((p) => p.id === h.lider_id) || {}).nombre || null, k: h.k, detalle: h.detalle, mes: h.mes, n: h.n === undefined ? null : h.n, abre: !!h.cliente_id && r !== 'gerencia' }));
+  },
   lider_analista(m, yo, a){ if(yo.rol !== 'admin') return error('No tienes permiso para hacer esto'); const p = m.personas.find((x) => x.id === a.p_lider); if(!p || p.rol !== 'lider') return error('Ese usuario no es líder'); p.analista_id = a.p_analista; return null; },
   ajustes_app(m){ return Object.assign({ whatsapp_admin: null }, m.datos.dias || {}); },
   ajuste_guardar(m, yo, a){ if(yo.rol !== 'admin') return error('No tienes permiso para hacer esto'); if(/^dias_/.test(a.p_clave) && !(Number(a.p_valor) > 0)) return error('Escribe un número de días mayor que cero');

@@ -108,6 +108,8 @@
       texto: rol === 'admin' ? 'Solicitudes, referidos y pagos de aliados' : canales ? 'Tus solicitudes, referidos y pagos' : 'Registro de aliados e instalados, para ver' });
     if(['admin', 'analista', 'abogado'].indexOf(rol) >= 0 || (rol === 'lider' && dedicados)) activos.push({ id: 'dedicados', nombre: 'Dedicados', icono: 'servidor', enlace: 'dedicados.html',
       texto: rol === 'lider' ? 'Tus clientes dedicados: enlaces, documentos y contratos' : 'ISP y corporativos: enlaces, documentos y contratos' });
+    if(['admin', 'analista', 'lider', 'abogado'].indexOf(rol) >= 0) activos.push({ id: 'gerencia', nombre: 'Gerencia', icono: 'barras', enlace: 'gerencia.html',
+      texto: rol === 'lider' ? 'Tus números: instalaciones, comisiones y expedientes' : 'Resumen del negocio por mes, líder y segmento' });
     if(rol === 'admin' || rol === 'abogado') activos.push({ id: 'revision', nombre: 'Revisión', icono: 'doc', enlace: 'revision.html', texto: rol === 'admin' ? 'Documentos por revisar, también con IA' : 'Tus contratos por hacer y por firmar' });
     const pronto = PRONTO.filter((m) => m.roles.indexOf(rol) >= 0);
     $('zonaModulos').innerHTML = '<div class="h2 primero">Módulos</div><div class="mods">' +

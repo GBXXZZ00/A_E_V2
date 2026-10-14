@@ -13,11 +13,12 @@
     { id: 'factibilidad', texto: 'Factibilidad', icono: 'wifi', enlace: 'factibilidad.html', roles: ['admin', 'analista', 'lider'] },
     { id: 'revision', texto: 'Revisión', icono: 'doc', enlace: 'revision.html', roles: ['admin', 'abogado'] },
     { id: 'dedicados', texto: 'Dedicados', icono: 'servidor', enlace: 'dedicados.html', roles: ['admin', 'analista', 'abogado'], marca: 'dedicados', pcSalvoMarca: true },
-    { id: 'aliados', texto: 'Aliados', icono: 'usuarios', enlace: 'aliados.html', roles: ['admin', 'analista', 'lider', 'abogado'], soloPc: true }
+    { id: 'aliados', texto: 'Aliados', icono: 'usuarios', enlace: 'aliados.html', roles: ['admin', 'analista', 'lider', 'abogado'], soloPc: true },
+    { id: 'gerencia', texto: 'Gerencia', icono: 'barras', enlace: 'gerencia.html', roles: ['admin', 'analista', 'lider', 'abogado', 'gerencia'], soloPc: true }
   ];
 
   // Un módulo se ve por rol o, para un líder, por su marca (líder de dedicados)
-  const puedeVer = (n, p) => !n.roles || n.roles.indexOf(p.rol) >= 0 || (n.marca && p.rol === 'lider' && !!p[n.marca]);
+  const puedeVer = (n, p) => p.rol === 'gerencia' ? n.id === 'gerencia' : !n.roles || n.roles.indexOf(p.rol) >= 0 || (n.marca && p.rol === 'lider' && !!p[n.marca]);
   // opciones: { activo: 'inicio'|'comisiones'|'clientes'|'factibilidad'|'revision'|'aliados'|null, sinNav: bool, volver: {enlace, texto}, acciones: html }
   let montado = null;   // { clave, res }: lo que ya está dibujado, para no repetirlo al confirmar la sesión
   function montar(p, opciones){
@@ -43,7 +44,7 @@
       document.body.classList.add('con-nav');
       let nav = $('navAbajo');
       if(!nav){ nav = document.createElement('nav'); nav.id = 'navAbajo'; nav.className = 'nav'; nav.setAttribute('aria-label', 'Navegación'); document.body.appendChild(nav); }
-      nav.innerHTML = NAV.filter((n) => puedeVer(n, p) && !n.soloPc && !(n.pcSalvoMarca && !(p.rol === 'lider' && p[n.marca]))).map((n) => '<a href="' + n.enlace + '"' + (o.activo === n.id ? ' class="on" aria-current="page"' : '') + '><span>' + ic(n.icono) + '</span>' + n.texto + '</a>').join('');
+      nav.innerHTML = NAV.filter((n) => puedeVer(n, p) && (!n.soloPc || p.rol === 'gerencia') && !(n.pcSalvoMarca && !(p.rol === 'lider' && p[n.marca]))).map((n) => '<a href="' + n.enlace + '"' + (o.activo === n.id ? ' class="on" aria-current="page"' : '') + '><span>' + ic(n.icono) + '</span>' + n.texto + '</a>').join('');
     }
 
     let hoja = $('hojaCuenta');
