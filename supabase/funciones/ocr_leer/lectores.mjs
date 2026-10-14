@@ -2,7 +2,7 @@
 // RIF viejo (con vencimiento), RIF Digital v2.0 (sin vencimiento), cédula y póliza. El dígito verificador del RIF
 // y el código del sello confirman la lectura; si algo no cuadra, la lectura es "dudosa" y el archivo va a la IA.
 // Lo usan la función ocr_leer (Supabase) y las pruebas (pruebas/test35.js). Nada de esto decide: solo lee.
-export const VERSION = "ocr-2";
+export const VERSION = "ocr-3";
 
 const LETRA = { V: 1, E: 2, J: 3, P: 4, G: 5 };
 const DE_SELLO = { 1: "V", 2: "E", 3: "J", 4: "P", 5: "G" };
@@ -21,10 +21,10 @@ export const rifValido = (rif) => { const m = /^([VEJPG])(\d{8})(\d)$/.exec(Stri
 const PARECIDAS = { "А": "A", "В": "B", "Е": "E", "К": "K", "М": "M", "Н": "H", "О": "O", "Р": "P", "С": "C", "Т": "T", "Х": "X", "У": "Y", "І": "I",
   "а": "a", "е": "e", "о": "o", "р": "p", "с": "c", "х": "x", "у": "y", "Ο": "O", "Α": "A", "Ε": "E", "Ι": "I", "Ν": "N", "Τ": "T" };
 export function limpiar(t){
-  return String(t || "").replace(/[Ͱ-ϿЀ-ӿ]/g, (c) => PARECIDAS[c] || c).replace(/\r/g, "").replace(/[ \t ]+/g, " ");
+  return String(t || "").replace(/[\u0370-\u03ff\u0400-\u04ff]/g, (c) => PARECIDAS[c] || c).replace(/\r/g, "").replace(/[ \t\u00a0]+/g, " ");
 }
 // Para comparar: mayúsculas y sin tildes (la Ñ se queda)
-const plano = (s) => String(s || "").toUpperCase().replace(/Ñ/g, "\u0001").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/\u0001/g, "Ñ");
+const plano = (s) => String(s || "").toUpperCase().replace(/Ñ/g, "\u0001").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\u0001/g, "Ñ");
 const fechaIso = (d) => { const m = /^(\d{2})[\/-](\d{2})[\/-](\d{4})$/.exec(d || ""); return m ? m[3] + "-" + m[2] + "-" + m[1] : null; };
 const FECHA = /(\d{2}\/\d{2}\/\d{4})/;
 
@@ -51,7 +51,7 @@ function leerRif(t, P0){
   const TOK = /\b([VEJPG])[\s-]?(\d{8})[\s-]?(\d)\b/;
   let m = /RIF\s*:\s*([VEJPG])[\s-]?(\d{8})[\s-]?(\d)\b/.exec(P) || TOK.exec(P);
   let rif = m ? m[1] + m[2] + m[3] : null;
-  // El sello del comprobante repite el número: 3 = J, 1 = V... (3299682950-HPT)
+  // El sello del comprobante repite el número: 3 = J, 1 = V... (3419999015-HPT)
   const s = /\b([1-5])(\d{9})-[A-Z]{3}\b/.exec(P); const sello = s ? DE_SELLO[s[1]] + s[2] : null;
   const datos = { rif, sello_coincide: sello ? sello === rif : null };
   if(!rif && sello){ rif = sello; datos.rif = rif; }
@@ -113,11 +113,18 @@ function leerCedula(t, P){
   if(!nom && iN >= 0) for(let i = iN + 1; i < Math.min(L.length, iN + 4) && !nom; i++) nom = nombreDe(i) || "";
   if(!nom && iA >= 0 && iN < 0) nom = nombreDe(iA + 1) || "";   // sin rótulo de nombres: la línea siguiente a los apellidos
   datos.nombres = nom || null;
-  // Vencimiento: mes y año solos (06/2033 o 02-2028), que no sean parte de una fecha completa
-  const v = /(?<![\d\/-])(0[1-9]|1[0-2])[\/-](20\d{2})(?![\d\/-])/.exec(P1);
+  // Vencimiento: mes y año solos (06/2033 o 02-2028), que no sean parte de una fecha completa.
+  // Expedición: la fecha completa que va justo antes (la de nacimiento va más arriba); deben separarlas 10 años
+  const vs = [...P1.matchAll(/(?<![\d\/-])(0[1-9]|1[0-2])[\/-](20\d{2})(?![\d\/-])/g)];
+  const v = vs.length ? vs[vs.length - 1] : null;
   datos.vencimiento = v ? v[2] + "-" + v[1] : null;
+  const antes = v ? [...P1.slice(0, v.index).matchAll(/\b(\d{2})[\/-](\d{2})[\/-](\d{4}|\d{2})\b/g)] : [];
+  const ex = antes.length ? antes[antes.length - 1] : null;
+  datos.expedicion = ex ? (ex[3].length === 2 ? "20" + ex[3] : ex[3]) + "-" + ex[2] + "-" + ex[1] : null;
   const motivos = [];
   if(!datos.numero) motivos.push("sin número"); if(!datos.apellidos) motivos.push("sin apellidos"); if(!datos.nombres) motivos.push("sin nombres");
+  if(!datos.vencimiento) motivos.push("sin vencimiento");
+  else if(datos.expedicion && Number(datos.vencimiento.slice(0, 4)) - Number(datos.expedicion.slice(0, 4)) !== 10) motivos.push("las fechas no cuadran");
   return { tipo: "cedula", datos: Object.assign(datos, { motivos }), dudosa: motivos.length > 0 };
 }
 

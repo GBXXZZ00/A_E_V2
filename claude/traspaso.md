@@ -1,6 +1,6 @@
 # Traspaso (se actualiza al cerrar cada sesión)
 
-Actualizado: 14/10/2026 (corrida 14/10 tarde hecha). Publicado: `?v=43`.
+Actualizado: 14/10/2026 (corrida 14/10 tarde hecha). Publicado: `?v=44`.
 
 ## CORRIDA 14/10 TARDE (APROBADA por el administrador): texto completo
 
@@ -86,6 +86,17 @@ Respuesta final corta: qué quedó por parte, la tabla OCR contra Gemini, qué s
   - Hallazgo de datos: 100 casillas de cédula tienen un RIF y 80 de RIF personal tienen una cédula (casi la mitad son pares cruzados). Se corrige en el chat del proyecto o al revisar.
   - Ahorro: un RIF o cédula claro cuesta unos 0,02 USD en Gemini; de lo leído por la IA, cerca del 20% del gasto eran RIF y cédulas claros. Lo caro son las actas.
   - Pruebas nuevas: test35 (lectores) y test36 (ajustes y propuesta); test16 y test19 ampliadas.
+  - **Revisión independiente (partes 3 y 4), corregido en v44:**
+    - En test35, test19 y test36 había dos RIF que existen en la base: cambiados por RIF inventados (con dígito válido y que no están en la base). **Siguen en el historial de git del commit de v43**; borrarlos del historial es decisión del administrador.
+    - RIF con y sin dígito verificador: la base guarda muchas cédulas y algunos RIF sin el dígito. La propuesta del expediente ya no avisa "RIF de otro cliente" por eso; el formulario llena la cédula de una persona natural sin el dígito; `cambio_crear` reconoce al cliente con o sin dígito (no duplica) y detecta "el nuevo titular es el mismo". Función `privado.rif_digito`.
+    - El RIF del formulario no pisa el de un cliente que ya existía: si ya tiene RIF en su expediente, avisa y no lo sube. Si hay otra subida en curso, avisa que no se guardó.
+    - Revisión con IA: el OCR va de 4 en 4 en una sola llamada con tiempo límite; el resto sigue en la próxima llamada. Se pide siempre a `ocr_leer` (vuelve a correr los lectores si cambiaron).
+    - RIF que Gemini marca como Digital pero trae una fecha vencida: revisar a mano (no "bien").
+    - Cédula por OCR: sin vencimiento o con expedición y vencimiento que no se separan 10 años es lectura dudosa y va a la IA (lectores `ocr-3`). Con los textos ya leídos: 13 cédulas pasaron a dudosas (fechas mal leídas o cédulas de 5 años) y 2 por no traer vencimiento.
+    - `ocr_leer` con archivo suelto: solo cuentas activas y 60 lecturas por hora por persona (`ocr_uso_registrar`); la copia temporal en Drive se reintenta borrar 3 veces y las que queden se limpian en la siguiente tanda.
+    - Carrera al cerrar el formulario mientras lee; los ajustes del OCR no se quedan en "apagado" si falló la red.
+    - SQL de referencia en `supabase/pruebas/corrida_tarde_p34.sql`. Queda sin uso `privado.prueba_tmp_cambio` (siempre termina en error; no se pudo probar `cambio_crear` completo porque la base aún no tiene el TAD completo).
+  - **Encendido (14/10, decisión de Claude según la regla de 95%):** con los lectores `ocr-3`, RIF de empresa 172 de 176 lecturas claras coinciden con el cliente (97,7%; las 4 restantes son el RIF de otra empresa subido en la casilla, error de datos). Cédula contra RIF personal: 93 de 103; las 10 diferencias son de datos (7 representantes cruzados y 3 documentos de otra persona, con 5 o más dígitos distintos), ningún error de lectura. Se prendieron los tres ajustes (aliados, revisión y llenar datos del expediente), con registro en la bitácora. Se apagan en el menú de la cuenta, "Lectura con OCR".
 
 ## CORRIDA DEL 14/10 (APROBADA por el administrador el 13/10 noche): Lote 3 + Lote 4 + Lote 5 + Lote 6 + Lote 7 · HECHA el 14/10 (v33 a v37)
 Antes de tocar código: lee los cinco lotes completos y dile al administrador, en pocas líneas, qué puedes ejecutar y qué no (y por qué). Si todo es ejecutable, arranca sin esperar más. Orden: Lote 3, 5, 4, 6, 7. Publica por lote (pruebas, capturas, `?v=`, commit y push). Septiembre certificado (59/49) no se mueve; corre la referencia de comisiones antes y después de cada lote que toque comisiones. Las pantallas siguen el estilo ya aprobado (maquetas en `claude/maquetas/`, Clientes y Comisiones como modelo); no hace falta maqueta nueva. Fuera de esta corrida: notificaciones, ingresos y bandeja de dedicados, propuesta de servicio, proforma y carta para nuevo titular, subidas por guardias.

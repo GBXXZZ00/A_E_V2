@@ -25,7 +25,7 @@ function montar(op){
     return {};
   },
   // Corrida 14/10 tarde: lo que el OCR ya leyó (public.ocr_lecturas)
-  from: (t) => ({ select: () => ({ eq: (k, v) => ({ maybeSingle: async () => { s.ocrLeido++; return { data: ocr[v] || null }; } }) }) }) };
+  from: (t) => ({ select: () => ({ in: async (k, ids) => { s.ocrLeido++; return { data: ids.filter((v) => ocr[v]).map((v) => ({ archivo_id: v, ...ocr[v] })) }; } }) }) };
   const espera = (ms) => new Promise((r) => setTimeout(r, ms));
   const fetchFalso = async (url, o) => {
     url = String(url);
@@ -37,7 +37,7 @@ function montar(op){
     }
     if(url.includes('/upload/v1beta/files')) return { ok: true, headers: { get: () => 'https://subir.test/x' }, json: async () => ({}) };
     if(url.startsWith('https://subir.test')){ s.subidas++; return { ok: true, json: async () => ({ file: { uri: 'u' + s.subidas, name: 'files/' + s.subidas, state: 'ACTIVE' } }) }; }
-    if(url.includes('/functions/v1/ocr_leer')){ s.ocrPedido++; if(op.ocrCaido) throw new Error('sin red'); const id = JSON.parse(o.body).archivos[0]; if(op.ocrTarde) ocr[id] = op.ocrTarde[id]; return { ok: true, json: async () => ({ ok: true }) }; }
+    if(url.includes('/functions/v1/ocr_leer')){ s.ocrPedido++; if(op.ocrCaido) throw new Error('sin red'); for(const id of JSON.parse(o.body).archivos) if(op.ocrTarde && op.ocrTarde[id]) ocr[id] = op.ocrTarde[id]; return { ok: true, json: async () => ({ ok: true }) }; }
     if(url.includes(':generateContent')){
       s.gemini++; s.activos++; s.maxActivos = Math.max(s.maxActivos, s.activos);
       await espera(op.demora || 120);
@@ -65,7 +65,7 @@ const arch = (n, extra) => Array.from({ length: n }, (_, i) => Object.assign({ i
 
 const docsOcr = [{ id: 11, casilla: 'rif_empresa', numero: 0, estado: 'por_revisar', archivos: [1] }, { id: 12, casilla: 'cedula', numero: 1, estado: 'por_revisar', archivos: [2] },
   { id: 13, casilla: 'acta_constitutiva', numero: 0, estado: 'por_revisar', archivos: [3] }, { id: 14, casilla: 'rif_personal', numero: 1, estado: 'por_revisar', archivos: [4] }, { id: 15, casilla: 'cedula_rif', numero: 2, estado: 'por_revisar', archivos: [4] }];
-const ocrFilas = { 1: { estado: 'ok', tipo: 'rif_digital', dudosa: false, datos: { rif: 'J411633267', razon_social: 'EMPRESA INVENTADA, C.A', domicilio: 'CALLE 1 ZONA POSTAL 4001', vencimiento: null } },
+const ocrFilas = { 1: { estado: 'ok', tipo: 'rif_digital', dudosa: false, datos: { rif: 'J418888023', razon_social: 'EMPRESA INVENTADA, C.A', domicilio: 'CALLE 1 ZONA POSTAL 4001', vencimiento: null } },
   2: { estado: 'ok', tipo: 'cedula', dudosa: true, datos: { letra: 'V', numero: '123', nombres: null, apellidos: 'X' } }, 3: { estado: 'ok', tipo: 'otro', dudosa: true, datos: {} },
   4: { estado: 'ok', tipo: 'rif_viejo', dudosa: false, datos: { rif: 'V128967423', razon_social: 'PERSONA INVENTADA', vencimiento: '2028-04-27' } } };
 
@@ -77,7 +77,7 @@ const ocrFilas = { 1: { estado: 'ok', tipo: 'rif_digital', dudosa: false, datos:
   o = montar({ archivos: arch(4), documentos: docsOcr, ocr: ocrFilas, ajustes: { ocr_revision: 'si' } });
   await o.trabajar(1);
   const lo = o.s.lecturas['1'];
-  ok('OCR prendido: el RIF claro no va a Gemini y pasa a las reglas sin costo', lo && lo.modelo === 'ocr-drive' && lo.costo_usd === 0 && lo.hallazgos[0].tipo === 'rif_empresa' && lo.hallazgos[0].formato === 'rif_digital' && lo.hallazgos[0].numero === 'J411633267');
+  ok('OCR prendido: el RIF claro no va a Gemini y pasa a las reglas sin costo', lo && lo.modelo === 'ocr-drive' && lo.costo_usd === 0 && lo.hallazgos[0].tipo === 'rif_empresa' && lo.hallazgos[0].formato === 'rif_digital' && lo.hallazgos[0].numero === 'J418888023');
   ok('OCR prendido: la cédula dudosa, el acta y el archivo combinado (cédula + RIF) sí van a Gemini', o.s.gemini === 3 && o.s.lecturas['2'].modelo === 'gemini-x-pro' && o.s.lecturas['3'].modelo === 'gemini-x-pro' && o.s.lecturas['4'].modelo === 'gemini-x-pro');
   ok('OCR prendido: las reglas deciden con todo leído', o.s.resultado && o.s.resultado.leidos === 4);
   o = montar({ archivos: arch(1), documentos: [docsOcr[0]], ocr: {}, ajustes: { ocr_revision: 'si' }, ocrTarde: { 1: ocrFilas[1] } });
@@ -86,6 +86,12 @@ const ocrFilas = { 1: { estado: 'ok', tipo: 'rif_digital', dudosa: false, datos:
   o = montar({ archivos: arch(1), documentos: [docsOcr[0]], ocr: {}, ajustes: { ocr_revision: 'si' }, ocrCaido: true });
   await o.trabajar(1);
   ok('OCR caído: vuelve al camino de hoy (Gemini) sin fallar', o.s.gemini === 1 && o.s.lecturas['1'].modelo === 'gemini-x-pro' && !o.s.fallo);
+  // Seis RIF de empresa de una casilla cada uno: el OCR toma 4 en una sola llamada y los otros 2 quedan para la próxima (sin Gemini)
+  const seis = [1, 2, 3, 4, 5, 6].map((i) => ({ id: 20 + i, casilla: 'rif_empresa', numero: i, estado: 'por_revisar', archivos: [i] }));
+  const filas6 = {}; for(let i = 1; i <= 6; i++) filas6[i] = ocrFilas[1];
+  o = montar({ archivos: arch(6), documentos: seis, ocr: filas6, ajustes: { ocr_revision: 'si' } });
+  await o.trabajar(1);
+  ok('OCR de 4 en 4: una llamada, 4 resueltos, los otros 2 a la próxima sin Gemini', o.s.ocrPedido === 1 && Object.keys(o.s.lecturas).length === 4 && o.s.gemini === 0 && o.s.seguir === 1 && !o.s.resultado);
 
   // 1. Seis archivos: lee 4 a la vez, guarda los 4 y se llama de nuevo para los otros 2
   let m = montar({ archivos: arch(6) });

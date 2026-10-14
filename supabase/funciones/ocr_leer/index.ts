@@ -54,13 +54,33 @@ async function ocrSuelto(bytes: Uint8Array, mime: string): Promise<string> {
     return fetch("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&ocrLanguage=es&fields=id", { method: "POST", headers: { ...H, "Content-Type": "multipart/related; boundary=" + limite }, body: cuerpo });
   });
 }
+// La copia convertida tiene datos del cliente: se borra siempre y, si Google no deja, se reintenta y queda en el registro
+async function borrarCopia(id: string, H: Record<string, string>) {
+  for (let i = 0; i < 3; i++) {
+    const r = await fetch("https://www.googleapis.com/drive/v3/files/" + encodeURIComponent(id) + "?supportsAllDrives=true", { method: "DELETE", headers: H }).catch(() => null);
+    if (r && (r.ok || r.status === 404)) return;
+    await new Promise((x) => setTimeout(x, 800 * (i + 1)));
+  }
+  console.error("ocr: no se pudo borrar la copia temporal", id);
+}
+// Copias que quedaron de intentos fallidos (nombre "ocr-temporal", más de 1 hora): se borran de a poco
+async function limpiarHuerfanas() {
+  try {
+    const tk = await tokenGoogle(); if (!tk) return;
+    const H = { Authorization: "Bearer " + tk };
+    const q = encodeURIComponent("name contains 'ocr-temporal' and modifiedTime < '" + new Date(Date.now() - 3600_000).toISOString() + "' and trashed = false");
+    const r = await fetch("https://www.googleapis.com/drive/v3/files?pageSize=20&fields=files(id)&q=" + q, { headers: H });
+    if (!r.ok) return;
+    for (const f of ((await r.json()).files || []) as { id: string }[]) await borrarCopia(f.id, H);
+  } catch (_) { /* es limpieza: si falla, la próxima */ }
+}
 async function convertir(crear: (H: Record<string, string>) => Promise<Response>): Promise<string> {
   const tk = await tokenGoogle();
   if (!tk) throw new Error("El permiso de Google venció");
   const H = { Authorization: "Bearer " + tk };
   const copiar = () => crear(H);
   let c = await copiar();
-  // Google a veces falla por su lado (500): un segundo intento
+  // Google a veces falla por su lado (500): un segundo intento. Si el primero dejó una copia, la limpieza de "ocr-temporal" la borra
   if (c.status >= 500) { await new Promise((r) => setTimeout(r, 1500)); c = await copiar(); }
   const cj = await c.json().catch(() => ({}));
   if (!c.ok || !cj.id) {
@@ -73,8 +93,7 @@ async function convertir(crear: (H: Record<string, string>) => Promise<Response>
     if (!e.ok) throw new Error("Drive no entregó el texto (" + e.status + ")");
     return (await e.text()).replace(/^\uFEFF/, "");
   } finally {
-    await fetch("https://www.googleapis.com/drive/v3/files/" + encodeURIComponent(cj.id) + "?supportsAllDrives=true", { method: "DELETE", headers: H })
-      .catch((x) => console.error("borrar copia", x));
+    await borrarCopia(cj.id, H);
   }
 }
 
@@ -128,6 +147,11 @@ async function suelto(req: Request): Promise<Response> {
   if (!/^Bearer\s+\S+/i.test(sesion)) return respuesta({ error: "Tu sesión venció. Entra de nuevo" }, 401);
   const { data: u } = await db.auth.getUser(sesion.replace(/^Bearer\s+/i, ""));
   if (!u?.user) return respuesta({ error: "Tu sesión venció. Entra de nuevo" }, 401);
+  // Solo cuentas activas y con tope por hora (cada lectura sube una copia al Drive de la empresa)
+  const { data: uso, error: eu } = await db.rpc("ocr_uso_registrar", { p_usuario: u.user.id });
+  if (eu) return respuesta({ estado: "sin_lectura", error: "No se pudo comprobar tu cuenta" });
+  if (uso === "inactivo") return respuesta({ error: "Tu cuenta no está activa" }, 403);
+  if (uso === "limite") return respuesta({ estado: "sin_lectura", error: "Llegaste al tope de lecturas de esta hora. Escribe los datos a mano" });
   const form = await req.formData().catch(() => null);
   const archivo = form ? form.get("archivo") : null;
   if (!(archivo instanceof File) || !archivo.size) return respuesta({ estado: "sin_lectura", error: "No llegó el archivo" });
@@ -159,7 +183,7 @@ Deno.serve(async (req: Request) => {
       if (!ids.length) return respuesta({ error: "Faltan los archivos" }, 400);
       // La revisión con IA espera la lectura de un archivo suelto antes de decidir si gasta Gemini
       if (b.esperar === true && ids.length <= 4) { await lote(ids); return respuesta({ ok: true, archivos: ids.length }); }
-      EdgeRuntime.waitUntil(lote(ids));
+      EdgeRuntime.waitUntil(lote(ids).then(limpiarHuerfanas));
       return respuesta({ ok: true, archivos: ids.length }, 202);
     }
     // La app: un archivo que el usuario puede ver (lo decide la base con su sesión)

@@ -211,16 +211,15 @@ function conLimite(p: Promise<{ lectura: Record<string, unknown>; fatal?: Error 
 // Solo con el ajuste ocr_revision = 'si'. Un archivo de una sola casilla (RIF de empresa, RIF personal o cédula) que el OCR
 // leyó claro pasa a las reglas como si lo hubiera leído la IA, sin costo. Combinados, actas, dudosas o sin lectura: Gemini, como siempre.
 const OCR_CASILLAS = ["rif_empresa", "rif_personal", "cedula"];
-type FilaOcr = { estado: string; tipo: string | null; dudosa: boolean; datos: Record<string, string | null> | null };
-async function filaOcr(id: number): Promise<FilaOcr | null> {
-  const ver = async () => (await db.from("ocr_lecturas").select("estado, tipo, dudosa, datos").eq("archivo_id", id).maybeSingle()).data as FilaOcr | null;
-  let f = await ver();
-  if (!f) {
-    // Todavía no se leyó: se lee ya (la función responde cuando termina)
-    await fetch(URL_BASE + "/functions/v1/ocr_leer", { method: "POST", headers: { "Content-Type": "application/json", "x-tarea": TAREA }, body: JSON.stringify({ archivos: [id], esperar: true }) }).catch(() => null);
-    f = await ver();
-  }
-  return f;
+type FilaOcr = { archivo_id?: number; estado: string; tipo: string | null; dudosa: boolean; datos: Record<string, string | null> | null };
+const OCR_LOTE = 4;
+// Se pide siempre a ocr_leer (responde enseguida con lo ya leído y vuelve a correr los lectores si cambiaron de versión).
+// Hasta 4 archivos por llamada y con tiempo límite, para no pasar el límite de la función.
+async function filasOcr(ids: number[]): Promise<Map<number, FilaOcr>> {
+  await fetch(URL_BASE + "/functions/v1/ocr_leer", { method: "POST", headers: { "Content-Type": "application/json", "x-tarea": TAREA },
+    body: JSON.stringify({ archivos: ids, esperar: true }), signal: AbortSignal.timeout(60_000) }).catch(() => null);
+  const { data } = await db.from("ocr_lecturas").select("archivo_id, estado, tipo, dudosa, datos").in("archivo_id", ids);
+  return new Map(((data || []) as FilaOcr[]).map((f) => [Number(f.archivo_id), f]));
 }
 function hallazgoDeOcr(f: FilaOcr | null): Record<string, unknown> | null {
   if (!f || f.estado !== "ok" || f.dudosa || !f.datos) return null;
@@ -232,7 +231,7 @@ function hallazgoDeOcr(f: FilaOcr | null): Record<string, unknown> | null {
       direccion: d.domicilio || null, formato: f.tipo, observacion: "Leído con el OCR de Google Drive" };
   }
   if (f.tipo === "cedula") return { tipo: "cedula", pagina_inicio: 1, pagina_fin: 1, legible: true, numero: (d.letra || "V") + " " + (d.numero || ""),
-    nombre: [d.nombres, d.apellidos].filter(Boolean).join(" "), fecha_vencimiento: d.vencimiento || null, observacion: "Leído con el OCR de Google Drive" };
+    nombre: [d.nombres, d.apellidos].filter(Boolean).join(" "), fecha_vencimiento: d.vencimiento || null, fecha_expedicion: d.expedicion || null, observacion: "Leído con el OCR de Google Drive" };
   return null;
 }
 
@@ -252,19 +251,26 @@ async function trabajar(corrida: number) {
   const w = data as Trabajo;
   try {
     let pendientes = w.archivos.filter((a) => !w.lecturas[String(a.id)]);
+    let diferidos = false;
     if (String(w.ajustes.ocr_revision || "no") === "si" && pendientes.length) {
-      const resueltos = new Set<number>();
-      for (const a of pendientes) {
+      // Combinados y actas: Gemini. RIF y cédulas de una sola casilla: primero el OCR, de 4 en 4 (el resto en la próxima llamada)
+      const cand = pendientes.filter((a) => {
         const cas = w.documentos.filter((d) => (d.archivos || []).includes(a.id)).map((d) => d.casilla);
-        if (cas.length !== 1 || !OCR_CASILLAS.includes(cas[0])) continue;   // combinados y actas: Gemini
-        const h = hallazgoDeOcr(await filaOcr(a.id).catch(() => null));
+        return cas.length === 1 && OCR_CASILLAS.includes(cas[0]);
+      });
+      const ahora = cand.slice(0, OCR_LOTE); const luego = new Set(cand.slice(OCR_LOTE).map((a) => a.id));
+      const resueltos = new Set<number>();
+      const filas = ahora.length ? await filasOcr(ahora.map((a) => a.id)).catch(() => new Map<number, FilaOcr>()) : new Map<number, FilaOcr>();
+      for (const a of ahora) {
+        const h = hallazgoDeOcr(filas.get(a.id) || null);
         if (!h) continue;
         const lectura = { estado: "ok", hallazgos: [h], paginas: 1, tokens_entrada: 0, tokens_salida: 0, costo_usd: 0, modelo: "ocr-drive" };
         const { error: eg } = await db.rpc("ia_guardar_lectura", { p_corrida: corrida, p_archivo: a.id, p_datos: lectura });
         if (eg) continue;   // si no se pudo guardar, lo lee Gemini como siempre
         w.lecturas[String(a.id)] = { estado: "ok", documentos: [h] }; resueltos.add(a.id);
       }
-      pendientes = pendientes.filter((a) => !resueltos.has(a.id));
+      pendientes = pendientes.filter((a) => !resueltos.has(a.id) && !luego.has(a.id));
+      diferidos = luego.size > 0;
     }
     let modelo = "";
     if (pendientes.length) {
@@ -293,6 +299,7 @@ async function trabajar(corrida: number) {
       }
       if (pendientes.length > lote.length) { await seguir(corrida); return; }
     }
+    if (diferidos) { await seguir(corrida); return; }   // quedan RIF o cédulas por pasar por el OCR
     // Todo leído: deciden las reglas (sin IA y sin costo)
     const r = evaluar({ hoy: w.hoy, cliente: w.cliente, representantes: w.representantes, faltantes: w.faltantes, documentos: w.documentos, lecturas: w.lecturas, excepciones: w.excepciones });
     const { error: er } = await db.rpc("ia_guardar_resultado", { p_corrida: corrida, p_resultado: r });

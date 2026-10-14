@@ -132,14 +132,18 @@ export function evaluar(e){
     if(d.casilla === 'rif_personal'){
       const venc = fecha(h.fecha_vencimiento); const datos = { nombre: h.nombre || null, numero: h.numero || null, vence: venc };
       // Corrida 14/10 tarde: el RIF Digital v2.0 no vence; el viejo vale si su vencimiento no pasó
-      if(h.formato === 'rif_digital'){ marca(d, 'bien', null, 'RIF Digital v2.0: no vence.', h, datos); return; }
+      if(h.formato === 'rif_digital' && !venc){ marca(d, 'bien', null, 'RIF Digital v2.0: no vence.', h, datos); return; }
+      // Dice digital pero trae una fecha vencida: puede ser un RIF viejo o la fecha de actualización; lo ve una persona
+      if(h.formato === 'rif_digital' && venc < hoy){ marca(d, 'revisar_a_mano', null, 'Parece RIF Digital pero trae fecha ' + fechaTexto(venc) + '. Confirmar si es el viejo vencido.', h, datos); return; }
       if(!venc){ marca(d, 'revisar_a_mano', null, 'No se leyó la fecha de vencimiento.', h, datos); return; }
       if(venc < hoy){ marca(d, 'problema', 'vencido', 'Venció el ' + fechaTexto(venc) + '. El RIF vencido no admite excepción.', h, datos); return; }
       marca(d, 'bien', null, 'Vigente hasta el ' + fechaTexto(venc) + '.', h, datos); return;
     }
     if(d.casilla === 'rif_empresa'){
       const venc = fecha(h.fecha_vencimiento); const datos = { nombre: h.razon_social || h.nombre || null, numero: h.numero || null, vence: venc };
-      if(h.formato === 'rif_digital'){ marca(d, 'bien', null, 'RIF Digital v2.0: no vence.', h, datos); return; }
+      if(h.formato === 'rif_digital' && !venc){ marca(d, 'bien', null, 'RIF Digital v2.0: no vence.', h, datos); return; }
+      // Dice digital pero trae una fecha vencida: puede ser un RIF viejo o la fecha de actualización; lo ve una persona
+      if(h.formato === 'rif_digital' && venc < hoy){ marca(d, 'revisar_a_mano', null, 'Parece RIF Digital pero trae fecha ' + fechaTexto(venc) + '. Confirmar si es el viejo vencido.', h, datos); return; }
       if(!venc){ marca(d, 'revisar_a_mano', null, 'No se leyó la fecha de vencimiento.', h, datos); return; }
       if(venc < hoy){ marca(d, 'problema', 'vencido', 'Venció el ' + fechaTexto(venc) + '.', h, datos); return; }
       marca(d, 'bien', null, 'Vigente hasta el ' + fechaTexto(venc) + '.', h, datos); return;

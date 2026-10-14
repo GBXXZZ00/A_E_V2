@@ -200,7 +200,7 @@
     if(!/^(application\/pdf|image\/(jpeg|png))$/i.test(file.type)){ N.err.doc = 'Sube el RIF en PDF, JPG o PNG'; pintarNuevo(); return; }
     if(file.size > 10 * 1024 * 1024){ N.err.doc = 'El archivo pesa más de 10 MB'; pintarNuevo(); return; }
     N.archivo = file; N.leyendo = true; N.ocr = null; pintarNuevo();
-    let o;
+    const mio = N; let o;
     try {
       const s = await window.db.auth.getSession(); const tk = (s.data && s.data.session && s.data.session.access_token) || '';
       if(!tk) throw new Error('Tu sesión venció. Entra de nuevo');
@@ -209,11 +209,12 @@
       o = await r.json().catch(() => ({ estado: 'sin_lectura', error: 'Respuesta inválida' }));
       if(!r.ok && !o.estado) o = { estado: 'sin_lectura', error: o.error || 'No se pudo leer' };
     } catch (e) { o = { estado: 'sin_lectura', error: navigator.onLine === false ? 'Sin conexión' : e.message }; }
-    if(!N) return;
+    if(N !== mio) return;   // cerró o abrió otro pedido mientras leía
     N.leyendo = false; N.ocr = o;
     const d = o.datos || {};
     if(o.estado === 'ok' && /^rif_/.test(o.tipo || '')){
-      if(d.rif){ N.doc = d.rif.charAt(0) + '-' + d.rif.slice(1, 9) + '-' + d.rif.slice(9);
+      // Persona natural: la cédula sin el dígito verificador, como se guarda en la base; empresa: el RIF completo
+      if(d.rif){ N.doc = /^[VE]/.test(d.rif) ? d.rif.charAt(0) + '-' + d.rif.slice(1, -1).replace(/^0+/, '') : d.rif.charAt(0) + '-' + d.rif.slice(1, 9) + '-' + d.rif.slice(9);
         if(!N.sol){ const tt = titularElegido(); const de = tt && /^[VE]/i.test(tt.doc_tipo || '') ? 'natural' : 'juridico'; N.sol = de + '_' + (/^[VE]/.test(d.rif) ? 'natural' : 'juridico'); } }
       if(d.razon_social) N.nom = d.razon_social; if(d.domicilio) N.dom = d.domicilio;
     }
@@ -249,8 +250,10 @@
   async function guardarRif(idCambio, arch, nat){
     try {
       const d = await rpc('cambio_detalle', { p_id: idCambio }); if(!d.nuevo || !d.nuevo.cliente_id) return;
-      const F = await rpc('cliente_ficha', { p_cliente: d.nuevo.cliente_id });
-      window.Ficha.subirArchivoA(F, nat ? 'rif_personal' : 'rif_empresa', nat ? 1 : 0, arch, () => { if(V && V.id === idCambio) cargarDetalle(); cargar(); });
+      const F = await rpc('cliente_ficha', { p_cliente: d.nuevo.cliente_id }); const cas = nat ? 'rif_personal' : 'rif_empresa'; const num = nat ? 1 : 0;
+      // Si el nuevo titular ya existía y tiene su RIF, no se pisa sin que alguien lo vea
+      if((F.documentos || []).some((x) => x.casilla === cas && x.numero === num)){ toast('El nuevo titular ya tiene RIF en su expediente. Si este es más nuevo, súbelo desde su expediente'); return; }
+      if(!window.Ficha.subirArchivoA(F, cas, num, arch, () => { if(V && V.id === idCambio) cargarDetalle(); cargar(); })) toast('El cambio quedó pedido, pero el RIF no se guardó porque hay otra subida en curso. Súbelo desde el cambio', 'error');
     } catch (e) { toast('El cambio quedó pedido, pero el RIF no se guardó: ' + e.message + '. Súbelo desde el cambio', 'error'); }
   }
 

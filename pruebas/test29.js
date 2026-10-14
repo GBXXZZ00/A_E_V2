@@ -51,6 +51,12 @@ function sembrarIndice(m){
     await p.setInputFiles('#camRifArchivo', { name: 'rif-nuevo.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4 prueba') });
     await p.waitForFunction(() => /No se pudo leer/.test(document.getElementById('cCamN').textContent));
     ok(nombre + ': sin lectura del OCR avisa y deja escribir', (await p.inputValue('#camDoc')) === '' && /se guarda/.test(await p.textContent('#cCamN')));
+    // Persona natural: la cédula sin el dígito verificador del RIF, como se guarda en la base
+    mundo.ocr = { estado: 'ok', tipo: 'rif_viejo', dudosa: false, datos: { rif: 'V198765437', razon_social: 'PERSONA INVENTADA TRES', domicilio: 'CALLE 9 ZONA POSTAL 4001', vencimiento: '2028-01-01', motivos: [] } };
+    await p.setInputFiles('#camRifArchivo', { name: 'rif-v.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4 prueba') });
+    await p.waitForFunction(() => /Leído del RIF/.test(document.getElementById('cCamN').textContent));
+    ok(nombre + ': RIF personal leído llena la cédula sin el dígito verificador', (await p.inputValue('#camDoc')) === 'V-19876543');
+    await p.click('[data-camsol="natural_juridico"]'); await p.fill('#camDoc', ''); await p.fill('#camNom', ''); await p.fill('#camDom', '');
     // Con lectura clara: llena RIF, razón social y domicilio, y propone el tipo de solicitud
     mundo.ocr = { estado: 'ok', tipo: 'rif_viejo', dudosa: false, datos: { rif: 'J417779999', razon_social: 'NUEVA EMPRESA INVENTADA, C.A', domicilio: 'CALLE 1 LOCAL 2 CIUDAD PRUEBA ZONA POSTAL 4001', vencimiento: '2028-01-01', motivos: [] } };
     await p.click('[data-cam="rif"]').catch(() => {});

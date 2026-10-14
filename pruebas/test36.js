@@ -35,9 +35,18 @@ async function cerrarHojas(p){ for(let i = 0; i < 5 && await p.evaluate(() => !!
     await p.uncheck('[data-ocr-campo="nombre"]'); await p.click('#usarOcr'); await p.waitForSelector('#hojaOcr', { state: 'hidden' });
     ok(nombre + ': guarda solo lo marcado (el domicilio)', llamo(mundo, 'cliente_dato').some((l) => l[2].p_campo === 'direccion' && /ZONA POSTAL 4001/.test(l[2].p_valor)) && !llamo(mundo, 'cliente_dato').some((l) => l[2].p_campo === 'nombre') && faro.direccion.includes('ZONA POSTAL 4001'));
     await cerrarHojas(p);
+    // El cliente guardado sin el dígito verificador (8 dígitos) es el mismo RIF: propone, no avisa
+    const docViejo = faro.doc_numero; faro.doc_numero = String(docViejo).slice(0, -1);
+    faro.documentos = faro.documentos.filter((d) => d.casilla !== 'rif_empresa');
+    await p.goto(H + 'clientes.html?c=' + faro.id + '&t=documentos'); await p.waitForSelector('#hojaFicha.ver [data-subir="rif_empresa:0"]');
+    const [fc8] = await Promise.all([p.waitForEvent('filechooser'), p.click('[data-subir="rif_empresa:0"]')]);
+    await fc8.setFiles({ name: 'rif3.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4 rif') });
+    await p.waitForSelector('#hojaOcr.ver [data-ocr-campo]', { timeout: 8000 }).catch(() => {});
+    ok(nombre + ': el RIF con dígito verificador coincide con el cliente guardado sin él', (await p.locator('#hojaOcr.ver').count()) === 1 && !/no el de este cliente/.test(await p.textContent('body')));
+    faro.doc_numero = docViejo; await cerrarHojas(p);
     // RIF de otro cliente: avisa y no propone nada
     faro.documentos = faro.documentos.filter((d) => d.casilla !== 'rif_empresa');
-    mundo.ocr = { estado: 'ok', tipo: 'rif_viejo', dudosa: false, datos: { rif: 'J411633267', razon_social: 'OTRA EMPRESA INVENTADA, C.A', domicilio: 'X ZONA POSTAL 1000', motivos: [] } };
+    mundo.ocr = { estado: 'ok', tipo: 'rif_viejo', dudosa: false, datos: { rif: 'J418888023', razon_social: 'OTRA EMPRESA INVENTADA, C.A', domicilio: 'X ZONA POSTAL 1000', motivos: [] } };
     await p.goto(H + 'clientes.html?c=' + faro.id + '&t=documentos'); await p.waitForSelector('#hojaFicha.ver [data-subir="rif_empresa:0"]');
     const [fc2] = await Promise.all([p.waitForEvent('filechooser'), p.click('[data-subir="rif_empresa:0"]')]);
     await fc2.setFiles({ name: 'rif2.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4 rif') });

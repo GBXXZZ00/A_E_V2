@@ -17,7 +17,7 @@ Estado: SEGUIR = se queda como estaba; CAMBIAR = propongo otra cosa; CONFIRMAR =
 ### Identidad
 1. **Cédula vigente.** Vence el último día del mes impreso. Bloquea si está vencida. Viene de: los dos scripts. SEGUIR.
 2. **Cruce de la cédula.** Expedición más 10 años debe dar el mismo año de vencimiento; si no, se toma como mal leída y va a revisión a mano. La cédula venezolana dura 10 años. Viene de: aliados. SEGUIR y aplicarlo a todos.
-3. **RIF personal vigente** según la fecha impresa. Bloquea. SEGUIR. Desde el 14/10: el RIF viejo vale si su vencimiento no pasó; el **RIF Digital v2.0** (sin fecha de vencimiento, con inscripción y última actualización) vale siempre. La IA y el OCR marcan el formato (`rif_viejo` o `rif_digital`). DECIDIDO 14/10.
+3. **RIF personal vigente** según la fecha impresa. Bloquea. SEGUIR. Desde el 14/10: el RIF viejo vale si su vencimiento no pasó; el **RIF Digital v2.0** (sin fecha de vencimiento, con inscripción y última actualización) vale siempre. La IA y el OCR marcan el formato (`rif_viejo` o `rif_digital`). Si dice digital pero trae una fecha ya vencida, se revisa a mano. DECIDIDO 14/10.
 4. **Nombre de la cédula igual al del RIF.** Lo compara el código por palabras (60 %). El umbral es práctico, no es norma. SEGUIR y medirlo en la prueba.
 5. **Cédula vencida.** Bloquea, pero el administrador puede conceder la excepción (por ejemplo, en trámite). El RIF vencido no la admite. DECIDIDO 09/10.
 

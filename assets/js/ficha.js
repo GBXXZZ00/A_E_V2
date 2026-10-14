@@ -877,7 +877,7 @@
   }
   // ---------- OCR del RIF (corrida 14/10 tarde): propone razón social y domicilio; la persona confirma ----------
   let OCRA = null;
-  async function ocrAjustes(){ if(OCRA) return OCRA; try { OCRA = (await rpc('ocr_ajustes', {})) || {}; } catch (e) { OCRA = {}; } return OCRA; }
+  async function ocrAjustes(){ if(OCRA) return OCRA; try { OCRA = (await rpc('ocr_ajustes', {})) || {}; } catch (e) { return {}; } return OCRA; }
   async function proponerDelRif(cli, file){
     if(!yo || ['admin', 'analista', 'abogado'].indexOf(yo.rol) < 0) return;
     if(!(await ocrAjustes()).expediente || !/^(application\/pdf|image\/(jpeg|png))$/i.test(file.type)) return;
@@ -892,7 +892,8 @@
     const d = o.datos; const c = F.cliente;
     // El número del RIF leído contra el del cliente (sin ceros a la izquierda)
     const nr = String(d.rif || '').slice(1).replace(/^0+/, ''); const nc = String(c.doc_numero || '').replace(/^0+/, '');
-    if(nr && nc && nr !== nc){ toast('El RIF del archivo es ' + d.rif.charAt(0) + '-' + d.rif.slice(1) + ' y no el de este cliente. Revisa la casilla', 'error'); return; }
+    // La base puede guardar el número sin el dígito verificador (cédulas y RIF viejos)
+    if(nr && nc && nr !== nc && nr.slice(0, -1) !== nc){ toast('El RIF del archivo es ' + d.rif.charAt(0) + '-' + d.rif.slice(1) + ' y no el de este cliente. Revisa la casilla', 'error'); return; }
     const cambia = [];
     if(d.razon_social && normalizeStr(d.razon_social) !== normalizeStr(c.nombre)) cambia.push(['nombre', 'Razón social', d.razon_social, c.nombre]);
     if(d.domicilio && normalizeStr(d.domicilio) !== normalizeStr(c.direccion || '')) cambia.push(['direccion', 'Domicilio fiscal', d.domicilio, c.direccion || 'Sin dirección']);
@@ -1404,9 +1405,9 @@
   }
   // Un archivo que ya se eligió en otra hoja (el RIF leído en el formulario de cambio de titular) va directo a su casilla
   function subirArchivoA(ficha, cas, num, file, alTerminar){
-    montar(); if(ocupado){ toast('Espera a que termine la subida'); return; }
+    montar(); if(ocupado) return false;
     fuera = { cliente: ficha.cliente.id, F: ficha, alTerminar };
-    guardarItems([{ files: [file], casillas: [{ casilla: cas, numero: num }] }]);
+    guardarItems([{ files: [file], casillas: [{ casilla: cas, numero: num }] }]); return true;
   }
   // Proforma y carta desde otra hoja: siempre con los datos del momento (la ficha recién leída)
   function enviarDesde(ficha, servicioId, alTerminar){ montar(); envF = ficha; envFin = alTerminar || null; abrirEnviar(servicioId); }
