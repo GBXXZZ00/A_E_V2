@@ -36,17 +36,19 @@ async function cerrarHojas(p){ for(let i = 0; i < 5 && await p.evaluate(() => !!
     ok(nombre + ': Inicio tiene el módulo Dedicados', true);
     if(nombre === 'pc') ok('pc: la barra de arriba lleva Dedicados', (await p.textContent('.navpc')).includes('Dedicados'));
     else ok('tel: en el teléfono del administrador la barra de abajo no se recarga con Dedicados', !(await p.textContent('#navAbajo')).includes('Dedicados'));
-    await p.click('[data-modulo="dedicados"]'); await p.waitForSelector('#lista .cli');
+    await p.click('[data-modulo="dedicados"]'); await p.waitForSelector('#filtros [data-filtro="todos"]');
+    ok(nombre + ': abre en En curso, con los mismos atajos de Clientes', (await p.textContent('#filtros')).replace(/\s+/g, ' ').includes('En curso') && (await p.textContent('#filtros')).includes('Por revisar') && (await p.textContent('#filtros')).includes('Sin gestión') && (await p.textContent('#filtros')).includes('Faltan documentos'));
+    await p.click('#filtros [data-filtro="todos"]'); await p.waitForSelector('#lista .cli');
     const primero = await p.textContent('#lista .cli:first-child');
     ok(nombre + ': la lista abre con los ISP primero', primero.includes('Tornillos El Yunque') && primero.includes('ISP'));
     const aviso = await p.textContent('#avisoDed');
     ok(nombre + ': aviso del plazo ISP con la semana del 19/10', aviso.includes('semana del 19/10') && /le faltan documentos|les faltan documentos/.test(aviso));
     ok(nombre + ': aviso de pendientes por verificar', aviso.includes('1 cliente pendiente por verificar'));
-    ok(nombre + ': la fila dice cuántos documentos faltan y la ruta', primero.includes('Falta 1 documento: cargar a la app') && primero.includes('Contrato: por firmar'));
+    ok(nombre + ': la fila dice cuántos documentos faltan (la ruta solo dentro de la hoja)', primero.includes('Falta 1 documento') && !primero.includes('cargar a la app') && primero.includes('Contrato: por firmar'));
     ok(nombre + ': marca Pendiente por verificar en la fila', (await p.textContent('#lista')).includes('Pendiente por verificar'));
     ok(nombre + ': sin desborde', await sinDesborde(p));
     await p.screenshot({ path: 'capturas/25-' + nombre + '-lista.png', fullPage: true });
-    await p.click('#filtros [data-filtro="verificar"]');
+    await p.click('#avisoDed [data-filtro="verificar"]');
     ok(nombre + ': el atajo Por verificar filtra', (await p.locator('#lista .cli').count()) === 1 && (await p.textContent('#lista')).includes('Posada Brisa Marina'));
     await p.click('#filtros [data-filtro="faltan"]');
     ok(nombre + ': el atajo Faltan documentos cuenta casillas vacías', (await p.textContent('#lista')).includes('Tornillos El Yunque'));
@@ -78,7 +80,7 @@ async function cerrarHojas(p){ for(let i = 0; i < 5 && await p.evaluate(() => !!
     // Contratos
     await p.click('#tabs [data-tab="contratos"]'); await p.waitForSelector('#tab-contratos.on [data-ctr-editar]');
     const ctr = await p.textContent('#tab-contratos');
-    ok(nombre + ': Contratos con servicio y VGT por proyecto', ctr.includes('Contrato de servicio') && ctr.includes('Por firmar') && ctr.includes('VGT') && ctr.includes('Vía de prueba') && ctr.includes('12 postes'));
+    ok(nombre + ': Contratos con servicio y VGT por proyecto', ctr.includes('Servicio dedicado') && ctr.includes('Por firmar') && ctr.includes('VGT') && ctr.includes('Vía de prueba') && ctr.includes('12 postes'));
     await p.screenshot({ path: 'capturas/25-' + nombre + '-ficha-contratos.png' });
     await p.click('[data-ctr-editar="11"]'); await p.waitForSelector('#hojaCtr.ver');
     await p.selectOption('#kEst', 'firmado'); await p.evaluate(() => { const f = document.querySelector('#kFirma'); f.removeAttribute('max'); f.value = '2099-01-01'; });
@@ -96,7 +98,7 @@ async function cerrarHojas(p){ for(let i = 0; i < 5 && await p.evaluate(() => !!
 
     // ----- La ejecutiva de dedicados -----
     const c2 = await contexto(nav, dispositivo, mundo); const q = await entrar(c2.ctx, 'nora', '650912'); q.on('pageerror', (e) => errores.push(e.message));
-    await q.goto(H + 'dedicados.html'); await q.waitForSelector('#lista .cli');
+    await q.goto(H + 'dedicados.html?f=todos'); await q.waitForSelector('#lista .cli');
     ok(nombre + ': la ejecutiva ve solo sus dedicados', (await q.locator('#lista .cli').count()) === 1 && (await q.textContent('#lista')).includes('Tornillos El Yunque'));
     if(nombre === 'tel') ok('tel: la ejecutiva tiene Dedicados en la barra de abajo', (await q.textContent('#navAbajo')).includes('Dedicados'));
     await q.click('#lista .cli'); await q.waitForSelector('#hojaFicha.ver #tab-datos .ded-enl');

@@ -195,6 +195,16 @@ async function leerArchivo(a: Archivo, modelo: string, pe: number, ps: number): 
   }
 }
 
+// Tiempo límite por archivo: por debajo del límite de la función (150 s), para que siempre quede guardado
+const LIMITE_MS = 140000;
+function conLimite(p: Promise<{ lectura: Record<string, unknown>; fatal?: Error }>) {
+  let t: number | undefined;
+  const vence = new Promise<{ lectura: Record<string, unknown> }>((r) => {
+    t = setTimeout(() => r({ lectura: { estado: "error", error: "No se pudo leer a tiempo. Revisar a mano" } }), LIMITE_MS);
+  });
+  return Promise.race([p, vence]).finally(() => clearTimeout(t));
+}
+
 // ---------- Trabajo ----------
 type Trabajo = {
   corrida: number; hoy: string; ajustes: Record<string, string>; excepciones: unknown[];
@@ -226,7 +236,8 @@ async function trabajar(corrida: number) {
       lote.push(a); peso += t;
     }
     if (lote.length) {
-      const leidas = await Promise.all(lote.map((a) => leerArchivo(a, modelo, pe, ps)));
+      // Lote 3: un archivo que no se lee a tiempo queda "revisar a mano" y no frena a los demás
+      const leidas = await Promise.all(lote.map((a) => conLimite(leerArchivo(a, modelo, pe, ps))));
       const fatal = leidas.find((l) => l.fatal);
       if (fatal) throw fatal.fatal;   // permiso de Google o clave de Gemini: no sirve seguir con los demás
       for (let i = 0; i < lote.length; i++) {

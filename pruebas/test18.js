@@ -30,8 +30,12 @@ const ABOGADA = { id: '77777777-7777-4777-8777-777777777777', usuario: 'sara', p
     await p.click('[data-campo="correo_empresa"]'); await p.waitForSelector('#hojaCampo.ver #cCorreo');
     await p.fill('#cCorreo', 'admin@vidrioselfaro.test'); await p.click('#guardarCampo');
     await p.waitForFunction(() => !document.querySelector('#hojaCampo.ver'));
+    // Lote 3: nunca se relee solo; el administrador lo actualiza con el enlace chico
+    await p.waitForSelector('#iaResultado .ia-vieja button.enlace[data-actualizar-ia]');
+    ok(nombre + ': al guardar el correo no se actualiza solo', llamo(m, 'ia_actualizar').length === 0);
+    await p.click('#iaResultado [data-actualizar-ia]');
     await p.waitForFunction(() => { const r = document.getElementById('iaResultado'); return r && !/Falta correo de la empresa/.test(r.textContent); }, null, { timeout: 15000 });
-    ok(nombre + ': al guardar el correo la IA se actualiza sola', llamo(m, 'ia_actualizar').length === 1);
+    ok(nombre + ': con el enlace Actualizar resultado se actualiza sin costo', llamo(m, 'ia_actualizar').length === 1);
     ok(nombre + ': ya no dice que falta el correo', !/Falta correo de la empresa/.test(await p.textContent('#iaResultado')));
     ok(nombre + ': la excepción de la junta se mantiene', (await p.locator('[data-quitar-exc="junta"]').count()) === 1);
     ok(nombre + ': actualizar por un dato no cuesta', cli().ia.costo_usd === costo && cli().ia.nuevos === 0);

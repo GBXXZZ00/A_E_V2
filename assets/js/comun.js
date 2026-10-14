@@ -178,6 +178,10 @@
     return '<span class="chip ' + (ok ? 'verde' : 'rojo') + '">' + esc(capital(n)) + '</span>';
   }
   // Nombre de una casilla del expediente
+  // Requisitos VGT: casillas "otro" con número reservado (lote 3, privado.vgt_requisitos)
+  const VGT = { 60: 'Acta de cambios sustanciales', 61: 'Acta de cambios sustanciales 2', 62: 'Acta de cambios sustanciales 3', 63: 'Acta de cambios sustanciales 4',
+    64: 'Poder de representación', 65: 'Habilitación de internet y transporte', 66: 'Póliza de responsabilidad civil', 67: 'Póliza de responsabilidad patronal',
+    68: 'Propuesta comercial firmada', 69: 'Planilla de solicitud de tendido', 70: 'Aprobación de factibilidad técnica' };
   function casilla(c, n){
     switch(c){
       case 'cedula': return 'Cédula' + (n > 1 ? ' del representante ' + n : '');
@@ -188,7 +192,7 @@
       case 'conatel': return 'Permiso de Conatel';
       case 'contrato_pyme': return 'Contrato PYME';
       case 'contrato_dedicado': return 'Contrato dedicado';
-      case 'otro': return 'Otro documento' + (n ? ' ' + n : '');
+      case 'otro': return VGT[n] || 'Otro documento' + (n ? ' ' + n : '');
       default: return c || '';
     }
   }

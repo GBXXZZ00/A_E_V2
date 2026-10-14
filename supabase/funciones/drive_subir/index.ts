@@ -45,7 +45,7 @@ async function drive(url: string, init: RequestInit = {}) {
 }
 const comillas = (s: string) => s.replace(/\\/g, "\\\\").replace(/'/g, "\\'");
 // "DEDICADO (ISP)" y "DEDICADO ISP" son la misma carpeta; "PYME" y "PYMES" también
-const igual = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toUpperCase().replace(/[()]/g, " ").replace(/\bPYMES\b/g, "PYME").replace(/\s+/g, " ").trim();
+const igual = (s: string) => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().replace(/[()]/g, " ").replace(/\bPYMES\b/g, "PYME").replace(/\s+/g, " ").trim();
 
 async function viva(id: string): Promise<boolean> {
   const r = await drive(API + "/" + encodeURIComponent(id) + "?fields=id,trashed,mimeType&supportsAllDrives=true");
@@ -88,6 +88,8 @@ Deno.serve(async (req: Request) => {
     const mime = TIPOS.includes(archivo.type) ? archivo.type : "";
     if (!mime) return fallo("Solo se aceptan fotos y PDF", 415);
     const nombre = String(form.get("nombre") || archivo.name || "archivo").replace(/[\u0000-\u001f\u007f]/g, "").trim().slice(0, 150) || "archivo";
+    // Lote 3: en Drive se llama "RIF - Casilla - fecha" (varias casillas: "Cédula + RIF personal"); el nombre original queda en la base
+    const casillas = String(form.get("casillas") || "").replace(/[\u0000-\u001f\u007f/\\]/g, "").replace(/\s+/g, " ").trim().slice(0, 120);
 
     // Permiso y destino con la sesión del usuario
     const db = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, {
@@ -126,7 +128,10 @@ Deno.serve(async (req: Request) => {
     // Subida en una sola petición (los archivos pesan hasta 15 MB)
     const limite = "aev2" + crypto.randomUUID().replace(/-/g, "");
     const enc = new TextEncoder();
-    const meta = JSON.stringify({ name: nombre, parents: [destino], mimeType: mime });
+    const ext = (nombre.match(/\.[a-z0-9]{2,5}$/i) || [""])[0];
+    const hoy = new Intl.DateTimeFormat("es-VE", { timeZone: "America/Caracas", day: "2-digit", month: "2-digit", year: "numeric" }).format(new Date()).replace(/\//g, "-");
+    const enDrive = casillas ? (d.rif + " - " + casillas + " - " + hoy + ext).slice(0, 200) : nombre;
+    const meta = JSON.stringify({ name: enDrive, parents: [destino], mimeType: mime });
     const cuerpo = new Blob([
       enc.encode("--" + limite + "\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n" + meta + "\r\n--" + limite + "\r\nContent-Type: " + mime + "\r\n\r\n"),
       new Uint8Array(await archivo.arrayBuffer()),

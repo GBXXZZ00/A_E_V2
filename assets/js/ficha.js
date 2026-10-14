@@ -177,7 +177,12 @@
       case 'dato': t = quien + ' ' + ({ representante: 'actualizó el contacto del representante ' + (d.orden || 1), correo_empresa: 'actualizó el correo de la empresa', telefono: 'actualizó el teléfono', direccion: 'actualizó la dirección',
         regimen_firma: 'puso el régimen de firma en ' + (d.valor === 'conjunta' ? 'Conjunta' : d.valor === 'individual' ? 'Individual' : 'Sin definir'),
         ip: 'actualizó la IP' + (d.codigo ? ' del servicio ' + d.codigo : ''), es_top: d.valor === 'true' ? 'lo marcó como Cliente TOP' : 'le quitó la marca de Cliente TOP', es_isp: d.valor === 'true' ? 'lo marcó como proveedor de internet' : 'le quitó la marca de proveedor de internet',
-        dedicado_creado: 'entró como cliente dedicado desde el archivo de la analista' }[h.texto] || 'actualizó un dato'); break;
+        dedicado_creado: 'entró como cliente dedicado desde el archivo de la analista',
+        legal_aprobado: 'aprobó Legal a mano', legal_quitado: 'le quitó el check de Legal',
+        contrato_presencial: d.valor === 'true' ? 'lo marcó como contrato presencial' : 'le quitó la marca de contrato presencial',
+        exc_pagada: d.valor === 'true' ? 'lo marcó como excepción pagada con documentos por subir' : 'le quitó la marca de excepción pagada' }[h.texto] || 'actualizó un dato');
+        if(h.texto === 'legal_aprobado' || h.texto === 'legal_quitado'){ tono = h.texto === 'legal_aprobado' ? 'verde' : 'rojo'; if(d.motivo) glo = '<div class="glo gris">' + esc(d.motivo) + '</div>'; }
+        break;
       case 'gestion': { const que = h.texto === 'ambas' ? 'la proforma y la carta de bienvenida' : h.texto === 'bienvenida' ? 'la carta de bienvenida' : 'la proforma';
         if(d.canal === 'whatsapp' || d.canal === 'correo'){ tono = 'azul'; t = quien + ' envió ' + que + (d.canal === 'correo' ? ' por correo' : ' por WhatsApp'); }
         else t = quien + (d.hecho ? ' marcó ' : ' quitó la marca de ') + que + (d.hecho ? (h.texto === 'ambas' ? ' como enviadas' : ' como enviada') : '');
@@ -227,7 +232,7 @@
     const puedeSubir = !(cas.indexOf('contrato_') === 0 && !F.puedo.contrato);
     if(subiendo[k]) return '<div class="casilla doc subiendo" data-casilla="' + k + '" aria-busy="true"><span class="ico" aria-hidden="true">' + ic('subir') + '</span><span class="tx"><b>' + esc(nombre) + '</b><small class="tx-subida">' + esc(typeof subiendo[k] === 'string' ? subiendo[k] : 'Subiendo a Drive…') + '</small><span class="carga-barra" aria-hidden="true"><i></i></span></span><span class="chip azul">Subiendo</span></div>';
     if(!d){
-      const req = esRequerido(cas, num);
+      const req = o.req !== undefined ? o.req : esRequerido(cas, num);
       if(!puedeSubir) return '<div class="casilla doc" data-casilla="' + k + '"><span class="ico">' + ic('doc') + '</span><span class="tx"><b>' + esc(nombre) + '</b><small>' + esc(o.sub || 'Lo sube Legal') + '</small></span></div>';
       return '<button type="button" class="casilla doc falta" data-casilla="' + k + '" data-subir="' + k + '" data-suelta="1"><span class="ico mas" aria-hidden="true">+</span><span class="tx"><b>' + esc(nombre) + '</b><small>' + esc(o.sub || (req ? 'Toca o suelta el archivo aquí' : 'Opcional')) + '</small></span>' +
         (req ? '<span class="chip rojo">Falta</span>' : '') + '</button>';
@@ -259,9 +264,11 @@
   }
   // Contacto del representante: una sola casilla con el teléfono y el correo
   function contactoHtml(r, n, obligatorio){
-    const tel = String(r.telefono || '').trim(); const co = String(r.correo || '').trim(); const lleno = !!(tel && co); const algo = tel || co;
+    const tel = String(r.telefono || '').trim(); const co = String(r.correo || '').trim(); const algo = tel || co;
+    // Contrato presencial: del representante 1 basta el teléfono (no se pide su correo)
+    const sinCorreo = n === 1 && !!F.cliente.presencial; const lleno = !!(tel && (co || sinCorreo));
     const falta = obligatorio && !lleno;
-    const sub = lleno ? tel + ' · ' + co : algo ? algo + (obligatorio ? '. Falta el ' + (tel ? 'correo' : 'teléfono') : '') : obligatorio ? 'Toca para escribir el teléfono y el correo' : 'Opcional';
+    const sub = lleno ? tel + (co ? ' · ' + co : ' · Contrato presencial, sin correo') : algo ? algo + (obligatorio ? '. Falta el ' + (tel ? 'correo' : 'teléfono') : '') : obligatorio ? 'Toca para escribir el teléfono' + (sinCorreo ? '' : ' y el correo') : 'Opcional';
     return '<button type="button" class="casilla doc dato ' + (falta ? 'falta' : algo ? 'ok' : '') + '" data-campo="rep:' + n + '"><span class="ico' + (algo && !falta ? '' : ' mas') + '" aria-hidden="true">' + (algo && !falta ? ic('check') : ic('lapiz')) + '</span>' +
       '<span class="tx"><b>Contacto</b><small>' + esc(sub) + '</small></span>' + (falta ? '<span class="chip rojo">Falta</span>' : algo ? ic('lapiz', 'ch') : '') + '</button>';
   }
@@ -304,11 +311,32 @@
         ((tienePyme && !c.es_natural) || docDe('contrato_pyme', 0) ? casillaHtml('contrato_pyme', 0, { sub: F.puedo.contrato ? 'Con fecha de firma y de vencimiento' : 'Lo sube Legal' }) : '') +
         (tieneDed || docDe('contrato_dedicado', 0) ? casillaHtml('contrato_dedicado', 0, { sub: F.puedo.contrato ? 'Con fecha de firma y de vencimiento' : 'Lo sube Legal' }) : '') + '</section>';
     }
-    const otros = (F.documentos || []).filter((d) => d.casilla === 'otro');
+    h += grupoVgt();
+    const otros = (F.documentos || []).filter((d) => d.casilla === 'otro' && d.numero < 60);
     h += '<section class="bloque" data-grupo="otros"><div class="sec">Otros documentos</div>' + otros.map((d) => casillaHtml('otro', d.numero)).join('') +
       '<button type="button" class="casilla doc" data-subir="otro:0" data-casilla="otro:0" data-suelta="1"><span class="ico mas" aria-hidden="true">+</span><span class="tx"><b>Otro documento</b><small>Lo que no entra en las casillas de arriba</small></span></button></section>';
     h += historialRevisiones();
     $('tab-documentos').innerHTML = h;
+  }
+  // Lote 3: requisitos VGT, con su propio contador. Los comunes (actas, RIF, cédulas, Conatel) no se repiten.
+  let vgtExtra = 0;
+  function grupoVgt(){
+    const V = (F.cliente.dedicado || {}).vgt; if(!V) return '';
+    const R = V.requisitos || []; const hoy = F.hoy || new Date().toISOString().slice(0, 10);
+    const asam = R.filter((r) => r.clave === 'asamblea'); const conAsam = asam.filter((r) => docDe('otro', r.numero));
+    const libres = asam.filter((r) => !docDe('otro', r.numero));
+    const verAsam = conAsam.concat(libres.slice(0, (conAsam.length ? 0 : 1) + vgtExtra));
+    const sub = (r) => (r.vence ? 'Con vencimiento. Mínimo US$ 20.000, aseguradora del top 10 de SUDEASEG y mención al contrato' : r.requerido ? 'Toca o suelta el archivo aquí' : 'Opcional');
+    const aviso = (V.polizas || []).filter((p) => p.vence_en && C.diasEntre(hoy, p.vence_en) <= 30).map((p) => {
+      const r = R.find((x) => x.numero === p.numero) || {}; const d = C.diasEntre(hoy, p.vence_en);
+      return '<div class="al-banda ' + (d < 0 ? 'rojo' : 'ambar') + '" role="note"><b>' + esc(r.texto || 'Póliza') + '</b><p>' + esc(d < 0 ? 'Venció el ' + fecha(p.vence_en) + '. Pide la renovación.' : 'Vence el ' + fecha(p.vence_en) + '. Pide la renovación antes.') + '</p></div>';
+    }).join('');
+    return '<section class="bloque" data-grupo="vgt"><div class="sec">Requisitos VGT<span>' + (V.faltan ? (V.faltan === 1 ? 'Falta 1' : 'Faltan ' + V.faltan) : 'Completos') + '</span></div>' + aviso +
+      datoHtml('Correo para notificaciones', V.correo, 'vgt_correo', true) +
+      verAsam.map((r) => casillaHtml('otro', r.numero, { nombre: r.texto.replace(/ \d$/, ''), req: false, sub: sub(r) })).join('') +
+      (verAsam.length < asam.length ? '<button type="button" class="btn btn-chico btn-2 btn-ancho" id="agregarVgt" style="margin-top:10px">' + ic('mas') + 'Agregar acta de cambios sustanciales</button>' : '') +
+      R.filter((r) => r.clave !== 'asamblea').map((r) => casillaHtml('otro', r.numero, { nombre: r.texto, req: r.requerido, sub: sub(r) })).join('') +
+      '<p class="nota-chica">El contrato VGT no pasa a Por firmar mientras falten requisitos. La fecha de vencimiento de las pólizas se escribe al revisarlas.</p></section>';
   }
   const resumenMarcas = () => { const ap = marcas().filter((m) => m.accion === 'aprobar').length; const dv = marcas().length - ap;
     return [ap ? plural(ap, 'para aprobar', 'para aprobar') : '', dv ? plural(dv, 'para devolver', 'para devolver') : ''].filter(Boolean).join(' y '); };
@@ -389,16 +417,8 @@
     try { rev = await rpc('revision_estado', { p_cliente: id }); } catch (e) {}
     pintarTodo(); vigilar();
   }
-  // Si el expediente cambió después de la IA y no hay archivos sin leer, el resultado se actualiza solo (no cuesta).
-  // Una vez por resultado y a lo sumo 3 por corrida, para que nunca quede dando vueltas.
-  const autoIA = new Map();
-  function actualizarSolo(){
-    const k = rev && rev.ia;
-    if(!id || !k || k.estado !== 'lista' || !k.cambio || k.sin_leer || !rev.puede_ia) return false;
-    const a = autoIA.get(k.id) || { veces: 0 }; if(a.en === k.terminada_en || a.veces >= 3) return false;
-    autoIA.set(k.id, { en: k.terminada_en, veces: a.veces + 1 });
-    actualizarIA(null, true); return true;
-  }
+  // Lote 3: el resultado de la IA nunca se relee solo. El administrador lo actualiza con el enlace chico si quiere.
+  function actualizarSolo(){ return false; }
   async function actualizarIA(b, solo){
     if(b) b.disabled = true;
     const mio = id;
@@ -416,7 +436,7 @@
       (n ? 'Subieron ' + plural(n, 'archivo', 'archivos') + ' después de la IA y este resultado no ' + (n === 1 ? 'lo' : 'los') + ' incluye.' + (puede ? ' Leer' + (n === 1 ? 'lo' : 'los') + ' cuesta unos US$ ' + (n * 0.04).toFixed(2) + '.' : '')
         : 'Cambiaron datos después de la IA y este resultado es de antes.') +
       (puede ? '' : ' El administrador debe actualizarlo.') + '</small>' +
-      (puede ? '<button type="button" class="mini pri" data-actualizar-ia>Actualizar resultado</button>' : '') + '</div>';
+      (puede ? '<button type="button" class="enlace chico" data-actualizar-ia>Actualizar resultado</button>' : '') + '</div>';
   }
   async function reanudarIA(b){
     b.disabled = true;
@@ -465,7 +485,9 @@
   // ---------- Datos ----------
   function fila(etq, valor){ return '<div class="dato-f"><span>' + etq + '</span><b>' + valor + '</b></div>'; }
   function pintarDatos(){
-    const c = F.cliente; const s = F.servicios || []; const s0 = s[0] || {};
+    const c = F.cliente; const todos = F.servicios || []; const s0 = todos[0] || {};
+    // Lote 3: en un dedicado solo se listan los servicios PYME del TAD; los enlaces dedicados van aparte
+    const s = c.dedicado ? todos.filter((x) => String(x.categoria || '').toUpperCase() !== 'DEDICADO') : todos;
     const diasGestion = diasEntre(c.creado_en, new Date().toISOString());
     const r1 = (F.representantes || []).find((x) => x.orden === 1) || {};
     const tj = (titulo, fuerte, lineas, extra) => '<div class="tj"><span class="tj-t">' + titulo + '</span><b>' + fuerte + '</b>' + lineas.filter(Boolean).map((l) => '<small>' + l + '</small>').join('') + (extra || '') + '</div>';
@@ -485,7 +507,7 @@
         (x.con_deuda ? '<small style="color:var(--rojo);font-weight:600">Con deuda en el TAD</small>' : '') +
         '<div class="ip-l"><span>' + (x.ip || x.ip6 ? [x.ip ? 'IPv4 ' + esc(x.ip) : '', x.ip6 ? 'IPv6 ' + esc(x.ip6) : ''].filter(Boolean).join(' · ') : 'IP pendiente por asignar') + '</span>' +
           (F.puedo.ip ? '<button type="button" class="enlace" data-ip="' + esc(x.id) + '">' + (x.ip || x.ip6 ? 'Cambiar IP' : 'Escribir IP') + '</button>' : '') + '</div>' +
-        (F.puedo.enviar ? '<div class="ip-l env-l"><span>' + esc(estadoEnvio(x)) + '</span><button type="button" class="mini" data-enviar="' + esc(x.id) + '">Proforma y carta</button></div>' : '') + '</div>';
+        (F.puedo.enviar && esNuevo() ? '<div class="ip-l env-l"><span>' + esc(estadoEnvio(x)) + '</span><button type="button" class="mini" data-enviar="' + esc(x.id) + '">Proforma y carta</button></div>' : '') + '</div>';
     });
     h += '</div>';
     if(c.dedicado && window.FichaDedicado) h += window.FichaDedicado.datos(F, yo);
@@ -494,12 +516,18 @@
       h += '<div class="secc">Régimen de firma' + (F.puedo.regimen ? '' : '<span class="der">Lo define Legal</span>') + '</div><div class="tres" role="radiogroup" aria-label="Régimen de firma">' +
         [['', 'Sin definir'], ['individual', 'Individual'], ['conjunta', 'Conjunta']].map((x) => '<button type="button" role="radio" aria-checked="' + (r === x[0]) + '" data-regimen="' + x[0] + '" class="' + (r === x[0] ? 'on' : '') + '"' + dis + '>' + x[1] + '</button>').join('') + '</div>' +
         (r === 'conjunta' ? '<p class="nota-chica">Con firma conjunta se piden la cédula y el RIF de dos representantes.</p>' : '') +
-        (/Dedicado/.test(c.seg) || c.es_isp ? '<div class="interr"><span class="tx">Proveedor de internet (ISP)<small>Se le pide el permiso de Conatel</small></span><button type="button" class="sw" role="switch" aria-checked="' + !!c.es_isp + '" data-interr="es_isp" aria-label="Proveedor de internet"' + dis + '></button></div>' : '');
+        (/Dedicado/.test(c.seg) || c.es_isp ? '<div class="interr"><span class="tx">Proveedor de internet (ISP)<small>Se le pide el permiso de Conatel</small></span><button type="button" class="sw" role="switch" aria-checked="' + !!c.es_isp + '" data-interr="es_isp" aria-label="Proveedor de internet"' + dis + '></button></div>' : '') +
+        '<div class="interr"><span class="tx">Contrato presencial<small>Se firma en persona. Comisiona y no se pide el correo del representante</small></span><button type="button" class="sw" role="switch" aria-checked="' + !!c.presencial + '" data-marca-cli="contrato_presencial" aria-label="Contrato presencial"' + (F.puedo.presencial ? '' : ' disabled') + '></button></div>';
     }
     h += '<div class="secc">Cartera</div><div class="interr"><span class="tx">Cliente TOP<small>Protegido: los aliados no pueden instalarlo</small></span>' +
       '<button type="button" class="sw" role="switch" aria-checked="' + !!c.es_top + '" data-interr="es_top" aria-label="Cliente TOP"' + (F.puedo.top ? '' : ' disabled') + '></button></div>';
+    if(F.puedo.exc_pagada || c.exc_pagada) h += '<div class="interr"><span class="tx">Excepción pagada, documentos por subir<small>Se le pagó la comisión por excepción. Sale en Archivos por subir hasta completar</small></span>' +
+      '<button type="button" class="sw" role="switch" aria-checked="' + !!c.exc_pagada + '" data-marca-cli="exc_pagada" aria-label="Excepción pagada, documentos por subir"' + (F.puedo.exc_pagada ? '' : ' disabled') + '></button></div>';
     $('tab-datos').innerHTML = h;
   }
+
+  // Lote 3: proforma y carta solo para clientes nuevos (con instalación en un corte de Comisiones); dedicados no
+  function esNuevo(){ return !F.cliente.dedicado && (F.comision || []).some((i) => i.comisiona); }
 
   // ---------- Proforma y carta de bienvenida ----------
   function estadoEnvio(x){
@@ -697,6 +725,14 @@
         '<div class="acciones"><button type="submit" class="btn btn-ancho" id="guardarCampo">Guardar</button></div></form>';
       abrirHoja('hojaCampo'); return;
     }
+    if(clave === 'vgt_correo'){
+      const V = (F.cliente.dedicado || {}).vgt || {};
+      campo = { tipo: 'vgt' };
+      h.innerHTML = cabHoja('tCampo', 'Correo para notificaciones', 'Contrato VGT · ' + F.cliente.nombre) + '<form id="formCampo" novalidate><label class="rotulo" for="cCorreo">Correo para notificaciones</label>' +
+        '<input class="campo" id="cCorreo" type="email" inputmode="email" autocapitalize="none" autocomplete="off" maxlength="120" value="' + esc(V.correo || '') + '" data-foco><div class="error" id="eCampo" role="alert"></div>' +
+        '<div class="acciones"><button type="submit" class="btn btn-ancho" id="guardarCampo">Guardar</button></div></form>';
+      abrirHoja('hojaCampo'); return;
+    }
     if(clave === 'correo_empresa'){
       campo = { tipo: 'empresa' };
       h.innerHTML = cabHoja('tCampo', 'Correo de la empresa', F.cliente.nombre) + '<form id="formCampo" novalidate><label class="rotulo" for="cCorreo">Correo de la empresa</label>' +
@@ -729,6 +765,7 @@
         if(Number(nuevo) !== Number(cli)){ id = Number(nuevo); } await cargar(); return;
       }
       if(campo.tipo === 'ip') await rpc('servicio_ip', { p_servicio: campo.servicio, p_ip: $('cIp').value.trim(), p_ip6: $('cIp6').value.trim() });
+      else if(campo.tipo === 'vgt') await rpc('dedicado_vgt_correo', { p_cliente: cli, p_correo: co });
       else if(campo.tipo === 'empresa') await rpc('cliente_dato', { p_cliente: cli, p_campo: 'correo_empresa', p_valor: co });
       else await rpc('cliente_representante', { p_cliente: cli, p_orden: campo.orden, p_correo: co, p_telefono: $('cTel').value.trim() });
       toast('Guardado'); if(hojaAbierta() === 'hojaCampo') cerrarHoja();
@@ -741,7 +778,7 @@
     const act = F.cliente.estatus;
     $('hojaEstatus').innerHTML = cabHoja('tEstatus', 'Cambiar estatus', 'Los de documentos se mueven solos. Aquí se cambia a mano.') +
       '<div class="motivos" role="radiogroup" aria-label="Estatus">' + Object.keys(C.ESTATUS).map((k) => '<button type="button" role="radio" aria-checked="' + (k === act) + '" class="mot' + (k === act ? ' on' : '') + '" data-estatus="' + k + '"><i></i>' + esc(C.ESTATUS[k].t) + '</button>').join('') + '</div>' +
-      '<div class="acciones"><button type="button" class="btn btn-ancho" id="guardarEstatus" disabled>Guardar</button></div>';
+      '<div id="pregEstatus"></div><div class="acciones"><button type="button" class="btn btn-ancho" id="guardarEstatus" disabled>Guardar</button></div>';
     abrirHoja('hojaEstatus');
   }
 
@@ -786,13 +823,14 @@
     Array.prototype.forEach.call(document.querySelectorAll('.doc.subiendo .tx-subida'), (x) => { x.textContent = texto; });
   }
   // Cada archivo va a Drive por la función drive_subir: carpeta "RIF - NOMBRE" del cliente (se crea sola) y subcarpeta por tipo de servicio
-  async function subirADrive(cli, pr, original){
+  async function subirADrive(cli, pr, original, casillas){
     let tk = '';
     try { const s = await db.auth.getSession(); tk = (s.data && s.data.session && s.data.session.access_token) || ''; } catch (e) {}
     if(!tk) throw new Error('Tu sesión venció. Entra de nuevo');
     const fd = new FormData();
     const seguro = nombreSeguro(pr.nombre, pr.mime); const base = String(original || pr.nombre || 'archivo').replace(/\.[a-z0-9]{2,5}$/i, '').trim().slice(0, 140) || 'archivo';
-    fd.append('cliente', String(cli)); fd.append('nombre', base + seguro.slice(seguro.lastIndexOf('.')));   // en Drive con su nombre original y la extensión de lo que de verdad se sube
+    fd.append('cliente', String(cli)); fd.append('nombre', base + seguro.slice(seguro.lastIndexOf('.')));   // el nombre original queda en la base con la extensión de lo que de verdad se sube
+    if(casillas) fd.append('casillas', casillas);   // en Drive se llama "RIF - Casilla - fecha" (lote 3)
     fd.append('archivo', pr.blob.type === pr.mime ? pr.blob : pr.blob.slice(0, pr.blob.size, pr.mime), seguro);   // un PDF sin tipo se reconoce por el nombre
     let r;
     try { r = await fetch(db.supabaseUrl + '/functions/v1/drive_subir', { method: 'POST', headers: { Authorization: 'Bearer ' + tk, apikey: db.supabaseKey }, body: fd }); }
@@ -819,7 +857,7 @@
         for(const file of it.files){
           hecho++; avance(total > 1 ? 'Subiendo a Drive ' + hecho + ' de ' + total + '…' : 'Subiendo a Drive…');
           const pr = await preparar(file);
-          const r = await subirADrive(cli, pr, file.name);
+          const r = await subirADrive(cli, pr, file.name, it.casillas.map((c) => casilla(c.casilla, c.numero === 'auto' ? 1 : Number(c.numero || 0))).join(' + '));
           archivos.push({ drive_id: r.drive_id });
         }
         envio.push({ archivos, casillas: it.casillas, vence_en: it.vence_en || null, firmado_en: it.firmado_en || null });
@@ -1056,19 +1094,44 @@
   }
 
   // ---------- Cerrar revisión: todo junto, una sola vez ----------
-  function estatusDespues(){
+  function estatusDespues(){ const k = claveDespues(); return k ? (C.ESTATUS[k] || {}).t || '' : ''; }
+  function claveDespues(){
     const c = F.cliente; if(['grandes_negocios', 'documentos_pendientes', 'documentos_solicitados', 'documentos_en_revision', 'documentos_recibidos'].indexOf(c.estatus) < 0) return '';
     const docDeFalta = (x) => (F.documentos || []).find((d) => d.casilla === x.k && d.numero === x.n) || {};
     const dv = marcas().some((m) => m.accion === 'devolver') || (F.faltantes || []).some((x) => { if(x.e !== 'devuelto') return false; const m = marcaDe(docDeFalta(x).id); return !m || m.accion !== 'aprobar'; });
     const falta = (F.faltantes || []).some((x) => x.e === 'falta');
-    const nuevo = dv ? 'documentos_pendientes' : falta ? ((F.documentos || []).length ? 'documentos_pendientes' : c.estatus) : sinMarcar().some((d) => esRequerido(d.casilla, d.numero)) ? 'documentos_en_revision' : 'documentos_recibidos';
-    return (C.ESTATUS[nuevo] || {}).t || '';
+    return dv ? 'documentos_pendientes' : falta ? ((F.documentos || []).length ? 'documentos_pendientes' : c.estatus) : sinMarcar().some((d) => esRequerido(d.casilla, d.numero)) ? 'documentos_en_revision' : 'documentos_recibidos';
+  }
+  // Lote 3: si un cambio baja a pendiente a un cliente que comisiona en un corte abierto, se pregunta antes de quitarle la comisión
+  const CON_LEGAL = ['documentos_en_revision', 'documentos_recibidos', 'contrato_en_curso', 'por_firmar', 'contrato_firmado'];
+  function preguntaComision(estatus){
+    const c = F.cliente;
+    if(!estatus || !c.abierta || !c.legal_ok_en || c.legal_como === 'excepcion' || CON_LEGAL.indexOf(estatus) >= 0 || !(F.puedo || {}).legal) return '';
+    return '<div class="estado ambar preg-com" id="pregCom"><b>Este cliente comisiona en el corte de ' + esc(C.mes(c.abierta)) + '. ¿Quitarle la comisión?</b>' +
+      '<small>Un corte certificado no cambia.</small><div class="tres dos" role="radiogroup" aria-label="¿Quitarle la comisión?">' +
+      '<button type="button" role="radio" aria-checked="false" data-quitar-com="si">Sí, quitarla</button><button type="button" role="radio" aria-checked="false" data-quitar-com="no">No, que siga</button></div>' +
+      '<div class="error" id="ePregCom" role="alert"></div></div>';
+  }
+  // Devuelve null si falta responder, true si hay que quitar Legal y false si no
+  function respuestaComision(){
+    const z = $('pregCom'); if(!z) return false;
+    const b = z.querySelector('[aria-checked="true"]');
+    if(!b){ $('ePregCom').textContent = 'Elige si se le quita la comisión'; return null; }
+    return b.dataset.quitarCom === 'si';
+  }
+  async function quitarLegalTras(quitar, motivo){
+    if(!quitar) return;
+    try { await rpc('legal_quitar', { p_cliente: id, p_motivo: motivo }); toast('Se le quitó la comisión del corte abierto'); }
+    catch (e) { toast('El estatus cambió, pero no se pudo quitar la comisión: ' + e.message, 'error'); }
   }
   function mensajeRevision(){
     const c = F.cliente; const lis = [];
     marcas().filter((m) => m.accion === 'devolver').forEach((m) => { const d = (F.documentos || []).find((x) => x.id === m.documento);
       lis.push('• ' + (d ? casilla(d.casilla, d.numero) : 'Documento') + ': ' + (C.MOTIVOS[m.motivo] || 'devuelto').toLowerCase() + (m.nota ? '. ' + m.nota : '')); });
     (F.faltantes || []).filter((x) => x.e === 'falta').forEach((x) => lis.push('• Falta ' + x.t));
+    // Lo que la IA pide aparte, sin devolver un documento (junta vencida: acta de asamblea)
+    const k = rev && rev.ia && rev.ia.estado === 'lista' ? rev.ia : null;
+    if(k) (k.puntos || []).filter((p) => p.pedir && p.estado === 'bloquea' && p.falta).forEach((p) => lis.push('• Falta ' + p.falta.charAt(0).toLowerCase() + p.falta.slice(1)));
     if(!lis.length) return '';
     const quien = primerNombre(c.lider);
     return saludoHora() + (quien ? ', ' + quien : '') + '. Del cliente ' + c.nombre + (c.provisional ? '' : ' (' + docFmt(c.doc_tipo, c.doc_numero) + ')') + ' hace falta:\n' + lis.join('\n') + '\nCuando lo tengas, súbelo a la app. Gracias.';
@@ -1091,6 +1154,7 @@
       (msj ? '<label class="rotulo arriba" for="msjRev">Mensaje para ' + esc(liderCorto()) + '</label><textarea class="area" id="msjRev" maxlength="4000">' + esc(msj) + '</textarea>' +
         '<p class="nota">Puedes cambiarlo antes de enviarlo. ' + (rev.lider_whatsapp ? 'Se abre el WhatsApp de ' + esc(liderCorto()) + '.' : 'No tiene WhatsApp en Usuarios: se abre WhatsApp para que elijas el chat.') + '</p>'
         : '<p class="nota">No hay nada que pedirle a ' + esc(liderCorto()) + '.</p>') +
+      preguntaComision(claveDespues()) +
       '<div class="error" id="eCerrar" role="alert"></div>' +
       '<div class="acciones">' + (msj ? '<button type="button" class="btn btn-2" id="cerrarRevSolo">Cerrar sin enviar</button><button type="button" class="btn" id="cerrarRevEnviar">Cerrar y enviar</button>'
         : '<button type="button" class="btn btn-ancho" id="cerrarRevSolo">Cerrar revisión</button>') + '</div>';
@@ -1100,12 +1164,14 @@
     const er = $('eCerrar'); er.textContent = '';
     const m = $('msjRev'); const texto = m ? m.value.trim() : '';
     if(enviar && texto.length < 10){ er.textContent = 'Escribe el mensaje o cierra sin enviar'; m.focus(); return; }
+    const quitar = respuestaComision(); if(quitar === null) return;
     const bs = ['cerrarRevSolo', 'cerrarRevEnviar'].map($).filter(Boolean); bs.forEach((x) => { x.disabled = true; });
     // WhatsApp se abre primero: después de esperar al servidor el navegador lo bloquearía
     if(enviar) window.open(rev && rev.lider_whatsapp ? C.enlaceWa(rev.lider_whatsapp, texto) : 'https://wa.me/?text=' + encodeURIComponent(texto), '_blank', 'noopener');
     let r;
     try { r = await rpc('revision_cerrar', { p_cliente: id, p_mensaje: texto || null, p_enviado: !!enviar }); }
     catch (e) { er.textContent = (enviar ? 'Se abrió WhatsApp, pero la revisión no se cerró: ' : '') + e.message; bs.forEach((x) => { if(document.contains(x)) x.disabled = false; }); return; }
+    await quitarLegalTras(quitar, 'Revisión cerrada con documentos devueltos');
     if(hojaAbierta() === 'hojaCerrarRev') cerrarHoja();
     const e = C.ESTATUS[r && r.estatus] || null;
     toast('Revisión cerrada' + (e ? '. Quedó en ' + e.t : ''));
@@ -1118,6 +1184,7 @@
     let b;
     if(t.closest('#hojaFicha #reintentar')){ cargar(true); return; }
     if((b = t.closest('#tabs [data-tab]'))){ irTab(b.dataset.tab); return; }
+    if((b = t.closest('#hojaFicha [data-ir-tab]'))){ irTab(b.dataset.irTab); return; }
     if((b = t.closest('[data-paso]'))){
       const a = b.dataset.paso;
       if(a === 'rif') abrirCampo('rif'); else if(a === 'revisar') abrirRevision(); else if(a === 'cerrarrev') abrirCerrar(); else if(a === 'estatus') abrirEstatus(); else if(a.indexOf('pedir:') === 0) pedir(a.slice(6)); else if(a.indexOf('tab:') === 0){ irTab(a.slice(4)); const g = document.querySelector('[data-grupo="contrato"]'); if(g) g.scrollIntoView({ block: 'center' }); }
@@ -1135,6 +1202,7 @@
     if(t.closest('#envIp') && env){ const sid = env.servicio; const fe = envF ? { cliente: envF.cliente.id, F: envF, alTerminar: envFin } : null; cerrarHoja(); fuera = fe; abrirCampo('ip:' + sid); return; }
     if((b = t.closest('#envManual')) && env){ if(b.dataset.armado !== '1'){ b.dataset.armado = '1'; b.textContent = '¿Seguro? Toca otra vez'; setTimeout(() => { if(document.contains(b)){ b.dataset.armado = ''; b.textContent = 'Ya se envió por fuera'; } }, 4000); return; }
       b.disabled = true; anotarEnvio(env.tipo, 'manual', null); return; }
+    if(t.closest('#agregarVgt')){ vgtExtra = Math.min(4, vgtExtra + 1); pintarDocumentos(); return; }
     if(t.closest('#agregarActa')){ actaExtra = Math.min(4, actaExtra + 1); pintarDocumentos(); const cs = document.querySelectorAll('[data-grupo="empresa"] [data-casilla^="acta_asamblea"]'); if(cs.length) cs[cs.length - 1].scrollIntoView({ block: 'center' }); return; }
     if((b = t.closest('[data-ver]'))){ abrirVer(Number(b.dataset.ver)); return; }
     if((b = t.closest('#hojaFicha [data-campo]'))){ fuera = null; abrirCampo(b.dataset.campo); return; }
@@ -1156,10 +1224,22 @@
     if(t.closest('#cambiarEstatus')){ abrirEstatus(); return; }
     if((b = t.closest('[data-estatus]'))){
       Array.prototype.forEach.call($('hojaEstatus').querySelectorAll('.mot'), (x) => { const on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-checked', String(on)); });
-      const g = $('guardarEstatus'); g.disabled = b.dataset.estatus === F.cliente.estatus; g.dataset.valor = b.dataset.estatus; return;
+      const g = $('guardarEstatus'); g.disabled = b.dataset.estatus === F.cliente.estatus; g.dataset.valor = b.dataset.estatus;
+      $('pregEstatus').innerHTML = b.dataset.estatus === F.cliente.estatus ? '' : preguntaComision(b.dataset.estatus);
+      const pq = $('pregCom'); if(pq) pq.scrollIntoView({ block: 'nearest' }); return;
     }
-    if((b = t.closest('#guardarEstatus'))){ const v = b.dataset.valor; b.disabled = true; rpc('cliente_estatus', { p_cliente: id, p_estatus: v }).then(() => { toast('Estatus cambiado'); if(hojaAbierta() === 'hojaEstatus') cerrarHoja(); return cargar(); }).catch((err) => { toast(err.message, 'error'); b.disabled = false; }); return; }
+    if((b = t.closest('[data-quitar-com]'))){
+      Array.prototype.forEach.call(b.parentNode.querySelectorAll('button'), (x) => { const on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-checked', String(on)); });
+      const er = $('ePregCom'); if(er) er.textContent = ''; return;
+    }
+    if((b = t.closest('#guardarEstatus'))){
+      const v = b.dataset.valor; const quitar = respuestaComision(); if(quitar === null) return;
+      b.disabled = true;
+      rpc('cliente_estatus', { p_cliente: id, p_estatus: v }).then(async () => { toast('Estatus cambiado'); await quitarLegalTras(quitar, 'Cambio de estatus a ' + ((C.ESTATUS[v] || {}).t || v));
+        if(hojaAbierta() === 'hojaEstatus') cerrarHoja(); return cargar(); }).catch((err) => { toast(err.message, 'error'); b.disabled = false; }); return;
+    }
     if((b = t.closest('[data-regimen]'))){ if(b.dataset.regimen !== (F.cliente.regimen_firma || '')) accion('cliente_dato', { p_cliente: id, p_campo: 'regimen_firma', p_valor: b.dataset.regimen }, 'Régimen de firma guardado', b); return; }
+    if((b = t.closest('[data-marca-cli]'))){ const nuevo = b.getAttribute('aria-checked') !== 'true'; accion('cliente_marca', { p_cliente: id, p_marca: b.dataset.marcaCli, p_valor: nuevo }, 'Guardado', b); return; }
     if((b = t.closest('[data-interr]'))){ const nuevo = b.getAttribute('aria-checked') !== 'true'; accion('cliente_dato', { p_cliente: id, p_campo: b.dataset.interr, p_valor: String(nuevo) }, 'Guardado', b); return; }
     if((b = t.closest('[data-gestion]'))){ accion('cliente_gestion', { p_cliente: id, p_cual: b.dataset.gestion, p_hecho: b.dataset.hecho === '1' }, b.dataset.hecho === '1' ? 'Marcada como enviada' : 'Marca quitada', b); return; }
     if((b = t.closest('[data-pago]'))){ accion('instalacion_pago', { p_instalacion: Number(b.dataset.pago), p_pagada: b.dataset.pagada === '1' }, b.dataset.pagada === '1' ? 'Instalación marcada como pagada' : 'Pago quitado', b); return; }

@@ -126,7 +126,7 @@ function faltantes(c){
     if(!d) r.push({ k: q.casilla, n: q.numero, t: q.texto, e: 'falta' }); else if(d.estado === 'devuelto') r.push({ k: q.casilla, n: q.numero, t: q.texto, e: 'devuelto', m: d.motivo }); });
   const rp = c.representantes.find((x) => x.orden === 1) || {};
   if(c.es_natural) return r;   // naturales: solo cédula y RIF personal
-  if(!String(rp.correo || '').trim()) r.push({ k: 'correo', n: 1, t: 'correo', e: 'falta', dato: true });
+  if(!c.contrato_presencial && !String(rp.correo || '').trim()) r.push({ k: 'correo', n: 1, t: 'correo', e: 'falta', dato: true });
   if(!String(rp.telefono || '').trim()) r.push({ k: 'telefono', n: 1, t: 'número de contacto', e: 'falta', dato: true });
   if(!c.es_natural && !String(c.correo_empresa || '').trim()) r.push({ k: 'correo_empresa', n: 0, t: 'correo de la empresa', e: 'falta', dato: true });
   return r;
@@ -136,7 +136,10 @@ function ponerEstatus(c, nuevo, autor, como){
   // A recibidos solo con todos los archivos (como el servidor)
   if(nuevo === 'documentos_recibidos' && faltanArchivos(c)){ if(como === 'auto' || como === 'migracion') return false; throw new Error('Para pasar a Documentos recibidos deben estar subidos todos los documentos en la app'); }
   const ant = c.estatus; c.estatus = nuevo; c.estatus_desde = hace(0);
-  c.legal_ok_en = LEGAL_OK.includes(nuevo) ? (c.legal_ok_en || hace(0)) : null;
+  // Lote 3: en revisión cuenta como Legal listo; una baja de un cliente que comisiona en el corte abierto conserva Legal (la pantalla pregunta)
+  if(LEGAL_OK.includes(nuevo)){ c.legal_ok_en = c.legal_ok_en || hace(0); if(c.legal_como !== 'excepcion') c.legal_como = 'legal'; }
+  else if(nuevo === 'documentos_en_revision'){ if(!c.legal_ok_en){ c.legal_ok_en = hace(0); c.legal_como = 'revision'; } }
+  else if(c.legal_ok_en && c.legal_como !== 'excepcion' && !c.abierta){ c.legal_ok_en = null; c.legal_como = null; }
   c.hilo.push(linea('estatus', nuevo, { antes: ant, como }, como === 'manual' ? autor.nombre : null));
   return true;
 }
@@ -285,7 +288,7 @@ const RPC = {
   por_instalar(m, yo){
     if(!['admin', 'analista', 'lider'].includes(yo.rol)) return error('No tienes permiso para hacer esto');
     const sen = esSenior(yo);
-    return { rol: yo.rol, ahora: new Date().toISOString(), filas: ordenesAbiertas(m, yo), realizadas: yo.rol === 'admin' || sen ? (m.datos.realizadas || []) : null, duenos: sen ? DUENOS : [],
+    return { rol: yo.rol, ahora: new Date().toISOString(), filas: ordenesAbiertas(m, yo).map((o) => Object.assign({ anterior: o.creada_en < '2026-10-01' }, o)), realizadas: yo.rol === 'admin' || sen ? (m.datos.realizadas || []) : null, duenos: sen ? DUENOS : [],
       puedo: { asignar: sen, realizadas: yo.rol === 'admin' || sen } };
   },
   orden_es_cliente(m, yo, a){
@@ -350,6 +353,7 @@ const RPC = {
       .sort((x, y) => (y.dedicado.tipo === 'isp') - (x.dedicado.tipo === 'isp') || (y.dedicado.activo !== false) - (x.dedicado.activo !== false) || x.nombre.localeCompare(y.nombre))
       .map((c) => { const d = c.dedicado; return { id: c.id, nombre: c.nombre, doc_tipo: c.doc_tipo, doc_numero: c.doc_numero, provisional: !!c.provisional, tipo: d.tipo, seg: segmento(c), estatus: c.estatus,
         activo: d.activo !== false, ejecutiva: d.ejecutiva || null, verificar: !!d.verificar, verificar_motivo: d.verificar_motivo || null, ruta_documentos: d.ruta_documentos || null, ruta_contrato: d.ruta_contrato || null,
+        vgt_por_firmar: (d.contratos || []).some((k) => k.tipo === 'vgt' && k.estatus !== 'firmado'), vgt_faltan: d.vgt ? d.vgt.faltan || 0 : 0, lider: c.lider,
         plazo: d.plazo || null, vacias: casillasVacias(c), por_revisar: c.documentos.filter((x) => x.estado === 'por_revisar').length, enlaces: (d.enlaces || []).filter((e) => e.activo).length,
         contrato: ((d.contratos || []).find((k) => k.tipo === 'servicio') || {}).estatus || null, vgt: (d.contratos || []).some((k) => k.tipo === 'vgt'), colocation: (d.contratos || []).some((k) => k.tipo === 'colocation') }; });
     return { rol: yo.rol, hoy: hoy(), puedo: { editar: yo.rol === 'admin' }, filas };
@@ -378,7 +382,8 @@ const RPC = {
     const actual = enCurso(); const rp = c.representantes.find((x) => x.orden === 1) || {}; const s0 = c.servicios[0];
     const r = yo.rol;
     return { rol: r, hoy: hoy(), yo: { id: yo.id, nombre: yo.nombre }, corte: { etiqueta: actual, fin: corteFin(actual), limite: corteLimite(actual), dias: dias(hoy(), corteLimite(actual)) },
-      cliente: { id: c.id, nombre: c.nombre, doc_tipo: c.doc_tipo, doc_numero: c.doc_numero, es_natural: c.es_natural, seg: segmento(c), estatus: c.estatus, estatus_desde: c.estatus_desde, legal_ok_en: c.legal_ok_en, aprobado_por_subir: aprobadoPorSubir(c), por_subir: porSubir(c),
+      cliente: { id: c.id, nombre: c.nombre, doc_tipo: c.doc_tipo, doc_numero: c.doc_numero, es_natural: c.es_natural, seg: segmento(c), estatus: c.estatus, estatus_desde: c.estatus_desde, legal_ok_en: c.legal_ok_en,
+        legal_como: c.legal_como || null, presencial: !!c.contrato_presencial, exc_pagada: !!c.exc_pagada, abierta: c.abierta || null, aprobado_por_subir: aprobadoPorSubir(c), por_subir: porSubir(c),
         dedicado: c.dedicado ? Object.assign({}, c.dedicado, { vacias: casillasVacias(c) }) : null,
         lider: c.lider, es_top: c.es_top, regimen_firma: c.regimen_firma, es_isp: c.es_isp, correo_empresa: c.correo_empresa, telefono: c.telefono, direccion: c.direccion,
         proforma_en: c.proforma_en, proforma_por: c.proforma_por, bienvenida_en: c.bienvenida_en, bienvenida_por: c.bienvenida_por, ug_en: c.ug_en, ug_por: c.ug_por, creado_en: c.creado_en, es_demo: c.es_demo,
@@ -395,7 +400,7 @@ const RPC = {
           dueno_whatsapp: m.personas.filter((p) => p.nombre === duenoDe(c, i)).map((p) => p.whatsapp)[0] || null, dueno_correo: m.personas.filter((p) => p.nombre === duenoDe(c, i)).map((p) => p.correo)[0] || null,
           excepcion_corte: i.excepcion_corte, excepcion_motivo: i.excepcion_motivo, excepcion_por: i.excepcion_por,
           corte_pago: i.excepcion_corte ? i.excepcion_corte : ok === null ? null : ok < limiteTs(cp) ? cp : masMeses(cp, 1) }; }),
-      puedo: { revisar: ['admin', 'abogado'].includes(r), estatus: ['admin', 'abogado'].includes(r), contrato: ['admin', 'abogado'].includes(r), regimen: ['admin', 'abogado'].includes(r), top: r === 'admin', gestion: ['admin', 'analista'].includes(r), pago: esSenior(yo), asignar: esSenior(yo), evento: esSenior(yo), excepcion: r === 'admin', ip: ['admin', 'analista'].includes(r), enviar: ['admin', 'analista', 'lider'].includes(r) } };
+      puedo: { legal: r === 'admin', presencial: ['admin', 'abogado'].includes(r), exc_pagada: r === 'admin', revisar: ['admin', 'abogado'].includes(r), estatus: ['admin', 'abogado'].includes(r), contrato: ['admin', 'abogado'].includes(r), regimen: ['admin', 'abogado'].includes(r), top: r === 'admin', gestion: ['admin', 'analista'].includes(r), pago: esSenior(yo), asignar: esSenior(yo), evento: esSenior(yo), excepcion: r === 'admin', ip: ['admin', 'analista'].includes(r), enviar: ['admin', 'analista', 'lider'].includes(r) } };
   },
   cliente_nota(m, yo, a){
     const c = visibles(m, yo).find((x) => x.id === Number(a.p_cliente)); if(!c) return error('No tienes acceso a este cliente');
@@ -408,6 +413,17 @@ const RPC = {
     if(a.p_motivo === 'pedir' && c.estatus === 'grandes_negocios') ponerEstatus(c, 'documentos_solicitados', yo, 'auto');
     return c.estatus;
   },
+  // Lote 3: Legal a mano, marcas del expediente y correo VGT
+  legal_aprobar(m, yo, a){ if(yo.rol !== 'admin') return error('No tienes permiso para hacer esto'); const c = m.datos.clientes.find((x) => x.id === Number(a.p_cliente));
+    if(String(a.p_motivo || '').trim().length < 3) return error('Escribe el motivo'); if(c.legal_ok_en) return error('Legal ya está listo');
+    c.legal_ok_en = hace(0); c.legal_como = 'excepcion'; c.hilo.push(linea('dato', 'legal_aprobado', { motivo: a.p_motivo }, yo.nombre)); return null; },
+  legal_quitar(m, yo, a){ if(yo.rol !== 'admin') return error('No tienes permiso para hacer esto'); const c = m.datos.clientes.find((x) => x.id === Number(a.p_cliente));
+    if(!c.legal_ok_en) return error('Este cliente no tiene Legal listo'); c.legal_ok_en = null; c.legal_como = null; c.hilo.push(linea('dato', 'legal_quitado', { motivo: a.p_motivo }, yo.nombre)); return null; },
+  cliente_marca(m, yo, a){ if(!['admin', 'abogado'].includes(yo.rol)) return error('No tienes permiso para hacer esto'); const c = m.datos.clientes.find((x) => x.id === Number(a.p_cliente));
+    if(a.p_marca === 'exc_pagada' && yo.rol !== 'admin') return error('Solo el administrador marca la excepción pagada');
+    c[a.p_marca] = !!a.p_valor; c.hilo.push(linea('dato', a.p_marca, { valor: String(!!a.p_valor) }, yo.nombre)); return null; },
+  dedicado_vgt_correo(m, yo, a){ const c = m.datos.clientes.find((x) => x.id === Number(a.p_cliente)); if(!c || !c.dedicado || !c.dedicado.vgt) return error('No es un cliente dedicado');
+    c.dedicado.vgt.correo = a.p_correo; c.dedicado.vgt.faltan = Math.max(0, (c.dedicado.vgt.faltan || 0) - (a.p_correo ? 1 : 0)); return null; },
   cliente_estatus(m, yo, a){
     if(!['admin', 'abogado'].includes(yo.rol)) return error('No tienes permiso para hacer esto');
     const c = visibles(m, yo).find((x) => x.id === Number(a.p_cliente)); if(!c) return error('No tienes acceso a este cliente');

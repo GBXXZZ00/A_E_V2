@@ -29,8 +29,10 @@
     if(D.verificar) h += '<div class="al-banda ambar" role="note"><b>Pendiente por verificar</b><p>' + esc(D.verificar_motivo || 'Revisar el RIF de este cliente.') + ' Igual se pueden subir sus documentos.</p></div>';
     h += '<div class="secc">Dedicado' + (esAdmin() ? '<button type="button" class="enlace der" data-ded-editar="1">Editar</button>' : '') + '</div><div class="datos">' +
       fila('Tipo', D.tipo === 'isp' ? 'Dedicado ISP' : 'Dedicado corporativo') +
-      fila('Ejecutiva', esc(D.ejecutiva || 'Sin asignar')) +
-      fila('Documentos', D.vacias ? '<span class="chip ambar">' + esc(D.vacias === 1 ? 'Falta 1' : 'Faltan ' + D.vacias) + '</span> ' + esc(RUTAS[D.ruta_documentos] || 'Sin ruta') : '<span class="chip verde">Completos</span>') +
+      fila('Líder', esc(D.ejecutiva || 'Sin asignar')) +
+      fila('Documentos', D.vacias ? '<span class="chip ambar">' + esc(D.vacias === 1 ? 'Falta 1' : 'Faltan ' + D.vacias) + '</span>' : '<span class="chip verde">Completos</span>') +
+      (D.vacias && D.ruta_documentos ? fila('Qué hacer', esc(RUTAS[D.ruta_documentos])) : '') +
+      (D.vgt ? fila('Requisitos VGT', D.vgt.faltan ? '<span class="chip ambar">' + esc(D.vgt.faltan === 1 ? 'Falta 1' : 'Faltan ' + D.vgt.faltan) + '</span>' : '<span class="chip verde">Completos</span>') : '') +
       (D.tipo === 'isp' && D.plazo ? fila('Plazo ISP', esc('Semana del ' + ddmm(addDias(D.plazo, -4)))) : '') +
       fila('Contrato', esc(D.ruta_contrato || 'Sin siguiente paso')) +
       (D.estatus_anterior ? fila('App vieja', esc(C.capital(String(D.estatus_anterior).toLowerCase())) + ' <small class="ded-gris">no confiable</small>') : '') +
@@ -62,24 +64,46 @@
       (lugar || e.inicio ? '<small>' + esc([lugar, e.inicio ? 'Inicio según la analista: ' + e.inicio : ''].filter(Boolean).join(' · ')) + '</small>' : '') + '</div>';
   }
 
-  // ---------- Contratos: servicio (uno por cliente), VGT por proyecto y colocation por sitio ----------
+  // ---------- Contratos: una tarjeta por contrato (servicio dedicado, PYME si es combinado, VGT con sus proyectos, colocation por sitio) ----------
+  function tarjeta(titulo, estatus, cuerpo, idEditar){
+    return '<div class="ctr-t"><div class="ctr-cab"><b>' + esc(titulo) + '</b>' + estatus + (idEditar && esAdmin() ? '<button type="button" class="enlace" data-ctr-editar="' + esc(idEditar) + '">Editar</button>' : '') + '</div>' + cuerpo + '</div>';
+  }
   function contratos(ficha, quien){
     F = ficha; yo = quien || yo; const D = F.cliente.dedicado; if(!D) return '';
-    const lista = D.contratos || []; let h = '<p class="nota-chica" style="margin-top:12px">Los dedicados no comisionan. El vencimiento se escribe a mano mientras se define la duración de los contratos.</p>';
-    if(!lista.length) return h + C.vacio('Sin contratos', 'Este dedicado todavía no tiene contratos cargados.');
-    ['servicio', 'vgt', 'colocation'].forEach((t) => {
-      const xs = lista.filter((k) => k.tipo === t); if(!xs.length) return;
-      h += '<div class="secc">' + esc(TIPO_CTR[t]) + (xs.length > 1 ? '<span class="der">' + xs.length + '</span>' : '') + '</div>';
-      xs.forEach((k) => {
-        const det = t === 'vgt' ? [k.proyecto, k.numero ? 'N° ' + k.numero : '', k.postes ? k.postes + ' postes' : '', k.fecha ? 'Fecha ' + k.fecha : '', k.estado].filter(Boolean).join(' · ')
-          : t === 'colocation' ? [k.sitio, k.municipio, k.estado].filter(Boolean).join(' · ') : (k.nota || '');
-        h += '<div class="datos">' + fila('Estatus', chip(k.estatus) + (esAdmin() ? '<button type="button" class="enlace" data-ctr-editar="' + esc(k.id) + '">Editar</button>' : '')) +
-          (det ? fila(t === 'servicio' ? 'Nota' : 'Detalle', esc(det)) : '') +
-          fila('Firma', k.firmado_en ? esc(fecha(k.firmado_en)) : '<span class="ded-gris">Sin fecha</span>') +
-          fila('Vence', k.vence ? esc(k.vence) : '<span class="ded-gris">Sin escribir</span>') +
-          (k.editado_por ? fila('Cambió', esc(k.editado_por + (k.editado_en ? ', ' + fecha(k.editado_en) : ''))) : '') + '</div>';
-      });
+    const lista = D.contratos || []; const c = F.cliente;
+    let h = '<p class="nota-chica" style="margin-top:12px">Los dedicados no comisionan. El vencimiento se escribe a mano mientras se define la duración de los contratos.</p>';
+    const combinado = c.seg === 'PYME + Dedicado';
+    if(!lista.length && !combinado) return h + C.vacio('Sin contratos', 'Este dedicado todavía no tiene contratos cargados.');
+    const serv = lista.filter((k) => k.tipo === 'servicio');
+    serv.forEach((k) => {
+      h += tarjeta('Servicio dedicado', chip(k.estatus), '<div class="datos">' + fila('Firma', k.firmado_en ? esc(fecha(k.firmado_en)) : '<span class="ded-gris">Sin fecha</span>') +
+        fila('Vence', k.vence ? esc(k.vence) : '<span class="ded-gris">Sin escribir</span>') + (k.nota ? fila('Nota', esc(k.nota)) : '') +
+        (k.editado_por ? fila('Cambió', esc(k.editado_por + (k.editado_en ? ', ' + fecha(k.editado_en) : ''))) : '') + '</div>', k.id);
     });
+    if(combinado){
+      // PYME del mismo cliente: su estatus es el legal; los documentos comunes son los mismos
+      const docP = (F.documentos || []).find((d) => d.casilla === 'contrato_pyme');
+      const dedFirmado = serv.some((k) => k.estatus === 'firmado');
+      const est = docP && docP.firmado_en ? '<span class="chip verde">Firmado</span>' : dedFirmado ? '<span class="chip ambar">Contrato PYME por elaborar</span>' : C.chipEstatus(c.estatus);
+      h += tarjeta('Contrato PYME', est, '<div class="datos">' + fila('Firma', docP && docP.firmado_en ? esc(fecha(docP.firmado_en)) : '<span class="ded-gris">Sin firmar</span>') +
+        fila('Documentos', 'Los mismos del dedicado') + '</div>');
+    }
+    const vgt = lista.filter((k) => k.tipo === 'vgt');
+    if(vgt.length){
+      const k = vgt[0]; const postes = vgt.reduce((a, x) => a + (Number(x.postes) || 0), 0); const V = D.vgt || {};
+      const uso = (u) => { const t = String(u || '').toUpperCase(); return t === 'SI' ? 'En uso' : t === 'NO' ? 'No' : t === 'EN PROYECTO' ? 'En proyecto' : (u || ''); };
+      h += tarjeta('VGT', chip(k.estatus), '<div class="datos">' + fila('Contrato', k.numero ? 'N° ' + esc(k.numero) : '<span class="ded-gris">Sin número</span>') +
+          fila('Firma', k.firmado_en ? esc(fecha(k.firmado_en)) : '<span class="ded-gris">Sin fecha</span>') + fila('Vence', k.vence ? esc(k.vence) : '<span class="ded-gris">Sin escribir</span>') +
+          fila('Requisitos', V.faltan ? '<span class="chip ambar">' + esc(V.faltan === 1 ? 'Falta 1' : 'Faltan ' + V.faltan) + '</span> <button type="button" class="enlace" data-ir-tab="documentos">Ver en Documentos</button>' : '<span class="chip verde">Completos</span>') + '</div>' +
+        '<div class="ctr-proy"><div class="ctr-proy-t"><span>' + esc(vgt.length === 1 ? '1 proyecto' : vgt.length + ' proyectos') + '</span><span>' + esc(postes + ' postes') + '</span></div>' +
+        vgt.map((x) => '<div class="ctr-p"><b>' + esc(x.proyecto || 'Sin nombre') + '</b><small>' + esc([x.estado, x.postes ? x.postes + ' postes' : '', uso(x.en_uso), x.odt ? 'ODT ' + x.odt : ''].filter(Boolean).join(' · ')) + '</small></div>').join('') + '</div>', k.id);
+    }
+    const col = lista.filter((k) => k.tipo === 'colocation');
+    if(col.length){
+      h += tarjeta('Colocation', '<span class="chip">' + esc(col.length === 1 ? '1 sitio' : col.length + ' sitios') + '</span>', '<div class="ctr-proy">' +
+        col.map((x) => '<div class="ctr-p ctr-p2"><span><b>' + esc(x.sitio || 'Sin sitio') + '</b><small>' + esc([x.municipio, x.estado].filter(Boolean).join(', ')) + '</small></span>' + chip(x.estatus) +
+          (esAdmin() ? '<button type="button" class="enlace" data-ctr-editar="' + esc(x.id) + '">Editar</button>' : '') + '</div>').join('') + '</div>');
+    }
     return h;
   }
 

@@ -1,7 +1,7 @@
 // Reglas de la revisión con IA (claude/ia-reglas.md). La IA solo lee; aquí se decide, siempre igual con los mismos datos.
 // Corre en la función de borde ia_revisar y en las pruebas (pruebas/test16.js). Sin dependencias.
 
-export const VERSION_REGLAS = '2';
+export const VERSION_REGLAS = '3';
 
 // ---------- Texto y fechas ----------
 export function norm(s){
@@ -215,7 +215,7 @@ export function evaluar(e){
         if(venceJ >= hoy) punto('junta', 'Junta vigente', 'ok', 'Designada en el acta inscrita el ' + fechaTexto(designa._insc) + ' por ' + anosJ + ' años. Vigente hasta el ' + fechaTexto(venceJ) + '.', { pagina: pg(designa) });
         else if(perm && tope >= hoy) punto('junta', 'Junta vigente por cláusula de permanencia', 'ok', 'Su período venció el ' + fechaTexto(venceJ) + ', pero la cláusula de permanencia la mantiene hasta el ' + fechaTexto(tope) + '.', { pagina: pg(designa) });
         else if(x) punto('junta', 'Junta vencida', 'ok', 'Venció el ' + fechaTexto(venceJ) + '. Excepción: ' + x.motivo, { pagina: pg(designa), excepcion: x.motivo });
-        else punto('junta', 'Junta vencida', 'bloquea', 'Designada en el acta inscrita el ' + fechaTexto(designa._insc) + ' por ' + anosJ + ' años: venció el ' + fechaTexto(venceJ) + '.' + (perm ? ' Tenía cláusula de permanencia, pero ya pasaron 10 años.' : ''), { pagina: pg(designa), falta: 'Acta de asamblea de ratificación o cambio de junta', excepcionable: true });
+        else punto('junta', 'Junta vencida', 'bloquea', 'Designada en el acta inscrita el ' + fechaTexto(designa._insc) + ' por ' + anosJ + ' años: venció el ' + fechaTexto(venceJ) + '.' + (perm ? ' Tenía cláusula de permanencia, pero ya pasaron 10 años.' : ''), { pagina: pg(designa), falta: 'Acta de asamblea: ratificación o cambio de junta', pedir: true, excepcionable: true });
       }
 
       // Régimen de firma y firmantes (reglas 15, 16 y 17)
@@ -289,10 +289,11 @@ export function evaluar(e){
     });
   }));
 
-  // Lo que falta en las actas (junta, duración, domicilio, razón social) se pide devolviendo el acta constitutiva:
+  // Lo que falta en las actas (duración, domicilio, razón social) se pide devolviendo el acta constitutiva:
   // así el estatus se sigue calculando por documentos, como siempre.
+  // Lote 3: la junta vencida NO devuelve el acta constitutiva; el acta se aprueba y se pide el acta de asamblea (punto con "pedir").
   const dActa2 = docs.find((d) => d.casilla === 'acta_constitutiva');
-  const deActas = puntos.filter((p) => p.estado === 'bloquea' && p.falta && ['junta', 'duracion', 'domicilio', 'razon_social'].includes(p.id));
+  const deActas = puntos.filter((p) => p.estado === 'bloquea' && p.falta && ['duracion', 'domicilio', 'razon_social'].includes(p.id));
   if(dActa2 && deActas.length && marcas[dActa2.id] && marcas[dActa2.id].propuesta === 'bien'){
     const m = marcas[dActa2.id];
     marca(dActa2, 'problema', 'otro', 'Falta: ' + deActas.map((p) => p.falta.charAt(0).toLowerCase() + p.falta.slice(1)).join('; ') + '. ' + m.nota, H[dActa2.id], m.datos);

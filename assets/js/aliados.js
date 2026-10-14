@@ -11,7 +11,7 @@
 
   // Etiquetas: el color es solo para el estado
   const ETQ = {
-    borrador: ['Borrador', ''], analizando: ['Analizando', 'azul'], recaudos: ['Recaudos incompletos', 'ambar'], excepcion: ['Excepción solicitada', 'morado'],
+    borrador: ['Borrador', ''], analizando: ['Recibido, en revisión', 'azul'], recaudos: ['Recaudos incompletos', 'ambar'], excepcion: ['Excepción solicitada', 'morado'],
     revision: ['En revisión', 'morado'], lista: ['Lista para instalar', 'verde'], listaobs: ['Lista con observaciones', 'verde'], curso: ['Instalación en curso', 'azul'],
     instalada: ['Instalada', 'verde'], sininst: ['Sin instalar', ''], noprocede: ['No procede', 'rojo'], cartera: ['Cliente en cartera', ''], otro: ['En gestión por otro', '']
   };
@@ -42,9 +42,10 @@
   // ---------- Secciones según el rol ----------
   const TABS = {
     aliado: [['inicio', 'Inicio'], ['solicitudes', 'Mis solicitudes'], ['referidos', 'Referidos']],
-    canales: [['inicio', 'Inicio'], ['solicitudes', 'Mis solicitudes'], ['referidos', 'Referidos'], ['registro', 'Registro'], ['pagos', 'Pagos'], ['instalados', 'Instalados por aliados'], ['mes', 'Por mes']],
-    admin: [['registro', 'Registro'], ['mes', 'Por mes'], ['pagos', 'Pagos'], ['instalados', 'Instalados por aliados'], ['aliados', 'Aliados y usuarios']],
-    equipo: [['registro', 'Registro'], ['mes', 'Por mes'], ['instalados', 'Instalados por aliados']]
+    // Lote 3: "Instalados por aliados" quedó dentro de "Por mes"; lo instalado sin consultar va solo en "Sin autorización"
+    canales: [['inicio', 'Inicio'], ['solicitudes', 'Mis solicitudes'], ['referidos', 'Referidos'], ['registro', 'Registro'], ['mes', 'Por mes'], ['sinp', 'Sin autorización'], ['pagos', 'Pagos']],
+    admin: [['registro', 'Registro'], ['mes', 'Por mes'], ['sinp', 'Sin autorización'], ['pagos', 'Pagos'], ['aliados', 'Aliados y usuarios']],
+    equipo: [['registro', 'Registro'], ['mes', 'Por mes'], ['sinp', 'Sin autorización']]
   };
   const AYUDA = {
     inicio: 'Sube los documentos del cliente y en minutos sabes si puedes instalarlo.', solicitudes: 'Todas tus solicitudes con su etiqueta.',
@@ -53,10 +54,10 @@
     recaudos: 'El aliado debe completar o corregir.', listas: 'Aprobadas: el aliado puede instalar.', curso: 'El aliado marcó cuándo va a instalar.',
     instaladas: 'Llegó la orden de instalación.', cerradas: 'No se instalaron o no proceden. El cliente quedó libre.',
     bloq: 'Pidieron un cliente que ya es de la oficina o que otra persona gestiona.', refs: 'Clientes referidos por los aliados.',
-    sinp: 'Instalaciones de aliados sin solicitud aprobada. Las nuevas llegan solas con cada carga de órdenes de instalación.',
+    sinp: 'Instalaciones de aliados hechas sin consultar (sin solicitud aprobada). Llegan solas con cada carga de órdenes de instalación. Revisa cada una y deja una nota.',
     viejas: 'Los casos de la app vieja (AppSheet), con su situación.', pagos: 'Solo PYME instaladas por el mismo aliado de la solicitud, y referidos instalados. Aparte del corte de los líderes.',
     instalados: 'Clientes que instalaron los aliados. Solo para ver.',
-    mes: 'Instalaciones de aliados por mes desde enero, de las órdenes de instalación. Aparte de las comisiones de los líderes.',
+    mes: 'Todo lo que instalaron los aliados, por mes desde enero, con o sin permiso. Aparte de las comisiones de los líderes.',
     registro: 'Todo lo de los aliados, agrupado por aliado y con lo más reciente arriba. Toca cualquier registro para ver todo.', aliados: 'Enlaza cada aliado con su usuario. Los usuarios se crean en Usuarios con el rol Aliado.'
   };
   const tabs = () => TABS[modo] || [];
@@ -98,7 +99,7 @@
       return '<button type="button" data-tab="' + x[0] + '" class="' + (x[0] === tab ? 'on' : '') + '" aria-pressed="' + (x[0] === tab) + '">' + esc(x[1]) + (c !== null ? ' <em>' + c + '</em>' : '') + '</button>'; }).join('') : '';
     $('ayuda').textContent = (AYUDA[tab] || '') + (tab === 'registro' && modo !== 'admin' ? ' Solo para ver: las decisiones las toma el administrador.' : '');
     $('zonaRegistro').classList.toggle('hidden', tab !== 'registro');
-    $('accionCab').innerHTML = (modo === 'aliado' || modo === 'canales') && tab !== 'pagos' && tab !== 'instalados' && tab !== 'mes' ? '<button type="button" class="btn btn-chico solo-pc" data-acc="nueva">Nueva solicitud</button>'
+    $('accionCab').innerHTML = (modo === 'aliado' || modo === 'canales') && tab !== 'pagos' && tab !== 'instalados' && tab !== 'mes' && tab !== 'sinp' ? '<button type="button" class="btn btn-chico solo-pc" data-acc="nueva">Nueva solicitud</button>'
       : modo === 'admin' && tab === 'registro' && R && R.puedo && R.puedo.prueba ? '<button type="button" class="btn btn-chico btn-2" data-acc="nueva">Solicitud de prueba</button>' : '';
   }
   const clave = () => 'aliados:' + modo;
@@ -108,7 +109,7 @@
     if(tab === 'instalados') return cargarInstalados(mio);
     if(tab === 'mes') return cargarMes(mio);
     if(tab === 'aliados') return cargarAliadosAdm(mio);
-    if(tab === 'registro' && modo !== 'admin') return cargarRegistro(mio);
+    if((tab === 'registro' || tab === 'sinp') && modo !== 'admin') return cargarRegistro(mio);
     if(!D){ const g = cache.leer(clave()); if(g){ D = g; pintarTabs(); pintar(); } else { $('lista').innerHTML = esqueleto(6); $('cuentaLista').textContent = 'Cargando…'; } }
     try {
       const d = await rpc(modo === 'admin' ? 'aliados_registro' : 'aliado_inicio', {});
@@ -157,7 +158,7 @@
       (filas.length > mostrar ? '<div class="pie-lista"><span>Mostrando ' + mostrar + ' de ' + filas.length + '.</span><button type="button" class="btn btn-chico btn-2" data-acc="mas">Ver más</button></div>' : '');
   }
   function pintar(){
-    if(tab === 'registro'){ if(modo === 'admin') R = D; pintarRegistro(); return; }
+    if(tab === 'registro' || tab === 'sinp'){ if(modo === 'admin') R = D; pintarRegistro(); return; }
     const s = sols(); let h = ''; let n = 0;
     const de = (f) => s.filter(f);
     if(tab === 'inicio'){
@@ -206,19 +207,18 @@
     const r = R || {}; const it = [];
     (r.solicitudes || []).forEach((x) => it.push({ t: 'sol', id: x.id, aliado: x.aliado, cliente: x.cliente || 'RIF por leer', rif: rifFmt(x.rif), fecha: x.actualizada_en || x.creada_en, k: x.etiqueta, x, tu: !!x.tu_cliente }));
     (r.referidos || []).forEach((x) => it.push({ t: 'ref', id: x.id, aliado: x.aliado, cliente: x.cliente || 'Cliente ' + rifFmt(x.rif), rif: rifFmt(x.rif), fecha: x.pagado_en || x.instalado_en || x.creado_en, k: 'rf', x, tu: !!x.tu_cliente }));
-    (r.sin_permiso || []).forEach((x) => it.push({ t: 'sinp', id: x.id, aliado: x.aliado, cliente: x.cliente || 'Sin nombre', rif: x.rif ? docFmt(/^\d/.test(x.rif) ? '' : x.rif.charAt(0), /^\d/.test(x.rif) ? x.rif : x.rif.slice(1)) : '', fecha: x.instalada_en, k: 'sinp', x, tu: !!x.tu_cliente }));
     (r.viejas || []).forEach((x) => it.push({ t: 'vieja', id: x.id, aliado: x.aliado, cliente: x.cliente || 'Sin nombre', rif: x.rif || '', fecha: null, k: 'vieja', x, tu: !!x.tu_cliente }));
     it.forEach((i) => { i.aliado = String(i.aliado || 'Sin aliado').trim() || 'Sin aliado'; });
     return it;
   }
-  const paraTi = (i) => (i.t === 'sol' && (i.k === 'excepcion' || i.k === 'revision')) || (i.t === 'ref' && i.x.etiqueta === 'referido') || (i.t === 'sinp' && i.x.origen === 'carga' && !i.x.revisado_en);
+  const paraTi = (i) => !i.x.revisado && ((i.t === 'sol' && (i.k === 'excepcion' || i.k === 'revision')) || (i.t === 'ref' && i.x.etiqueta === 'referido'));
   const CHIPS_AL = [
     ['todo', 'Todo', () => true], ['para_ti', 'Esperan tu decisión', paraTi], ['mio', 'Lo mío', (i) => i.tu],
-    ['analizando', 'Analizando', (i) => i.t === 'sol' && i.k === 'analizando'], ['recaudos', 'Recaudos incompletos', (i) => i.t === 'sol' && i.k === 'recaudos'],
+    ['analizando', 'En revisión', (i) => i.t === 'sol' && i.k === 'analizando'], ['recaudos', 'Recaudos incompletos', (i) => i.t === 'sol' && i.k === 'recaudos'],
     ['decidir', 'Excepción o revisión', (i) => i.t === 'sol' && (i.k === 'excepcion' || i.k === 'revision')], ['listas', 'Listas para instalar', (i) => i.t === 'sol' && (i.k === 'lista' || i.k === 'listaobs')],
     ['curso', 'Instalación en curso', (i) => i.t === 'sol' && i.k === 'curso'], ['instaladas', 'Instaladas', (i) => i.t === 'sol' && i.k === 'instalada'],
     ['cerradas', 'Sin instalar o no procede', (i) => i.t === 'sol' && (i.k === 'sininst' || i.k === 'noprocede')], ['bloq', 'Bloqueadas', (i) => i.t === 'sol' && (i.k === 'cartera' || i.k === 'otro')],
-    ['refs', 'Referidos', (i) => i.t === 'ref'], ['sinp', 'Instalado sin permiso', (i) => i.t === 'sinp'], ['viejas', 'Consultas viejas', (i) => i.t === 'vieja']
+    ['refs', 'Referidos', (i) => i.t === 'ref'], ['viejas', 'Consultas viejas', (i) => i.t === 'vieja']
   ];
   const visto = () => { try { return JSON.parse(localStorage.getItem('ae_al_visto_' + (yo && yo.id)) || 'null'); } catch (e) { return null; } };
   const guardarVisto = (v) => { try { localStorage.setItem('ae_al_visto_' + (yo && yo.id), JSON.stringify(v)); } catch (e) {} };
@@ -235,13 +235,21 @@
     return '<button type="button" class="fila" ' + dato + '><span class="tx"><b>' + esc(i.cliente) + '</b><small>' + esc(sub) + '</small>' + (i.tu ? '<small class="etqs"><span class="tagn azul">Tu cliente</span></small>' : '') + '</span>' +
       '<span class="par-m">' + chipItem(i) + '</span></button>';
   }
+  // Sin autorización: instalaciones de aliados sin solicitud aprobada, las que faltan por revisar primero
+  function pintarSinp(){
+    const sp = (R.sin_permiso || []).slice().sort((x, y) => Number(!!x.revisado_en) - Number(!!y.revisado_en) || String(y.instalada_en || '').localeCompare(String(x.instalada_en || '')));
+    const pend = sp.filter((p) => !p.revisado_en).length;
+    $('cuentaLista').textContent = plural(sp.length, 'instalación', 'instalaciones') + (pend ? ' · ' + plural(pend, 'por revisar', 'por revisar') : '');
+    $('lista').innerHTML = paginar(sp, filaSinp, ['Ninguna', 'Todo lo que instalaron los aliados tenía permiso.']);
+  }
   function pintarRegistro(){
-    if(!R) return;
+    if(!R || (tab !== 'registro' && tab !== 'sinp')) return;   // el buscador espera un momento: no repinta otra pestaña
+    if(tab === 'sinp') return pintarSinp();
     const todos = itemsAl(); const P = R.puedo || {};
     const chips = CHIPS_AL.filter((c) => (c[0] !== 'para_ti' || P.decidir) && (c[0] !== 'mio' || modo !== 'admin'));
     if(!chips.some((c) => c[0] === chipAl)) chipAl = 'todo';
     const pend = todos.filter(paraTi).length;
-    $('avisoAl').innerHTML = P.decidir && pend && chipAl !== 'para_ti' ? '<button type="button" class="franja ambar" data-chipal="para_ti">' + ic('alerta') + '<span><b>' + plural(pend, 'espera tu decisión', 'esperan tu decisión') + '</b>Excepciones, revisiones, referidos e instalaciones sin permiso.</span>' + ic('derecha') + '</button>' : '';
+    $('avisoAl').innerHTML = P.decidir && pend && chipAl !== 'para_ti' ? '<button type="button" class="franja ambar" data-chipal="para_ti">' + ic('alerta') + '<span><b>' + plural(pend, 'espera tu decisión', 'esperan tu decisión') + '</b>Excepciones, revisiones y referidos. Si ya lo resolviste por fuera, márcalo Revisado.</span>' + ic('derecha') + '</button>' : '';
     $('vistaAl').innerHTML = '<div class="tres dos" role="radiogroup" aria-label="Cómo ver el registro">' + [['general', 'Todo junto'], ['aliado', 'Por aliado']].map((x) =>
       '<button type="button" role="radio" data-vistaal="' + x[0] + '" aria-checked="' + (verAl === x[0]) + '" class="' + (verAl === x[0] ? 'on' : '') + '">' + x[1] + '</button>').join('') + '</div>';
     $('chipsAl').innerHTML = chips.map((c) => { const n = todos.filter(c[2]).length; if(!n && c[0] !== 'todo' && c[0] !== chipAl) return '';
@@ -266,9 +274,13 @@
         .filter((c) => c[0]).map((c) => plural(c[0], c[1], c[2])).join(' · ');
       const ver = masAl[k] ? l : l.slice(0, 30);
       return '<div class="grupo' + (ab ? ' abierto' : '') + '"><button type="button" class="grupo-cab" data-grupoal="' + esc(k) + '" aria-expanded="' + ab + '"><span class="tx"><b>' + esc(k) + (nuevo ? ' <span class="tagn azul">Nuevo</span>' : '') + '</b><small>' + esc(cnt || 'Sin movimiento') + '</small></span>' +
-        '<span class="num">' + l.length + '</span>' + ic('abajo') + '</button><div class="grupo-cuerpo">' + ver.map(filaAl).join('') +
+        '<span class="num">' + l.length + '</span>' + ic('abajo') + '</button><div class="grupo-cuerpo">' + ver.map((i) => (P.decidir && paraTi(i) ? filaRevisar(i, false) : filaAl(i))).join('') +
         (l.length > ver.length ? '<button type="button" class="fila mas" data-masal="' + esc(k) + '">Ver ' + (l.length - ver.length) + ' más</button>' : '') + '</div></div>';
     }).join('');
+  }
+  // "Esperan tu decisión": cada registro con una acción simple "Revisado" y nota (lo resuelto fuera de la app)
+  function filaRevisar(i, conAliado){
+    return '<div class="fila-rev">' + filaAl(i, conAliado !== false) + '<button type="button" class="mini" data-revisado="' + esc(i.t + ':' + i.id) + '" data-nombre="' + esc(i.cliente) + '">Revisado</button></div>';
   }
   // Vista general: todo a la vista por secciones (es poco volumen), lo más reciente arriba
   let verAl = 'general';
@@ -278,7 +290,6 @@
     const SECC = [
       ['decidir', 'Esperan tu decisión', (i) => paraTi(i)],
       ['pend', 'Solicitudes pendientes', (i) => i.t === 'sol' && ABIERTA.indexOf(i.k) >= 0 && !paraTi(i)],
-      ['sinp', 'Instaladas sin consultar', (i) => i.t === 'sinp' && !paraTi(i)],
       ['inst', 'Solicitudes instaladas y referidos', (i) => (i.t === 'sol' && ABIERTA.indexOf(i.k) < 0) || i.t === 'ref'],
       ['viejas', 'Registros viejos (app anterior)', (i) => i.t === 'vieja']
     ];
@@ -289,7 +300,7 @@
       if(!l.length || (sc[0] === 'decidir' && !(R.puedo || {}).decidir)) return;
       const ver = masAl['g|' + sc[0]] ? l : l.slice(0, 30);
       h += '<section class="al-secc"><div class="bandeja-cab"><h3>' + esc(sc[1]) + '</h3><span class="n">' + l.length + '</span></div><div class="grupo abierto">' +
-        ver.map((i) => filaAl(i, true)).join('') + (l.length > ver.length ? '<button type="button" class="fila mas" data-masal="g|' + sc[0] + '">Ver ' + (l.length - ver.length) + ' más</button>' : '') + '</div></section>';
+        ver.map((i) => (sc[0] === 'decidir' ? filaRevisar(i) : filaAl(i, true))).join('') + (l.length > ver.length ? '<button type="button" class="fila mas" data-masal="g|' + sc[0] + '">Ver ' + (l.length - ver.length) + ' más</button>' : '') + '</div></section>';
     });
     $('lista').innerHTML = h || vacio(buscaAl ? 'Sin resultados' : 'Nada en esta etiqueta', buscaAl ? 'Nadie coincide con "' + buscaAl + '".' : 'Prueba con otra etiqueta o mira todo.');
   }
@@ -408,6 +419,7 @@
   async function subir(cliente, file, cas, num){
     const t = validar(file); const tk = await token(); const db = window.db;
     const fd = new FormData(); fd.append('cliente', String(cliente)); fd.append('nombre', String(file.name || 'archivo').slice(0, 140));
+    fd.append('casillas', casilla(cas, num));   // en Drive se llama "RIF - Casilla - fecha"
     fd.append('archivo', file.type === t ? file : file.slice(0, file.size, t), file.name || 'archivo');
     let r; try { r = await fetch(db.supabaseUrl + '/functions/v1/drive_subir', { method: 'POST', headers: { Authorization: 'Bearer ' + tk, apikey: db.supabaseKey }, body: fd }); }
     catch (e) { throw new Error('Sin conexión. El archivo no se subió. Revisa el internet e intenta de nuevo'); }
@@ -540,7 +552,7 @@
     N.enviando = true; pintarPieNueva();
     try { await guardarContacto(N.id, N.c, N.tipo); await rpc('solicitud_enviar', { p_sol: N.id }); }
     catch (e) { N.enviando = false; pintarPieNueva(); toast(e.message, 'error'); return; }
-    const id = N.id; N = null; cerrarHoja(true); invalidar(); cargar(); abrirSol(id);
+    const id = N.id; N = null; cerrarHoja(true); invalidar(); cargar(); toast('Recibido, en revisión. El resultado llega a Mis solicitudes'); abrirSol(id);
   }
 
   // ---------- Detalle de una solicitud ----------
@@ -562,8 +574,9 @@
     const p = PASOS(d);
     const fila = (i, t, s) => '<div class="al-paso ' + (p.n > i ? 'hecho' : p.n === i ? 'activo' : 'espera') + '"><i aria-hidden="true"></i><div><b>' + esc(t) + '</b>' + (s ? '<small>' + esc(s) + '</small>' : '') + '</div></div>';
     const frac = Math.min(1, (p.n - 1 + (p.n === 2 && p.total ? p.av / p.total : 0)) / 4);
-    return '<div class="al-banda verde"><b>Cliente disponible</b><p>El RIF se leyó primero. Ahora la IA revisa lo demás.</p></div>' +
-      '<div class="h2 al-h2">Revisando tu solicitud</div><span class="al-barra" aria-hidden="true"><i style="transform:scaleX(' + frac.toFixed(2) + ')"></i></span>' +
+    // Lote 3: la IA nunca frena la solicitud. Queda recibida al instante y el resultado llega después.
+    return '<div class="al-banda verde"><b>Recibido, en revisión</b><p>Tu solicitud ya está guardada. El cliente está disponible y la revisión corre aparte: el resultado llega a Mis solicitudes.</p></div>' +
+      '<div class="h2 al-h2">Revisión de documentos</div><span class="al-barra" aria-hidden="true"><i style="transform:scaleX(' + frac.toFixed(2) + ')"></i></span>' +
       '<div class="al-pasos" role="status">' + fila(0, 'RIF leído', d.cliente + ', ' + rifFmt(d.rif)) + fila(1, 'Cartera revisada', 'No es TOP, no tiene orden abierta ni otro aliado') +
       fila(2, 'Leyendo documentos', p.total ? p.av + ' de ' + p.total + ' leídos' : 'Lo que ya se leyó al subir no se vuelve a leer') + fila(3, 'Revisando firmantes, junta y actas', 'Mismas reglas de los contratos') + fila(4, 'Armando el resultado', '') + '</div>' +
       '<p class="nota">Puedes cerrar esta pantalla. El resultado queda en Mis solicitudes.</p>';
@@ -603,7 +616,7 @@
     const h = $('hojaSol'); if(!h) return;
     h.querySelector('.hoja-cab b').textContent = d.cliente || 'Solicitud';
     h.querySelector('.hoja-cab small').textContent = [rifFmt(d.rif), d.codigo, adm ? d.aliado : ''].filter(Boolean).join(' · ');
-    const solo = !!d.solo_ver; const aliadoPuede = !adm && !solo && k === 'recaudos';
+    const solo = !!d.solo_ver; const aliadoPuede = !adm && !solo && (k === 'recaudos' || k === 'instalada');   // lote 3: lo que sube después de instalar también va al expediente
     let acc = '';
     if(solo){ acc = ''; }
     else if(!adm){
@@ -696,6 +709,10 @@
       t = p.cliente || 'Instalación'; s = 'Instaló ' + (p.aliado || 'sin enlazar'); boton = p.revisado_en || modo !== 'admin' ? '' : 'Marcar revisado';
       cuerpo = '<div class="estado rojo"><b>Instalado sin permiso</b><small>' + esc((p.aliado || 'Un aliado') + ' lo instaló el ' + fecha(p.instalada_en, true) + ' sin una solicitud aprobada' + (p.origen === 'historico' ? ' (antes del módulo, no aparece en AppSheet).' : '.')) + '</small></div>' +
         (p.revisado_en ? '<p class="nota">Revisado el ' + esc(fecha(p.revisado_en, true)) + (p.nota ? ': ' + esc(p.nota) : '') + '</p>' : modo !== 'admin' ? '<p class="nota">Lo revisa el administrador.</p>' : '<label class="rotulo arriba" for="fTexto">Nota (opcional)</label><textarea class="campo al-area" id="fTexto" maxlength="500"></textarea><div class="error" id="eForm" role="alert"></div><p class="nota">No entra en Pagos. Márcalo revisado cuando hables con el aliado.</p>');
+    } else if(tipo === 'revisado'){
+      t = 'Marcar revisado'; s = x.nombre || ''; boton = 'Marcar revisado';
+      cuerpo = '<p class="nota">Sale de "Esperan tu decisión" sin cambiar su etiqueta. Úsalo cuando ya se resolvió por fuera de la app.</p>' +
+        '<label class="rotulo arriba" for="fTexto">Nota (opcional)</label><textarea class="campo al-area" id="fTexto" maxlength="500"></textarea><p class="nota">Por ejemplo: aprobada por correo.</p><div class="error" id="eForm" role="alert"></div>';
     } else if(tipo === 'vieja'){
       const v = (fuente().viejas || []).find((y) => y.id === x.id); if(!v) return;
       t = v.cliente || 'Consulta vieja'; s = [v.rif, v.aliado].filter(Boolean).join(' · '); boton = '';
@@ -730,6 +747,7 @@
         if(rechazar){ const m = valor('fTexto'); if(m.length < 5) return err('Escribe por qué no se acepta (al menos 5 letras).'); await rpc('referido_decidir', { p_ref: x.id, p_aceptar: false, p_lider: null, p_texto: m }); toast('Referido no aceptado'); }
         else { const l = valor('fLider'); if(!l) return err('Elige a qué líder se lo pasas.'); await rpc('referido_decidir', { p_ref: x.id, p_aceptar: true, p_lider: l, p_texto: null }); toast('Referido aceptado y pasado a ' + l); }
       }
+      else if(tipo === 'revisado'){ await rpc('aliado_revisado', { p_tipo: x.tipo, p_id: x.id, p_nota: valor('fTexto') || null }); toast('Marcado como revisado'); }
       else if(tipo === 'sinp'){ await rpc('sin_permiso_revisar', { p_id: x.id, p_nota: valor('fTexto') || null }); toast('Marcado como revisado'); }
       else if(tipo === 'pagar'){ await rpc('pago_marcar', { p_tipo: x.tipo, p_id: x.id }); toast('Marcado como pagado'); pagos = null; }
     } catch (e) { return err(e.message); }
@@ -745,6 +763,7 @@
     if((b = t.closest('[data-tab]'))){ tab = b.dataset.tab; mostrar = POR_PAGINA; guardarUrl(); pintarTabs(); cargar(); return; }
     if((b = t.closest('[data-sol]'))){ if(hojaAbierta() === 'hojaNueva') cerrarHoja(true); abrirSol(Number(b.dataset.sol)); return; }
     if((b = t.closest('[data-ref]'))){ abrirForm('ref', { id: Number(b.dataset.ref) }); return; }
+    if((b = t.closest('[data-revisado]'))){ const p = b.dataset.revisado.split(':'); abrirForm('revisado', { tipo: p[0], id: Number(p[1]), nombre: b.dataset.nombre }); return; }
     if((b = t.closest('[data-sinp]'))){ abrirForm('sinp', { id: Number(b.dataset.sinp) }); return; }
     if((b = t.closest('[data-vieja]'))){ abrirForm('vieja', { id: Number(b.dataset.vieja) }); return; }
     if((b = t.closest('[data-vistaal]'))){ verAl = b.dataset.vistaal; try { localStorage.setItem('ae_aliados_vista', verAl); } catch (x) {} pintarRegistro(); return; }

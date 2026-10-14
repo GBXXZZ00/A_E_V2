@@ -1,27 +1,29 @@
 // Dedicados: la lista se queda quieta (ISP primero) y el expediente sale encima, con Datos, Documentos y Contratos.
-// Cada ejecutiva ve solo sus clientes (lo filtra el servidor). Son pocos: se traen todos y se filtran aquí.
+// Cada líder de dedicados ve solo sus clientes (lo filtra el servidor). Son pocos: se traen todos y se filtran aquí.
 (function(){
   'use strict';
-  const { $, esc, ic, rpc, toast, cache, vacio, docFmt, chipEstatus, plural, iniciales, abrirHoja, normalizeStr } = window.Comun;
+  const { $, esc, ic, rpc, toast, cache, vacio, docFmt, chipEstatus, plural, iniciales, abrirHoja, normalizeStr, ESTATUS } = window.Comun;
   const POR_PAGINA = 40;
+  // Lote 3: los mismos atajos y filtros que Clientes (Grandes negocios)
   const ATAJOS = [
-    { id: 'todos', t: 'Todos' }, { id: 'isp', t: 'ISP' }, { id: 'corporativo', t: 'Corporativo' },
-    { id: 'faltan', t: 'Faltan documentos' }, { id: 'verificar', t: 'Por verificar' }
+    { id: 'en_curso', t: 'En curso' }, { id: 'por_revisar', t: 'Por revisar' }, { id: 'sin_gestion', t: 'Sin gestión' },
+    { id: 'faltan', t: 'Faltan documentos' }, { id: 'todos', t: 'Todos' }
   ];
-  const SELS = [{ k: 'ejecutiva', t: 'Ejecutiva' }, { k: 'ruta', t: 'Ruta de documentos' }, { k: 'activo', t: 'Enlaces' }];
-  const RUTA_CORTA = { cargar: 'Cargar a la app', completar: 'Completar en la app', pedir: 'Pedir al cliente', validar: 'Validar con la analista' };
-  let yo = null; let D = null; let filtro = 'todos'; let q = ''; let sel = {}; let mostrar = POR_PAGINA; let marcado = 0; let pedido = 0; let reloj = null;
+  // Atajos a los que se llega desde los avisos de arriba
+  const EXTRA = { isp: 'ISP', verificar: 'Por verificar' };
+  const SELS = [{ k: 'lider', t: 'Líder' }, { k: 'tipo', t: 'Tipo' }, { k: 'estatus', t: 'Estatus legal' }, { k: 'vgt', t: 'VGT' }, { k: 'activo', t: 'Enlaces' }];
+  let yo = null; let D = null; let filtro = 'en_curso'; let q = ''; let sel = {}; let mostrar = POR_PAGINA; let marcado = 0; let pedido = 0; let reloj = null;
 
   function leerUrl(){
     const u = new URLSearchParams(location.search);
-    const f = u.get('f'); filtro = ATAJOS.some((x) => x.id === f) ? f : 'todos';
+    const f = u.get('f'); filtro = ATAJOS.some((x) => x.id === f) || Object.prototype.hasOwnProperty.call(EXTRA, f || '') ? f : 'en_curso';
     q = (u.get('q') || '').slice(0, 60);
     sel = {}; SELS.forEach((x) => { const v = u.get(x.k); if(v) sel[x.k] = v.slice(0, 60); });
     return { c: Number(u.get('c')) || 0, t: u.get('t') || '' };
   }
   function guardarUrl(){
     const u = new URLSearchParams();
-    if(filtro !== 'todos') u.set('f', filtro); if(q) u.set('q', q);
+    if(filtro !== 'en_curso') u.set('f', filtro); if(q) u.set('q', q);
     SELS.forEach((x) => { if(sel[x.k]) u.set(x.k, sel[x.k]); });
     const s = u.toString(); history.replaceState(history.state, '', location.pathname + (s ? '?' + s : ''));
   }
@@ -29,12 +31,15 @@
   const filas = () => (D && D.filas) || [];
 
   // Filtros en el dispositivo (búsqueda por nombre, RIF o código Proham)
+  const tipoDe = (r) => (r.seg === 'PYME + Dedicado' ? 'combinado' : r.tipo === 'isp' || r.seg === 'Dedicado ISP' ? 'isp' : 'corporativo');
   function pasaSel(r){
-    return (!sel.ejecutiva || (r.ejecutiva || 'Sin asignar') === sel.ejecutiva) && (!sel.ruta || (r.ruta_documentos || 'sin') === sel.ruta) &&
-      (!sel.activo || (sel.activo === 'activos' ? r.activo : !r.activo));
+    return (!sel.lider || (r.ejecutiva || 'Sin asignar') === sel.lider) && (!sel.tipo || tipoDe(r) === sel.tipo) && (!sel.estatus || r.estatus === sel.estatus) &&
+      (!sel.vgt || (sel.vgt === 'con' ? r.vgt : r.vgt && r.vgt_por_firmar)) && (!sel.activo || (sel.activo === 'activos' ? r.activo : !r.activo));
   }
   function pasaAtajo(r, f){
-    return f === 'isp' ? r.tipo === 'isp' : f === 'corporativo' ? r.tipo !== 'isp' : f === 'faltan' ? r.vacias > 0 : f === 'verificar' ? r.verificar : true;
+    return f === 'en_curso' ? r.estatus !== 'contrato_firmado' : f === 'por_revisar' ? r.estatus === 'documentos_en_revision' || r.por_revisar > 0
+      : f === 'sin_gestion' ? ['grandes_negocios', 'documentos_solicitados', 'documentos_pendientes'].indexOf(r.estatus) >= 0
+      : f === 'faltan' ? r.vacias > 0 : f === 'isp' ? tipoDe(r) === 'isp' : f === 'verificar' ? r.verificar : true;
   }
   function pasaBusca(r){
     if(!q) return true; const b = normalizeStr(q); const d = q.replace(/\D/g, '');
@@ -54,15 +59,18 @@
   function semana(iso){ const d = new Date(String(iso).slice(0, 10) + 'T12:00:00'); d.setDate(d.getDate() - 4); return String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0'); }
   function pintarAtajos(){
     const n = nSel();
-    $('filtros').innerHTML = '<button type="button" class="bfil" id="abrirFiltros">Filtros' + (n ? '<u>' + n + '</u>' : '') + '</button>' + ATAJOS.map((f) => {
+    const lista = ATAJOS.slice(); if(EXTRA[filtro]) lista.unshift({ id: filtro, t: EXTRA[filtro] });
+    $('filtros').innerHTML = '<button type="button" class="bfil" id="abrirFiltros">Filtros' + (n ? '<u>' + n + '</u>' : '') + '</button>' + lista.map((f) => {
       const c = D ? filas().filter((r) => pasaSel(r) && pasaAtajo(r, f.id)).length : null;
       const on = f.id === filtro && !q;
       return '<button type="button" data-filtro="' + f.id + '" class="' + (on ? 'on' : '') + '" aria-pressed="' + on + '">' + esc(f.t) + (c !== null ? ' <em>' + c + '</em>' : '') + '</button>';
     }).join('');
   }
   function opcionesDe(k){
-    if(k === 'ejecutiva') return Array.from(new Set(filas().map((r) => r.ejecutiva || 'Sin asignar'))).sort().map((v) => [v, v]);
-    if(k === 'ruta') return Object.keys(RUTA_CORTA).map((v) => [v, RUTA_CORTA[v]]).concat([['sin', 'Sin ruta']]);
+    if(k === 'lider') return Array.from(new Set(filas().map((r) => r.ejecutiva || 'Sin asignar'))).sort().map((v) => [v, v]);
+    if(k === 'tipo') return [['isp', 'ISP'], ['corporativo', 'Corporativo'], ['combinado', 'Combinado (dedicado + PYME)']];
+    if(k === 'estatus') return Object.keys(ESTATUS).map((e) => [e, ESTATUS[e].t]);
+    if(k === 'vgt') return [['con', 'Con VGT'], ['por_firmar', 'VGT por firmar']];
     return [['activos', 'Con algo activo'], ['suspendidos', 'Todo suspendido']];
   }
   function pintarSels(){
@@ -79,15 +87,17 @@
   // Documentos y contrato: lo que falta y qué sigue, en una línea
   function sigue(r){
     const ctr = window.FichaDedicado && window.FichaDedicado.CONTRATO[r.contrato];
-    const docs = r.vacias ? (r.vacias === 1 ? 'Falta 1 documento' : 'Faltan ' + r.vacias + ' documentos') + (r.ruta_documentos ? ': ' + RUTA_CORTA[r.ruta_documentos].toLowerCase() : '') : r.por_revisar ? plural(r.por_revisar, 'documento', 'documentos') + ' por revisar' : 'Documentos completos';
+    const docs = r.vacias ? (r.vacias === 1 ? 'Falta 1 documento' : 'Faltan ' + r.vacias + ' documentos') : r.por_revisar ? plural(r.por_revisar, 'documento', 'documentos') + ' por revisar' : 'Documentos completos';
     return [r.vacias ? (r.tipo === 'isp' ? 'rojo' : 'ambar') : 'verde', docs + (ctr ? '. Contrato: ' + ctr[1].toLowerCase() : '')];
   }
   function fila(r){
     const s = sigue(r);
-    const sub = [r.provisional ? 'Provisional, sin RIF' : docFmt(r.doc_tipo, r.doc_numero), r.tipo === 'isp' ? 'Dedicado ISP' : 'Dedicado corporativo', plural(r.enlaces, 'enlace activo', 'enlaces activos'), r.vgt ? 'VGT' : '', r.colocation ? 'Colocation' : ''].filter(Boolean).join(' · ');
+    const tp = tipoDe(r);
+    const sub = [r.provisional ? 'Provisional, sin RIF' : docFmt(r.doc_tipo, r.doc_numero), tp === 'isp' ? 'Dedicado ISP' : tp === 'combinado' ? 'Dedicado + PYME' : 'Dedicado corporativo', plural(r.enlaces, 'enlace activo', 'enlaces activos'), r.colocation ? 'Colocation' : ''].filter(Boolean).join(' · ');
     return '<button type="button" class="cli' + (marcado === r.id ? ' sel' : '') + (r.activo ? '' : ' apagado') + '" data-cliente="' + esc(r.id) + '">' +
       '<span class="quien"><span class="mono" aria-hidden="true">' + esc(iniciales(r.nombre).charAt(0)) + '</span><span><b>' + esc(r.nombre) + '</b><small>' +
-        (r.verificar ? '<span class="tagn ambar">Pendiente por verificar</span>' : '') + (r.tipo === 'isp' ? '<span class="tagn azul">ISP</span>' : '') + esc(sub) + '</small></span></span>' +
+        (r.verificar ? '<span class="tagn ambar">Pendiente por verificar</span>' : '') + (tp === 'isp' ? '<span class="tagn azul">ISP</span>' : '') +
+        (r.vgt ? (r.vgt_por_firmar ? '<span class="tagn ambar">VGT por firmar</span>' : '<span class="tagn azul">VGT</span>') : '') + esc(sub) + '</small></span></span>' +
       '<span class="c2">' + esc(r.ejecutiva || 'Sin asignar') + '</span><span class="c3">' + chipEstatus(r.estatus) + '</span>' +
       '<span class="sig ' + s[0] + '">' + esc(s[1]) + '</span>' + ic('derecha', 'ch fl') + '</button>';
   }

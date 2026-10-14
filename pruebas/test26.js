@@ -57,7 +57,7 @@ const estado = (p) => p.textContent('#estadoPin');
       await a.selectOption('#fRol', 'lider'); await a.click('#fDed');
       await a.screenshot({ path: 'capturas/26-pc-usuario-dedicados.png' });
       await a.click('#guardar');
-      await a.waitForFunction(() => /Ejecutiva de dedicados/.test(document.querySelector('#lista').textContent));
+      await a.waitForFunction(() => /Líder de dedicados/.test(document.querySelector('#lista').textContent));
       ok('pc: se guarda y la lista lo dice', c3.mundo.llamadas.some((l) => l[0] === 'usuarios' && l[1].accion === 'editar' && l[1].dedicados === true));
       await c3.ctx.close();
     }

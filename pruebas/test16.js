@@ -55,7 +55,7 @@ const M = (r, doc) => r.marcas.find((m) => m.documento === doc) || {};
   // 1. Empresa de 2008, junta de 5 años, sin asambleas, con cláusula de permanencia: más de 10 años
   r = evaluar(base((e) => Object.assign(acta(e), { fecha_inscripcion: '2008-06-10', junta_anos: 5, clausula_permanencia: true })));
   ok('caso 1: junta de 2008 con cláusula, pasados 10 años, bloquea', r.veredicto === 'no_apto' && P(r, 'junta').estado === 'bloquea' && P(r, 'junta').excepcionable === true, P(r, 'junta'));
-  ok('caso 1: pide acta de ratificación devolviendo el acta constitutiva', /ratificación/.test(P(r, 'junta').falta || '') && M(r, 14).propuesta === 'problema' && M(r, 14).motivo === 'otro' && /Falta: acta de asamblea de ratificación/.test(M(r, 14).nota), M(r, 14));
+  ok('caso 1 (lote 3): pide el acta de asamblea sin devolver el acta constitutiva', P(r, 'junta').falta === 'Acta de asamblea: ratificación o cambio de junta' && P(r, 'junta').pedir === true && M(r, 14).propuesta === 'bien', M(r, 14));
   r = evaluar(base((e) => { Object.assign(acta(e), { fecha_inscripcion: '2008-06-10', junta_anos: 5, clausula_permanencia: true }); e.excepciones = [{ punto: 'junta', motivo: 'Acta en el Registro' }]; }));
   ok('caso 1: con excepción del administrador queda Apto y el acta se aprueba', r.veredicto === 'apto' && /Excepción/.test(P(r, 'junta').detalle) && M(r, 14).propuesta === 'bien');
 

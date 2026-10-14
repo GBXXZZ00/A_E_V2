@@ -595,19 +595,16 @@ button.fila{width:100%;text-align:left;background:none}
 .req p{margin-top:4px;font-size:13px;color:var(--text2)}
 .req .sec{margin:14px 0 0}
 /* Proforma y carta plegable y liviana (lote 2, A2) */
-details.prof{padding:0 14px}
-details.prof > summary{list-style:none;cursor:pointer;min-height:48px;font-size:14px;font-weight:700}
-details.prof > summary::-webkit-details-marker{display:none}
-details.prof > summary .m{margin-left:0} details.prof > summary .m:first-of-type{margin-left:auto}
-details.prof > summary .i{width:16px;height:16px;flex:none;color:var(--text3);transition:transform 160ms var(--ease-out)}
-details.prof[open] > summary .i{transform:rotate(180deg)}
-details.prof[open]{padding-bottom:12px}
-details.prof p{margin-top:0;font-size:12.5px}
-details.prof .chk{min-height:40px;font-size:13px}
-details.prof .chk small{font-size:12px}
-details.prof .mini,details.prof .acc-prof .mini{height:34px;min-height:0;padding:0 12px;font-size:12.5px}
-@media (max-width:899px){ details.prof .mini,details.prof .acc-prof .mini{min-height:44px} }
-@media (prefers-reduced-motion:reduce){ details.prof > summary .i{transition:none} }
+.req.prof .req-t{font-size:14px}
+.req.prof p{margin-top:6px;font-size:12.5px}
+.prof-l{display:flex;align-items:center;gap:4px;flex-wrap:wrap;color:var(--text2)}
+.prof-l .mal{color:var(--rojo)}
+button.enlace.chico{min-height:32px;padding:0 4px;font-size:12.5px}
+.req.prof .acc-prof{margin-top:8px}
+.req.prof .acc-prof .mini{height:34px;min-height:0;padding:0 12px;font-size:12.5px;white-space:nowrap}
+@media (max-width:899px){ .req.prof .acc-prof .mini{min-height:44px} button.enlace.chico{min-height:44px} }
+.preg-com .tres{margin-top:10px}
+.ins-ant{margin:14px 0 0;text-align:center}
 .chk{display:flex;align-items:center;gap:10px;min-height:48px;padding:8px 0 0;margin-top:8px;box-shadow:0 -1px 0 var(--line);font-size:14px;font-weight:600}
 .chk > span{flex:1;min-width:0}
 .chk small{display:block;font-weight:500;font-size:12.5px;color:var(--text2);overflow-wrap:anywhere}
@@ -886,3 +883,21 @@ main.vista-instalar #ayudaFiltro{display:none}
 .fila .tx small.para-que,.para-que{display:block;margin-top:4px;font-size:12.5px;color:var(--text2);white-space:normal;overflow:visible}
 .para-que .enlace{font-size:12.5px}
 .para-que .enlace{display:inline-flex;align-items:center;vertical-align:middle;min-height:40px}
+
+/* Lote 3: tarjetas de contratos del dedicado */
+.ctr-t{border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-top:12px;background:#fff}
+.ctr-cab{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ctr-cab b{font-size:14.5px;margin-right:auto}
+.ctr-t .datos{margin-top:6px;border:0;border-radius:0}
+.ctr-t .datos .dato-f{padding-left:0;padding-right:0}
+.ctr-proy{margin-top:10px;border-top:1px solid var(--line);padding-top:8px}
+.ctr-proy-t{display:flex;justify-content:space-between;font-size:12.5px;font-weight:700;color:var(--text2);margin-bottom:4px}
+.ctr-p{padding:7px 0;border-bottom:1px solid var(--line)}
+.ctr-p:last-child{border-bottom:0}
+.ctr-p b{display:block;font-size:13.5px;font-weight:600}
+.ctr-p small{display:block;font-size:12.5px;color:var(--text2);margin-top:2px}
+.ctr-p2{display:flex;align-items:center;gap:8px}
+.ctr-p2 > span:first-child{margin-right:auto;min-width:0}
+.fila-rev{display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--line)}
+.fila-rev > .fila{flex:1;min-width:0;border-bottom:0}
+.fila-rev > .mini{flex:none;margin-right:10px;white-space:nowrap}

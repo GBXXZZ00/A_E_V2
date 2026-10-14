@@ -1,9 +1,20 @@
 # Traspaso (se actualiza al cerrar cada sesión)
 
-Actualizado: 13/10/2026 noche (Lote 2 hecho; corrida del 14/10 aprobada: Lotes 3 a 7). Publicado: `?v=32`.
+Actualizado: 14/10/2026 (corrida del 14/10: Lote 3 hecho). Publicado: `?v=33`.
 
 ## CORRIDA DEL 14/10 (APROBADA por el administrador el 13/10 noche): Lote 3 + Lote 4 + Lote 5 + Lote 6 + Lote 7
 Antes de tocar código: lee los cinco lotes completos y dile al administrador, en pocas líneas, qué puedes ejecutar y qué no (y por qué). Si todo es ejecutable, arranca sin esperar más. Orden: Lote 3, 5, 4, 6, 7. Publica por lote (pruebas, capturas, `?v=`, commit y push). Septiembre certificado (59/49) no se mueve; corre la referencia de comisiones antes y después de cada lote que toque comisiones. Las pantallas siguen el estilo ya aprobado (maquetas en `claude/maquetas/`, Clientes y Comisiones como modelo); no hace falta maqueta nueva. Fuera de esta corrida: notificaciones, ingresos y bandeja de dedicados, propuesta de servicio, proforma y carta para nuevo titular, subidas por guardias.
+
+**Avance de la corrida del 14/10 (Claude Code):**
+- **Lote 3: HECHO en v33.** Septiembre 59/49 antes y después; octubre 54 filas (Legal listo pasó de 5 a 8 por los que están en revisión).
+  - Legal (base): columnas `clientes.legal_como` (legal, revision, excepcion), `legal_ok_antes`, `legal_quitado_en`, `contrato_presencial`, `exc_pagada`. `poner_estatus` reescrita: pasar a Documentos en revisión pone Legal listo (`revision`); una baja de estatus de un cliente que comisiona en el corte abierto (`privado.comisiona_abierto`) conserva Legal y la pantalla pregunta "¿Quitarle la comisión?"; si no comisiona, se quita guardando el Legal de antes. `comision_filas3` usa el Legal de antes para los cortes cuyo límite pasó antes de quitarlo (un cambio nunca mueve un corte ya vencido). Nuevas: `legal_aprobar` (admin, motivo), `legal_quitar` (admin), `comision_abierta`, `cliente_marca` (contrato presencial: admin y abogado; excepción pagada: admin), todas con hilo y bitácora. `faltantes` no pide el correo del representante con contrato presencial. `archivos_por_subir` incluye la excepción pagada; `aprobado_por_subir` no cuenta los "en revisión". Los 50 clientes que ya estaban en revisión quedaron con Legal listo (`privado.lote3_revision_legal`, bitácora `legal_revision_inicial`). `comisiones_corte` trae `exc_pagada` (contador).
+  - Pantalla: hoja de comisión con un solo botón de Legal (Aprobar Legal con motivo / Quitar Legal), etiqueta En revisión o Aprobado a mano; Proforma y carta compacta ("IP: falta · Escribir" y dos botones chicos), y en el expediente solo para clientes con instalación en un corte (dedicados no). Cambiar estatus y Cerrar revisión preguntan antes de quitar la comisión. Datos: Contrato presencial y Excepción pagada. Comisiones, filtro Archivos por subir: enlace a Clientes con los de excepción pagada.
+  - Por instalar: solo órdenes creadas desde el 01/10/2026 (`privado.instalar_desde`), "Ver anteriores" abajo; el contador de Inicio también.
+  - Dedicados: "Líder" en vez de "Ejecutiva" en toda la app; atajos de Clientes (En curso, Por revisar, Sin gestión, Faltan documentos, Todos) y filtros Líder, Tipo (ISP, Corporativo, Combinado), Estatus legal, VGT (Con VGT, VGT por firmar), Enlaces; la ruta de documentos quedó como "Qué hacer" dentro de la hoja. Contratos en tarjetas: Servicio dedicado, Contrato PYME (si es combinado: "Contrato PYME por elaborar" si el dedicado está firmado), VGT con número, firma, vencimiento, proyectos (estado, postes, en uso, ODT) y total de postes, Colocation por sitio. El VGT es uno por cliente: al editarlo cambian todas sus filas de proyecto. Requisitos VGT: casillas "otro" con número reservado 60 a 70 (`privado.vgt_requisitos`), correo para notificaciones (`dedicados.vgt_correo`, `dedicado_vgt_correo`), contador propio (`privado.vgt_faltan`), aviso de pólizas a 30 días; `dedicado_contrato_editar` no deja pasar el VGT a Por firmar o Firmado con requisitos pendientes. Servicios en la hoja del dedicado: solo los PYME.
+  - IA: la junta vencida ya no devuelve el acta constitutiva; se pide "Acta de asamblea: ratificación o cambio de junta" en el mensaje al líder (reglas v3). Un archivo que no se lee en 140 s queda "revisar a mano" sin frenar. "Actualizar resultado" es un enlace chico y nunca se relee solo. Aliados: "Recibido, en revisión" al instante. Función `ia_revisar` v6.
+  - Drive: `drive_subir` v3 nombra el archivo "RIF - Casilla - fecha" (varias: "Cédula + RIF personal"); el nombre original queda en la base.
+  - Aliados: pestañas Registro, Por mes (absorbe Instalados por aliados), Sin autorización (lo instalado sin consultar sale del Registro), Pagos, Aliados y usuarios. "Esperan tu decisión" con botón "Revisado" y nota (`aliado_revisado`, columnas `revisado_*` en solicitudes y referidos). El aliado puede seguir subiendo en una solicitud instalada (`puede_cliente`), y todo va al mismo expediente del cliente.
+  - Pruebas: test28 nueva; test16, 18, 20, 22, 25 y 26 ajustadas. 28 de 28 en TODO OK.
 
 ### LOTE 4: cambios de categoría y de titularidad
 1. Pestaña **"Cambios"** dentro de Comisiones. El líder crea la solicitud ahí (un solo canal, reemplaza el WhatsApp).
@@ -289,6 +300,11 @@ Antes de cada una: explicar en simple y esperar el OK.
 - Seguridad: migración "endurecer_acceso_y_permisos" (entrada por función de borde con bloqueo, permisos de escritura, sesiones). Con el administrador presente.
 
 ## Decisiones tomadas por Claude que el administrador NO ha confirmado
+- Lote 3: los 50 clientes que ya estaban en Documentos en revisión quedaron con Legal listo desde hoy (no cambia septiembre; en octubre cuentan 3 más).
+- Lote 3: bajar de estatus a un cliente que NO comisiona en el corte abierto le quita Legal como antes, sin preguntar.
+- Lote 3: el acta de cambios sustanciales y el poder del VGT son opcionales; los demás requisitos VGT y el correo de notificaciones son obligatorios. La fecha de vencimiento de las pólizas se escribe al revisarlas.
+- Lote 3: el tiempo límite por archivo de la IA es 140 segundos (no 3 minutos) para quedar por debajo del límite de la función.
+- Lote 3: el aliado puede seguir subiendo documentos en una solicitud ya instalada.
 - Lote 2: un archivo de órdenes de instalación con fechas de antes del 21/08/2026 se toma como histórico solo para aliados (se puede cambiar en la fila antes de cargar).
 - Lote 2: bloqueo de la entrada a los 5 fallos (15 min), 10 (1 hora) y 15 (1 día); el administrador desbloquea restableciendo el PIN.
 - Lote 2: los dedicados sin otro líder quedan a nombre de su ejecutiva (para que ella los vea); a un dedicado no se le cambia el estatus legal por subirle documentos si ya estaba aprobado.

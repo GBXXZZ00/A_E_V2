@@ -15,7 +15,7 @@
     { id: 'aliados', texto: 'Aliados', icono: 'usuarios', enlace: 'aliados.html', roles: ['admin', 'analista', 'lider', 'abogado'], soloPc: true }
   ];
 
-  // Un módulo se ve por rol o, para un líder, por su marca (la ejecutiva de dedicados)
+  // Un módulo se ve por rol o, para un líder, por su marca (líder de dedicados)
   const puedeVer = (n, p) => !n.roles || n.roles.indexOf(p.rol) >= 0 || (n.marca && p.rol === 'lider' && !!p[n.marca]);
   // opciones: { activo: 'inicio'|'comisiones'|'clientes'|'factibilidad'|'revision'|'aliados'|null, sinNav: bool, volver: {enlace, texto}, acciones: html }
   let montado = null;   // { clave, res }: lo que ya está dibujado, para no repetirlo al confirmar la sesión

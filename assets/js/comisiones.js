@@ -118,7 +118,11 @@
     pago: 'Debe instalación: según el TAD, el cliente todavía no ha pagado la instalación. Mientras no la pague, no comisiona. Se quita sola cuando el TAD trae el pago.',
     asignar: 'Por asignar: no se sabe de qué líder es la instalación (la orden no tiene código de vendedor o la creó otra persona). No comisiona hasta que el Analista Senior le pone dueño.'
   };
-  function ayudaFiltro(){ return AYUDA[filtro] ? '<p class="ayuda-filtro" role="note">' + esc(AYUDA[filtro]) + '</p>' : ''; }
+  function ayudaFiltro(){
+    // Lote 3: los clientes con excepción pagada en un corte anterior no están en este corte; se gestionan en Clientes
+    const xp = filtro === 'subir' && d && d.exc_pagada ? ' <a class="enlace" href="clientes.html?f=por_subir">' + plural(d.exc_pagada, 'cliente', 'clientes') + ' con excepción pagada también ' + (d.exc_pagada === 1 ? 'tiene' : 'tienen') + ' archivos por subir. Ver en Clientes</a>' : '';
+    return AYUDA[filtro] || xp ? '<p class="ayuda-filtro" role="note">' + esc(AYUDA[filtro] || '') + xp + '</p>' : '';
+  }
   function pintarLista(){
     if(filtro === 'eventos'){
       const p = (d.eventos || []).filter(coincide);
@@ -169,7 +173,7 @@
   const conInstalar = () => !!yo && ['admin', 'analista', 'lider'].indexOf(yo.rol) >= 0;
   function pintarVistas(){
     if(!conInstalar()){ $('vistas').innerHTML = ''; return; }
-    const rojas = PI ? (PI.filas || []).filter((o) => o.color === 'rojo').length : 0;
+    const rojas = PI ? vigentes(PI.filas).filter((o) => o.color === 'rojo').length : 0;
     $('vistas').innerHTML = [['corte', 'Corte'], ['instalar', 'Por instalar']].map((x) => '<button type="button" role="tab" data-vista="' + x[0] + '" aria-selected="' + (vista === x[0]) + '" class="' + (vista === x[0] ? 'on' : '') + '">' + x[1] +
       (x[0] === 'instalar' && rojas ? ' <em>' + rojas + '</em>' : '') + '</button>').join('');
     document.querySelector('main').classList.toggle('vista-instalar', vista === 'instalar');
@@ -218,10 +222,14 @@
       '<div class="ik"><small>La más vieja</small><b>' + esc(horasTexto(vieja.horas)) + '</b><span>' + esc(vieja.cliente || 'Cliente nuevo') + '</span></div>' +
       '<div class="ik"><small>Reprogramadas</small><b>' + rep + '</b><span>' + (rep ? 'movidas en Odoo' : 'ninguna') + '</span></div>' + lid + '</div>';
   }
+  // Lote 3: solo órdenes creadas desde el 01/10/2026; las anteriores con "Ver anteriores"
+  let verAnt = false;
+  const vigentes = (l) => (l || []).filter((o) => verAnt || !o.anterior);
   function pintarInstalar(){
     if(!PI) return;
     const ok = (o) => { const b = normalizeStr(busca); return !b || normalizeStr(o.cliente).indexOf(b) >= 0 || normalizeStr(o.lider).indexOf(b) >= 0 || String(o.numero || '').indexOf(busca) >= 0; };
-    const filas = (PI.filas || []).filter(ok); let h = kpisInstalar(PI.filas || []);
+    const filas = vigentes(PI.filas).filter(ok); let h = kpisInstalar(vigentes(PI.filas));
+    const nAnt = (PI.filas || []).concat(PI.realizadas || []).filter((o) => o.anterior).length;
     // Bandeja 1: órdenes abiertas en Odoo que todavía no se instalan
     h += '<section class="bandeja-ins" aria-labelledby="bIns1"><div class="bandeja-cab"><h3 id="bIns1">Órdenes abiertas sin instalar</h3><span class="n">' + filas.length + '</span></div>' +
       '<p class="nota-chica ins-ayuda">El reloj cuenta de 8:00 a 22:00, todos los días, desde la primera orden. Ámbar a las 16 horas y rojo a las 24. Se apaga cuando llega la instalación o Odoo la cancela.</p>';
@@ -239,7 +247,7 @@
     }
     h += '</section>';
     // Bandeja 2: Odoo dice realizada pero la instalación no llegó (solo quien puede verla)
-    const re = (PI.realizadas || []).filter((o) => ok(Object.assign({ numero: o.numero }, o)));
+    const re = vigentes(PI.realizadas).filter((o) => ok(Object.assign({ numero: o.numero }, o)));
     if(PI.puedo && PI.puedo.realizadas){
       h += '<section class="bandeja-ins" aria-labelledby="bIns2"><div class="bandeja-cab"><h3 id="bIns2">Realizadas en Odoo sin instalación</h3><span class="n">' + re.length + '</span></div>' +
         '<p class="nota-chica ins-ayuda">Órdenes de los últimos 60 días que Odoo marca como realizadas y no tienen instalación en el TAD. Revisa si falta cargar el TAD o falló el cruce.</p>';
@@ -248,6 +256,8 @@
           ' · Realizada el ' + esc(fecha(o.ejecutada_en || o.creada_en)) + '</small></span><span class="m azul">Realizado</span></' + (o.cliente_id ? 'button' : 'div') + '>').join('') + '</div>';
       h += '</section>';
     }
+    if(nAnt) h += '<p class="nota-chica ins-ant">' + (verAnt ? 'Incluye las órdenes creadas antes del 01/10. ' : 'Solo órdenes creadas desde el 01/10. ') +
+      '<button type="button" class="enlace" id="verAnteriores">' + (verAnt ? 'Ocultar anteriores' : 'Ver anteriores (' + nAnt + ')') + '</button></p>';
     $('lista').innerHTML = h;
   }
   function abrirDuenoProv(cliente, nombre){
@@ -448,9 +458,9 @@
     return [0, '<div class="chk"><i class="no"></i><span>' + esc(nombre) + '</span><button type="button" class="mini pri" data-sube-doc="' + k + '">Subir</button></div>'];
   }
   // Contacto del representante: teléfono y correo en una sola línea
-  function itemContacto(r, n, natural){
+  function itemContacto(r, n, natural, presencial){
     const tel = String(r.telefono || '').trim(); const co = String(r.correo || '').trim(); const k = 'rep:' + n;
-    if(tel && co) return [1, '<div class="chk"><i class="ok">' + ic('check') + '</i><span>Contacto<small>' + esc(tel) + ' · ' + esc(co) + '</small></span><button type="button" class="mini" data-ir-campo="' + k + '">Cambiar</button></div>'];
+    if(tel && (co || (presencial && n === 1))) return [1, '<div class="chk"><i class="ok">' + ic('check') + '</i><span>Contacto<small>' + esc(tel) + (co ? ' · ' + esc(co) : ' · Contrato presencial, sin correo') + '</small></span><button type="button" class="mini" data-ir-campo="' + k + '">Cambiar</button></div>'];
     if(natural && !tel && !co) return [0, '<div class="chk"><i class="opc"></i><span>Contacto<small>Opcional para personas naturales</small></span><button type="button" class="mini" data-ir-campo="' + k + '">Escribir</button></div>'];
     return [0, '<div class="chk"><i class="' + (natural ? 'opc' : 'no') + '"></i><span>Contacto<small' + (natural ? '' : ' class="mal"') + '>' + esc(tel || co ? (tel || co) + '. Falta el ' + (tel ? 'correo' : 'teléfono') : 'Falta el teléfono y el correo') + '</small></span><button type="button" class="mini pri" data-ir-campo="' + k + '">Escribir</button></div>'];
   }
@@ -472,7 +482,7 @@
     for(let n = 1; n <= nReps; n++){
       const r = (F.representantes || []).find((x) => x.orden === n) || {}; const req = n <= nReq;
       legal += '<div class="sec">' + (c.es_natural ? 'Titular' : 'Representante ' + n) + (req ? '' : '<span>Opcional</span>') + '</div>' +
-        suma(itemContacto(r, n, c.es_natural), req && !c.es_natural) +
+        suma(itemContacto(r, n, c.es_natural, c.presencial), req && !c.es_natural) +
         suma(itemDoc(F, 'cedula', n, 'Cédula'), req) + suma(itemDoc(F, 'rif_personal', n, 'RIF personal'), req);
     }
     if(!c.es_natural){
@@ -500,8 +510,13 @@
           : !i.orden_ok ? '<button type="button" class="mini pri" id="asigCambiar">Asignar</button>' : '<button type="button" class="mini" id="asigCambiar">Cambiar</button>') + '</div>' +
         (!asigna && !i.orden_ok ? '<p class="nota-chica">La asigna el Analista Senior.</p>' : '') + '</div>';
     }
-    h += '<div class="req"><div class="req-t">Legal<span class="m ' + (legalOk ? 'verde' : 'rojo') + '">' + (legalOk ? 'Cumple' : 'Falta') + '</span></div>' +
-        '<p>' + (legalOk ? 'Cumplió el ' + esc(fecha(c.legal_ok_en)) + '.' : hechos + ' de ' + total + ' listos. Estatus: ' + esc((window.Comun.ESTATUS[c.estatus] || {}).t || c.estatus) + '.') + '</p>' + legal +
+    // Un solo lugar para el check de Legal: en revisión cuenta como listo y solo el administrador lo quita o lo aprueba a mano
+    const lc = c.legal_como;
+    h += '<div class="req"><div class="req-t">Legal<span class="m ' + (legalOk ? 'verde' : 'rojo') + '">' + (!legalOk ? 'Falta' : lc === 'revision' ? 'En revisión' : lc === 'excepcion' ? 'Aprobado a mano' : 'Cumple') + '</span></div>' +
+        '<p>' + (!legalOk ? hechos + ' de ' + total + ' listos. Estatus: ' + esc((window.Comun.ESTATUS[c.estatus] || {}).t || c.estatus) + '.'
+          : lc === 'revision' ? 'Pasó a revisión el ' + esc(fecha(c.legal_ok_en)) + '. Cuenta como listo hasta que el administrador le quite el check.'
+          : lc === 'excepcion' ? 'El administrador lo aprobó el ' + esc(fecha(c.legal_ok_en)) + ' aunque falten documentos.' : 'Cumplió el ' + esc(fecha(c.legal_ok_en)) + '.') + '</p>' +
+        (F.puedo.legal ? '<div class="chk"><span>' + (legalOk ? '¿No debe contar?' : '¿Aprobar aunque falten documentos?') + '</span><button type="button" class="mini' + (legalOk ? '' : ' pri') + '" id="legalCheck" data-quita-legal="' + (legalOk ? '1' : '0') + '">' + (legalOk ? 'Quitar Legal' : 'Aprobar Legal') + '</button></div>' : '') + legal +
         '<p class="nota-chica hidden" id="subidaCom" role="status"><span class="cargando-linea"><i></i></span> </p>' +
         (fal.length ? '<div class="chk"><span>¿No los tienes?</span><button type="button" class="mini" id="pedirCom">Pedir al cliente</button></div>' : '') + '</div>';
     if(i && i.comisiona){
@@ -529,12 +544,12 @@
     const sinIp = !sv.ip && !sv.ip6; const b = sv.bienvenida_envio; const p = sv.proforma_envio;
     const una = (e, que) => (e ? que + ' enviada por ' + (e.por || 'alguien del equipo') + ', ' + diaMes(e.en) : '');
     const estado = [una(b, 'Carta'), una(p, 'Proforma')].filter(Boolean).join('. ');
-    // Plegado por defecto: la cabecera dice si falta la IP y si ya se envió; se recuerda abierto mientras la hoja siga
-    return '<details class="req prof"' + (profAbierto ? ' open' : '') + '><summary class="req-t">Proforma y carta' +
-      (sinIp ? '<span class="m rojo">Falta IP</span>' : '') + '<span class="m ' + (b ? 'verde' : 'ambar') + '">' + (b ? 'Enviada ' + esc(diaMes(b.en)) : 'Por enviar') + '</span>' + ic('abajo') + '</summary>' +
-      '<p>' + esc(estado ? estado + '.' : 'Todavía no se ha enviado. Lo puede enviar el analista o el líder.') + '</p>' +
-      (sinIp ? '<div class="chk"><i class="no"></i><span>Falta IP<small class="mal">Sin IP, la carta dice "Pendiente por asignar"</small></span>' + (F.puedo.ip ? '<button type="button" class="mini pri" id="profIp">Escribir IP</button>' : '') + '</div>' : '') +
-      '<div class="acc-prof"><button type="button" class="mini" id="profBajar">' + ic('doc') + 'Descargar</button><button type="button" class="mini pri" id="profEnviar">' + ic('wa') + (b ? 'Reenviar' : 'Enviar') + '</button></div></details>';
+    // Lote 3: bloque compacto. Una línea de IP con enlace chico y Descargar / Enviar en una sola fila
+    const ip = [sv.ip, sv.ip6].filter(Boolean).join(' · ');
+    return '<div class="req prof"><div class="req-t">Proforma y carta<span class="m ' + (b ? 'verde' : 'ambar') + '">' + (b ? 'Enviada ' + esc(diaMes(b.en)) : 'Por enviar') + '</span></div>' +
+      '<p class="prof-l">IP: ' + (sinIp ? '<b class="mal">falta</b>' : esc(ip)) + (F.puedo.ip ? ' · <button type="button" class="enlace chico" id="profIp">' + (sinIp ? 'Escribir' : 'Cambiar') + '</button>' : '') + '</p>' +
+      (estado ? '<p class="nota-chica">' + esc(estado) + '.</p>' : '') +
+      '<div class="acc-prof"><button type="button" class="mini" id="profBajar">' + ic('doc') + 'Descargar</button><button type="button" class="mini pri" id="profEnviar">' + ic('wa') + (b ? 'Reenviar' : 'Enviar') + '</button></div></div>';
   }
   function bajarProforma(){
     const F = K && K.F; const i = F && (F.comision || []).find((x) => Number(x.id) === K.inst);
@@ -612,6 +627,14 @@
       '<div class="error" id="eExc" role="alert"></div><div class="acciones"><button type="submit" class="btn btn-ancho" id="excGuardar">Dar excepción</button></div></form>';
     abrirHoja('hojaExc');
   }
+  function abrirLegal(quitar){
+    if(!K || !K.F) return;
+    hojaChica('hojaLegal', 'tLegal').innerHTML = cabHoja('tLegal', quitar ? 'Quitar Legal' : 'Aprobar Legal', K.F.cliente.nombre) + '<form id="formLegal" novalidate data-quita-legal="' + (quitar ? '1' : '0') + '">' +
+      '<label class="rotulo" for="legalMotivo">Motivo' + (quitar ? ' (opcional)' : '') + '</label><textarea class="area corta" id="legalMotivo" maxlength="500" data-foco></textarea>' +
+      '<p class="nota-chica">' + (quitar ? 'Deja de contar para la comisión del corte abierto. Un corte certificado no cambia.' : 'Legal cuenta como listo aunque falten documentos. Lo que falta sigue saliendo como Falta en el expediente.') + ' Queda en la bitácora.</p>' +
+      '<div class="error" id="eLegal" role="alert"></div><div class="acciones"><button type="submit" class="btn btn-ancho" id="legalGuardar">' + (quitar ? 'Quitar Legal' : 'Aprobar Legal') + '</button></div></form>';
+    abrirHoja('hojaLegal');
+  }
   function abrirCertificar(){
     const n = porAsignar(); const cumplen = d.filas.filter((f) => f.cumple).length;
     hojaChica('hojaCert', 'tCert').innerHTML = cabHoja('tCert', 'Certificar ' + nombreCorte(d.corte).toLowerCase(), 'Del ' + fecha(d.inicio) + ' al ' + fecha(d.fin)) +
@@ -635,6 +658,7 @@
     if(e.target.closest('#lista #reintentar')){ cargar(); return; }
     const vv = e.target.closest('#vistas [data-vista]'); if(vv){ cambiarVista(vv.dataset.vista); return; }
     if(e.target.closest('#reintentarPI')){ cargarInstalar(); return; }
+    if(e.target.closest('#verAnteriores')){ verAnt = !verAnt; pintarInstalar(); pintarVistas(); return; }
     const ec = e.target.closest('[data-es-cli]');
     if(ec){ const si = ec.dataset.esCli === 'si'; Array.prototype.forEach.call(ec.parentNode.querySelectorAll('button'), (x) => { x.disabled = true; });
       rpc('orden_es_cliente', { p_orden: Number(ec.dataset.orden), p_cliente: si ? Number(ec.dataset.cli) : null })
@@ -677,6 +701,7 @@
       asignar(f.orden_id, i.dueno, b); return; }
     if(t.closest('#asigBuscar') && A){ buscarOrdenes($('asigBusca').value.trim()); return; }
     if(t.closest('#excAbrir') && K){ abrirExcepcion(); return; }
+    if((b = t.closest('#legalCheck')) && K){ abrirLegal(b.dataset.quitaLegal === '1'); return; }
     if((b = t.closest('#excQuitar')) && K){ b.disabled = true;
       rpc('instalacion_excepcion', { p_instalacion: K.inst, p_corte: null, p_motivo: null }).then(() => { toast('Excepción quitada'); tras(); }).catch((err) => { toast(err.message, 'error'); if(document.contains(b)) b.disabled = false; }); return; }
     if((b = t.closest('#pagoCom')) && K){ b.disabled = true; const pagada = b.dataset.pagada === '1';
@@ -694,6 +719,12 @@
       if(!m){ er.textContent = 'Elige la orden o marca Sin orden de Odoo'; return; }
       if(!dueno){ er.textContent = 'Elige a quién pertenece'; $('asigDueno').focus(); return; }
       asignar(m.value ? Number(m.value) : null, dueno, $('asigGuardar'), (msj) => { er.textContent = msj; }); return; }
+    if(e.target.id === 'formLegal' && K){ e.preventDefault(); const er = $('eLegal'); er.textContent = ''; const m = $('legalMotivo').value.trim(); const b = $('legalGuardar');
+      const quitar = e.target.dataset.quitaLegal === '1'; const txt = b.textContent;
+      if(!quitar && m.length < 3){ er.textContent = 'Escribe el motivo'; $('legalMotivo').focus(); return; }
+      b.disabled = true; b.textContent = 'Guardando…';
+      rpc(quitar ? 'legal_quitar' : 'legal_aprobar', { p_cliente: K.cliente, p_motivo: m || null }).then(() => { toast(quitar ? 'Legal quitado' : 'Legal aprobado a mano'); if(hojaAbierta() === 'hojaLegal') cerrarHoja(); tras(); })
+        .catch((err) => { er.textContent = err.message; b.disabled = false; b.textContent = txt; }); return; }
     if(e.target.id === 'formExc' && K){ e.preventDefault(); const er = $('eExc'); er.textContent = ''; const m = $('excMotivo').value.trim(); const b = $('excGuardar');
       if(m.length < 5){ er.textContent = 'Escribe el motivo de la excepción'; $('excMotivo').focus(); return; }
       b.disabled = true; b.textContent = 'Guardando…';
