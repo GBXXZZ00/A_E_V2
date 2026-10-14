@@ -47,9 +47,9 @@ begin
     l.lid, privado.analista_de(l.lid), case when l.lid is null then 'senior' else 'analista' end, b.instalada_en, (b.instalada_en at time zone 'America/Caracas')::date + d_env, jsonb_build_object('servicio', b.servicio_id, 'instalacion', b.instalacion_id)
   from privado.bienvenidas_filas() b
   cross join lateral (select coalesce(i.lider_id, o.vendedor_id, privado.lider_por_nombre(b.lider)) lid from public.instalaciones i left join public.ordenes_odoo o on o.id = i.orden_id where i.id = b.instalacion_id) l;
-  -- Datos por corregir: RIF por verificar (sale al quitar la marca en Editar dedicado), instalación sin cliente, cliente sin servicio enlazado
+  -- Datos por corregir: RIF por verificar (solo el administrador: sale al quitar la marca en Editar dedicado), instalación sin cliente, cliente sin servicio enlazado
   return query select 'rif_verificar'::text, dd.cliente_id::text, dd.cliente_id, c.nombre, coalesce(dd.verificar_motivo, 'RIF por verificar'), c.lider_id, privado.analista_de(c.lider_id),
-    case when c.lider_id is null then 'senior' else 'analista' end, coalesce(dd.actualizado_en, dd.creado_en), (coalesce(dd.actualizado_en, dd.creado_en) at time zone 'America/Caracas')::date + d_docs, jsonb_build_object('dedicado', true)
+    'admin'::text, coalesce(dd.actualizado_en, dd.creado_en), (coalesce(dd.actualizado_en, dd.creado_en) at time zone 'America/Caracas')::date + d_docs, jsonb_build_object('dedicado', true)
   from public.dedicados dd join public.clientes c on c.id = dd.cliente_id where dd.verificar;
   return query select 'sin_cliente'::text, i.id::text, null::bigint, coalesce(i.nombre, 'Instalación sin nombre'), 'Instalación ' || i.sucursal || '-' || i.codigo || ' sin cliente en la app',
     null::uuid, null::uuid, 'senior'::text, i.instalada_en, (i.instalada_en at time zone 'America/Caracas')::date + d_env, jsonb_build_object('instalacion', i.id)
@@ -96,10 +96,10 @@ begin
   from (select d.cliente_id, d.numero, max(d.vence_en) vence from public.documentos d
         where d.casilla = 'otro' and d.numero in (66, 67) and d.vence_en is not null and d.estado <> 'devuelto' group by 1, 2) p
   join public.clientes c on c.id = p.cliente_id
-  where c.unido_a is null and p.vence <= hoy + 30;
+  where c.unido_a is null and p.vence <= hoy + 30 and exists (select 1 from public.dedicados dd where dd.cliente_id = p.cliente_id);
   -- Líder: clientes instalados en este corte o el anterior a los que no se les ha pedido nada (sale con una gestión en el hilo o al cambiar el estatus)
   return query select 'sin_gestion'::text, c.id::text, c.id, c.nombre, 'Instalado y sin gestión: pide los documentos', c.lider_id, privado.analista_de(c.lider_id), 'lider'::text,
-    coalesce(c.ultima_gestion_en, c.creado_en), (coalesce(c.ultima_gestion_en, c.creado_en) at time zone 'America/Caracas')::date + 3, jsonb_build_object('estatus', c.estatus)
+    x.ins, (x.ins at time zone 'America/Caracas')::date + 3, jsonb_build_object('estatus', c.estatus)
   from public.clientes c
   cross join lateral (select min(i.instalada_en) ins from public.instalaciones i where i.cliente_id = c.id and i.instalada_en >= ini and privado.comisionable(i.categoria, i.es_aliado)) x
   where c.unido_a is null and c.lider_id is not null and c.estatus = 'grandes_negocios' and x.ins is not null

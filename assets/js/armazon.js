@@ -1,7 +1,7 @@
 // Armazón común de los módulos: barra de arriba, navegación y menú de cuenta.
 (function(){
   'use strict';
-  const { $, esc, ic, iniciales, fecha, abrirHoja, cerrarHoja, prepararHojas, cache } = window.Comun;
+  const { $, esc, ic, iniciales, fecha, abrirHoja, cerrarHoja, prepararHojas, cache, rpc } = window.Comun;
   const S = window.Sesion;
   window.ACTUALIZAR_LISTO = true;   // la pantalla Actualizar ya existe
 
@@ -34,7 +34,7 @@
     barra.innerHTML =
       (o.volver ? '<a class="barra-volver" href="' + esc(o.volver.enlace) + '">' + ic('volver', 'ch') + esc(o.volver.texto) + '</a>' : '') +
       '<a class="marca" href="inicio.html" aria-label="Inicio"><img class="logo" src="assets/img/logo.svg?v=5" alt="Airtek" width="96" height="12"><span>Empresas</span></a>' +
-      (conNav ? '<nav class="navpc" aria-label="Navegación">' + NAV.filter((n) => puedeVer(n, p)).map((n) => '<a href="' + n.enlace + '"' + (o.activo === n.id ? ' class="on" aria-current="page"' : '') + '>' + n.texto + '</a>').join('') + '</nav>' : '') +
+      (conNav ? '<nav class="navpc" aria-label="Navegación">' + NAV.filter((n) => puedeVer(n, p)).map((n) => '<a href="' + n.enlace + '" data-nav="' + n.id + '"' + (o.activo === n.id ? ' class="on" aria-current="page"' : '') + '>' + n.texto + '</a>').join('') + '</nav>' : '') +
       '<span class="sep"></span>' +
       (o.acciones ? '<div class="acciones-bar" id="accionesBar">' + o.acciones + '</div>' : '') +
       '<button type="button" class="cuenta" id="cuenta" data-abre="hojaCuenta" aria-label="Mi cuenta">' +
@@ -47,8 +47,9 @@
       if(!nav){ nav = document.createElement('nav'); nav.id = 'navAbajo'; nav.className = 'nav'; nav.setAttribute('aria-label', 'Navegación'); document.body.appendChild(nav); }
       let tel = NAV.filter((n) => puedeVer(n, p) && (!n.soloPc || p.rol === 'gerencia') && !(n.pcSalvoMarca && !(p.rol === 'lider' && p[n.marca])));
       if(tel.length > 5) tel = tel.filter((n) => !n.opcionalTel);
-      nav.innerHTML = tel.map((n) => '<a href="' + n.enlace + '"' + (o.activo === n.id ? ' class="on" aria-current="page"' : '') + '><span>' + ic(n.icono) + '</span>' + n.texto + '</a>').join('');
+      nav.innerHTML = tel.map((n) => '<a href="' + n.enlace + '" data-nav="' + n.id + '"' + (o.activo === n.id ? ' class="on" aria-current="page"' : '') + '><span>' + ic(n.icono) + '</span>' + n.texto + '</a>').join('');
     }
+    if(conNav) contadores(null, p);
 
     let hoja = $('hojaCuenta');
     if(!hoja){
@@ -77,6 +78,39 @@
     $('salir').addEventListener('click', async () => { cache.borrarTodo(); await S.salir(); location.replace('index.html'); });
     montado = { clave, res: { equipo, conNav } };
     return montado.res;
+  }
+
+  // Corrida 14/10 tarde: cada módulo del menú lleva su contador de pendientes (la misma fuente que Mi trabajo e Inicio).
+  // Se guarda en el dispositivo y se pide de nuevo cada 2 minutos como máximo; si falla, el menú sigue sin número.
+  const K_CONT = 'contadores_menu'; let pidiendo = false;
+  function numerosNav(r){
+    const m = (r && r.modulos) || {}; const n = (k) => (m[k] || {}).n || 0; const rj = (k) => (m[k] || {}).rojo || 0;
+    return { trabajo: [r ? r.total || 0 : 0, r ? r.rojo || 0 : 0], clientes: [n('expedientes') + n('dedicados'), rj('expedientes') + rj('dedicados')],
+      comisiones: [n('comisiones'), rj('comisiones')], migraciones: [n('migraciones'), rj('migraciones')], aliados: [n('aliados'), rj('aliados')] };
+  }
+  function pintarNumeros(r){
+    const nums = numerosNav(r);
+    Array.prototype.forEach.call(document.querySelectorAll('[data-nav]'), (a) => {
+      let b = a.querySelector('.nbadge'); const x = nums[a.dataset.nav];
+      const nom = a.dataset.nom || (a.dataset.nom = a.textContent.replace(/\d+\+?/g, '').trim());
+      if(!x || !x[0]){ if(b) b.remove(); a.removeAttribute('aria-label'); return; }
+      if(!b){ b = document.createElement('b'); b.className = 'nbadge'; (a.querySelector('span') || a).appendChild(b); }
+      b.textContent = x[0] > 99 ? '99+' : String(x[0]); b.classList.toggle('rojo', x[1] > 0);
+      b.setAttribute('aria-hidden', 'true'); a.setAttribute('aria-label', nom + ', ' + x[0] + ' pendientes' + (x[1] ? ', ' + x[1] + ' vencidos' : ''));
+    });
+  }
+  // resumen: lo que ya trajo la página (Inicio); sin él, se usa lo guardado y se pide si está viejo
+  async function contadores(resumen, p){
+    const yo = p || {}; if(['admin', 'analista', 'lider'].indexOf(yo.rol) < 0) return;
+    if(resumen){ cache.guardar(K_CONT, { uid: yo.id, en: Date.now(), r: resumen }); pintarNumeros(resumen); return; }
+    const g = cache.leer(K_CONT); const mio = g && g.uid === yo.id ? g : null;
+    if(mio) pintarNumeros(mio.r);
+    if(/(?:inicio|trabajo)\.html$|\/$/.test(location.pathname)) return;   // estas páginas ya piden el resumen y lo pasan aquí
+    if((mio && Date.now() - mio.en < 120000) || pidiendo || !navigator.onLine) return;
+    pidiendo = true;
+    try { const r = await rpc('trabajo_resumen', {}); if(r){ cache.guardar(K_CONT, { uid: yo.id, en: Date.now(), r }); pintarNumeros(r); } }
+    catch (e) { /* el contador es de ayuda: si falla, la página sigue y su propia carga avisa del error */ }
+    finally { pidiendo = false; }
   }
 
   // Opciones de cada página, para dibujar la navegación antes de que responda el servidor
@@ -119,5 +153,5 @@
     const t = $('dTad'); if(t) t.textContent = ini.tad_en ? 'Último TAD: ' + fecha(ini.tad_en) : 'Odoo, instalaciones y TAD';
   }
 
-  window.Armazon = { montar, temprano, arrancar, datosMenu, cerrarCuenta: cerrarHoja, abrirCuenta: () => abrirHoja('hojaCuenta') };
+  window.Armazon = { montar, temprano, arrancar, datosMenu, contadores, cerrarCuenta: cerrarHoja, abrirCuenta: () => abrirHoja('hojaCuenta') };
 })();

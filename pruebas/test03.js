@@ -16,7 +16,7 @@ const { ok, cerrar } = marcador();
     await p.keyboard.press('Escape'); await p.waitForFunction(() => !document.querySelector('#hojaCuenta.ver'));
 
     await p.click('a.corte'); await p.waitForURL('**/comisiones.html'); await p.waitForSelector('.grupo');
-    ok(nombre + ': Comisiones marca su pestaña', (await p.textContent(navSel + ' .on')).trim() === 'Comisiones');
+    ok(nombre + ': Comisiones marca su pestaña', (await p.textContent(navSel + ' .on')).replace(/\d+\+?/g, '').trim() === 'Comisiones');
     const grupos = await p.locator('.grupo').count();
     ok(nombre + ': agrupa por líder', grupos === 4 && (await p.textContent('.mets .negro')).includes('de 16'));
     ok(nombre + ': los grupos empiezan cerrados', (await p.locator('.grupo.abierto').count()) === 0);

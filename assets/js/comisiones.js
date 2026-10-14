@@ -190,7 +190,7 @@
   let porDecidir = 0;
   async function cargarPorDecidir(){
     if(!yo || ['admin', 'analista'].indexOf(yo.rol) < 0) return;
-    try { const r = await rpc('trabajo_resumen', {}); porDecidir = ((r && r.tipos && r.tipos.cambio_comision) || {}).n || 0; pintarVistas(); }
+    try { const r = await rpc('trabajo_resumen', {}); if(r) window.Armazon.contadores(r, yo); porDecidir = ((r && r.tipos && r.tipos.cambio_comision) || {}).n || 0; pintarVistas(); }
     catch (e) { /* El aviso es secundario: si falla, Comisiones sigue igual y Migraciones lo muestra */ }
   }
   async function cargarInstalar(){

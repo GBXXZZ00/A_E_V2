@@ -1059,3 +1059,16 @@ button.ge-li{cursor:pointer}
 .ctr-p small.mal{color:var(--danger);font-weight:600}
 .ctr-p small.ojo{color:var(--warn);font-weight:600}
 @media (prefers-reduced-motion:reduce){ .plegado[aria-expanded] .i{transition:none} }
+/* Corrida 14/10 tarde, Parte 2: Mi trabajo por módulo, dentro vencido, vence hoy, nuevo y a tiempo */
+.tr-subs{margin-top:-4px}
+.tr-subs button{font-size:13px}
+.tr-g{margin-top:14px}
+.tr-gt{font-size:13px;font-weight:700;color:var(--text2);margin:0 0 6px 2px;text-transform:none}
+.tr-gt em{font-style:normal;font-weight:600;color:var(--text3)}
+.tr-f > .fila .ch{flex:none;color:var(--text3)}
+/* Contador de pendientes en cada módulo del menú */
+.nbadge{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 5px;margin-left:6px;border-radius:var(--pill);background:var(--surface-3);color:var(--text);font-size:11px;font-weight:700;line-height:1}
+.nbadge.rojo{background:var(--danger);color:#fff}
+.navpc a.on .nbadge{background:#fff;color:var(--text)} .navpc a.on .nbadge.rojo{background:var(--danger);color:#fff}
+.nav a span{position:relative}
+.nav a span .nbadge{position:absolute;top:-4px;right:6px;margin:0;border:2px solid #fff;height:20px}

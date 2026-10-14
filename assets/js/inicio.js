@@ -35,22 +35,19 @@
     // Lote 6: lo que vive en la bandeja "Mi trabajo" se cuenta una sola vez, desde la misma fuente del servidor
     const T = d.trabajo; const conBandeja = !!T && (lider || analista || admin);
     if(conBandeja){
-      const g = T.tipos || {}; const suma = (ts) => ts.reduce((a, k) => [a[0] + ((g[k] || {}).n || 0), a[1] + ((g[k] || {}).rojo || 0)], [0, 0]);
-      const GR = lider ? [['docs', ['docs_faltan', 'devuelto'], 'cliente con documentos pendientes', 'clientes con documentos pendientes', 'doc'], ['firmar', ['por_firmar'], 'contrato por firmar', 'contratos por firmar', 'lapiz'],
-          ['titular', ['planilla'], 'cambio de titular con documentos por subir', 'cambios de titular con documentos por subir', 'cambio', 'migraciones.html'], ['referidos', ['referido'], 'referido por contactar', 'referidos por contactar', 'usuarios'],
-          ['vgt', ['vgt'], 'dedicado con requisitos VGT', 'dedicados con requisitos VGT', 'servidor'], ['gestion', ['sin_gestion'], 'cliente sin gestión', 'clientes sin gestión', 'alerta']]
-        : [['cambios', ['cambio_emitir'], 'cambio por emitir', 'cambios por emitir', 'cambio', 'migraciones.html?f=por_emitir'], ['enviar', ['por_enviar'], 'proforma y carta por enviar', 'proformas y cartas por enviar', 'enviar'],
-          ['ip', ['sin_ip'], 'servicio sin IP', 'servicios sin IP', 'alerta'], ['datos', ['rif_verificar', 'sin_cliente', 'sin_servicio'], 'dato por corregir', 'datos por corregir', 'lapiz'],
-          ['sinsol', ['sin_solicitud'], 'cambio sin solicitud', 'cambios sin solicitud', 'cambio', 'migraciones.html?f=sin_solicitud']].concat(d.senior || admin ? [['certificar', ['certificar'], 'instalación por cumplir para certificar', 'instalaciones por cumplir para certificar', 'barras'],
-            ['decidir', ['cambio_comision'], 'cambio con la comisión por decidir', 'cambios con la comisión por decidir', 'cambio', 'migraciones.html?f=decidir']] : []);
-      GR.forEach((x) => { const n = suma(x[1]); if(!n[0]) return;
-        r.push({ c: n[1] ? 'rojo' : 'azul', i: x[4], t: plural(n[0], x[2], x[3]), s: n[1] ? plural(n[1], 'vencido', 'vencidos') + (x[5] ? '. Míralo en Migraciones' : '. Míralo en Mi trabajo') : x[5] ? 'En Migraciones, a tiempo' : 'En Mi trabajo, a tiempo', e: x[5] || 'trabajo.html?f=' + x[0], k: 'tr_' + x[0] }); });
+      // Corrida 14/10 tarde: un contador por módulo, desde la misma fuente que Mi trabajo y el menú
+      const M = T.modulos || {};
+      const MODS = [['expedientes', 'Expedientes', 'doc', 'clientes con algo pendiente'], ['comisiones', 'Comisiones', 'barras', 'pendientes de comisiones'], ['migraciones', 'Migraciones', 'cambio', 'cambios pendientes'],
+        ['dedicados', 'Dedicados', 'servidor', 'pendientes de dedicados'], ['aliados', 'Aliados', 'usuarios', 'pendientes de aliados']];
+      MODS.forEach((x) => { const m = M[x[0]] || {}; if(!m.n) return;
+        const det = [m.rojo ? plural(m.rojo, 'vencido', 'vencidos') : '', m.hoy ? m.hoy + ' vence' + (m.hoy === 1 ? '' : 'n') + ' hoy' : ''].filter(Boolean).join(', ');
+        r.push({ c: m.rojo ? 'rojo' : m.hoy ? 'ambar' : 'azul', i: x[2], t: x[1] + ': ' + plural(m.n, 'pendiente', 'pendientes'), s: (det ? det + '. ' : 'A tiempo. ') + 'Míralo en Mi trabajo', e: 'trabajo.html?m=' + x[0], k: 'tr_' + x[0] }); });
     }
     if(!conBandeja && (lider || analista || admin) && c.devueltos > 0){
       r.push({ c: 'rojo', i: 'devolver', t: plural(c.devueltos, 'cliente', 'clientes') + ' con documentos devueltos',
         s: 'Hay que pedirlos de nuevo al cliente', e: 'clientes.html?f=devueltos', k: 'devueltos' });
     }
-    if((d.senior || admin) && com.por_asignar > 0){
+    if(!conBandeja && (d.senior || admin) && com.por_asignar > 0){
       r.push({ c: 'ambar', i: 'alerta', t: plural(com.por_asignar, 'instalación', 'instalaciones') + ' por asignar',
         s: 'No comisionan hasta confirmar la orden y a quién pertenecen', e: 'comisiones.html?f=asignar', k: 'asignar' });
     }
@@ -143,7 +140,7 @@
     if(guardado && guardado.rol === p.rol) pintar(guardado, p.rol); else esqueletoInicio();
     try {
       const d = await rpc('inicio_datos');
-      if(['admin', 'analista', 'lider'].indexOf(p.rol) >= 0){ try { d.trabajo = await rpc('trabajo_resumen'); } catch (e) { d.trabajo = null; } }
+      if(['admin', 'analista', 'lider'].indexOf(p.rol) >= 0){ try { d.trabajo = await rpc('trabajo_resumen'); window.Armazon.contadores(d.trabajo, p); } catch (e) { d.trabajo = null; } }
       cache.guardar('inicio', d);
       pintar(d, p.rol);
       window.Armazon.datosMenu(d);

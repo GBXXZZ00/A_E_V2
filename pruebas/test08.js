@@ -88,8 +88,8 @@ const llamo = (m, n) => m.llamadas.filter((l) => l[1] === n);
 
     // Inicio de la analista: bienvenidas por enviar
     const s = await contexto(nav, dispositivo); const q = await entrar(s.ctx, 'elena', '315806'); q.on('pageerror', (e) => errores.push(e.message));
-    await q.waitForSelector('[data-pend="tr_enviar"]');
-    ok(nombre + ': Inicio cuenta lo por enviar (desde Mi trabajo) y las pendientes por asignar', /por enviar/.test(await q.textContent('[data-pend="tr_enviar"]')) && (await q.textContent('[data-pend="asignar"]')).includes('2 instalaciones por asignar'));
+    await q.waitForSelector('[data-pend="tr_comisiones"]');
+    ok(nombre + ': Inicio cuenta Comisiones desde Mi trabajo (por enviar incluido) sin repetir por asignar aparte', /Comisiones: \d+ pendientes?/.test(await q.textContent('[data-pend="tr_comisiones"]')) && (await q.locator('[data-pend="asignar"]').count()) === 0);
     await q.screenshot({ path: 'capturas/08-' + nombre + '-inicio.png', fullPage: true });
     await q.goto(H + 'clientes.html?bienvenidas=1'); await q.waitForSelector('#hojaBienv.ver [data-bienv]');
     const n = await q.locator('#hojaBienv [data-bienv]').count();

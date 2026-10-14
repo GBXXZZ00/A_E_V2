@@ -212,9 +212,15 @@ function pendientesBase(m){
   ];
   return m.datos.pendientes.concat(pendDecidir(m));
 }
+// Corrida 14/10 tarde: módulo de cada tipo (como privado.modulo_de) y sin "Hecho"
+function moduloDe(t){
+  return ['docs_faltan', 'devuelto', 'por_firmar', 'sin_gestion', 'rif_verificar'].includes(t) ? 'expedientes'
+    : ['por_instalar', 'por_enviar', 'sin_ip', 'por_asignar', 'certificar', 'sin_cliente', 'sin_servicio'].includes(t) ? 'comisiones'
+    : ['cambio_emitir', 'sin_solicitud', 'cambio_comision', 'planilla'].includes(t) ? 'migraciones' : ['vgt', 'poliza'].includes(t) ? 'dedicados' : t === 'referido' ? 'aliados' : 'otros';
+}
 function misPendientes(m, yo, persona){
-  const sen = yo.rol === 'analista' && !!yo.senior; const can = !!yo.canales; const hechos = m.datos.hechos || [];
-  return pendientesBase(m).filter((p) => hechos.indexOf(p.tipo + '|' + p.clave) < 0).filter((p) =>
+  const sen = yo.rol === 'analista' && !!yo.senior; const can = !!yo.canales;
+  return pendientesBase(m).filter((p) =>
     yo.rol === 'admin' ? !persona || p.analista_id === persona || p.lider_id === persona
       : yo.rol === 'lider' ? p.para === 'lider' && p.lider_id === yo.id
       : can ? ['analista', 'senior'].includes(p.para) && (!persona || p.analista_id === persona)
@@ -599,7 +605,7 @@ const RPC = {
   trabajo(m, yo, a){
     if(!['admin', 'analista', 'lider'].includes(yo.rol)) return error('No tienes permiso para hacer esto');
     const sen = esSenior(yo); const can = !!yo.canales; const h = hoy();
-    const filas = misPendientes(m, yo, a.p_persona).map((p) => Object.assign({}, p, { color: p.vence < h ? 'rojo' : p.vence === h ? 'ambar' : 'verde', nuevo: p.desde > new Date(Date.now() - 864e5).toISOString(),
+    const filas = misPendientes(m, yo, a.p_persona).map((p) => Object.assign({}, p, { modulo: moduloDe(p.tipo), color: p.vence < h ? 'rojo' : p.vence === h ? 'ambar' : 'verde', nuevo: p.desde > new Date(Date.now() - 864e5).toISOString(),
       lider: (m.personas.find((x) => x.id === p.lider_id) || {}).nombre || null, analista: (m.personas.find((x) => x.id === p.analista_id) || {}).nombre || null }));
     filas.sort((x, y) => ({ rojo: 0, ambar: 1, verde: 2 }[x.color] - { rojo: 0, ambar: 1, verde: 2 }[y.color]));
     return { rol: yo.rol, senior: yo.rol === 'analista' && !!yo.senior, canales: can, hoy: h, dias: Object.assign({}, m.datos.dias || { dias_orden_sin_instalar: '15', dias_sin_documentos: '30', dias_por_enviar: '3', dias_cambio_por_emitir: '2' }),
@@ -607,9 +613,11 @@ const RPC = {
       aliados: yo.rol === 'admin' || can ? { solicitudes: 2, referidos: 1, pagos: 1, sin_permiso: 3 } : null, filas }; },
   trabajo_resumen(m, yo){ if(!['admin', 'analista', 'lider'].includes(yo.rol)) return null; const h = hoy(); const l = misPendientes(m, yo, null); const tipos = {};
     l.forEach((p) => { const t = tipos[p.tipo] || (tipos[p.tipo] = { n: 0, rojo: 0 }); t.n++; if(p.vence < h) t.rojo++; });
-    return { total: l.length, rojo: l.filter((p) => p.vence < h).length, hoy: l.filter((p) => p.vence === h).length, tipos }; },
-  trabajo_hecho(m, yo, a){ const l = misPendientes(m, yo, null); const p = l.find((x) => x.tipo === a.p_tipo && x.clave === a.p_clave); if(!p) return error('Ese pendiente no es tuyo o ya no está');
-    (m.datos.hechos = m.datos.hechos || []).push(a.p_tipo + '|' + a.p_clave); (m.bitacora = m.bitacora || []).push({ accion: 'pendiente_hecho', nota: a.p_nota }); return null; },
+    const al = yo.rol === 'admin' || !!yo.canales ? { solicitudes: 2, referidos: 1, pagos: 1, sin_permiso: 3 } : null; const modulos = {};
+    ['expedientes', 'comisiones', 'migraciones', 'dedicados', 'aliados'].forEach((k) => { const x = l.filter((p) => moduloDe(p.tipo) === k);
+      modulos[k] = { n: x.length + (k === 'aliados' && al ? al.solicitudes + al.pagos + al.sin_permiso : 0), rojo: x.filter((p) => p.vence < h).length, hoy: x.filter((p) => p.vence === h).length }; });
+    return { total: l.length, rojo: l.filter((p) => p.vence < h).length, hoy: l.filter((p) => p.vence === h).length, tipos, modulos, aliados: al }; },
+  trabajo_hecho(){ return error('Los pendientes ya no se marcan a mano: salen solos cuando se resuelven'); },
   lideres_analistas(m, yo){ if(yo.rol !== 'admin') return error('No tienes permiso para hacer esto'); const l = {}; m.personas.filter((p) => p.rol === 'lider').forEach((p) => { l[p.id] = p.analista_id || null; });
     return { lideres: l, analistas: m.personas.filter((p) => p.rol === 'analista' && p.activo).map((p) => ({ id: p.id, nombre: p.nombre })) }; },
   // Lote 7: Gerencia. Los hechos inventados imitan privado.gerencia_hechos; los filtros y permisos, privado.gerencia_filtrado.

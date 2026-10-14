@@ -24,11 +24,11 @@ function sembrar(m){
     const { ctx, mundo } = await contexto(nav, dispositivo); sembrar(mundo);
     // ----- Analista Senior: Inicio y Mi trabajo llevan a Migraciones -----
     const p = await entrar(ctx, 'elena', '315806'); p.on('pageerror', (e) => errores.push(e.message));
-    await p.waitForSelector('#zonaPendientes [data-pend="tr_decidir"]');
-    ok(nombre + ': Inicio del Senior avisa los cambios con la comisión por decidir y lleva a Migraciones', /1 cambio con la comisión por decidir/.test(await p.textContent('#zonaPendientes')) && (await p.getAttribute('[data-pend="tr_decidir"]', 'href')) === 'migraciones.html?f=decidir');
+    await p.waitForSelector('#zonaPendientes [data-pend="tr_migraciones"]');
+    ok(nombre + ': Inicio del Senior cuenta Migraciones (con la comisión por decidir) y lleva a Mi trabajo', /Migraciones: \d+ pendientes?/.test(await p.textContent('#zonaPendientes')) && (await p.getAttribute('[data-pend="tr_migraciones"]', 'href')) === 'trabajo.html?m=migraciones');
     ok(nombre + ': Migraciones es un módulo en Inicio (ya no "En construcción")', (await p.locator('#zonaModulos a[data-modulo="migraciones"]').count()) === 1 && (await p.locator('#zonaModulos .pronto[data-modulo="migraciones"]').count()) === 0);
     await p.goto(H + 'trabajo.html?f=decidir'); await p.waitForSelector('#lista .tr-f');
-    ok(nombre + ': Mi trabajo del Senior tiene la pestaña Comisión por decidir', (await p.getAttribute('#filtros [data-tab="decidir"]', 'aria-selected')) === 'true' && /Ferreteria Inventada/.test(await p.textContent('#lista')));
+    ok(nombre + ': Mi trabajo del Senior abre Migraciones con Comisión por decidir', (await p.getAttribute('#filtros [data-tab="migraciones"]', 'aria-selected')) === 'true' && (await p.getAttribute('#subs [data-sub="cambio_comision"]', 'aria-pressed')) === 'true' && /Ferreteria Inventada/.test(await p.textContent('#lista')));
     await p.locator('#lista .tr-f [data-abrir]').first().click(); await p.waitForURL('**/migraciones.html**'); await p.waitForSelector('#hojaCambio.ver #cCam .estado');
     ok(nombre + ': tocar el pendiente abre Migraciones en la pestaña y el cambio', (await p.getAttribute('#filtros [data-camtab="decidir"]', 'aria-selected')) === 'true' && /Por decidir/.test(await p.textContent('#cCam')));
     // Sí sin motivo: error debajo; con motivo: comisiona y queda en la bitácora
