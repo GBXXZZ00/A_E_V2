@@ -920,3 +920,22 @@ main.vista-instalar #ayudaFiltro{display:none}
 .cam-srv b{display:block;font-size:13.5px}
 .cam-srv small{display:block;font-size:12px;color:var(--text2)}
 .vistas em.az{background:var(--azul-bg);color:var(--azul)}
+/* Lote 6: Mi trabajo */
+.tr-f{display:flex;align-items:center;gap:8px;border-top:1px solid var(--line)}
+.tr-lista > .tr-f:first-child{border-top:0}
+.tr-f > .fila{flex:1;min-width:0;border-top:0;text-align:left}
+.tr-f > .mini{flex:none;margin-right:10px;white-space:nowrap}
+.tr-f .pto{width:10px;height:10px;border-radius:50%;flex:none;margin-right:2px;background:var(--verde)}
+.tr-f .pto.ambar{background:var(--ambar)} .tr-f .pto.rojo{background:var(--rojo)}
+.tr-q{font-size:12px;color:var(--text2)}
+#filtros em.rj{background:var(--rojo-bg);color:var(--rojo);border-radius:6px;padding:0 5px}
+#filtros .on em.rj{background:#fff}
+.tr-al{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}
+.tr-al-k{display:flex;align-items:center;gap:12px;padding:14px 16px;border:1px solid var(--line);border-radius:16px;min-height:64px}
+.tr-al-k b{font-size:24px;font-weight:800}
+.tr-al-k small{flex:1;font-size:13px;color:var(--text2)}
+.tr-dias{margin-top:24px;border-top:1px solid var(--line);padding-top:12px}
+.tr-dias > summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;min-height:44px;font-weight:700}
+.tr-dias > summary::-webkit-details-marker{display:none}
+.tr-dias-g{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-top:8px}
+@media (hover:hover) and (pointer:fine){ .tr-al-k:hover{background:var(--surface-2)} }

@@ -88,10 +88,10 @@ const llamo = (m, n) => m.llamadas.filter((l) => l[1] === n);
 
     // Inicio de la analista: bienvenidas por enviar
     const s = await contexto(nav, dispositivo); const q = await entrar(s.ctx, 'elena', '315806'); q.on('pageerror', (e) => errores.push(e.message));
-    await q.waitForSelector('[data-pend="bienvenidas"]');
-    ok(nombre + ': Inicio lista las bienvenidas por enviar y las pendientes por asignar', /\d+ bienvenidas por enviar/.test(await q.textContent('[data-pend="bienvenidas"]')) && (await q.textContent('[data-pend="asignar"]')).includes('2 instalaciones por asignar'));
+    await q.waitForSelector('[data-pend="tr_enviar"]');
+    ok(nombre + ': Inicio cuenta lo por enviar (desde Mi trabajo) y las pendientes por asignar', /por enviar/.test(await q.textContent('[data-pend="tr_enviar"]')) && (await q.textContent('[data-pend="asignar"]')).includes('2 instalaciones por asignar'));
     await q.screenshot({ path: 'capturas/08-' + nombre + '-inicio.png', fullPage: true });
-    await q.click('[data-pend="bienvenidas"]'); await q.waitForSelector('#hojaBienv.ver [data-bienv]');
+    await q.goto(H + 'clientes.html?bienvenidas=1'); await q.waitForSelector('#hojaBienv.ver [data-bienv]');
     const n = await q.locator('#hojaBienv [data-bienv]').count();
     ok(nombre + ': la lista trae las instalaciones con dueño y marca las que no tienen IP', n >= 5 && !(await q.textContent('#hojaBienv')).includes('Comercial de Prueba 8,') && !q.url().includes('bienvenidas'));
     ok(nombre + ': lista de bienvenidas sin desborde', await sinDesborde(q));
@@ -105,7 +105,7 @@ const llamo = (m, n) => m.llamadas.filter((l) => l[1] === n);
 
     // La líder también puede enviar las suyas
     const l = await contexto(nav, dispositivo); const r = await entrar(l.ctx, 'lucia', '739105'); r.on('pageerror', (e) => errores.push(e.message));
-    await r.waitForSelector('[data-pend="bienvenidas"]'); await r.click('[data-pend="bienvenidas"]'); await r.waitForSelector('#hojaBienv.ver [data-bienv]');
+    await r.goto(H + 'clientes.html?bienvenidas=1'); await r.waitForSelector('#hojaBienv.ver [data-bienv]');
     ok(nombre + ': la líder ve solo las bienvenidas de sus clientes', (await r.locator('#hojaBienv [data-bienv]').count()) === 3);
     await r.locator('#hojaBienv [data-bienv]').first().click(); await r.waitForSelector('#hojaEnviar.ver #envWa');
     ok(nombre + ': la líder puede enviar pero no marcar por fuera', (await r.locator('#envManual').count()) === 0 && (await r.locator('#envCorreo').count()) === 1);

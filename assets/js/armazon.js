@@ -8,6 +8,7 @@
   const NAV = [
     { id: 'inicio', texto: 'Inicio', icono: 'casa', enlace: 'inicio.html' },
     { id: 'comisiones', texto: 'Comisiones', icono: 'barras', enlace: 'comisiones.html' },
+    { id: 'trabajo', texto: 'Mi trabajo', icono: 'check', enlace: 'trabajo.html', roles: ['admin', 'analista', 'lider'], soloPc: true },
     { id: 'clientes', texto: 'Clientes', icono: 'edificio', enlace: 'clientes.html' },
     { id: 'factibilidad', texto: 'Factibilidad', icono: 'wifi', enlace: 'factibilidad.html', roles: ['admin', 'analista', 'lider'] },
     { id: 'revision', texto: 'Revisión', icono: 'doc', enlace: 'revision.html', roles: ['admin', 'abogado'] },

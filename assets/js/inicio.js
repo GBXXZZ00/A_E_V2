@@ -34,7 +34,20 @@
       r.push({ c: 'ambar', i: 'doc', t: plural(c.por_revisar, 'expediente', 'expedientes') + ' por revisar',
         s: c.por_revisar_dias > 0 ? 'El más viejo espera ' + plural(c.por_revisar_dias, 'día', 'días') : 'Llegaron hoy', e: 'clientes.html?f=por_revisar', k: 'por_revisar' });
     }
-    if((lider || analista || admin) && c.devueltos > 0){
+    // Lote 6: lo que vive en la bandeja "Mi trabajo" se cuenta una sola vez, desde la misma fuente del servidor
+    const T = d.trabajo; const conBandeja = !!T && (lider || analista || admin);
+    if(conBandeja){
+      const g = T.tipos || {}; const suma = (ts) => ts.reduce((a, k) => [a[0] + ((g[k] || {}).n || 0), a[1] + ((g[k] || {}).rojo || 0)], [0, 0]);
+      const GR = lider ? [['docs', ['docs_faltan', 'devuelto'], 'cliente con documentos pendientes', 'clientes con documentos pendientes', 'doc'], ['firmar', ['por_firmar'], 'contrato por firmar', 'contratos por firmar', 'lapiz'],
+          ['titular', ['planilla'], 'cambio de titular con documentos por subir', 'cambios de titular con documentos por subir', 'cambio'], ['referidos', ['referido'], 'referido por contactar', 'referidos por contactar', 'usuarios'],
+          ['vgt', ['vgt'], 'dedicado con requisitos VGT', 'dedicados con requisitos VGT', 'servidor'], ['gestion', ['sin_gestion'], 'cliente sin gestión', 'clientes sin gestión', 'alerta']]
+        : [['cambios', ['cambio_emitir'], 'cambio por emitir', 'cambios por emitir', 'cambio'], ['enviar', ['por_enviar'], 'proforma y carta por enviar', 'proformas y cartas por enviar', 'enviar'],
+          ['ip', ['sin_ip'], 'servicio sin IP', 'servicios sin IP', 'alerta'], ['datos', ['rif_verificar', 'sin_cliente', 'sin_servicio'], 'dato por corregir', 'datos por corregir', 'lapiz'],
+          ['sinsol', ['sin_solicitud'], 'cambio sin solicitud', 'cambios sin solicitud', 'cambio']].concat(d.senior || admin ? [['certificar', ['certificar'], 'instalación por cumplir para certificar', 'instalaciones por cumplir para certificar', 'barras']] : []);
+      GR.forEach((x) => { const n = suma(x[1]); if(!n[0]) return;
+        r.push({ c: n[1] ? 'rojo' : 'azul', i: x[4], t: plural(n[0], x[2], x[3]), s: n[1] ? plural(n[1], 'vencido', 'vencidos') + '. Míralo en Mi trabajo' : 'En Mi trabajo, a tiempo', e: 'trabajo.html?f=' + x[0], k: 'tr_' + x[0] }); });
+    }
+    if(!conBandeja && (lider || analista || admin) && c.devueltos > 0){
       r.push({ c: 'rojo', i: 'devolver', t: plural(c.devueltos, 'cliente', 'clientes') + ' con documentos devueltos',
         s: 'Hay que pedirlos de nuevo al cliente', e: 'clientes.html?f=devueltos', k: 'devueltos' });
     }
@@ -47,7 +60,7 @@
       r.push({ c: ins.rojo ? 'rojo' : 'ambar', i: 'reloj', t: ins.rojo ? plural(ins.rojo, 'orden en rojo', 'órdenes en rojo') : plural(ins.ambar, 'orden en ámbar', 'órdenes en ámbar'),
         s: (ins.rojo ? 'Llevan 24 horas o más sin instalación' : 'Llevan 16 horas o más sin instalación') + (ins.rojo && ins.ambar ? '. Y ' + ins.ambar + ' en ámbar' : ''), e: 'comisiones.html?t=instalar', k: 'instalar' });
     }
-    if((analista || admin || lider) && d.bienvenidas > 0){
+    if(!conBandeja && (analista || admin || lider) && d.bienvenidas > 0){
       r.push({ c: 'azul', i: 'enviar', t: plural(d.bienvenidas, 'bienvenida', 'bienvenidas') + ' por enviar',
         s: 'Instalaciones de este corte sin su carta de bienvenida', e: 'clientes.html?bienvenidas=1', k: 'bienvenidas' });
     }
@@ -55,7 +68,7 @@
       r.push({ c: 'azul', i: 'reloj', t: plural(com.ultimo, 'instalación', 'instalaciones') + ' en su último corte',
         s: 'Si no ' + (com.ultimo === 1 ? 'cumple' : 'cumplen') + ' el ' + (d.corte ? fecha(d.corte.limite || d.corte.fin).split(' de ')[0] : '18') + ', se pierde la comisión', e: 'comisiones.html?f=ultimo', k: 'ultimo' });
     }
-    if((lider || analista || admin) && c.sin_gestion > 0){
+    if(!conBandeja && (lider || analista || admin) && c.sin_gestion > 0){
       r.push({ c: 'gris', i: 'alerta', t: plural(c.sin_gestion, 'cliente', 'clientes') + ' sin gestión',
         s: 'Llevan más de 3 días sin que nadie los contacte', e: 'clientes.html?f=sin_gestion', k: 'sin_gestion' });
     }
@@ -88,6 +101,8 @@
       { id: 'clientes', nombre: 'Clientes', icono: 'edificio', enlace: 'clientes.html',
         texto: d.clientes ? (c.en_curso ? c.en_curso + ' con documentos en curso' : 'Sin expedientes en curso') : 'Expediente, documentos e hilo' }
     ];
+    if(['admin', 'lider', 'analista'].indexOf(rol) >= 0) activos.unshift({ id: 'trabajo', nombre: 'Mi trabajo', icono: 'check', enlace: 'trabajo.html',
+      texto: d.trabajo ? (d.trabajo.total ? plural(d.trabajo.total, 'pendiente', 'pendientes') + (d.trabajo.rojo ? ', ' + plural(d.trabajo.rojo, 'vencido', 'vencidos') : '') : 'Todo al día') : 'Tus pendientes del día' });
     if(['admin', 'lider', 'analista'].indexOf(rol) >= 0) activos.push({ id: 'factibilidad', nombre: 'Factibilidad', icono: 'wifi', enlace: 'factibilidad.html', texto: 'Si una ubicación tiene red' });
     activos.push({ id: 'aliados', nombre: 'Aliados', icono: 'usuarios', enlace: 'aliados.html',
       texto: rol === 'admin' ? 'Solicitudes, referidos y pagos de aliados' : canales ? 'Tus solicitudes, referidos y pagos' : 'Registro de aliados e instalados, para ver' });
@@ -128,6 +143,7 @@
     if(guardado && guardado.rol === p.rol) pintar(guardado, p.rol); else esqueletoInicio();
     try {
       const d = await rpc('inicio_datos');
+      if(['admin', 'analista', 'lider'].indexOf(p.rol) >= 0){ try { d.trabajo = await rpc('trabajo_resumen'); } catch (e) { d.trabajo = null; } }
       cache.guardar('inicio', d);
       pintar(d, p.rol);
       window.Armazon.datosMenu(d);

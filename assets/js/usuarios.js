@@ -85,6 +85,7 @@
     $('fWhatsapp').value = u ? (u.whatsapp || '') : ''; $('fCorreo').value = u ? (u.correo || '') : '';
     $('fEquipo').value = u ? u.equipo : 'ventas';
     $('fDed').setAttribute('aria-checked', String(!!(u && u.dedicados))); $('zonaDed').classList.toggle('hidden', $('fRol').value !== 'lider');
+    zonaAnalista(u);
     $('fCodigo').value = u && u.codigo_vendedor ? u.codigo_vendedor : '';
     $('fOdoo').value = u ? (u.nombre_odoo || '') : '';
     $('fPin').value = '';
@@ -121,13 +122,28 @@
       codigo_vendedor: cod ? Number(cod) : null, nombre_odoo: $('fOdoo').value.trim() };
   }
 
+  let LA = null;   // { lideres: {id: analista}, analistas: [...] }
+  async function zonaAnalista(u){
+    const z = $('zonaAnalista'); const es = !!u && $('fRol').value === 'lider'; z.classList.toggle('hidden', !es); $('eAnalista').textContent = '';
+    if(!es) return;
+    if(!LA){ try { LA = await window.Comun.rpc('lideres_analistas', {}); } catch (e) { $('eAnalista').textContent = e.message; return; } }
+    const v = LA.lideres[u.id] || '';
+    $('fAnalista').innerHTML = '<option value="">' + (LA.analistas.length ? 'Sin analista' : 'No hay analistas todavía') + '</option>' + LA.analistas.map((a) => '<option value="' + window.Comun.esc(a.id) + '"' + (a.id === v ? ' selected' : '') + '>' + window.Comun.esc(a.nombre) + '</option>').join('');
+  }
   async function guardar(e){
     e.preventDefault();
     limpiarErrores();
     const d = leerForm(); if(!d) return;
     const b = $('guardar'); b.disabled = true; b.textContent = 'Guardando…';
     try {
-      if(editando) await llamar(Object.assign({ accion: 'editar', id: editando.id }, d));
+      if(editando){
+        await llamar(Object.assign({ accion: 'editar', id: editando.id }, d));
+        // Lote 6: el analista del líder (le llegan los pendientes de sus clientes)
+        if(d.rol === 'lider' && LA && $('fAnalista').value !== (LA.lideres[editando.id] || '')){
+          try { await window.Comun.rpc('lider_analista', { p_lider: editando.id, p_analista: $('fAnalista').value || null }); LA.lideres[editando.id] = $('fAnalista').value || null; }
+          catch (x) { $('eAnalista').textContent = x.message; b.disabled = false; b.textContent = 'Guardar'; return; }
+        }
+      }
       else await llamar(Object.assign({ accion: 'crear' }, d));
       if(editando){ toast('Cambios guardados'); cerrarHoja(); }
       else {
@@ -230,6 +246,6 @@
 
   window.Armazon.arrancar(['admin'], { activo: null, volver: { enlace: 'inicio.html', texto: 'Inicio' } }, (p) => { yo = p; cargar(); cargarCreadores(); }, (p) => { yo = p; });
   // Líder de dedicados: solo para líderes
-  $('fRol').addEventListener('change', () => { $('zonaDed').classList.toggle('hidden', $('fRol').value !== 'lider'); });
+  $('fRol').addEventListener('change', () => { $('zonaDed').classList.toggle('hidden', $('fRol').value !== 'lider'); zonaAnalista(editando); });
   $('fDed').addEventListener('click', () => { const b = $('fDed'); b.setAttribute('aria-checked', String(b.getAttribute('aria-checked') !== 'true')); });
 })();

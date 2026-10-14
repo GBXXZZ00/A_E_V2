@@ -179,6 +179,32 @@ function ordenesAbiertas(m, yo){
   return r.sort((x, y) => rango[x.color] - rango[y.color] || y.horas - x.horas);
 }
 const error = (mensaje) => ({ __error: { code: 'P0001', message: mensaje } });
+// Lote 6: pendientes inventados como los arma privado.pendientes (analista del líder, líder, senior)
+function pendientesBase(m){
+  if(m.datos.pendientes) return m.datos.pendientes;
+  const cli = (n) => m.datos.clientes.find((c) => c.nombre === n || c.nombre === n + ', C.A.') || m.datos.clientes[0];
+  const lucia = m.personas.find((p) => p.usuario === 'lucia'); const elena = m.personas.find((p) => p.usuario === 'elena');
+  const dia = (n) => { const d = new Date(hoy() + 'T12:00:00'); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
+  const faro = cli('Vidrios El Faro'); const yun = cli('Tornillos El Yunque');
+  m.datos.pendientes = [
+    { tipo: 'por_enviar', clave: 'i1', cliente_id: faro.id, titulo: faro.nombre, detalle: 'Proforma y carta por enviar del servicio 824-99100001', para: 'analista', lider_id: lucia.id, analista_id: elena.id, desde: dia(-5) + 'T12:00:00Z', vence: dia(-2), ref: {} },
+    { tipo: 'sin_ip', clave: 'i2', cliente_id: yun.id, titulo: yun.nombre, detalle: 'Falta la IP del servicio 824-99100004', para: 'analista', lider_id: lucia.id, analista_id: elena.id, desde: new Date().toISOString(), vence: dia(3), ref: {} },
+    { tipo: 'cambio_emitir', clave: 'c7', cliente_id: null, titulo: 'Panaderia Inventada Uno', detalle: 'Cambio de categoría a PYME-1GB', para: 'analista', lider_id: lucia.id, analista_id: elena.id, desde: dia(0) + 'T08:00:00Z', vence: dia(0), ref: { cambio: 7 } },
+    { tipo: 'certificar', clave: 'i3', cliente_id: faro.id, titulo: faro.nombre, detalle: 'falta Legal', para: 'senior', lider_id: lucia.id, analista_id: elena.id, desde: dia(-3) + 'T12:00:00Z', vence: dia(4), ref: {} },
+    { tipo: 'docs_faltan', clave: String(yun.id), cliente_id: yun.id, titulo: yun.nombre, detalle: 'Faltan 2 documentos', para: 'lider', lider_id: lucia.id, analista_id: elena.id, desde: dia(-40) + 'T12:00:00Z', vence: dia(-10), ref: {} },
+    { tipo: 'por_firmar', clave: String(faro.id), cliente_id: faro.id, titulo: faro.nombre, detalle: 'Contrato por firmar', para: 'lider', lider_id: lucia.id, analista_id: elena.id, desde: dia(-2) + 'T12:00:00Z', vence: dia(28), ref: {} }
+  ];
+  return m.datos.pendientes;
+}
+function misPendientes(m, yo, persona){
+  const sen = yo.rol === 'analista' && !!yo.senior; const can = !!yo.canales; const hechos = m.datos.hechos || [];
+  return pendientesBase(m).filter((p) => hechos.indexOf(p.tipo + '|' + p.clave) < 0).filter((p) =>
+    yo.rol === 'admin' ? !persona || p.analista_id === persona || p.lider_id === persona
+      : yo.rol === 'lider' ? p.para === 'lider' && p.lider_id === yo.id
+      : can ? ['analista', 'senior'].includes(p.para) && (!persona || p.analista_id === persona)
+      : sen ? (p.para === 'analista' && (p.analista_id === yo.id || !p.analista_id)) || p.para === 'senior'
+      : p.para === 'analista' && p.analista_id === yo.id);
+}
 // Lote 4: el cambio como lo devuelve el servidor (requisitos según el tipo, contra el expediente del nuevo titular)
 function cambioJson(m, c){
   const pyme = (x) => /pyme/i.test(x || '');
@@ -485,6 +511,27 @@ const RPC = {
         servicios: [{ clave: '824-' + f.codigo, sucursal: '824', codigo: String(f.codigo).replace(/^0+/, '') }], bitacora: [] }); } });
     k.archivo = { en: new Date().toISOString(), filas: n }; return { filas: n, ignoradas: ign, confirmados: conf, sin_solicitud: sins }; },
   subidas_ultimas(m){ const k = m.datos.cambiosK || {}; return { tad: null, odoo: null, instalaciones: null, indice: k.vigente ? k.cargas[k.vigente - 1].en : null, cambios: k.archivo ? k.archivo.en : null }; },
+  // ----- Lote 6: una sola fuente de pendientes -----
+  trabajo(m, yo, a){
+    if(!['admin', 'analista', 'lider'].includes(yo.rol)) return error('No tienes permiso para hacer esto');
+    const sen = esSenior(yo); const can = !!yo.canales; const h = hoy();
+    const filas = misPendientes(m, yo, a.p_persona).map((p) => Object.assign({}, p, { color: p.vence < h ? 'rojo' : p.vence === h ? 'ambar' : 'verde', nuevo: p.desde > new Date(Date.now() - 864e5).toISOString(),
+      lider: (m.personas.find((x) => x.id === p.lider_id) || {}).nombre || null, analista: (m.personas.find((x) => x.id === p.analista_id) || {}).nombre || null }));
+    filas.sort((x, y) => ({ rojo: 0, ambar: 1, verde: 2 }[x.color] - { rojo: 0, ambar: 1, verde: 2 }[y.color]));
+    return { rol: yo.rol, senior: yo.rol === 'analista' && !!yo.senior, canales: can, hoy: h, dias: Object.assign({}, m.datos.dias || { dias_orden_sin_instalar: '15', dias_sin_documentos: '30', dias_por_enviar: '3', dias_cambio_por_emitir: '2' }),
+      personas: yo.rol === 'admin' || can ? m.personas.filter((p) => p.activo && (p.rol === 'analista' || (yo.rol === 'admin' && p.rol === 'lider'))).map((p) => ({ id: p.id, nombre: p.nombre, rol: p.rol })) : [],
+      aliados: yo.rol === 'admin' || can ? { solicitudes: 2, referidos: 1, pagos: 1, sin_permiso: 3 } : null, filas }; },
+  trabajo_resumen(m, yo){ if(!['admin', 'analista', 'lider'].includes(yo.rol)) return null; const h = hoy(); const l = misPendientes(m, yo, null); const tipos = {};
+    l.forEach((p) => { const t = tipos[p.tipo] || (tipos[p.tipo] = { n: 0, rojo: 0 }); t.n++; if(p.vence < h) t.rojo++; });
+    return { total: l.length, rojo: l.filter((p) => p.vence < h).length, hoy: l.filter((p) => p.vence === h).length, tipos }; },
+  trabajo_hecho(m, yo, a){ const l = misPendientes(m, yo, null); const p = l.find((x) => x.tipo === a.p_tipo && x.clave === a.p_clave); if(!p) return error('Ese pendiente no es tuyo o ya no está');
+    (m.datos.hechos = m.datos.hechos || []).push(a.p_tipo + '|' + a.p_clave); (m.bitacora = m.bitacora || []).push({ accion: 'pendiente_hecho', nota: a.p_nota }); return null; },
+  lideres_analistas(m, yo){ if(yo.rol !== 'admin') return error('No tienes permiso para hacer esto'); const l = {}; m.personas.filter((p) => p.rol === 'lider').forEach((p) => { l[p.id] = p.analista_id || null; });
+    return { lideres: l, analistas: m.personas.filter((p) => p.rol === 'analista' && p.activo).map((p) => ({ id: p.id, nombre: p.nombre })) }; },
+  lider_analista(m, yo, a){ if(yo.rol !== 'admin') return error('No tienes permiso para hacer esto'); const p = m.personas.find((x) => x.id === a.p_lider); if(!p || p.rol !== 'lider') return error('Ese usuario no es líder'); p.analista_id = a.p_analista; return null; },
+  ajustes_app(m){ return Object.assign({ whatsapp_admin: null }, m.datos.dias || {}); },
+  ajuste_guardar(m, yo, a){ if(yo.rol !== 'admin') return error('No tienes permiso para hacer esto'); if(/^dias_/.test(a.p_clave) && !(Number(a.p_valor) > 0)) return error('Escribe un número de días mayor que cero');
+    m.datos.dias = Object.assign(m.datos.dias || {}, { [a.p_clave]: String(a.p_valor) }); return null; },
   cliente_estatus(m, yo, a){
     if(!['admin', 'abogado'].includes(yo.rol)) return error('No tienes permiso para hacer esto');
     const c = visibles(m, yo).find((x) => x.id === Number(a.p_cliente)); if(!c) return error('No tienes acceso a este cliente');
