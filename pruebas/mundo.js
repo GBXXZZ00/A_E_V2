@@ -161,7 +161,12 @@ function segmento(c){
   const ded = !!c.dedicado || c.servicios.some((s) => /(dedicad|conectiv)/.test(norm(s.categoria))); const pyme = c.servicios.some((s) => !/(dedicad|conectiv)/.test(norm(s.categoria)));
   return ded && pyme ? 'PYME + Dedicado' : ded ? (c.es_isp || (c.dedicado && c.dedicado.tipo === 'isp') ? 'Dedicado ISP' : 'Dedicado corporativo') : c.es_natural ? 'Natural' : 'PYME';
 }
-const visibles = (m, yo) => m.datos.clientes.filter((c) => !c.unido_a && (['admin', 'abogado', 'analista'].includes(yo.rol) || (yo.rol === 'lider' && c.lider_id === yo.id)));
+const visibles = (m, yo) => m.datos.clientes.filter((c) => !c.unido_a && (['admin', 'abogado', 'analista'].includes(yo.rol) || (yo.rol === 'lider' && (c.lider_id === yo.id || (c.dedicado && c.dedicado.ejecutiva_id === yo.id)))));
+// Corrida urgente 14/10: a qué tarjeta de Clientes va cada cliente (como privado.tarjetas_todas); un combinado va a dos
+function tarjetaDe(c){
+  const ded = !!c.dedicado || c.servicios.some((s) => /(dedicad|conectiv)/.test(norm(s.categoria))); const pyme = c.servicios.some((s) => !/(dedicad|conectiv)/.test(norm(s.categoria)));
+  return { pyme: !ded || pyme, ded: ded ? (c.es_isp || (c.dedicado && c.dedicado.tipo === 'isp') ? 'isp' : 'corporativo') : null };
+}
 // Reloj de las órdenes abiertas: solo cuenta de 8:00 a 22:00 de Caracas, todos los días (igual que privado.horas_reloj)
 function horasReloj(desde, hasta){
   const a = new Date(desde).getTime() - 4 * 3600000, b = new Date(hasta || Date.now()).getTime() - 4 * 3600000; if(b <= a) return 0;
@@ -399,11 +404,22 @@ const RPC = {
   },
   // Igual que clientes_lista, con los filtros de las listas desplegables y sus opciones
   clientes_lista2(m, yo, a){
-    const f = a.p_filtros || {}; const todos = visibles(m, yo);
+    const f = a.p_filtros || {}; const todos = visibles(m, yo); const tj = ['pyme', 'corporativo', 'isp'].includes(f.tarjeta) ? f.tarjeta : '';
+    const ctr = (c) => (c.dedicado && c.dedicado.contratos) || []; const enl = (c) => ((c.dedicado && c.dedicado.enlaces) || []).some((e) => e.activo);
     const pasa = (c) => (!f.lider || (c.lider || 'Sin líder') === f.lider) && (!f.estatus || c.estatus === f.estatus) && (!f.tipo || segmentoFiltro(c) === f.tipo) &&
-      (!f.sucursal || c.servicios.some((s) => s.sucursal === f.sucursal)) && (!f.servicio || c.servicios.some((s) => norm(s.estado) === norm(f.servicio)));
-    const m2 = Object.assign({}, m, { datos: Object.assign({}, m.datos, { clientes: m.datos.clientes.filter(pasa) }) });
-    const r = RPC.clientes_lista(m2, yo, a); if(r && r.__error) return r;
+      (!f.sucursal || c.servicios.some((s) => s.sucursal === f.sucursal)) && (!f.servicio || c.servicios.some((s) => norm(s.estado) === norm(f.servicio))) &&
+      (!f.vgt || (f.vgt === 'con' ? ctr(c).some((k) => k.tipo === 'vgt') : ctr(c).some((k) => k.tipo === 'vgt' && k.estatus !== 'firmado'))) && (!f.enlaces || (f.enlaces === 'activos') === enl(c));
+    const enT = (c) => !tj || (tj === 'pyme' ? tarjetaDe(c).pyme : tarjetaDe(c).ded === tj);
+    const buscando = !!(norm(a.p_busca) || String(a.p_busca || '').replace(/\D/g, '').length >= 4);
+    const base = m.datos.clientes.filter(pasa);
+    const m2 = Object.assign({}, m, { datos: Object.assign({}, m.datos, { clientes: base.filter((c) => buscando || enT(c)) }) });
+    const r = RPC.clientes_lista(m2, yo, Object.assign({}, a, { p_filtro: a.p_filtro === 'faltan' ? 'todos' : a.p_filtro })); if(r && r.__error) return r;
+    // Faltan documentos y el conteo por tarjeta (el servidor los cuenta sobre lo que ve cada quien)
+    const vis = visibles(m2, yo); const vb = visibles(Object.assign({}, m, { datos: Object.assign({}, m.datos, { clientes: base }) }), yo);
+    r.conteos.faltan = vis.filter((c) => casillasVacias(c) > 0).length;
+    if(a.p_filtro === 'faltan' && !buscando){ const l = vis.filter((c) => casillasVacias(c) > 0); const ids = new Set(l.map((c) => c.id)); r.total = l.length; r.filas = r.filas.filter((x) => ids.has(x.id)); }
+    r.tarjetas = { pyme: vb.filter((c) => tarjetaDe(c).pyme).length, corporativo: vb.filter((c) => tarjetaDe(c).ded === 'corporativo').length, isp: vb.filter((c) => tarjetaDe(c).ded === 'isp').length };
+    r.filas.forEach((x) => { const c = m.datos.clientes.find((k) => k.id === x.id); const t = tarjetaDe(c); x.ded = t.ded; x.combinado = !!t.ded && t.pyme; x.n_enl = ((c.dedicado && c.dedicado.enlaces) || []).filter((e) => e.activo).length; });
     const un = (l) => Array.from(new Set(l)).sort();
     r.opciones = { lider: un(todos.map((c) => c.lider || 'Sin líder')), sucursal: un([].concat.apply([], todos.map((c) => c.servicios.map((s) => s.sucursal)))),
       servicio: un([].concat.apply([], todos.map((c) => c.servicios.map((s) => norm(s.estado).replace(/^./, (x) => x.toUpperCase()))))), tipo: ['PYME', 'Dedicado ISP', 'Dedicado corporativo', 'Combinado'] };
@@ -436,7 +452,14 @@ const RPC = {
         activo: d.activo !== false, ejecutiva: d.ejecutiva || null, verificar: !!d.verificar, verificar_motivo: d.verificar_motivo || null, ruta_documentos: d.ruta_documentos || null, ruta_contrato: d.ruta_contrato || null,
         vgt_por_firmar: (d.contratos || []).some((k) => k.tipo === 'vgt' && k.estatus !== 'firmado'), vgt_faltan: d.vgt ? d.vgt.faltan || 0 : 0, lider: c.lider,
         plazo: d.plazo || null, vacias: casillasVacias(c), por_revisar: c.documentos.filter((x) => x.estado === 'por_revisar').length, enlaces: (d.enlaces || []).filter((e) => e.activo).length,
-        contrato: ((d.contratos || []).find((k) => k.tipo === 'servicio') || {}).estatus || null, vgt: (d.contratos || []).some((k) => k.tipo === 'vgt'), colocation: (d.contratos || []).some((k) => k.tipo === 'colocation') }; });
+        contrato: ((d.contratos || []).find((k) => k.tipo === 'servicio') || {}).estatus || null, vgt: (d.contratos || []).some((k) => k.tipo === 'vgt'), colocation: (d.contratos || []).some((k) => k.tipo === 'colocation'),
+        // Corrida urgente 14/10: datos de operación
+        capacidad: (d.enlaces || []).filter((e) => e.activo).reduce((a2, e) => a2 + (Number(e.cap_entregada || e.cap_facturada || e.cap_inicial) || 0), 0) || null,
+        nodos: Array.from(new Set((d.enlaces || []).filter((e) => e.activo && e.nodo).map((e) => e.nodo))).join(', ') || null,
+        contratos: (d.contratos || []).map((k) => ({ tipo: k.tipo, estatus: k.estatus, vence: k.vence || null, firmado_en: k.firmado_en || null, numero: k.numero || null })),
+        vgt_proyectos: new Set((d.contratos || []).filter((k) => k.tipo === 'vgt').map((k) => k.proyecto || k.id)).size,
+        vgt_postes: (d.contratos || []).filter((k) => k.tipo === 'vgt').reduce((a2, k) => a2 + (Number(k.postes) || 0), 0),
+        poliza_vence: (c.documentos || []).filter((x) => x.casilla === 'otro' && [66, 67].includes(x.numero) && x.vence_en).map((x) => x.vence_en).sort()[0] || null }; });
     return { rol: yo.rol, hoy: hoy(), puedo: { editar: yo.rol === 'admin' }, filas };
   },
   dedicado_editar(m, yo, a){

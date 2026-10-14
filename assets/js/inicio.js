@@ -6,7 +6,6 @@
   const K_OCULTO = 'ae_pend_oculto';
 
   const PRONTO = [
-    { id: 'dedicados', nombre: 'Dedicados', icono: 'servidor', roles: ['admin', 'abogado', 'analista'] }
   ];
 
   function pintarCorte(d){
@@ -107,8 +106,9 @@
     if(['admin', 'lider', 'analista'].indexOf(rol) >= 0) activos.push({ id: 'factibilidad', nombre: 'Factibilidad', icono: 'wifi', enlace: 'factibilidad.html', texto: 'Si una ubicación tiene red' });
     activos.push({ id: 'aliados', nombre: 'Aliados', icono: 'usuarios', enlace: 'aliados.html',
       texto: rol === 'admin' ? 'Solicitudes, referidos y pagos de aliados' : canales ? 'Tus solicitudes, referidos y pagos' : 'Registro de aliados e instalados, para ver' });
-    if(['admin', 'analista', 'abogado'].indexOf(rol) >= 0 || (rol === 'lider' && dedicados)) activos.push({ id: 'dedicados', nombre: 'Dedicados', icono: 'servidor', enlace: 'dedicados.html',
-      texto: rol === 'lider' ? 'Tus clientes dedicados: enlaces, documentos y contratos' : 'ISP y corporativos: enlaces, documentos y contratos' });
+    // Dedicados es de operación (administrador y analista); el líder y Legal ven sus dedicados en Clientes
+    if(['admin', 'analista'].indexOf(rol) >= 0) activos.push({ id: 'dedicados', nombre: 'Dedicados', icono: 'servidor', enlace: 'dedicados.html',
+      texto: 'Operación: enlaces, contratos, VGT y pólizas' });
     if(['admin', 'analista', 'lider', 'abogado'].indexOf(rol) >= 0) activos.push({ id: 'gerencia', nombre: 'Gerencia', icono: 'barras', enlace: 'gerencia.html',
       texto: rol === 'lider' ? 'Tus números: instalaciones, comisiones y expedientes' : 'Resumen del negocio por mes, líder y segmento' });
     if(rol === 'admin' || rol === 'abogado') activos.push({ id: 'revision', nombre: 'Revisión', icono: 'doc', enlace: 'revision.html', texto: rol === 'admin' ? 'Documentos por revisar, también con IA' : 'Tus contratos por hacer y por firmar' });
@@ -120,7 +120,7 @@
       (d.hay_demo ? '<div class="linea-info" id="avisoDemo">' + ic('estrella') + '<span>Estás viendo datos de ejemplo, con nombres inventados.</span></div>' : '');
   }
 
-  let canales = false; let dedicados = false;
+  let canales = false;
   function pintar(d, rol){ pintarCorte(d); pintarPendientes(d, rol); pintarModulos(d, rol); }
 
   function esqueletoInicio(){
@@ -134,7 +134,7 @@
     const { equipo } = window.Armazon.montar(p, { activo: 'inicio' });
     $('saludo').textContent = 'Hola, ' + (primerNombre(p.nombre) || p.nombre);
     $('subSaludo').textContent = fechaDia(new Date().toISOString());
-    canales = !!p.canales; dedicados = !!p.dedicados;
+    canales = !!p.canales;
     // El aliado trabaja en su propio módulo
     if(p.rol === 'aliado'){ location.replace('aliados.html'); return; }
     if(equipo === 'aliados'){

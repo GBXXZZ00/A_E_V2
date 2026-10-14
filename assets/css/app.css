@@ -1031,3 +1031,21 @@ button.ge-li{cursor:pointer}
 #hojaCambio .hoja-pie.hidden,#hojaCambioN .hoja-pie.hidden{display:none}
 #hojaCambio .hoja-pie .btn,#hojaCambioN .hoja-pie .btn{flex:1;min-width:0;white-space:nowrap}
 #hojaCambio textarea,#hojaCambio select,#hojaCambio .error,#hojaCambioN input,#hojaCambioN .error{scroll-margin-bottom:120px}
+
+/* Clientes: tres tarjetas arriba (PYME, Dedicado corporativo, Dedicado ISP). Escritorio: compactas; teléfono: una fila deslizable */
+.tclis{display:flex;gap:10px;margin-top:14px;overflow-x:auto;margin-inline:-20px;padding:2px 20px 4px;scrollbar-width:none;scroll-snap-type:x proximity}
+.tclis::-webkit-scrollbar{display:none}
+.tcli{flex:none;display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-width:132px;min-height:72px;padding:10px 16px;border:1.5px solid var(--line);border-radius:18px;background:#fff;text-align:left;color:var(--text);scroll-snap-align:start;transition:transform 120ms var(--ease-out)}
+.tcli b{font-size:26px;font-weight:800;letter-spacing:-.02em;line-height:1.1;font-variant-numeric:tabular-nums}
+.tcli span{font-size:13px;font-weight:600;color:var(--text2);white-space:nowrap}
+.tcli.on{border-color:var(--accent);background:var(--acc-bg)}
+.tcli.on span{color:var(--accent)}
+.tcli:active{transform:scale(.97)}
+.tcli:focus-visible{outline:0;box-shadow:0 0 0 4px var(--accent-soft)}
+@media (hover:hover) and (pointer:fine){ .tcli:not(.on):hover{background:var(--surface-2)} }
+@media (min-width:900px){
+  .tclis{margin-inline:0;padding:0;overflow:visible}
+  .tcli{flex-direction:row;align-items:baseline;gap:10px;min-height:56px;padding:8px 18px;min-width:0}
+  .tcli b{font-size:28px}
+}
+@media (prefers-reduced-motion:reduce){ .tcli{transition:none} .tcli:active{transform:none} }

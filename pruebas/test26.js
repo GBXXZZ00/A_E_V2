@@ -1,6 +1,6 @@
 // Lote 2, parte E: entrada segura. Pasa por la función "entrar" (nunca directo a Supabase), avisa los intentos que quedan,
 // bloquea a los 5 fallos con un mensaje claro, el PIN temporal se cambia por la función, la entrada de respaldo
-// funciona si la función no responde, y en Usuarios el líder puede marcarse como ejecutiva de dedicados.
+// funciona si la función no responde, y en Usuarios ya no hay marca de ejecutiva de dedicados.
 const { chromium, H, TEL, PC, contexto, marcador, pin, entrar } = require('./simulador');
 const { ok, cerrar } = marcador();
 
@@ -46,19 +46,14 @@ const estado = (p) => p.textContent('#estadoPin');
     ok(nombre + ': si la función no responde, entra por el respaldo', c2.mundo.llamadas.some((l) => l[0] === 'entrar' && l[2] === 'caida') && c2.mundo.llamadas.some((l) => l[0] === 'entrar' && !l[2]));
     await c2.ctx.close();
 
-    // Usuarios: marca de ejecutiva de dedicados solo para líderes
+    // Usuarios: ya no existe la marca "Ejecutiva de dedicados" (corrida urgente 14/10: todo líder ve sus dedicados en Clientes)
     if(nombre === 'pc'){
       const c3 = await contexto(nav, dispositivo); const a = await entrar(c3.ctx, 'marcos', '482913'); a.on('pageerror', (e) => errores.push(e.message));
       await a.goto(H + 'usuarios.html'); await a.waitForSelector('.persona');
       await a.click('.persona:has-text("Lucía Ferrer")'); await a.waitForSelector('#hojaUsuario.ver');
-      ok('pc: en un líder aparece "Ejecutiva de dedicados"', await a.locator('#zonaDed').isVisible());
-      await a.selectOption('#fRol', 'abogado');
-      ok('pc: en otro rol no aparece', !(await a.locator('#zonaDed').isVisible()));
-      await a.selectOption('#fRol', 'lider'); await a.click('#fDed');
-      await a.screenshot({ path: 'capturas/26-pc-usuario-dedicados.png' });
-      await a.click('#guardar');
-      await a.waitForFunction(() => /Líder de dedicados/.test(document.querySelector('#lista').textContent));
-      ok('pc: se guarda y la lista lo dice', c3.mundo.llamadas.some((l) => l[0] === 'usuarios' && l[1].accion === 'editar' && l[1].dedicados === true));
+      ok('pc: en un líder ya no aparece "Ejecutiva de dedicados"', (await a.locator('#zonaDed, #fDed').count()) === 0);
+      await a.click('#guardar'); await a.waitForFunction(() => !document.querySelector('#hojaUsuario.ver'));
+      ok('pc: guardar un líder no manda la marca', c3.mundo.llamadas.some((l) => l[0] === 'usuarios' && l[1].accion === 'editar' && !l[1].dedicados));
       await c3.ctx.close();
     }
     await ctx.close();

@@ -41,7 +41,7 @@
     $('lista').innerHTML = '<div class="lista">' + usuarios.map((u, i) => {
       const est = !u.activo ? '<span class="chip chip-off">Sin acceso</span>'
         : u.debe_cambiar_pin ? '<span class="chip chip-warn">PIN temporal</span>' : '<span class="chip chip-ok">Activo</span>';
-      const rol = u.gerencia ? 'Gerencia (solo lectura)' : u.rol === 'analista' && u.senior ? 'Analista Senior' : u.rol === 'lider' && u.dedicados ? 'Líder de dedicados' : (S.ROLES[u.rol] || u.rol);
+      const rol = u.gerencia ? 'Gerencia (solo lectura)' : u.rol === 'analista' && u.senior ? 'Analista Senior' : (S.ROLES[u.rol] || u.rol);
       return '<button type="button" class="persona' + (u.activo ? '' : ' inactiva') + '" data-i="' + i + '">' +
         '<span class="quien"><span class="av" aria-hidden="true">' + esc(iniciales(u.nombre)) + '</span><b>' + esc(u.nombre) + '</b>' +
         '<span class="det"><span class="solo-pc">' + esc(u.usuario) + (u.cargo ? ' · ' + esc(u.cargo) : '') + '</span>' +
@@ -84,7 +84,6 @@
     $('fRol').value = u ? (u.gerencia ? 'gerencia' : u.rol === 'analista' && u.senior ? 'analista_senior' : u.rol) : 'lider';
     $('fWhatsapp').value = u ? (u.whatsapp || '') : ''; $('fCorreo').value = u ? (u.correo || '') : '';
     $('fEquipo').value = u ? u.equipo : 'ventas';
-    $('fDed').setAttribute('aria-checked', String(!!(u && u.dedicados))); $('zonaDed').classList.toggle('hidden', $('fRol').value !== 'lider');
     zonaAnalista(u);
     $('fCodigo').value = u && u.codigo_vendedor ? u.codigo_vendedor : '';
     $('fOdoo').value = u ? (u.nombre_odoo || '') : '';
@@ -118,7 +117,7 @@
     if(correo && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(correo)){ $('eCorreo').textContent = 'Ese correo no parece válido'; ok = false; }
     if(!ok) return null;
     const rolForm = $('fRol').value;
-    return { nombre, usuario, pin, cargo: $('fCargo').value.trim(), rol: rolForm === 'analista_senior' ? 'analista' : rolForm, senior: rolForm === 'analista_senior', dedicados: rolForm === 'lider' && $('fDed').getAttribute('aria-checked') === 'true', whatsapp: wa, correo, equipo: $('fEquipo').value,
+    return { nombre, usuario, pin, cargo: $('fCargo').value.trim(), rol: rolForm === 'analista_senior' ? 'analista' : rolForm, senior: rolForm === 'analista_senior', whatsapp: wa, correo, equipo: $('fEquipo').value,
       codigo_vendedor: cod ? Number(cod) : null, nombre_odoo: $('fOdoo').value.trim() };
   }
 
@@ -248,7 +247,6 @@
   });
 
   window.Armazon.arrancar(['admin'], { activo: null, volver: { enlace: 'inicio.html', texto: 'Inicio' } }, (p) => { yo = p; cargar(); cargarCreadores(); }, (p) => { yo = p; });
-  // Líder de dedicados: solo para líderes
-  $('fRol').addEventListener('change', () => { $('zonaDed').classList.toggle('hidden', $('fRol').value !== 'lider'); zonaAnalista(editando); });
-  $('fDed').addEventListener('click', () => { const b = $('fDed'); b.setAttribute('aria-checked', String(b.getAttribute('aria-checked') !== 'true')); });
+  // Todo líder ve sus clientes, sean PYME, dedicados o combinados: ya no hay marca de "Líder de dedicados"
+  $('fRol').addEventListener('change', () => zonaAnalista(editando));
 })();
