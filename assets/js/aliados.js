@@ -382,11 +382,21 @@
     try { const d = await rpc('aliados_lista', {}); if(mio !== pedido) return; aliadosAdm = d; pintarAliadosAdm(); }
     catch (e) { if(mio !== pedido) return; $('lista').innerHTML = errorCaja('No se pudo cargar la lista', e.message); }
   }
+  // Lote 5: el número de "Escribir al administrador" es un ajuste que cambia el administrador
+  let ajustes = {};
+  function cargarAjustes(){ rpc('ajustes_app', {}).then((a) => { ajustes = a || {}; }).catch(() => {}); }
+  function bloqueWa(){
+    return '<div class="al-wa"><label class="rotulo" for="waAdm">WhatsApp del administrador</label><div class="busca-linea"><input class="campo" id="waAdm" type="tel" inputmode="tel" autocomplete="off" maxlength="20" value="' + esc(ajustes.whatsapp_admin || '') + '">' +
+      '<button type="button" class="btn btn-chico" data-acc="guardarWa">Guardar</button></div><div class="error" id="eWaAdm" role="alert"></div>' +
+      '<p class="nota-chica">' + (ajustes.whatsapp_admin ? 'Los aliados y la coordinación lo usan en "Escribir al administrador".' : 'Sin número, "Escribir al administrador" abre WhatsApp para elegir el chat. Escríbelo aquí.') + '</p></div>';
+  }
   function pintarAliadosAdm(){
     const as = aliadosAdm.aliados || []; const ps = aliadosAdm.perfiles || [];
     $('cuentaLista').textContent = plural(as.length, 'aliado', 'aliados') + ', ' + as.filter((a) => a.perfil).length + ' con usuario';
-    $('lista').innerHTML = '<div class="lista-rv">' + as.map((a) => {
+    $('lista').innerHTML = bloqueWa() + '<div class="lista-rv">' + as.map((a) => {
       const opc = ps.filter((p) => (a.es_canales ? p.rol === 'analista' : p.rol === 'aliado'));
+      if(a.es_canales && !opc.length && !a.perfil) return '<div class="rv al-enlace"><div class="rv-cuerpo"><span class="quien"><span class="mono" aria-hidden="true">C</span><span><b>Coordinación de canales</b><small>Hace solicitudes, referidos y pagos</small></span></span></div>' +
+        '<p class="nota-chica al-sin">Crea primero el usuario en Usuarios con rol Analista. Después lo eliges aquí.</p></div>';
       return '<div class="rv al-enlace"><div class="rv-cuerpo"><span class="quien"><span class="mono" aria-hidden="true">' + esc(a.nombre.charAt(0)) + '</span><span><b>' + esc(a.es_canales ? 'Coordinación de canales' : a.nombre) + '</b><small>' + esc(a.es_canales ? 'Hace solicitudes, referidos y pagos' : a.codigo ? 'Código ' + a.codigo + ' en las órdenes de instalación' : 'Sin código en las órdenes') + '</small></span></span></div>' +
         '<div class="campo-s"><label for="enl' + a.id + '">Usuario</label><select id="enl' + a.id + '" data-enlazar="' + a.id + '" class="' + (a.perfil ? 'puesto' : '') + '"><option value="">Sin usuario</option>' +
         opc.map((p) => '<option value="' + esc(p.id) + '"' + (p.id === a.perfil ? ' selected' : '') + '>' + esc(p.nombre + ' (' + p.usuario + ')') + '</option>').join('') + '</select></div></div>';
@@ -453,8 +463,8 @@
     if(!e) return '<div class="al-banda"><b>Empieza por el ' + (N.tipo === 'empresa' ? 'RIF de la empresa' : 'RIF personal') + '</b><p>Con eso te decimos al momento si el cliente está disponible. Después subes lo demás.</p></div>';
     if(e === 'leyendo') return '<div class="al-banda azul" role="status"><b>Leyendo el RIF y revisando la cartera…</b><p>Tarda unos segundos.</p><span class="al-barra corre" aria-hidden="true"><i></i></span></div>';
     if(e === 'libre') return '<div class="al-banda verde" role="status"><b>Cliente disponible: ' + nom + '</b><p>' + esc(rifFmt(N.rif)) + '. Sube lo demás: cada documento se empieza a leer apenas sube.</p></div>';
-    if(e === 'cartera') return '<div class="al-banda" role="status"><b>Cliente en cartera</b><p>' + (nom || 'Este cliente') + ' ya es de la oficina. No hace falta subir más: refiérelo y se paga con dos residenciales si se instala.</p><button type="button" class="btn btn-chico" data-acc="referirSol" data-id="' + N.id + '">Referir cliente</button></div>';
-    if(e === 'otro') return '<div class="al-banda" role="status"><b>En gestión por otro</b><p>Otra persona ya está gestionando ' + (nom ? nom.replace(/\.$/, '') : 'este cliente') + '. No se puede instalar ni referir por ahora.</p></div>';
+    if(e === 'cartera') return '<div class="al-banda" role="status"><b>Cliente en cartera</b><p>' + (nom || 'Este cliente') + ' ya es de la oficina. Sus archivos no se guardaron: solo se leyó el RIF. Refiérelo y se paga con dos residenciales si se instala.</p><button type="button" class="btn btn-chico" data-acc="referirSol" data-id="' + N.id + '">Referir cliente</button></div>';
+    if(e === 'otro') return '<div class="al-banda" role="status"><b>En gestión por otro</b><p>Otra persona ya está gestionando ' + (nom ? nom.replace(/\.$/, '') : 'este cliente') + '. Sus archivos no se guardaron: solo se leyó el RIF. No se puede instalar ni referir por ahora.</p></div>';
     if(e === 'repetida') return '<div class="al-banda ambar" role="alert"><b>Ya tienes una solicitud de este cliente</b><p>Es la ' + esc(N.repetida) + '. Síguela desde ahí.</p><button type="button" class="btn btn-chico" data-sol="' + esc(N.repetidaId) + '">Abrir ' + esc(N.repetida) + '</button></div>';
     return '<div class="al-banda ambar" role="alert"><b>' + esc(e === 'no_es_rif' ? 'Ese archivo no es un RIF' : e === 'ilegible' ? 'No pudimos leer el RIF' : 'No se pudo leer el RIF') + '</b><p>' + esc(N.msg || 'Sube una foto más clara, con buena luz y sin cortes.') + '</p></div>';
   }
@@ -640,7 +650,7 @@
       (d.respuesta ? '<div class="al-nota"><b>Respuesta del administrador:</b> ' + esc(d.respuesta) + '</div>' : '') +
       (acc ? '<div class="al-acc">' + acc + '</div>' : '') +
       (adm && (k === 'lista' || k === 'listaobs') ? '<p class="nota">Correo de aprobación al aliado: pendiente, llega con las notificaciones.</p>' : '') +
-      (k === 'cartera' || k === 'otro' ? '' : '<div class="h2 al-h2">Documentos</div>' + docsSol(d, aliadoPuede) + puntosSol(d)) +
+      (k === 'cartera' || k === 'otro' ? '<p class="nota">Sus archivos no se guardaron: solo se leyó el RIF.</p>' : '<div class="h2 al-h2">Documentos</div>' + docsSol(d, aliadoPuede) + puntosSol(d)) +
       (aliadoPuede ? contactoSol(d) : '')) +
       '<div class="h2 al-h2">Historial</div><div class="al-hilo">' + (d.hilo || []).map((x) => '<div class="al-hi ' + esc(x.color) + '"><div>' + esc(x.texto) + '<small>' + esc(fecha(x.en) + ' ' + hora(x.en)) + '</small></div></div>').join('') + '</div>' +
       fechasSol(d) + bitacoraSol(d);
@@ -792,7 +802,12 @@
     else if(a === 'enviarN') enviarN();
     else if(a === 'guardarForm') guardarForm(b, false);
     else if(a === 'rechazarRef') guardarForm(b, true);
-    else if(a === 'whats'){ const d = SOL && SOL.d; window.open(enlaceWa('', 'Hola, sobre la solicitud ' + (d ? d.codigo + ' de ' + d.cliente : '') + ':'), '_blank', 'noopener'); }
+    else if(a === 'whats'){ const d = SOL && SOL.d; window.open(enlaceWa(ajustes.whatsapp_admin || '', 'Hola, sobre la solicitud ' + (d ? d.codigo + ' de ' + d.cliente : '') + ':'), '_blank', 'noopener'); }
+    else if(a === 'guardarWa'){
+      const er = $('eWaAdm'); er.textContent = ''; b.disabled = true; b.textContent = 'Guardando…';
+      try { await rpc('ajuste_guardar', { p_clave: 'whatsapp_admin', p_valor: valor('waAdm') }); ajustes = (await rpc('ajustes_app', {})) || ajustes; toast('WhatsApp guardado'); pintarAliadosAdm(); }
+      catch (e) { er.textContent = e.message; b.disabled = false; b.textContent = 'Guardar'; }
+    }
     else if(a === 'expediente'){ const d = SOL.d; window.Ficha.abrir(d.cliente_id, { yo, tab: 'documentos' }); }
     else if(a === 'yaInstale'){ b.disabled = true; try { await rpc('solicitud_ya_instale', { p_sol: SOL.id }); toast('Anotado. Pasa a Instalada cuando llegue la orden'); } catch (e) { toast(e.message, 'error'); } cargarSol(); }
     else if(a === 'revisarDeNuevo'){ b.disabled = true; b.textContent = 'Enviando…'; try { await rpc('solicitud_enviar', { p_sol: SOL.id }); invalidar(); } catch (e) { toast(e.message, 'error'); } cargarSol(); }
@@ -820,7 +835,7 @@
     modo = yo.rol === 'admin' ? 'admin' : yo.rol === 'aliado' ? 'aliado' : yo.rol === 'analista' && yo.canales ? 'canales' : 'equipo';
     if(window.Ficha && modo === 'admin'){ window.Ficha.montar(); }
     $('titulo').textContent = modo === 'equipo' || modo === 'admin' ? 'Aliados comerciales' : 'Hola, ' + (window.Comun.primerNombre(yo.nombre) || yo.nombre);
-    leerUrl(); pintarTabs(); cargar();
+    leerUrl(); pintarTabs(); cargar(); cargarAjustes();
     const s = Number(new URLSearchParams(location.search).get('s')) || 0;
     if(s) abrirSol(s);
   }, (p) => { yo = p; });

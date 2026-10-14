@@ -60,8 +60,11 @@ function mundoAliados(m){
     instalados_aliados(m, yo){ return [{ id: 1, cliente: 'Óptica Imaginaria, C.A.', rif: 'J000000024', aliado: 'Redes Norte Ejemplo', instalada_en: hoy, categoria: 'PYME-1GB', con_permiso: yo.rol === 'admin' ? true : null }]; },
     aliado_revisado(m, yo, a){ if(yo.rol !== 'admin') return err('No tienes permiso para hacer esto'); const x = (a.p_tipo === 'sol' ? A.sols : A.refs).find((y) => y.id === a.p_id); x.revisado = true; x.revisado_nota = a.p_nota; return null; },
     sin_permiso_revisar(m, yo, a){ A.sinp.find((p) => p.id === a.p_id).revisado_en = hoy; return null; },
-    aliados_lista(m, yo){ return { aliados: [{ id: 1, nombre: 'REDES NORTE EJEMPLO', codigo: '027', perfil: null }, { id: 3, nombre: 'Canales', es_canales: true, perfil: null }], perfiles: [{ id: ALIADO.id, nombre: ALIADO.nombre, usuario: ALIADO.usuario, rol: 'aliado' }, { id: CANALES.id, nombre: CANALES.nombre, usuario: CANALES.usuario, rol: 'analista' }] }; },
-    aliado_enlazar(m, yo, a){ A.enlace = a; return null; }
+    aliados_lista(m, yo){ return { aliados: [{ id: 1, nombre: 'REDES NORTE EJEMPLO', codigo: '027', perfil: null }, { id: 3, nombre: 'Canales', es_canales: true, perfil: null }], perfiles: [{ id: ALIADO.id, nombre: ALIADO.nombre, usuario: ALIADO.usuario, rol: 'aliado' }, { id: CANALES.id, nombre: CANALES.nombre, usuario: CANALES.usuario, rol: 'analista' }].filter((p) => !A.sinAnalista || p.rol !== 'analista') }; },
+    aliado_enlazar(m, yo, a){ A.enlace = a; return null; },
+    ajustes_app(){ return Object.assign({ whatsapp_admin: null }, A.ajustes || {}); },
+    ajuste_guardar(m, yo, a){ if(yo.rol !== 'admin') return err('No tienes permiso para hacer esto'); const v = String(a.p_valor || '').replace(/\D/g, '');
+      if(v.length < 10) return err('Escribe el número con su código, por ejemplo 0414 1234567'); A.ajustes = { whatsapp_admin: '58' + v.replace(/^0/, '') }; return null; }
   });
   const registrar = RPC.documentos_registrar;
   RPC.documentos_registrar = (m, yo, a) => { if(yo.rol !== 'aliado') return registrar(m, yo, a); const s = A.sols.find((x) => x.cliente_id === a.p_cliente); (A.docs[s.id] = A.docs[s.id] || []).push(a.p_items[0].casillas[0]); return 1; };
@@ -146,6 +149,7 @@ const entrarAliado = (ctx, persona) => entrarComo(ctx, persona, 'aliados');
     await p.click('.al-grande.prin'); await p.waitForSelector('#hojaNueva.ver [data-subirn="rif_empresa:0"]'); await p.waitForTimeout(300);
     await subirEn(p, '[data-subirn="rif_empresa:0"]'); await p.waitForSelector('#hojaNueva [data-acc="referirSol"]');
     ok(nombre + ': cliente en cartera: no deja seguir y ofrece referir', (await p.textContent('#hojaNueva .al-banda')).includes('Cliente en cartera') && await p.isDisabled('[data-subirn="acta_constitutiva:0"]'));
+    ok(nombre + ': el aviso dice claro que sus archivos no se guardaron (lote 5)', (await p.textContent('#hojaNueva .al-banda')).includes('Sus archivos no se guardaron'));
     await p.click('#hojaNueva [data-acc="referirSol"]'); await p.waitForSelector('#hojaForm.ver #fRif');
     ok(nombre + ': el RIF del referido viene leído y fijo', await p.isDisabled('#fRif') && (await p.inputValue('#fRif')).includes('J-'));
     await p.click('#hojaForm [data-acc="guardarForm"]'); await p.waitForTimeout(400);
@@ -243,6 +247,16 @@ const entrarAliado = (ctx, persona) => entrarComo(ctx, persona, 'aliados');
     await a.click('[data-tab="aliados"]'); await a.waitForSelector('[data-enlazar="1"]');
     await a.selectOption('[data-enlazar="1"]', ALIADO.id); await a.waitForTimeout(400);
     ok(nombre + ': enlaza el aliado con su usuario', llamo('aliado_enlazar').length === 1 && llamo('aliado_enlazar')[0][2].p_perfil === ALIADO.id);
+    // Lote 5: WhatsApp del administrador editable y coordinación sin analistas
+    await a.waitForSelector('#waAdm'); await a.fill('#waAdm', '0414'); await a.click('[data-acc="guardarWa"]');
+    await a.waitForFunction(() => /código/.test(document.getElementById('eWaAdm').textContent));
+    ok(nombre + ': número incompleto da error debajo del campo', (await a.textContent('#eWaAdm')).includes('código'));
+    await a.fill('#waAdm', '0414 5550001'); await a.click('[data-acc="guardarWa"]'); await a.waitForFunction(() => /Escribir al administrador/.test(document.getElementById('lista').textContent) && document.getElementById('waAdm').value === '584145550001');
+    ok(nombre + ': el WhatsApp del administrador se guarda', llamo('ajuste_guardar').length === 2);
+    m.al.sinAnalista = true; await a.click('#filtros [data-tab="registro"]'); await a.click('#filtros [data-tab="aliados"]'); await a.waitForSelector('.al-sin');
+    ok(nombre + ': sin analistas, la coordinación dice que primero se crea el usuario', (await a.textContent('.al-sin')).includes('Crea primero el usuario en Usuarios con rol Analista'));
+    await a.screenshot({ path: 'capturas/t20-' + nombre + '-aliados-usuarios.png', fullPage: true });
+    m.al.sinAnalista = false;
     await a.click('#filtros [data-tab="registro"]'); await a.waitForSelector('#accionCab [data-acc="nueva"]').catch(() => {});
     ok(nombre + ': el administrador enlazado a un aliado de prueba ve "Solicitud de prueba"', (await a.locator('#accionCab [data-acc="nueva"]').count()) === 1);
     await a.click('#filtros [data-tab="mes"]'); await a.waitForSelector('#lista .grupo[class] [data-mes]');

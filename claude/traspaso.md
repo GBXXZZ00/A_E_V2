@@ -1,6 +1,6 @@
 # Traspaso (se actualiza al cerrar cada sesión)
 
-Actualizado: 14/10/2026 (corrida del 14/10: Lote 3 hecho). Publicado: `?v=33`.
+Actualizado: 14/10/2026 (corrida del 14/10: Lotes 3 y 5 hechos). Publicado: `?v=34`.
 
 ## CORRIDA DEL 14/10 (APROBADA por el administrador el 13/10 noche): Lote 3 + Lote 4 + Lote 5 + Lote 6 + Lote 7
 Antes de tocar código: lee los cinco lotes completos y dile al administrador, en pocas líneas, qué puedes ejecutar y qué no (y por qué). Si todo es ejecutable, arranca sin esperar más. Orden: Lote 3, 5, 4, 6, 7. Publica por lote (pruebas, capturas, `?v=`, commit y push). Septiembre certificado (59/49) no se mueve; corre la referencia de comisiones antes y después de cada lote que toque comisiones. Las pantallas siguen el estilo ya aprobado (maquetas en `claude/maquetas/`, Clientes y Comisiones como modelo); no hace falta maqueta nueva. Fuera de esta corrida: notificaciones, ingresos y bandeja de dedicados, propuesta de servicio, proforma y carta para nuevo titular, subidas por guardias.
@@ -15,6 +15,7 @@ Antes de tocar código: lee los cinco lotes completos y dile al administrador, e
   - Drive: `drive_subir` v3 nombra el archivo "RIF - Casilla - fecha" (varias: "Cédula + RIF personal"); el nombre original queda en la base.
   - Aliados: pestañas Registro, Por mes (absorbe Instalados por aliados), Sin autorización (lo instalado sin consultar sale del Registro), Pagos, Aliados y usuarios. "Esperan tu decisión" con botón "Revisado" y nota (`aliado_revisado`, columnas `revisado_*` en solicitudes y referidos). El aliado puede seguir subiendo en una solicitud instalada (`puede_cliente`), y todo va al mismo expediente del cliente.
   - Pruebas: test28 nueva; test16, 18, 20, 22, 25 y 26 ajustadas. 28 de 28 en TODO OK.
+- **Lote 5: HECHO en v34.** La coordinadora (analista con `canales`, enlazada al aliado Canales) ya creaba y pedía igual que un aliado con el mismo bloqueo (`solicitud_crear`, `solicitud_rif_leido`, `al_bloqueo`): comprobado. Cadena completa probada en la base con datos inventados y deshecha (`supabase/pruebas/aliados_cadena.sql`): RIF libre, 2 documentos en el expediente del mismo cliente, aprobada, la orden de instalación la pasa a Instalada, una instalación sin solicitud cae en Sin autorización, aparece en Pagos y se marca pagada; septiembre 59/49. Un RIF de un cliente con líder da "cartera" y no guarda archivos. Ajustes editables: tabla `privado.ajustes_app` (WhatsApp del administrador y los días límite del Lote 6), `ajustes_app()` (todos leen) y `ajuste_guardar()` (admin, bitácora). En Aliados y usuarios: campo "WhatsApp del administrador" (lo usa "Escribir al administrador"); la fila de coordinación sin analistas dice "Crea primero el usuario en Usuarios con rol Analista". Cliente bloqueado: el aviso dice "Sus archivos no se guardaron: solo se leyó el RIF". Prueba test20 ampliada. Falta que el administrador escriba su WhatsApp en Aliados > Aliados y usuarios.
 
 ### LOTE 4: cambios de categoría y de titularidad
 1. Pestaña **"Cambios"** dentro de Comisiones. El líder crea la solicitud ahí (un solo canal, reemplaza el WhatsApp).

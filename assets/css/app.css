@@ -901,3 +901,6 @@ main.vista-instalar #ayudaFiltro{display:none}
 .fila-rev{display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--line)}
 .fila-rev > .fila{flex:1;min-width:0;border-bottom:0}
 .fila-rev > .mini{flex:none;margin-right:10px;white-space:nowrap}
+.al-wa{margin:4px 0 16px;padding:14px;border:1px solid var(--line);border-radius:16px}
+.al-wa .busca-linea{margin-top:6px}
+.al-sin{margin:0 14px 12px}
