@@ -12,7 +12,7 @@
   };
   const AREA = { presidencia: 'Presidencia', administracion: 'Administración', tecnologia: 'Tecnología', empresa: 'Correo de la empresa' };
   const TIPO_CTR = { servicio: 'Contrato de servicio', vgt: 'VGT', colocation: 'Colocation' };
-  let F = null; let yo = null; let editando = null;
+  let F = null; let yo = null; let editando = null; let enlAbierto = null;   // enlaces plegados: { cliente, abierto }
 
   const esAdmin = () => !!yo && yo.rol === 'admin';
   const chip = (e) => { const x = CONTRATO[e] || ['', e || 'Sin dato']; return '<span class="chip ' + x[0] + '">' + esc(x[1]) + '</span>'; };
@@ -40,9 +40,14 @@
       '</div>';
     if(D.feedback || D.observacion) h += '<p class="nota-chica ded-nota">' + esc([D.feedback, D.observacion].filter(Boolean).join('. ')) + '</p>';
 
-    h += '<div class="secc">Enlaces<span class="der">' + esc(activos.length + ' activos de ' + (D.enlaces || []).length) + '</span></div>';
+    // Enlaces plegados: una línea con cuántos están activos y la capacidad que suman; se abren al tocar
+    h += '<div class="secc">Enlaces</div>';
     if(!(D.enlaces || []).length) h += '<p class="nota-chica">Sin enlaces en el archivo de la analista ni en Odoo.</p>';
-    else h += '<div class="ded-enl">' + D.enlaces.map(enlace).join('') + '</div>';
+    else {
+      const abierto = !!enlAbierto && enlAbierto.cliente === F.cliente.id && enlAbierto.abierto;
+      h += '<button type="button" class="plegado" data-ded-enl="1" aria-expanded="' + abierto + '" aria-controls="dedEnl"><span class="plg-tx">' + esc(resumenEnlaces(D.enlaces)) + '</span>' + ic('abajo') + '</button>' +
+        '<div class="ded-enl" id="dedEnl"' + (abierto ? '' : ' hidden') + '>' + D.enlaces.map(enlace).join('') + '</div>';
+    }
 
     h += '<div class="secc">Contactos de la empresa<span class="der">No son del representante legal</span></div>';
     if(!(D.contactos || []).length) h += '<p class="nota-chica">Sin contactos en el archivo de la analista.</p>';
@@ -50,6 +55,12 @@
       esc(k.nombre || '') + (k.telefono ? ' <a class="enlace" href="tel:' + esc(String(k.telefono).replace(/\D/g, '')) + '">' + esc(tel(k.telefono)) + '</a>' : '') +
       (k.correo ? ' <a class="enlace" href="mailto:' + esc(k.correo) + '">' + esc(k.correo) + '</a>' : ''))).join('') + '</div>';
     return h;
+  }
+  // "2 enlaces activos · 5,1 Gbps" (más los suspendidos si hay)
+  function resumenEnlaces(l){
+    const act = l.filter((e) => e.activo); const sus = l.length - act.length;
+    const tot = act.reduce((a, e) => a + (Number(e.cap_entregada !== null && e.cap_entregada !== undefined ? e.cap_entregada : e.cap_facturada !== null && e.cap_facturada !== undefined ? e.cap_facturada : e.cap_inicial) || 0), 0);
+    return [C.plural(act.length, 'enlace activo', 'enlaces activos'), tot ? cap(tot) : '', sus ? C.plural(sus, 'suspendido', 'suspendidos') : ''].filter(Boolean).join(' · ');
   }
   const ddmm = (iso) => String(iso).slice(8, 10) + '/' + String(iso).slice(5, 7);
   function addDias(iso, n){ const d = new Date(String(iso).slice(0, 10) + 'T12:00:00'); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); }
@@ -65,15 +76,16 @@
   }
 
   // ---------- Contratos: una tarjeta por contrato (servicio dedicado, PYME si es combinado, VGT con sus proyectos, colocation por sitio) ----------
-  function tarjeta(titulo, estatus, cuerpo, idEditar){
-    return '<div class="ctr-t"><div class="ctr-cab"><b>' + esc(titulo) + '</b>' + estatus + (idEditar && esAdmin() ? '<button type="button" class="enlace" data-ctr-editar="' + esc(idEditar) + '">Editar</button>' : '') + '</div>' + cuerpo + '</div>';
+  function tarjeta(titulo, estatus, cuerpo, idEditar, clase){
+    return '<div class="ctr-t' + (clase ? ' ' + clase : '') + '"><div class="ctr-cab"><b>' + esc(titulo) + '</b>' + estatus + (idEditar && esAdmin() ? '<button type="button" class="enlace" data-ctr-editar="' + esc(idEditar) + '">Editar</button>' : '') + '</div>' + cuerpo + '</div>';
   }
   function contratos(ficha, quien){
     F = ficha; yo = quien || yo; const D = F.cliente.dedicado; if(!D) return '';
     const lista = D.contratos || []; const c = F.cliente;
-    let h = '<p class="nota-chica" style="margin-top:12px">Los dedicados no comisionan. El vencimiento se escribe a mano mientras se define la duración de los contratos.</p>';
+    let h = bloqueVgt(lista.filter((k) => k.tipo === 'vgt'), D);
+    h += '<p class="nota-chica" style="margin-top:12px">Los dedicados no comisionan. El vencimiento se escribe a mano mientras se define la duración de los contratos.</p>';
     const combinado = c.seg === 'PYME + Dedicado';
-    if(!lista.length && !combinado) return h + C.vacio('Sin contratos', 'Este dedicado todavía no tiene contratos cargados.');
+    if(!lista.some((k) => k.tipo !== 'vgt') && !combinado) return h + C.vacio('Sin contratos', h.indexOf('ctr-vgt') >= 0 ? 'Fuera del VGT, este dedicado todavía no tiene contratos cargados.' : 'Este dedicado todavía no tiene contratos cargados.');
     const serv = lista.filter((k) => k.tipo === 'servicio');
     serv.forEach((k) => {
       h += tarjeta('Servicio dedicado', chip(k.estatus), '<div class="datos">' + fila('Firma', k.firmado_en ? esc(fecha(k.firmado_en)) : '<span class="ded-gris">Sin fecha</span>') +
@@ -88,16 +100,6 @@
       h += tarjeta('Contrato PYME', est, '<div class="datos">' + fila('Firma', docP && docP.firmado_en ? esc(fecha(docP.firmado_en)) : '<span class="ded-gris">Sin firmar</span>') +
         fila('Documentos', 'Los mismos del dedicado') + '</div>');
     }
-    const vgt = lista.filter((k) => k.tipo === 'vgt');
-    if(vgt.length){
-      const k = vgt[0]; const postes = vgt.reduce((a, x) => a + (Number(x.postes) || 0), 0); const V = D.vgt || {};
-      const uso = (u) => { const t = String(u || '').toUpperCase(); return t === 'SI' ? 'En uso' : t === 'NO' ? 'No' : t === 'EN PROYECTO' ? 'En proyecto' : (u || ''); };
-      h += tarjeta('VGT', chip(k.estatus), '<div class="datos">' + fila('Contrato', k.numero ? 'N° ' + esc(k.numero) : '<span class="ded-gris">Sin número</span>') +
-          fila('Firma', k.firmado_en ? esc(fecha(k.firmado_en)) : '<span class="ded-gris">Sin fecha</span>') + fila('Vence', k.vence ? esc(k.vence) : '<span class="ded-gris">Sin escribir</span>') +
-          fila('Requisitos', V.faltan ? '<span class="chip ambar">' + esc(V.faltan === 1 ? 'Falta 1' : 'Faltan ' + V.faltan) + '</span> <button type="button" class="enlace" data-ir-tab="documentos">Ver en Documentos</button>' : '<span class="chip verde">Completos</span>') + '</div>' +
-        '<div class="ctr-proy"><div class="ctr-proy-t"><span>' + esc(vgt.length === 1 ? '1 proyecto' : vgt.length + ' proyectos') + '</span><span>' + esc(postes + ' postes') + '</span></div>' +
-        vgt.map((x) => '<div class="ctr-p"><b>' + esc(x.proyecto || 'Sin nombre') + '</b><small>' + esc([x.estado, x.postes ? x.postes + ' postes' : '', uso(x.en_uso), x.odt ? 'ODT ' + x.odt : ''].filter(Boolean).join(' · ')) + '</small></div>').join('') + '</div>', k.id);
-    }
     const col = lista.filter((k) => k.tipo === 'colocation');
     if(col.length){
       h += tarjeta('Colocation', '<span class="chip">' + esc(col.length === 1 ? '1 sitio' : col.length + ' sitios') + '</span>', '<div class="ctr-proy">' +
@@ -105,6 +107,38 @@
           (esAdmin() ? '<button type="button" class="enlace" data-ctr-editar="' + esc(x.id) + '">Editar</button>' : '') + '</div>').join('') + '</div>');
     }
     return h;
+  }
+
+  // ---------- VGT: bloque propio arriba de Contratos (contrato, proyectos y postes, requisitos con sus documentos) ----------
+  const EST_DOC = { aprobado: ['verde', 'Aprobado'], por_revisar: ['ambar', 'Por revisar'], devuelto: ['rojo', 'Devuelto'] };
+  function bloqueVgt(vgt, D){
+    const V = D.vgt; if(!vgt.length && !V) return '';
+    const hoy = F.hoy || new Date().toISOString().slice(0, 10);
+    let cuerpo = '';
+    if(vgt.length){
+      const k = vgt[0]; const postes = vgt.reduce((a, x) => a + (Number(x.postes) || 0), 0);
+      const uso = (u) => { const t = String(u || '').toUpperCase(); return t === 'SI' ? 'En uso' : t === 'NO' ? 'No' : t === 'EN PROYECTO' ? 'En proyecto' : (u || ''); };
+      cuerpo += '<div class="datos">' + fila('Contrato', k.numero ? 'N° ' + esc(k.numero) : '<span class="ded-gris">Sin número</span>') +
+          fila('Firma', k.firmado_en ? esc(fecha(k.firmado_en)) : '<span class="ded-gris">Sin fecha</span>') + fila('Vence', k.vence ? esc(k.vence) : '<span class="ded-gris">Sin escribir</span>') + '</div>' +
+        '<div class="ctr-proy"><div class="ctr-proy-t"><span>' + esc(vgt.length === 1 ? '1 proyecto' : vgt.length + ' proyectos') + '</span><span>' + esc(postes + ' postes') + '</span></div>' +
+        vgt.map((x) => '<div class="ctr-p"><b>' + esc(x.proyecto || 'Sin nombre') + '</b><small>' + esc([x.estado, x.postes ? x.postes + ' postes' : '', uso(x.en_uso), x.odt ? 'ODT ' + x.odt : ''].filter(Boolean).join(' · ')) + '</small></div>').join('') + '</div>';
+    }
+    if(V){
+      // Cada requisito con el estado de su documento; las actas de cambios sustanciales solo si ya hay alguna
+      const docs = F.documentos || [];
+      const req = (V.requisitos || []).filter((r) => r.clave !== 'asamblea' || docs.some((d) => d.casilla === 'otro' && d.numero === r.numero));
+      const pol = {}; (V.polizas || []).forEach((p) => { pol[p.numero] = p.vence_en; });
+      cuerpo += '<div class="ctr-proy"><div class="ctr-proy-t"><span>Requisitos</span><span>' + esc(V.faltan ? (V.faltan === 1 ? 'Falta 1' : 'Faltan ' + V.faltan) : 'Completos') + '</span></div>' +
+        req.map((r) => {
+          const d = docs.find((x) => x.casilla === 'otro' && x.numero === r.numero); const e = d ? EST_DOC[d.estado] || ['', 'Subido'] : r.requerido ? ['ambar', 'Falta'] : ['', 'Opcional'];
+          const v = pol[r.numero] || (d && d.vence_en); const dv = v ? C.diasEntre(hoy, v) : null;
+          const sub = v ? (dv < 0 ? 'Venció el ' + fecha(v) : 'Vence el ' + fecha(v)) : '';
+          return '<div class="ctr-p ctr-p2"><span><b>' + esc(String(r.texto || '').replace(/ \d$/, '')) + '</b>' + (sub ? '<small class="' + (dv < 0 ? 'mal' : dv <= 30 ? 'ojo' : '') + '">' + esc(sub) + '</small>' : '') + '</span>' +
+            '<span class="chip ' + e[0] + '">' + esc(e[1]) + '</span></div>';
+        }).join('') +
+        '<button type="button" class="btn btn-chico btn-2 btn-ancho" data-ir-tab="documentos" data-ir-grupo="vgt" style="margin-top:10px">Subir o ver en Documentos</button></div>';
+    }
+    return tarjeta('VGT', vgt.length ? chip(vgt[0].estatus) : '<span class="chip">Sin contrato</span>', cuerpo, vgt.length ? vgt[0].id : null, 'ctr-vgt');
   }
 
   // ---------- Hojas de edición (solo administrador) ----------
@@ -168,6 +202,10 @@
   document.addEventListener('click', (e) => {
     const t = e.target; let b;
     if(t.closest('[data-ded-editar]')){ abrirEditar(); return; }
+    if((b = t.closest('[data-ded-enl]'))){
+      const ab = b.getAttribute('aria-expanded') !== 'true'; b.setAttribute('aria-expanded', String(ab)); const z = $('dedEnl'); if(z) z.hidden = !ab;
+      enlAbierto = { cliente: F && F.cliente.id, abierto: ab }; return;
+    }
     if((b = t.closest('[data-ctr-editar]'))){ abrirContrato(b.dataset.ctrEditar); return; }
     if((b = t.closest('#formDed [data-ded-tipo]'))){ Array.prototype.forEach.call(document.querySelectorAll('#formDed [data-ded-tipo]'), (x) => { const on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-checked', String(on)); }); return; }
     if((b = t.closest('#dVer'))){ b.setAttribute('aria-checked', String(b.getAttribute('aria-checked') !== 'true')); }

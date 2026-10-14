@@ -50,7 +50,7 @@ function preparar(m){
     ok(nombre + ': un atajo de Inicio abre en todas las tarjetas sin cambiar la guardada', (await p.locator('#tarjetas [aria-pressed="true"]').count()) === 0 && await p.evaluate(() => localStorage.getItem('ae_cli_tarjeta') === 'isp'));
     await p.click('#tarjetas [data-tarjeta="isp"]'); await p.waitForSelector('#tarjetas [data-tarjeta="isp"][aria-pressed="true"]');
     // La hoja del dedicado conserva Contratos; la del combinado, Comisión y Contratos
-    await p.click('#filtros [data-filtro="todos"]'); await p.locator('.cli', { hasText: 'Tornillos El Yunque' }).click(); await p.waitForSelector('#hojaFicha.ver #tab-datos .ded-enl');
+    await p.click('#filtros [data-filtro="todos"]'); await p.locator('.cli', { hasText: 'Tornillos El Yunque' }).click(); await p.waitForSelector('#hojaFicha.ver #tab-datos [data-ded-enl]');
     ok(nombre + ': la hoja del ISP muestra enlaces y Contratos, sin Comisión', await p.evaluate(() => !document.querySelector('#tabs [data-tab="contratos"]').classList.contains('hidden') && document.querySelector('#tabs [data-tab="comision"]').classList.contains('hidden')));
     await cerrarHojas(p);
     await p.click('#tarjetas [data-tarjeta="pyme"]'); await p.click('#filtros [data-filtro="todos"]');
@@ -70,7 +70,7 @@ function preparar(m){
     ok(nombre + ': la líder (sin marca) ve sus dedicados contados en las tarjetas', /1\s*Dedicado ISP/.test(await q.textContent('#tarjetas')) && /[1-9]\d*\s*Dedicado corporativo/.test(await q.textContent('#tarjetas')));
     await q.click('#tarjetas [data-tarjeta="isp"]'); await q.click('#filtros [data-filtro="todos"]'); await q.waitForFunction(() => /Tornillos El Yunque/.test(document.getElementById('lista').textContent));
     await q.screenshot({ path: 'capturas/34-' + nombre + '-lider-isp.png', fullPage: true });
-    await q.locator('.cli', { hasText: 'Tornillos El Yunque' }).click(); await q.waitForSelector('#hojaFicha.ver #tab-datos .ded-enl');
+    await q.locator('.cli', { hasText: 'Tornillos El Yunque' }).click(); await q.waitForSelector('#hojaFicha.ver #tab-datos [data-ded-enl]');
     ok(nombre + ': la líder abre la hoja de su dedicado con sus enlaces', true);
     await cerrarHojas(q);
     await q.goto(H + 'dedicados.html?c=' + isp.id); await q.waitForURL('**/clientes.html**'); await q.waitForSelector('#hojaFicha.ver');

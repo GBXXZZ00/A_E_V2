@@ -92,19 +92,18 @@ const llamo = (m, f) => m.llamadas.filter((l) => l[1] === f);
           [65, 'habilitacion', 'Habilitación con atributos de internet y transporte en las zonas', true, false], [66, 'poliza_rc', 'Póliza de responsabilidad civil general', true, true], [67, 'poliza_patronal', 'Póliza de responsabilidad patronal', true, true],
           [68, 'propuesta', 'Propuesta comercial firmada y sellada', true, false], [69, 'tendido', 'Planilla de solicitud de tendido aprobada', true, false], [70, 'factibilidad', 'Aprobación de factibilidad técnica (correo)', true, false]]
           .map((r) => ({ numero: r[0], clave: r[1], texto: r[2], requerido: r[3], vence: r[4] })) } };
-    await p.goto(H + 'dedicados.html?f=todos'); await p.waitForSelector('#lista .cli');
-    ok(nombre + ': la fila dice VGT por firmar', (await p.textContent('#lista')).includes('VGT por firmar'));
-    const ops = await p.$$eval('#ptipo option, #ttipo option', (xs) => xs.map((x) => x.textContent));
-    ok(nombre + ': filtro Tipo con ISP, Corporativo y Combinado; y Líder, Estatus legal, VGT y Enlaces', ops.includes('ISP') && ops.includes('Combinado (dedicado + PYME)') &&
-      ['plider', 'pestatus', 'pvgt', 'pactivo'].every(async () => true) && (await p.locator('#plider, #tlider').count()) >= 1 && (await p.locator('#pvgt, #tvgt').count()) >= 1);
-    ok(nombre + ': ya no hay filtro de Ruta de documentos', (await p.locator('#pruta, #truta').count()) === 0);
+    // Corrida 14/10 tarde: sin pantalla Dedicados; el dedicado se ve en Clientes (tarjeta ISP) con su etiqueta VGT
+    await p.goto(H + 'clientes.html?s=isp&f=todos'); await p.waitForSelector('#lista .cli');
+    ok(nombre + ': la fila lleva la etiqueta VGT', (await p.textContent('.cli[data-cliente="' + a.id + '"]')).includes('VGT'));
+    ok(nombre + ': filtros de dedicados: VGT, Enlaces y Pólizas', (await p.locator('[data-sel="vgt"]').count()) >= 1 && (await p.locator('[data-sel="enlaces"]').count()) >= 1 && (await p.locator('[data-sel="poliza"]').count()) >= 1);
     await p.click('.cli[data-cliente="' + a.id + '"]'); await p.waitForSelector('#hojaFicha.ver #tab-datos');
     const dts = await p.textContent('#tab-datos');
     ok(nombre + ': Datos dice Líder (no Ejecutiva) y los requisitos VGT', dts.includes('Líder') && !dts.includes('Ejecutiva') && dts.includes('Requisitos VGT'));
     await p.click('#tabs [data-tab="contratos"]'); await p.waitForSelector('#tab-contratos.on .ctr-t');
     const ct = await p.textContent('#tab-contratos');
-    ok(nombre + ': una tarjeta por contrato: servicio, VGT con proyectos y total de postes, colocation por sitio', (await p.locator('#tab-contratos .ctr-t').count()) === 3 &&
-      ct.includes('Ruta Inventada Uno') && ct.includes('Ruta Inventada Dos') && ct.includes('20 postes') && ct.includes('En proyecto') && ct.includes('ODT ODT-9') && ct.includes('Sitio Inventado'));
+    ok(nombre + ': una tarjeta por contrato: VGT arriba con proyectos y total de postes, servicio, colocation por sitio', (await p.locator('#tab-contratos .ctr-t').count()) === 3 &&
+      (await p.locator('#tab-contratos .ctr-t').first().getAttribute('class')).includes('ctr-vgt') && ct.includes('Ruta Inventada Uno') && ct.includes('Ruta Inventada Dos') && ct.includes('20 postes') && ct.includes('En proyecto') && ct.includes('ODT ODT-9') && ct.includes('Sitio Inventado'));
+    ok(nombre + ': el bloque VGT lista los requisitos con su estado y el vencimiento de la póliza', ct.includes('Requisitos') && ct.includes('Faltan 7') && ct.includes('Póliza de responsabilidad civil general') && /Vence el/.test(ct) && !ct.includes('Acta de asamblea de cambios sustanciales'));
     await p.screenshot({ path: 'capturas/28-' + nombre + '-contratos.png', fullPage: true });
     await p.click('#tab-contratos [data-ir-tab="documentos"]'); await p.waitForSelector('#tab-documentos.on [data-grupo="vgt"]');
     const vg = await p.textContent('[data-grupo="vgt"]');

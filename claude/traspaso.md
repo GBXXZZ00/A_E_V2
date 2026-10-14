@@ -1,6 +1,65 @@
 # Traspaso (se actualiza al cerrar cada sesión)
 
-Actualizado: 14/10/2026 (corrida del 14/10: Lotes 3, 5 y 4 hechos). Publicado: `?v=35`.
+Actualizado: 14/10/2026 (corrida 14/10 tarde en curso). Publicado: `?v=41`.
+
+## CORRIDA 14/10 TARDE (APROBADA por el administrador): texto completo
+
+CORRIDA 14/10 tarde (aprobada por el administrador). Primer paso: copia este texto completo al traspaso. Publica por parte (pruebas, capturas 1366x768 y iPhone como admin y como líder, revisión independiente, ?v=, commit y push). Septiembre 59/49 antes y después de cada parte. Migraciones está en pausa: solo se toca su formulario (Parte 3). Nada de nombres ni RIF reales en el repo. Anota las decisiones propias en el traspaso.
+
+PARTE 1: todo en Clientes
+1. Se elimina la pantalla Dedicados del menú y de Inicio; dedicados.html redirige a Clientes con la tarjeta ISP. Enlaces, contratos, VGT y pólizas quedan en la hoja del cliente y en los filtros de Clientes. Cobranza sale de aquí: será un módulo aparte.
+2. Combinados: un cliente sale en TODAS las tarjetas que le tocan (PYME, Dedicado corporativo, Dedicado ISP). En el filtro "Tipo", Combinado pasa a ser una etiqueta, no una opción excluyente. Caso: un ISP con un servicio PROMO-1GB debe salir en ISP y en PYME.
+3. VGT visible: etiqueta "VGT" en la fila; atajo "VGT" en las tarjetas de dedicados; en la hoja, bloque VGT propio arriba de Contratos (proyectos, postes, requisitos, documentos).
+4. Enlaces plegables en la hoja: resumen en una línea ("2 enlaces activos · 5,1 Gbps") que se abre al tocar.
+5. En el informe: lista de clientes con servicio dedicado en el TAD sin ficha de dedicado (unos 18). No los clasifiques.
+
+PARTE 2: pendientes por módulo y sin "Hecho"
+1. Quitar "Hecho" en toda la app. Un pendiente solo desaparece cuando la app detecta que se resolvió (documento subido, envío registrado, IP escrita, gestión en el hilo para "sin gestión", etc.). Si alguno no puede resolverse solo, dímelo en el informe; no le inventes salida. Lo marcado antes como hecho vuelve si la condición sigue.
+2. Mi trabajo agrupado por módulo con contador: Expedientes (faltan documentos, devueltos, por firmar, sin gestión, RIF por verificar), Comisiones (por instalar, por enviar, sin IP, por asignar, para certificar), Migraciones (lo que exista hoy), Dedicados (VGT incompleto, pólizas), Aliados. Dentro: vencido, vence hoy, nuevo. Inicio cuenta desde la misma fuente.
+3. Cada módulo del menú muestra su contador.
+
+PARTE 3: formulario de cambio de titular (rehacer)
+1. Categoría nueva: lista cerrada (categorías reales del TAD), nunca texto libre.
+2. "Tipo de solicitud" de la planilla oficial en vez de "Nuevo titular / Es": natural a natural, natural a jurídico, jurídico a natural, jurídico a jurídico. Los documentos pedidos salen de esa elección.
+3. Diseño más limpio, estilo de las hojas aprobadas, label arriba, errores debajo, cómodo en teléfono.
+4. Botón "Subir RIF": usa el OCR de la Parte 4 y llena RIF, razón social y domicilio para que la persona confirme. El archivo queda en la casilla RIF del nuevo titular.
+
+PARTE 4: lectura OCR con Google Drive para bajar el costo de la IA
+Objetivo: usar OCR más reglas fijas en todo lo que lo amerite y dejar la IA solo para lo que hay que entender.
+1. Función de borde "ocr_leer": toma un archivo que ya está en Drive (imagen JPG/PNG o PDF), lo copia convirtiéndolo a documento de Google, saca el texto y borra la copia. Guarda el texto en una tabla nueva (un archivo se lee una sola vez). Si falla (permiso, tamaño, archivo ilegible) devuelve "sin lectura" y todo sigue por el camino de hoy.
+2. Lectores con reglas fijas, en el servidor:
+   - RIF viejo: RIF, razón social, domicilio fiscal, fecha de vencimiento.
+   - RIF nuevo "RIF Digital v2.0": RIF, razón social, domicilio fiscal, fecha de inscripción, última actualización, número de comprobante (sin vencimiento).
+   - Dígito verificador del RIF en los dos; si no cuadra, "lectura dudosa".
+   - Cédula: número, nombres, apellidos, vencimiento si lo trae.
+   - Póliza: propone la fecha de vencimiento (la persona confirma).
+   - Verificación de casilla: la casilla ya dice qué es el archivo. El OCR solo comprueba que el texto corresponde (RIF: "Registro Único de Información Fiscal"; cédula: "Cédula de identidad"). Si no corresponde, marca "No corresponde a la casilla" para que se corrija, sin gastar IA.
+   - Archivos combinados (casilla "Cédula + RIF personal" o un archivo con varios documentos), actas y lecturas dudosas van SIEMPRE a la IA.
+3. Vigencia del RIF (determinista): el viejo vale si su vencimiento no pasó; el nuevo vale siempre. Actualizar claude/ia-reglas.md y las reglas del servidor para aceptar los dos formatos.
+4. Uso (TODO SUMA, NADA SE REEMPLAZA hasta pasar la prueba):
+   a) Formulario de titularidad (Parte 3): activo desde el inicio (es nuevo).
+   b) Ajuste "Usar OCR en aliados": RIF leído por OCR para el bloqueo por cartera; si es dudoso o falla, IA como hoy.
+   c) Ajuste "Usar OCR en la revisión": RIF y cédulas con lectura clara no van a Gemini; combinados, actas y lecturas dudosas sí.
+   d) Ajuste "Llenar datos del expediente con OCR": razón social y domicilio propuestos para que la persona confirme.
+   Los tres ajustes arrancan en NO. Con NO, ia_revisar, aliados y la subida funcionan exactamente igual que hoy (test20, test24 a test28 deben pasar igual).
+5. Prueba y encendido: correr el OCR sobre los clientes ya revisados por la IA. Tabla OCR contra Gemini (RIF, nombres, fechas, tipo de documento), aciertos por tipo de documento, tiempo y ahorro estimado. Si el OCR acierta en al menos 95% en un tipo de documento, prender los ajustes para ese tipo. Si no llega, dejarlos en NO y explicar dónde falla. Comprobar además que con el OCR caído todo vuelve al camino de hoy.
+
+Respuesta final corta: qué quedó por parte, la tabla OCR contra Gemini, qué se prendió, qué debo probar y qué pendientes no se resuelven solos.
+
+**Orden acordado con el administrador:** Parte 1, Parte 2, base del OCR (4.1 a 4.3), Parte 3, uso y prueba del OCR (4.4 y 4.5). La prueba del OCR usa archivos ya analizados y aprobados.
+
+**Avance de la corrida 14/10 tarde (Claude Code):**
+- Antes de empezar: septiembre 59/49. test23 tenía una carrera (la lista se repinta después de "No, es otro"); se agregó la espera, la comprobación sigue igual.
+- **Parte 1: HECHA en v41.** Septiembre 59/49 antes y después.
+  - Sin pantalla Dedicados: fuera del menú y de Inicio; `dedicados.html` solo redirige a Clientes con la tarjeta ISP (o a la hoja si trae `?c=`); `assets/js/dedicados.js` borrado. Sus pendientes pasan a Mi trabajo en la Parte 2. Cobranza sale (será módulo aparte).
+  - Combinados: ya salían en todas sus tarjetas (6 ISP combinados salen también en PYME). Lo que faltaba era el filtro "tipo" de `clientes_lista2`, que excluía: ahora "Dedicado ISP" trae también a los combinados ISP y "Combinado" muestra los que tienen las dos cosas. La fila lleva la etiqueta "Combinado" (y ", ISP").
+  - VGT: etiqueta en la fila, atajo "VGT" con su número en las tarjetas de dedicados, filtro "Pólizas" (vencida o vence en 30 días; con póliza cargada). En la hoja, bloque VGT arriba de Contratos: contrato, proyectos y postes, requisitos con el estado de su documento y el vencimiento de las pólizas, y botón "Subir o ver en Documentos".
+  - **Decisión propia:** las casillas para subir los requisitos VGT siguen en Documentos (allí funcionan la subida, la revisión y la IA); el bloque VGT de Contratos muestra su estado y lleva a ellas. No se duplican.
+  - La fila muestra "Póliza vence dd/mm" (ámbar) o "Póliza vencida" (rojo) cuando falta 30 días o menos; una póliza devuelta no cuenta.
+  - Revisión independiente: sin bloqueos; se corrigió la fecha de póliza (sin devueltos), el texto de Contratos vacío, el botón plegado en una sola línea y el salto a Requisitos VGT.
+  - Enlaces plegados en Datos: "2 enlaces activos · 5,1 Gbps" (y los suspendidos), se abren al tocar.
+  - Base: `clientes_lista2` (SQL en `supabase/pruebas/corrida_tarde_p1.sql`). Pruebas: test25 reescrita (sin pantalla), test28 y test34 ajustadas.
+  - Informe (en el chat, no aquí): 43 clientes tienen servicio DEDICADO o CONECTIVIDAD en el TAD sin ficha de dedicado: 19 con DEDICADO y 24 personas naturales con CONECTIVIDAD. Sin clasificar.
 
 ## CORRIDA DEL 14/10 (APROBADA por el administrador el 13/10 noche): Lote 3 + Lote 4 + Lote 5 + Lote 6 + Lote 7 · HECHA el 14/10 (v33 a v37)
 Antes de tocar código: lee los cinco lotes completos y dile al administrador, en pocas líneas, qué puedes ejecutar y qué no (y por qué). Si todo es ejecutable, arranca sin esperar más. Orden: Lote 3, 5, 4, 6, 7. Publica por lote (pruebas, capturas, `?v=`, commit y push). Septiembre certificado (59/49) no se mueve; corre la referencia de comisiones antes y después de cada lote que toque comisiones. Las pantallas siguen el estilo ya aprobado (maquetas en `claude/maquetas/`, Clientes y Comisiones como modelo); no hace falta maqueta nueva. Fuera de esta corrida: notificaciones, ingresos y bandeja de dedicados, propuesta de servicio, proforma y carta para nuevo titular, subidas por guardias.

@@ -406,20 +406,27 @@ const RPC = {
   clientes_lista2(m, yo, a){
     const f = a.p_filtros || {}; const todos = visibles(m, yo); const tj = ['pyme', 'corporativo', 'isp'].includes(f.tarjeta) ? f.tarjeta : '';
     const ctr = (c) => (c.dedicado && c.dedicado.contratos) || []; const enl = (c) => ((c.dedicado && c.dedicado.enlaces) || []).some((e) => e.activo);
-    const pasa = (c) => (!f.lider || (c.lider || 'Sin líder') === f.lider) && (!f.estatus || c.estatus === f.estatus) && (!f.tipo || segmentoFiltro(c) === f.tipo) &&
+    // Corrida 14/10 tarde: el tipo no excluye combinados; pólizas por vencer
+    const tipoOk = (c) => { const t = tarjetaDe(c); return !f.tipo || (f.tipo === 'PYME' && t.pyme) || (f.tipo === 'Dedicado ISP' && t.ded === 'isp') || (f.tipo === 'Dedicado corporativo' && t.ded === 'corporativo') || (f.tipo === 'Combinado' && t.pyme && !!t.ded); };
+    const polDe = (c) => (c.documentos || []).filter((x) => x.casilla === 'otro' && [66, 67].includes(x.numero) && x.vence_en && x.estado !== 'devuelto').map((x) => x.vence_en).sort()[0] || null;
+    const hoyMas30 = new Date(Date.now() + 30 * DIA).toISOString().slice(0, 10);
+    const polOk = (c) => !f.poliza || (f.poliza === 'con' ? !!polDe(c) : !!polDe(c) && polDe(c).slice(0, 10) <= hoyMas30);
+    const esVgt = (c) => ctr(c).some((k) => k.tipo === 'vgt');
+    const pasa = (c) => (!f.lider || (c.lider || 'Sin líder') === f.lider) && (!f.estatus || c.estatus === f.estatus) && tipoOk(c) && polOk(c) &&
       (!f.sucursal || c.servicios.some((s) => s.sucursal === f.sucursal)) && (!f.servicio || c.servicios.some((s) => norm(s.estado) === norm(f.servicio))) &&
       (!f.vgt || (f.vgt === 'con' ? ctr(c).some((k) => k.tipo === 'vgt') : ctr(c).some((k) => k.tipo === 'vgt' && k.estatus !== 'firmado'))) && (!f.enlaces || (f.enlaces === 'activos') === enl(c));
     const enT = (c) => !tj || (tj === 'pyme' ? tarjetaDe(c).pyme : tarjetaDe(c).ded === tj);
     const buscando = !!(norm(a.p_busca) || String(a.p_busca || '').replace(/\D/g, '').length >= 4);
     const base = m.datos.clientes.filter(pasa);
     const m2 = Object.assign({}, m, { datos: Object.assign({}, m.datos, { clientes: base.filter((c) => buscando || enT(c)) }) });
-    const r = RPC.clientes_lista(m2, yo, Object.assign({}, a, { p_filtro: a.p_filtro === 'faltan' ? 'todos' : a.p_filtro })); if(r && r.__error) return r;
+    const r = RPC.clientes_lista(m2, yo, Object.assign({}, a, { p_filtro: a.p_filtro === 'faltan' || a.p_filtro === 'vgt' ? 'todos' : a.p_filtro, p_limite: a.p_filtro === 'vgt' ? 999 : a.p_limite })); if(r && r.__error) return r;
     // Faltan documentos y el conteo por tarjeta (el servidor los cuenta sobre lo que ve cada quien)
     const vis = visibles(m2, yo); const vb = visibles(Object.assign({}, m, { datos: Object.assign({}, m.datos, { clientes: base }) }), yo);
-    r.conteos.faltan = vis.filter((c) => casillasVacias(c) > 0).length;
+    r.conteos.faltan = vis.filter((c) => casillasVacias(c) > 0).length; r.conteos.vgt = vis.filter(esVgt).length;
+    if(a.p_filtro === 'vgt' && !buscando){ const ids = new Set(vis.filter(esVgt).map((c) => c.id)); r.filas = r.filas.filter((x) => ids.has(x.id)); r.total = r.filas.length; }
     if(a.p_filtro === 'faltan' && !buscando){ const l = vis.filter((c) => casillasVacias(c) > 0); const ids = new Set(l.map((c) => c.id)); r.total = l.length; r.filas = r.filas.filter((x) => ids.has(x.id)); }
     r.tarjetas = { pyme: vb.filter((c) => tarjetaDe(c).pyme).length, corporativo: vb.filter((c) => tarjetaDe(c).ded === 'corporativo').length, isp: vb.filter((c) => tarjetaDe(c).ded === 'isp').length };
-    r.filas.forEach((x) => { const c = m.datos.clientes.find((k) => k.id === x.id); const t = tarjetaDe(c); x.ded = t.ded; x.combinado = !!t.ded && t.pyme; x.n_enl = ((c.dedicado && c.dedicado.enlaces) || []).filter((e) => e.activo).length; });
+    r.filas.forEach((x) => { const c = m.datos.clientes.find((k) => k.id === x.id); const t = tarjetaDe(c); x.ded = t.ded; x.combinado = !!t.ded && t.pyme; x.vgt = esVgt(c); x.poliza_vence = polDe(c); x.n_enl = ((c.dedicado && c.dedicado.enlaces) || []).filter((e) => e.activo).length; });
     const un = (l) => Array.from(new Set(l)).sort();
     r.opciones = { lider: un(todos.map((c) => c.lider || 'Sin líder')), sucursal: un([].concat.apply([], todos.map((c) => c.servicios.map((s) => s.sucursal)))),
       servicio: un([].concat.apply([], todos.map((c) => c.servicios.map((s) => norm(s.estado).replace(/^./, (x) => x.toUpperCase()))))), tipo: ['PYME', 'Dedicado ISP', 'Dedicado corporativo', 'Combinado'] };

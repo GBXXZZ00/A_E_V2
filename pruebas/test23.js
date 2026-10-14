@@ -56,7 +56,8 @@ function preparar(mundo){
     await p.click('[data-es-cli="no"]');
     await p.waitForFunction(() => !document.querySelector('[data-es-cli]'));
     ok(nombre + ': "No, es otro" crea el provisional', mundo.llamadas.some((l) => l[1] === 'orden_es_cliente' && l[2].p_cliente === null) && mundo.datos.clientes.some((c) => c.nombre === 'Kiosko La Parada' && c.provisional));
-    // Realizada en Odoo sin instalación
+    // Realizada en Odoo sin instalación (la lista se repinta después de "No, es otro")
+    await p.waitForFunction(() => /Ferreter/.test(document.querySelector('#lista').textContent), null, { timeout: 5000 }).catch(() => {});
     ok(nombre + ': el Analista Senior ve las realizadas en Odoo sin instalación', /Realizadas? en Odoo sin instalación/.test(await p.textContent('#lista')) && (await p.textContent('#lista')).includes('Ferretería Hecha'));
     // Abrir el provisional, escribir su RIF y que se una al cliente real
     await p.evaluate(() => { document.querySelectorAll('#lista .grupo').forEach((g) => { if(!g.classList.contains('abierto')) g.querySelector('.grupo-cab').click(); }); });

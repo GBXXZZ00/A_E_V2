@@ -4,53 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
-<meta name="theme-color" content="#FFFFFF">
 <title>Dedicados</title>
-<link rel="expect" href="#navListo" blocking="render">
-<link rel="manifest" href="manifest.json">
-<link rel="apple-touch-icon" href="assets/img/icon-192.png">
-<link rel="stylesheet" href="assets/css/base.css?v=40">
-<link rel="stylesheet" href="assets/css/modulos.css?v=40">
-<link rel="stylesheet" href="assets/css/app.css?v=40">
+<script>
+// Dedicados ya no es una pantalla: todo está en Clientes (tarjeta ISP, o la hoja del cliente si el enlace la traía).
+(function(){ var u = new URLSearchParams(location.search); var n = new URLSearchParams(); if(Number(u.get('c'))){ n.set('c', u.get('c')); if(u.get('t')) n.set('t', u.get('t')); } else n.set('s', 'isp'); location.replace('clientes.html?' + n.toString()); })();
+</script>
 </head>
-<body>
-<header class="barra" id="barra"><a class="marca" href="inicio.html" aria-label="Inicio"><img class="logo" src="assets/img/logo.svg?v=40" alt="Airtek" width="96" height="12"><span>Empresas</span></a></header>
-<main class="pagina">
-  <div class="cabeza busca">
-    <h1 class="titulo">Dedicados</h1>
-    <form class="buscar" id="formBusca" role="search" autocomplete="off">
-      <label class="solo-lector" for="busca">Buscar dedicado</label>
-      <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM20 20l-3.5-3.5"/></svg>
-      <input class="campo" id="busca" type="search" inputmode="search" enterkeyhint="search" placeholder="Nombre, RIF o código" maxlength="60">
-    </form>
-  </div>
-  <div id="avisoDed"></div>
-  <div class="filtros una" id="filtros" role="group" aria-label="Atajos"></div>
-  <div class="sels" id="selsPc"></div>
-  <p class="cuenta-l" id="cuentaLista" aria-live="polite">&nbsp;</p>
-  <div class="enc hidden" id="enc" aria-hidden="true"><span>Cliente</span><span>Líder</span><span>Estatus legal</span><span>Documentos y contrato</span><span></span></div>
-  <div id="lista"></div>
-  <div class="pie-lista hidden" id="pieLista"></div>
-</main>
-
-<section class="hoja" id="hojaFiltros" role="dialog" aria-modal="true" aria-labelledby="tFiltros" aria-hidden="true">
-  <div class="asa" aria-hidden="true"></div>
-  <div class="cab"><div><h2 id="tFiltros">Filtros</h2><p class="sub-hoja">Elige una opción en cada uno. Los que dejes en Todos no filtran.</p></div><button type="button" class="cerrar" data-cierra="1" aria-label="Cerrar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
-  <div class="sels" id="selsTel"></div>
-  <div class="acciones" style="display:flex;gap:10px"><button type="button" class="btn btn-2" id="limpiarFiltros">Limpiar</button><button type="button" class="btn" style="flex:1" id="verFiltrados" data-cierra="1">Ver dedicados</button></div>
-</section>
-<script src="assets/vendor/supabase.js?v=1"></script>
-<script src="assets/js/supabase-client.js?v=1"></script>
-<script src="assets/js/comun.js?v=40"></script>
-<script src="assets/js/sesion.js?v=40"></script>
-<script src="assets/js/armazon.js?v=40"></script>
-<i id="navListo" hidden></i>
-<script src="assets/js/archivos.js?v=40"></script>
-<script src="assets/js/marca.js?v=40"></script>
-<script src="assets/js/documentos.js?v=40"></script>
-<script src="assets/js/pedir.js?v=40"></script>
-<script src="assets/js/ficha.js?v=40"></script>
-<script src="assets/js/dedicado-ficha.js?v=40"></script>
-<script src="assets/js/dedicados.js?v=40"></script>
-</body>
+<body></body>
 </html>

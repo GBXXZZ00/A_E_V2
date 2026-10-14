@@ -1184,7 +1184,7 @@
     let b;
     if(t.closest('#hojaFicha #reintentar')){ cargar(true); return; }
     if((b = t.closest('#tabs [data-tab]'))){ irTab(b.dataset.tab); return; }
-    if((b = t.closest('#hojaFicha [data-ir-tab]'))){ irTab(b.dataset.irTab); return; }
+    if((b = t.closest('#hojaFicha [data-ir-tab]'))){ irTab(b.dataset.irTab); const g = b.dataset.irGrupo && document.querySelector('#tab-' + tab + ' [data-grupo="' + b.dataset.irGrupo + '"]'); if(g) g.scrollIntoView({ block: 'center' }); return; }
     if((b = t.closest('[data-paso]'))){
       const a = b.dataset.paso;
       if(a === 'rif') abrirCampo('rif'); else if(a === 'revisar') abrirRevision(); else if(a === 'cerrarrev') abrirCerrar(); else if(a === 'estatus') abrirEstatus(); else if(a.indexOf('pedir:') === 0) pedir(a.slice(6)); else if(a.indexOf('tab:') === 0){ irTab(a.slice(4)); const g = document.querySelector('[data-grupo="contrato"]'); if(g) g.scrollIntoView({ block: 'center' }); }

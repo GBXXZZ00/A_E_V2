@@ -7,7 +7,7 @@
   const POR_PAGINA = 30;
   const ATAJOS = [
     { id: 'en_curso', t: 'En curso' }, { id: 'por_revisar', t: 'Por revisar' }, { id: 'sin_gestion', t: 'Sin gestión' },
-    { id: 'faltan', t: 'Faltan documentos' }, { id: 'por_subir', t: 'Archivos por subir' }, { id: 'todos', t: 'Todos' }
+    { id: 'faltan', t: 'Faltan documentos' }, { id: 'por_subir', t: 'Archivos por subir' }, { id: 'vgt', t: 'VGT', ded: true }, { id: 'todos', t: 'Todos' }
   ];
   const TARJETAS = [{ id: 'pyme', t: 'PYME' }, { id: 'corporativo', t: 'Dedicado corporativo' }, { id: 'isp', t: 'Dedicado ISP' }];
   // Lo que se escribía como "Segmento" en enlaces viejos ahora es la tarjeta
@@ -18,12 +18,16 @@
   const SELS = [
     { k: 'lider', t: 'Líder' }, { k: 'estatus', t: 'Estatus legal' }, { k: 'sucursal', t: 'Sucursal' }, { k: 'servicio', t: 'Estado del servicio' },
     // Solo en las tarjetas de dedicados
-    { k: 'vgt', t: 'VGT', ded: true }, { k: 'enlaces', t: 'Enlaces', ded: true }
+    { k: 'vgt', t: 'VGT', ded: true }, { k: 'enlaces', t: 'Enlaces', ded: true }, { k: 'poliza', t: 'Pólizas', ded: true }
   ];
-  const FIJAS = { vgt: [['con', 'Con VGT'], ['por_firmar', 'VGT por firmar']], enlaces: [['activos', 'Con enlaces activos'], ['sin', 'Sin enlaces activos']] };
+  const FIJAS = { vgt: [['con', 'Con VGT'], ['por_firmar', 'VGT por firmar']], enlaces: [['activos', 'Con enlaces activos'], ['sin', 'Sin enlaces activos']],
+    poliza: [['por_vencer', 'Vencida o vence en 30 días'], ['con', 'Con póliza cargada']] };
   let tarjeta = 'pyme'; let nTarjetas = null;
   const esDed = () => tarjeta === 'corporativo' || tarjeta === 'isp';
   const selsDe = () => SELS.filter((x) => !x.ded || esDed());
+  const atajosDe = () => ATAJOS.filter((x) => !x.ded || esDed());
+  // Al salir de las tarjetas de dedicados se sueltan sus filtros y su atajo
+  function soltarDed(){ if(esDed()) return; SELS.forEach((x) => { if(x.ded) delete sel[x.k]; }); if(ATAJOS.some((x) => x.ded && x.id === filtro)) filtro = 'en_curso'; }
   function leerTarjeta(){ try { const v = localStorage.getItem(K_TARJETA); return TARJETAS.some((t) => t.id === v) ? v : 'pyme'; } catch (e) { return 'pyme'; } }
   function guardarTarjeta(){ if(tarjeta === 'todas') return; try { localStorage.setItem(K_TARJETA, tarjeta); } catch (e) {} }
   let yo = null; let rol = ''; let filtro = 'en_curso'; let q = ''; let sel = {}; let filas = []; let total = 0; let conteos = null; let opciones = null;
@@ -36,7 +40,7 @@
     sel = {}; SELS.forEach((x) => { const v = u.get(x.k); if(v) sel[x.k] = v.slice(0, 60); });
     // Con un atajo que viene de Inicio o Comisiones (sin tarjeta) se ve en todas, igual que el número que lo trajo
     const s = u.get('s'); tarjeta = TARJETAS.some((t) => t.id === s) ? s : DE_TIPO[u.get('tipo')] || (u.get('f') || u.get('c') ? 'todas' : leerTarjeta());
-    if(!esDed()){ delete sel.vgt; delete sel.enlaces; }
+    soltarDed();
     return { c: Number(u.get('c')) || 0, t: u.get('t') || '', revisar: u.get('revisar'), pedir: u.get('pedir') };
   }
   function guardarUrl(){
@@ -57,7 +61,7 @@
   }
 
   function pintarAtajos(){
-    const lista = ATAJOS.slice();
+    const lista = atajosDe();
     if(EXTRA[filtro]) lista.unshift({ id: filtro, t: EXTRA[filtro] });
     const n = nSel();
     $('filtros').innerHTML = '<button type="button" class="bfil" id="abrirFiltros">Filtros' + (n ? '<u>' + n + '</u>' : '') + '</button>' + lista.map((f) => {
@@ -100,11 +104,16 @@
     if(fal) return [c.ultimo_corte ? 'rojo' : 'gris', faltaTexto(f)];
     return ['gris', 'Sin pendientes'];
   }
+  // Póliza VGT que venció o vence en 30 días: se ve en la fila
+  function polizaTag(v){
+    if(!v) return ''; const d = diasEntre(new Date().toISOString(), String(v).slice(0, 10) + 'T12:00:00'); if(d > 30) return '';
+    return '<span class="tagn ' + (d < 0 ? 'rojo' : 'ambar') + '">' + (d < 0 ? 'Póliza vencida' : 'Póliza vence ' + String(v).slice(8, 10) + '/' + String(v).slice(5, 7)) + '</span>';
+  }
   function fila(c){
     const s = c.serv; const sig = siguiente(c);
     const dedSolo = !!c.ded && !c.n_serv;
     const sub = [c.provisional ? 'Provisional, sin RIF' : docFmt(c.doc_tipo, c.doc_numero), c.combinado ? '' : c.seg, dedSolo ? plural(c.n_enl || 0, 'enlace activo', 'enlaces activos') : s ? (sucursal(s.sucursal) === s.sucursal ? 'Suc. ' + s.sucursal : sucursal(s.sucursal)) : '', c.n_serv > 1 ? c.n_serv + ' servicios' : ''].filter(Boolean).join(' · ');
-    const etq = c.combinado ? '<span class="tagn azul">Combinado' + (c.ded === 'isp' ? ', ISP' : '') + '</span>' : '';
+    const etq = (c.combinado ? '<span class="tagn azul">Combinado' + (c.ded === 'isp' ? ', ISP' : '') + '</span>' : '') + (c.vgt ? '<span class="tagn azul">VGT</span>' : '') + polizaTag(c.poliza_vence);
     return '<button type="button" class="cli' + (marcado === c.id ? ' sel' : '') + '" data-cliente="' + esc(c.id) + '">' +
       '<span class="quien"><span class="mono" aria-hidden="true">' + esc(iniciales(c.nombre).charAt(0)) + '</span><span><b>' + esc(c.nombre) + '</b><small>' + etq + (c.por_subir ? '<span class="tagn ambar">' + (c.aprobado_por_subir ? 'Aprobado, documentos por subir' : 'Archivos por subir') + '</span>' : '') + esc(sub) + '</small></span></span>' +
       '<span class="c2">' + esc(c.lider || 'Sin líder') + '</span><span class="c3">' + chipEstatus(c.estatus) + '</span>' +
@@ -182,10 +191,10 @@
     const t = e.target; let b;
     if((b = t.closest('#tarjetas [data-tarjeta]'))){
       if(b.dataset.tarjeta === tarjeta && !q) return;
-      tarjeta = b.dataset.tarjeta; guardarTarjeta(); if(!esDed()){ delete sel.vgt; delete sel.enlaces; }
+      tarjeta = b.dataset.tarjeta; guardarTarjeta(); soltarDed();
       q = ''; $('busca').value = ''; guardarUrl(); pintarTarjetas(); pintarAtajos(); pintarSels(); cargar(false); return;
     }
-    if(t.closest('#lista [data-tarjeta-todas]')){ tarjeta = 'todas'; delete sel.vgt; delete sel.enlaces; guardarUrl(); pintarTarjetas(); pintarSels(); cargar(false); return; }
+    if(t.closest('#lista [data-tarjeta-todas]')){ tarjeta = 'todas'; soltarDed(); guardarUrl(); pintarTarjetas(); pintarSels(); cargar(false); return; }
     if((b = t.closest('#filtros [data-filtro], #lista [data-filtro]'))){ filtro = b.dataset.filtro; q = ''; $('busca').value = ''; guardarUrl(); pintarAtajos(); cargar(false); return; }
     if(t.closest('#abrirFiltros')){ abrirHoja('hojaFiltros'); return; }
     if(t.closest('#quitarFiltros') || t.closest('#quitarFiltros2') || t.closest('#limpiarFiltros')){ limpiar(); return; }

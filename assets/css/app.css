@@ -1049,3 +1049,13 @@ button.ge-li{cursor:pointer}
   .tcli b{font-size:28px}
 }
 @media (prefers-reduced-motion:reduce){ .tcli{transition:none} .tcli:active{transform:none} }
+
+/* Corrida 14/10 tarde, Parte 1: enlaces plegados y bloque VGT arriba de Contratos */
+.plegado[aria-expanded] .i{transition:transform 160ms var(--ease-out)}
+.plegado[aria-expanded="true"] .i{transform:rotate(180deg)}
+.ded-enl[hidden]{display:none}
+.plegado .plg-tx{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.ctr-vgt{border-color:var(--accent-soft)}
+.ctr-p small.mal{color:var(--danger);font-weight:600}
+.ctr-p small.ojo{color:var(--warn);font-weight:600}
+@media (prefers-reduced-motion:reduce){ .plegado[aria-expanded] .i{transition:none} }

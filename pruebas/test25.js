@@ -1,4 +1,4 @@
-// Lote 2, parte D: Dedicados (desde la corrida urgente del 14/10, pantalla de operación). Pestañas de operación, avisos de plazo y por verificar,
+// Lote 2, parte D: Dedicados (desde la corrida 14/10 tarde, todo en Clientes: sin pantalla propia, atajo VGT, filtro de pólizas, enlaces plegados y VGT arriba de Contratos),
 // expediente con enlaces, contactos de la empresa y Contratos (sin Comisión), edición solo del administrador
 // con errores debajo del campo, la ejecutiva ve solo los suyos, navegación e Inicio, y el segmento en Clientes.
 const { chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar, basePersonas } = require('./simulador');
@@ -16,6 +16,7 @@ function prepararDedicados(mundo){
               { id: 2, codigo: null, servicio: 'transporte', nodo: 'NODO NORTE PRUEBA', cap_entregada: 100, tarifa: 10, activo: false, estado: 'Falcón', municipio: 'Carirubana', inicio: null }],
     contactos: [{ area: 'presidencia', nombre: 'Persona Inventada Uno', telefono: '04140000001' }, { area: 'empresa', correo: 'info@inventada.test' }],
     contratos: [{ id: 11, tipo: 'servicio', estatus: 'por_firmar', nota: 'Pendiente por firma' }, { id: 12, tipo: 'vgt', estatus: 'firmado', proyecto: 'Vía de prueba', numero: 'VGT-001', postes: 12 }] };
+  a.documentos.push({ id: 9066, casilla: 'otro', numero: 66, estado: 'aprobado', vence_en: new Date(Date.now() + 10 * 864e5).toISOString().slice(0, 10), archivos: [], subido_en: new Date().toISOString() });
   // b: corporativo pendiente por verificar, de otra ejecutiva
   b.dedicado = { tipo: 'corporativo', ejecutiva: 'Otra Ejecutiva', activo: true, verificar: true, verificar_motivo: 'RIF repetido en la maestra', ruta_documentos: null, cods: ['502'], enlaces: [], contactos: [], contratos: [{ id: 21, tipo: 'servicio', estatus: 'sin_contrato' }] };
   c.dedicado = { tipo: 'corporativo', ejecutiva: 'Otra Ejecutiva', activo: false, verificar: false, ruta_documentos: 'pedir', cods: ['503'], enlaces: [], contactos: [], contratos: [] };
@@ -32,39 +33,33 @@ async function cerrarHojas(p){ for(let i = 0; i < 5 && await p.evaluate(() => !!
 
     // ----- Administrador -----
     const p = await entrar(ctx, 'marcos', '482913'); p.on('pageerror', (e) => errores.push(e.message));
-    await p.goto(H + 'inicio.html'); await p.waitForSelector('[data-modulo="dedicados"]');
-    ok(nombre + ': Inicio tiene el módulo Dedicados', true);
-    if(nombre === 'pc') ok('pc: la barra de arriba lleva Dedicados', (await p.textContent('.navpc')).includes('Dedicados'));
-    else ok('tel: en el teléfono del administrador la barra de abajo no se recarga con Dedicados', !(await p.textContent('#navAbajo')).includes('Dedicados'));
-    await p.click('[data-modulo="dedicados"]'); await p.waitForSelector('#filtros [data-vista="pendientes"]'); await p.waitForSelector('#lista .cli');
-    const vistas = await p.textContent('#filtros');
-    ok(nombre + ': Dedicados es de operación: Pendientes, Enlaces, Contratos, VGT, Pólizas y Cobranza', ['Pendientes', 'Enlaces', 'Contratos', 'VGT', 'Pólizas', 'Cobranza'].every((x) => vistas.includes(x)) && (await p.getAttribute('#filtros [data-vista="pendientes"]', 'aria-pressed')) === 'true');
-    const primero = await p.textContent('#lista .cli:first-child');
-    ok(nombre + ': Pendientes dice lo que falta de cada cliente (ISP primero)', primero.includes('Tornillos El Yunque') && primero.includes('ISP') && primero.includes('Falta 1 documento') && primero.includes('Contrato por firmar'));
-    const aviso = await p.textContent('#avisoDed');
-    ok(nombre + ': aviso del plazo ISP con la semana del 19/10', aviso.includes('semana del 19/10') && /le faltan documentos|les faltan documentos/.test(aviso));
-    ok(nombre + ': aviso de pendientes por verificar', aviso.includes('1 cliente pendiente por verificar'));
-    ok(nombre + ': marca Pendiente por verificar en la fila', (await p.textContent('#lista')).includes('Pendiente por verificar'));
+    await p.goto(H + 'inicio.html'); await p.waitForSelector('[data-modulo="clientes"]');
+    ok(nombre + ': Inicio ya no tiene el módulo Dedicados', (await p.locator('[data-modulo="dedicados"]').count()) === 0);
+    if(nombre === 'pc') ok('pc: la barra de arriba no lleva Dedicados', !(await p.textContent('.navpc')).includes('Dedicados'));
+    else ok('tel: la barra de abajo no lleva Dedicados', !(await p.textContent('#navAbajo')).includes('Dedicados'));
+    // Un enlace viejo a Dedicados lleva a Clientes con la tarjeta ISP
+    await p.goto(H + 'dedicados.html'); await p.waitForURL('**/clientes.html?s=isp**');
+    ok(nombre + ': dedicados.html lleva a Clientes con la tarjeta ISP', (await p.getAttribute('#tarjetas [data-tarjeta="isp"]', 'aria-pressed')) === 'true');
+    await p.click('#filtros [data-filtro="todos"]'); await p.waitForFunction(() => /Tornillos El Yunque/.test(document.getElementById('lista').textContent));
+    const filaIsp = await p.locator('#lista .cli[data-cliente="' + a.id + '"]').textContent();
+    ok(nombre + ': la fila lleva la etiqueta VGT y la póliza por vencer', filaIsp.includes('VGT') && /Póliza vence \d\d\/\d\d/.test(filaIsp));
+    ok(nombre + ': en las tarjetas de dedicados hay atajo VGT con su número', /VGT\s*1/.test(await p.textContent('#filtros [data-filtro="vgt"]')));
+    ok(nombre + ': en dedicados hay filtro de Pólizas', (await p.locator('[data-sel="poliza"]').count()) >= 1);
+    await p.click('#filtros [data-filtro="vgt"]'); await p.waitForFunction(() => document.querySelectorAll('#lista .cli').length === 1);
+    ok(nombre + ': el atajo VGT deja solo a los que tienen VGT', (await p.textContent('#lista')).includes('Tornillos El Yunque'));
+    await p.click('#tarjetas [data-tarjeta="corporativo"]'); await p.click('#filtros [data-filtro="todos"]'); await p.waitForFunction(() => /Posada Brisa Marina/.test(document.getElementById('lista').textContent));
+    ok(nombre + ': la tarjeta corporativo trae al pendiente por verificar', true);
+    await p.click('#tarjetas [data-tarjeta="pyme"]');
+    ok(nombre + ': en PYME no hay atajo VGT ni filtro de pólizas', (await p.locator('#filtros [data-filtro="vgt"], [data-sel="poliza"]').count()) === 0);
     ok(nombre + ': sin desborde', await sinDesborde(p));
+    await p.click('#tarjetas [data-tarjeta="isp"]'); await p.click('#filtros [data-filtro="todos"]'); await p.waitForFunction(() => /Tornillos El Yunque/.test(document.getElementById('lista').textContent));
     await p.screenshot({ path: 'capturas/25-' + nombre + '-lista.png', fullPage: true });
-    await p.click('#avisoDed [data-extra="verificar"]');
-    ok(nombre + ': el aviso Por verificar filtra', (await p.locator('#lista .cli').count()) === 1 && (await p.textContent('#lista')).includes('Posada Brisa Marina'));
-    await p.click('#filtros [data-quitar-extra]');
-    await p.click('#filtros [data-vista="enlaces"]'); await p.waitForFunction(() => document.querySelectorAll('#lista .cli').length === 3);
-    ok(nombre + ': Enlaces muestra enlaces activos, capacidad y nodo', /1 enlace activo · 2 Gbps · NODO CENTRO PRUEBA/.test(await p.textContent('#lista')));
-    await p.click('#filtros [data-vista="contratos"]');
-    ok(nombre + ': Contratos muestra cada contrato con su estatus', /Servicio: por firmar · VGT: firmado/.test(await p.textContent('#lista')));
-    await p.click('#filtros [data-vista="vgt"]');
-    ok(nombre + ': VGT muestra proyectos y postes', /1 proyecto · 12 postes/.test(await p.textContent('#lista')));
-    await p.screenshot({ path: 'capturas/25-' + nombre + '-vgt.png', fullPage: true });
-    await p.click('#filtros [data-vista="cobranza"]');
-    ok(nombre + ': Cobranza queda preparada sin inventar datos', /Falta que el administrador diga de qué archivo/.test(await p.textContent('#lista')));
-    await p.fill('#busca', 'brisa'); await p.waitForFunction(() => document.querySelectorAll('#lista .cli').length === 1);
-    ok(nombre + ': el buscador encuentra por nombre', (await p.textContent('#lista')).includes('Posada Brisa Marina'));
-    await p.fill('#busca', ''); await p.click('#filtros [data-vista="enlaces"]'); await p.waitForFunction(() => document.querySelectorAll('#lista .cli').length === 3);
 
     // Expediente del ISP
-    await p.click('#lista .cli[data-cliente="' + a.id + '"]'); await p.waitForSelector('#hojaFicha.ver #tab-datos .ded-enl');
+    await p.click('#lista .cli[data-cliente="' + a.id + '"]'); await p.waitForSelector('#hojaFicha.ver #tab-datos [data-ded-enl]');
+    ok(nombre + ': los enlaces salen plegados con el resumen en una línea', (await p.textContent('#tab-datos [data-ded-enl]')).includes('1 enlace activo · 2 Gbps · 1 suspendido') && await p.locator('#dedEnl').isHidden());
+    await p.click('#tab-datos [data-ded-enl]'); await p.waitForSelector('#dedEnl .ded-e');
+    ok(nombre + ': al tocar se abren los enlaces', (await p.getAttribute('#tab-datos [data-ded-enl]', 'aria-expanded')) === 'true');
     const datos = await p.textContent('#tab-datos');
     ok(nombre + ': Datos muestra tipo, ejecutiva, ruta y plazo ISP', datos.includes('Dedicado ISP') && datos.includes('Nora Quintero') && datos.includes('Cargar a la app') && datos.includes('Semana del 19/10'));
     ok(nombre + ': enlaces con nodo, capacidad, tarifa y la fecha cruda de la analista', datos.includes('NODO CENTRO PRUEBA') && datos.includes('2 Gbps') && datos.includes('Tarifa 1,5') && datos.includes('Inicio según la analista: 2021-03-09'));
@@ -87,6 +82,7 @@ async function cerrarHojas(p){ for(let i = 0; i < 5 && await p.evaluate(() => !!
     await p.click('#tabs [data-tab="contratos"]'); await p.waitForSelector('#tab-contratos.on [data-ctr-editar]');
     const ctr = await p.textContent('#tab-contratos');
     ok(nombre + ': Contratos con servicio y VGT por proyecto', ctr.includes('Servicio dedicado') && ctr.includes('Por firmar') && ctr.includes('VGT') && ctr.includes('Vía de prueba') && ctr.includes('12 postes'));
+    ok(nombre + ': el VGT va en su propio bloque arriba de los demás contratos', await p.evaluate(() => { const t = document.querySelectorAll('#tab-contratos .ctr-t'); return t.length >= 2 && t[0].classList.contains('ctr-vgt'); }));
     await p.screenshot({ path: 'capturas/25-' + nombre + '-ficha-contratos.png' });
     await p.click('[data-ctr-editar="11"]'); await p.waitForSelector('#hojaCtr.ver');
     await p.selectOption('#kEst', 'firmado'); await p.evaluate(() => { const f = document.querySelector('#kFirma'); f.removeAttribute('max'); f.value = '2099-01-01'; });
@@ -108,7 +104,7 @@ async function cerrarHojas(p){ for(let i = 0; i < 5 && await p.evaluate(() => !!
     await q.goto(H + 'dedicados.html'); await q.waitForURL('**/clientes.html?s=isp**'); await q.click('#filtros [data-filtro="todos"]'); await q.waitForSelector('#lista .cli');
     ok(nombre + ': la líder que abre Dedicados llega a Clientes con la tarjeta ISP y ve solo los suyos', (await q.getAttribute('#tarjetas [data-tarjeta="isp"]', 'aria-pressed')) === 'true' && (await q.locator('#lista .cli').count()) === 1 && (await q.textContent('#lista')).includes('Tornillos El Yunque'));
     if(nombre === 'tel') ok('tel: la barra de abajo de la líder no tiene Dedicados (lo ve en Clientes)', !(await q.textContent('#navAbajo')).includes('Dedicados'));
-    await q.click('#lista .cli'); await q.waitForSelector('#hojaFicha.ver #tab-datos .ded-enl');
+    await q.click('#lista .cli'); await q.waitForSelector('#hojaFicha.ver #tab-datos [data-ded-enl]');
     ok(nombre + ': la ejecutiva no ve Editar ni cambia contratos', (await q.locator('[data-ded-editar]').count()) === 0 && (await q.locator('[data-ctr-editar]').count()) === 0);
     await q.screenshot({ path: 'capturas/25-' + nombre + '-ejecutiva.png' });
     await c2.ctx.close(); await ctx.close();

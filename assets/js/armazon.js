@@ -14,8 +14,6 @@
     { id: 'migraciones', texto: 'Migraciones', icono: 'cambio', enlace: 'migraciones.html', roles: ['admin', 'analista', 'lider'], opcionalTel: true },
     { id: 'factibilidad', texto: 'Factibilidad', icono: 'wifi', enlace: 'factibilidad.html', roles: ['admin', 'analista', 'lider'] },
     { id: 'revision', texto: 'Revisión', icono: 'doc', enlace: 'revision.html', roles: ['admin', 'abogado'] },
-    // Operación de dedicados: administrador y analista (el líder ve sus dedicados en Clientes)
-    { id: 'dedicados', texto: 'Dedicados', icono: 'servidor', enlace: 'dedicados.html', roles: ['admin', 'analista'], soloPc: true },
     { id: 'aliados', texto: 'Aliados', icono: 'usuarios', enlace: 'aliados.html', roles: ['admin', 'analista', 'lider', 'abogado'], soloPc: true },
     { id: 'gerencia', texto: 'Gerencia', icono: 'barras', enlace: 'gerencia.html', roles: ['admin', 'analista', 'lider', 'abogado', 'gerencia'], soloPc: true }
   ];

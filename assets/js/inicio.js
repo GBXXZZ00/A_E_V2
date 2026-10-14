@@ -106,9 +106,6 @@
     if(['admin', 'lider', 'analista'].indexOf(rol) >= 0) activos.push({ id: 'factibilidad', nombre: 'Factibilidad', icono: 'wifi', enlace: 'factibilidad.html', texto: 'Si una ubicación tiene red' });
     activos.push({ id: 'aliados', nombre: 'Aliados', icono: 'usuarios', enlace: 'aliados.html',
       texto: rol === 'admin' ? 'Solicitudes, referidos y pagos de aliados' : canales ? 'Tus solicitudes, referidos y pagos' : 'Registro de aliados e instalados, para ver' });
-    // Dedicados es de operación (administrador y analista); el líder y Legal ven sus dedicados en Clientes
-    if(['admin', 'analista'].indexOf(rol) >= 0) activos.push({ id: 'dedicados', nombre: 'Dedicados', icono: 'servidor', enlace: 'dedicados.html',
-      texto: 'Operación: enlaces, contratos, VGT y pólizas' });
     if(['admin', 'analista', 'lider', 'abogado'].indexOf(rol) >= 0) activos.push({ id: 'gerencia', nombre: 'Gerencia', icono: 'barras', enlace: 'gerencia.html',
       texto: rol === 'lider' ? 'Tus números: instalaciones, comisiones y expedientes' : 'Resumen del negocio por mes, líder y segmento' });
     if(rol === 'admin' || rol === 'abogado') activos.push({ id: 'revision', nombre: 'Revisión', icono: 'doc', enlace: 'revision.html', texto: rol === 'admin' ? 'Documentos por revisar, también con IA' : 'Tus contratos por hacer y por firmar' });
