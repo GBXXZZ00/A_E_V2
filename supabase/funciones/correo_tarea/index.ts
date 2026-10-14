@@ -40,9 +40,13 @@ async function tokenDrive() {
   return t;
 }
 async function gmail(buzon: string, ruta: string) {
-  const r = await fetch("https://gmail.googleapis.com/gmail/v1/users/me/" + ruta, { headers: { Authorization: "Bearer " + await tokenGmail(buzon) } });
-  if (!r.ok) throw new Error("Gmail respondió " + r.status + " en " + ruta.split("?")[0]);
-  return r.json();
+  // Gmail limita la velocidad (403/429): espera y reintenta hasta 4 veces
+  for (let intento = 0; ; intento++) {
+    const r = await fetch("https://gmail.googleapis.com/gmail/v1/users/me/" + ruta, { headers: { Authorization: "Bearer " + await tokenGmail(buzon) } });
+    if (r.ok) return r.json();
+    if ((r.status === 403 || r.status === 429 || r.status >= 500) && intento < 4) { await new Promise((ok) => setTimeout(ok, 800 * 2 ** intento + Math.random() * 400)); continue; }
+    throw new Error("Gmail respondió " + r.status + " en " + ruta.split("?")[0]);
+  }
 }
 
 // ---------- lectura de mensajes ----------
@@ -81,7 +85,7 @@ async function enLotes<T, R>(xs: T[], n: number, f: (x: T) => Promise<R>) {
 async function barrer(buzon: string, q: string, max: number, pagina?: string) {
   const lista = await gmail(buzon, "messages?maxResults=" + Math.min(Math.max(max, 1), 100) + "&q=" + encodeURIComponent(q + " has:attachment") + (pagina ? "&pageToken=" + encodeURIComponent(pagina) : ""));
   const ids: string[] = (lista.messages || []).map((x: any) => x.id);
-  const msgs = await enLotes(ids, 8, (id) => gmail(buzon, "messages/" + id + "?format=full").catch((e) => { console.error(e); return null; }));
+  const msgs = await enLotes(ids, 4, (id) => gmail(buzon, "messages/" + id + "?format=full").catch((e) => { console.error(e); return null; }));
   const items = msgs.filter(Boolean).map((m) => leer(m, buzon)).filter((x: any) => x.adjuntos.length);
   let guardados = 0;
   if (items.length) {
@@ -167,7 +171,17 @@ Deno.serve(async (req: Request) => {
   if (!ok) return json({ error: "No autorizado" }, 401);
   try {
     const b = await req.json().catch(() => ({}));
-    if (b.accion === "barrer") return json(await barrer(String(b.buzon || ""), String(b.q || ""), Number(b.max) || 50, b.pagina));
+    if (b.accion === "barrer") {
+      const r = await barrer(String(b.buzon || ""), String(b.q || ""), Number(b.max) || 50, b.pagina);
+      // seguir: barre la página siguiente sola (hasta 80 páginas), sin esperar
+      const n = Number(b.paginas) || 0;
+      if (b.seguir && r.siguiente && n < 80) {
+        // @ts-ignore EdgeRuntime existe en Supabase
+        EdgeRuntime.waitUntil(fetch((Deno.env.get("SUPABASE_URL") || "").replace(/\/$/, "") + "/functions/v1/correo_tarea", { method: "POST", headers: { "Content-Type": "application/json", "x-tarea": req.headers.get("x-tarea") || "" },
+          body: JSON.stringify({ ...b, pagina: r.siguiente, paginas: n + 1 }) }).catch((e) => console.error("seguir", e)));
+      }
+      return json({ ...r, pagina_n: n });
+    }
     if (b.accion === "subir") {
       const ids: number[] = (Array.isArray(b.adjuntos) ? b.adjuntos : []).map(Number).filter((x: number) => Number.isInteger(x) && x > 0).slice(0, 25);
       const res = [];
