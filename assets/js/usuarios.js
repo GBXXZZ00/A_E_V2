@@ -1,7 +1,7 @@
 // Usuarios (solo administrador): crear, editar, restablecer PIN y activar o desactivar.
 (function(){
   'use strict';
-  const { $, esc, toast, mensajeError, iniciales, normalizeStr, abrirHoja, cerrarHoja, cache, esqueleto, rpc } = window.Comun;
+  const { $, esc, toast, mensajeError, iniciales, normalizeStr, abrirHoja, cerrarHoja, cache, esqueleto, rpc, plural } = window.Comun;
   const S = window.Sesion;
   const db = window.db;
   const EQ = { ventas: 'Ventas corporativas', aliados: 'Aliados comerciales', ambos: 'Los dos' };
@@ -136,22 +136,25 @@
     const d = leerForm(); if(!d) return;
     const b = $('guardar'); b.disabled = true; b.textContent = 'Guardando…';
     try {
+      let r = null;
       if(editando){
-        await llamar(Object.assign({ accion: 'editar', id: editando.id }, d));
+        r = await llamar(Object.assign({ accion: 'editar', id: editando.id }, d));
         // Lote 6: el analista del líder (le llegan los pendientes de sus clientes)
         if(d.rol === 'lider' && LA && $('fAnalista').value !== (LA.lideres[editando.id] || '')){
           try { await window.Comun.rpc('lider_analista', { p_lider: editando.id, p_analista: $('fAnalista').value || null }); LA.lideres[editando.id] = $('fAnalista').value || null; }
           catch (x) { $('eAnalista').textContent = x.message; b.disabled = false; b.textContent = 'Guardar'; return; }
         }
       }
-      else await llamar(Object.assign({ accion: 'crear' }, d));
-      if(editando){ toast('Cambios guardados'); cerrarHoja(); }
+      else r = await llamar(Object.assign({ accion: 'crear' }, d));
+      // Un líder nuevo o editado se queda con los clientes que tienen su nombre y no tenían cuenta
+      const enl = r && r.enlazados > 0 ? '. ' + plural(r.enlazados, 'cliente enlazado', 'clientes enlazados') + ' a su cuenta' : '';
+      if(editando){ toast('Cambios guardados' + enl); cerrarHoja(); }
       else {
         // El PIN temporal se muestra aquí una sola vez: después ya no se puede ver
         $('form').classList.add('hidden'); $('tHoja').textContent = 'Usuario creado';
         $('pinDe').textContent = 'Usuario: ' + d.usuario; $('pinNuevo').textContent = d.pin;
         $('pinListo').classList.remove('hidden'); $('zonaListo').classList.remove('hidden');
-        toast('Usuario creado');
+        toast('Usuario creado' + enl);
       }
       await cargar();
     } catch (err) {
@@ -196,8 +199,8 @@
     const b = $('alternar'); b.disabled = true;
     const eraActivo = editando.activo;
     try {
-      await llamar({ accion: 'activo', id: editando.id, activo: !editando.activo });
-      toast(eraActivo ? 'Acceso desactivado' : 'Acceso activado');
+      const r = await llamar({ accion: 'activo', id: editando.id, activo: !editando.activo });
+      toast((eraActivo ? 'Acceso desactivado' : 'Acceso activado') + (r && r.enlazados > 0 ? '. ' + plural(r.enlazados, 'cliente enlazado', 'clientes enlazados') + ' a su cuenta' : ''));
       cerrarHoja();
       await cargar();
     } catch (err) { toast(err.message, 'error'); }

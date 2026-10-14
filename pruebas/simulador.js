@@ -19,6 +19,13 @@ function basePersonas(){
   ];
 }
 
+// Corrida urgente 14/10: un líder creado o editado se queda con los clientes que tienen su nombre y no tienen cuenta
+const normal = (t) => String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim();
+function enlazarMock(m, p){
+  if(!p || p.rol !== 'lider' || !m.datos) return null; let n = 0;
+  m.datos.clientes.forEach((c) => { if(!c.lider_id && normal(c.lider) && normal(c.lider) === normal(p.nombre)){ c.lider_id = p.id; n++; } });
+  return n;
+}
 // Crea un contexto de navegador con Supabase simulado. "llamadas" guarda lo que la app pidió.
 async function contexto(navegador, opciones, mundo){
   const ctx = await navegador.newContext(opciones || {});
@@ -135,10 +142,10 @@ async function contexto(navegador, opciones, mundo){
         if(m.personas.some((p) => p.usuario === b.usuario)) return j({ error: 'Ese usuario ya existe' }, 400);
         const ger = b.rol === 'gerencia';
         m.personas.push({ id: '55555555-5555-4555-8555-55555555555' + m.personas.length, usuario: b.usuario, pin: b.pin, nombre: b.nombre, rol: ger ? 'abogado' : b.rol, gerencia: ger, cargo: b.cargo || null, equipo: b.equipo, codigo_vendedor: b.codigo_vendedor, nombre_odoo: b.nombre_odoo || null, senior: b.rol === 'analista' && b.senior === true, whatsapp: b.whatsapp || null, correo: b.correo || null, activo: true, debe_cambiar_pin: true });
-        return j({ ok: true });
+        return j({ ok: true, enlazados: enlazarMock(m, m.personas[m.personas.length - 1]) });
       }
       const p = m.personas.find((x) => x.id === b.id); if(!p) return j({ error: 'Falta el usuario' }, 400);
-      if(b.accion === 'editar'){ Object.assign(p, { nombre: b.nombre, rol: b.rol === 'gerencia' ? 'abogado' : b.rol, gerencia: b.rol === 'gerencia', cargo: b.cargo || null, equipo: b.equipo, codigo_vendedor: b.codigo_vendedor, nombre_odoo: b.nombre_odoo || null, senior: b.rol === 'analista' && b.senior === true, whatsapp: b.whatsapp || null, correo: b.correo || null, dedicados: b.rol === 'lider' && b.dedicados === true }); return j({ ok: true }); }
+      if(b.accion === 'editar'){ Object.assign(p, { nombre: b.nombre, rol: b.rol === 'gerencia' ? 'abogado' : b.rol, gerencia: b.rol === 'gerencia', cargo: b.cargo || null, equipo: b.equipo, codigo_vendedor: b.codigo_vendedor, nombre_odoo: b.nombre_odoo || null, senior: b.rol === 'analista' && b.senior === true, whatsapp: b.whatsapp || null, correo: b.correo || null, dedicados: b.rol === 'lider' && b.dedicados === true }); return j({ ok: true, enlazados: enlazarMock(m, p) }); }
       if(b.accion === 'pin'){ p.pin = b.pin; p.debe_cambiar_pin = true; return j({ ok: true }); }
       if(b.accion === 'activo'){ p.activo = b.activo; return j({ ok: true }); }
       return j({ error: 'Acción no reconocida' }, 400);
