@@ -469,25 +469,28 @@
     try { const F = await rpc('cliente_ficha', { p_cliente: mia.cliente }); if(K !== mia) return; K.F = F; pintarComision(); }
     catch (e) { if(K !== mia) return; $('cuerpoCom').innerHTML = '<div class="aviso" role="alert"><b>No se pudo abrir</b><p>' + esc(e.message) + '</p><p style="margin-top:14px"><button type="button" class="btn btn-chico" id="reintentarCom">Reintentar</button></p></div>'; toast(e.message, 'error'); }
   }
-  // Una línea del checklist de Legal: hecha, por revisar, devuelta o por hacer
-  function itemDoc(F, cas, num, nombre){
-    const x = (F.documentos || []).find((y) => y.casilla === cas && y.numero === num); const k = cas + ':' + num;
-    if(x && x.estado === 'aprobado') return [1, '<div class="chk"><i class="ok">' + ic('check') + '</i><span>' + esc(nombre) + '</span></div>'];
-    if(x && x.estado === 'por_revisar') return [0, '<div class="chk"><i class="rv">' + ic('reloj') + '</i><span>' + esc(nombre) + '<small>Subido. Legal lo está revisando</small></span><button type="button" class="mini" data-ir-doc="' + k + '">Ver</button></div>'];
-    if(x && x.estado === 'devuelto') return [0, '<div class="chk"><i class="no"></i><span>' + esc(nombre) + '<small class="mal">Devuelto' + (x.revisado_por ? ' por ' + esc(primerNombre(x.revisado_por)) : '') + (x.revisado_en ? ' ' + esc(dia(x.revisado_en).toLowerCase()) : '') + ': ' + esc((MOTIVOS[x.motivo] || 'revisa la nota').toLowerCase()) + (x.nota ? '. "' + esc(x.nota) + '"' : '') + '</small></span><button type="button" class="mini pri" data-sube-doc="' + k + '">Subir de nuevo</button></div>'];
-    return [0, '<div class="chk"><i class="no"></i><span>' + esc(nombre) + '</span><button type="button" class="mini pri" data-sube-doc="' + k + '">Subir</button></div>'];
+  // Lote urgente 20/10: lista de chequeo siempre visible arriba (Legal, pago, orden de Odoo, IP)
+  function chequeo(F, i, legalOk, pagoOk){
+    if(!i || !i.comisiona) return '';
+    const c = F.cliente; const fal = (F.faltantes || []).length; const lc = c.legal_como;
+    const sv = (F.servicios || []).find((x) => Number(x.id) === Number(i.servicio_id)); const ip = sv ? (sv.ip || sv.ip6 || '') : '';
+    const fila = (est, nombre, sub) => '<div class="chk"><i class="' + est + '">' + (est === 'ok' ? ic('check') : est === 'rv' ? ic('reloj') : '') + '</i><span>' + nombre + '<small>' + esc(sub) + '</small></span></div>';
+    return '<div class="req chequeo" aria-label="Lo que pide la comisión"><div class="req-t">Lo que pide la comisión</div>' +
+      fila(legalOk ? 'ok' : 'no', 'Legal', legalOk ? (lc === 'revision' ? 'En revisión: cuenta como listo' : lc === 'excepcion' ? 'Aprobado a mano' : 'Cumple') : fal ? plural(fal, 'falta', 'faltan') + ' en el expediente' : 'Falta que Legal lo apruebe') +
+      fila(pagoOk ? 'ok' : 'no', 'Pago de instalación', pagoOk ? (i.pago_manual ? 'Marcado a mano' : 'Sin deuda en el TAD') : (F.servicios || []).length > 1 ? 'Revisar pago a mano' : 'Debe la instalación') +
+      fila(i.orden_ok ? 'ok' : i.orden ? 'rv' : 'no', 'Orden de Odoo', i.orden_ok ? (i.orden ? 'Confirmada' : 'Asignada a mano') : i.orden ? 'Por confirmar' : 'Sin orden') +
+      fila(!i.servicio_id ? 'no' : ip ? 'ok' : 'no', 'IP', !i.servicio_id ? 'Sin servicio enlazado' : ip || 'Falta la IP') + '</div>';
   }
-  // Contacto del representante: teléfono y correo en una sola línea
-  function itemContacto(r, n, natural, presencial){
-    const tel = String(r.telefono || '').trim(); const co = String(r.correo || '').trim(); const k = 'rep:' + n;
-    if(tel && (co || (presencial && n === 1))) return [1, '<div class="chk"><i class="ok">' + ic('check') + '</i><span>Contacto<small>' + esc(tel) + (co ? ' · ' + esc(co) : ' · Contrato presencial, sin correo') + '</small></span><button type="button" class="mini" data-ir-campo="' + k + '">Cambiar</button></div>'];
-    if(natural && !tel && !co) return [0, '<div class="chk"><i class="opc"></i><span>Contacto<small>Opcional para personas naturales</small></span><button type="button" class="mini" data-ir-campo="' + k + '">Escribir</button></div>'];
-    return [0, '<div class="chk"><i class="' + (natural ? 'opc' : 'no') + '"></i><span>Contacto<small' + (natural ? '' : ' class="mal"') + '>' + esc(tel || co ? (tel || co) + '. Falta el ' + (tel ? 'correo' : 'teléfono') : 'Falta el teléfono y el correo') + '</small></span><button type="button" class="mini pri" data-ir-campo="' + k + '">Escribir</button></div>'];
-  }
-  function itemDato(nombre, valor, clave){
-    const v = String(valor || '').trim();
-    if(v) return [1, '<div class="chk"><i class="ok">' + ic('check') + '</i><span>' + nombre + '<small>' + esc(v) + '</small></span></div>'];
-    return [0, '<div class="chk"><i class="no"></i><span>' + nombre + '</span><button type="button" class="mini pri" data-ir-campo="' + clave + '">Escribir</button></div>'];
+  // Documentos: las mismas casillas del expediente (subir, arrastrar, Subir varios), en un bloque plegable cerrado al abrir
+  function bloqueDocs(F){
+    const fal = (F.faltantes || []).length; const pr = (F.documentos || []).filter((x) => x.estado === 'por_revisar').length;
+    const res = [fal ? plural(fal, 'falta', 'faltan') : 'Nada falta', pr ? pr + ' por revisar' : ''].filter(Boolean).join(' · ');
+    const ab = !!(K && K.docsAbierto);
+    return '<section class="req docs-com"><button type="button" class="plegado" data-docs-com aria-expanded="' + ab + '" aria-controls="docsCom"><span class="plg-tx">Documentos</span><span>' + esc(res) + '</span>' + ic('abajo') + '</button>' +
+      '<div id="docsCom" class="docs-com-z"' + (ab ? '' : ' hidden') + '>' +
+        '<div class="acc"><button type="button" class="btn btn-chico btn-2" id="comVarios"' + (window.Ficha.ocupado() ? ' disabled' : '') + '>' + ic('subir') + 'Subir varios</button></div>' +
+        '<p class="nota-chica solo-pc" style="text-align:center">También puedes arrastrar un archivo y soltarlo sobre una casilla.</p>' +
+        window.Ficha.documentosPara(F) + '</div></section>';
   }
   function pintarComision(){
     const F = K.F; const c = F.cliente; const i = (F.comision || []).find((x) => Number(x.id) === K.inst) || (F.comision || [])[0];
@@ -495,29 +498,16 @@
     const P = (d && d.puedo) || {}; const est = i ? i.estado : 'no_comisiona';
     const legalOk = !!c.legal_ok_en; const pagoOk = !!(i && i.pago_ok_en); const ok = est === 'cumple'; const ultimo = est === 'ultimo_corte'; const perdida = est === 'perdida';
     const sinAsignar = est === 'por_asignar'; const exc = !!(i && i.excepcion_corte);
-    const nReq = !c.es_natural && c.regimen_firma === 'conjunta' ? 2 : 1;
-    const nReps = Math.max(nReq, (F.representantes || []).reduce((a, r) => Math.max(a, r.orden), 1));
-    let hechos = 0; let total = 0; let legal = '';
-    const suma = (x, cuenta) => { if(cuenta){ total++; hechos += x[0]; } return x[1]; };
-    for(let n = 1; n <= nReps; n++){
-      const r = (F.representantes || []).find((x) => x.orden === n) || {}; const req = n <= nReq;
-      legal += '<div class="sec">' + (c.es_natural ? 'Titular' : 'Representante ' + n) + (req ? '' : '<span>Opcional</span>') + '</div>' +
-        suma(itemContacto(r, n, c.es_natural, c.presencial), req && !c.es_natural) +
-        suma(itemDoc(F, 'cedula', n, 'Cédula'), req) + suma(itemDoc(F, 'rif_personal', n, 'RIF personal'), req);
-    }
-    if(!c.es_natural){
-      legal += '<div class="sec">Empresa</div>' + suma(itemDato('Correo de la empresa', c.correo_empresa, 'correo_empresa'), true) +
-        suma(itemDoc(F, 'rif_empresa', 0, 'RIF de la empresa'), true) + suma(itemDoc(F, 'acta_constitutiva', 0, 'Acta constitutiva'), true) + (c.es_isp ? suma(itemDoc(F, 'conatel', 0, 'Permiso de Conatel'), true) : '');
-    }
     const fal = F.faltantes || [];
     const tituloEstado = !i || !i.comisiona ? 'Esta instalación no comisiona' : sinAsignar ? 'Pendiente por asignar' : ok && exc ? 'Comisiona por excepción en ' + mes(i.corte_pago) : ok ? 'Cumple. Comisiona en ' + mes(i.corte_pago || i.corte)
       : perdida ? 'No cumplió a tiempo: se perdió' : ultimo ? 'Último corte: si no cumple el ' + fecha(F.corte.limite || F.corte.fin).split(' de ')[0] + ' se pierde' : 'Todavía no cumple';
     const sub = !i || !i.comisiona ? (i && i.es_evento && !i.es_aliado ? 'Es un evento y el Analista Senior decidió que no comisiona.' : i && i.es_aliado ? 'Es una instalación de aliado' + (i.instalador ? ': ' + capital(i.instalador) : '') + '. No comisiona.' : 'Los dedicados y las instalaciones de aliado no comisionan.')
       : sinAsignar ? 'No comisiona hasta que el Analista Senior confirme la orden de Odoo y a quién pertenece.'
       : ok && exc ? 'Motivo: ' + (i.excepcion_motivo || 'sin motivo') + (i.excepcion_por ? '. La dio ' + primerNombre(i.excepcion_por) + '.' : '')
-      : perdida ? 'Era del corte de ' + mes(i.corte) + '.' : 'Corte de ' + mes(F.corte.etiqueta) + ', límite el ' + fecha(F.corte.limite || F.corte.fin).split(' de ')[0] + '. ' + (F.corte.dias < 0 ? 'El corte sigue abierto hasta que se cierre.' : F.corte.dias === 0 ? 'Es hoy.' : 'Faltan ' + plural(F.corte.dias, 'día', 'días') + '.');
+      : perdida ? 'Era del corte de ' + mes(i.corte) + '.' : 'Corte de ' + mes(F.corte.etiqueta) + ', límite el ' + fecha(F.corte.limite || F.corte.fin).split(' de ')[0] + '. ' + (F.corte.dias < 0 ? 'El corte sigue abierto hasta que se cierre.' : F.corte.dias === 0 ? 'Es hoy.' : (F.corte.dias === 1 ? 'Falta ' : 'Faltan ') + plural(F.corte.dias, 'día', 'días') + '.');
     const ns = (F.servicios || []).length;
     let h = '<div class="estado ' + (ok ? 'verde' : ultimo || perdida ? 'rojo' : 'ambar') + '"><b>' + esc(tituloEstado) + '</b><small>' + esc(sub) + '</small></div>' +
+      chequeo(F, i, legalOk, pagoOk) + bloqueDocs(F) +
       bloqueProforma(F, i) +
       '<button type="button" class="exp" id="abrirExp"><span>Abrir expediente del cliente<small>' + plural(ns, 'servicio', 'servicios') + ' en este ' + (c.es_natural ? 'documento' : 'RIF') + ' · datos, documentos e hilo</small></span>' + ic('derecha', 'ch') + '</button>';
     if(i && i.comisiona){
@@ -533,10 +523,10 @@
     // Un solo lugar para el check de Legal: en revisión cuenta como listo y solo el administrador lo quita o lo aprueba a mano
     const lc = c.legal_como;
     h += '<div class="req"><div class="req-t">Legal<span class="m ' + (legalOk ? 'verde' : 'rojo') + '">' + (!legalOk ? 'Falta' : lc === 'revision' ? 'En revisión' : lc === 'excepcion' ? 'Aprobado a mano' : 'Cumple') + '</span></div>' +
-        '<p>' + (!legalOk ? hechos + ' de ' + total + ' listos. Estatus: ' + esc((window.Comun.ESTATUS[c.estatus] || {}).t || c.estatus) + '.'
+        '<p>' + (!legalOk ? (fal.length ? plural(fal.length, 'falta', 'faltan') + ' en el expediente' : 'El expediente está completo') + '. Estatus: ' + esc((window.Comun.ESTATUS[c.estatus] || {}).t || c.estatus) + '.'
           : lc === 'revision' ? 'Pasó a revisión el ' + esc(fecha(c.legal_ok_en)) + '. Cuenta como listo hasta que el administrador le quite el check.'
           : lc === 'excepcion' ? 'El administrador lo aprobó el ' + esc(fecha(c.legal_ok_en)) + ' aunque falten documentos.' : 'Cumplió el ' + esc(fecha(c.legal_ok_en)) + '.') + '</p>' +
-        (F.puedo.legal ? '<div class="chk"><span>' + (legalOk ? '¿No debe contar?' : '¿Aprobar aunque falten documentos?') + '</span><button type="button" class="mini' + (legalOk ? '' : ' pri') + '" id="legalCheck" data-quita-legal="' + (legalOk ? '1' : '0') + '">' + (legalOk ? 'Quitar Legal' : 'Aprobar Legal') + '</button></div>' : '') + legal +
+        (F.puedo.legal ? '<div class="chk"><span>' + (legalOk ? '¿No debe contar?' : '¿Aprobar aunque falten documentos?') + '</span><button type="button" class="mini' + (legalOk ? '' : ' pri') + '" id="legalCheck" data-quita-legal="' + (legalOk ? '1' : '0') + '">' + (legalOk ? 'Quitar Legal' : 'Aprobar Legal') + '</button></div>' : '') +
         '<p class="nota-chica hidden" id="subidaCom" role="status"><span class="cargando-linea"><i></i></span> </p>' +
         (fal.length ? '<div class="chk"><span>¿No los tienes?</span><button type="button" class="mini" id="pedirCom">Pedir al cliente</button></div>' : '') + '</div>';
     if(i && i.comisiona){
@@ -726,6 +716,14 @@
     if(t.closest('#reintentarCom')){ cargarComision(); return; }
     if(t.closest('#abrirExp')){ alExpediente({ tab: 'datos' }); return; }
     if(t.closest('#verHilo')){ alExpediente({ tab: 'hilo' }); return; }
+    // Documentos dentro de la hoja de comisión: las mismas casillas del expediente
+    if((b = t.closest('[data-docs-com]')) && K){ K.docsAbierto = b.getAttribute('aria-expanded') !== 'true'; b.setAttribute('aria-expanded', String(K.docsAbierto)); const z = $('docsCom'); if(z) z.hidden = !K.docsAbierto; return; }
+    if(t.closest('#docsCom') && K && K.F){
+      if((b = t.closest('[data-subir]'))){ const p = b.dataset.subir.split(':'); window.Ficha.subirA(K.F, p[0], Number(p[1]), tras); return; }
+      if((b = t.closest('[data-campo]'))){ window.Ficha.editarCampo(K.F, b.dataset.campo, tras); return; }
+      if((b = t.closest('[data-ver]'))){ const cs = b.closest('[data-casilla]'); alExpediente({ tab: 'documentos', casilla: cs ? cs.dataset.casilla : null }); return; }
+      if(t.closest('#comVarios')){ window.Ficha.variosA(K.F, tras); return; }
+    }
     if((b = t.closest('[data-ir-doc]'))){ alExpediente({ tab: 'documentos', casilla: b.dataset.irDoc }); return; }
     // Subir un documento o escribir un dato se hace aquí mismo, sin saltar al expediente
     if((b = t.closest('[data-sube-doc]')) && K && K.F){ const p = b.dataset.subeDoc.split(':'); window.Ficha.subirA(K.F, p[0], Number(p[1]), tras); return; }
@@ -772,6 +770,19 @@
     if((b = t.closest('#pagoCom, #pagoSi')) && K){ b.disabled = true; const pagada = b.dataset.pagada === '1';
       rpc('instalacion_pago', { p_instalacion: K.inst, p_pagada: pagada }).then(() => { toast(pagada ? 'Instalación marcada como pagada' : 'Pago quitado'); tras(); }).catch((err) => { toast(err.message, 'error'); if(document.contains(b)) b.disabled = false; }); }
   });
+  const sinSobre = () => Array.prototype.forEach.call(document.querySelectorAll('#docsCom .sobre'), (x) => x.classList.remove('sobre'));
+  document.addEventListener('dragover', (e) => { const z = e.target.closest && e.target.closest('#docsCom'); if(!z) return; e.preventDefault(); sinSobre(); const c = e.target.closest('[data-suelta]'); (c || z).classList.add('sobre'); });
+  document.addEventListener('dragleave', (e) => { const z = $('docsCom'); if(z && !z.contains(e.relatedTarget)) sinSobre(); });
+  document.addEventListener('drop', (e) => {
+    const z = e.target.closest && e.target.closest('#docsCom'); if(!z || !K || !K.F) return;
+    e.preventDefault(); sinSobre();
+    const files = Array.prototype.slice.call((e.dataTransfer && e.dataTransfer.files) || []); if(!files.length) return;
+    const c = e.target.closest('[data-suelta]');
+    if(c){ const p = c.dataset.casilla.split(':'); window.Ficha.soltarA(K.F, p[0], Number(p[1]), files, tras); }
+    else window.Ficha.variosA(K.F, tras, files);
+  });
+  // Mientras se sube desde aquí, la casilla dice "Subiendo"
+  document.addEventListener('ficha-subida', () => { if(K && K.F && document.querySelector('#hojaComision.ver')) pintarComision(); });
   document.addEventListener('submit', (e) => {
     if(e.target.id === 'formDueno'){ e.preventDefault(); const v = $('duenoSel').value; $('eDueno').textContent = '';
       if(!v){ $('eDueno').textContent = 'Elige el líder'; return; }

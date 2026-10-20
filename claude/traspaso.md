@@ -1,6 +1,6 @@
 # Traspaso (se actualiza al cerrar cada sesión)
 
-Actualizado: 20/10/2026 (lote urgente comisiones y hojas en curso). Publicado: `?v=47`.
+Actualizado: 20/10/2026 (lote urgente comisiones y hojas en curso). Publicado: `?v=48`.
 
 ## LOTE URGENTE COMISIONES Y HOJAS (APROBADO por el administrador el 20/10): texto completo
 
@@ -63,6 +63,12 @@ Al terminar: pruebas (nuevas para 1, 2, 3, 5 y 6), capturas en escritorio e iPho
   - "Quitar pago" pregunta en el mismo lugar: "¿Quitar el pago de este cliente?" con No y "Sí, quitar".
   - Con más de un servicio, la hoja dice: "El cliente tiene más de un servicio; el TAD no puede decidir. Marca el pago a mano."
   - SQL en `supabase/pruebas/lote_urgente_p3.sql`. Prueba nueva: test38 (carga del TAD con deuda no quita el pago a mano; quitado a mano no vuelve; confirmación; texto de Revisar pago). test03 y test06 ajustadas a la confirmación.
+- **Parte 4: HECHA en v48. Hoja de comisión: documentos.** Sin cambios en la base.
+  - Arriba, siempre visible, "Lo que pide la comisión": Legal, pago de instalación, orden de Odoo e IP, cada uno con su estado.
+  - Debajo, bloque plegable "Documentos" (cerrado al abrir la hoja, con un resumen: faltan y por revisar) con las mismas casillas del expediente y en el mismo orden (`Ficha.documentosPara`), Subir varios (`Ficha.variosA`) y arrastrar y soltar sobre una casilla (`Ficha.soltarA`). Mientras sube, la casilla dice "Subiendo"; al terminar la hoja se actualiza sin cerrarse. Tocar un documento ya subido abre el expediente en Documentos (allí se revisa).
+  - **Decisión propia:** dentro de la hoja de comisión no están "Agregar representante" ni "Agregar acta"; si no hay actas de asamblea se muestra una casilla libre para subir la primera. Para lo demás está "Abrir expediente".
+  - Persona natural: ya se cumplía en el servidor (`privado.requeridos` y `privado.faltantes` solo piden cédula y RIF personal; el contacto es opcional; nada de empresa) y en la hoja de Clientes. Ahora la hoja de comisión usa las mismas casillas, así que tampoco muestra nada de empresa.
+  - Pruebas: test39 nueva (natural sin empresa y contador de faltantes, arrastrar a una casilla, Subir varios desde la comisión, orden de los bloques); test03, test06, test07 y test22 ajustadas.
 ## CORRIDA 14/10 TARDE (APROBADA por el administrador): texto completo
 
 CORRIDA 14/10 tarde (aprobada por el administrador). Primer paso: copia este texto completo al traspaso. Publica por parte (pruebas, capturas 1366x768 y iPhone como admin y como líder, revisión independiente, ?v=, commit y push). Septiembre 59/49 antes y después de cada parte. Migraciones está en pausa: solo se toca su formulario (Parte 3). Nada de nombres ni RIF reales en el repo. Anota las decisiones propias en el traspaso.

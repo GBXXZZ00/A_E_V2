@@ -66,8 +66,9 @@ const cerrarHojas = async (p) => { for(let i = 0; i < 4; i++){ if(await p.evalua
 
     // Excepción: solo el administrador, con motivo
     await abrir(p, 'Kiosco La Parada');
+    await p.click('[data-docs-com]'); h = await p.textContent('#docsCom');
+    ok(nombre + ': natural: contacto opcional y sin bloque de empresa', h.includes('Titular') && h.includes('Opcional') && !h.includes('Empresa'));
     h = await p.textContent('#hojaComision');
-    ok(nombre + ': natural: contacto opcional y sin bloque de empresa', h.includes('Titular') && h.includes('Opcional para personas naturales') && !h.includes('Empresa'));
     await p.click('#excAbrir'); await p.waitForSelector('#hojaExc.ver'); await p.click('#excGuardar');
     ok(nombre + ': la excepción exige motivo', (await p.textContent('#eExc')).includes('motivo'));
     await p.fill('#excMotivo', 'Cliente antiguo, se aprobó por gerencia'); await p.screenshot({ path: 'capturas/06-' + nombre + '-excepcion.png' });
