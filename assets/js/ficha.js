@@ -273,11 +273,16 @@
     return '<button type="button" class="casilla doc dato ' + (falta ? 'falta' : algo ? 'ok' : '') + '" data-campo="rep:' + n + '"><span class="ico' + (algo && !falta ? '' : ' mas') + '" aria-hidden="true">' + (algo && !falta ? ic('check') : ic('lapiz')) + '</span>' +
       '<span class="tx"><b>Contacto</b><small>' + esc(sub) + '</small></span>' + (falta ? '<span class="chip rojo">Falta</span>' : algo ? ic('lapiz', 'ch') : '') + '</button>';
   }
-  function grupoRep(n, requeridoN){
+  // Lote urgente 20/10: un representante agregado sin ningún dato ni archivo no se pide y se puede quitar
+  const repConAlgo = (n) => { const r = (F.representantes || []).find((x) => x.orden === n) || {};
+    return !!(String(r.nombre || '').trim() || String(r.correo || '').trim() || String(r.telefono || '').trim() || docDe('cedula', n) || docDe('rif_personal', n)); };
+  function grupoRep(n, requeridoN, quitable){
     const r = (F.representantes || []).find((x) => x.orden === n) || {};
-    return '<section class="bloque" data-grupo="rep' + n + '"><div class="sec">' + (F.cliente.es_natural ? 'Titular' : 'Representante ' + n) + (r.nombre ? '<span>' + esc(r.nombre) + '</span>' : !requeridoN ? '<span>Opcional</span>' : '') + '</div>' +
+    const vacio = !requeridoN && !repConAlgo(n);
+    return '<section class="bloque" data-grupo="rep' + n + '"><div class="sec">' + (F.cliente.es_natural ? 'Titular' : 'Representante ' + n) + (r.nombre ? '<span>' + esc(r.nombre) + '</span>' : vacio ? '<span>Opcional</span>' : '') + '</div>' +
       contactoHtml(r, n, requeridoN && !F.cliente.es_natural) +
-      casillaHtml('cedula', n, { nombre: 'Cédula' }) + casillaHtml('rif_personal', n, { nombre: 'RIF personal' }) + '</section>';
+      casillaHtml('cedula', n, { nombre: 'Cédula' }) + casillaHtml('rif_personal', n, { nombre: 'RIF personal' }) +
+      (vacio && quitable ? '<button type="button" class="enlace" data-quitar-rep="' + n + '">Quitar representante</button>' : '') + '</section>';
   }
   function pintarDocumentos(){
     const c = F.cliente; const fal = F.faltantes || []; const nr = F.puedo.revisar ? sinMarcar().length : porRevisar().length;
@@ -298,8 +303,10 @@
   function casillasHtml(emb){
     const c = F.cliente; let h = '';
     const nReq = !c.es_natural && c.regimen_firma === 'conjunta' ? 2 : 1;
-    const nReps = Math.max(nReq, (F.representantes || []).reduce((a, r) => Math.max(a, r.orden), 1), emb ? 0 : repExtra);
-    for(let n = 1; n <= nReps; n++) h += grupoRep(n, n <= nReq);
+    // Los representantes que se ven: los que pide el régimen, los que tienen algo y el que se acaba de agregar
+    const conAlgo = [2, 3, 4].filter((n) => repConAlgo(n));
+    const nReps = Math.max(nReq, conAlgo.length ? Math.max.apply(null, conAlgo) : 1, emb ? 0 : repExtra);
+    for(let n = 1; n <= nReps; n++) h += grupoRep(n, n <= nReq, !emb && n === nReps);
     if(!emb && !c.es_natural && nReps < 4) h += '<button type="button" class="btn btn-chico btn-2 btn-ancho" id="agregarRep" style="margin-top:12px">Agregar representante</button>';
     if(!c.es_natural){
       // Las actas de asamblea se agregan con su botón, hasta 4
@@ -1258,7 +1265,8 @@
     if(t.closest('#agregarActa')){ actaExtra = Math.min(4, actaExtra + 1); pintarDocumentos(); const cs = document.querySelectorAll('[data-grupo="empresa"] [data-casilla^="acta_asamblea"]'); if(cs.length) cs[cs.length - 1].scrollIntoView({ block: 'center' }); return; }
     if((b = t.closest('[data-ver]')) && !t.closest('#docsCom')){ abrirVer(Number(b.dataset.ver)); return; }   // en la hoja de comisión lo maneja comisiones.js
     if((b = t.closest('#hojaFicha [data-campo]'))){ fuera = null; abrirCampo(b.dataset.campo); return; }
-    if(t.closest('#agregarRep')){ const n = Math.max((F.representantes || []).reduce((a, x) => Math.max(a, x.orden), 1), repExtra, !F.cliente.es_natural && F.cliente.regimen_firma === 'conjunta' ? 2 : 1) + 1; repExtra = Math.min(4, n); pintarDocumentos(); const g = document.querySelector('[data-grupo="rep' + repExtra + '"]'); if(g) g.scrollIntoView({ block: 'center' }); return; }
+    if((b = t.closest('[data-quitar-rep]'))){ repExtra = Math.max(0, Number(b.dataset.quitarRep) - 1); pintarDocumentos(); return; }
+    if(t.closest('#agregarRep')){ const vis = document.querySelectorAll('#tab-documentos [data-grupo^="rep"]').length; const n = Math.max(vis, repExtra, !F.cliente.es_natural && F.cliente.regimen_firma === 'conjunta' ? 2 : 1) + 1; repExtra = Math.min(4, n); pintarDocumentos(); const g = document.querySelector('[data-grupo="rep' + repExtra + '"]'); if(g) g.scrollIntoView({ block: 'center' }); return; }
     if(t.closest('#subirVarios')){ abrirVarios(); return; }
     if(t.closest('#revisarTodo')){ abrirRevision(); return; }
     if(t.closest('#abrirCerrarRev')){ abrirCerrar(); return; }

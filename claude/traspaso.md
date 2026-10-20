@@ -1,6 +1,6 @@
 # Traspaso (se actualiza al cerrar cada sesión)
 
-Actualizado: 20/10/2026 (lote urgente comisiones y hojas en curso). Publicado: `?v=48`.
+Actualizado: 20/10/2026 (lote urgente comisiones y hojas en curso). Publicado: `?v=49`.
 
 ## LOTE URGENTE COMISIONES Y HOJAS (APROBADO por el administrador el 20/10): texto completo
 
@@ -69,6 +69,11 @@ Al terminar: pruebas (nuevas para 1, 2, 3, 5 y 6), capturas en escritorio e iPho
   - **Decisión propia:** dentro de la hoja de comisión no están "Agregar representante" ni "Agregar acta"; si no hay actas de asamblea se muestra una casilla libre para subir la primera. Para lo demás está "Abrir expediente".
   - Persona natural: ya se cumplía en el servidor (`privado.requeridos` y `privado.faltantes` solo piden cédula y RIF personal; el contacto es opcional; nada de empresa) y en la hoja de Clientes. Ahora la hoja de comisión usa las mismas casillas, así que tampoco muestra nada de empresa.
   - Pruebas: test39 nueva (natural sin empresa y contador de faltantes, arrastrar a una casilla, Subir varios desde la comisión, orden de los bloques); test03, test06, test07 y test22 ajustadas.
+- **Parte 5: HECHA en v49. Representantes.** Septiembre 59/49 y octubre 63/26 antes y después.
+  - Un representante agregado (2, 3 o 4) sin ningún dato ni archivo sale como "Opcional", no cuenta en faltantes y tiene "Quitar representante". Con algún dato (nombre, correo o teléfono) o archivo, se piden su cédula y su RIF personal (`privado.requeridos`); el contacto de los agregados sigue siendo opcional.
+  - Una fila vacía de representante en la base ya no se muestra (solo se ven los que piden el régimen, los que tienen algo y el que se acaba de agregar).
+  - **Decisión propia (importante):** la regla nueva solo aplica a clientes **sin Legal aprobado**. Aplicada a todos, 156 clientes ganaban 273 documentos faltantes (74 ya aprobados, casi todos con un representante 2 que trajo la base vieja o la IA con nombre y sin papeles). Así solo cambian 82 clientes que ya tenían otros faltantes (ninguno pasa de completo a incompleto; 1 está en el corte de octubre).
+  - SQL en `supabase/pruebas/lote_urgente_p5.sql`. Prueba nueva: test40.
 ## CORRIDA 14/10 TARDE (APROBADA por el administrador): texto completo
 
 CORRIDA 14/10 tarde (aprobada por el administrador). Primer paso: copia este texto completo al traspaso. Publica por parte (pruebas, capturas 1366x768 y iPhone como admin y como líder, revisión independiente, ?v=, commit y push). Septiembre 59/49 antes y después de cada parte. Migraciones está en pausa: solo se toca su formulario (Parte 3). Nada de nombres ni RIF reales en el repo. Anota las decisiones propias en el traspaso.

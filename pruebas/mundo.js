@@ -125,6 +125,12 @@ function baseDatos(){
 function requeridos(c){
   const r = []; const n = !c.es_natural && c.regimen_firma === 'conjunta' ? 2 : 1;
   for(let i = 1; i <= n; i++){ const suf = n > 1 ? ' del representante ' + i : ''; r.push({ casilla: 'cedula', numero: i, texto: 'cédula' + suf }, { casilla: 'rif_personal', numero: i, texto: 'RIF personal' + suf }); }
+  // Lote urgente 20/10: un representante agregado solo se pide si tiene algún dato o archivo (sin Legal aprobado)
+  if(!c.es_natural && !c.legal_ok_en) for(let i = n + 1; i <= 4; i++){
+    const rp = c.representantes.find((x) => x.orden === i) || {};
+    const algo = String(rp.nombre || '').trim() || String(rp.correo || '').trim() || String(rp.telefono || '').trim() || c.documentos.some((d) => ['cedula', 'rif_personal'].includes(d.casilla) && d.numero === i && (d.archivos || []).length);
+    if(algo) r.push({ casilla: 'cedula', numero: i, texto: 'cédula del representante ' + i }, { casilla: 'rif_personal', numero: i, texto: 'RIF personal del representante ' + i });
+  }
   if(!c.es_natural){ r.push({ casilla: 'rif_empresa', numero: 0, texto: 'RIF de la empresa' }, { casilla: 'acta_constitutiva', numero: 0, texto: 'acta constitutiva' }); if(c.es_isp) r.push({ casilla: 'conatel', numero: 0, texto: 'permiso de Conatel' }); }
   return r;
 }
