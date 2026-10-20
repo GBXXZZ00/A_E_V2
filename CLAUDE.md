@@ -6,7 +6,7 @@ El usuario es el administrador de contratos. No programa, no usa SQL ni el panel
 
 ## 0. Antes de hacer cualquier cosa
 1. Lee `claude/traspaso.md` (estado actual y siguientes tareas) y `claude/reglas-negocio.md`. Lo que dice el traspaso manda.
-2. Corre las pruebas antes de tocar nada (ver `pruebas/LEEME.md`): `python3 -m http.server 8765` en la raíz y, desde `pruebas/`, `node test01.js` hasta `test14.js`. Todas deben terminar en `TODO OK`.
+2. Antes de tocar nada corre solo las pruebas del módulo que vas a cambiar (ver `pruebas/LEEME.md`: `python3 -m http.server 8765` en la raíz y `node testNN.js` desde `pruebas/`). La batería completa se corre una sola vez, al final del lote.
 3. Al cerrar la sesión, actualiza `claude/traspaso.md` con lo hecho y lo que sigue, en el mismo commit.
 
 ## 1. Este repositorio es PÚBLICO
@@ -34,10 +34,18 @@ El usuario es el administrador de contratos. No programa, no usa SQL ni el panel
 - No presentes "mejoras opcionales" en lista: di directo qué vas a hacer y por qué.
 - Cambios de interfaz: sigue el diseño ya aprobado. Maqueta nueva solo si el usuario la pide.
 - Cambios pequeños y cuidadosos. Nunca hagas cambios que no aprobó.
-- Después de cada cambio: corre todas las pruebas, agrega pruebas nuevas para lo nuevo y mira capturas a 1366x768 y en tamaño iPhone (solo las de lo que cambió).
+- Ahorro de consumo (decidido 20/10, obligatorio):
+  - Durante el lote, después de cada parte corre SOLO las pruebas del módulo que tocaste. La batería completa (todas las pruebas) UNA sola vez, al final del lote.
+  - Agrega o ajusta pruebas solo para lo nuevo; no dupliques pruebas que ya cubren lo mismo.
+  - Capturas (1366x768 e iPhone) solo de las pantallas que cambiaron, y solo al final del lote.
+  - Publica UNA sola vez por lote (un `?v=`, un commit y un push), salvo que el usuario pida publicar por parte.
+  - La revisión propia se hace una vez, al final del lote, no por parte.
+  - Comisiones: la referencia (septiembre 59/49 y el corte abierto) se verifica al empezar y al terminar el lote, y después de cada parte que toque el cálculo.
+  - No releas archivos completos ni la salida entera de las pruebas: busca el tramo y muestra solo los fallos.
+  - El modelo se mantiene (Opus); el ahorro viene de hacer menos repeticiones, no de bajar calidad.
 - Nunca entregues código sin verificar sintaxis (`node --check`).
-- Al terminar: revisa tu propio cambio como si fuera de otro (permisos, RLS, texto del usuario escapado, errores de red), corrige, sube `?v=` en todos los HTML, commit y push a `main`. No lances agentes revisores salvo que el usuario lo pida.
-- Respuestas finales cortas: qué quedó, qué debe probar él y qué queda pendiente.
+- Al terminar el lote: revisa tu propio cambio como si fuera de otro (permisos, RLS, texto del usuario escapado, errores de red), corrige, sube `?v=` en todos los HTML, commit y push a `main`. No lances agentes revisores salvo que el usuario lo pida.
+- Respuestas finales cortas (máximo unas 15 líneas): qué quedó, qué debe probar él y qué queda pendiente. Sin repetir todo lo que hiciste.
 - Cuida el consumo: no leas archivos enteros si basta con buscar y leer un tramo (`ficha.js` tiene unas 900 líneas). Una tarea por sesión.
 
 ## 5. Datos
