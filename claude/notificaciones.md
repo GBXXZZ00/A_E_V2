@@ -120,7 +120,7 @@ Regla 14/10: los documentos son los mismos de una instalación; si el cambio de 
 | # | Para | Cuándo | Contenido |
 |---|---|---|---|
 | 9.1 | Cada persona | 8 a.m. diario (solo si hay algo) | ☀️ **Buenos días, {nombre}** · Hoy tienes {n} pendientes: {top 3 con su número}. [Abrir Mi trabajo] |
-| 9.2 | Gerencia y Administrador | Lunes 8 a.m. | 📈 **Semana de Airtek Empresas** · Instalaciones {n} ({±%}), comisionables {n}, expedientes completos {%}, negativos {n}. [Ver Gerencia] |
+| 9.2 | Gerencia y Administrador | Lunes 8 a.m. | 📈 **Semana de Airtek Empresas** · Instalaciones {n} ({±%}), comisionables {n}, expedientes completos {porcentaje}, negativos {n}. [Ver Gerencia] |
 
 ---
 
