@@ -53,3 +53,7 @@ No comisionan, pero pasan por aprobación y contrato. Falta todo, incluido su te
 
 ## Más adelante
 Mensajes al cliente por caso, correo desde el servidor, gestión de clientes viejos, avisos al teléfono, indicador de tiempo de instalación.
+
+## Anotado 20/10 (chat del proyecto)
+- Mi trabajo: rehacerlo bien cuando toquemos ese módulo (al administrador no le gusta cómo quedó). Incluir la bandeja "Legal aprobado a mano: revisar" (clientes con Legal aprobado como excepción y documentos pendientes; se gestionan desde el cliente y salen al pasarlo a Recibidos u otro estatus).
+- Pago y TAD: el TAD puede dar "solvente" antes de que se facture la instalación (caso dedicado del 07/10). Definir cuántos días después de instalar se genera la cuenta por cobrar antes de dar el pago por bueno.
