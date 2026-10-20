@@ -1,6 +1,6 @@
 // Lote 3 (14/10): Legal en revisión y a mano, pregunta antes de quitar la comisión, contrato presencial, excepción pagada,
 // proforma solo para clientes nuevos, Por instalar desde el 01/10, Dedicados con filtros de Clientes, contratos en tarjetas y requisitos VGT.
-const { chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar } = require('./simulador');
+const { chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar, plegables } = require('./simulador');
 const { ok, cerrar } = marcador();
 const cliente = (mundo, nombre) => mundo.datos.clientes.find((c) => c.nombre === nombre || c.nombre === nombre + ', C.A.');
 async function cerrarHojas(p){ for(let i = 0; i < 5 && await p.evaluate(() => !!window.Comun.hojaAbierta()); i++){ await p.keyboard.press('Escape'); await p.waitForTimeout(260); } }
@@ -19,14 +19,14 @@ const llamo = (m, f) => m.llamadas.filter((l) => l[1] === f);
     await p.goto(H + 'comisiones.html'); await p.waitForSelector('.grupo');
     const fila = p.locator('[data-com]', { hasText: 'Vidrios El Faro' }).first();
     if(!(await fila.isVisible())){ await p.locator('.grupo', { has: fila }).locator('.grupo-cab').click(); }
-    await fila.click(); await p.waitForSelector('#hojaComision.ver #legalCheck');
+    await fila.click(); await plegables(p, 'legal', 'bienv'); await p.waitForSelector('#hojaComision.ver #legalCheck');
     ok(nombre + ': Legal tiene un solo botón para el administrador', (await p.locator('#hojaComision #legalCheck').count()) === 1 && (await p.textContent('#legalCheck')).includes('Aprobar Legal'));
     await p.click('#legalCheck'); await p.waitForSelector('#hojaLegal.ver'); await p.click('#legalGuardar');
     ok(nombre + ': aprobar Legal sin motivo da error debajo', (await p.textContent('#eLegal')).includes('motivo'));
     await p.fill('#legalMotivo', 'Firmó en la oficina, faltan copias'); await p.click('#legalGuardar');
     await p.waitForFunction(() => /Aprobado a mano/.test(document.querySelector('#hojaComision').textContent));
     ok(nombre + ': Legal aprobado a mano con su motivo y en el hilo', llamo(mundo, 'legal_aprobar').length === 1 && faro.hilo.some((h) => h.texto === 'legal_aprobado'));
-    ok(nombre + ': Proforma y carta compacta: una línea de IP y dos botones', (await p.locator('#hojaComision .prof .prof-l').count()) === 1 && (await p.locator('#hojaComision .prof .acc-prof .mini').count()) === 2);
+    ok(nombre + ': Bienvenida y proforma: un botón de IP y dos botones', (await p.locator('#hojaComision .prof #profIp').count()) === 1 && (await p.locator('#hojaComision .prof .acc-prof .mini').count()) === 2);
     ok(nombre + ': hoja de comisión sin desborde', await sinDesborde(p));
     await p.screenshot({ path: 'capturas/28-' + nombre + '-legal.png' });
     await p.click('#legalCheck'); await p.waitForSelector('#hojaLegal.ver');

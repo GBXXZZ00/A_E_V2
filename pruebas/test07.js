@@ -1,6 +1,6 @@
 // Tanda B: gestionar desde la hoja de comisión sin saltar, casilla de Contacto, actas agregables, contrato desde Pendiente por firmar,
 // servicios con número grande, ISP solo con dedicado, IP por servicio y Usuarios con WhatsApp, correo y Analista Senior.
-const { chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar } = require('./simulador');
+const { chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar, plegables } = require('./simulador');
 const { ok, cerrar } = marcador();
 const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
 const abiertas = (p) => p.evaluate(() => window.Comun.hojasAbiertas().join());

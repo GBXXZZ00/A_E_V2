@@ -1,6 +1,24 @@
 # Traspaso (se actualiza al cerrar cada sesión)
 
-Actualizado: 20/10/2026 (lote urgente comisiones y hojas hecho). Publicado: `?v=51`.
+Actualizado: 20/10/2026 (lote 21/10, tanda A hecha). Publicado: `?v=52`.
+
+## LOTE 21/10 (`claude/lote-21oct.md`, aprobado): en dos tandas
+Decidido con el administrador: tanda A = partes 1 y 2 (comisiones), publicada en v52; tanda B = partes 3, 4 y 5 (Clientes lista, Clientes hoja, velocidad de documentos), en otra publicación. **Siguiente: tanda B.**
+
+### Tanda A hecha (v52)
+- Base (migraciones `lote_21oct_comisiones` y `pago_dias_leer`; SQL en `supabase/pruebas/lote_21oct_comisiones.sql`):
+  - Columnas nuevas en `instalaciones`: `anulada_motivo`, `anulada_por`, `pago_nota`, `correccion` (no_se_pago | se_pago), `correccion_motivo/_por/_en`.
+  - Ajuste `pago_dias_tad` (3) en `privado.ia_ajustes`: el TAD solo da el pago si se carga N días después de instalar (`tad_cerrar` y `privado.cruzar`).
+  - Pago fijo (`privado.pago_respetar`): ningún TAD posterior quita un pago; el administrador o el Analista Senior sí lo quitan a mano.
+  - `privado.revisar_pago(inst)`: `factura_mes` (instalada del 20 al 31 y el TAD del mes siguiente trae deuda: es la factura nueva, no la instalación) o `varios_servicios` (más de un servicio, contando residenciales del índice TAD completo).
+  - RPC nuevas: `instalacion_no_comisiona` (Senior anula con motivo; solo el administrador reactiva; no aplica a lo que está en una foto), `instalacion_corregir_certificado` (administrador: "no se pagó" pasa al corte en curso; "se pagó allá" = corte_manual + excepcion_corte en ese corte; la foto no se toca), `instalacion_pago_nota`, `pago_dias`, `pago_dias_guardar`. Todo deja bitácora.
+  - `comisiones_corte` trae `no_comisionan`, `fuera_foto` (solo administrador, corte certificado) y permisos nuevos en `puedo`.
+- Pantalla (`comisiones.js`): hoja de comisión con estado + datos clave (estatus legal, líder, código, instalada, orden) y plegables cerrados con su estado en la cabecera: Legal y documentos (Firma Digital/Física, Aprobar Legal, Pedir, casillas), Pago (TAD, Revisar pago, marcar/quitar, nota), Bienvenida y proforma (IP aquí), Ajustes de la comisión (dueño, evento, corte, excepción, No comisiona, corregir certificado). Bandejas plegables "No comisionan" y "Fuera de la foto" al final de la lista. Botón "Días para el pago" (administrador).
+- Referencia: septiembre 46/41 antes y después. Octubre pasó de 68/49 a 68/53 durante el día por aprobaciones de Legal en vivo del administrador (bitácora `legal_excepcion` 18:02 a 18:08 UTC), no por el cambio. Al aplicar había 9 órdenes de octubre con Revisar pago (1 por factura del mes).
+- Pruebas: test43 nueva; ajustadas 03, 06, 22, 37, 38, 39, 41 (ayudante `plegables()` en `simulador.js`).
+
+### Tanda B (pendiente): partes 3, 4 y 5 de `claude/lote-21oct.md`
+
 
 ## LOTE URGENTE COMISIONES Y HOJAS (APROBADO por el administrador el 20/10): texto completo
 

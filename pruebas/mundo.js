@@ -290,12 +290,21 @@ function bienvenidasFilas(m, yo){
   return r.sort((a, b) => a.instalada_en.localeCompare(b.instalada_en));
 }
 function instPorId(m, id){ for(const c of m.datos.clientes){ const i = c.instalaciones.find((x) => x.id === Number(id)); if(i) return { c, i }; } return null; }
+// Lote 21/10: por qué hay que revisar el pago a mano (igual que privado.revisar_pago)
+function revisarMotivo(c, i){
+  if(i.pago_ok_en) return null;
+  const f = fechaClave(caracas(i.instalada_en)); const sig = masMeses(f.slice(0, 8) + '01', 1);
+  if(Number(f.slice(8, 10)) >= 20 && c.servicios.some((sv) => sv.con_deuda && sv.tad_en && fechaClave(caracas(sv.tad_en)) >= sig)) return 'factura_mes';
+  if(c.servicios.length > 1 || (c.residenciales || 0) > 0) return 'varios_servicios';
+  return null;
+}
+const enFoto = (m, id) => Object.keys(m.certificados || {}).sort().find((k) => (m.certificados[k].filas || []).some((f) => f.instalacion_id === id)) || null;
 function filasComision(m, yo, corte){
   const cert = (m.certificados || {})[corte]; if(cert) return cert.filas.filter((f) => yo.rol !== 'lider' || f.lider_id === yo.id);
   const iniAnt = cierre(masMeses(corte, -2)), ini = cierre(masMeses(corte, -1)), fin = cierre(corte); const lAnt = limiteTs(masMeses(corte, -1)), lim = limiteTs(corte); const r = [];
   visibles(m, yo).forEach((c) => c.instalaciones.forEach((i) => {
     const t = new Date(i.instalada_en).getTime(); const cm = i.corte_manual || null;
-    if((cm ? (cm !== corte && cm !== masMeses(corte, -1)) : (t < iniAnt || t >= fin)) || !comisionable(i) || !comisionaEvento(i)) return;
+    if(i.anulada_en || (cm ? (cm !== corte && cm !== masMeses(corte, -1)) : (t < iniAnt || t >= fin)) || !comisionable(i) || !comisionaEvento(i)) return;
     const delCorte = cm ? cm === corte : t >= ini;
     const leg = c.legal_ok_en ? new Date(c.legal_ok_en).getTime() : null; const pag = i.pago_ok_en ? new Date(i.pago_ok_en).getTime() : null;
     const ook = ordenOk(c, i); const exc = !!(i.excepcion_corte && i.excepcion_corte <= corte); const excAntes = !!(i.excepcion_corte && i.excepcion_corte < corte);
@@ -303,7 +312,7 @@ function filasComision(m, yo, corte){
     const dueno = duenoDe(c, i);
     r.push({ instalacion_id: i.id, cliente_id: c.id, nombre: c.nombre, doc: c.doc_tipo + '-' + c.doc_numero, instalada_en: i.instalada_en, lider_id: dueno === c.lider ? c.lider_id : null, lider: dueno || 'Por asignar',
       origen: delCorte ? 'corte' : 'anterior', movida: !!cm, movida_motivo: i.corte_manual_motivo || null, legal_ok: leg !== null && leg < lim, pago_ok: pag !== null && pag < lim, cumple: ook && ((leg !== null && pag !== null && leg < lim && pag < lim) || exc),
-      estatus: c.estatus, codigo: i.codigo, sucursal: i.sucursal, revisar_pago: pag === null && c.servicios.length > 1,
+      estatus: c.estatus, codigo: i.codigo, sucursal: i.sucursal, revisar_pago: revisarMotivo(c, i) !== null, revisar_motivo: revisarMotivo(c, i), correccion: i.correccion || null,
       orden_ok: ook, orden: i.orden ? i.orden.numero : null, orden_id: i.orden ? i.orden.id : null, orden_titulo: i.orden ? i.orden.titulo : null, orden_creador: i.orden ? i.orden.creador : null, cruce: i.cruce,
       es_natural: c.es_natural, instalador: i.instalador, excepcion: exc, excepcion_motivo: i.excepcion_motivo, dueno_manual: !!i.manual,
       motivo: motivoDe(c, i), por_subir: porSubir(c), aprobado_por_subir: aprobadoPorSubir(c), es_evento: !!i.es_evento, servicio_id: (c.servicios.find((sv) => sv.codigo === i.codigo) || {}).id || null,
@@ -530,11 +539,14 @@ const RPC = {
       comision: c.instalaciones.map((i) => { const cn = corteDe(fechaClave(caracas(i.instalada_en))); const cp = i.corte_manual || cn; const com = comisionable(i);
         const ok = c.legal_ok_en && i.pago_ok_en ? Math.max(new Date(c.legal_ok_en).getTime(), new Date(i.pago_ok_en).getTime()) : null;
         const ook = ordenOk(c, i); const comE = com && comisionaEvento(i);
-        const estado = !comE ? 'no_comisiona' : !ook ? 'por_asignar' : i.excepcion_corte ? 'cumple' : ok !== null && ok < limiteTs(masMeses(cp, 1)) ? 'cumple' : Date.now() < limiteTs(cp) ? 'en_curso' : Date.now() < limiteTs(masMeses(cp, 1)) ? 'ultimo_corte' : 'perdida';
+        const estado = i.anulada_en ? 'anulada' : !comE ? 'no_comisiona' : !ook ? 'por_asignar' : i.excepcion_corte ? 'cumple' : ok !== null && ok < limiteTs(masMeses(cp, 1)) ? 'cumple' : Date.now() < limiteTs(cp) ? 'en_curso' : Date.now() < limiteTs(masMeses(cp, 1)) ? 'ultimo_corte' : 'perdida';
         return { id: i.id, codigo: i.codigo, sucursal: i.sucursal, categoria: i.categoria, instalada_en: i.instalada_en, pago_ok_en: i.pago_ok_en, pago_manual: i.pago_manual, corte: cp, comisiona: comE, estado, es_evento: !!i.es_evento, evento_comisiona: i.es_evento ? !!i.evento_comisiona : null, evento_manual: !!i.evento_manual, motivo: motivoDe(c, i),
           servicio_id: (c.servicios.find((sv) => sv.codigo === i.codigo) || {}).id || null, es_aliado: i.es_aliado, instalador: i.instalador, orden: i.orden ? i.orden.numero : null, orden_ok: ook, dueno: duenoDe(c, i),
           dueno_whatsapp: m.personas.filter((p) => p.nombre === duenoDe(c, i)).map((p) => p.whatsapp)[0] || null, dueno_correo: m.personas.filter((p) => p.nombre === duenoDe(c, i)).map((p) => p.correo)[0] || null,
           excepcion_corte: i.excepcion_corte, excepcion_motivo: i.excepcion_motivo, excepcion_por: i.excepcion_por, movida: !!i.corte_manual, movida_motivo: i.corte_manual_motivo || null, corte_natural: cn,
+          anulada: !!i.anulada_en, anulada_motivo: i.anulada_motivo || null, anulada_por: i.anulada_por || null, anulada_en: i.anulada_en || null, pago_nota: i.pago_nota || null,
+          correccion: i.correccion || null, correccion_motivo: i.correccion_motivo || null, en_foto: enFoto(m, i.id), revisar_motivo: revisarMotivo(c, i),
+          tad_deuda: ((c.servicios.find((sv) => sv.codigo === i.codigo) || {}).con_deuda), tad_visto: ((c.servicios.find((sv) => sv.codigo === i.codigo) || {}).tad_en) || null, pago_dias: m.pagoDias || 3,
           corte_pago: i.excepcion_corte ? i.excepcion_corte : ok === null ? null : ok < limiteTs(cp) ? cp : masMeses(cp, 1) }; }),
       puedo: { legal: r === 'admin', presencial: ['admin', 'abogado'].includes(r), exc_pagada: r === 'admin', revisar: ['admin', 'abogado'].includes(r), estatus: ['admin', 'abogado'].includes(r), contrato: ['admin', 'abogado'].includes(r), regimen: ['admin', 'abogado'].includes(r), top: r === 'admin', gestion: ['admin', 'analista'].includes(r), pago: esSenior(yo), asignar: esSenior(yo), evento: esSenior(yo), excepcion: r === 'admin', ip: ['admin', 'analista'].includes(r), enviar: ['admin', 'analista', 'lider'].includes(r) } };
   },
@@ -784,6 +796,46 @@ const RPC = {
     if(c >= DESDE_MANUAL && cerrado(masMeses(c, 1))) return error('No se puede abrir: el corte siguiente ya está cerrado');
     delete m.certificados[c]; return null;
   },
+  // ----- Lote 21/10 -----
+  instalacion_no_comisiona(m, yo, a){
+    if(!esSenior(yo)) return error('Esto lo hace el Analista Senior o el administrador');
+    const x = instPorId(m, a.p_instalacion); if(!x) return error('No se encontró la instalación');
+    const mot = String(a.p_motivo || '').trim();
+    if(a.p_si){
+      if(x.i.anulada_en) return error('Ya no comisiona'); if(mot.length < 5) return error('Escribe el motivo');
+      if(enFoto(m, x.i.id)) return error('Está en un corte certificado: usa Corregir certificado');
+      Object.assign(x.i, { anulada_en: hace(0), anulada_motivo: mot, anulada_por: yo.nombre });
+      (m.bitacora = m.bitacora || []).push({ accion: 'instalacion_no_comisiona', instalacion: x.i.id, por: yo.id, motivo: mot }); return null;
+    }
+    if(yo.rol !== 'admin') return error('Solo el administrador la vuelve a activar');
+    if(!x.i.anulada_en || !x.i.anulada_motivo) return error('Esta instalación no se marcó como No comisiona');
+    Object.assign(x.i, { anulada_en: null, anulada_motivo: null, anulada_por: null });
+    (m.bitacora = m.bitacora || []).push({ accion: 'instalacion_reactivada', instalacion: x.i.id, por: yo.id }); return null;
+  },
+  instalacion_corregir_certificado(m, yo, a){
+    if(yo.rol !== 'admin') return error('Solo el administrador corrige un corte certificado');
+    const x = instPorId(m, a.p_instalacion); if(!x || x.i.anulada_en) return error('No se encontró la instalación');
+    if(!['no_se_pago', 'se_pago'].includes(a.p_accion)) return error('Elige qué pasó');
+    const mot = String(a.p_motivo || '').trim(); if(mot.length < 5) return error('Escribe el motivo');
+    const c = enFoto(m, x.i.id) || x.i.corte_manual || corteDe(fechaClave(caracas(x.i.instalada_en)));
+    if(!(m.certificados || {})[c]) return error('No está en un corte certificado');
+    const ab = enCurso();
+    if(a.p_accion === 'no_se_pago') Object.assign(x.i, { corte_manual: ab, corte_manual_motivo: mot, correccion: 'no_se_pago', correccion_motivo: mot });
+    else Object.assign(x.i, { corte_manual: c, excepcion_corte: c, excepcion_motivo: mot, correccion: 'se_pago', correccion_motivo: mot });
+    (m.bitacora = m.bitacora || []).push({ accion: 'corte_certificado_correccion', instalacion: x.i.id, por: yo.id, accion_c: a.p_accion, corte: a.p_accion === 'no_se_pago' ? ab : c });
+    return { corte: a.p_accion === 'no_se_pago' ? ab : c };
+  },
+  instalacion_pago_nota(m, yo, a){
+    if(!esSenior(yo)) return error('Esto lo hace el Analista Senior o el administrador');
+    const x = instPorId(m, a.p_instalacion); if(!x) return error('No se encontró la instalación');
+    x.i.pago_nota = String(a.p_nota || '').trim().slice(0, 500) || null; (m.bitacora = m.bitacora || []).push({ accion: 'pago_nota', instalacion: x.i.id }); return null;
+  },
+  pago_dias(m, yo){ return m.pagoDias == null ? 3 : m.pagoDias; },
+  pago_dias_guardar(m, yo, a){
+    if(yo.rol !== 'admin') return error('No tienes permiso para hacer esto');
+    const n = Number(a.p_dias); if(!Number.isInteger(n) || n < 0 || n > 30) return error('Escribe un número de días entre 0 y 30');
+    m.pagoDias = n; (m.bitacora = m.bitacora || []).push({ accion: 'ajuste', clave: 'pago_dias_tad', valor: n }); return n;
+  },
   instalacion_pago(m, yo, a){
     if(!esSenior(yo)) return error('Esto lo hace el Analista Senior o el administrador');
     for(const c of m.datos.clientes){ const i = c.instalaciones.find((x) => x.id === Number(a.p_instalacion));
@@ -974,10 +1026,10 @@ const RPC = {
     const c = (m.cargas || []).find((x) => x.id === a.p_carga && x.estado === 'procesando'); if(!c) return error('Esta carga ya se cerró');
     c.estado = c.resumen.invalidas ? 'con_errores' : 'lista';
     // Igual que tad_cerrar: la primera vez que el cliente sale sin deuda se marca el pago; nunca se quita uno marcado
-    // y uno quitado a mano no vuelve solo (privado.pago_respetar)
-    let pagos = 0;
+    // y uno quitado a mano no vuelve solo (privado.pago_respetar). Lote 21/10: solo si la carga es N días (pago_dias_tad) después de instalar
+    let pagos = 0; const lim = masDias(hoy(), -(m.pagoDias == null ? 3 : m.pagoDias));
     m.datos.clientes.filter((cl) => (c.vistas || []).includes(cl.id) && cl.servicios.some((sv) => sv.con_deuda === false)).forEach((cl) => cl.instalaciones.forEach((i) => {
-      if(!i.pago_ok_en && !i.pago_quitado){ i.pago_ok_en = new Date().toISOString(); pagos++; } }));
+      if(!i.pago_ok_en && !i.pago_quitado && fechaClave(caracas(i.instalada_en)) <= lim){ i.pago_ok_en = new Date().toISOString(); pagos++; } }));
     return Object.assign({}, c.resumen, { pagos_marcados: pagos, clientes_total: m.datos.clientes.length, filas: c.filas });
   },
   crudo_iniciar(m, yo, a){
@@ -1086,7 +1138,11 @@ const RPC = {
       eventos: yo.rol === 'abogado' ? [] : [].concat.apply([], visibles(m, yo).map((x) => x.instalaciones.filter((i) => { const t = new Date(i.instalada_en).getTime();
         return i.es_evento && !i.evento_comisiona && comisionable(i) && t >= cierre(masMeses(c, -1)) && t < cierre(c); }).map((i) => ({ instalacion_id: i.id, cliente_id: x.id, nombre: x.nombre, instalada_en: i.instalada_en, codigo: i.codigo, sucursal: i.sucursal, lider: duenoDe(x, i) || 'Por asignar', evento_manual: !!i.evento_manual })))),
       duenos: sen ? DUENOS : [], certificado: cert ? { en: cert.en, por: cert.por, total: cert.total, cumplen: cert.cumplen } : null,
-      puedo: { asignar: sen && !cert, pago: sen, excepcion: yo.rol === 'admin' && !cert, certificar: sen && !cert && c === actual && (manual ? hoy() > corteFin(c) : hoy() >= corteCertifica(c)),
+      no_comisionan: [].concat.apply([], visibles(m, yo).map((x) => x.instalaciones.filter((i) => i.anulada_en && i.anulada_motivo && (i.corte_manual || corteDe(fechaClave(caracas(i.instalada_en)))) === c)
+        .map((i) => ({ instalacion_id: i.id, cliente_id: x.id, nombre: x.nombre, codigo: i.codigo, instalada_en: i.instalada_en, motivo: i.anulada_motivo, por: i.anulada_por, en: i.anulada_en })))),
+      fuera_foto: cert && yo.rol === 'admin' ? [].concat.apply([], m.datos.clientes.map((x) => x.instalaciones.filter((i) => !i.anulada_en && comisionable(i) && (i.corte_manual || corteDe(fechaClave(caracas(i.instalada_en)))) === c && !cert.filas.some((f) => f.instalacion_id === i.id))
+        .map((i) => ({ instalacion_id: i.id, cliente_id: x.id, nombre: x.nombre, codigo: i.codigo, instalada_en: i.instalada_en, motivo: motivoDe(x, i), evento: !!i.es_evento, lider: duenoDe(x, i) || 'Por asignar' })))) : null,
+      puedo: { no_comisiona: sen, reactivar: yo.rol === 'admin', corregir: yo.rol === 'admin' && !!cert, pago_dias: yo.rol === 'admin', asignar: sen && !cert, pago: sen, excepcion: yo.rol === 'admin' && !cert, certificar: sen && !cert && c === actual && (manual ? hoy() > corteFin(c) : hoy() >= corteCertifica(c)),
         quitar_certificado: yo.rol === 'admin' && !!cert && !cerrado(masMeses(c, 1)) } };
   }
 };

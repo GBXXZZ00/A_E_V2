@@ -1,7 +1,7 @@
 // Comisiones del 13/10: período del 18 al 17 con límite el 18, evento a mano, orden de otra persona,
 // motivo visible, IP a mano, Excel con técnico, Proforma y carta en la hoja, archivos por subir y quienes crean órdenes por otros.
 const fs = require('fs');
-const { chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar } = require('./simulador');
+const { chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar, plegables } = require('./simulador');
 const { corte: K } = require('./mundo');
 const { ok, cerrar } = marcador();
 
@@ -61,17 +61,19 @@ async function cerrarHojas(p){ for(let i = 0; i < 4 && await p.evaluate(() => !!
 
     // Hoja de comisión: Proforma y carta arriba, Falta IP, escribir IP, enviar y quién lo envió
     await p.locator('.grupo.abierto [data-com]').filter({ hasText: 'Vidrios El Faro' }).click(); await p.waitForSelector('#hojaComision.ver .prof');
+    ok(nombre + ': Bienvenida y proforma es un plegable con su estado en la cabecera', (await p.textContent('[data-plg-btn="bienv"]')).includes('Por enviar'));
+    await plegables(p, 'bienv');
     const prof = await p.textContent('#hojaComision .prof');
-    ok(nombre + ': bloque Proforma y carta arriba con Descargar y Enviar', prof.includes('Proforma y carta') && (await p.locator('#profBajar').count()) === 1 && (await p.locator('#profEnviar').count()) === 1);
-    ok(nombre + ': sin IP el bloque dice "IP: falta" con el enlace Escribir (lote 3)', /IP: falta/.test(prof) && (await p.textContent('#profIp')).includes('Escribir'));
-    ok(nombre + ': bloque compacto, sin plegar, con Descargar y Enviar en una fila', await p.evaluate(() => { const b = document.querySelector('#hojaComision .prof'); const a = b.querySelector('.acc-prof'); const x = [...a.querySelectorAll('.mini')].map((y) => y.getBoundingClientRect().top); return b.tagName === 'DIV' && x.length === 2 && Math.abs(x[0] - x[1]) < 2; }));
-    ok(nombre + ': el bloque va antes que la orden y Legal', await p.evaluate(() => { const c = document.querySelector('#cuerpoCom'); const a = [...c.children]; return a.indexOf(c.querySelector('.prof')) < a.findIndex((x) => /Legal/.test(x.textContent) && x.classList.contains('req') && !x.classList.contains('prof') && !x.classList.contains('chequeo') && !x.classList.contains('docs-com')); }));
+    ok(nombre + ': el plegable trae IP, carta, proforma, Descargar y Enviar', prof.includes('Carta de bienvenida') && prof.includes('Proforma') && (await p.locator('#profBajar').count()) === 1 && (await p.locator('#profEnviar').count()) === 1);
+    ok(nombre + ': sin IP dice "Falta la IP" con el enlace Escribir', /Falta la IP/.test(prof) && (await p.textContent('#profIp')).includes('Escribir'));
+    ok(nombre + ': Descargar y Enviar en una fila', await p.evaluate(() => { const a = document.querySelector('#hojaComision .prof .acc-prof'); const x = [...a.querySelectorAll('.mini')].map((y) => y.getBoundingClientRect().top); return x.length === 2 && Math.abs(x[0] - x[1]) < 2; }));
+    ok(nombre + ': va después de Legal y Pago, antes de los ajustes', await p.evaluate(() => { const o = [...document.querySelectorAll('#cuerpoCom [data-plg]')].map((x) => x.dataset.plg).join(); return /legal,(pago,)?bienv,ajustes/.test(o); }));
     await p.screenshot({ path: 'capturas/22-' + nombre + '-hoja-proforma.png' });
     const [pdf] = await Promise.all([p.waitForEvent('download'), p.click('#profBajar')]);
     ok(nombre + ': Descargar baja el PDF con los datos del momento', /\.pdf$/i.test(pdf.suggestedFilename()));
     await p.click('#profIp'); await p.waitForSelector('#hojaCampo.ver #cIp');
     await p.fill('#cIp', '190.124.30.15'); await p.click('#guardarCampo');
-    await p.waitForFunction(() => document.querySelector('#hojaComision .prof') && !/IP: falta/.test(document.querySelector('#hojaComision .prof').textContent));
+    await p.waitForFunction(() => document.querySelector('#hojaComision .prof') && !/Falta la IP/.test(document.querySelector('#hojaComision .prof').textContent));
     ok(nombre + ': la IP escrita en la hoja de comisión se guarda y quita el Falta IP', mundo.llamadas.some((l) => l[1] === 'servicio_ip' && l[2].p_ip === '190.124.30.15'));
     await p.click('#profEnviar'); await p.waitForSelector('#hojaEnviar.ver');
     ok(nombre + ': Enviar abre la hoja de envío encima, sin abrir el expediente', (await p.evaluate(() => window.Comun.hojasAbiertas().join())) === 'hojaComision,hojaEnviar');
@@ -86,7 +88,7 @@ async function cerrarHojas(p){ for(let i = 0; i < 4 && await p.evaluate(() => !!
     // Evento a mano: el Analista Senior lo ve aparte y decide si comisiona
     await p.click('[data-filtro="eventos"]'); await p.waitForSelector('#lista [data-com]');
     ok(nombre + ': filtro Eventos con el evento que no comisiona', (await p.textContent('#lista')).includes('Comercial de Prueba 14'));
-    await p.locator('#lista [data-com]').first().click(); await p.waitForSelector('#hojaComision.ver [data-evento]');
+    await p.locator('#lista [data-com]').first().click(); await plegables(p, 'ajustes'); await p.waitForSelector('#hojaComision.ver [data-evento]');
     ok(nombre + ': la hoja dice que es evento y no comisiona', (await p.textContent('#hojaComision')).includes('Evento: no comisiona'));
     await p.click('[data-evento="si_com"]');
     await p.waitForFunction(() => document.querySelector('[data-evento="si_com"].on'));

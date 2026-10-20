@@ -1,6 +1,6 @@
 // Lote urgente 20/10, parte 4: en la hoja de comisión los documentos son las mismas casillas del expediente (arrastrar, Subir varios),
-// en un bloque plegable cerrado; arriba la lista de chequeo. Persona natural: solo cédula y RIF (teléfono opcional), nada de empresa.
-const { chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar } = require('./simulador');
+// en un bloque plegable cerrado; arriba los datos clave (lote 21/10). Persona natural: solo cédula y RIF (teléfono opcional), nada de empresa.
+const { chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar, plegables } = require('./simulador');
 const { ok, cerrar } = marcador();
 const { RPC } = require('./mundo');
 const llamo = (m, f) => m.llamadas.filter((l) => l[1] === f);
@@ -18,7 +18,7 @@ const cerrarHojas = async (p) => { for(let i = 0; i < 5 && await p.evaluate(() =
     const abrirFila = async (f) => {
       const g = p.locator('.grupo').filter({ has: p.locator('.grupo-cab', { hasText: f.lider }) });
       if(!(await g.evaluate((x) => x.classList.contains('abierto')))) await g.locator('.grupo-cab').click();
-      await p.click('[data-com="' + f.instalacion_id + '"]'); await p.waitForSelector('#hojaComision.ver .chequeo');
+      await p.click('[data-com="' + f.instalacion_id + '"]'); await p.waitForSelector('#hojaComision.ver .datos-com');
       await p.click('[data-docs-com]'); await p.waitForSelector('#docsCom:not([hidden]) [data-casilla]');
     };
     // ----- Persona natural -----

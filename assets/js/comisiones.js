@@ -142,6 +142,7 @@
     if(!filas.length){
       $('lista').innerHTML = busca && d.filas.filter(pasa).length ? vacio('Sin resultados', 'Nadie coincide con "' + busca + '". Revisa cómo está escrito o busca por código o número de orden.')
         : d.filas.length ? vacio('Nada en este filtro', 'Prueba con otro filtro o mira todos.') : vacio('Sin instalaciones en este corte', 'Cuando se instale un servicio que comisiona aparecerá aquí.');
+      $('lista').insertAdjacentHTML('beforeend', bandejasExtra());
       return;
     }
     const grupos = []; const idx = {};
@@ -157,7 +158,20 @@
           bloque(g.lider + '|a', 'Último corte: si no cumplen se pierden', g.filas.filter((f) => f.origen === 'anterior'), 'rojo') +
           bloque(g.lider + '|c', 'Instaladas en este corte', g.filas.filter((f) => f.origen === 'corte')) +
         '</div></div>';
-    }).join('');
+    }).join('') + bandejasExtra();
+  }
+  // Lote 21/10: bandejas plegables debajo de la lista: "No comisionan" (anuladas a mano) y, en un corte certificado, "Fuera de la foto"
+  function bandejasExtra(){
+    if(busca || filtro !== 'todos') return '';
+    const caja = (k, titulo, sub, items, chip, cls) => {
+      if(!items.length) return '';
+      const ab = !!abiertos[k];
+      return '<div class="grupo bandeja-extra' + (ab ? ' abierto' : '') + '" data-lider="' + k + '"><button type="button" class="grupo-cab" data-grupo="' + k + '" aria-expanded="' + ab + '"><span class="tx"><b>' + titulo + '</b><small>' + esc(sub) + '</small></span><span class="num">' + items.length + '</span>' + ic('abajo') + '</button>' +
+        '<div class="grupo-cuerpo">' + items.map((o) => '<button type="button" class="fila" data-com="' + esc(o.instalacion_id) + '" data-cliente="' + esc(o.cliente_id) + '"><span class="tx"><b>' + esc(o.nombre) + '</b><small>' +
+          esc([o.codigo, fecha(o.instalada_en), o.lider, o.motivo].filter(Boolean).join(' · ')) + '</small></span><span class="m ' + cls + '">' + esc(chip) + '</span></button>').join('') + '</div></div>';
+    };
+    return caja('__nc', 'No comisionan', 'Marcadas a mano con su motivo. Ábrelas para ver o volver a activar', d.no_comisionan || [], 'No comisiona', 'rojo') +
+      caja('__ff', 'Fuera de la foto', 'Son de este corte certificado pero no quedaron en su foto. Ábrelas para asignar, marcar evento o pasar al corte abierto', d.fuera_foto || [], 'Fuera de la foto', 'ambar');
   }
   function pintarLado(){
     const comp = d.comparativa || []; const max = Math.max(1, ...comp.map((c) => c.total));
@@ -296,6 +310,7 @@
       'No se sabe de qué líder son. ' + (P.asignar ? 'No comisionan hasta que confirmes la orden y a quién pertenecen.' : 'No comisionan hasta que el Analista Senior las asigne.') + '</span>' + ic('derecha') + '</button>';
     $('avisos').innerHTML = h;
     $('acciones').innerHTML = (d.filas.length ? '<button type="button" class="mini" id="bajarExcel">' + ic('doc') + 'Bajar Excel</button>' : '') +
+      (P.pago_dias ? '<button type="button" class="mini" id="pagoDiasAbrir">' + ic('reloj') + 'Días para el pago</button>' : '') +
       (P.certificar ? '<button type="button" class="mini pri" id="abrirCert">' + ic('check') + 'Cerrar corte</button>' : '');
   }
   // Columnas del Excel del corte (para planta externa). Para cambiar el orden basta mover las líneas.
@@ -469,78 +484,130 @@
     try { const F = await rpc('cliente_ficha', { p_cliente: mia.cliente }); if(K !== mia) return; K.F = F; pintarComision(); }
     catch (e) { if(K !== mia) return; $('cuerpoCom').innerHTML = '<div class="aviso" role="alert"><b>No se pudo abrir</b><p>' + esc(e.message) + '</p><p style="margin-top:14px"><button type="button" class="btn btn-chico" id="reintentarCom">Reintentar</button></p></div>'; toast(e.message, 'error'); }
   }
-  // Lote urgente 20/10: lista de chequeo siempre visible arriba (Legal, pago, orden de Odoo, IP)
-  function chequeo(F, i, legalOk, pagoOk){
+  // ---------- Lote 21/10: hoja de comisión ----------
+  // Arriba el estado y los datos clave; tres bloques plegables con su mini chequeo y su estado en la cabecera; abajo los ajustes.
+  const filaChq = (est, nombre, sub) => '<div class="chk"><i class="' + est + '">' + (est === 'ok' ? ic('check') : est === 'rv' ? ic('reloj') : '') + '</i><span>' + nombre + '<small>' + esc(sub) + '</small></span></div>';
+  function plegable(id, titulo, chip, cls, cuerpo, extra){
+    K.ab = K.ab || {}; const ab = !!K.ab[id]; const zid = id === 'legal' ? 'docsCom' : 'plg-' + id;
+    return '<section class="req plg-com" data-plg="' + id + '"><button type="button" class="plegado" data-plg-btn="' + id + '"' + (extra || '') + ' aria-expanded="' + ab + '" aria-controls="' + zid + '">' +
+      '<span class="plg-tx">' + titulo + '</span>' + (chip ? '<span class="m ' + cls + '">' + esc(chip) + '</span>' : '') + ic('abajo') + '</button>' +
+      '<div id="' + zid + '" class="plg-z"' + (ab ? '' : ' hidden') + '>' + cuerpo + '</div></section>';
+  }
+  function datosClave(F, i){
+    const c = F.cliente; const est = (window.Comun.ESTATUS[c.estatus] || {}).t || c.estatus || '';
+    const cod = i ? [i.sucursal, i.codigo].filter(Boolean).join('-') : '';
+    return '<div class="datos-com">' + [['Estatus legal', est], ['Líder', i ? i.dueno || 'Por asignar' : 'Sin instalación'], ['Código', cod || 'Sin código'],
+      ['Instalada', i ? fecha(i.instalada_en) : ''], ['Orden de Odoo', i && i.orden ? ordenCorta(i.orden) : 'Sin orden']]
+      .map((x) => '<div class="dato-f"><span>' + x[0] + '</span><b>' + esc(x[1]) + '</b></div>').join('') + '</div>';
+  }
+  // 1. Legal y documentos: mini chequeo, firma, Aprobar Legal, Pedir al cliente y las casillas del expediente
+  function bloqueLegal(F){
+    const c = F.cliente; const fal = F.faltantes || []; const ok = !!c.legal_ok_en; const lc = c.legal_como;
+    const pr = (F.documentos || []).filter((x) => x.estado === 'por_revisar').length;
+    const est = (window.Comun.ESTATUS[c.estatus] || {}).t || c.estatus || '';
+    const chip = !ok ? (fal.length ? plural(fal.length, 'falta', 'faltan') : 'Falta Legal') : lc === 'revision' ? 'En revisión' : lc === 'excepcion' ? 'Aprobado a mano' : 'Cumple';
+    let h = filaChq(ok ? 'ok' : 'no', 'Legal', ok ? (lc === 'revision' ? 'Pasó a revisión el ' + fecha(c.legal_ok_en) + '. Cuenta como listo' : lc === 'excepcion' ? 'Aprobado a mano el ' + fecha(c.legal_ok_en) : 'Cumplió el ' + fecha(c.legal_ok_en)) : 'Estatus: ' + est) +
+      filaChq(fal.length ? 'no' : pr ? 'rv' : 'ok', 'Documentos', (fal.length ? plural(fal.length, 'falta', 'faltan') + ' en el expediente' : 'Completo') + (pr ? ' · ' + pr + ' por revisar' : ''));
+    if(!c.es_natural){
+      const fis = !!c.presencial; const dis = F.puedo.presencial ? '' : ' disabled';
+      h += '<span class="rotulo" id="rFirma">Firma del contrato</span><div class="tres" role="radiogroup" aria-labelledby="rFirma">' +
+        [['digital', 'Digital', !fis], ['fisica', 'Física', fis]].map((x) => '<button type="button" role="radio" data-firma="' + x[0] + '" aria-checked="' + x[2] + '" class="' + (x[2] ? 'on' : '') + '"' + dis + '>' + x[1] + '</button>').join('') + '</div>' +
+        '<p class="nota-chica">' + (fis ? 'El cliente firma en físico. No se piden correos ni teléfono; sí los documentos legales. Comisiona igual.' : 'Firma digital: se piden el correo y el teléfono del representante.') + '</p>';
+    }
+    if(F.puedo.legal) h += '<div class="chk"><span>' + (ok ? '¿No debe contar?' : '¿Aprobar aunque falten documentos?') + '</span><button type="button" class="mini' + (ok ? '' : ' pri') + '" id="legalCheck" data-quita-legal="' + (ok ? '1' : '0') + '">' + (ok ? 'Quitar Legal' : 'Aprobar Legal') + '</button></div>';
+    if(fal.length) h += '<div class="chk"><span>¿No los tienes?</span><button type="button" class="mini" id="pedirCom">Pedir al cliente</button></div>';
+    h += '<div class="acc"><button type="button" class="btn btn-chico btn-2" id="comVarios"' + (window.Ficha.ocupado() ? ' disabled' : '') + '>' + ic('subir') + 'Subir varios</button></div>' +
+      '<p class="nota-chica solo-pc" style="text-align:center">También puedes arrastrar un archivo y soltarlo sobre una casilla.</p>' + window.Ficha.documentosPara(F);
+    return plegable('legal', 'Legal y documentos', chip, ok ? 'verde' : fal.length ? 'rojo' : 'ambar', h, ' data-docs-com');
+  }
+  // 2. Pago: qué dice el TAD y cuándo, revisar pago, marcar o quitar (pregunta antes) y nota
+  function bloquePago(F, i){
     if(!i || !i.comisiona) return '';
-    const c = F.cliente; const fal = (F.faltantes || []).length; const lc = c.legal_como;
-    const sv = (F.servicios || []).find((x) => Number(x.id) === Number(i.servicio_id)); const ip = sv ? (sv.ip || sv.ip6 || '') : '';
-    const fila = (est, nombre, sub) => '<div class="chk"><i class="' + est + '">' + (est === 'ok' ? ic('check') : est === 'rv' ? ic('reloj') : '') + '</i><span>' + nombre + '<small>' + esc(sub) + '</small></span></div>';
-    return '<div class="req chequeo" aria-label="Lo que pide la comisión"><div class="req-t">Lo que pide la comisión</div>' +
-      fila(legalOk ? 'ok' : 'no', 'Legal', legalOk ? (lc === 'revision' ? 'En revisión: cuenta como listo' : lc === 'excepcion' ? 'Aprobado a mano' : 'Cumple') : fal ? plural(fal, 'falta', 'faltan') + ' en el expediente' : 'Falta que Legal lo apruebe') +
-      fila(pagoOk ? 'ok' : 'no', 'Pago de instalación', pagoOk ? (i.pago_manual ? 'Marcado a mano' : 'Sin deuda en el TAD') : (F.servicios || []).length > 1 ? 'Revisar pago a mano' : 'Debe la instalación') +
-      fila(i.orden_ok ? 'ok' : i.orden ? 'rv' : 'no', 'Orden de Odoo', i.orden_ok ? (i.orden ? 'Confirmada' : 'Asignada a mano') : i.orden ? 'Por confirmar' : 'Sin orden') +
-      fila(!i.servicio_id ? 'no' : ip ? 'ok' : 'no', 'IP', !i.servicio_id ? 'Sin servicio enlazado' : ip || 'Falta la IP') + '</div>';
+    const ok = !!i.pago_ok_en; const rv = ok ? null : i.revisar_motivo;
+    const tad = i.tad_deuda === false ? 'Sin deuda' : i.tad_deuda === true ? 'Con deuda' : 'Sin dato del TAD';
+    let h = filaChq(i.tad_deuda === false ? 'ok' : i.tad_deuda ? 'no' : 'rv', 'Qué dice el TAD', tad + (i.tad_visto ? ', carga del ' + fecha(i.tad_visto) : '')) +
+      filaChq(ok ? 'ok' : rv ? 'rv' : 'no', 'Pago de la instalación', ok ? (i.pago_manual ? 'Marcado a mano el ' : 'Lo dio el TAD el ') + fecha(i.pago_ok_en) + '. Queda fijo' : rv ? 'Revisar a mano' : 'Debe la instalación');
+    if(rv) h += '<div class="al-banda ambar" role="note"><b>' + (rv === 'factura_mes' ? 'Revisar pago: factura nueva del mes' : 'Revisar pago') + '</b><p>' +
+      (rv === 'factura_mes' ? 'Se instaló del 20 en adelante y el TAD de este mes trae la factura nueva del mes, que no es la instalación. Si ya pagó, márcalo a mano.' : 'El cliente tiene más de un servicio; el TAD no puede decidir. Marca el pago a mano.') + '</p></div>';
+    else if(!ok && i.tad_deuda === false) h += '<p class="nota-chica">El TAD da el pago solo si se cargó al menos ' + plural(Number(i.pago_dias) || 3, 'día', 'días') + ' después de instalar.</p>';
+    if(F.puedo.pago){
+      h += '<div class="chk"><span>' + (ok ? '¿Fue un error?' : 'Si ya pagó') + '</span><button type="button" class="mini' + (ok ? '' : ' pri') + '" id="pagoCom" data-pagada="' + (ok ? '0' : '1') + '">' + (ok ? 'Quitar pago' : 'Marcar pagada') + '</button></div>' +
+        '<label class="rotulo arriba" for="pagoNota">Nota del pago</label><textarea class="area corta" id="pagoNota" maxlength="500">' + esc(i.pago_nota || '') + '</textarea>' +
+        '<div class="error" id="ePagoNota" role="alert"></div><div class="acc"><button type="button" class="btn btn-chico btn-2" id="pagoNotaGuardar">Guardar nota</button></div>';
+    } else h += (ok ? '' : '<p class="nota-chica">Lo marca el Analista Senior o el administrador.</p>') + (i.pago_nota ? '<p>Nota: ' + esc(i.pago_nota) + '</p>' : '');
+    return plegable('pago', 'Pago', ok ? 'Pagada' : rv ? 'Revisar pago' : 'Debe', ok ? 'verde' : rv ? 'ambar' : 'rojo', h);
   }
-  // Documentos: las mismas casillas del expediente (subir, arrastrar, Subir varios), en un bloque plegable cerrado al abrir
-  function bloqueDocs(F){
-    const fal = (F.faltantes || []).length; const pr = (F.documentos || []).filter((x) => x.estado === 'por_revisar').length;
-    const res = [fal ? plural(fal, 'falta', 'faltan') : 'Nada falta', pr ? pr + ' por revisar' : ''].filter(Boolean).join(' · ');
-    const ab = !!(K && K.docsAbierto);
-    return '<section class="req docs-com"><button type="button" class="plegado" data-docs-com aria-expanded="' + ab + '" aria-controls="docsCom"><span class="plg-tx">Documentos</span><span>' + esc(res) + '</span>' + ic('abajo') + '</button>' +
-      '<div id="docsCom" class="docs-com-z"' + (ab ? '' : ' hidden') + '>' +
-        '<div class="acc"><button type="button" class="btn btn-chico btn-2" id="comVarios"' + (window.Ficha.ocupado() ? ' disabled' : '') + '>' + ic('subir') + 'Subir varios</button></div>' +
-        '<p class="nota-chica solo-pc" style="text-align:center">También puedes arrastrar un archivo y soltarlo sobre una casilla.</p>' +
-        window.Ficha.documentosPara(F) + '</div></section>';
+  // 3. Bienvenida y proforma: la IP va aquí (no tiene que ver con la comisión)
+  function bloqueBienvenida(F, i){
+    if(!i || !F.puedo.enviar) return '';
+    const sv = i.servicio_id && (F.servicios || []).find((x) => Number(x.id) === Number(i.servicio_id));
+    if(!sv) return plegable('bienv', 'Bienvenida y proforma', 'Sin servicio', 'gris', '<p>Todavía no tiene un servicio enlazado. Sale cuando el TAD traiga el servicio de esta instalación.</p>');
+    const sinIp = !sv.ip && !sv.ip6; const b = sv.bienvenida_envio; const p = sv.proforma_envio;
+    const una = (e, que) => (e ? que + ' enviada por ' + (e.por || 'alguien del equipo') + ', ' + diaMes(e.en) : '');
+    const ip = [sv.ip, sv.ip6].filter(Boolean).join(' · ');
+    const h = filaChq(sinIp ? 'no' : 'ok', 'IP', sinIp ? 'Falta la IP' : ip) +
+      filaChq(b ? 'ok' : 'no', 'Carta de bienvenida', b ? una(b, 'Enviada').replace('Enviada enviada', 'Enviada') : 'Por enviar') +
+      filaChq(p ? 'ok' : 'no', 'Proforma', p ? una(p, 'Enviada').replace('Enviada enviada', 'Enviada') : 'Por enviar') +
+      (F.puedo.ip ? '<div class="chk"><span>IP<small>' + (sinIp ? 'Escríbela antes de enviar' : 'Sale en la carta') + '</small></span><button type="button" class="mini" id="profIp">' + (sinIp ? 'Escribir' : 'Cambiar') + '</button></div>' : '') +
+      '<div class="acc-prof"><button type="button" class="mini" id="profBajar">' + ic('doc') + 'Descargar</button><button type="button" class="mini pri" id="profEnviar">' + ic('wa') + (b ? 'Reenviar' : 'Enviar') + '</button></div>';
+    return plegable('bienv', 'Bienvenida y proforma', b ? 'Enviada ' + diaMes(b.en) : 'Por enviar', b ? 'verde' : 'ambar', h).replace('class="req plg-com"', 'class="req plg-com prof"');
   }
-  function pintarComision(){
-    const F = K.F; const c = F.cliente; const i = (F.comision || []).find((x) => Number(x.id) === K.inst) || (F.comision || [])[0];
-    const f = (d && d.filas.find((x) => Number(x.instalacion_id) === K.inst)) || {};
-    const P = (d && d.puedo) || {}; const est = i ? i.estado : 'no_comisiona';
-    const legalOk = !!c.legal_ok_en; const pagoOk = !!(i && i.pago_ok_en); const ok = est === 'cumple'; const ultimo = est === 'ultimo_corte'; const perdida = est === 'perdida';
-    const sinAsignar = est === 'por_asignar'; const exc = !!(i && i.excepcion_corte);
-    const fal = F.faltantes || [];
-    const tituloEstado = !i || !i.comisiona ? 'Esta instalación no comisiona' : sinAsignar ? 'Pendiente por asignar' : ok && exc ? 'Comisiona por excepción en ' + mes(i.corte_pago) : ok ? 'Cumple. Comisiona en ' + mes(i.corte_pago || i.corte)
-      : perdida ? 'No cumplió a tiempo: se perdió' : ultimo ? 'Último corte: si no cumple el ' + fecha(F.corte.limite || F.corte.fin).split(' de ')[0] + ' se pierde' : 'Todavía no cumple';
-    const sub = !i || !i.comisiona ? (i && i.es_evento && !i.es_aliado ? 'Es un evento y el Analista Senior decidió que no comisiona.' : i && i.es_aliado ? 'Es una instalación de aliado' + (i.instalador ? ': ' + capital(i.instalador) : '') + '. No comisiona.' : 'Los dedicados y las instalaciones de aliado no comisionan.')
-      : sinAsignar ? 'No comisiona hasta que el Analista Senior confirme la orden de Odoo y a quién pertenece.'
-      : ok && exc ? 'Motivo: ' + (i.excepcion_motivo || 'sin motivo') + (i.excepcion_por ? '. La dio ' + primerNombre(i.excepcion_por) + '.' : '')
-      : perdida ? 'Era del corte de ' + mes(i.corte) + '.' : 'Corte de ' + mes(F.corte.etiqueta) + ', límite el ' + fecha(F.corte.limite || F.corte.fin).split(' de ')[0] + '. ' + (F.corte.dias < 0 ? 'El corte sigue abierto hasta que se cierre.' : F.corte.dias === 0 ? 'Es hoy.' : (F.corte.dias === 1 ? 'Falta ' : 'Faltan ') + plural(F.corte.dias, 'día', 'días') + '.');
-    const ns = (F.servicios || []).length;
-    let h = '<div class="estado ' + (ok ? 'verde' : ultimo || perdida ? 'rojo' : 'ambar') + '"><b>' + esc(tituloEstado) + '</b><small>' + esc(sub) + '</small></div>' +
-      chequeo(F, i, legalOk, pagoOk) + bloqueDocs(F) +
-      bloqueProforma(F, i) +
-      '<button type="button" class="exp" id="abrirExp"><span>Abrir expediente del cliente<small>' + plural(ns, 'servicio', 'servicios') + ' en este ' + (c.es_natural ? 'documento' : 'RIF') + ' · datos, documentos e hilo</small></span>' + ic('derecha', 'ch') + '</button>';
-    if(i && i.comisiona){
+  // Abajo: a quién pertenece, evento, corte, excepción, No comisiona y corregir un corte certificado
+  function bloqueAjustes(F, i, f, P){
+    if(!i) return '';
+    let h = '';
+    if(i.comisiona){
       const asigna = !!(F.puedo.asignar && P.asignar);
-      h += '<div class="req"><div class="req-t">Orden de Odoo<span class="m ' + (i.orden_ok ? 'verde' : i.orden ? 'ambar' : 'rojo') + '">' + (i.orden_ok ? (i.orden ? 'Confirmada' : 'A mano') : i.orden ? 'Por confirmar' : 'Sin orden') + '</span></div>' +
+      h += '<div class="req"><div class="req-t">Orden de Odoo y dueño<span class="m ' + (i.orden_ok ? 'verde' : i.orden ? 'ambar' : 'rojo') + '">' + (i.orden_ok ? (i.orden ? 'Confirmada' : 'A mano') : i.orden ? 'Por confirmar' : 'Sin orden') + '</span></div>' +
         '<p>' + (i.orden ? esc(i.orden) + (f.orden_titulo ? '. ' + esc(f.orden_titulo) : '') : i.orden_ok ? 'No tiene orden de Odoo: se asignó a mano.' : 'No hay una orden de Odoo reciente con el nombre de este cliente.') + '</p>' +
         (!i.orden_ok && i.motivo ? '<p class="tx-ambar">' + esc(i.motivo) + '</p>' : '') +
         '<div class="chk"><span>Pertenece a<small>' + esc(i.dueno || 'Por asignar') + (!i.orden_ok && i.dueno ? ' (propuesto)' : '') + '</small></span>' +
         (!asigna ? '' : !i.orden_ok && i.orden && i.dueno && f.orden_id ? '<button type="button" class="mini" id="asigCambiar">Cambiar</button><button type="button" class="mini pri" id="asigConfirmar">Confirmar</button>'
           : !i.orden_ok ? '<button type="button" class="mini pri" id="asigCambiar">Asignar</button>' : '<button type="button" class="mini" id="asigCambiar">Cambiar</button>') + '</div>' +
         (!asigna && !i.orden_ok ? '<p class="nota-chica">La asigna el Analista Senior.</p>' : '') + '</div>';
-    }
-    // Un solo lugar para el check de Legal: en revisión cuenta como listo y solo el administrador lo quita o lo aprueba a mano
-    const lc = c.legal_como;
-    h += '<div class="req"><div class="req-t">Legal<span class="m ' + (legalOk ? 'verde' : 'rojo') + '">' + (!legalOk ? 'Falta' : lc === 'revision' ? 'En revisión' : lc === 'excepcion' ? 'Aprobado a mano' : 'Cumple') + '</span></div>' +
-        '<p>' + (!legalOk ? (fal.length ? plural(fal.length, 'falta', 'faltan') + ' en el expediente' : 'El expediente está completo') + '. Estatus: ' + esc((window.Comun.ESTATUS[c.estatus] || {}).t || c.estatus) + '.'
-          : lc === 'revision' ? 'Pasó a revisión el ' + esc(fecha(c.legal_ok_en)) + '. Cuenta como listo hasta que el administrador le quite el check.'
-          : lc === 'excepcion' ? 'El administrador lo aprobó el ' + esc(fecha(c.legal_ok_en)) + ' aunque falten documentos.' : 'Cumplió el ' + esc(fecha(c.legal_ok_en)) + '.') + '</p>' +
-        (F.puedo.legal ? '<div class="chk"><span>' + (legalOk ? '¿No debe contar?' : '¿Aprobar aunque falten documentos?') + '</span><button type="button" class="mini' + (legalOk ? '' : ' pri') + '" id="legalCheck" data-quita-legal="' + (legalOk ? '1' : '0') + '">' + (legalOk ? 'Quitar Legal' : 'Aprobar Legal') + '</button></div>' : '') +
-        '<p class="nota-chica hidden" id="subidaCom" role="status"><span class="cargando-linea"><i></i></span> </p>' +
-        (fal.length ? '<div class="chk"><span>¿No los tienes?</span><button type="button" class="mini" id="pedirCom">Pedir al cliente</button></div>' : '') + '</div>';
-    if(i && i.comisiona){
-      h += '<div class="req"><div class="req-t">Pago de instalación<span class="m ' + (pagoOk ? 'verde' : 'rojo') + '">' + (pagoOk ? 'Pagada' : 'Debe') + '</span></div>' +
-        '<p>' + (pagoOk ? (i.pago_manual ? 'Marcada a mano el ' : 'Quedó sin deuda el ') + esc(fecha(i.pago_ok_en)) + '.' : ns > 1 ? 'El cliente tiene más de un servicio; el TAD no puede decidir. Marca el pago a mano.' : 'El TAD todavía la muestra con deuda.') + '</p>' +
-        (F.puedo.pago ? '<div class="chk"><span>' + (pagoOk ? '¿Fue un error?' : 'Si ya pagó') + '</span><button type="button" class="mini' + (pagoOk ? '' : ' pri') + '" id="pagoCom" data-pagada="' + (pagoOk ? '0' : '1') + '">' + (pagoOk ? 'Quitar pago' : 'Marcar pagada') + '</button></div>'
-          : pagoOk ? '' : '<p class="nota-chica">Lo marca el Analista Senior o el administrador.</p>') + '</div>';
-      const puedeExc = !!(F.puedo.excepcion && P.excepcion);
+      h += bloqueEvento(F, i, P) + bloqueCorte(i, P);
+      const exc = !!i.excepcion_corte; const puedeExc = !!(F.puedo.excepcion && P.excepcion);
       if(exc) h += '<div class="req"><div class="req-t">Excepción<span class="m verde">Activa</span></div><p>' + esc(i.excepcion_motivo || '') + (i.excepcion_por ? ' La dio ' + esc(primerNombre(i.excepcion_por)) + '.' : '') + '</p>' +
         (puedeExc ? '<div class="chk"><span>¿Ya no aplica?</span><button type="button" class="mini" id="excQuitar">Quitar excepción</button></div>' : '') + '</div>';
-      else if(puedeExc && !ok && !sinAsignar) h += '<div class="req"><div class="req-t">Excepción</div><p>Comisiona aunque no cumpla. Solo la da el administrador y el líder ve el motivo.</p>' +
+      else if(puedeExc && i.estado !== 'cumple' && i.estado !== 'por_asignar') h += '<div class="req"><div class="req-t">Excepción</div><p>Comisiona aunque no cumpla. Solo la da el administrador y el líder ve el motivo.</p>' +
         '<div class="chk"><span>¿Debe comisionar igual?</span><button type="button" class="mini" id="excAbrir">Dar excepción</button></div></div>';
+    } else h += bloqueEvento(F, i, P);
+    // No comisiona: la marca el Analista Senior o el administrador con motivo; solo el administrador la vuelve a activar
+    if(i.anulada && i.anulada_motivo) h += '<div class="req"><div class="req-t">No comisiona<span class="m rojo">Anulada</span></div><p>Motivo: ' + esc(i.anulada_motivo) + (i.anulada_por ? '. La marcó ' + esc(primerNombre(i.anulada_por)) : '') + (i.anulada_en ? ' el ' + esc(fecha(i.anulada_en)) : '') + '.</p>' +
+      (P.reactivar ? '<div class="chk"><span>¿Fue un error?</span><button type="button" class="mini" id="ncReactivar">Volver a activar</button></div>' : '') + '</div>';
+    else if(!i.anulada && i.comisiona && P.no_comisiona && !i.en_foto) h += '<div class="req"><div class="req-t">No comisiona</div><p>La instalación deja de contar en Comisiones. Queda en la bandeja "No comisionan" y se puede volver a activar.</p>' +
+      '<div class="chk"><span>¿No debe comisionar?</span><button type="button" class="mini" id="ncAbrir">No comisiona</button></div></div>';
+    // Corregir un corte certificado (solo administrador): la foto no cambia
+    const certCorte = i.en_foto || (d && d.certificado && d.corte === i.corte ? d.corte : null);
+    if(P.corregir && certCorte && !i.anulada){
+      h += '<div class="req"><div class="req-t">Corte certificado' + (i.correccion ? '<span class="m ambar">Corregida</span>' : '') + '</div>' +
+        '<p>' + (i.en_foto ? 'Está en la foto de ' + esc(nombreCorte(i.en_foto).toLowerCase()) + '.' : 'Es de ' + esc(nombreCorte(certCorte).toLowerCase()) + ', pero no quedó en su foto.') +
+          (i.correccion ? ' ' + (i.correccion === 'no_se_pago' ? 'Se corrigió: no se pagó y pasó al corte abierto.' : 'Se corrigió: se pagó en ese corte.') + (i.correccion_motivo ? ' Motivo: ' + esc(i.correccion_motivo) + '.' : '') : ' La foto no cambia; la corrección queda en la bitácora.') + '</p>' +
+        (i.correccion ? '' : '<div class="acc"><button type="button" class="btn btn-chico btn-2" data-corregir="no_se_pago">No se pagó</button><button type="button" class="btn btn-chico btn-2" data-corregir="se_pago">Se pagó allá</button></div>') + '</div>';
     }
-    h += bloqueCorte(i, P) + bloqueEvento(F, i, P);
+    if(!h) return '';
+    return plegable('ajustes', 'Ajustes de la comisión', i.anulada ? 'No comisiona' : i.movida ? 'Movida a mano' : '', i.anulada ? 'rojo' : 'ambar', h);
+  }
+  function pintarComision(){
+    const F = K.F; const c = F.cliente; const i = (F.comision || []).find((x) => Number(x.id) === K.inst) || (F.comision || [])[0];
+    const f = (d && d.filas.find((x) => Number(x.instalacion_id) === K.inst)) || {};
+    const P = (d && d.puedo) || {}; const est = i ? i.estado : 'no_comisiona';
+    const ok = est === 'cumple'; const ultimo = est === 'ultimo_corte'; const perdida = est === 'perdida'; const anulada = est === 'anulada';
+    const sinAsignar = est === 'por_asignar'; const exc = !!(i && i.excepcion_corte);
+    const tituloEstado = anulada ? 'No comisiona' : !i || !i.comisiona ? 'Esta instalación no comisiona' : sinAsignar ? 'Pendiente por asignar' : ok && exc ? 'Comisiona por excepción en ' + mes(i.corte_pago) : ok ? 'Cumple. Comisiona en ' + mes(i.corte_pago || i.corte)
+      : perdida ? 'No cumplió a tiempo: se perdió' : ultimo ? 'Último corte: si no cumple el ' + fecha(F.corte.limite || F.corte.fin).split(' de ')[0] + ' se pierde' : 'Todavía no cumple';
+    // Qué le falta, dicho en una línea
+    const falta = !i || !i.comisiona ? [] : [!c.legal_ok_en ? 'Legal' : '', !i.pago_ok_en ? 'el pago' : '', !i.orden_ok ? 'la orden de Odoo' : ''].filter(Boolean);
+    const sub = anulada ? 'Motivo: ' + (i.anulada_motivo || 'sin motivo') + '.' : !i || !i.comisiona ? (i && i.es_evento && !i.es_aliado ? 'Es un evento y el Analista Senior decidió que no comisiona.' : i && i.es_aliado ? 'Es una instalación de aliado' + (i.instalador ? ': ' + capital(i.instalador) : '') + '. No comisiona.' : 'Los dedicados y las instalaciones de aliado no comisionan.')
+      : sinAsignar ? 'No comisiona hasta que el Analista Senior confirme la orden de Odoo y a quién pertenece.'
+      : ok && exc ? 'Motivo: ' + (i.excepcion_motivo || 'sin motivo') + (i.excepcion_por ? '. La dio ' + primerNombre(i.excepcion_por) + '.' : '')
+      : ok ? 'Tiene Legal, pago y orden de Odoo.'
+      : perdida ? 'Era del corte de ' + mes(i.corte) + '.' : (falta.length ? 'Le falta ' + window.Comun.lista(falta) + '. ' : '') + 'Corte de ' + mes(F.corte.etiqueta) + ', límite el ' + fecha(F.corte.limite || F.corte.fin).split(' de ')[0] + '. ' + (F.corte.dias < 0 ? 'El corte sigue abierto hasta que se cierre.' : F.corte.dias === 0 ? 'Es hoy.' : (F.corte.dias === 1 ? 'Falta ' : 'Faltan ') + plural(F.corte.dias, 'día', 'días') + '.');
+    const ns = (F.servicios || []).length;
+    let h = '<div class="estado ' + (ok ? 'verde' : ultimo || perdida || anulada ? 'rojo' : 'ambar') + '"><b>' + esc(tituloEstado) + '</b><small>' + esc(sub) + '</small></div>' +
+      datosClave(F, i) +
+      '<button type="button" class="exp" id="abrirExp"><span>Abrir expediente del cliente<small>' + plural(ns, 'servicio', 'servicios') + ' en este ' + (c.es_natural ? 'documento' : 'RIF') + ' · datos, documentos e hilo</small></span>' + ic('derecha', 'ch') + '</button>' +
+      bloqueLegal(F) + bloquePago(F, i) + bloqueBienvenida(F, i) + bloqueAjustes(F, i, f, P);
     const mov = (F.hilo || []).slice(0, 4);
     h += '<div class="req"><div class="req-t">Qué ha pasado</div>' + (mov.length ? '<div class="hilo" style="padding:10px 0 0">' + mov.map(window.Ficha.lineaHilo).join('') + '</div>' : '<p>Todavía no hay movimientos.</p>') +
       ((F.hilo || []).length > 4 ? '<button type="button" class="enlace" id="verHilo">Ver todo el hilo</button>' : '') + '</div>';
@@ -561,6 +628,30 @@
       '<p>Cuenta en el corte de ' + esc(mes(i.corte)) + '.' + (i.movida ? ' Por su fecha era de ' + esc(mes(i.corte_natural)) + '. Motivo: ' + esc(i.movida_motivo || 'sin motivo') + '.' : '') + '</p>' +
       (ops.length ? '<div class="chk"><span>¿Debe contar en otro corte?</span><button type="button" class="mini" id="corteCambiar">Cambiar de corte</button></div>' : '') + '</div>';
   }
+  // Ajuste del administrador: cuántos días después de instalar tiene que ser el TAD que da el pago
+  function abrirPagoDias(){
+    const h = hojaChica('hojaPagoDias', 'tPagoDias');
+    h.innerHTML = cabHoja('tPagoDias', 'Días para el pago', 'Pago de la instalación con el TAD') + '<form id="formPagoDias" novalidate>' +
+      '<label class="rotulo" for="pagoDias">Días después de instalar</label><input class="campo" id="pagoDias" type="number" inputmode="numeric" min="0" max="30" data-foco>' +
+      '<p class="nota-chica">Un TAD cargado antes de esos días no da el pago, porque la cuenta por cobrar de la instalación se genera después. Queda en la bitácora.</p>' +
+      '<div class="error" id="ePagoDias" role="alert"></div><div class="acciones"><button type="submit" class="btn btn-ancho" id="pagoDiasGuardar">Guardar</button></div></form>';
+    abrirHoja('hojaPagoDias');
+    rpc('pago_dias', {}).then((n) => { const x = $('pagoDias'); if(x) x.value = n; }).catch((e) => { const er = $('ePagoDias'); if(er) er.textContent = e.message; });
+  }
+  // Hoja chica con motivo: No comisiona y corregir un corte certificado
+  const MOTIVO = {
+    nc: { t: 'No comisiona', nota: 'Deja de contar en Comisiones y queda en la bandeja "No comisionan". Solo el administrador la vuelve a activar.', b: 'No comisiona' },
+    no_se_pago: { t: 'No se pagó', nota: 'Pasa al corte abierto para pagarse allí. La foto del corte certificado no cambia.', b: 'Pasar al corte abierto' },
+    se_pago: { t: 'Se pagó allá', nota: 'Queda pagada en el corte certificado y no vuelve a salir. La foto no cambia.', b: 'Marcar pagada allá' }
+  };
+  function abrirMotivo(tipo){
+    const m = MOTIVO[tipo]; if(!m || !K || !K.F) return;
+    hojaChica('hojaMotivoCom', 'tMotivoCom').innerHTML = cabHoja('tMotivoCom', m.t, K.F.cliente.nombre) + '<form id="formMotivoCom" novalidate data-tipo="' + tipo + '">' +
+      '<label class="rotulo" for="motivoCom">Motivo</label><textarea class="area corta" id="motivoCom" maxlength="500" data-foco></textarea>' +
+      '<p class="nota-chica">' + m.nota + ' Queda en la bitácora.</p>' +
+      '<div class="error" id="eMotivoCom" role="alert"></div><div class="acciones"><button type="submit" class="btn btn-ancho" id="motivoComGuardar">' + m.b + '</button></div></form>';
+    abrirHoja('hojaMotivoCom');
+  }
   function abrirCambioCorte(){
     if(!K || !K.F) return;
     const i = (K.F.comision || []).find((x) => Number(x.id) === K.inst); const ops = opcionesCorte(i); if(!ops.length) return;
@@ -573,20 +664,6 @@
       '<p class="nota-chica">Queda en la bitácora y la fila dice "Movida a mano".</p>' +
       '<div class="error" id="eCorteMov" role="alert"></div><div class="acciones"><button type="submit" class="btn btn-ancho" id="corteMovGuardar">Cambiar de corte</button></div></form>';
     abrirHoja('hojaCorteMov');
-  }
-  // Proforma y carta, arriba de la hoja: el PDF sale siempre con los datos del momento y cada envío queda anotado
-  function bloqueProforma(F, i){
-    if(!i || !i.servicio_id || !F.puedo.enviar) return '';
-    const sv = (F.servicios || []).find((x) => Number(x.id) === Number(i.servicio_id)); if(!sv) return '';
-    const sinIp = !sv.ip && !sv.ip6; const b = sv.bienvenida_envio; const p = sv.proforma_envio;
-    const una = (e, que) => (e ? que + ' enviada por ' + (e.por || 'alguien del equipo') + ', ' + diaMes(e.en) : '');
-    const estado = [una(b, 'Carta'), una(p, 'Proforma')].filter(Boolean).join('. ');
-    // Lote 3: bloque compacto. Una línea de IP con enlace chico y Descargar / Enviar en una sola fila
-    const ip = [sv.ip, sv.ip6].filter(Boolean).join(' · ');
-    return '<div class="req prof"><div class="req-t">Proforma y carta<span class="m ' + (b ? 'verde' : 'ambar') + '">' + (b ? 'Enviada ' + esc(diaMes(b.en)) : 'Por enviar') + '</span></div>' +
-      '<p class="prof-l">IP: ' + (sinIp ? '<b class="mal">falta</b>' : esc(ip)) + (F.puedo.ip ? ' · <button type="button" class="enlace chico" id="profIp">' + (sinIp ? 'Escribir' : 'Cambiar') + '</button>' : '') + '</p>' +
-      (estado ? '<p class="nota-chica">' + esc(estado) + '.</p>' : '') +
-      '<div class="acc-prof"><button type="button" class="mini" id="profBajar">' + ic('doc') + 'Descargar</button><button type="button" class="mini pri" id="profEnviar">' + ic('wa') + (b ? 'Reenviar' : 'Enviar') + '</button></div></div>';
   }
   function bajarProforma(){
     const F = K && K.F; const i = F && (F.comision || []).find((x) => Number(x.id) === K.inst);
@@ -718,7 +795,22 @@
     if(t.closest('#abrirExp')){ alExpediente({ tab: 'datos' }); return; }
     if(t.closest('#verHilo')){ alExpediente({ tab: 'hilo' }); return; }
     // Documentos dentro de la hoja de comisión: las mismas casillas del expediente
-    if((b = t.closest('[data-docs-com]')) && K){ K.docsAbierto = b.getAttribute('aria-expanded') !== 'true'; b.setAttribute('aria-expanded', String(K.docsAbierto)); const z = $('docsCom'); if(z) z.hidden = !K.docsAbierto; return; }
+    if((b = t.closest('[data-plg-btn]')) && K){ K.ab = K.ab || {}; const id = b.dataset.plgBtn; K.ab[id] = b.getAttribute('aria-expanded') !== 'true'; b.setAttribute('aria-expanded', String(K.ab[id]));
+      const z = $(b.getAttribute('aria-controls')); if(z) z.hidden = !K.ab[id]; return; }
+    // Firma Digital o Física (Física = contrato presencial)
+    if((b = t.closest('[data-firma]')) && K && K.F){ if(b.classList.contains('on')) return; const fis = b.dataset.firma === 'fisica';
+      Array.prototype.forEach.call(document.querySelectorAll('[data-firma]'), (x) => { x.disabled = true; });
+      rpc('cliente_marca', { p_cliente: K.F.cliente.id, p_marca: 'contrato_presencial', p_valor: fis }).then(() => { toast(fis ? 'Firma física: no se piden correos ni teléfono' : 'Firma digital'); tras(); })
+        .catch((err) => { toast(err.message, 'error'); Array.prototype.forEach.call(document.querySelectorAll('[data-firma]'), (x) => { x.disabled = false; }); }); return; }
+    if((b = t.closest('#pagoNotaGuardar')) && K){ const n = $('pagoNota').value.trim(); $('ePagoNota').textContent = ''; b.disabled = true; b.textContent = 'Guardando…';
+      rpc('instalacion_pago_nota', { p_instalacion: K.inst, p_nota: n }).then(() => { toast('Nota guardada'); tras(); })
+        .catch((err) => { $('ePagoNota').textContent = err.message; if(document.contains(b)){ b.disabled = false; b.textContent = 'Guardar nota'; } }); return; }
+    if(t.closest('#ncAbrir') && K){ abrirMotivo('nc'); return; }
+    if(t.closest('#pagoDiasAbrir')){ abrirPagoDias(); return; }
+    if((b = t.closest('[data-corregir]')) && K){ abrirMotivo(b.dataset.corregir); return; }
+    if((b = t.closest('#ncReactivar')) && K){ b.disabled = true;
+      rpc('instalacion_no_comisiona', { p_instalacion: K.inst, p_si: false, p_motivo: '' }).then(() => { toast('Vuelve a comisionar'); tras(); })
+        .catch((err) => { toast(err.message, 'error'); if(document.contains(b)) b.disabled = false; }); return; }
     if(t.closest('#docsCom') && K && K.F){
       if((b = t.closest('[data-subir]'))){ const p = b.dataset.subir.split(':'); window.Ficha.subirA(K.F, p[0], Number(p[1]), tras); return; }
       if((b = t.closest('[data-campo]'))){ window.Ficha.editarCampo(K.F, b.dataset.campo, tras); return; }
@@ -805,6 +897,17 @@
       b.disabled = true; b.textContent = 'Guardando…';
       rpc(quitar ? 'legal_quitar' : 'legal_aprobar', { p_cliente: K.cliente, p_motivo: m || null }).then(() => { toast(quitar ? 'Legal quitado' : 'Legal aprobado a mano'); if(hojaAbierta() === 'hojaLegal') cerrarHoja(); tras(); })
         .catch((err) => { er.textContent = err.message; b.disabled = false; b.textContent = txt; }); return; }
+    if(e.target.id === 'formPagoDias'){ e.preventDefault(); const er = $('ePagoDias'); er.textContent = ''; const v = $('pagoDias').value.trim(); const b = $('pagoDiasGuardar');
+      if(!/^\d{1,2}$/.test(v) || Number(v) > 30){ er.textContent = 'Escribe un número de días entre 0 y 30'; $('pagoDias').focus(); return; }
+      b.disabled = true; b.textContent = 'Guardando…';
+      rpc('pago_dias_guardar', { p_dias: Number(v) }).then((n) => { toast('El TAD da el pago desde ' + plural(n, 'día', 'días') + ' después de instalar'); if(hojaAbierta() === 'hojaPagoDias') cerrarHoja(); })
+        .catch((err) => { er.textContent = err.message; b.disabled = false; b.textContent = 'Guardar'; }); return; }
+    if(e.target.id === 'formMotivoCom' && K){ e.preventDefault(); const er = $('eMotivoCom'); er.textContent = ''; const m = $('motivoCom').value.trim(); const b = $('motivoComGuardar'); const tipo = e.target.dataset.tipo;
+      if(m.length < 5){ er.textContent = 'Escribe el motivo'; $('motivoCom').focus(); return; }
+      b.disabled = true; b.textContent = 'Guardando…';
+      const pr = tipo === 'nc' ? rpc('instalacion_no_comisiona', { p_instalacion: K.inst, p_si: true, p_motivo: m }) : rpc('instalacion_corregir_certificado', { p_instalacion: K.inst, p_accion: tipo, p_motivo: m });
+      pr.then(() => { toast(tipo === 'nc' ? 'Ya no comisiona' : tipo === 'no_se_pago' ? 'Pasó al corte abierto' : 'Quedó pagada en el corte certificado'); if(hojaAbierta() === 'hojaMotivoCom') cerrarHoja(); tras(); })
+        .catch((err) => { er.textContent = err.message; b.disabled = false; b.textContent = MOTIVO[tipo].b; }); return; }
     if(e.target.id === 'formCorteMov' && K){ e.preventDefault(); const er = $('eCorteMov'); er.textContent = ''; const m = $('corteMovMotivo').value.trim(); const b = $('corteMovGuardar');
       const el = document.querySelector('[data-corte-mov].on'); const c = el ? el.dataset.corteMov : '';
       if(!c){ er.textContent = 'Elige el corte'; return; }

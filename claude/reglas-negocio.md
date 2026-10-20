@@ -144,3 +144,10 @@ Sin nombres reales: el repo es público. "Analista Senior" es el responsable de 
 - 20/10/2026 (chat del proyecto): el límite del corte de octubre se movió del 18 al 21 (`privado.corte_reglas`, fila 2026-10-01: dia_limite 21, dia_certifica 21) porque el administrador trabajó pagos y Legal el 19 y 20. Noviembre en adelante sigue 18/18/19 (fila nueva 2026-11-01). Octubre pasó de 11 a 26 que cumplen; septiembre 59/49 igual. Siguiente: corte con cierre manual (administrador o Analista Senior) y mover instalación de corte con motivo (lote urgente comisiones).
 - 20/10/2026 (lote urgente, aprobado): desde el corte de octubre 2026 el corte se cierra a mano (administrador o Analista Senior, botón "Cerrar corte" en Comisiones). Lo que se cumpla antes del cierre cuenta; al cerrar, lo que no cumple pasa al siguiente y si tampoco cumple ahí se pierde. El día límite de `privado.corte_reglas` queda como aviso. Un corte cerrado no se mueve.
 - 20/10/2026 (lote urgente, aprobado): con contrato presencial no se piden el correo del representante, el correo de la empresa ni el teléfono; sí los documentos legales. Un representante agregado solo se pide si tiene algún dato o archivo (sin Legal aprobado); vacío se puede quitar.
+
+## Comisiones: decisiones del 20/10 (lote 21/10)
+- Pago fijo: una vez dado el pago de la instalación, ninguna carga del TAD lo quita. Solo el administrador o el Analista Senior lo quitan a mano (pregunta antes).
+- El TAD da el pago solo si se cargó al menos N días después de instalar. N lo cambia el administrador ("Días para el pago"); por defecto 3.
+- Revisar pago (a mano): si se instaló del 20 al 31 y el TAD siguiente trae deuda (es la factura nueva del mes), o si el RIF tiene más de un servicio, contando los residenciales.
+- No comisiona: la marca el Analista Senior o el administrador con motivo; sale de la lista y queda en la bandeja "No comisionan". Solo el administrador la vuelve a activar.
+- Corte certificado: la foto no se toca. El administrador corrige con "No se pagó" (pasa al corte abierto) o "Se pagó allá" (queda pagada en ese corte). Lo que es del corte pero no quedó en la foto sale en "Fuera de la foto".

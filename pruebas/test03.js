@@ -1,5 +1,5 @@
 // Inicio, navegación, menú de cuenta y Comisiones.
-const { chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar } = require('./simulador');
+const { chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar, plegables } = require('./simulador');
 const { ok, cerrar } = marcador();
 (async () => {
   const nav = await chromium.launch(); const errores = [];
@@ -41,10 +41,11 @@ const { ok, cerrar } = marcador();
     await p.click('[data-filtro="todos"]'); await p.locator('.grupo-cab').filter({ hasText: 'Lucía Ferrer' }).click();
     await p.locator('.grupo.abierto [data-com]').filter({ hasText: 'Vidrios El Faro' }).click(); await p.waitForSelector('#hojaComision.ver .req');
     const hc = await p.textContent('#hojaComision');
-    ok(nombre + ': la fila abre la hoja corta de comisión, sin salir', p.url().includes('comisiones.html') && hc.includes('Legal') && hc.includes('Pago de instalación'));
-    // Lote urgente 20/10: lista de chequeo arriba (Legal, pago, orden de Odoo, IP) y Documentos plegado
-    const chq = await p.textContent('#hojaComision .chequeo');
-    ok(nombre + ': arriba, la lista de chequeo con Legal, pago, orden de Odoo e IP', ['Legal', 'Pago de instalación', 'Orden de Odoo', 'IP'].every((x) => chq.includes(x)) && (await p.locator('#hojaComision .chequeo .chk').count()) === 4);
+    ok(nombre + ': la fila abre la hoja corta de comisión, sin salir', p.url().includes('comisiones.html') && hc.includes('Legal') && hc.includes('Pago de la instalación'));
+    // Lote 21/10: arriba los datos clave y luego tres plegables con su estado en la cabecera
+    const dc = await p.textContent('#hojaComision .datos-com');
+    ok(nombre + ': arriba los datos clave (estatus legal, líder, código, instalación, orden)', ['Estatus legal', 'Líder', 'Código', 'Instalada', 'Orden de Odoo'].every((x) => dc.includes(x)) && (await p.locator('#hojaComision .chequeo').count()) === 0);
+    ok(nombre + ': plegables Legal, Pago, Bienvenida y Ajustes, con estado', await p.evaluate(() => ['legal', 'pago', 'bienv', 'ajustes'].every((id) => document.querySelector('[data-plg-btn="' + id + '"]'))) && (await p.locator('#hojaComision .plg-com > .plegado .m').count()) >= 3);
     ok(nombre + ': Documentos empieza cerrado', (await p.getAttribute('[data-docs-com]', 'aria-expanded')) === 'false' && await p.evaluate(() => document.getElementById('docsCom').hidden));
     await p.screenshot({ path: 'capturas/03-' + nombre + '-comision.png' });
     await p.click('[data-docs-com]');
@@ -56,7 +57,7 @@ const { ok, cerrar } = marcador();
     await p.click('#cabFicha [data-cierra]'); await p.waitForFunction(() => window.Comun.hojasAbiertas().join() === 'hojaComision');
     ok(nombre + ': al cerrarlo se vuelve a la comisión', true);
     const pagos = mundo.llamadas.filter((l) => l[1] === 'instalacion_pago').length;
-    await p.waitForSelector('#pagoCom'); await p.click('#pagoCom'); if(await p.locator('#pagoSi').count()) await p.click('#pagoSi');
+    await plegables(p, 'pago'); await p.click('#pagoCom'); if(await p.locator('#pagoSi').count()) await p.click('#pagoSi');
     await p.waitForFunction(() => Array.from(document.querySelectorAll('.toast')).some((t) => /pagada|Pago quitado/.test(t.textContent)));
     ok(nombre + ': el pago se gestiona desde la hoja', mundo.llamadas.filter((l) => l[1] === 'instalacion_pago').length === pagos + 1);
     await p.click('#abrirExp'); await p.waitForSelector('#hojaFicha.ver #tFicha');

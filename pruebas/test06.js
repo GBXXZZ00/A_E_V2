@@ -1,10 +1,10 @@
 // Comisiones, tanda A: orden de Odoo a la vista, pendientes por asignar, dueño, excepción, pago del Analista Senior, certificar, Excel y buscador.
 const fs = require('fs');
-const { chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar } = require('./simulador');
+const { chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar, plegables } = require('./simulador');
 const { ok, cerrar } = marcador();
 const { RPC } = require('./mundo');
 const llamo = (m, f) => m.llamadas.filter((l) => l[1] === f);
-const abrir = async (p, texto) => { await p.locator('[data-com]').filter({ hasText: texto }).first().click(); await p.waitForSelector('#hojaComision.ver .req'); };
+const abrir = async (p, texto) => { await p.locator('[data-com]').filter({ hasText: texto }).first().click(); await p.waitForSelector('#hojaComision.ver .req'); await plegables(p, 'pago', 'ajustes'); };
 const cerrarHojas = async (p) => { for(let i = 0; i < 4; i++){ if(await p.evaluate(() => !!window.Comun.hojaAbierta())) await p.keyboard.press('Escape'); } await p.waitForFunction(() => !window.Comun.hojaAbierta()); };
 (async () => {
   const nav = await chromium.launch(); const errores = [];

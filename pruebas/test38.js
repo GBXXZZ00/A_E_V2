@@ -1,6 +1,6 @@
 // Lote urgente 20/10, parte 3: el pago marcado a mano no lo quita la carga del TAD; quitar el pago pide confirmación;
 // el texto de "Revisar pago" explica que el TAD no puede decidir cuando hay más de un servicio.
-const { chromium, H, TEL, PC, contexto, marcador, entrar } = require('./simulador');
+const { chromium, H, TEL, PC, contexto, marcador, entrar, plegables } = require('./simulador');
 const { ok, cerrar } = marcador();
 const { RPC } = require('./mundo');
 const llamo = (m, f) => m.llamadas.filter((l) => l[1] === f);
@@ -32,7 +32,7 @@ function cargaTad(m, yo, cl, conDeuda){
     await p.goto(H + 'comisiones.html'); await p.waitForSelector('.grupo');
     const g = p.locator('.grupo').filter({ has: p.locator('.grupo-cab', { hasText: fila.lider }) });
     if(!(await g.evaluate((x) => x.classList.contains('abierto')))) await g.locator('.grupo-cab').click();
-    await p.click('[data-com="' + ins.id + '"]'); await p.waitForSelector('#hojaComision.ver #pagoCom');
+    await p.click('[data-com="' + ins.id + '"]'); await p.waitForSelector('#hojaComision.ver #pagoCom', { state: 'attached' }); await plegables(p, 'pago');
     const antes = llamo(mundo, 'instalacion_pago').length;
     await p.click('#pagoCom'); await p.waitForSelector('#pagoConfirma');
     ok(nombre + ': "Quitar pago" pregunta antes', (await p.textContent('#pagoConfirma')).includes('¿Quitar el pago de este cliente?') && llamo(mundo, 'instalacion_pago').length === antes);
@@ -50,12 +50,13 @@ function cargaTad(m, yo, cl, conDeuda){
     if(otra){ const c2 = mundo.datos.clientes.find((c) => c.id === otra.cliente_id); const i2 = c2.instalaciones.find((i) => i.id === otra.instalacion_id);
       cargaTad(mundo, adm, c2, false); ok(nombre + ': sin pago a mano, el TAD sin deuda lo marca', !!i2.pago_ok_en); }
     // 6. Revisar pago: más de un servicio
-    const multi = d0.filas.find((f) => f.revisar_pago);
+    const multi = d0.filas.find((f) => f.revisar_pago && f.revisar_motivo === 'varios_servicios');
     if(multi){
       await p.keyboard.press('Escape'); await p.waitForTimeout(300);
       const g2 = p.locator('.grupo').filter({ has: p.locator('.grupo-cab', { hasText: multi.lider }) });
       if(!(await g2.evaluate((x) => x.classList.contains('abierto')))) await g2.locator('.grupo-cab').click();
       await p.click('[data-com="' + multi.instalacion_id + '"]'); await p.waitForSelector('#hojaComision.ver .req');
+      ok(nombre + ': la cabecera del plegable Pago dice Revisar pago', (await p.textContent('[data-plg-btn="pago"]')).includes('Revisar pago'));
       ok(nombre + ': "Revisar pago" explica que el TAD no puede decidir', (await p.textContent('#hojaComision')).includes('El cliente tiene más de un servicio; el TAD no puede decidir. Marca el pago a mano.'));
     } else ok(nombre + ': hay un cliente con más de un servicio para probar Revisar pago', false);
     await ctx.close();

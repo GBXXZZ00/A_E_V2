@@ -1,6 +1,6 @@
 // Lote urgente 20/10, parte 2: cambiar una instalación de corte (solo entre el corte en curso y el siguiente, ambos abiertos),
 // con motivo y bitácora; la fila dice "Movida a mano"; nunca desde ni hacia un corte cerrado; el líder no puede.
-const { chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar } = require('./simulador');
+const { chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar, plegables } = require('./simulador');
 const { ok, cerrar } = marcador();
 const { RPC } = require('./mundo');
 const llamo = (m, f) => m.llamadas.filter((l) => l[1] === f);
@@ -19,7 +19,7 @@ const cerrarHojas = async (p) => { for(let i = 0; i < 4 && await p.evaluate(() =
     const fila = d0.filas.find((f) => f.origen === 'corte' && f.orden_ok);
     const abrirGrupo = async (pg, lider) => { const g = pg.locator('.grupo').filter({ has: pg.locator('.grupo-cab', { hasText: lider }) }); if(!(await g.evaluate((x) => x.classList.contains('abierto')))) await g.locator('.grupo-cab').click(); };
     await abrirGrupo(p, fila.lider);
-    await p.click('[data-com="' + fila.instalacion_id + '"]'); await p.waitForSelector('#hojaComision.ver .req');
+    await p.click('[data-com="' + fila.instalacion_id + '"]'); await p.waitForSelector('#hojaComision.ver .req'); await plegables(p, 'ajustes');
     ok(nombre + ': la hoja de comisión ofrece "Cambiar de corte" al administrador', (await p.locator('#corteCambiar').count()) === 1 && /Cuenta en el corte de/.test(await p.textContent('#hojaComision')));
     await p.click('#corteCambiar'); await p.waitForSelector('#hojaCorteMov.ver #corteMovMotivo');
     ok(nombre + ': solo ofrece el otro corte abierto', (await p.locator('[data-corte-mov]').count()) === 1 && (await p.getAttribute('[data-corte-mov]', 'data-corte-mov')) === sig && /Pasa a /.test(await p.textContent('#hojaCorteMov')));

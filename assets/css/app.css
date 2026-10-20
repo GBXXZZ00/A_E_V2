@@ -1104,3 +1104,17 @@ button.ge-li{cursor:pointer}
 }
 @media (min-width:900px){ .hoja .asa{display:none} }
 @media (prefers-reduced-motion:reduce){ .hoja,.hoja.ver{transition:visibility 0s} }
+/* Lote 21/10: hoja de comisión con datos clave, bloques plegables con su chequeo y bandejas debajo de la lista */
+.datos-com{margin-top:10px;border:1px solid var(--line);border-radius:16px;background:#fff}
+.datos-com .dato-f b{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.plg-com{padding-top:6px}
+.plg-com > .plegado{margin-top:0;background:none;padding:0 2px}
+.plg-com > .plegado .plg-tx{flex:0 1 auto;color:var(--text);font-size:15px;font-weight:800}
+.plg-com > .plegado .m{margin-left:auto;flex:none}
+.plg-com > .plegado .m + .i{margin-left:6px}
+.plg-z[hidden]{display:none}
+.plg-z .req{margin:12px 0 0;padding:12px 0 0;background:none;border-radius:0;border-top:1px solid var(--line)}
+.plg-z > .chk:first-child{margin-top:6px}
+.plg-z .tres{margin-top:6px}
+.plg-z .al-banda{margin-top:10px}
+.bandeja-extra{margin-top:12px}

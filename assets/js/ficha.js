@@ -307,7 +307,7 @@
       '<button type="button" class="sw" role="switch" aria-checked="' + !!c.presencial + '" data-marca-cli="contrato_presencial" aria-label="Contrato presencial"' + (F.puedo.presencial ? '' : ' disabled') + '></button></div>';
   }
   function casillasHtml(emb){
-    const c = F.cliente; let h = emb ? presencialHtml() : '';
+    const c = F.cliente; let h = '';   // en la hoja de comisión la firma (Digital o Física) va en su bloque Legal
     const nReq = !c.es_natural && c.regimen_firma === 'conjunta' ? 2 : 1;
     // Los representantes que se ven: los que pide el régimen, los que tienen algo y el que se acaba de agregar
     const conAlgo = [2, 3, 4].filter((n) => repConAlgo(n));

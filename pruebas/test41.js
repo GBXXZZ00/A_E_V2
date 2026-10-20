@@ -1,6 +1,6 @@
 // Lote urgente 20/10, parte 6: contrato presencial. El interruptor está arriba de Documentos (expediente y hoja de comisión);
 // con él no se piden correos ni teléfono (sí los documentos legales); faltantes, "Pedir lo que falta" y el paso a revisión cambian.
-const { chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar } = require('./simulador');
+const { chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar, plegables } = require('./simulador');
 const { ok, cerrar } = marcador();
 const { RPC } = require('./mundo');
 const llamo = (m, f) => m.llamadas.filter((l) => l[1] === f);
@@ -39,18 +39,18 @@ const cerrarHojas = async (p) => { for(let i = 0; i < 5 && await p.evaluate(() =
     ok(nombre + ': con presencial el acta constitutiva se sigue pidiendo', fal().some((x) => x.k === 'acta_constitutiva'));
     ok(nombre + ': documentos sin desborde', await sinDesborde(p));
     await cerrarHojas(p);
-    // En la hoja de comisión, el mismo interruptor dentro de Documentos
+    // En la hoja de comisión (lote 21/10): Firma Digital/Física dentro de Legal y documentos
     const ins = c.instalaciones[0];
     await p.goto(H + 'comisiones.html'); await p.waitForSelector('.grupo');
     const fila = RPC.comisiones_corte(mundo, adm, {}).filas.find((f) => f.cliente_id === c.id);
     if(fila){
       const g = p.locator('.grupo').filter({ has: p.locator('.grupo-cab', { hasText: fila.lider }) });
       if(!(await g.evaluate((x) => x.classList.contains('abierto')))) await g.locator('.grupo-cab').click();
-      await p.click('[data-com="' + fila.instalacion_id + '"]'); await p.waitForSelector('#hojaComision.ver [data-docs-com]'); await p.click('[data-docs-com]');
-      await p.waitForSelector('#docsCom [data-marca-cli="contrato_presencial"]');
-      ok(nombre + ': la hoja de comisión trae el interruptor arriba de sus documentos', (await p.getAttribute('#docsCom [data-marca-cli="contrato_presencial"]', 'aria-checked')) === 'true');
-      await p.click('#docsCom [data-marca-cli="contrato_presencial"]');
-      await p.waitForFunction(() => { const b = document.querySelector('#docsCom [data-marca-cli="contrato_presencial"]'); return b && b.getAttribute('aria-checked') === 'false'; });
+      await p.click('[data-com="' + fila.instalacion_id + '"]'); await p.waitForSelector('#hojaComision.ver [data-docs-com]'); await plegables(p, 'legal');
+      await p.waitForSelector('#docsCom [data-firma="fisica"]');
+      ok(nombre + ': la hoja de comisión trae Firma Digital/Física en Legal, ya en Física', (await p.getAttribute('#docsCom [data-firma="fisica"]', 'aria-checked')) === 'true' && (await p.locator('#docsCom [data-marca-cli="contrato_presencial"]').count()) === 0);
+      await p.click('#docsCom [data-firma="digital"]');
+      await p.waitForFunction(() => { const b = document.querySelector('#docsCom [data-firma="digital"]'); return b && b.getAttribute('aria-checked') === 'true'; });
       ok(nombre + ': desde la comisión también se cambia (pasa por el servidor)', c.contrato_presencial === false && llamo(mundo, 'cliente_marca').slice(-1)[0][2].p_cliente === c.id);
     } else ok(nombre + ': el cliente está en el corte (' + (ins && ins.codigo) + ')', false);
     await ctx.close();

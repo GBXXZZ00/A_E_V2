@@ -186,4 +186,11 @@ async function entrar(ctx, usuario, clave){
   await pin(p, clave, pc); await p.waitForURL('**/inicio.html');
   return p;
 }
-module.exports = { chromium, H, TEL, PC, contexto, marcador, pin, sinDesborde, basePersonas, entrar };
+// Hoja de comisión (lote 21/10): abre los plegables pedidos si están y están cerrados.
+async function plegables(p, ...ids){
+  await p.waitForSelector('#hojaComision.ver [data-plg-btn]');
+  for(const id of ids){ const b = p.locator('#hojaComision [data-plg-btn="' + id + '"]');
+    if((await b.count()) && (await b.getAttribute('aria-expanded')) !== 'true') await b.click(); }
+}
+
+module.exports = { chromium, H, TEL, PC, contexto, marcador, pin, sinDesborde, basePersonas, entrar, plegables };
