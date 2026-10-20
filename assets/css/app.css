@@ -1118,3 +1118,60 @@ button.ge-li{cursor:pointer}
 .plg-z .tres{margin-top:6px}
 .plg-z .al-banda{margin-top:10px}
 .bandeja-extra{margin-top:12px}
+
+/* Lote 21/10: Clientes con etiquetas de gestión, suspendidos y páginas con flechas */
+.gcuentas{display:flex;gap:8px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin-top:10px;padding-bottom:2px}
+.gcuentas::-webkit-scrollbar{display:none}
+.gcuentas:empty{display:none}
+.gcu{display:inline-flex;align-items:center;gap:7px;min-height:36px;padding:0 12px;border-radius:var(--pill);background:var(--surface-2);font-size:13px;font-weight:600;color:var(--text2);white-space:nowrap;transition:transform 120ms var(--ease-out)}
+.gcu:active{transform:scale(.97)}
+.gcu i{width:8px;height:8px;border-radius:50%;background:var(--text3)}
+.gcu b{font-size:12.5px;color:var(--text)}
+.gcu.contactado i{background:var(--verde)} .gcu.sin_contacto i{background:var(--rojo)} .gcu.esperando i{background:var(--ambar)}
+.gcu.on{background:var(--text);color:#fff} .gcu.on b{color:#fff}
+.gcu{flex:none;min-height:40px;font-size:12.5px}
+.tagn.gest-contactado{background:var(--verde-bg);color:var(--verde)}
+.tagn.gest-sin_contacto{background:var(--rojo-bg);color:var(--rojo)}
+.tagn.gest-esperando{background:var(--ambar-bg);color:var(--ambar)}
+.cli-w{position:relative}
+.cli-w + .cli-w{box-shadow:0 -1px 0 var(--line)}
+.cli-w .cli{padding-right:48px}
+.cli-etq{position:absolute;right:0;top:8px;width:44px;height:44px;display:grid;place-items:center;border-radius:12px;color:var(--text3);transition:transform 120ms var(--ease-out)}
+.cli-etq:active{transform:scale(.97)}
+.cli-etq .i{width:19px;height:19px}
+.pasapag{display:flex;align-items:center;gap:6px;margin:0 auto}
+.pasapag span{min-width:120px;text-align:center;font-weight:600;color:var(--text)}
+.pag-f{width:44px;height:44px;display:grid;place-items:center;border-radius:12px;background:var(--surface-2);color:var(--text);transition:transform 120ms var(--ease-out)}
+.pag-f:active{transform:scale(.97)}
+.pag-f:disabled{opacity:.4}
+#lista.cargando-lista{opacity:.55;transition:opacity 160ms var(--ease-out)}
+.etq-op{display:grid;gap:8px;margin-top:16px}
+.etq-op button{display:flex;align-items:center;gap:10px;min-height:48px;padding:0 14px;border-radius:12px;background:var(--surface-2);font-weight:600;text-align:left;transition:transform 120ms var(--ease-out)}
+.etq-op button:active{transform:scale(.97)}
+.etq-op button i{width:10px;height:10px;border-radius:50%;flex:none}
+.etq-op .contactado i{background:var(--verde)} .etq-op .sin_contacto i{background:var(--rojo)} .etq-op .esperando i{background:var(--ambar)}
+.etq-op button.on{box-shadow:inset 0 0 0 2px var(--accent)}
+@media (min-width:900px){
+  .gcuentas{flex-wrap:wrap;overflow:visible}
+  .gcu.sus{margin-left:auto}
+  .cli-w .cli{padding-right:56px}
+  .cli-w .cli .fl{display:none}
+  .cli-etq{top:50%;transform:translateY(-50%);right:6px}
+  .cli-etq:active{transform:translateY(-50%) scale(.97)}
+}
+@media (hover:hover) and (pointer:fine){ .cli-etq:hover{background:var(--surface-2);color:var(--accent)} .pag-f:not(:disabled):hover{background:var(--surface-3)} .gcu:hover{color:var(--text)} }
+@media (prefers-reduced-motion:reduce){ .gcu,.cli-etq,.pag-f,.etq-op button,#lista.cargando-lista{transition:none} }
+/* Lote 21/10: hoja del cliente (etiqueta, aprobar seleccionados, vista ligera, firma por contrato) */
+.chip-btn{border:0;cursor:pointer;min-height:28px;transition:transform 120ms var(--ease-out)}
+.chip-btn .i{width:14px;height:14px}
+.chip-btn:active{transform:scale(.97)}
+.doc .ico.caja{background:#fff;border:2px solid #B9BFC8;width:26px;height:26px;border-radius:8px;margin:7px}
+.doc.elegible.on .ico.caja{background:var(--accent);border-color:var(--accent);color:#fff}
+.doc.elegible.on{box-shadow:inset 0 0 0 2px var(--accent)}
+.sel-barra{position:sticky;top:0;z-index:2}
+.visor-mini{display:grid;gap:10px;justify-items:center;width:100%}
+.visor-mini img{opacity:.92}
+.ctr-firma{margin:10px 0 4px}
+.ctr-firma .rotulo{display:block;margin-bottom:6px}
+.ctr-t .chip + .chip{margin-left:6px}
+@media (prefers-reduced-motion:reduce){ .chip-btn{transition:none} }

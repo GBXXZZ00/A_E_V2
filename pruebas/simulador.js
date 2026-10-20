@@ -105,6 +105,7 @@ async function contexto(navegador, opciones, mundo){
       if(!yo || !yo.activo) return j({ error: 'Tu sesión venció. Entra de nuevo' }, 401);
       if(m.fallaSubida) return j({ error: m.fallaSubida === true ? 'Drive no recibió el archivo. Intenta de nuevo' : m.fallaSubida }, 502);
       if(m.lento) await new Promise((ok) => setTimeout(ok, m.lento));
+      if(m.lentoSubida) await new Promise((ok) => setTimeout(ok, m.lentoSubida));
       const r2 = driveSubir(m, yo, campo('cliente'), campo('nombre'), tipo, buf.length);
       return r2.error ? j({ error: r2.error }, r2.status) : j(r2);
     }
@@ -114,6 +115,7 @@ async function contexto(navegador, opciones, mundo){
       if(!yo || !yo.activo) return j({ code: 'P0001', message: 'Tu sesión venció. Entra de nuevo' }, 400);
       if(m.fallaRpc === rp[1] || m.fallaRpc === '*') return j({ message: 'error interno' }, 500);
       if(m.lento) await new Promise((ok) => setTimeout(ok, m.lento));
+      if(m.lentoRpc && m.lentoRpc[rp[1]]) await new Promise((ok) => setTimeout(ok, m.lentoRpc[rp[1]]));
       if(!RPC[rp[1]]) return j({ code: 'PGRST202', message: 'no existe' }, 404);
       usar(m); const res = RPC[rp[1]](m, yo, args);
       if(res && res.__error) return j(res.__error, 400);
@@ -128,10 +130,13 @@ async function contexto(navegador, opciones, mundo){
     }
     // Archivos de Drive: la función drive_archivo con el permiso del expediente
     if(u.includes('/functions/v1/drive_archivo')){
-      const yo = quien(req); const b = cuerpo(); m.llamadas.push(['drive', b.archivo]);
+      const yo = quien(req); const b = cuerpo(); m.llamadas.push(['drive', b.archivo, b.vista || null]);
       if(!yo || !yo.activo) return j({ error: 'Tu sesión venció. Entra de nuevo' }, 401);
       if(m.fallaDrive) return j({ error: m.fallaDrive }, 503);
       const r2 = archivoDrive(m, yo, b.archivo); if(r2.error) return j({ error: r2.error }, r2.status);
+      // Lote 21/10: la miniatura (vista ligera) llega rápido; el archivo completo puede tardar (m.lentoDrive)
+      if(b.vista === 'mini') return m.sinMini ? j({ error: 'Sin vista previa' }, 404) : r.fulfill({ status: 200, contentType: 'image/png', headers: cab, body: PNG });
+      if(m.lentoDrive) await new Promise((ok) => setTimeout(ok, m.lentoDrive));
       const a = r2.archivo; const pdf = a.mime === 'application/pdf';
       return r.fulfill({ status: 200, contentType: /^image\//.test(a.mime) ? 'image/png' : a.mime, headers: cab, body: /^image\//.test(a.mime) ? PNG : pdf ? PDF_MIN : Buffer.from('PK prueba') });
     }

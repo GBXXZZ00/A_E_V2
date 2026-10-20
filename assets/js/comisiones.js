@@ -516,7 +516,7 @@
     }
     if(F.puedo.legal) h += '<div class="chk"><span>' + (ok ? '¿No debe contar?' : '¿Aprobar aunque falten documentos?') + '</span><button type="button" class="mini' + (ok ? '' : ' pri') + '" id="legalCheck" data-quita-legal="' + (ok ? '1' : '0') + '">' + (ok ? 'Quitar Legal' : 'Aprobar Legal') + '</button></div>';
     if(fal.length) h += '<div class="chk"><span>¿No los tienes?</span><button type="button" class="mini" id="pedirCom">Pedir al cliente</button></div>';
-    h += '<div class="acc"><button type="button" class="btn btn-chico btn-2" id="comVarios"' + (window.Ficha.ocupado() ? ' disabled' : '') + '>' + ic('subir') + 'Subir varios</button></div>' +
+    h += '<div class="acc"><button type="button" class="btn btn-chico btn-2" id="comVarios">' + ic('subir') + 'Subir varios</button></div>' +
       '<p class="nota-chica solo-pc" style="text-align:center">También puedes arrastrar un archivo y soltarlo sobre una casilla.</p>' + window.Ficha.documentosPara(F);
     return plegable('legal', 'Legal y documentos', chip, ok ? 'verde' : fal.length ? 'rojo' : 'ambar', h, ' data-docs-com');
   }

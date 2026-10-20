@@ -50,7 +50,8 @@
     casa: 'M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z',
     barras: 'M4 20V10M10 20V4M16 20v-7M22 20H2',
     edificio: 'M4 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16M16 9h2a2 2 0 0 1 2 2v10M2 21h20M8 7h4M8 11h4M8 15h4',
-    abajo: 'm6 9 6 6 6-6', arriba: 'm6 15 6-6 6 6', derecha: 'm9 6 6 6-6 6',
+    abajo: 'm6 9 6 6 6-6', arriba: 'm6 15 6-6 6 6', derecha: 'm9 6 6 6-6 6', izquierda: 'm15 6-6 6 6 6',
+    etiqueta: 'M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9zM7.5 7.5h.01',
     volver: 'M19 12H5M11 6l-6 6 6 6', x: 'M6 6l12 12M18 6 6 18',
     wa: 'M4 20l1.3-4A8 8 0 1 1 8 18.7z',
     tel: 'M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A15 15 0 0 1 3 6a2 2 0 0 1 2-2z',
@@ -156,6 +157,8 @@
     por_firmar: { t: 'Pendiente por firmar', c: 'morado' },
     contrato_firmado: { t: 'Contrato firmado', c: 'verde' }
   };
+  // Lote 21/10: etiquetas de gestión del cliente (no cambian el estatus)
+  const GESTION = { contactado: 'Contactado', sin_contacto: 'Sin contacto', esperando: 'Esperando documentos' };
   const MOTIVOS = { vencido: 'Está vencido', ilegible: 'Ilegible o incompleto', no_corresponde: 'No corresponde a este cliente', falta_firma: 'Falta firma o sello', otro: 'Otro motivo' };
   const FEMENINAS = { cedula: 1, acta_constitutiva: 1, acta_asamblea: 1 };
   // "acta constitutiva vencida", "RIF personal ilegible o incompleto"
@@ -189,7 +192,7 @@
       case 'rif_empresa': return 'RIF de la empresa';
       case 'acta_constitutiva': return 'Acta constitutiva';
       case 'acta_asamblea': return 'Acta de asamblea ' + (n || 1);
-      case 'conatel': return 'Permiso de Conatel';
+      case 'conatel': return 'Conatel: habilitación vigente';
       case 'contrato_pyme': return 'Contrato PYME';
       case 'contrato_dedicado': return 'Contrato dedicado';
       case 'otro': return VGT[n] || 'Otro documento' + (n ? ' ' + n : '');
@@ -362,6 +365,6 @@
   window.Comun = { $, esc, normalizeStr, toast, mensajeError, iniciales, primerNombre, abrirHoja, cerrarHoja, cerrarTodas, hojaAbierta, hojasAbiertas: () => pila.map((x) => x.h.id), prepararHojas,
     ic, partes, hoyClave, diasEntre, fecha, fechaDia, hora, mes, mesAnio, dia, capital, plural, lista,
     docFmt, telWa, enlaceWa, enlaceTel, enlaceCorreo,
-    ESTATUS, MOTIVOS, devueltoFrase, sucursal, chipEstatus, estadoServicio, casilla, faltaTexto,
+    ESTATUS, MOTIVOS, GESTION, devueltoFrase, sucursal, chipEstatus, estadoServicio, casilla, faltaTexto,
     rpc, cache, esqueleto, vacio };
 })();

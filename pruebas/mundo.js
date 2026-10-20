@@ -172,15 +172,35 @@ function recalcular(c, autor){
 const gestion = (c, yo) => { c.ug_en = hace(0); c.ug_por = yo.nombre; };
 const porInstalar = (c) => !c.servicios.length && !c.instalaciones.length;
 function segmentoFiltro(c){ const s = segmento(c); return s === 'PYME + Dedicado' ? 'Combinado' : s === 'Natural' ? 'PYME' : s; }
+// Lote 21/10: un dedicado excluido (dedicados.excluido_en) no cuenta como dedicado
+const excluido = (c) => !!(c.dedicado && c.dedicado.excluido_en);
 function segmento(c){
-  const ded = !!c.dedicado || c.servicios.some((s) => /(dedicad|conectiv)/.test(norm(s.categoria))); const pyme = c.servicios.some((s) => !/(dedicad|conectiv)/.test(norm(s.categoria)));
+  const ded = (!!c.dedicado || c.servicios.some((s) => /(dedicad|conectiv)/.test(norm(s.categoria)))) && !excluido(c); const pyme = c.servicios.some((s) => !/(dedicad|conectiv)/.test(norm(s.categoria))) || excluido(c);
   return ded && pyme ? 'PYME + Dedicado' : ded ? (c.es_isp || (c.dedicado && c.dedicado.tipo === 'isp') ? 'Dedicado ISP' : 'Dedicado corporativo') : c.es_natural ? 'Natural' : 'PYME';
 }
 const visibles = (m, yo) => m.datos.clientes.filter((c) => !c.unido_a && (['admin', 'abogado', 'analista'].includes(yo.rol) || (yo.rol === 'lider' && (c.lider_id === yo.id || (c.dedicado && c.dedicado.ejecutiva_id === yo.id)))));
 // Corrida urgente 14/10: a qué tarjeta de Clientes va cada cliente (como privado.tarjetas_todas); un combinado va a dos
 function tarjetaDe(c){
-  const ded = !!c.dedicado || c.servicios.some((s) => /(dedicad|conectiv)/.test(norm(s.categoria))); const pyme = c.servicios.some((s) => !/(dedicad|conectiv)/.test(norm(s.categoria)));
+  const ded = (!!c.dedicado || c.servicios.some((s) => /(dedicad|conectiv)/.test(norm(s.categoria)))) && !excluido(c); const pyme = c.servicios.some((s) => !/(dedicad|conectiv)/.test(norm(s.categoria)));
   return { pyme: !ded || pyme, ded: ded ? (c.es_isp || (c.dedicado && c.dedicado.tipo === 'isp') ? 'isp' : 'corporativo') : null };
+}
+// Lote 21/10: contrato firmado sin archivo o sin vencimiento (como privado.contrato_pendiente)
+function contratoPend(c){
+  const dp = c.documentos.find((d) => d.casilla === 'contrato_pyme'); const dd = c.documentos.find((d) => d.casilla === 'contrato_dedicado');
+  const arch = (d) => !!d && (d.archivos || []).length > 0;
+  const py = c.estatus === 'contrato_firmado' && !c.es_natural && ['PYME', 'PYME + Dedicado'].includes(segmento(c));
+  const ks = c.dedicado && !excluido(c) ? (c.dedicado.contratos || []).filter((k) => k.estatus === 'firmado') : [];
+  if(py && !arch(dp)) return 'sin_archivo';
+  if(ks.some((k) => (k.tipo === 'servicio' && !arch(dd)) || (k.tipo !== 'servicio' && k.falta_archivo))) return 'sin_archivo';
+  if(py && !dp.vence_en) return 'sin_vence';
+  if(ks.some((k) => !k.vence_en)) return 'sin_vence';
+  return null;
+}
+const ultimaEtq = (c) => (c.gestiones || [])[0] || null;
+function etiquetar(c, etq, fecha, nota, yo){
+  if(!['contactado', 'sin_contacto', 'esperando'].includes(etq)) return error('Etiqueta no reconocida');
+  const g = { e: etq, fecha: fecha || hoy(), nota: nota || null, por: yo.nombre, en: hace(0) };
+  c.gestiones = [g].concat(c.gestiones || []); c.hilo.push(linea('dato', 'etiqueta', { etiqueta: etq, fecha: g.fecha, nota: g.nota }, yo.nombre)); return null;
 }
 // Reloj de las órdenes abiertas: solo cuenta de 8:00 a 22:00 de Caracas, todos los días (igual que privado.horas_reloj)
 function horasReloj(desde, hasta){
@@ -446,13 +466,18 @@ const RPC = {
     const hoyMas30 = new Date(Date.now() + 30 * DIA).toISOString().slice(0, 10);
     const polOk = (c) => !f.poliza || (f.poliza === 'con' ? !!polDe(c) : !!polDe(c) && polDe(c).slice(0, 10) <= hoyMas30);
     const esVgt = (c) => ctr(c).some((k) => k.tipo === 'vgt');
-    const pasa = (c) => (!f.lider || (c.lider || 'Sin líder') === f.lider) && (!f.estatus || c.estatus === f.estatus) && tipoOk(c) && polOk(c) &&
+    // Lote 21/10: Segmento, VGT con requisitos incompletos, suspendidos aparte y etiqueta de gestión
+    const segOk = (c) => { const t = tarjetaDe(c); return !f.segmento || (f.segmento === 'pyme' && t.pyme && !t.ded) || (f.segmento === 'dedicado' && t.ded === 'corporativo' && !t.pyme) || (f.segmento === 'isp' && t.ded === 'isp' && !t.pyme) || (f.segmento === 'combinado' && t.pyme && !!t.ded); };
+    const vgtOk = (c) => !f.vgt || (f.vgt === 'con' ? ctr(c).some((k) => k.tipo === 'vgt') : f.vgt === 'incompletos' ? !!(c.dedicado && c.dedicado.vgt && c.dedicado.vgt.faltan) : ctr(c).some((k) => k.tipo === 'vgt' && k.estatus !== 'firmado'));
+    const sus = f.suspendidos === '1';
+    const pasa = (c) => !!c.suspendido_en === sus && (!f.lider || (c.lider || 'Sin líder') === f.lider) && (!f.estatus || c.estatus === f.estatus) && tipoOk(c) && polOk(c) && segOk(c) && vgtOk(c) &&
       (!f.sucursal || c.servicios.some((s) => s.sucursal === f.sucursal)) && (!f.servicio || c.servicios.some((s) => norm(s.estado) === norm(f.servicio))) &&
-      (!f.vgt || (f.vgt === 'con' ? ctr(c).some((k) => k.tipo === 'vgt') : ctr(c).some((k) => k.tipo === 'vgt' && k.estatus !== 'firmado'))) && (!f.enlaces || (f.enlaces === 'activos') === enl(c));
+      (!f.enlaces || (f.enlaces === 'activos') === enl(c));
     const enT = (c) => !tj || (tj === 'pyme' ? tarjetaDe(c).pyme : tarjetaDe(c).ded === tj);
     const buscando = !!(norm(a.p_busca) || String(a.p_busca || '').replace(/\D/g, '').length >= 4);
     const base = m.datos.clientes.filter(pasa);
-    const m2 = Object.assign({}, m, { datos: Object.assign({}, m.datos, { clientes: base.filter((c) => buscando || enT(c)) }) });
+    const etqOk = (c) => !f.gestion || buscando || (ultimaEtq(c) || {}).e === f.gestion;
+    const m2 = Object.assign({}, m, { datos: Object.assign({}, m.datos, { clientes: base.filter((c) => (buscando || enT(c)) && etqOk(c)) }) });
     const r = RPC.clientes_lista(m2, yo, Object.assign({}, a, { p_filtro: a.p_filtro === 'faltan' || a.p_filtro === 'vgt' ? 'todos' : a.p_filtro, p_limite: a.p_filtro === 'vgt' ? 999 : a.p_limite })); if(r && r.__error) return r;
     // Faltan documentos y el conteo por tarjeta (el servidor los cuenta sobre lo que ve cada quien)
     const vis = visibles(m2, yo); const vb = visibles(Object.assign({}, m, { datos: Object.assign({}, m.datos, { clientes: base }) }), yo);
@@ -460,7 +485,11 @@ const RPC = {
     if(a.p_filtro === 'vgt' && !buscando){ const ids = new Set(vis.filter(esVgt).map((c) => c.id)); r.filas = r.filas.filter((x) => ids.has(x.id)); r.total = r.filas.length; }
     if(a.p_filtro === 'faltan' && !buscando){ const l = vis.filter((c) => casillasVacias(c) > 0); const ids = new Set(l.map((c) => c.id)); r.total = l.length; r.filas = r.filas.filter((x) => ids.has(x.id)); }
     r.tarjetas = { pyme: vb.filter((c) => tarjetaDe(c).pyme).length, corporativo: vb.filter((c) => tarjetaDe(c).ded === 'corporativo').length, isp: vb.filter((c) => tarjetaDe(c).ded === 'isp').length };
-    r.filas.forEach((x) => { const c = m.datos.clientes.find((k) => k.id === x.id); const t = tarjetaDe(c); x.ded = t.ded; x.combinado = !!t.ded && t.pyme; x.vgt = esVgt(c); x.poliza_vence = polDe(c); x.n_enl = ((c.dedicado && c.dedicado.enlaces) || []).filter((e) => e.activo).length; });
+    r.filas.forEach((x) => { const c = m.datos.clientes.find((k) => k.id === x.id); const t = tarjetaDe(c); x.ded = t.ded; x.combinado = !!t.ded && t.pyme; x.vgt = esVgt(c); x.poliza_vence = polDe(c); x.n_enl = ((c.dedicado && c.dedicado.enlaces) || []).filter((e) => e.activo).length;
+      x.suspendido = !!c.suspendido_en; const g = ultimaEtq(c); x.etq = g ? { e: g.e, fecha: g.fecha, nota: g.nota } : null; x.ctr = contratoPend(c); });
+    const visT = vb.filter(enT);
+    r.gestion = { contactado: 0, sin_contacto: 0, esperando: 0 }; visT.forEach((c) => { const g = ultimaEtq(c); if(g) r.gestion[g.e]++; });
+    r.suspendidos = todos.filter((c) => c.suspendido_en).length;
     const un = (l) => Array.from(new Set(l)).sort();
     r.opciones = { lider: un(todos.map((c) => c.lider || 'Sin líder')), sucursal: un([].concat.apply([], todos.map((c) => c.servicios.map((s) => s.sucursal)))),
       servicio: un([].concat.apply([], todos.map((c) => c.servicios.map((s) => norm(s.estado).replace(/^./, (x) => x.toUpperCase()))))), tipo: ['PYME', 'Dedicado ISP', 'Dedicado corporativo', 'Combinado'] };
@@ -519,7 +548,11 @@ const RPC = {
     let k = null; m.datos.clientes.forEach((c) => { if(c.dedicado) (c.dedicado.contratos || []).forEach((x) => { if(x.id === Number(a.p_id)) k = x; }); });
     if(!k) return error('No encontré ese contrato');
     const v = a.p_campos || {}; if(v.firmado_en && v.firmado_en > hoy()) return error('La fecha de firma no puede ser futura');
+    const est = 'estatus' in v ? v.estatus : k.estatus; const ve = 'vence_en' in v ? v.vence_en || null : k.vence_en || null; const fi = 'firmado_en' in v ? v.firmado_en || null : k.firmado_en || null;
+    if(est === 'firmado' && !ve) return error('Pon la fecha de vencimiento del contrato');
+    if(ve && fi && ve <= fi) return error('El vencimiento debe ser después de la firma');
     if('estatus' in v) k.estatus = v.estatus; if('firmado_en' in v) k.firmado_en = v.firmado_en || null; if('vence' in v) k.vence = v.vence || null; if('nota' in v) k.nota = v.nota || null;
+    if('vence_en' in v) k.vence_en = v.vence_en || null; if('firma' in v) k.firma = v.firma || null;
     k.editado_por = yo.nombre; k.editado_en = hace(0); return null;
   },
   cliente_ficha(m, yo, a){
@@ -529,10 +562,12 @@ const RPC = {
     return { rol: r, hoy: hoy(), yo: { id: yo.id, nombre: yo.nombre }, corte: { etiqueta: actual, fin: corteFin(actual), limite: corteLimite(actual), dias: dias(hoy(), corteLimite(actual)) },
       cliente: { id: c.id, nombre: c.nombre, doc_tipo: c.doc_tipo, doc_numero: c.doc_numero, es_natural: c.es_natural, seg: segmento(c), estatus: c.estatus, estatus_desde: c.estatus_desde, legal_ok_en: c.legal_ok_en,
         legal_como: c.legal_como || null, presencial: !!c.contrato_presencial, exc_pagada: !!c.exc_pagada, abierta: c.abierta || null, aprobado_por_subir: aprobadoPorSubir(c), por_subir: porSubir(c),
-        dedicado: c.dedicado ? Object.assign({}, c.dedicado, { vacias: casillasVacias(c) }) : null,
+        dedicado: c.dedicado && !excluido(c) ? Object.assign({}, c.dedicado, { vacias: casillasVacias(c), contratos: (c.dedicado.contratos || []).map((k) => Object.assign({ con_archivo: k.tipo === 'servicio' && !!c.documentos.some((d) => d.casilla === 'contrato_dedicado' && (d.archivos || []).length) }, k)) }) : null,
         lider: c.lider, es_top: c.es_top, regimen_firma: c.regimen_firma, es_isp: c.es_isp, correo_empresa: c.correo_empresa, telefono: c.telefono, direccion: c.direccion,
         proforma_en: c.proforma_en, proforma_por: c.proforma_por, bienvenida_en: c.bienvenida_en, bienvenida_por: c.bienvenida_por, ug_en: c.ug_en, ug_por: c.ug_por, creado_en: c.creado_en, es_demo: c.es_demo,
-        tel: rp.telefono || c.telefono || (s0 && s0.telefono) || null, correo: rp.correo || c.correo_empresa || null, por_instalar: porInstalar(c), por_subir: porSubir(c), aprobado_por_subir: aprobadoPorSubir(c), provisional: !!c.provisional, unido_a: c.unido_a || null },
+        tel: rp.telefono || c.telefono || (s0 && s0.telefono) || null, correo: rp.correo || c.correo_empresa || null, por_instalar: porInstalar(c), por_subir: porSubir(c), aprobado_por_subir: aprobadoPorSubir(c), provisional: !!c.provisional, unido_a: c.unido_a || null,
+        lider_id: c.lider_id || null, suspendido_en: c.suspendido_en || null, suspendido_por: c.suspendido_por || null, suspendido_nota: c.suspendido_nota || null, contrato_pend: contratoPend(c) },
+      gestion: (c.gestiones || []).slice(0, 10), lideres: r === 'admin' ? m.personas.filter((p) => p.rol === 'lider' && p.activo !== false).map((p) => ({ id: p.id, nombre: p.nombre })) : null,
       orden: c.orden, servicios: c.servicios.map((sv) => Object.assign({}, sv, { envios: undefined, carta: cartaDe(m, c, sv), proforma_envio: ultimoEnvio(sv, 'proforma'), bienvenida_envio: ultimoEnvio(sv, 'bienvenida') })), representantes: c.representantes,
       documentos: c.documentos.slice().sort((x, y) => x.casilla.localeCompare(y.casilla) || x.numero - y.numero), requeridos: requeridos(c), faltantes: faltantes(c),
       hilo: c.hilo.slice().sort((x, y) => y.en.localeCompare(x.en) || y.id - x.id).map((h) => Object.assign({ mio: h.autor === yo.nombre }, h)), hilo_total: c.hilo.length,
@@ -548,7 +583,8 @@ const RPC = {
           correccion: i.correccion || null, correccion_motivo: i.correccion_motivo || null, en_foto: enFoto(m, i.id), revisar_motivo: revisarMotivo(c, i),
           tad_deuda: ((c.servicios.find((sv) => sv.codigo === i.codigo) || {}).con_deuda), tad_visto: ((c.servicios.find((sv) => sv.codigo === i.codigo) || {}).tad_en) || null, pago_dias: m.pagoDias || 3,
           corte_pago: i.excepcion_corte ? i.excepcion_corte : ok === null ? null : ok < limiteTs(cp) ? cp : masMeses(cp, 1) }; }),
-      puedo: { legal: r === 'admin', presencial: ['admin', 'abogado'].includes(r), exc_pagada: r === 'admin', revisar: ['admin', 'abogado'].includes(r), estatus: ['admin', 'abogado'].includes(r), contrato: ['admin', 'abogado'].includes(r), regimen: ['admin', 'abogado'].includes(r), top: r === 'admin', gestion: ['admin', 'analista'].includes(r), pago: esSenior(yo), asignar: esSenior(yo), evento: esSenior(yo), excepcion: r === 'admin', ip: ['admin', 'analista'].includes(r), enviar: ['admin', 'analista', 'lider'].includes(r) } };
+      puedo: { legal: r === 'admin', presencial: ['admin', 'abogado'].includes(r), exc_pagada: r === 'admin', revisar: ['admin', 'abogado'].includes(r), estatus: ['admin', 'abogado'].includes(r), contrato: ['admin', 'abogado'].includes(r), regimen: ['admin', 'abogado'].includes(r), top: r === 'admin', gestion: ['admin', 'analista'].includes(r), pago: esSenior(yo), asignar: esSenior(yo), evento: esSenior(yo), excepcion: r === 'admin', ip: ['admin', 'analista'].includes(r), enviar: ['admin', 'analista', 'lider'].includes(r),
+        lider_cambiar: r === 'admin', suspender: r === 'admin', etiquetar: true } };
   },
   cliente_nota(m, yo, a){
     const c = visibles(m, yo).find((x) => x.id === Number(a.p_cliente)); if(!c) return error('No tienes acceso a este cliente');
@@ -559,7 +595,40 @@ const RPC = {
     const c = visibles(m, yo).find((x) => x.id === Number(a.p_cliente)); if(!c) return error('No tienes acceso a este cliente');
     c.hilo.push(linea('contacto', a.p_motivo, { canal: a.p_canal, motivo: a.p_motivo }, yo.nombre)); gestion(c, yo);
     if(a.p_motivo === 'pedir' && c.estatus === 'grandes_negocios') ponerEstatus(c, 'documentos_solicitados', yo, 'auto');
+    if(['pedir', 'recordar'].includes(a.p_motivo)) etiquetar(c, 'esperando', hoy(), null, yo);
     return c.estatus;
+  },
+  // Lote 21/10: etiqueta de gestión, cambiar líder, suspender y aprobar seleccionados
+  cliente_etiqueta(m, yo, a){
+    const c = visibles(m, yo).find((x) => x.id === Number(a.p_cliente)); if(!c) return error('No tienes acceso a este cliente');
+    const e = etiquetar(c, a.p_etiqueta, a.p_fecha, String(a.p_nota || '').trim() || null, yo); if(e) return e; gestion(c, yo); (m.bitacora = m.bitacora || []).push({ accion: 'cliente_etiqueta', registro: c.id, por: yo.nombre, etiqueta: a.p_etiqueta });
+    return ultimaEtq(c);
+  },
+  cliente_lider_cambiar(m, yo, a){
+    if(yo.rol !== 'admin') return error('No tienes permiso para hacer esto');
+    const c = m.datos.clientes.find((x) => x.id === Number(a.p_cliente)); if(!c) return error('Ese cliente no existe');
+    const p = m.personas.find((x) => x.id === a.p_lider && x.rol === 'lider' && x.activo !== false); if(!p) return error('Elige un líder activo');
+    let antes;
+    if(a.p_cual === 'dedicado'){ if(!c.dedicado) return error('Este cliente no es dedicado'); antes = c.dedicado.ejecutiva; c.dedicado.ejecutiva = p.nombre; c.dedicado.ejecutiva_id = p.id; }
+    else { antes = c.lider; c.lider = p.nombre; c.lider_id = p.id; }
+    c.hilo.push(linea('dato', 'lider', { cual: a.p_cual, antes, lider: p.nombre }, yo.nombre)); (m.bitacora = m.bitacora || []).push({ accion: 'cliente_lider', registro: c.id, por: yo.nombre, antes, despues: p.nombre });
+    return null;
+  },
+  cliente_suspender(m, yo, a){
+    if(yo.rol !== 'admin') return error('No tienes permiso para hacer esto');
+    const c = m.datos.clientes.find((x) => x.id === Number(a.p_cliente)); if(!c) return error('Ese cliente no existe');
+    const nt = String(a.p_nota || '').trim();
+    if(a.p_suspender){ if(nt.length < 3) return error('Escribe por qué se suspende'); if(c.suspendido_en) return error('Ya está suspendido'); c.suspendido_en = hace(0); c.suspendido_por = yo.nombre; c.suspendido_nota = nt; }
+    else { if(!c.suspendido_en) return error('No está suspendido'); c.suspendido_en = null; c.suspendido_por = null; c.suspendido_nota = null; }
+    c.hilo.push(linea('dato', a.p_suspender ? 'suspendido' : 'reactivado', { nota: nt || null }, yo.nombre)); (m.bitacora = m.bitacora || []).push({ accion: a.p_suspender ? 'cliente_suspendido' : 'cliente_reactivado', registro: c.id, por: yo.nombre });
+    return null;
+  },
+  documentos_marcar_varios(m, yo, a){
+    if(!['admin', 'abogado'].includes(yo.rol)) return error('No tienes permiso para hacer esto');
+    const ids = a.p_documentos || []; if(!ids.length) return error('Marca al menos un documento'); let n = 0;
+    for(const x of ids){ const c = m.datos.clientes.find((k) => k.documentos.some((d) => d.id === Number(x) && d.estado === 'por_revisar')); if(!c) continue;
+      const r = RPC.documento_marcar(m, yo, { p_documento: x, p_accion: 'aprobar' }); if(r && r.__error) return r; n++; }
+    return n;
   },
   // Lote 3: Legal a mano, marcas del expediente y correo VGT
   legal_aprobar(m, yo, a){ if(yo.rol !== 'admin') return error('No tienes permiso para hacer esto'); const c = m.datos.clientes.find((x) => x.id === Number(a.p_cliente));
@@ -861,12 +930,14 @@ const RPC = {
       for(const ca of it.casillas){
         let num = Number(ca.numero || 0);
         if(/^contrato_/.test(ca.casilla) && !['admin', 'abogado'].includes(yo.rol)) return error('El contrato lo sube Legal');
-        if(ca.casilla === 'otro') num = c.documentos.filter((d) => d.casilla === 'otro').length + 1;
+        if(/^contrato_/.test(ca.casilla) && it.firmado_en && !it.vence_en) return error('Pon la fecha de vencimiento del contrato');
+        if(ca.casilla === 'otro' && !(num >= 60)) num = c.documentos.filter((d) => d.casilla === 'otro' && d.numero < 60).length + 1;
         else if(!['cedula', 'rif_personal', 'acta_asamblea'].includes(ca.casilla)) num = 0;
         let d = busca(c, ca.casilla, num);
         if(!d){ d = { id: ++sec, casilla: ca.casilla, numero: num }; c.documentos.push(d); }
         const ok = aprob && !/^contrato_/.test(ca.casilla); if(!ok) recalc = true;
-        Object.assign(d, { estado: ok ? 'aprobado' : 'por_revisar', motivo: null, nota: null, vence_en: it.vence_en || null, firmado_en: it.firmado_en || null, subido_en: hace(0), subido_por: yo.nombre, revisado_en: ok ? hace(0) : null, revisado_por: ok ? yo.nombre : null, archivos, comparte: [] });
+        const esOtro = ca.casilla === 'otro' && num < 60;
+        Object.assign(d, { estado: ok ? 'aprobado' : 'por_revisar', motivo: null, nota: esOtro ? it.nota || null : null, titulo: esOtro ? it.titulo || d.titulo || null : d.titulo || null, vence_en: it.vence_en || null, firmado_en: it.firmado_en || null, subido_en: hace(0), subido_por: yo.nombre, revisado_en: ok ? hace(0) : null, revisado_por: ok ? yo.nombre : null, archivos, comparte: [] });
         if(c.marcas) delete c.marcas[d.id];   // archivo nuevo: la marca anterior ya no vale (disparador marca_al_subir)
         etiquetas.push({ casilla: ca.casilla, numero: num }); n++;
       }
@@ -965,14 +1036,14 @@ const RPC = {
     m.datos.clientes.forEach((c) => avanzarIA(m, c));
     const grupos = (c) => [c.estatus === 'documentos_en_revision' ? 'por_revisar' : null, Object.values(c.marcas || {}).some((x) => x.accion) ? 'en_curso' : null,
       c.ia && c.ia.estado === 'lista' ? 'borradores' : null, c.ia && ['en_cola', 'leyendo', 'error'].includes(c.ia.estado) ? 'leyendo' : null,
-      ['documentos_recibidos', 'contrato_en_curso'].includes(c.estatus) ? 'contrato' : null, c.estatus === 'por_firmar' ? 'por_firmar' : null, archivosDe(c).length ? 'analizables' : null].filter(Boolean);
+      ['documentos_recibidos', 'contrato_en_curso'].includes(c.estatus) ? 'contrato' : null, c.estatus === 'por_firmar' ? 'por_firmar' : null, !c.suspendido_en && contratoPend(c) ? 'contrato_pend' : null, archivosDe(c).length ? 'analizables' : null].filter(Boolean);
     const conteos = {}; m.datos.clientes.forEach((c) => grupos(c).forEach((g) => { conteos[g] = (conteos[g] || 0) + 1; }));
     const b = norm(a.p_busca);
     const sel = m.datos.clientes.filter((c) => grupos(c).includes(a.p_bandeja) && (!b || norm(c.nombre).includes(b) || c.doc_numero.includes(String(a.p_busca || '').replace(/\D/g, '') || '@')));
     const des = a.p_desde || 0; const lim = a.p_limite || 30;
     return { rol: yo.rol, bandeja: a.p_bandeja, total: sel.length, desde: des, conteos, filas: sel.slice(des, des + lim).map((c) => ({ id: c.id, nombre: c.nombre, doc_tipo: c.doc_tipo, doc_numero: c.doc_numero, es_natural: c.es_natural,
       lider: c.lider, estatus: c.estatus, estatus_desde: c.estatus_desde, archivos: archivosDe(c).length, nuevos: archivosDe(c).filter((x) => !(c.leidos || {})[x]).length,
-      marcas: Object.values(c.marcas || {}).filter((x) => x.accion).length, ia: c.ia ? { estado: c.ia.estado, veredicto: c.ia.veredicto, avance: c.ia.avance, total: c.ia.total, costo_usd: c.ia.costo_usd, en: c.ia.terminada_en || c.ia.lanzada_en } : null })) };
+      marcas: Object.values(c.marcas || {}).filter((x) => x.accion).length, contrato_pend: contratoPend(c), ia: c.ia ? { estado: c.ia.estado, veredicto: c.ia.veredicto, avance: c.ia.avance, total: c.ia.total, costo_usd: c.ia.costo_usd, en: c.ia.terminada_en || c.ia.lanzada_en } : null })) };
   },
   ia_comparar(m, yo){
     if(yo.rol !== 'admin') return error('No tienes permiso para hacer esto');

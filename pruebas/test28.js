@@ -54,9 +54,10 @@ const llamo = (m, f) => m.llamadas.filter((l) => l[1] === f);
     await p.keyboard.press('Escape'); await p.waitForTimeout(300);
 
     // Contrato presencial y excepción pagada
-    await p.click('#tabs [data-tab="documentos"]'); await p.waitForSelector('#tab-documentos [data-marca-cli="contrato_presencial"]');
-    ok(nombre + ': Contrato presencial arriba de Documentos y Excepción pagada en Datos (admin)', (await p.locator('[data-marca-cli="contrato_presencial"]').count()) === 1 && (await p.locator('[data-marca-cli="exc_pagada"]').count()) === 1);
-    await p.click('#tab-documentos [data-marca-cli="contrato_presencial"]'); await p.waitForFunction(() => document.querySelector('#tab-documentos [data-marca-cli="contrato_presencial"]').getAttribute('aria-checked') === 'true');
+    // Lote 21/10: la firma Física (contrato presencial) se marca en la tarjeta del contrato PYME
+    await p.click('#tabs [data-tab="contrato"]'); await p.waitForSelector('#tab-contrato [data-firma-cli]');
+    ok(nombre + ': Firma Digital/Física en Contrato y Excepción pagada en Datos (admin)', (await p.locator('#tab-contrato .ctr-pyme [data-firma-cli]').count()) === 2 && (await p.locator('[data-marca-cli="exc_pagada"]').count()) === 1);
+    await p.click('#tab-contrato .ctr-pyme [data-firma-cli][data-valor="fisica"]'); await p.waitForFunction(() => { const b = document.querySelector('#tab-contrato .ctr-pyme [data-firma-cli][data-valor="fisica"]'); return b && b.getAttribute('aria-checked') === 'true'; });
     ok(nombre + ': marcar contrato presencial pasa por el servidor y queda en el hilo', llamo(mundo, 'cliente_marca').some((l) => l[2].p_marca === 'contrato_presencial' && l[2].p_valor === true) && faro.hilo.some((h) => h.texto === 'contrato_presencial'));
     await p.click('#tabs [data-tab="documentos"]');
     faro.representantes[0].correo = '';
@@ -95,18 +96,20 @@ const llamo = (m, f) => m.llamadas.filter((l) => l[1] === f);
     // Corrida 14/10 tarde: sin pantalla Dedicados; el dedicado se ve en Clientes (tarjeta ISP) con su etiqueta VGT
     await p.goto(H + 'clientes.html?s=isp&f=todos'); await p.waitForSelector('#lista .cli');
     ok(nombre + ': la fila lleva la etiqueta VGT', (await p.textContent('.cli[data-cliente="' + a.id + '"]')).includes('VGT'));
-    ok(nombre + ': filtros de dedicados: VGT, Enlaces y Pólizas', (await p.locator('[data-sel="vgt"]').count()) >= 1 && (await p.locator('[data-sel="enlaces"]').count()) >= 1 && (await p.locator('[data-sel="poliza"]').count()) >= 1);
+    ok(nombre + ': filtros (lote 21/10): Segmento y VGT, sin Enlaces ni Pólizas', (await p.locator('[data-sel="vgt"]').count()) >= 1 && (await p.locator('[data-sel="segmento"]').count()) >= 1 && (await p.locator('[data-sel="enlaces"], [data-sel="poliza"]').count()) === 0);
     await p.click('.cli[data-cliente="' + a.id + '"]'); await p.waitForSelector('#hojaFicha.ver #tab-datos');
     await p.waitForFunction(() => (document.querySelector('#tab-datos') || {}).textContent.includes('Requisitos VGT'), null, { timeout: 8000 }).catch(() => {});
     const dts = await p.textContent('#tab-datos');
     ok(nombre + ': Datos dice Líder (no Ejecutiva) y los requisitos VGT', dts.includes('Líder') && !dts.includes('Ejecutiva') && dts.includes('Requisitos VGT'));
-    await p.click('#tabs [data-tab="contratos"]'); await p.waitForSelector('#tab-contratos.on .ctr-t');
-    const ct = await p.textContent('#tab-contratos');
-    ok(nombre + ': una tarjeta por contrato: VGT arriba con proyectos y total de postes, servicio, colocation por sitio', (await p.locator('#tab-contratos .ctr-t').count()) === 3 &&
-      (await p.locator('#tab-contratos .ctr-t').first().getAttribute('class')).includes('ctr-vgt') && ct.includes('Ruta Inventada Uno') && ct.includes('Ruta Inventada Dos') && ct.includes('20 postes') && ct.includes('En proyecto') && ct.includes('ODT ODT-9') && ct.includes('Sitio Inventado'));
-    ok(nombre + ': el bloque VGT lista los requisitos con su estado y el vencimiento de la póliza', ct.includes('Requisitos') && ct.includes('Faltan 7') && ct.includes('Póliza de responsabilidad civil general') && /Vence el/.test(ct) && !ct.includes('Acta de asamblea de cambios sustanciales'));
+    // Lote 21/10: Contrato (servicio y colocation) y VGT en su pestaña (contrato, proyectos, requisitos y pólizas)
+    await p.click('#tabs [data-tab="contrato"]'); await p.waitForSelector('#tab-contrato.on .ctr-t');
+    const ct = await p.textContent('#tab-contrato');
+    ok(nombre + ': una tarjeta por contrato: servicio y colocation por sitio', (await p.locator('#tab-contrato .ctr-t').count()) === 2 && ct.includes('Contrato dedicado') && ct.includes('Sitio Inventado') && !ct.includes('Ruta Inventada Uno'));
     await p.screenshot({ path: 'capturas/28-' + nombre + '-contratos.png', fullPage: true });
-    await p.click('#tab-contratos [data-ir-tab="documentos"]'); await p.waitForSelector('#tab-documentos.on [data-grupo="vgt"]');
+    await p.click('#tabs [data-tab="vgt"]'); await p.waitForSelector('#tab-vgt.on [data-grupo="vgt"]');
+    const tv = await p.textContent('#tab-vgt');
+    ok(nombre + ': la pestaña VGT trae el contrato con proyectos y total de postes', (await p.locator('#tab-vgt .ctr-vgt').count()) === 1 && tv.includes('Ruta Inventada Uno') && tv.includes('Ruta Inventada Dos') && tv.includes('20 postes') && tv.includes('En proyecto') && tv.includes('ODT ODT-9'));
+    ok(nombre + ': Documentos ya no trae los requisitos VGT', (await p.locator('#tab-documentos [data-grupo="vgt"]').count()) === 0);
     const vg = await p.textContent('[data-grupo="vgt"]');
     ok(nombre + ': grupo Requisitos VGT con su contador, correo y casillas', vg.includes('Faltan 7') && vg.includes('Correo para notificaciones') && vg.includes('Póliza de responsabilidad civil general') && vg.includes('Aprobación de factibilidad técnica'));
     ok(nombre + ': la póliza que vence en menos de 30 días avisa', vg.includes('Pide la renovación'));

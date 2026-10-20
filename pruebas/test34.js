@@ -30,14 +30,14 @@ function preparar(m){
     const at = await p.textContent('#filtros');
     ok(nombre + ': los atajos sirven para las tres (con Faltan documentos)', ['En curso', 'Por revisar', 'Sin gestión', 'Faltan documentos', 'Todos'].every((x) => at.includes(x)));
     await p.click('#filtros [data-filtro="todos"]'); await p.waitForFunction(() => /Vidrios El Faro/.test(document.getElementById('lista').textContent));
-    ok(nombre + ': el combinado sale en PYME con su etiqueta y el ISP solo no', /Combinado/.test(await p.locator('.cli', { hasText: 'Vidrios El Faro' }).textContent()) && !(await p.textContent('#lista')).includes('Tornillos El Yunque'));
-    ok(nombre + ': en PYME no están los filtros de dedicados', (await p.locator('[data-sel="vgt"], [data-sel="enlaces"]').count()) === 0);
+    ok(nombre + ': el combinado sale en PYME con su etiqueta "PYME + Dedicado" y el ISP solo no', /PYME \+ Dedicado/.test(await p.locator('.cli', { hasText: 'Vidrios El Faro' }).textContent()) && !(await p.textContent('#lista')).includes('Tornillos El Yunque'));
+    ok(nombre + ': lote 21/10: filtros Segmento, Líder, Estatus legal y VGT; sin Enlaces', (await p.locator('[data-sel="enlaces"]').count()) === 0 && (await p.locator('[data-sel="segmento"]').count()) >= 1 && (await p.locator('[data-sel="vgt"]').count()) >= 1);
     ok(nombre + ': sin desborde', await sinDesborde(p));
     await p.screenshot({ path: 'capturas/34-' + nombre + '-admin-pyme.png', fullPage: true });
     // Dedicado corporativo: el combinado también sale aquí, con los filtros VGT y Enlaces
     await p.click('#tarjetas [data-tarjeta="corporativo"]'); await p.waitForFunction(() => /Vidrios El Faro/.test(document.getElementById('lista').textContent) && /Dedicado corporativo/.test(document.getElementById('cuentaLista').textContent));
     ok(nombre + ': el combinado también sale en Dedicado corporativo', (await p.getAttribute('#tarjetas [data-tarjeta="corporativo"]', 'aria-pressed')) === 'true');
-    ok(nombre + ': en las tarjetas de dedicados aparecen VGT y Enlaces', (await p.locator('[data-sel="vgt"]').count()) >= 1 && (await p.locator('[data-sel="enlaces"]').count()) >= 1);
+    ok(nombre + ': en las tarjetas de dedicados está VGT y ya no Enlaces', (await p.locator('[data-sel="vgt"]').count()) >= 1 && (await p.locator('[data-sel="enlaces"]').count()) === 0);
     const llam = mundo.llamadas.filter((l) => l[1] === 'clientes_lista2').slice(-1)[0][2];
     ok(nombre + ': la tarjeta viaja al servidor y queda en la dirección', llam.p_filtros.tarjeta === 'corporativo' && p.url().includes('s=corporativo'));
     // ISP y se recuerda
@@ -51,13 +51,15 @@ function preparar(m){
     await p.click('#tarjetas [data-tarjeta="isp"]'); await p.waitForSelector('#tarjetas [data-tarjeta="isp"][aria-pressed="true"]');
     // La hoja del dedicado conserva Contratos; la del combinado, Comisión y Contratos
     await p.click('#filtros [data-filtro="todos"]'); await p.locator('.cli', { hasText: 'Tornillos El Yunque' }).click(); await p.waitForSelector('#hojaFicha.ver #tab-datos [data-ded-enl]');
-    ok(nombre + ': la hoja del ISP muestra enlaces y Contratos, sin Comisión', await p.evaluate(() => !document.querySelector('#tabs [data-tab="contratos"]').classList.contains('hidden') && document.querySelector('#tabs [data-tab="comision"]').classList.contains('hidden')));
+    ok(nombre + ': la hoja del ISP muestra enlaces y Contrato, sin Comisión', await p.evaluate(() => !document.querySelector('#tabs [data-tab="contrato"]').classList.contains('hidden') && document.querySelector('#tabs [data-tab="comision"]').classList.contains('hidden')));
     await cerrarHojas(p);
     await p.click('#tarjetas [data-tarjeta="pyme"]'); await p.click('#filtros [data-filtro="todos"]');
     await p.locator('.cli', { hasText: 'Vidrios El Faro' }).click(); await p.waitForSelector('#hojaFicha.ver');
-    await p.click('#tabs [data-tab="contratos"]'); await p.waitForSelector('#tab-contratos.on');
-    const ctr = await p.textContent('#tab-contratos');
-    ok(nombre + ': la hoja del combinado tiene Comisión y en Contratos el dedicado, el PYME y el VGT con su proyecto', await p.evaluate(() => !document.querySelector('#tabs [data-tab="comision"]').classList.contains('hidden')) && ctr.includes('Servicio dedicado') && ctr.includes('Contrato PYME') && ctr.includes('Proyecto de prueba'));
+    ok(nombre + ': la hoja del combinado dice PYME + Dedicado', (await p.textContent('#cabFicha')).includes('PYME + Dedicado'));
+    await p.click('#tabs [data-tab="contrato"]'); await p.waitForSelector('#tab-contrato.on');
+    const ctr = await p.textContent('#tab-contrato');
+    await p.click('#tabs [data-tab="vgt"]'); await p.waitForSelector('#tab-vgt.on');
+    ok(nombre + ': la hoja del combinado tiene Comisión, en Contrato el dedicado y el PYME, y en VGT su proyecto', await p.evaluate(() => !document.querySelector('#tabs [data-tab="comision"]').classList.contains('hidden')) && ctr.includes('Contrato dedicado') && ctr.includes('Contrato PYME') && (await p.textContent('#tab-vgt')).includes('Proyecto de prueba'));
     await cerrarHojas(p);
     // Enlace viejo con el segmento
     await p.goto(H + 'clientes.html?tipo=Dedicado%20ISP'); await p.waitForSelector('#tarjetas [data-tarjeta="isp"][aria-pressed="true"]');

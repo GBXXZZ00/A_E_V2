@@ -5,7 +5,8 @@
   const { $, esc, ic, rpc, toast, fecha, hora, dia, mes, diasEntre, plural, capital, primerNombre, docFmt, sucursal, chipEstatus, estadoServicio, casilla, faltaTexto, devueltoFrase, normalizeStr, abrirHoja, cerrarHoja, hojaAbierta, iniciales } = C;
   const S = window.Sesion;
   const db = window.db;
-  const TABS = ['datos', 'documentos', 'hilo', 'contratos', 'comision'];
+  // Lote 21/10: Datos, Documentos, Contrato, VGT (solo si tiene), Hilo y Comisión (solo con instalación en un corte)
+  const TABS = ['datos', 'documentos', 'contrato', 'vgt', 'hilo', 'comision'];
   const MAX_ARCHIVO = 15 * 1024 * 1024;
   const TIPOS = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
 
@@ -13,8 +14,10 @@
   const encima = () => { const h = hojaAbierta(); return !!h && h !== 'hojaFicha'; };
   let hiloTodo = false; let soloNotas = false; let repExtra = 0; let actaExtra = 0;
   let fuera = null;               // { cliente, F, alTerminar }: se sube o se escribe desde otra hoja, sin abrir el expediente
-  let ocupado = false;            // hay una subida en curso
-  let subiendo = {};              // casillas que se están subiendo ('cedula:1': true): se ven con su barra en la misma fila
+  let ocupado = false;            // hay subidas en la cola
+  let subiendo = {};              // casillas que se están subiendo ('12|cedula:1': texto): se ven con su barra en la misma fila
+  const cola = []; let trabajando = false;   // lote 21/10: subidas en segundo plano, una tras otra
+  let selMode = false; let selDocs = new Set();   // "Aprobar seleccionados"
   let drive;                      // carpeta del cliente en Drive (solo admin): undefined cargando, null sin permiso
   let rev = null;                 // revisión en curso (solo quien revisa): marcas sin cerrar, historial, WhatsApp del líder y la última revisión con IA
   let sondeo = null;              // mientras la IA lee, se pregunta cada pocos segundos cómo va
@@ -115,7 +118,7 @@
       return { tono: 'azul', texto: 'Revisión lista para cerrar', sub: resumenMarcas() + '. ' + (cierra ? capital(liderCorto()) + ' no se entera hasta que la cierres' : 'La cierra el administrador'), boton: cierra ? 'Cerrar revisión' : '', accion: 'cerrarrev' };
     }
     if(c.estatus === 'por_firmar') return F.puedo.contrato
-      ? { tono: 'morado', texto: 'Falta la firma del cliente', sub: 'Cuando llegue, sube el contrato firmado', boton: 'Subir contrato', accion: 'tab:documentos' }
+      ? { tono: 'morado', texto: 'Falta la firma del cliente', sub: 'Cuando llegue, sube el contrato firmado', boton: 'Subir contrato', accion: 'tab:contrato' }
       : { tono: 'morado', texto: 'Falta la firma del cliente', sub: 'El contrato ya se le envió', boton: 'Recordar la firma', accion: 'pedir:firma' };
     if(c.estatus === 'contrato_en_curso') return { tono: 'morado', texto: 'Legal está elaborando el contrato', sub: F.puedo.estatus ? 'Cuando lo envíes, pásalo a Pendiente por firmar' : '', boton: F.puedo.estatus ? 'Cambiar estatus' : '', accion: 'estatus' };
     if(c.estatus === 'documentos_recibidos') return { tono: 'verde', texto: 'Documentos completos y aprobados', sub: 'Sigue el contrato', boton: F.puedo.estatus ? 'Cambiar estatus' : '', accion: 'estatus' };
@@ -142,12 +145,20 @@
     $('cabFicha').innerHTML = '<div class="f-cab"><span class="mono" aria-hidden="true">' + esc(iniciales(c.nombre).charAt(0)) + '</span><div class="tx"><h1 class="nom" id="tFicha">' + esc(c.nombre) + '</h1><p class="dat">' + esc(dat) + '</p></div>' +
         '<button type="button" class="cerrar" data-cierra="1" aria-label="Cerrar">' + ic('x') + '</button></div>' +
       '<div class="chips">' + chipEstatus(c.estatus) + '<span class="seg">' + esc(c.seg) + '</span>' + (s0 ? estadoServicio(s0.estado) : '') + (pinst ? '<span class="chip azul">Por instalar</span>' : '') +
-        (c.es_top ? '<span class="chip">Cliente TOP</span>' : '') + (c.es_demo ? '<span class="chip">Dato de ejemplo</span>' : '') + '</div>' +
+        (c.es_top ? '<span class="chip">Cliente TOP</span>' : '') + (c.es_demo ? '<span class="chip">Dato de ejemplo</span>' : '') +
+        (c.suspendido_en ? '<span class="chip rojo">Suspendido</span>' : '') + etqChip() + '</div>' +
       '<div class="contacto">' + window.Pedir.iconos(clienteContacto()) + '</div>' +
       (p ? '<div class="paso ' + p.tono + '" id="paso"><span class="tx">' + esc(p.texto) + (sub ? '<small>' + esc(sub) + '</small>' : '') + '</span>' +
         (p.boton ? '<button type="button" class="btn btn-chico" data-paso="' + esc(p.accion) + '">' + esc(p.boton) + '</button>' : '') + '</div>' : '');
     const nr = F.puedo.revisar ? sinMarcar().length : porRevisar().length; const t = $('tabs').querySelector('[data-tab="documentos"]');
     if(t) t.innerHTML = 'Documentos' + (nr ? '<em>' + nr + '</em>' : '');
+  }
+
+  // Lote 21/10: última etiqueta de gestión; se cambia con un toque
+  const GES = C.GESTION || {};
+  function etqChip(){
+    const g = (F.gestion || [])[0]; const tono = { contactado: 'verde', sin_contacto: 'rojo', esperando: 'ambar' };
+    return '<button type="button" class="chip chip-btn ' + (g ? tono[g.e] || '' : '') + '" data-etiquetar-ficha="1" aria-label="Etiqueta de gestión">' + ic('etiqueta') + esc(g ? GES[g.e] || g.e : 'Poner etiqueta') + '</button>';
   }
 
   // ---------- Hilo ----------
@@ -181,7 +192,10 @@
         dedicado_creado: 'entró como cliente dedicado desde el archivo de la analista',
         legal_aprobado: 'aprobó Legal a mano', legal_quitado: 'le quitó el check de Legal',
         contrato_presencial: d.valor === 'true' ? 'lo marcó como contrato presencial' : 'le quitó la marca de contrato presencial',
-        exc_pagada: d.valor === 'true' ? 'lo marcó como excepción pagada con documentos por subir' : 'le quitó la marca de excepción pagada' }[h.texto] || 'actualizó un dato');
+        exc_pagada: d.valor === 'true' ? 'lo marcó como excepción pagada con documentos por subir' : 'le quitó la marca de excepción pagada',
+        etiqueta: 'le puso la etiqueta ' + esc((C.GESTION || {})[d.etiqueta] || d.etiqueta || ''), lider: 'cambió ' + (d.cual === 'dedicado' ? 'la líder del dedicado' : 'el líder') + (d.antes ? ' de ' + esc(d.antes) : '') + ' a ' + esc(d.lider || ''),
+        suspendido: 'suspendió al cliente', reactivado: 'reactivó al cliente' }[h.texto] || 'actualizó un dato');
+        if(h.texto === 'etiqueta' || h.texto === 'suspendido' || h.texto === 'reactivado'){ tono = h.texto === 'suspendido' ? 'rojo' : h.texto === 'reactivado' ? 'verde' : ''; if(d.nota) glo = '<div class="glo gris">' + esc(d.nota) + '</div>'; }
         if(h.texto === 'legal_aprobado' || h.texto === 'legal_quitado'){ tono = h.texto === 'legal_aprobado' ? 'verde' : 'rojo'; if(d.motivo) glo = '<div class="glo gris">' + esc(d.motivo) + '</div>'; }
         break;
       case 'gestion': { const que = h.texto === 'ambas' ? 'la proforma y la carta de bienvenida' : h.texto === 'bienvenida' ? 'la carta de bienvenida' : 'la proforma';
@@ -223,15 +237,22 @@
     if(d.estado === 'devuelto') return 'Devuelto: ' + (C.MOTIVOS[d.motivo] || 'revisa la nota').toLowerCase();
     if(d.firmado_en) return 'Firmado el ' + fecha(d.firmado_en, true) + (d.vence_en ? '. Vence el ' + fecha(d.vence_en, true) : '');
     if(d.vence_en) return (d.vence_en < hoy ? 'Venció el ' : 'Vence el ') + fecha(d.vence_en, true);
+    if(d.casilla === 'otro' && d.nota) return d.nota;
     if((d.comparte || []).length) return 'Mismo archivo que: ' + C.lista(d.comparte.map((x) => casilla(x.casilla, x.numero)));
     if((d.archivos || []).length > 1) return d.archivos.length + ' archivos';
     return 'Subido ' + dia(d.subido_en).toLowerCase().replace(/^(\d)/, 'el $1') + (d.subido_por ? ' por ' + primerNombre(d.subido_por) : '');
   }
   // Cada casilla tiene un solo estado y una sola acción
   function casillaHtml(cas, num, opciones){
-    const o = opciones || {}; const d = docDe(cas, num); const nombre = o.nombre || casilla(cas, num); const k = cas + ':' + num;
+    const o = opciones || {}; const d = docDe(cas, num); const nombre = o.nombre || (d && d.titulo) || casilla(cas, num); const k = cas + ':' + num;
     const puedeSubir = !(cas.indexOf('contrato_') === 0 && !F.puedo.contrato);
-    if(subiendo[k]) return '<div class="casilla doc subiendo" data-casilla="' + k + '" aria-busy="true"><span class="ico" aria-hidden="true">' + ic('subir') + '</span><span class="tx"><b>' + esc(nombre) + '</b><small class="tx-subida">' + esc(typeof subiendo[k] === 'string' ? subiendo[k] : 'Subiendo a Drive…') + '</small><span class="carga-barra" aria-hidden="true"><i></i></span></span><span class="chip azul">Subiendo</span></div>';
+    const ks = (varF || F).cliente.id + '|' + k; const sb = subiendo[ks];
+    if(sb) return '<div class="casilla doc subiendo" data-casilla="' + k + '" aria-busy="true"><span class="ico" aria-hidden="true">' + ic('subir') + '</span><span class="tx"><b>' + esc(nombre) + '</b><small class="tx-subida" data-sube="' + esc(ks) + '">' + esc(typeof sb === 'string' ? sb : 'Subiendo a Drive…') + '</small><span class="carga-barra" aria-hidden="true"><i></i></span></span><span class="chip azul">' + (sb === 'En cola…' ? 'En cola' : 'Subiendo') + '</span></div>';
+    // Aprobar seleccionados: los que esperan revisión se marcan con un toque
+    if(selMode && d && d.estado === 'por_revisar' && F.puedo.revisar && !marcaDe(d.id)){
+      const on = selDocs.has(d.id);
+      return '<button type="button" class="casilla doc rev elegible' + (on ? ' on' : '') + '" data-casilla="' + k + '" data-sel-doc="' + d.id + '" aria-pressed="' + on + '"><span class="ico caja" aria-hidden="true">' + (on ? ic('check') : '') + '</span><span class="tx"><b>' + esc(nombre) + '</b><small>' + esc(subCasilla(d)) + '</small></span><span class="chip ' + (on ? 'azul">Para aprobar' : 'ambar">Por revisar') + '</span></button>';
+    }
     if(!d){
       const req = o.req !== undefined ? o.req : esRequerido(cas, num);
       if(!puedeSubir) return '<div class="casilla doc" data-casilla="' + k + '"><span class="ico">' + ic('doc') + '</span><span class="tx"><b>' + esc(nombre) + '</b><small>' + esc(o.sub || 'Lo sube Legal') + '</small></span></div>';
@@ -288,23 +309,32 @@
     const c = F.cliente; const fal = F.faltantes || []; const nr = F.puedo.revisar ? sinMarcar().length : porRevisar().length;
     const aprobados = (F.documentos || []).filter((d) => d.estado === 'aprobado').length;
     const pedirM = c.estatus === 'grandes_negocios' ? 'pedir' : 'recordar';
-    let h = presencialHtml() + '<div class="res"><div class="r"><b>' + fal.length + '</b><small>' + (fal.length === 1 ? 'Falta' : 'Faltan') + '</small></div><div class="a"><b>' + nr + '</b><small>Por revisar</small></div><div class="v"><b>' + aprobados + '</b><small>' + (aprobados === 1 ? 'Aprobado' : 'Aprobados') + '</small></div></div>' +
-      '<div class="acc"><button type="button" class="btn btn-chico btn-2" id="subirVarios"' + (ocupado ? ' disabled' : '') + '>' + ic('subir') + 'Subir varios</button>' +
+    let h = presencialHtml() + suspHtml() + '<div class="res"><div class="r"><b>' + fal.length + '</b><small>' + (fal.length === 1 ? 'Falta' : 'Faltan') + '</small></div><div class="a"><b>' + nr + '</b><small>Por revisar</small></div><div class="v"><b>' + aprobados + '</b><small>' + (aprobados === 1 ? 'Aprobado' : 'Aprobados') + '</small></div></div>' +
+      '<div class="acc"><button type="button" class="btn btn-chico btn-2" id="subirVarios">' + ic('subir') + 'Subir varios</button>' +
         (F.puedo.revisar && nr ? '<button type="button" class="btn btn-chico" id="revisarTodo">Revisar ' + nr + '</button>'
-          : fal.length ? '<button type="button" class="btn btn-chico" data-paso="pedir:' + pedirM + '">Pedir lo que falta</button>' : '') + '</div>' +
+          : fal.length ? '<button type="button" class="btn btn-chico" data-paso="pedir:' + pedirM + '">Pedir lo que falta</button>' : '') +
+        (F.puedo.revisar && nr > 1 ? '<button type="button" class="btn btn-chico btn-2" id="elegirAprobar" aria-pressed="' + selMode + '">' + (selMode ? 'Cancelar' : 'Aprobar seleccionados') + '</button>' : '') + '</div>' +
+      (selMode ? '<div class="al-banda azul sel-barra" role="status"><b>' + (selDocs.size ? plural(selDocs.size, 'documento elegido', 'documentos elegidos') : 'Toca los documentos que quieres aprobar') + '</b><p>Quedan marcados para aprobar; se aprueban al cerrar la revisión.</p>' +
+        '<p style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap"><button type="button" class="btn btn-chico" id="aprobarSel"' + (selDocs.size ? '' : ' disabled') + '>Aprobar ' + (selDocs.size || '') + '</button><button type="button" class="btn btn-chico btn-2" id="selTodos">Elegir todos</button></p></div>' : '') +
       (c.aprobado_por_subir ? '<div class="al-banda ambar" role="note"><b>Aprobado, documentos por subir</b><p>Legal ya lo aprobó. Sube lo que falta: no cambia su aprobación ni su comisión.</p></div>' : '') +
       bloqueIA() + barraRevision() +
       '<p class="nota-chica solo-pc" style="text-align:center">También puedes arrastrar un archivo desde tu computadora y soltarlo sobre una casilla.</p>' +
-      '<p class="nota-chica' + (ocupado ? '' : ' hidden') + '" id="estadoSubida" role="status"><span class="cargando-linea"><i></i><span id="textoSubida">Subiendo…</span></span></p>' + driveHtml();
+      '<p class="nota-chica' + (colaDe(id) ? '' : ' hidden') + '" id="estadoSubida" role="status"><span class="cargando-linea"><i></i><span id="textoSubida">' + esc(textoCola()) + '</span></span></p>' + driveHtml();
     h += casillasHtml(false) + historialRevisiones();
     $('tab-documentos').innerHTML = h;
   }
   // Las casillas del expediente, en su orden. emb: dentro de otra hoja (la de comisión), sin agregar representantes ni actas
   // Lote urgente 20/10: el interruptor de contrato presencial va arriba de Documentos (y en la hoja de comisión)
+  // Lote 21/10: la firma Digital o Física (Física = contrato presencial) se elige en la pestaña Contrato; aquí solo se avisa
   function presencialHtml(){
-    const c = F.cliente; if(c.es_natural) return '';
-    return '<div class="interr presencial-docs"><span class="tx">Contrato presencial<small>El cliente firma en físico. No se piden correos ni teléfono; sí los documentos legales. Comisiona igual.</small></span>' +
-      '<button type="button" class="sw" role="switch" aria-checked="' + !!c.presencial + '" data-marca-cli="contrato_presencial" aria-label="Contrato presencial"' + (F.puedo.presencial ? '' : ' disabled') + '></button></div>';
+    const c = F.cliente; if(c.es_natural || !c.presencial) return '';
+    return '<div class="al-banda azul presencial-docs" role="note"><b>Firma física (contrato presencial)</b><p>No se piden correos ni teléfono; sí los documentos legales. Comisiona igual.</p>' +
+      '<p style="margin-top:8px"><button type="button" class="enlace" data-ir-tab="contrato">Cambiar en Contrato</button></p></div>';
+  }
+  // Suspendido: se le pueden seguir pidiendo documentos
+  function suspHtml(){
+    const c = F.cliente; if(!c.suspendido_en) return '';
+    return '<div class="al-banda rojo" role="note"><b>Cliente suspendido</b><p>' + esc(c.suspendido_nota || 'Sin nota') + '. No sale en la lista ni en los contadores; igual se le pueden pedir documentos.</p></div>';
   }
   function casillasHtml(emb){
     const c = F.cliente; let h = '';   // en la hoja de comisión la firma (Digital o Física) va en su bloque Legal
@@ -319,21 +349,21 @@
       const actas = [1, 2, 3, 4].filter((n) => docDe('acta_asamblea', n)); const libres = [1, 2, 3, 4].filter((n) => !docDe('acta_asamblea', n));
       const mostrar = actas.concat(libres.slice(0, Math.min(emb ? (actas.length ? 0 : 1) : actaExtra, libres.length))).sort();
       h += '<section class="bloque" data-grupo="empresa"><div class="sec">Empresa</div>' + datoHtml('Correo de la empresa', c.correo_empresa, 'correo_empresa', !c.presencial) +
-        casillaHtml('rif_empresa', 0, { nombre: 'RIF de la empresa' }) + casillaHtml('acta_constitutiva', 0) + (c.es_isp ? casillaHtml('conatel', 0) : '') +
+        casillaHtml('rif_empresa', 0, { nombre: 'RIF de la empresa' }) + casillaHtml('acta_constitutiva', 0) + (c.es_isp ? casillaHtml('conatel', 0, { sub: docDe('conatel', 0) ? undefined : 'Habilitación vigente con atributos de Internet y Transporte' }) : '') +
         mostrar.map((n) => casillaHtml('acta_asamblea', n, { sub: 'Toca o suelta el archivo aquí' })).join('') +
         (!emb && mostrar.length < 4 ? '<button type="button" class="btn btn-chico btn-2 btn-ancho" id="agregarActa" style="margin-top:10px">' + ic('mas') + 'Agregar acta de asamblea</button>' : '') + '</section>';
     }
     const tieneDed = /Dedicado/.test(c.seg); const tienePyme = !/^Dedicado/.test(c.seg);
     // El contrato aparece cuando ya se envió a firmar (o si ya hay uno guardado). Los naturales no llevan contrato.
     const hayContrato = !!(docDe('contrato_pyme', 0) || docDe('contrato_dedicado', 0));
-    if(hayContrato || (!c.es_natural && (c.estatus === 'por_firmar' || c.estatus === 'contrato_firmado'))){
+    if(emb && (hayContrato || (!c.es_natural && (c.estatus === 'por_firmar' || c.estatus === 'contrato_firmado')))){
       h += '<section class="bloque" data-grupo="contrato"><div class="sec">Contrato<span>Lo sube Legal</span></div>' +
         ((tienePyme && !c.es_natural) || docDe('contrato_pyme', 0) ? casillaHtml('contrato_pyme', 0, { sub: F.puedo.contrato ? 'Con fecha de firma y de vencimiento' : 'Lo sube Legal' }) : '') +
         (tieneDed || docDe('contrato_dedicado', 0) ? casillaHtml('contrato_dedicado', 0, { sub: F.puedo.contrato ? 'Con fecha de firma y de vencimiento' : 'Lo sube Legal' }) : '') + '</section>';
     }
-    h += grupoVgt();
+    if(emb) h += grupoVgt();
     const otros = (F.documentos || []).filter((d) => d.casilla === 'otro' && d.numero < 60);
-    h += '<section class="bloque" data-grupo="otros"><div class="sec">Otros documentos</div>' + otros.map((d) => casillaHtml('otro', d.numero)).join('') +
+    h += '<section class="bloque" data-grupo="otros"><div class="sec">Otros documentos</div>' + otros.map((d) => casillaHtml('otro', d.numero, { nombre: d.titulo || undefined })).join('') +
       '<button type="button" class="casilla doc" data-subir="otro:0" data-casilla="otro:0" data-suelta="1"><span class="ico mas" aria-hidden="true">+</span><span class="tx"><b>Otro documento</b><small>Lo que no entra en las casillas de arriba</small></span></button></section>';
     return h;
   }
@@ -510,10 +540,10 @@
     const diasGestion = diasEntre(c.creado_en, new Date().toISOString());
     const r1 = (F.representantes || []).find((x) => x.orden === 1) || {};
     const tj = (titulo, fuerte, lineas, extra) => '<div class="tj"><span class="tj-t">' + titulo + '</span><b>' + fuerte + '</b>' + lineas.filter(Boolean).map((l) => '<small>' + l + '</small>').join('') + (extra || '') + '</div>';
-    let h = '<div class="tarjs">' +
+    let h = suspHtml() + '<div class="tarjs">' +
       tj(c.es_natural ? 'Titular' : 'Empresa', esc(c.nombre), [esc(rifDe(c)) + ' · ' + esc(c.seg), esc(c.direccion || s0.direccion || 'Sin dirección')]) +
       tj(c.es_natural ? 'Contacto' : 'Representante', esc(r1.nombre || (c.es_natural ? c.nombre : 'Sin nombre todavía')), [esc(r1.telefono || c.telefono || s0.telefono || 'Sin teléfono'), esc(r1.correo || c.correo_empresa || 'Sin correo')]) +
-      tj('Líder', esc(c.lider || 'Sin asignar'), [c.estatus === 'contrato_firmado' ? 'Gestión cerrada' : 'En gestión hace ' + esc(plural(diasGestion, 'día', 'días'))]) +
+      tj('Líder', esc(c.lider || 'Sin asignar'), [c.estatus === 'contrato_firmado' ? 'Gestión cerrada' : 'En gestión hace ' + esc(plural(diasGestion, 'día', 'días'))], F.puedo.lider_cambiar ? '<button type="button" class="enlace" data-lider-cambiar="pyme" style="margin-top:8px">Cambiar líder</button>' : '') +
       tj('Estatus legal', chipEstatus(c.estatus), [], F.puedo.estatus ? '<button type="button" class="enlace" id="cambiarEstatus" style="margin-top:8px">Cambiar</button>' : '') + '</div>';
     const soloDed = !!c.dedicado && !s.length;   // dedicado sin servicios PYME: sus enlaces van abajo
     h += soloDed ? '<div>' : '<div class="serv-n"><b>' + s.length + '</b><span>' + (s.length === 1 ? 'Servicio' : 'Servicios') + ' en este ' + (c.es_natural ? 'documento' : 'RIF') + '</span></div><div class="tarjs">';
@@ -536,12 +566,19 @@
         [['', 'Sin definir'], ['individual', 'Individual'], ['conjunta', 'Conjunta']].map((x) => '<button type="button" role="radio" aria-checked="' + (r === x[0]) + '" data-regimen="' + x[0] + '" class="' + (r === x[0] ? 'on' : '') + '"' + dis + '>' + x[1] + '</button>').join('') + '</div>' +
         (r === 'conjunta' ? '<p class="nota-chica">Con firma conjunta se piden la cédula y el RIF de dos representantes.</p>' : '') +
         (/Dedicado/.test(c.seg) || c.es_isp ? '<div class="interr"><span class="tx">Proveedor de internet (ISP)<small>Se le pide el permiso de Conatel</small></span><button type="button" class="sw" role="switch" aria-checked="' + !!c.es_isp + '" data-interr="es_isp" aria-label="Proveedor de internet"' + dis + '></button></div>' : '') +
-        '<p class="nota-chica">El contrato presencial se marca arriba de Documentos.</p>';
+        '<p class="nota-chica">La firma Digital o Física (contrato presencial) se marca en Contrato.</p>';
     }
+    // Lote 21/10: etiquetas de gestión (no cambian el estatus)
+    const gs = F.gestion || [];
+    h += '<div class="secc">Gestión<button type="button" class="enlace der" data-etiquetar-ficha="1">Poner etiqueta</button></div>' +
+      (gs.length ? '<div class="datos">' + gs.slice(0, 4).map((g) => fila(esc(fecha(g.fecha)), esc((GES[g.e] || g.e) + (g.por ? ' · ' + primerNombre(g.por) : '')) + (g.nota ? '<small class="ded-gris" style="display:block;font-weight:500">' + esc(g.nota) + '</small>' : ''))).join('') + '</div>'
+        : '<p class="nota-chica">Sin etiquetas todavía. Marca Contactado, Sin contacto o Esperando documentos para que el equipo sepa en qué va.</p>');
     h += '<div class="secc">Cartera</div><div class="interr"><span class="tx">Cliente TOP<small>Protegido: los aliados no pueden instalarlo</small></span>' +
       '<button type="button" class="sw" role="switch" aria-checked="' + !!c.es_top + '" data-interr="es_top" aria-label="Cliente TOP"' + (F.puedo.top ? '' : ' disabled') + '></button></div>';
     if(F.puedo.exc_pagada || c.exc_pagada) h += '<div class="interr"><span class="tx">Excepción pagada, documentos por subir<small>Se le pagó la comisión por excepción. Sale en Archivos por subir hasta completar</small></span>' +
       '<button type="button" class="sw" role="switch" aria-checked="' + !!c.exc_pagada + '" data-marca-cli="exc_pagada" aria-label="Excepción pagada, documentos por subir"' + (F.puedo.exc_pagada ? '' : ' disabled') + '></button></div>';
+    if(F.puedo.suspender) h += '<div class="interr"><span class="tx">' + (c.suspendido_en ? 'Suspendido' : 'Suspender cliente') + '<small>' + esc(c.suspendido_en ? 'Desde el ' + fecha(c.suspendido_en) + (c.suspendido_por ? ' por ' + primerNombre(c.suspendido_por) : '') : 'Sale de la lista y de los contadores. Se le pueden seguir pidiendo documentos') + '</small></span>' +
+      '<button type="button" class="btn btn-chico ' + (c.suspendido_en ? '' : 'btn-2') + '" data-suspender="' + (c.suspendido_en ? '0' : '1') + '">' + (c.suspendido_en ? 'Reactivar' : 'Marcar como suspendido') + '</button></div>';
     $('tab-datos').innerHTML = h;
   }
 
@@ -689,17 +726,23 @@
   }
 
   // ---------- Pestañas ----------
-  // Dedicados: pestaña Contratos; sin Comisión cuando solo es dedicado (no comisionan)
+  // Lote 21/10: Contrato (una tarjeta por contrato), VGT solo si tiene y Comisión solo con instalación en un corte
   function pintarDedicado(){
-    const D = F && F.cliente.dedicado; const tb = $('tabs');
-    const bc = tb.querySelector('[data-tab="contratos"]'); const bm = tb.querySelector('[data-tab="comision"]');
-    const sinCom = !!D && F.cliente.seg !== 'PYME + Dedicado' && !(F.comision || []).length;
-    bc.classList.toggle('hidden', !D); bm.classList.toggle('hidden', sinCom);
-    $('tab-contratos').innerHTML = D && window.FichaDedicado ? window.FichaDedicado.contratos(F, yo) : '';
-    if((tab === 'contratos' && !D) || (tab === 'comision' && sinCom)) irTab('datos', true);
+    const c = F.cliente; const D = c.dedicado; const tb = $('tabs');
+    const hayCtr = !c.es_natural || !!D || (F.documentos || []).some((d) => d.casilla.indexOf('contrato_') === 0);
+    const hayVgt = !!D && (!!D.vgt || (D.contratos || []).some((k) => k.tipo === 'vgt'));
+    const hayCom = (F.comision || []).length > 0;
+    tb.querySelector('[data-tab="contrato"]').classList.toggle('hidden', !hayCtr);
+    tb.querySelector('[data-tab="vgt"]').classList.toggle('hidden', !hayVgt);
+    tb.querySelector('[data-tab="comision"]').classList.toggle('hidden', !hayCom);
+    const bc = tb.querySelector('[data-tab="contrato"]'); bc.innerHTML = 'Contrato' + (c.contrato_pend ? '<em>!</em>' : '');
+    $('tab-contrato').innerHTML = hayCtr && window.FichaDedicado ? window.FichaDedicado.contratos(F, yo) : '';
+    $('tab-vgt').innerHTML = hayVgt && window.FichaDedicado ? window.FichaDedicado.vgt(F, yo) + grupoVgt() : '';
+    if((tab === 'contrato' && !hayCtr) || (tab === 'vgt' && !hayVgt) || (tab === 'comision' && !hayCom)) irTab('datos', true);
   }
   function tabVisible(t){ const b = $('tabs').querySelector('[data-tab="' + t + '"]'); return !!b && !b.classList.contains('hidden'); }
   function irTab(t, sinUrl){
+    if(t === 'contratos') t = 'contrato';   // enlaces viejos
     if(TABS.indexOf(t) < 0 || (F && !tabVisible(t))) t = 'datos';
     tab = t;
     Array.prototype.forEach.call($('tabs').querySelectorAll('button'), (b) => { const on = b.dataset.tab === t; b.classList.toggle('on', on); b.setAttribute('aria-selected', String(on)); });
@@ -834,12 +877,30 @@
     if(blob.size > MAX_ARCHIVO) throw new Error('"' + file.name + '" pesa más de 15 MB');
     return { blob, mime: 'image/jpeg', nombre: file.name, tamano: blob.size };
   }
-  function avance(texto){
-    const z = $('estadoSubida'); if(z){ z.classList.remove('hidden'); const t = $('textoSubida'); if(t) t.textContent = texto; }
-    const q = $('subidaCom'); if(q){ q.classList.remove('hidden'); q.lastChild.textContent = texto; }
-    const p = $('progLote'); if(p) p.textContent = texto;
-    Object.keys(subiendo).forEach((k) => { subiendo[k] = texto; });
-    Array.prototype.forEach.call(document.querySelectorAll('.doc.subiendo .tx-subida'), (x) => { x.textContent = texto; });
+  // ---------- Cola de subidas (lote 21/10) ----------
+  // Se puede soltar o elegir otro archivo sin esperar al anterior: cada subida entra a la cola y se sube por detrás, en orden.
+  // La casilla dice "En cola" o "Subiendo" con su avance; se puede seguir trabajando y hasta cambiar de cliente.
+  const claveSub = (cli, c) => cli + '|' + c.casilla + ':' + (c.numero === 'auto' ? 'auto' : Number(c.numero || 0));
+  const colaDe = (cli) => cola.filter((t) => t.cli === cli).length;
+  function textoCola(){
+    if(!cola.length) return '';
+    const t = cola[0]; const resto = cola.length - 1;
+    return (t.texto || 'Subiendo a Drive…').replace(/…$/, '') + (resto ? '. ' + plural(resto, 'subida más', 'subidas más') + ' en cola' : '') + '. Puedes seguir trabajando';
+  }
+  function avance(t, texto){
+    t.texto = texto;
+    t.items.forEach((it) => it.casillas.forEach((c) => { subiendo[claveSub(t.cli, c)] = texto; }));
+    t.items.forEach((it) => it.casillas.forEach((c) => Array.prototype.forEach.call(document.querySelectorAll('.tx-subida[data-sube="' + claveSub(t.cli, c) + '"]'), (x) => { x.textContent = texto; })));
+    pintarCola();
+  }
+  function pintarCola(){
+    const z = $('estadoSubida'); if(z){ z.classList.toggle('hidden', !cola.length); const tx = $('textoSubida'); if(tx) tx.textContent = textoCola(); }
+    const q = $('subidaCom'); if(q){ q.classList.toggle('hidden', !cola.length); if(cola.length) q.lastChild.textContent = textoCola(); }
+  }
+  function repintarSubida(t){
+    if(t.f) document.dispatchEvent(new CustomEvent('ficha-subida'));   // la hoja de comisión pinta su casilla
+    else if(t.cli === id && F) pintarDocumentos();
+    pintarCola();
   }
   // Cada archivo va a Drive por la función drive_subir: carpeta "RIF - NOMBRE" del cliente (se crea sola) y subcarpeta por tipo de servicio
   async function subirADrive(cli, pr, original, casillas){
@@ -858,42 +919,53 @@
     if(!r.ok || !d.drive_id) throw new Error(String(d.error || 'No se pudo subir "' + original + '". Intenta de nuevo').replace(/\.$/, ''));
     return d;
   }
-  // items: [{ files:[File], casillas:[{casilla,numero}], vence_en, firmado_en }]
-  async function guardarItems(items){
-    if(ocupado) return false;
-    const f = fuera; fuera = null;
-    ocupado = true; const total = items.reduce((a, it) => a + it.files.length, 0); let hecho = 0; const cli = f ? f.cliente : id;   // el cliente de esta subida, aunque después se abra otro
-    Array.prototype.forEach.call(document.querySelectorAll('[data-subir],#subirVarios'), (b) => { b.disabled = true; });
-    // La casilla que se sube se ve "Subiendo a Drive…" en su propia fila, aquí y en la hoja de comisión
-    subiendo = {};
-    items.forEach((it) => it.casillas.forEach((c) => { subiendo[c.casilla + ':' + (c.numero === 'auto' ? 'auto' : Number(c.numero || 0))] = 'Subiendo a Drive…'; }));
-    Object.keys(subiendo).forEach((k) => Array.prototype.forEach.call(document.querySelectorAll('[data-sube-doc="' + k + '"]'), (b) => { b.disabled = true; b.textContent = 'Subiendo…'; }));
-    if(!f && cli === id && F) pintarDocumentos();
-    if(f) document.dispatchEvent(new CustomEvent('ficha-subida'));   // la hoja de comisión pinta su casilla "Subiendo"
-    try {
-      const envio = [];
-      for(const it of items){
-        const archivos = [];
-        for(const file of it.files){
-          hecho++; avance(total > 1 ? 'Subiendo a Drive ' + hecho + ' de ' + total + '…' : 'Subiendo a Drive…');
-          const pr = await preparar(file);
-          const r = await subirADrive(cli, pr, file.name, it.casillas.map((c) => casilla(c.casilla, c.numero === 'auto' ? 1 : Number(c.numero || 0))).join(' + '));
-          archivos.push({ drive_id: r.drive_id });
-        }
-        envio.push({ archivos, casillas: it.casillas, vence_en: it.vence_en || null, firmado_en: it.firmado_en || null });
-      }
-      avance('Guardando…');
-      const n = await rpc('documentos_registrar', { p_cliente: cli, p_items: envio });
-      toast(plural(n, 'documento guardado', 'documentos guardados'));
-      ocupado = false; subiendo = {}; if(f){ if(f.alTerminar) f.alTerminar(); } else if(cli === id) await cargar();
-      // El RIF recién subido: con el ajuste "Llenar datos del expediente con OCR" se proponen razón social y domicilio
-      const rifIt = items.find((it) => it.files.length === 1 && it.casillas.length === 1 && (it.casillas[0].casilla === 'rif_empresa' || (it.casillas[0].casilla === 'rif_personal' && (f ? f.F : F) && (f ? f.F : F).cliente.es_natural)));
-      if(rifIt && !f && cli === id) proponerDelRif(cli, rifIt.files[0]);
-      return true;
-    } catch (e) {
-      ocupado = false; subiendo = {}; toast(e.message, 'error'); if(f){ if(f.alTerminar) f.alTerminar(); } else if(cli === id && F) pintarDocumentos();
-      return false;
+  // items: [{ files:[File], casillas:[{casilla,numero}], vence_en, firmado_en, titulo, nota }]. Devuelve una promesa que se cumple al guardar (true) o al fallar (false).
+  function guardarItems(items){
+    const f = fuera; fuera = null; const cli = f ? f.cliente : id;   // el cliente de esta subida, aunque después se abra otro
+    return new Promise((listo) => {
+      const t = { cli, items, f, listo, texto: cola.length ? 'En cola…' : 'Subiendo a Drive…' };
+      cola.push(t); ocupado = true;
+      items.forEach((it) => it.casillas.forEach((c) => { subiendo[claveSub(cli, c)] = t.texto; }));
+      repintarSubida(t);
+      if(!trabajando) trabajar();
+    });
+  }
+  async function subirTrabajo(t){
+    const total = t.items.reduce((a, it) => a + it.files.length, 0); let hecho = 0;
+    const envio = [];
+    for(const it of t.items){
+      // Los archivos de una misma subida van a Drive a la vez (hasta 3)
+      const archivos = new Array(it.files.length); let sig = 0;
+      const nombreCas = it.casillas.map((c) => casilla(c.casilla, c.numero === 'auto' ? 1 : Number(c.numero || 0))).join(' + ');
+      const uno = async () => { while(sig < it.files.length){ const n = sig++; const file = it.files[n];
+        const pr = await preparar(file); const r = await subirADrive(t.cli, pr, file.name, nombreCas); archivos[n] = { drive_id: r.drive_id };
+        hecho++; avance(t, total > 1 ? 'Subiendo a Drive ' + hecho + ' de ' + total + '…' : 'Subiendo a Drive…'); } };
+      avance(t, total > 1 ? 'Subiendo a Drive ' + (hecho + 1) + ' de ' + total + '…' : 'Subiendo a Drive…');
+      await Promise.all(Array.from({ length: Math.min(3, it.files.length) }, uno));
+      envio.push({ archivos, casillas: it.casillas, vence_en: it.vence_en || null, firmado_en: it.firmado_en || null, titulo: it.titulo || null, nota: it.nota || null });
     }
+    avance(t, 'Guardando…');
+    return rpc('documentos_registrar', { p_cliente: t.cli, p_items: envio });
+  }
+  async function trabajar(){
+    trabajando = true;
+    while(cola.length){
+      const t = cola[0]; let ok = false;
+      try { const n = await subirTrabajo(t); toast(plural(n, 'documento guardado', 'documentos guardados')); ok = true; }
+      catch (e) { toast(e.message, 'error'); }
+      cola.shift(); ocupado = cola.length > 0;
+      t.items.forEach((it) => it.casillas.forEach((c) => { delete subiendo[claveSub(t.cli, c)]; }));
+      try {
+        if(t.f){ if(t.f.alTerminar) t.f.alTerminar(); }
+        else if(t.cli === id && F){ if(ok && !cola.some((x) => x.cli === t.cli)) await cargar(); else pintarDocumentos(); }
+        pintarCola();
+        // El RIF recién subido: con el ajuste "Llenar datos del expediente con OCR" se proponen razón social y domicilio
+        const rifIt = ok && t.items.find((it) => it.files.length === 1 && it.casillas.length === 1 && (it.casillas[0].casilla === 'rif_empresa' || (it.casillas[0].casilla === 'rif_personal' && (t.f ? t.f.F : F) && (t.f ? t.f.F : F).cliente.es_natural)));
+        if(rifIt && !t.f && t.cli === id) proponerDelRif(t.cli, rifIt.files[0]);
+      } catch (e) {}
+      t.listo(ok);
+    }
+    trabajando = false; pintarCola();
   }
   // ---------- OCR del RIF (corrida 14/10 tarde): propone razón social y domicilio; la persona confirma ----------
   let OCRA = null;
@@ -937,7 +1009,6 @@
   document.addEventListener('submit', (e) => { if(e.target && e.target.id === 'formOcr') usarOcr(e); });
 
   function elegirPara(cas, num){
-    if(ocupado){ toast('Espera a que termine la subida'); return; }
     destino = { casilla: cas, numero: num };
     const inp = $('archivo'); inp.value = ''; inp.click();
   }
@@ -945,23 +1016,41 @@
     const files = Array.prototype.slice.call($('archivo').files || []); if(!files.length || !destino) return;
     const d = destino; destino = null;
     if(d.casilla.indexOf('contrato_') === 0){ abrirFechas(d, files); return; }
+    if(d.casilla === 'otro' && d.numero < 60){ abrirOtro(d, files); return; }
     guardarItems([{ files, casillas: [d] }]);
+  }
+  // Lote 21/10: "Otro documento" pide nombre (obligatorio) y nota
+  function abrirOtro(d, files){
+    campo = { tipo: 'otro', destino: d, files, f: fuera }; fuera = null;
+    $('hojaCampo').innerHTML = cabHoja('tCampo', 'Otro documento', files.length === 1 ? files[0].name : files.length + ' archivos') + '<form id="formOtro" novalidate>' +
+      '<label class="rotulo" for="oNombre">Nombre del documento</label><input class="campo" id="oNombre" maxlength="80" autocomplete="off" data-foco><div class="error" id="eOtro" role="alert"></div>' +
+      '<label class="rotulo arriba" for="oNota">Nota (opcional)</label><input class="campo" id="oNota" maxlength="300" autocomplete="off">' +
+      '<div class="acciones"><button type="submit" class="btn btn-ancho">Subir documento</button></div></form>';
+    abrirHoja('hojaCampo');
+  }
+  function guardarOtro(e){
+    e.preventDefault(); const n = $('oNombre').value.trim();
+    if(n.length < 3){ $('eOtro').textContent = 'Escribe qué documento es'; $('oNombre').focus(); return; }
+    const c = campo; cerrarHoja(); fuera = c.f || null;
+    guardarItems([{ files: c.files, casillas: [c.destino], titulo: n, nota: $('oNota').value.trim() || null }]);
   }
   // El contrato pide la fecha de firma antes de guardarse
   function abrirFechas(d, files){
     campo = { tipo: 'contrato', destino: d, files };
     $('hojaCampo').innerHTML = cabHoja('tCampo', casilla(d.casilla, 0), files.length === 1 ? files[0].name : files.length + ' archivos') + '<form id="formFechas" novalidate>' +
       '<label class="rotulo" for="cFirma">Fecha de firma</label><input class="campo" id="cFirma" type="date" max="' + esc(((fuera && fuera.F) || F).hoy) + '" data-foco><div class="error" id="eCampo" role="alert"></div>' +
-      '<label class="rotulo" for="cVence">Fecha de vencimiento (opcional)</label><input class="campo" id="cVence" type="date">' +
+      '<label class="rotulo" for="cVence">Fecha de vencimiento</label><input class="campo" id="cVence" type="date"><div class="error" id="eVenceC" role="alert"></div>' +
       '<p class="nota">Al guardarlo con fecha de firma, el cliente pasa a Contrato firmado.</p>' +
       '<div class="acciones"><button type="submit" class="btn btn-ancho">Subir contrato</button></div></form>';
     abrirHoja('hojaCampo');
   }
   function guardarFechas(e){
     e.preventDefault(); const f = $('cFirma').value; const v = $('cVence').value;
+    $('eCampo').textContent = ''; $('eVenceC').textContent = '';
     if(!f){ $('eCampo').textContent = 'Pon la fecha en que se firmó'; return; }
-    if(v && v <= f){ $('eCampo').textContent = 'El vencimiento debe ser después de la firma'; return; }
-    const c = campo; cerrarHoja(); if(!fuera) irTab('documentos');
+    if(!v){ $('eVenceC').textContent = 'Pon la fecha de vencimiento del contrato'; $('cVence').focus(); return; }
+    if(v <= f){ $('eVenceC').textContent = 'El vencimiento debe ser después de la firma'; return; }
+    const c = campo; cerrarHoja();
     guardarItems([{ files: c.files, casillas: [c.destino], firmado_en: f, vence_en: v || null }]);
   }
 
@@ -970,7 +1059,7 @@
     const G = varF || F; const c = G.cliente; const o = [];
     const nReq = !c.es_natural && c.regimen_firma === 'conjunta' ? 2 : 1;
     const nReps = Math.max(nReq, (G.representantes || []).reduce((a, r) => Math.max(a, r.orden), 1));
-    if(!c.es_natural){ o.push({ k: 'rif_empresa:0', t: 'RIF de la empresa' }, { k: 'acta_constitutiva:0', t: 'Acta constitutiva' }, { k: 'acta_asamblea:auto', t: 'Acta de asamblea', libre: true }); if(c.es_isp) o.push({ k: 'conatel:0', t: 'Permiso de Conatel' }); }
+    if(!c.es_natural){ o.push({ k: 'rif_empresa:0', t: 'RIF de la empresa' }, { k: 'acta_constitutiva:0', t: 'Acta constitutiva' }, { k: 'acta_asamblea:auto', t: 'Acta de asamblea', libre: true }); if(c.es_isp) o.push({ k: 'conatel:0', t: 'Conatel: habilitación vigente' }); }
     for(let n = 1; n <= nReps; n++){ const suf = c.es_natural ? '' : ' rep. ' + n; o.push({ k: 'cedula:' + n, t: 'Cédula' + suf }, { k: 'rif_personal:' + n, t: (c.es_natural ? 'RIF personal' : 'RIF') + suf }); }
     o.push({ k: 'otro:0', t: 'Otro', libre: true });
     return o;
@@ -998,6 +1087,7 @@
         '<div class="nom"><span>' + esc(it.files.length > 1 ? it.files.length + ' fotos: ' + it.files.map((f) => f.name).join(', ') : it.files[0].name) + '</span>' +
           '<button type="button" class="quitar" data-quitar="' + n + '" aria-label="Quitar este archivo">' + ic('x') + '</button></div>' +
         '<div class="checks" role="group" aria-label="Qué trae">' + ops.map((o) => '<button type="button" class="ck' + (it.marcas[o.k] ? ' on' : '') + '" aria-pressed="' + !!it.marcas[o.k] + '" data-marca="' + o.k + '">' + ic('check') + esc(o.t) + '</button>').join('') + '</div>' +
+        (it.marcas['otro:0'] ? '<label class="rotulo arriba" for="lt' + n + '">Nombre del documento</label><input class="campo" id="lt' + n + '" data-titulo="' + n + '" maxlength="80" autocomplete="off" value="' + esc(it.titulo || '') + '">' : '') +
         (it.files.length > 1 ? '<button type="button" class="enlace" data-separar="' + n + '">Son documentos distintos: separar las fotos</button>' : '') +
         (!marcadas.length ? '<div class="nota2" style="color:var(--rojo)">Marca qué trae para poder guardarlo.</div>'
           : marcadas.length > 1 ? '<div class="nota2" style="color:var(--text2)">Trae ' + marcadas.length + ' documentos: queda en las ' + marcadas.length + ' casillas sin cortarlo.</div>' : '') +
@@ -1019,13 +1109,14 @@
         if(p[1] === 'auto'){ const n = libres.shift(); if(!n){ toast('Ya están las 4 actas de asamblea. Para cambiar una, reemplázala desde su casilla', 'error'); return; } cas.push({ casilla: p[0], numero: n }); }
         else cas.push({ casilla: p[0], numero: Number(p[1]) });
       }
-      items.push({ files: it.files, casillas: cas });
+      if(it.marcas['otro:0'] && String(it.titulo || '').trim().length < 3){ toast('Escribe el nombre de cada archivo marcado como Otro', 'error'); const x = document.querySelector('#hojaVarios [data-titulo="' + lote.indexOf(it) + '"]'); if(x) x.focus(); return; }
+      items.push({ files: it.files, casillas: cas, titulo: it.marcas['otro:0'] ? String(it.titulo).trim().slice(0, 80) : null });
     }
-    const b = $('guardarLote'); b.disabled = true; b.textContent = 'Subiendo…';
+    // Lote 21/10: se manda a la cola y la hoja se cierra; la subida sigue por detrás
     const ext = varF; if(ext) fuera = { cliente: ext.cliente.id, F: ext, alTerminar: varFin };
-    const ok = await guardarItems(items);
-    if(ok){ soltarMinis(); lote = []; if(hojaAbierta() === 'hojaVarios'){ cerrarHoja(); if(!ext) irTab('documentos'); } }
-    else if(hojaAbierta() === 'hojaVarios') pintarVarios();
+    guardarItems(items); soltarMinis(); lote = [];
+    if(hojaAbierta() === 'hojaVarios'){ cerrarHoja(); if(!ext) irTab('documentos'); }
+    toast('Subiendo ' + plural(items.length, 'archivo', 'archivos') + ' por detrás. Puedes seguir trabajando');
   }
 
   // ---------- Ver y revisar un documento ----------
@@ -1035,7 +1126,7 @@
   function pintarVer(){
     const d = docVer(); const h = $('hojaVer');
     if(!d){ cerrarHoja(); return; }
-    const titulo = casilla(d.casilla, d.numero);
+    const titulo = d.titulo || casilla(d.casilla, d.numero);
     const pos = ver.cola ? ver.cola.indexOf(d.id) + 1 : 0;
     const cab = '<div class="hoja-cab"><div class="tx"><b id="tVer">' + esc(titulo) + '</b><small>' + esc(F.cliente.nombre) + (ver.cola ? ' · Documento ' + pos + ' de ' + ver.cola.length : '') + '</small></div><button type="button" class="cerrar" data-cierra="1" aria-label="Cerrar">' + ic('x') + '</button></div>';
     if(ver.paso === 'devolver'){
@@ -1072,7 +1163,8 @@
       ? '<div class="hoja-pie"><button type="button" class="btn btn-peligro" id="verDevolver">Devolver</button><button type="button" class="btn" id="verAprobar">' + (d.estado === 'aprobado' && !mk ? 'Guardar' : ver.cola && pos < ver.cola.length ? 'Aprobar y seguir' : 'Aprobar') + '</button></div>'
       : '<div class="hoja-pie">' + (puedeSubir ? '<button type="button" class="btn btn-2" id="verReemplazar">Reemplazar</button>' : '') + '<button type="button" class="btn" data-cierra="1">Cerrar</button></div>';
     h.innerHTML = cab + '<div class="hoja-cuerpo"><div class="revisar-cols"><section><div class="visor" id="visor"><span class="cargando-linea"><i></i>Abriendo el archivo</span></div>' + paginas +
-      '<div class="visor-pie"><span>' + (arch.length > 1 ? 'Archivo ' + (ver.archivo + 1) + ' de ' + arch.length : '') + '</span><a class="enlace hidden" id="abrirCompleto" target="_blank" rel="noopener">Abrir completo</a></div></section>' +
+      '<div class="visor-pie"><span>' + (arch.length > 1 ? 'Archivo ' + (ver.archivo + 1) + ' de ' + arch.length : '') + '</span><a class="enlace hidden" id="abrirCompleto" target="_blank" rel="noopener">Abrir completo</a>' +
+        (a && /^https:\/\/drive\.google\.com\//.test(a.url_externa || '') ? '<a class="enlace" id="abrirDrive" href="' + esc(a.url_externa) + '" target="_blank" rel="noopener">Abrir en Drive</a>' : '') + '</div></section>' +
       '<section style="margin-top:14px">' + info + '</section></div></div>' + pie;
     if(ver.url[ver.archivo] !== undefined) mostrarArchivo();
   }
@@ -1080,6 +1172,8 @@
   function mostrarArchivo(){
     const d = docVer(); const z = $('visor'); if(!d || !z) return;
     const a = (d.archivos || [])[ver.archivo]; const url = ver.url[ver.archivo]; const ab = $('abrirCompleto');
+    // Lote 21/10: mientras llega el archivo completo se ve la miniatura (primera página)
+    if(url === undefined && (ver.mini || {})[ver.archivo]){ z.innerHTML = '<div class="visor-mini"><img src="' + esc(ver.mini[ver.archivo]) + '" alt="' + esc(d.titulo || casilla(d.casilla, d.numero)) + '"><span class="cargando-linea"><i></i>Cargando el archivo completo</span></div>'; return; }
     if(!a || !url){ z.innerHTML = papel(a && !a.url_externa ? 'Archivo de ejemplo. No tiene imagen guardada.' : ((ver.fallo || {})[ver.archivo] ? ver.fallo[ver.archivo] + '.' : 'No se pudo abrir el archivo. Cierra y vuelve a intentar.')); return; }
     if(ab){ ab.href = url; ab.classList.remove('hidden'); }
     const pdf = a.mime === 'application/pdf' || /\.pdf$/i.test(a.nombre || '');
@@ -1092,12 +1186,12 @@
   // Los archivos de Drive los entrega la función drive_archivo (la base revisa el permiso); quedan en memoria mientras el visor esté abierto
   let blobs = [];
   function soltarBlobs(){ blobs.forEach((u) => { try { URL.revokeObjectURL(u); } catch (e) {} }); blobs = []; }
-  async function bajarDeDrive(a){
+  async function bajarDeDrive(a, vista){
     let tk = '';
     try { const s = await db.auth.getSession(); tk = (s.data && s.data.session && s.data.session.access_token) || ''; } catch (e) {}
     if(!tk) throw new Error('Tu sesión venció. Entra de nuevo');
     let r;
-    try { r = await fetch(db.supabaseUrl + '/functions/v1/drive_archivo', { method: 'POST', headers: { Authorization: 'Bearer ' + tk, apikey: db.supabaseKey, 'Content-Type': 'application/json' }, body: JSON.stringify({ archivo: a.id }) }); }
+    try { r = await fetch(db.supabaseUrl + '/functions/v1/drive_archivo', { method: 'POST', headers: { Authorization: 'Bearer ' + tk, apikey: db.supabaseKey, 'Content-Type': 'application/json' }, body: JSON.stringify(vista ? { archivo: a.id, vista } : { archivo: a.id }) }); }
     catch (e) { throw new Error('Sin conexión. Revisa el internet'); }
     if(!r.ok){ let m = ''; try { m = String((await r.json()).error || ''); } catch (e) {} throw new Error(m.replace(/\.$/, '') || 'No se pudo abrir el archivo'); }
     let b;
@@ -1112,6 +1206,9 @@
     if(ver.url[n] !== undefined){ mostrarArchivo(); return; }
     let url = '';
     if((a.url_externa || a.drive_id) && a.id){
+      // La miniatura pesa poco y llega antes; el archivo completo se pide a la vez y la reemplaza al llegar
+      ver.mini = ver.mini || {};
+      bajarDeDrive(a, 'mini').then((u) => { if(mio === ver && ver.docId === d.id && ver.url[n] === undefined){ ver.mini[n] = u; if(ver.archivo === n) mostrarArchivo(); } }).catch(() => {});
       try { url = await bajarDeDrive(a); }
       catch (e) { if(mio === ver){ ver.fallo = ver.fallo || {}; ver.fallo[n] = e.message; } }
     }
@@ -1132,21 +1229,30 @@
       if(ver.motivo === 'otro' && !ver.nota){ $('eDev').textContent = 'Escribe el motivo en la nota'; $('notaDev').focus(); return; }
       args.p_motivo = ver.motivo; args.p_nota = ver.nota || null;
     }
-    const b = $(accionRev === 'aprobar' ? 'verAprobar' : 'devConfirmar'); b.disabled = true;
-    // Solo se marca: el estatus y el aviso al líder esperan a "Cerrar revisión"
-    try { await rpc('documento_marcar', args); }
-    catch (e) { toast(e.message, 'error'); if(document.contains(b)) b.disabled = false; return; }
+    // Lote 21/10: la marca se ve al instante y se guarda por detrás; nunca espera la vista previa ni el recálculo.
+    // Si el servidor la rechaza, se quita y se avisa.
+    const previa = marcaDe(d.id); const cliM = id;
+    const nueva = { documento: d.id, accion: accionRev, motivo: args.p_motivo, nota: args.p_nota, vence_en: args.p_vence, origen: 'manual', por: yo && yo.nombre };
+    if(!rev) rev = { marcas: [], historial: [] };
+    rev.marcas = marcas().filter((m) => m.documento !== d.id).concat([nueva]);
+    guardandoMarcas++;
+    const p = rpc('documento_marcar', args).then(() => true, (e) => {
+      if(rev) rev.marcas = marcas().filter((m) => m !== nueva).concat(previa ? [previa] : []);
+      toast('No se guardó la marca de ' + (d.titulo || casilla(d.casilla, d.numero)) + ': ' + e.message, 'error');
+      if(F && !encima()) pintarTodo(); else if(hojaAbierta() === 'hojaVer' && ver) pintarVer();
+      return false;
+    });
+    marcasPend = marcasPend.then(() => p);
+    p.then(() => { guardandoMarcas--; if(!guardandoMarcas && id === cliM) recargarRevision().then(() => { if(F && !encima()) pintarTodo(); }).catch(() => {}); });
     toast(accionRev === 'aprobar' ? 'Marcado para aprobar' : 'Marcado para devolver');
-    if(!ver || hojaAbierta() !== 'hojaVer'){ cargar(); return; }   // cerraron el visor mientras guardaba
+    if(!ver || hojaAbierta() !== 'hojaVer'){ pintarTodo(); return; }   // cerraron el visor
     const cola = ver.cola; const actual = d.id;
-    try {
-      await recargarRevision();
-      // Sigue con el próximo que quede sin marcar; si no hay, cierra
-      const sig = cola ? cola.slice(cola.indexOf(actual) + 1).find((x) => { const y = (F.documentos || []).find((z) => z.id === x); return y && y.estado === 'por_revisar' && !marcaDe(x); }) : null;
-      if(sig){ soltarBlobs(); ver = { docId: sig, cola, paso: 'ver', motivo: null, archivo: 0, url: {} }; pintarTodo(); cargarArchivo(); }
-      else { ver = null; cerrarHoja(); pintarTodo(); if(cola) toast(rev && rev.puede_cerrar ? 'Listo. Toca Cerrar revisión para avisarle a ' + liderCorto() : 'Listo. El administrador cierra la revisión'); }
-    } catch (e) { ver = null; if(hojaAbierta() === 'hojaVer') cerrarHoja(); toast('Quedó marcado, pero no se pudo actualizar la pantalla. Cierra y abre el cliente', 'error'); }
+    // Sigue con el próximo que quede sin marcar; si no hay, cierra
+    const sig = cola ? cola.slice(cola.indexOf(actual) + 1).find((x) => { const y = (F.documentos || []).find((z) => z.id === x); return y && y.estado === 'por_revisar' && !marcaDe(x); }) : null;
+    if(sig){ soltarBlobs(); ver = { docId: sig, cola, paso: 'ver', motivo: null, archivo: 0, url: {} }; pintarTodo(); cargarArchivo(); }
+    else { ver = null; cerrarHoja(); pintarTodo(); if(cola) toast(rev && rev.puede_cerrar ? 'Listo. Toca Cerrar revisión para avisarle a ' + liderCorto() : 'Listo. El administrador cierra la revisión'); }
   }
+  let guardandoMarcas = 0; let marcasPend = Promise.resolve();
   async function recargarRevision(){
     const [f, r] = await Promise.all([rpc('cliente_ficha', { p_cliente: id }), rpc('revision_estado', { p_cliente: id })]);
     F = f; rev = r;
@@ -1226,6 +1332,7 @@
     abrirHoja('hojaCerrarRev');
   }
   async function cerrarRevision(enviar){
+    await marcasPend;   // las marcas que se están guardando por detrás van primero
     const er = $('eCerrar'); er.textContent = '';
     const m = $('msjRev'); const texto = m ? m.value.trim() : '';
     if(enviar && texto.length < 10){ er.textContent = 'Escribe el mensaje o cierra sin enviar'; m.focus(); return; }
@@ -1243,6 +1350,17 @@
     cargar();
   }
 
+  // Aprobar seleccionados: una sola llamada marca todos para aprobar; la pantalla responde al instante y se pone al día por detrás
+  async function aprobarSel(b){
+    const ids = Array.from(selDocs); if(!ids.length) return; b.disabled = true; b.textContent = 'Marcando…';
+    try { await rpc('documentos_marcar_varios', { p_documentos: ids }); }
+    catch (e) { toast(e.message, 'error'); b.disabled = false; b.textContent = 'Aprobar ' + ids.length; return; }
+    if(rev){ rev.marcas = (rev.marcas || []).filter((m) => ids.indexOf(m.documento) < 0).concat(ids.map((x) => ({ documento: x, accion: 'aprobar', origen: 'manual' }))); }
+    selMode = false; selDocs = new Set(); pintarTodo();
+    toast(plural(ids.length, 'documento marcado', 'documentos marcados') + ' para aprobar. ' + (rev && rev.puede_cerrar ? 'Cierra la revisión para avisarle a ' + liderCorto() : 'El administrador cierra la revisión'));
+    recargarRevision().then(() => { if(F && !encima()) pintarTodo(); }).catch(() => {});
+  }
+
   // ---------- Eventos ----------
   document.addEventListener('click', (e) => {
     const t = e.target;
@@ -1252,7 +1370,7 @@
     if((b = t.closest('#hojaFicha [data-ir-tab]'))){ irTab(b.dataset.irTab); const g = b.dataset.irGrupo && document.querySelector('#tab-' + tab + ' [data-grupo="' + b.dataset.irGrupo + '"]'); if(g) g.scrollIntoView({ block: 'center' }); return; }
     if((b = t.closest('[data-paso]'))){
       const a = b.dataset.paso;
-      if(a === 'rif') abrirCampo('rif'); else if(a === 'revisar') abrirRevision(); else if(a === 'cerrarrev') abrirCerrar(); else if(a === 'estatus') abrirEstatus(); else if(a.indexOf('pedir:') === 0) pedir(a.slice(6)); else if(a.indexOf('tab:') === 0){ irTab(a.slice(4)); const g = document.querySelector('[data-grupo="contrato"]'); if(g) g.scrollIntoView({ block: 'center' }); }
+      if(a === 'rif') abrirCampo('rif'); else if(a === 'revisar') abrirRevision(); else if(a === 'cerrarrev') abrirCerrar(); else if(a === 'estatus') abrirEstatus(); else if(a.indexOf('pedir:') === 0) pedir(a.slice(6)); else if(a.indexOf('tab:') === 0) irTab(a.slice(4));
       return;
     }
     if(t.closest('#hiloMas')){ hiloTodo = true; pintarHilo(); return; }
@@ -1267,13 +1385,25 @@
     if(t.closest('#envIp') && env){ const sid = env.servicio; const fe = envF ? { cliente: envF.cliente.id, F: envF, alTerminar: envFin } : null; cerrarHoja(); fuera = fe; abrirCampo('ip:' + sid); return; }
     if((b = t.closest('#envManual')) && env){ if(b.dataset.armado !== '1'){ b.dataset.armado = '1'; b.textContent = '¿Seguro? Toca otra vez'; setTimeout(() => { if(document.contains(b)){ b.dataset.armado = ''; b.textContent = 'Ya se envió por fuera'; } }, 4000); return; }
       b.disabled = true; anotarEnvio(env.tipo, 'manual', null); return; }
-    if(t.closest('#agregarVgt')){ vgtExtra = Math.min(4, vgtExtra + 1); pintarDocumentos(); return; }
+    if(t.closest('#agregarVgt')){ vgtExtra = Math.min(4, vgtExtra + 1); pintarDedicado(); return; }
     if(t.closest('#agregarActa')){ actaExtra = Math.min(4, actaExtra + 1); pintarDocumentos(); const cs = document.querySelectorAll('[data-grupo="empresa"] [data-casilla^="acta_asamblea"]'); if(cs.length) cs[cs.length - 1].scrollIntoView({ block: 'center' }); return; }
     if((b = t.closest('[data-ver]')) && !t.closest('#docsCom')){ abrirVer(Number(b.dataset.ver)); return; }   // en la hoja de comisión lo maneja comisiones.js
     if((b = t.closest('#hojaFicha [data-campo]'))){ fuera = null; abrirCampo(b.dataset.campo); return; }
     if((b = t.closest('[data-quitar-rep]'))){ repExtra = Math.max(0, Number(b.dataset.quitarRep) - 1); pintarDocumentos(); return; }
     if(t.closest('#agregarRep')){ const vis = document.querySelectorAll('#tab-documentos [data-grupo^="rep"]').length; const n = Math.max(vis, repExtra, !F.cliente.es_natural && F.cliente.regimen_firma === 'conjunta' ? 2 : 1) + 1; repExtra = Math.min(4, n); pintarDocumentos(); const g = document.querySelector('[data-grupo="rep' + repExtra + '"]'); if(g) g.scrollIntoView({ block: 'center' }); return; }
     if(t.closest('#subirVarios')){ abrirVarios(); return; }
+    // Aprobar seleccionados
+    if(t.closest('#elegirAprobar')){ selMode = !selMode; selDocs = new Set(); pintarDocumentos(); return; }
+    if((b = t.closest('[data-sel-doc]'))){ const n = Number(b.dataset.selDoc); if(selDocs.has(n)) selDocs.delete(n); else selDocs.add(n); pintarDocumentos(); return; }
+    if(t.closest('#selTodos')){ sinMarcar().forEach((d) => selDocs.add(d.id)); pintarDocumentos(); return; }
+    if((b = t.closest('#aprobarSel'))){ aprobarSel(b); return; }
+    // Gestión, líder y suspensión (cliente-gestion.js)
+    if(t.closest('#hojaFicha [data-etiquetar-ficha]') && F && window.Gestion){ window.Gestion.etiquetar(F.cliente.id, () => cargar(), (F.gestion || [])[0]); return; }
+    if((b = t.closest('#hojaFicha [data-lider-cambiar]')) && F && window.Gestion){ window.Gestion.lider(F, b.dataset.liderCambiar, () => cargar()); return; }
+    if((b = t.closest('#hojaFicha [data-suspender]')) && F && window.Gestion){ window.Gestion.suspender(F, b.dataset.suspender === '1', () => cargar()); return; }
+    // Firma Digital o Física del contrato PYME (Física = contrato presencial)
+    if((b = t.closest('#hojaFicha [data-firma-cli]')) && F){ if(b.classList.contains('on')) return; const fis = b.dataset.valor === 'fisica';
+      accion('cliente_marca', { p_cliente: id, p_marca: 'contrato_presencial', p_valor: fis }, fis ? 'Firma física: no se piden correos ni teléfono' : 'Firma digital', b); return; }
     if(t.closest('#revisarTodo')){ abrirRevision(); return; }
     if(t.closest('#abrirCerrarRev')){ abrirCerrar(); return; }
     if(t.closest('#cerrarRevSolo')){ cerrarRevision(false); return; }
@@ -1336,6 +1466,7 @@
     if(e.target.id === 'formNota') guardarNota(e);
     else if(e.target.id === 'formCampo') guardarCampo(e);
     else if(e.target.id === 'formFechas') guardarFechas(e);
+    else if(e.target.id === 'formOtro') guardarOtro(e);
   });
   document.addEventListener('visibilitychange', () => { if(!document.hidden && F && id && !ocupado && !encima()) cargar(); });
 
@@ -1343,17 +1474,17 @@
   function soltarEn(e){
     e.preventDefault(); limpiarSobre();
     const files = Array.prototype.slice.call((e.dataTransfer && e.dataTransfer.files) || []); if(!files.length || !F) return;
-    if(ocupado){ toast('Espera a que termine la subida'); return; }
     const c = e.target.closest('[data-suelta]');
-    if(c){ const p = c.dataset.casilla.split(':'); const d = { casilla: p[0], numero: Number(p[1]) };
+    if(c){ const p = c.dataset.casilla.split(':'); const d = { casilla: p[0], numero: Number(p[1]) }; fuera = null;
       if(d.casilla.indexOf('contrato_') === 0){ abrirFechas(d, files); return; }
+      if(d.casilla === 'otro' && d.numero < 60){ abrirOtro(d, files); return; }
       guardarItems([{ files, casillas: [d] }]); return; }
     abrirVarios(); agregarLote(files);
   }
   // Quita el recuadro de la zona misma y de cualquier casilla (también al soltar fuera o cancelar)
   function limpiarSobre(){
-    const z = document.getElementById('tab-documentos'); if(z) z.classList.remove('sobre');
-    Array.prototype.forEach.call(document.querySelectorAll('#tab-documentos .sobre'), (x) => x.classList.remove('sobre'));
+    ['tab-documentos', 'tab-contrato', 'tab-vgt'].forEach((k) => { const z = document.getElementById(k); if(z) z.classList.remove('sobre'); });
+    Array.prototype.forEach.call(document.querySelectorAll('#tab-documentos .sobre, #tab-contrato .sobre, #tab-vgt .sobre'), (x) => x.classList.remove('sobre'));
   }
 
   function montar(){
@@ -1363,9 +1494,11 @@
     h.innerHTML = '<div class="asa" aria-hidden="true"></div><div class="ficha-cab" id="cabFicha"></div>' +
       '<div class="tabs" id="tabs" role="tablist" aria-label="Secciones del cliente">' +
         '<button type="button" role="tab" data-tab="datos">Datos</button><button type="button" role="tab" data-tab="documentos">Documentos</button>' +
-        '<button type="button" role="tab" data-tab="hilo">Hilo</button><button type="button" role="tab" data-tab="contratos" class="hidden">Contratos</button><button type="button" role="tab" data-tab="comision">Comisión</button></div>' +
+        '<button type="button" role="tab" data-tab="contrato" class="hidden">Contrato</button><button type="button" role="tab" data-tab="vgt" class="hidden">VGT</button>' +
+        '<button type="button" role="tab" data-tab="hilo">Hilo</button><button type="button" role="tab" data-tab="comision" class="hidden">Comisión</button></div>' +
       '<div class="ficha-cuerpo" id="cuerpoFicha"><section class="panel-tab" id="tab-datos" aria-label="Datos"></section><section class="panel-tab" id="tab-documentos" aria-label="Documentos"></section>' +
-        '<section class="panel-tab" id="tab-hilo" aria-label="Hilo"></section><section class="panel-tab" id="tab-contratos" aria-label="Contratos"></section><section class="panel-tab" id="tab-comision" aria-label="Comisión"></section></div>';
+        '<section class="panel-tab" id="tab-contrato" aria-label="Contrato"></section><section class="panel-tab" id="tab-vgt" aria-label="VGT"></section>' +
+        '<section class="panel-tab" id="tab-hilo" aria-label="Hilo"></section><section class="panel-tab" id="tab-comision" aria-label="Comisión"></section></div>';
     document.body.appendChild(h);
     const mas = document.createElement('div');
     mas.innerHTML = '<input type="file" id="archivo" class="hidden" multiple accept="image/*,application/pdf" tabindex="-1" aria-hidden="true">' +
@@ -1386,14 +1519,15 @@
     $('hojaVarios').addEventListener('dragover', (e) => { e.preventDefault(); const s = $('soltar'); if(s) s.classList.add('sobre'); });
     $('hojaVarios').addEventListener('dragleave', () => { const s = $('soltar'); if(s) s.classList.remove('sobre'); });
     $('hojaVarios').addEventListener('drop', (e) => { e.preventDefault(); if(e.dataTransfer && e.dataTransfer.files) agregarLote(Array.prototype.slice.call(e.dataTransfer.files)); });
-    $('hojaVarios').addEventListener('hoja-cerrada', () => { if(!ocupado){ soltarMinis(); lote = []; } varF = null; varFin = null; });
+    $('hojaVarios').addEventListener('hoja-cerrada', () => { soltarMinis(); lote = []; varF = null; varFin = null; });
+    $('hojaVarios').addEventListener('input', (e) => { const x = e.target.closest('[data-titulo]'); if(x && lote[Number(x.dataset.titulo)]) lote[Number(x.dataset.titulo)].titulo = x.value; });
     $('hojaVer').addEventListener('hoja-cerrada', () => { ver = null; soltarBlobs(); });
     $('hojaEnviar').addEventListener('hoja-cerrada', () => { env = null; envF = null; envFin = null; });
     $('hojaEnviar').addEventListener('change', (e) => { if(e.target.id === 'envNum'){ $('envOtroZ').classList.toggle('hidden', !!e.target.value); $('eEnv').textContent = ''; if(!e.target.value) $('envOtro').focus(); } });
-    const zona = $('tab-documentos');
-    zona.addEventListener('dragover', (e) => { e.preventDefault(); limpiarSobre(); const c = e.target.closest('[data-suelta]'); (c || zona).classList.add('sobre'); });
-    zona.addEventListener('dragleave', (e) => { if(!zona.contains(e.relatedTarget)) limpiarSobre(); });
-    zona.addEventListener('drop', soltarEn);
+    ['tab-documentos', 'tab-contrato', 'tab-vgt'].forEach((z) => { const zona = $(z);
+      zona.addEventListener('dragover', (e) => { e.preventDefault(); limpiarSobre(); const c = e.target.closest('[data-suelta]'); (c || zona).classList.add('sobre'); });
+      zona.addEventListener('dragleave', (e) => { if(!zona.contains(e.relatedTarget)) limpiarSobre(); });
+      zona.addEventListener('drop', soltarEn); });
     // Soltar fuera de la zona, cancelar con Esc o salir de la ventana: no queda el recuadro puesto
     const conArchivos = (e) => !!(e.dataTransfer && Array.prototype.indexOf.call(e.dataTransfer.types || [], 'Files') >= 0);
     window.addEventListener('dragover', (e) => { if(conArchivos(e)) e.preventDefault(); });
@@ -1410,7 +1544,7 @@
     const o = opciones || {};
     montar();
     yo = o.yo || yo; id = Number(idCliente) || 0; drive = undefined; rev = null; clearTimeout(sondeo); sondeo = null; if(!id) return;
-    F = null; fuera = null; hiloTodo = false; soloNotas = false; repExtra = 0; actaExtra = 0; llegada = { revisar: o.revisar, pedir: o.pedir, casilla: o.casilla, campo: o.campo, enviar: o.enviar }; alCerrar = o.alCerrar || null;
+    F = null; fuera = null; hiloTodo = false; soloNotas = false; repExtra = 0; actaExtra = 0; selMode = false; selDocs = new Set(); llegada = { revisar: o.revisar, pedir: o.pedir, casilla: o.casilla, campo: o.campo, enviar: o.enviar }; alCerrar = o.alCerrar || null;
     $('cabFicha').innerHTML = '<div class="f-cab"><span class="mono sk" aria-hidden="true"></span><div class="tx"><span class="sk" style="width:70%;height:22px"></span><span class="sk" style="width:50%;height:12px;margin-top:8px"></span></div>' +
       '<button type="button" class="cerrar" data-cierra="1" aria-label="Cerrar">' + ic('x') + '</button></div>';
     TABS.forEach((x) => { $('tab-' + x).innerHTML = '<div class="sk-bloque"><span class="sk" style="height:64px;border-radius:16px"></span><span class="sk" style="height:64px;border-radius:16px"></span><span class="sk" style="height:64px;border-radius:16px"></span></div>'; });
@@ -1421,31 +1555,33 @@
   }
   // Desde otra hoja (la de comisión): subir a una casilla o escribir un dato sin abrir el expediente
   function subirA(ficha, cas, num, alTerminar){
-    montar(); if(ocupado){ toast('Espera a que termine la subida'); return; }
+    montar();
     fuera = { cliente: ficha.cliente.id, F: ficha, alTerminar }; destino = { casilla: cas, numero: num };
     const inp = $('archivo'); inp.value = ''; inp.click();
   }
   // Un archivo que ya se eligió en otra hoja (el RIF leído en el formulario de cambio de titular) va directo a su casilla
   function subirArchivoA(ficha, cas, num, file, alTerminar){
-    montar(); if(ocupado) return false;
+    montar();
     fuera = { cliente: ficha.cliente.id, F: ficha, alTerminar };
     guardarItems([{ files: [file], casillas: [{ casilla: cas, numero: num }] }]); return true;
   }
   // Lote urgente 20/10: los documentos en la hoja de comisión son las mismas casillas del expediente
   function documentosPara(ficha){ const prev = F; F = ficha; try { return casillasHtml(true); } finally { F = prev; } }
   function variosA(ficha, alTerminar, files){
-    montar(); if(ocupado){ toast('Espera a que termine la subida'); return; }
+    montar();
     varF = ficha; varFin = alTerminar || null; abrirVarios(); if(files && files.length) agregarLote(files);
   }
   // Archivos soltados sobre una casilla de otra hoja
   function soltarA(ficha, cas, num, files, alTerminar){
-    montar(); if(ocupado){ toast('Espera a que termine la subida'); return; }
+    montar();
     fuera = { cliente: ficha.cliente.id, F: ficha, alTerminar };
     if(cas.indexOf('contrato_') === 0){ abrirFechas({ casilla: cas, numero: num }, files); return; }
+    if(cas === 'otro' && num < 60){ abrirOtro({ casilla: cas, numero: num }, files); return; }
     guardarItems([{ files, casillas: [{ casilla: cas, numero: num }] }]);
   }
   // Proforma y carta desde otra hoja: siempre con los datos del momento (la ficha recién leída)
   function enviarDesde(ficha, servicioId, alTerminar){ montar(); envF = ficha; envFin = alTerminar || null; abrirEnviar(servicioId); }
   function editarCampo(ficha, clave, alTerminar){ montar(); fuera = { cliente: ficha.cliente.id, F: ficha, alTerminar }; abrirCampo(clave); }
-  window.Ficha = { subirA, subirArchivoA, documentosPara, variosA, soltarA, ocupado: () => ocupado, editarCampo, enviarDesde, lineaHilo, abrir, montar, abierta: () => id, alContactarFuera: (f) => { externo = f; }, recargar: () => { if(id) cargar(); } };
+  window.Ficha = { subirA, subirArchivoA, documentosPara, variosA, soltarA, ocupado: () => ocupado, editarCampo, enviarDesde, lineaHilo, abrir, montar, abierta: () => id, alContactarFuera: (f) => { externo = f; }, recargar: () => { if(id) cargar(); },
+    etiquetar: (cli, alTerminar) => { if(window.Gestion) window.Gestion.etiquetar(cli, alTerminar); } };
 })();

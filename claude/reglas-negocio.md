@@ -151,3 +151,10 @@ Sin nombres reales: el repo es público. "Analista Senior" es el responsable de 
 - Revisar pago (a mano): si se instaló del 20 al 31 y el TAD siguiente trae deuda (es la factura nueva del mes), o si el RIF tiene más de un servicio, contando los residenciales.
 - No comisiona: la marca el Analista Senior o el administrador con motivo; sale de la lista y queda en la bandeja "No comisionan". Solo el administrador la vuelve a activar.
 - Corte certificado: la foto no se toca. El administrador corrige con "No se pagó" (pasa al corte abierto) o "Se pagó allá" (queda pagada en ese corte). Lo que es del corte pero no quedó en la foto sale en "Fuera de la foto".
+
+## Clientes: decisiones del lote 21/10 (tanda B)
+- Etiquetas de gestión: Contactado, Sin contacto, Esperando documentos, con fecha y nota. No cambian el estatus. Pedir o recordar documentos pone sola "Esperando documentos".
+- Suspendido (solo el administrador, con nota): fuera de la lista y de los contadores; se le pueden seguir pidiendo documentos.
+- Un dedicado excluido no cuenta como dedicado.
+- Firma del contrato: Digital o Física. Física = contrato presencial (no se piden correos ni teléfono). Al marcar un contrato Firmado la fecha de vencimiento es obligatoria. Firmado sin archivo o sin vencimiento queda marcado en la lista y en la bandeja de Legal.
+- Cambiar el líder del cliente no cambia el dueño de las comisiones ya cargadas.

@@ -44,7 +44,7 @@ async function cerrarHojas(p){ for(let i = 0; i < 5 && await p.evaluate(() => !!
     const filaIsp = await p.locator('#lista .cli[data-cliente="' + a.id + '"]').textContent();
     ok(nombre + ': la fila lleva la etiqueta VGT y la póliza por vencer', filaIsp.includes('VGT') && /Póliza vence \d\d\/\d\d/.test(filaIsp));
     ok(nombre + ': en las tarjetas de dedicados hay atajo VGT con su número', /VGT\s*1/.test(await p.textContent('#filtros [data-filtro="vgt"]')));
-    ok(nombre + ': en dedicados hay filtro de Pólizas', (await p.locator('[data-sel="poliza"]').count()) >= 1);
+    ok(nombre + ': lote 21/10: sin filtro de Pólizas; VGT con Requisitos VGT incompletos', (await p.locator('[data-sel="poliza"]').count()) === 0 && (await p.locator('#selsPc [data-sel="vgt"] option[value="incompletos"], #selsTel [data-sel="vgt"] option[value="incompletos"]').count()) >= 1);
     await p.click('#filtros [data-filtro="vgt"]'); await p.waitForFunction(() => document.querySelectorAll('#lista .cli').length === 1);
     ok(nombre + ': el atajo VGT deja solo a los que tienen VGT', (await p.textContent('#lista')).includes('Tornillos El Yunque'));
     await p.click('#tarjetas [data-tarjeta="corporativo"]'); await p.click('#filtros [data-filtro="todos"]'); await p.waitForFunction(() => /Posada Brisa Marina/.test(document.getElementById('lista').textContent));
@@ -66,7 +66,8 @@ async function cerrarHojas(p){ for(let i = 0; i < 5 && await p.evaluate(() => !!
     ok(nombre + ': el enlace suspendido se ve apagado', (await p.locator('.ded-e.apagado').count()) === 1);
     ok(nombre + ': contactos de la empresa con teléfono y correo', datos.includes('Presidencia') && datos.includes('0414-0000001') && datos.includes('info@inventada.test'));
     ok(nombre + ': sin el recuadro de "Sin instalar" de los PYME', !datos.includes('Todavía sin servicio'));
-    ok(nombre + ': hay pestaña Contratos y no hay Comisión (no comisionan)', await p.evaluate(() => !document.querySelector('#tabs [data-tab="contratos"]').classList.contains('hidden') && document.querySelector('#tabs [data-tab="comision"]').classList.contains('hidden')));
+    ok(nombre + ': hay pestañas Contrato y VGT y no hay Comisión (no comisionan)', await p.evaluate(() => !document.querySelector('#tabs [data-tab="contrato"]').classList.contains('hidden') && !document.querySelector('#tabs [data-tab="vgt"]').classList.contains('hidden') && document.querySelector('#tabs [data-tab="comision"]').classList.contains('hidden')));
+    ok(nombre + ': las pestañas van en orden: Datos, Documentos, Contrato, VGT, Hilo', (await p.evaluate(() => Array.from(document.querySelectorAll('#tabs [data-tab]')).filter((b) => !b.classList.contains('hidden')).map((b) => b.dataset.tab).join())) === 'datos,documentos,contrato,vgt,hilo');
     ok(nombre + ': desde Datos se puede cambiar el estatus legal', (await p.locator('#tab-datos [data-paso="estatus"]').count()) >= 1);
     await p.screenshot({ path: 'capturas/25-' + nombre + '-ficha-datos.png' });
 
@@ -79,18 +80,25 @@ async function cerrarHojas(p){ for(let i = 0; i < 5 && await p.evaluate(() => !!
     ok(nombre + ': guardar pasa por el servidor y se ve al momento', mundo.llamadas.some((l) => l[1] === 'dedicado_editar' && l[2].p_campos.verificar === true && l[2].p_campos.ruta_documentos === 'pedir'));
 
     // Contratos
-    await p.click('#tabs [data-tab="contratos"]'); await p.waitForSelector('#tab-contratos.on [data-ctr-editar]');
-    const ctr = await p.textContent('#tab-contratos');
-    ok(nombre + ': Contratos con servicio y VGT por proyecto', ctr.includes('Servicio dedicado') && ctr.includes('Por firmar') && ctr.includes('VGT') && ctr.includes('Vía de prueba') && ctr.includes('12 postes'));
-    ok(nombre + ': el VGT va en su propio bloque arriba de los demás contratos', await p.evaluate(() => { const t = document.querySelectorAll('#tab-contratos .ctr-t'); return t.length >= 2 && t[0].classList.contains('ctr-vgt'); }));
+    await p.click('#tabs [data-tab="contrato"]'); await p.waitForSelector('#tab-contrato.on [data-ctr-editar]');
+    const ctr = await p.textContent('#tab-contrato');
+    ok(nombre + ': Contrato con una tarjeta por contrato, su estatus y su firma Digital o Física', ctr.includes('Contrato dedicado') && ctr.includes('Por firmar') && (await p.locator('#tab-contrato .ctr-ded [data-firma-ctr]').count()) === 2);
+    ok(nombre + ': el VGT no va en Contrato', !ctr.includes('Vía de prueba'));
+    await p.click('#tabs [data-tab="vgt"]'); await p.waitForSelector('#tab-vgt.on .ctr-vgt');
+    const vg = await p.textContent('#tab-vgt');
+    ok(nombre + ': la pestaña VGT trae el contrato, los proyectos y los requisitos aparte', vg.includes('Vía de prueba') && vg.includes('12 postes') && (await p.locator('#tab-documentos [data-grupo="vgt"]').count()) === 0);
+    await p.click('#tabs [data-tab="contrato"]');
     await p.screenshot({ path: 'capturas/25-' + nombre + '-ficha-contratos.png' });
     await p.click('[data-ctr-editar="11"]'); await p.waitForSelector('#hojaCtr.ver');
     await p.selectOption('#kEst', 'firmado'); await p.evaluate(() => { const f = document.querySelector('#kFirma'); f.removeAttribute('max'); f.value = '2099-01-01'; });
     await p.click('#guardarCtr');
     ok(nombre + ': fecha de firma futura da error debajo del campo', (await p.textContent('#eFirma')).includes('no puede ser futura'));
-    await p.fill('#kFirma', '2026-10-01'); await p.fill('#kVence', '12 meses desde la firma'); await p.click('#guardarCtr');
-    await p.waitForFunction(() => /12 meses desde la firma/.test(document.querySelector('#tab-contratos').textContent));
-    ok(nombre + ': el contrato queda firmado con su vencimiento escrito y quién lo cambió', (await p.textContent('#tab-contratos')).includes('Firmado') && (await p.textContent('#tab-contratos')).includes('Marcos Rivas'));
+    await p.fill('#kFirma', '2026-10-01'); await p.click('#guardarCtr');
+    ok(nombre + ': marcar Firmado sin fecha de vencimiento da error debajo', (await p.textContent('#eVence')).includes('vencimiento'));
+    await p.fill('#kVenceEn', '2027-10-01'); await p.click('#guardarCtr');
+    await p.waitForFunction(() => /1 de octubre de 2027|01\/10\/2027|oct/.test(document.querySelector('#tab-contrato .ctr-ded').textContent) && /Marcos Rivas/.test(document.querySelector('#tab-contrato').textContent));
+    ok(nombre + ': el contrato queda firmado con su vencimiento y quién lo cambió', (await p.textContent('#tab-contrato')).includes('Firmado') && mundo.llamadas.some((l) => l[1] === 'dedicado_contrato_editar' && l[2].p_campos.vence_en === '2027-10-01'));
+    ok(nombre + ': firmado sin archivo dice "Firmado: falta subir contrato"', (await p.textContent('#tab-contrato')).includes('Firmado: falta subir contrato'));
     await cerrarHojas(p);
 
     // Clientes: la tarjeta Dedicado ISP trae al ISP

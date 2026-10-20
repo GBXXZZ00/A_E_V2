@@ -1,9 +1,9 @@
 # Traspaso (se actualiza al cerrar cada sesión)
 
-Actualizado: 20/10/2026 (lote 21/10, tanda A hecha). Publicado: `?v=52`.
+Actualizado: 20/10/2026 (lote 21/10 completo: tandas A y B). Publicado: `?v=53`.
 
 ## LOTE 21/10 (`claude/lote-21oct.md`, aprobado): en dos tandas
-Decidido con el administrador: tanda A = partes 1 y 2 (comisiones), publicada en v52; tanda B = partes 3, 4 y 5 (Clientes lista, Clientes hoja, velocidad de documentos), en otra publicación. **Siguiente: tanda B.**
+Decidido con el administrador: tanda A = partes 1 y 2 (comisiones), publicada en v52; tanda B = partes 3, 4 y 5 (Clientes lista, Clientes hoja, velocidad de documentos), en otra publicación. **Lote 21/10 terminado (tanda B en v53).** Siguiente: lo que el administrador pida tras probar.
 
 ### Tanda A hecha (v52)
 - Base (migraciones `lote_21oct_comisiones` y `pago_dias_leer`; SQL en `supabase/pruebas/lote_21oct_comisiones.sql`):
@@ -17,7 +17,23 @@ Decidido con el administrador: tanda A = partes 1 y 2 (comisiones), publicada en
 - Referencia: septiembre 46/41 antes y después. Octubre pasó de 68/49 a 68/53 durante el día por aprobaciones de Legal en vivo del administrador (bitácora `legal_excepcion` 18:02 a 18:08 UTC), no por el cambio. Al aplicar había 9 órdenes de octubre con Revisar pago (1 por factura del mes).
 - Pruebas: test43 nueva; ajustadas 03, 06, 22, 37, 38, 39, 41 (ayudante `plegables()` en `simulador.js`).
 
-### Tanda B (pendiente): partes 3, 4 y 5 de `claude/lote-21oct.md`
+### Tanda B hecha (v53): partes 3, 4 y 5
+- Base (migraciones `lote_21oct_clientes`, `lote_21oct_clientes_permisos`, `lote_21oct_clientes_lista`, `lote_21oct_contrato_pendiente`; SQL en `supabase/pruebas/lote_21oct_clientes*.sql`):
+  - Columnas: `documentos.titulo` (nombre de "Otro"), `dedicado_contratos.vence_en` (fecha) y `firma` (digital | fisica).
+  - Dedicado con `excluido_en` ya no cuenta como dedicado (`privado.segmento`, `privado.tarjetas_todas`, `privado.dedicado_json`).
+  - `privado.contrato_pendiente(cliente)`: 'sin_archivo' | 'sin_vence' (PYME con Contrato firmado y su casilla; dedicados por contrato firmado; `falta_archivo` solo cuenta para VGT y colocation). Hoy: 70 sin archivo y 19 sin vencimiento (todos los dedicados firmados no tenían fecha de vencimiento, solo texto).
+  - RPC nuevas: `cliente_etiqueta` (todos los roles sobre sus clientes), `cliente_lider_cambiar` (admin; PYME = clientes.lider_id, dedicado = dedicados.ejecutiva_id; la comisión no cambia porque usa instalaciones.lider_id), `cliente_suspender` (admin, nota obligatoria), `documentos_marcar_varios` (admin y abogado). Todo con hilo y bitácora. `cliente_contacto` con pedir/recordar pone "Esperando documentos".
+  - `clientes_lista2`: "todos" por defecto; filtros segmento (pyme, dedicado, isp, combinado; excluyentes), vgt `incompletos`, `gestion`, `suspendidos`='1'; devuelve `gestion` (cuentas), `suspendidos`, y por fila `etq`, `ctr`, `suspendido`. Los suspendidos no salen ni cuentan.
+  - `dedicado_contrato_editar`: Firmado exige `vence_en`. `documentos_registrar`: contrato con firma exige vencimiento; "Otro" guarda título y nota. `cliente_ficha`: suspensión, etiquetas, líderes (solo admin), contrato_pend, permisos `lider_cambiar`, `suspender`, `etiquetar`. `revision_bandeja`: bandeja `contrato_pend`.
+  - Función de borde `drive_archivo` v4: con `vista: 'mini'` entrega la miniatura de Drive (primera página).
+- Pantalla:
+  - Clientes (`clientes.js`): "Todos" primero y por defecto; filtros Segmento, Líder, Estatus legal, VGT, Sucursal y Estado del servicio; páginas con flechas; fila de cuentas de etiquetas (filtra) y "Ver suspendidos"; botón de etiqueta en cada fila; etiquetas "PYME + Dedicado", "Suspendido", "Firmado: falta subir contrato", "Falta vencimiento".
+  - Hoja (`ficha.js`, `dedicado-ficha.js`, nuevo `cliente-gestion.js`): pestañas Datos, Documentos, Contrato, VGT (si tiene), Hilo, Comisión (solo con instalación). Datos: Cambiar líder, Gestión (etiquetas), Suspender/Reactivar. Documentos: cola de subidas por detrás (hasta 3 archivos a la vez por subida), "Otro" con nombre y nota, Conatel "Habilitación vigente con atributos de Internet y Transporte", Aprobar seleccionados. Contrato: una tarjeta por contrato con Firma Digital/Física (Física = contrato presencial; el interruptor salió de Documentos) y subida con fecha de firma y vencimiento obligatorio. VGT: contrato, proyectos, requisitos y pólizas.
+  - Revisión: bandeja "Contrato por completar".
+- Velocidad (medido el 20/10): `drive_archivo` tardaba 0,8 s la mitad de las veces y hasta 1,4 s; `cliente_ficha` 230 ms; `revision_estado` 30 ms; la lista de Clientes 900 ms. Aprobar hacía 3 llamadas seguidas antes de pasar al siguiente. Ahora: la miniatura sale primero y el archivo completo llega por detrás; Aprobar marca al instante, guarda por detrás (si el servidor la rechaza, la quita y avisa) y "Cerrar revisión" espera esas marcas.
+- **Decisiones propias:** Sucursal y Estado del servicio se quedaron como filtros (el lote solo pedía quitar los de dedicados). La búsqueda no muestra suspendidos (se ven con "Ver suspendidos"). La Firma física de un dedicado con ficha se guarda en su contrato; la de PYME (o dedicado sin ficha) es la marca de contrato presencial. "Abrir en Drive" está en el visor de cada documento. Los pendientes de Mi trabajo siguen contando a los suspendidos.
+- Referencia: septiembre 46/41 y octubre 68/53 al empezar y al terminar.
+- Pruebas: test44 nueva; ajustadas 04, 07, 09, 25, 28, 34, 41 (y `mundo.js`, `simulador.js`). Batería completa: 44/44.
 
 
 ## LOTE URGENTE COMISIONES Y HOJAS (APROBADO por el administrador el 20/10): texto completo

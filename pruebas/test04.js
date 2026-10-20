@@ -91,6 +91,8 @@ const abiertas = (p) => p.evaluate(() => window.Comun.hojasAbiertas());
     await p.locator('#hojaVarios .arch [data-marca]').nth(1).click();
     await p.screenshot({ path: 'capturas/04-' + nombre + '-varios.png' });
     await p.click('#guardarLote'); await p.waitForFunction(() => window.Comun.hojasAbiertas().join() === 'hojaFicha');
+    // Lote 21/10: la subida sigue por detrás (cola); la hoja ya volvió al expediente
+    await p.waitForFunction(() => !window.Ficha.ocupado()); await p.waitForTimeout(300);
     ok(nombre + ': subir varios registra y vuelve al expediente', llamo(mundo, 'documentos_registrar').length === 2);
     ok(nombre + ': el segundo envío va a la misma carpeta del cliente, sin crear otra', mundo.datos.carpetas[kiosco].subs['PERSONA NATURAL'].length === 2 && Object.values(mundo.datos.subidas).filter((x) => x.cliente === kiosco).filter((x) => x.nueva).length === 1 && !mundo.llamadas.some((l) => l[0] === 'storage'));
     ok(nombre + ': con todo completo pasa a revisión', /revisi/i.test(await p.textContent('#cabFicha')));
@@ -121,7 +123,7 @@ const abiertas = (p) => p.evaluate(() => window.Comun.hojasAbiertas());
     ok(nombre + ': el filtro de líder viaja al servidor y queda en la dirección', filtrado.p_filtros.lider === 'Tomás Guerra' && q.url().includes('lider='));
     if(nombre === 'pc'){ await q.selectOption('#pestatus', 'documentos_solicitados'); await q.waitForFunction(() => location.search.includes('estatus=')); ok('pc: los filtros se combinan', llamo(m, 'clientes_lista2').slice(-1)[0][2].p_filtros.estatus === 'documentos_solicitados'); }
     await q.click('#quitarFiltros'); await q.waitForFunction(() => !location.search.includes('lider='));
-    ok(nombre + ': Quitar filtros los limpia (solo queda la tarjeta)', Object.keys(llamo(m, 'clientes_lista2').slice(-1)[0][2].p_filtros).filter((k) => k !== 'tarjeta').length === 0);
+    ok(nombre + ': Quitar filtros los limpia (solo queda la tarjeta)', Object.keys(llamo(m, 'clientes_lista2').slice(-1)[0][2].p_filtros).filter((k) => k !== 'tarjeta' && llamo(m, 'clientes_lista2').slice(-1)[0][2].p_filtros[k]).length === 0);
 
     await q.goto(H + 'cliente.html?id=1001&t=documentos&revisar=1'); await q.waitForSelector('#hojaVer.ver');
     ok(nombre + ': el enlace viejo lleva a Clientes con el expediente y la revisión encima', q.url().includes('clientes.html') && (await abiertas(q)).join() === 'hojaFicha,hojaVer' && (await q.textContent('#hojaVer')).includes('Documento 1 de 4'));

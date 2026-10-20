@@ -11,12 +11,14 @@
       { id: 'en_curso', t: 'Revisión en curso', a: 'Tienen documentos marcados sin cerrar. El líder todavía no sabe nada.' },
       { id: 'leyendo', t: 'La IA está leyendo', a: 'Se actualiza sola. Puedes seguir trabajando.' },
       { id: 'por_firmar', t: 'Por firmar', a: 'El contrato ya se envió y falta la firma del cliente.' },
+      { id: 'contrato_pend', t: 'Contrato por completar', a: 'Contratos firmados sin archivo o sin fecha de vencimiento. Ábrelos y completa en la pestaña Contrato.' },
       { id: 'analizables', t: 'Todos con documentos', a: 'Marca los clientes que quieres revisar con IA. Solo se pagan los archivos que nunca se han leído.' },
       { id: 'comparar', t: 'Comparar con Legal', a: 'Lo que propuso la IA contra lo que quedó decidido, documento por documento.' }
     ],
     abogado: [
       { id: 'contrato', t: 'Para contrato', a: 'Documentos recibidos y revisados: falta elaborar el contrato.' },
       { id: 'por_firmar', t: 'Por firmar', a: 'El contrato ya se envió y falta la firma del cliente.' },
+      { id: 'contrato_pend', t: 'Contrato por completar', a: 'Contratos firmados sin archivo o sin fecha de vencimiento. Ábrelos y completa en la pestaña Contrato.' },
       { id: 'por_revisar', t: 'Por revisar', a: 'Puedes marcar los documentos; la revisión la cierra el administrador.' },
       { id: 'en_curso', t: 'Revisión en curso', a: 'Tienen documentos marcados sin cerrar.' }
     ]
@@ -63,7 +65,8 @@
       (puedeIA() ? '<button type="button" class="caja-rv' + (marc ? ' on' : '') + '" data-marcar="' + esc(f.id) + '" aria-pressed="' + marc + '" aria-label="Marcar ' + esc(f.nombre) + '"' + (leyendo || !f.archivos ? ' disabled' : '') + '><i></i></button>' : '') +
       '<button type="button" class="rv-cuerpo" data-cliente="' + esc(f.id) + '">' +
         '<span class="quien"><span class="mono" aria-hidden="true">' + esc(iniciales(f.nombre).charAt(0)) + '</span><span><b>' + esc(f.nombre) + '</b><small>' + esc(sub) + '</small></span></span>' +
-        '<span class="rv-chips">' + chipEstatus(f.estatus) + chipIA(f) + (f.marcas ? '<span class="chip">' + esc(plural(f.marcas, 'marcado', 'marcados')) + '</span>' : '') + '</span>' +
+        '<span class="rv-chips">' + chipEstatus(f.estatus) + chipIA(f) + (f.marcas ? '<span class="chip">' + esc(plural(f.marcas, 'marcado', 'marcados')) + '</span>' : '') +
+          (f.contrato_pend ? '<span class="chip ambar">' + (f.contrato_pend === 'sin_archivo' ? 'Firmado: falta subir contrato' : 'Falta vencimiento') + '</span>' : '') + '</span>' +
         '<span class="rv-arch">' + esc(arch) + '</span>' + ic('derecha', 'ch fl') + '</button></div>';
   }
   function pintarLista(){
@@ -71,7 +74,7 @@
     $('cuentaLista').textContent = q ? plural(total, 'resultado', 'resultados') : plural(total, 'cliente', 'clientes');
     if(!filas.length){
       $('lista').innerHTML = q ? vacio('No encontramos nada con "' + q + '"', 'Prueba con otra parte del nombre o el RIF sin guiones.')
-        : vacio('Nada en esta bandeja', { borradores: 'Cuando la IA termine una revisión, aparece aquí.', leyendo: 'La IA no está leyendo ningún expediente ahora.', en_curso: 'No hay revisiones sin cerrar.', contrato: 'Ningún expediente espera contrato.' }[bandeja] || 'No hay clientes en este grupo ahora mismo.',
+        : vacio('Nada en esta bandeja', { borradores: 'Cuando la IA termine una revisión, aparece aquí.', leyendo: 'La IA no está leyendo ningún expediente ahora.', en_curso: 'No hay revisiones sin cerrar.', contrato: 'Ningún expediente espera contrato.', contrato_pend: 'Todos los contratos firmados tienen su archivo y su vencimiento.' }[bandeja] || 'No hay clientes en este grupo ahora mismo.',
           rol === 'admin' && bandeja !== 'analizables' ? '<button type="button" class="btn btn-chico btn-2" data-bandeja="analizables">Ver todos con documentos</button>' : '');
       $('pieLista').classList.add('hidden'); return;
     }
@@ -194,7 +197,7 @@
   }
 
   // ---------- Eventos ----------
-  function abrirCliente(id){ window.Ficha.abrir(id, { yo, tab: 'documentos', alCerrar: refrescar }); }
+  function abrirCliente(id){ window.Ficha.abrir(id, { yo, tab: bandeja === 'contrato_pend' ? 'contrato' : 'documentos', alCerrar: refrescar }); }
   document.addEventListener('click', (e) => {
     const t = e.target; let b;
     if((b = t.closest('#filtros [data-bandeja], #lista [data-bandeja]'))){ bandeja = b.dataset.bandeja; q = ''; $('busca').value = ''; marcados.clear(); guardarUrl(); pintarAtajos(); cargar(false); return; }

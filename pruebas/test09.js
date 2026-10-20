@@ -31,7 +31,9 @@ const llamadasDrive = (m) => m.llamadas.filter((l) => l[0] === 'drive');
     const src = await p.getAttribute('#visor img', 'src').catch(() => null);
     ok(nombre + ': la imagen de Drive se ve dentro de la app', !!src && src.indexOf('blob:') === 0, src);
     ok(nombre + ': la pide a la función con el número del archivo', llamadasDrive(mundo).some((l) => l[1] === dImg.archivos[0].id));
-    ok(nombre + ': la app nunca abre el enlace de Drive', aDrive.length === 0 && !(await p.content()).includes('drive.google.com'), aDrive);
+    // Lote 21/10: el enlace de Drive solo está en el botón "Abrir en Drive"; la app nunca lo abre sola
+    ok(nombre + ': la app nunca abre el enlace de Drive (solo el botón Abrir en Drive lo tiene)', aDrive.length === 0 && (await p.evaluate(() => Array.from(document.querySelectorAll('[href*="drive.google.com"], [src*="drive.google.com"]')).every((x) => x.id === 'abrirDrive' || x.closest('#filaDrive')))), aDrive);
+    ok(nombre + ': el visor trae "Abrir en Drive"', (await p.textContent('#abrirDrive')) === 'Abrir en Drive' && /^https:\/\/drive\.google\.com\//.test(await p.getAttribute('#abrirDrive', 'href')));
     ok(nombre + ': Abrir completo usa el archivo bajado', ((await p.getAttribute('#abrirCompleto', 'href')) || '').indexOf('blob:') === 0);
     ok(nombre + ': el visor no desborda', await sinDesborde(p));
     await p.waitForTimeout(400); await p.screenshot({ path: 'capturas/09-' + nombre + '-imagen.png' });

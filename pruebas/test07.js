@@ -33,13 +33,14 @@ const cerrarTodo = async (p) => { for(let i = 0; i < 4; i++){ if(await p.evaluat
     ok(nombre + ': en revisión todavía no se ve el contrato', (await p.locator('[data-grupo="contrato"]').count()) === 0);
     await p.screenshot({ path: 'capturas/07-' + nombre + '-documentos.png' });
     await cerrarTodo(p);
-    await abrirCliente(p, 'Posada Brisa Marina'); await p.click('[data-tab="documentos"]');
-    ok(nombre + ': en Pendiente por firmar aparece el contrato', (await p.locator('[data-grupo="contrato"] [data-casilla="contrato_dedicado:0"]').count()) === 1);
+    // Lote 21/10: el contrato vive en la pestaña Contrato (una tarjeta por contrato)
+    await abrirCliente(p, 'Posada Brisa Marina'); await p.click('[data-tab="contrato"]');
+    ok(nombre + ': en Pendiente por firmar aparece el contrato', (await p.locator('#tab-contrato .ctr-ded [data-subir="contrato_dedicado:0"]').count()) === 1 && (await p.textContent('#tab-contrato .ctr-ded')).includes('Por firmar') && (await p.locator('#tab-documentos [data-grupo="contrato"]').count()) === 0);
     await cerrarTodo(p);
     await abrirCliente(p, 'Tornillos El Yunque');
     ok(nombre + ': sin dedicado no sale el interruptor de ISP', (await p.locator('[data-interr="es_isp"]').count()) === 0 && (await p.locator('[data-interr="es_top"]').count()) === 1);
-    await p.click('[data-tab="documentos"]');
-    ok(nombre + ': firmado conserva su contrato', (await p.locator('[data-grupo="contrato"] [data-casilla="contrato_pyme:0"]').count()) === 1);
+    await p.click('[data-tab="contrato"]');
+    ok(nombre + ': firmado conserva su contrato', (await p.locator('#tab-contrato .ctr-pyme').count()) === 1 && (await p.textContent('#tab-contrato .ctr-pyme')).includes('Firmado'));
     await cerrarTodo(p);
     await abrirCliente(p, 'Kiosco La Parada'); await p.click('[data-tab="documentos"]');
     ok(nombre + ': natural: contacto opcional y sin contrato', (await p.textContent('[data-grupo="rep1"] [data-campo]')).includes('Opcional') && (await p.locator('[data-grupo="contrato"]').count()) === 0 && (await p.locator('.chip.rojo:has-text("Falta")').count()) === 2);

@@ -57,6 +57,21 @@ Deno.serve(async (req: Request) => {
 
     const token = await tokenGoogle();
     if (!token) return fallo("El permiso de Google venció. Avísale al administrador", 503);
+
+    // Lote 21/10: vista ligera. Con vista = "mini" se entrega la miniatura de Drive (primera página de un PDF, foto achicada):
+    // pesa poco y llega rápido; la app pide el archivo completo por detrás.
+    if (b.vista === "mini") {
+      const m = await fetch("https://www.googleapis.com/drive/v3/files/" + encodeURIComponent(a.drive_id) + "?fields=thumbnailLink&supportsAllDrives=true", {
+        headers: { Authorization: "Bearer " + token },
+      });
+      const j = (await m.json().catch(() => ({}))) as Record<string, unknown>;
+      const link = String(j.thumbnailLink || "");
+      if (!m.ok || !/^https:\/\/[a-z0-9.-]+\.(googleusercontent|google)\.com\//i.test(link)) return fallo("Sin vista previa", 404);
+      const t = await fetch(link.replace(/=s\d+$/, "=s1400"), { headers: { Authorization: "Bearer " + token } });
+      if (!t.ok || !t.body) return fallo("Sin vista previa", 404);
+      const tipoM = /^image\//i.test(t.headers.get("Content-Type") || "") ? String(t.headers.get("Content-Type")) : "image/jpeg";
+      return new Response(t.body, { status: 200, headers: { ...cors, "Content-Type": tipoM, "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff" } });
+    }
     const r = await fetch("https://www.googleapis.com/drive/v3/files/" + encodeURIComponent(a.drive_id) + "?alt=media&supportsAllDrives=true", {
       headers: { Authorization: "Bearer " + token },
     });
