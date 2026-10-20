@@ -1096,3 +1096,11 @@ button.ge-li{cursor:pointer}
 .docs-com-z[hidden]{display:none}
 .docs-com-z .bloque:first-of-type .sec{margin-top:14px}
 #docsCom.sobre{outline:2px dashed var(--accent);outline-offset:4px;border-radius:14px}
+/* Lote urgente 20/10, parte 7: en el teléfono todas las hojas tienen agarradera y se cierran deslizando hacia abajo */
+@media (max-width:899px){
+  .hoja:not(:has(> .asa))::before{content:'';display:block;flex:none;width:40px;height:5px;border-radius:3px;background:var(--surface-3);margin:-10px auto 12px}
+  .hoja.arrastrando{transition:none}
+  .hoja.ficha::before{position:sticky;top:0}
+}
+@media (min-width:900px){ .hoja .asa{display:none} }
+@media (prefers-reduced-motion:reduce){ .hoja,.hoja.ver{transition:visibility 0s} }

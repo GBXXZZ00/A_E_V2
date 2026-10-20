@@ -681,6 +681,7 @@
     const c = d.corte;
     rpc('corte_cierre_resumen', { p_corte: c }).then((r) => {
       const z = $('certCuerpo'); if(!z || !d || d.corte !== c) return;
+      ['total', 'cumplen', 'pasan', 'se_pierden', 'por_asignar'].forEach((k) => { r[k] = Number(r[k]) || 0; });
       z.innerHTML = '<div class="estado verde"><b>' + r.cumplen + ' de ' + r.total + ' comisionan</b><small>Es lo que queda en el Excel del corte.</small></div>' +
         (r.pasan ? '<div class="estado ambar"><b>' + plural(r.pasan, 'pasa', 'pasan') + ' al corte siguiente</b><small>No cumplieron en este corte. Tienen el siguiente para cumplir.</small></div>' : '') +
         (r.se_pierden ? '<div class="estado rojo"><b>' + plural(r.se_pierden, 'se pierde', 'se pierden') + '</b><small>Era su último corte y no cumplieron. Queda la constancia.</small></div>' : '') +

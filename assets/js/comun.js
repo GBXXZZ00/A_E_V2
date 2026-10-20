@@ -314,6 +314,44 @@
   });
   document.addEventListener('keydown', (e) => { if(e.key === 'Escape') cerrarHoja(); });
 
+  // Lote urgente 20/10: en el teléfono, deslizar hacia abajo cierra la hoja (como una hoja del sistema).
+  // Se arrastra desde la parte de arriba (la agarradera) o desde el contenido solo si ya está arriba del todo.
+  // La hoja sigue el dedo (solo transform); se cierra si pasa el umbral o va rápido; si no, vuelve.
+  const telefono = window.matchMedia ? window.matchMedia('(max-width: 899px)') : { matches: false };
+  const ARRIBA = 56;   // zona de la agarradera, en píxeles desde el borde de arriba de la hoja
+  let arr = null;      // { h, y0, x0, t0, dy, activo, desdeArriba }
+  const enScroll = (el, h) => { for(let n = el; n && n !== h.parentNode; n = n.parentNode){ if(n.nodeType === 1 && n.scrollTop > 0) return true; if(n === h) break; } return false; };
+  document.addEventListener('touchstart', (e) => {
+    arr = null;
+    if(!telefono.matches || !abierta || e.touches.length !== 1) return;
+    const h = abierta; const t = e.touches[0]; if(!h.contains(e.target)) return;
+    if(e.target.closest('input,textarea,select,[contenteditable="true"],.sw')) return;
+    const r = h.getBoundingClientRect(); const desdeArriba = t.clientY - r.top <= ARRIBA;
+    if(!desdeArriba && enScroll(e.target, h)) return;   // el contenido no está arriba: es scroll, no arrastre
+    arr = { h, y0: t.clientY, x0: t.clientX, t0: Date.now(), dy: 0, activo: false, desdeArriba };
+  }, { passive: true });
+  document.addEventListener('touchmove', (e) => {
+    if(!arr) return; const t = e.touches[0]; const dy = t.clientY - arr.y0; const dx = t.clientX - arr.x0;
+    if(!arr.activo){
+      if(Math.abs(dy) < 8 && Math.abs(dx) < 8) return;
+      if(dy <= 0 || Math.abs(dx) > Math.abs(dy)){ arr = null; return; }   // hacia arriba o de lado: es scroll
+      if(!arr.desdeArriba && enScroll(e.target, arr.h)){ arr = null; return; }
+      arr.activo = true; arr.h.classList.add('arrastrando');
+    }
+    e.preventDefault();
+    arr.dy = Math.max(0, dy); arr.h.style.transform = 'translateY(' + arr.dy + 'px)';
+  }, { passive: false });
+  const soltar = () => {
+    if(!arr) return; const x = arr; arr = null; if(!x.activo) return;
+    const alto = x.h.getBoundingClientRect().height || 1; const vel = x.dy / Math.max(1, Date.now() - x.t0);
+    x.h.classList.remove('arrastrando');
+    const cierra = x.dy > Math.min(160, alto * 0.3) || (vel > 0.6 && x.dy > 30);
+    x.h.style.transform = '';   // con la transición de la hoja: vuelve a su sitio o sale por abajo
+    if(cierra && abierta === x.h) cerrarHoja();
+  };
+  document.addEventListener('touchend', soltar);
+  document.addEventListener('touchcancel', soltar);
+
   // Al volver con el botón Atrás, la página se revisa de nuevo en vez de mostrarse desde la memoria
   window.addEventListener('pageshow', (e) => { if(e.persisted) location.reload(); });
 

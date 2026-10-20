@@ -1,6 +1,6 @@
 # Traspaso (se actualiza al cerrar cada sesión)
 
-Actualizado: 20/10/2026 (lote urgente comisiones y hojas en curso). Publicado: `?v=50`.
+Actualizado: 20/10/2026 (lote urgente comisiones y hojas hecho). Publicado: `?v=51`.
 
 ## LOTE URGENTE COMISIONES Y HOJAS (APROBADO por el administrador el 20/10): texto completo
 
@@ -79,6 +79,13 @@ Al terminar: pruebas (nuevas para 1, 2, 3, 5 y 6), capturas en escritorio e iPho
   - El interruptor "Contrato presencial" está arriba de Documentos en la hoja de Clientes y dentro de Documentos en la hoja de comisión, con el aviso "El cliente firma en físico. No se piden correos ni teléfono; sí los documentos legales. Comisiona igual." Lo cambian administrador y abogado (como antes).
   - **Decisión propia:** el interruptor salió de Datos (quedó una nota que dice que se marca arriba de Documentos) para que haya uno solo.
   - SQL en `supabase/pruebas/lote_urgente_p6.sql`. Prueba nueva: test41; test28 ajustada.
+- **Parte 7: HECHA en v51. Hojas en el teléfono.** Sin cambios en la base.
+  - Deslizar hacia abajo cierra la hoja de arriba (`comun.js`): se arrastra desde la parte de arriba (agarradera, 56 px) o desde el contenido solo si está arriba del todo; la hoja sigue el dedo con transform; se cierra si pasa el 30% de su alto (máximo 160 px) o si va rápido; si no, vuelve. No se activa en campos de texto ni interruptores, ni de lado (scroll horizontal). Solo en pantallas de menos de 900 px.
+  - Todas las hojas del teléfono muestran agarradera (las que no la tenían, con CSS). En escritorio la agarradera no se muestra.
+  - Con movimiento reducido, las hojas no animan (aparecen y desaparecen sin transición).
+  - Prueba nueva: test42 (arrastre corto vuelve, sigue al dedo, contenido bajado es scroll, desde la agarradera cierra, rápido cierra, apiladas cierra solo la de arriba, agarradera visible, movimiento reducido y escritorio sin efecto).
+- **Lote completo.** Septiembre 59/49 y octubre 63/26 al final. Revisión propia: textos escapados, números del servidor convertidos antes de entrar al HTML, permisos en el servidor (cerrar corte y mover de corte solo administrador y Analista Senior; presencial administrador y abogado), errores de red con aviso.
+- **Qué debe probar el administrador:** (1) Comisiones: el aviso del día límite y "Cerrar corte" con su resumen (no cerrar octubre sin querer: queda fijo); (2) en una hoja de comisión, "Cambiar de corte" con motivo y la etiqueta "Movida a mano"; (3) "Quitar pago" pregunta antes; (4) Documentos plegado en la hoja de comisión, arrastrar un archivo y Subir varios; (5) agregar un representante vacío y quitarlo; (6) el interruptor de contrato presencial arriba de Documentos; (7) en el teléfono, cerrar hojas deslizando hacia abajo.
 ## CORRIDA 14/10 TARDE (APROBADA por el administrador): texto completo
 
 CORRIDA 14/10 tarde (aprobada por el administrador). Primer paso: copia este texto completo al traspaso. Publica por parte (pruebas, capturas 1366x768 y iPhone como admin y como líder, revisión independiente, ?v=, commit y push). Septiembre 59/49 antes y después de cada parte. Migraciones está en pausa: solo se toca su formulario (Parte 3). Nada de nombres ni RIF reales en el repo. Anota las decisiones propias en el traspaso.
