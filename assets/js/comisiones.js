@@ -58,9 +58,10 @@
 
   function pintarCorte(){
     const actual = d ? d.actual : corte; if(!actual) return;
-    const ops = [0, 1, 2, 3, 4, 5].map((n) => menosMeses(actual, n));
+    const sig = d && d.siguiente ? d.siguiente : null;
+    const ops = (sig ? [sig] : []).concat([0, 1, 2, 3, 4, 5].map((n) => menosMeses(actual, n)));
     const elegido = d ? d.corte : corte; if(elegido && ops.indexOf(elegido) < 0) ops.push(elegido);
-    $('corte').innerHTML = ops.map((c, i) => '<option value="' + c + '"' + (c === (d ? d.corte : corte) ? ' selected' : '') + '>' + esc(nombreCorte(c)) + (i === 0 ? ' (en curso)' : '') + '</option>').join('');
+    $('corte').innerHTML = ops.map((c) => '<option value="' + c + '"' + (c === (d ? d.corte : corte) ? ' selected' : '') + '>' + esc(nombreCorte(c)) + (c === actual ? ' (en curso)' : c === sig ? ' (siguiente)' : '') + '</option>').join('');
   }
   function pintarFiltros(){
     $('filtros').innerHTML = FILTROS.filter((f) => (OPCIONALES.indexOf(f.id) < 0 || filtro === f.id || Number(conteo(f.id)) > 0)).map((f) => {
@@ -72,9 +73,13 @@
   function pintarMets(){
     const propias = d.filas.filter((f) => f.origen === 'corte'); const ult = d.filas.filter((f) => f.origen === 'anterior');
     const cumplen = d.filas.filter((f) => f.cumple).length;
-    const enCurso = d.corte === d.actual;
-    const lim = d.limite || d.fin;
-    $('rango').textContent = 'Instalaciones del ' + fecha(d.inicio) + ' al ' + fecha(d.fin) + (enCurso ? '. Legal y pago hasta el ' + fecha(lim).split(' de ')[0] + ': ' + (d.dias > 0 ? 'faltan ' + plural(d.dias, 'día', 'días') : 'es hoy') : '. Corte cerrado');
+    const enCurso = d.corte === d.actual; const sig = !!d.siguiente && d.corte === d.siguiente;
+    const lim = fecha(d.limite || d.fin).split(' de ')[0];
+    // Lote urgente 20/10: el corte se cierra a mano; el día límite es un aviso
+    $('rango').textContent = 'Instalaciones del ' + fecha(d.inicio) + ' al ' + fecha(d.fin) + '. ' + (d.certificado ? 'Corte cerrado.'
+      : sig ? 'Corte siguiente: empieza a contar cuando se cierre el de ' + mes(d.actual) + '.'
+      : enCurso ? (d.dias > 0 ? 'Día límite el ' + lim + ': faltan ' + plural(d.dias, 'día', 'días') + '.' : d.dias === 0 ? 'Hoy es el día límite del corte.' : 'El día límite fue el ' + lim + '. Sigue abierto hasta que se cierre.')
+      : d.abierto === false || !d.manual ? 'Corte cerrado.' : 'Sigue abierto.');
     $('mets').innerHTML =
       '<div class="met negro"><b>' + cumplen + '</b><small>' + (enCurso ? 'Cumplen hasta hoy' : 'Cumplieron') + ' de ' + d.filas.length + '</small></div>' +
       '<div class="met"><b>' + propias.length + '</b><small>Instaladas en el corte</small></div>' +
@@ -281,13 +286,16 @@
   // Lo que pide atención en el corte y lo que se puede hacer con él
   function pintarAvisos(){
     const P = d.puedo || {}; const n = porAsignar(); let h = '';
-    if(d.certificado) h += '<div class="franja verde">' + ic('check') + '<span><b>Corte certificado</b>' + esc((d.certificado.por ? 'Por ' + primerNombre(d.certificado.por) + ', el ' : 'El ') + fecha(d.certificado.en)) + '. Lo que ves quedó fijo.</span>' +
+    if(!d.certificado && d.manual && d.corte === d.actual && d.dias <= 0) h += '<div class="franja ambar">' + ic('reloj') + '<span><b>' + (d.dias === 0 ? 'Hoy es el día límite del corte' : 'El corte de ' + mes(d.corte) + ' sigue abierto') + '</b>' +
+      (P.certificar ? 'Lo que se cumpla antes de cerrarlo cuenta. Ciérralo cuando termines Legal y pagos.' : 'Lo que se cumpla antes de que lo cierren cuenta para este corte.') + '</span>' +
+      (P.certificar ? '<button type="button" class="mini pri" data-cerrar-corte>Cerrar corte</button>' : '') + '</div>';
+    if(d.certificado) h += '<div class="franja verde">' + ic('check') + '<span><b>Corte cerrado</b>' + esc((d.certificado.por ? 'Por ' + primerNombre(d.certificado.por) + ', el ' : 'El ') + fecha(d.certificado.en)) + '. Lo que ves quedó fijo.</span>' +
       (P.quitar_certificado ? '<button type="button" class="mini" id="quitarCert">Quitar</button>' : '') + '</div>';
     if(n && filtro !== 'asignar') h += '<button type="button" class="franja ambar" data-filtro="asignar">' + ic('alerta') + '<span><b>' + plural(n, 'pendiente', 'pendientes') + ' por asignar</b>' +
       'No se sabe de qué líder son. ' + (P.asignar ? 'No comisionan hasta que confirmes la orden y a quién pertenecen.' : 'No comisionan hasta que el Analista Senior las asigne.') + '</span>' + ic('derecha') + '</button>';
     $('avisos').innerHTML = h;
     $('acciones').innerHTML = (d.filas.length ? '<button type="button" class="mini" id="bajarExcel">' + ic('doc') + 'Bajar Excel</button>' : '') +
-      (P.certificar ? '<button type="button" class="mini pri" id="abrirCert">' + ic('check') + 'Certificar corte</button>' : '');
+      (P.certificar ? '<button type="button" class="mini pri" id="abrirCert">' + ic('check') + 'Cerrar corte</button>' : '');
   }
   // Columnas del Excel del corte (para planta externa). Para cambiar el orden basta mover las líneas.
   const si = (v) => (v ? 'Sí' : 'No');
@@ -347,7 +355,7 @@
     const sec = (origen) => pend.filter((f) => f.origen === origen).map((f) => ({ n: ++n, nombre: window.Documentos.limpiarNombre(f.nombre), codigo: f.codigo || '', detalle: detalle(f) }));
     const ultimo = sec('anterior'); const actual = sec('corte');
     const dia = Number(String(x.limite || x.fin).slice(8, 10));
-    const cierre = x.dias <= 0 ? 'Hoy, el ' + dia + ', es el límite para Legal y pago' : 'El límite para Legal y pago es el ' + dia + ' y ' + (x.dias === 1 ? 'falta 1 día' : 'faltan ' + x.dias + ' días');
+    const cierre = x.dias < 0 ? 'El corte sigue abierto: envíalo lo antes posible, se cierra en cualquier momento' : x.dias === 0 ? 'Hoy, el ' + dia + ', es el límite para Legal y pago' : 'El límite para Legal y pago es el ' + dia + ' y ' + (x.dias === 1 ? 'falta 1 día' : 'faltan ' + x.dias + ' días');
     const cumplen = x.filas.filter((f) => f.cumple).length;
     const cab = saludo() + ', ' + primerNombre(x.nombre) + '. Te paso tus pendientes del corte de ' + mes(x.corte) + '. ' + cierre + '.';
     const cola = 'Ya cumplen: ' + cumplen + ' de ' + x.filas.length + '.\n\nCualquier documento me lo envías por aquí o lo subes en la app. Gracias.';
@@ -506,7 +514,7 @@
     const sub = !i || !i.comisiona ? (i && i.es_evento && !i.es_aliado ? 'Es un evento y el Analista Senior decidió que no comisiona.' : i && i.es_aliado ? 'Es una instalación de aliado' + (i.instalador ? ': ' + capital(i.instalador) : '') + '. No comisiona.' : 'Los dedicados y las instalaciones de aliado no comisionan.')
       : sinAsignar ? 'No comisiona hasta que el Analista Senior confirme la orden de Odoo y a quién pertenece.'
       : ok && exc ? 'Motivo: ' + (i.excepcion_motivo || 'sin motivo') + (i.excepcion_por ? '. La dio ' + primerNombre(i.excepcion_por) + '.' : '')
-      : perdida ? 'Era del corte de ' + mes(i.corte) + '.' : 'Corte de ' + mes(F.corte.etiqueta) + ', límite el ' + fecha(F.corte.limite || F.corte.fin).split(' de ')[0] + '. ' + (F.corte.dias <= 0 ? 'Es hoy.' : 'Faltan ' + plural(F.corte.dias, 'día', 'días') + '.');
+      : perdida ? 'Era del corte de ' + mes(i.corte) + '.' : 'Corte de ' + mes(F.corte.etiqueta) + ', límite el ' + fecha(F.corte.limite || F.corte.fin).split(' de ')[0] + '. ' + (F.corte.dias < 0 ? 'El corte sigue abierto hasta que se cierre.' : F.corte.dias === 0 ? 'Es hoy.' : 'Faltan ' + plural(F.corte.dias, 'día', 'días') + '.');
     const ns = (F.servicios || []).length;
     let h = '<div class="estado ' + (ok ? 'verde' : ultimo || perdida ? 'rojo' : 'ambar') + '"><b>' + esc(tituloEstado) + '</b><small>' + esc(sub) + '</small></div>' +
       bloqueProforma(F, i) +
@@ -646,14 +654,22 @@
       '<div class="error" id="eLegal" role="alert"></div><div class="acciones"><button type="submit" class="btn btn-ancho" id="legalGuardar">' + (quitar ? 'Quitar Legal' : 'Aprobar Legal') + '</button></div></form>';
     abrirHoja('hojaLegal');
   }
+  // Cerrar corte: resumen del servidor (cuántas cumplen, cuántas pasan al siguiente) y confirmación
   function abrirCertificar(){
-    const n = porAsignar(); const cumplen = d.filas.filter((f) => f.cumple).length;
-    hojaChica('hojaCert', 'tCert').innerHTML = cabHoja('tCert', 'Certificar ' + nombreCorte(d.corte).toLowerCase(), 'Del ' + fecha(d.inicio) + ' al ' + fecha(d.fin)) +
-      '<div class="estado verde"><b>' + cumplen + ' de ' + d.filas.length + ' comisionan</b><small>Es lo que queda en el Excel del corte.</small></div>' +
-      (n ? '<div class="estado ambar"><b>' + plural(n, 'queda', 'quedan') + ' por asignar</b><small>Si certificas ahora, no comisionan en este corte.</small></div>' : '') +
-      '<p class="nota-chica">Al certificar, el corte queda fijo: lo que cambie después ya no lo mueve.</p>' +
-      '<div class="acciones"><button type="button" class="btn btn-ancho" id="certificar">Certificar corte</button></div>';
+    const h = hojaChica('hojaCert', 'tCert');
+    h.innerHTML = cabHoja('tCert', 'Cerrar ' + nombreCorte(d.corte).toLowerCase(), 'Del ' + fecha(d.inicio) + ' al ' + fecha(d.fin)) +
+      '<div id="certCuerpo"><div class="sk-bloque"><span class="sk" style="height:56px;border-radius:14px"></span><span class="sk" style="height:56px;border-radius:14px"></span></div></div>';
     abrirHoja('hojaCert');
+    const c = d.corte;
+    rpc('corte_cierre_resumen', { p_corte: c }).then((r) => {
+      const z = $('certCuerpo'); if(!z || !d || d.corte !== c) return;
+      z.innerHTML = '<div class="estado verde"><b>' + r.cumplen + ' de ' + r.total + ' comisionan</b><small>Es lo que queda en el Excel del corte.</small></div>' +
+        (r.pasan ? '<div class="estado ambar"><b>' + plural(r.pasan, 'pasa', 'pasan') + ' al corte siguiente</b><small>No cumplieron en este corte. Tienen el siguiente para cumplir.</small></div>' : '') +
+        (r.se_pierden ? '<div class="estado rojo"><b>' + plural(r.se_pierden, 'se pierde', 'se pierden') + '</b><small>Era su último corte y no cumplieron. Queda la constancia.</small></div>' : '') +
+        (r.por_asignar ? '<div class="estado ambar"><b>' + plural(r.por_asignar, 'queda', 'quedan') + ' por asignar</b><small>Si cierras ahora, no comisionan en este corte.</small></div>' : '') +
+        '<p class="nota-chica">Al cerrar, el corte queda fijo: lo que cambie después ya no lo mueve. Queda en la bitácora.</p>' +
+        '<div class="acciones"><button type="button" class="btn btn-ancho" id="certificar">Cerrar corte</button></div>';
+    }).catch((e) => { const z = $('certCuerpo'); if(z) z.innerHTML = '<div class="estado rojo"><b>No se pudo preparar el cierre</b><small>' + esc(e.message) + '. Intenta de nuevo.</small></div>'; });
   }
   // Lo que se gestiona desde aquí abre el expediente encima; al cerrarlo se vuelve a esta hoja ya actualizada
   function alExpediente(o){ if(!K) return; window.Ficha.abrir(K.cliente, Object.assign({ yo, alCerrar: tras }, o || {})); }
@@ -700,9 +716,10 @@
     if(t.closest('#pendVerPdf') && P && P.datos){ let f; try { f = pdfPendientes(); } catch (err) { toast('No se pudo armar el PDF. Intenta de nuevo', 'error'); return; }
       const u = URL.createObjectURL(f); const w = window.open(u, '_blank'); if(!w) window.Archivos.descargar(f, f.name); setTimeout(() => URL.revokeObjectURL(u), 120000); return; }
     if(t.closest('#abrirCert') && d){ abrirCertificar(); return; }
-    if((b = t.closest('#certificar')) && d){ b.disabled = true; b.textContent = 'Certificando…';
-      rpc('corte_certificar', { p_corte: d.corte }).then(() => { toast('Corte certificado'); if(hojaAbierta() === 'hojaCert') cerrarHoja(); cache.borrarTodo(); cargar(); })
-        .catch((err) => { toast(err.message, 'error'); if(document.contains(b)){ b.disabled = false; b.textContent = 'Certificar corte'; } }); return; }
+    if(t.closest('[data-cerrar-corte]') && d){ abrirCertificar(); return; }
+    if((b = t.closest('#certificar')) && d){ b.disabled = true; b.textContent = 'Cerrando…';
+      rpc('corte_certificar', { p_corte: d.corte }).then((r) => { toast('Corte cerrado' + (r && r.pasan ? '. ' + plural(r.pasan, 'pasa', 'pasan') + ' al siguiente' : '')); if(hojaAbierta() === 'hojaCert') cerrarHoja(); cache.borrarTodo(); corte = ''; d = null; cargar(); })
+        .catch((err) => { toast(err.message, 'error'); if(document.contains(b)){ b.disabled = false; b.textContent = 'Cerrar corte'; } }); return; }
     if((b = t.closest('#quitarCert')) && d){ b.disabled = true;
       rpc('corte_descertificar', { p_corte: d.corte }).then(() => { toast('Certificación quitada'); cache.borrarTodo(); cargar(); }).catch((err) => { toast(err.message, 'error'); if(document.contains(b)) b.disabled = false; }); return; }
     if(t.closest('#asigCambiar') && K){ abrirAsignar(); return; }

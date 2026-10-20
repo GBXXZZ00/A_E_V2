@@ -31,10 +31,13 @@ const { ok, cerrar } = marcador();
     await p.click('#vistas [data-vista="corte"]'); await p.waitForSelector('[data-filtro="legal"]');
     await p.click('[data-filtro="legal"]');
     ok(nombre + ': Falta legal solo trae las que no cumplen legal', (await p.locator('.m.verde:has-text("Legal")').count()) === 0);
-    await p.selectOption('#corte', { index: 1 }); await p.waitForFunction(() => document.getElementById('rango').textContent.includes('cerrado'));
+    // El corte anterior al que está en curso (arriba puede estar el siguiente)
+    const enCursoVal = await p.evaluate(() => Array.from(document.getElementById('corte').options).find((o) => /en curso/.test(o.textContent)).value);
+    const anterior = await p.evaluate(() => { const o = Array.from(document.getElementById('corte').options); return o[o.findIndex((x) => /en curso/.test(x.textContent)) + 1].value; });
+    await p.selectOption('#corte', anterior); await p.waitForFunction(() => document.getElementById('rango').textContent.includes('cerrado'));
     ok(nombre + ': el corte anterior queda en la dirección', /c=\d{4}-\d{2}/.test(p.url()));
     ok(nombre + ': pide el corte elegido', mundo.llamadas.some((l) => l[0] === 'rpc' && l[1] === 'comisiones_corte' && l[2].p_corte));
-    await p.selectOption('#corte', { index: 0 }); await p.waitForFunction(() => document.getElementById('rango').textContent.includes('Legal y pago'));
+    await p.selectOption('#corte', enCursoVal); await p.waitForFunction(() => /día límite|Día límite/i.test(document.getElementById('rango').textContent));
     await p.click('[data-filtro="todos"]'); await p.locator('.grupo-cab').filter({ hasText: 'Lucía Ferrer' }).click();
     await p.locator('.grupo.abierto [data-com]').filter({ hasText: 'Vidrios El Faro' }).click(); await p.waitForSelector('#hojaComision.ver .req');
     const hc = await p.textContent('#hojaComision');

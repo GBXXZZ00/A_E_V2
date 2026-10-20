@@ -15,11 +15,18 @@ ok('el 17/11 es de noviembre y el 18/11 de diciembre', K.corteDe('2026-11-17') =
 ok('octubre va del 21/09 al 17/10', K.corteInicio('2026-10-01') === '2026-09-21' && K.corteFin('2026-10-01') === '2026-10-17');
 ok('noviembre va del 18/10 al 17/11', K.corteInicio('2026-11-01') === '2026-10-18' && K.corteFin('2026-11-01') === '2026-11-17');
 ok('septiembre conserva la regla vieja', K.corteInicio('2026-09-01') === '2026-08-21' && K.corteFin('2026-09-01') === '2026-09-20' && K.corteLimite('2026-09-01') === '2026-09-20');
-ok('octubre: límite el 18 y se certifica desde el 19', K.corteLimite('2026-10-01') === '2026-10-18' && K.corteCertifica('2026-10-01') === '2026-10-19');
-K.fijarHoy('2026-10-18'); ok('el 18 se sigue trabajando el corte de octubre', K.enCurso() === '2026-10-01');
-K.fijarHoy('2026-10-19'); ok('el 19 el corte en curso ya es noviembre', K.enCurso() === '2026-11-01');
+ok('octubre: límite movido al 21 (20/10); noviembre vuelve a 18 y certifica desde el 19', K.corteLimite('2026-10-01') === '2026-10-21' && K.corteCertifica('2026-10-01') === '2026-10-21' && K.corteLimite('2026-11-01') === '2026-11-18' && K.corteCertifica('2026-11-01') === '2026-11-19');
+// Lote urgente 20/10: el corte se cierra a mano; mientras no se cierre sigue en curso
+const { usar } = require('./mundo');
+usar({ certificados: {} });
 K.fijarHoy('2026-10-17'); ok('el 17 el corte en curso es octubre', K.enCurso() === '2026-10-01');
-K.fijarHoy(null);
+K.fijarHoy('2026-10-22'); ok('pasado el día límite, octubre sigue en curso si nadie lo cerró', K.enCurso() === '2026-10-01');
+K.fijarHoy('2026-11-25'); ok('aunque pase noviembre, sigue en curso el corte abierto más viejo', K.enCurso() === '2026-10-01');
+usar({ certificados: { '2026-10-01': { en: '2026-10-22T15:00:00Z', filas: [] } } });
+ok('cerrado octubre, el corte en curso es noviembre', K.enCurso() === '2026-11-01');
+K.fijarHoy('2026-10-22'); ok('cerrado octubre antes del día 18, en curso noviembre', K.enCurso() === '2026-11-01');
+K.fijarHoy('2026-09-10'); usar({ certificados: {} }); ok('antes de octubre 2026 el calendario manda (septiembre)', K.enCurso() === '2026-09-01');
+K.fijarHoy(null); usar(null);
 
 const cliente = (mundo, nombre) => mundo.datos.clientes.find((c) => c.nombre === nombre || c.nombre === nombre + ', C.A.');
 async function cerrarHojas(p){ for(let i = 0; i < 4 && await p.evaluate(() => !!window.Comun.hojaAbierta()); i++){ await p.keyboard.press('Escape'); await p.waitForTimeout(260); } }
@@ -36,7 +43,7 @@ async function cerrarHojas(p){ for(let i = 0; i < 4 && await p.evaluate(() => !!
 
     const p = await entrar(ctx, 'elena', '315806'); p.on('pageerror', (e) => errores.push(e.message));
     await p.goto(H + 'comisiones.html'); await p.waitForSelector('.grupo');
-    ok(nombre + ': el rango dice el período y el límite del 18', /Instalaciones del .+\. Legal y pago hasta el \d+/.test(await p.textContent('#rango')));
+    ok(nombre + ': el rango dice el período y el día límite como aviso', /Instalaciones del .+\. (Día límite el \d+|Hoy es el día límite|El día límite fue el \d+)/.test(await p.textContent('#rango')));
     // Orden de otra persona: por asignar con su motivo
     await p.click('[data-filtro="asignar"]'); await p.waitForSelector('[data-com]');
     const lista = await p.textContent('#lista');

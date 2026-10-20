@@ -2,6 +2,8 @@
 const fs = require('fs');
 const { chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar } = require('./simulador');
 const { ok, cerrar } = marcador();
+const { RPC } = require('./mundo');
+const llamo = (m, f) => m.llamadas.filter((l) => l[1] === f);
 const abrir = async (p, texto) => { await p.locator('[data-com]').filter({ hasText: texto }).first().click(); await p.waitForSelector('#hojaComision.ver .req'); };
 const cerrarHojas = async (p) => { for(let i = 0; i < 4; i++){ if(await p.evaluate(() => !!window.Comun.hojaAbierta())) await p.keyboard.press('Escape'); } await p.waitForFunction(() => !window.Comun.hojaAbierta()); };
 (async () => {
@@ -86,20 +88,36 @@ const cerrarHojas = async (p) => { for(let i = 0; i < 4; i++){ if(await p.evalua
     const fin = bytes.length - 22; const n = bytes.readUInt16LE(fin + 10); const tam = bytes.readUInt32LE(fin + 12); const pos = bytes.readUInt32LE(fin + 16);
     ok(nombre + ': el Excel está bien armado', bytes.readUInt32LE(fin) === 0x06054b50 && n === 7 && pos + tam === fin && bytes.readUInt32LE(pos) === 0x02014b50);
 
-    // Certificar: solo desde el día 20; el corte anterior ya se puede
-    ok(nombre + ': el corte en curso no se certifica antes del 20', (await p.locator('#abrirCert').count()) === (mundo.hoyEs20 ? 1 : (await p.evaluate(() => new Date(Date.now() - 4 * 3600000).getUTCDate() === 20)) ? 1 : 0));
-    await p.selectOption('#corte', { index: 1 }); await p.waitForFunction(() => document.getElementById('rango').textContent.includes('cerrado'));
-    await p.waitForSelector('#abrirCert'); await p.click('#abrirCert'); await p.waitForSelector('#hojaCert.ver');
-    ok(nombre + ': certificar resume cuántas comisionan', /\d+ de \d+ comisionan/.test(await p.textContent('#hojaCert')) && (await p.textContent('#hojaCert')).includes('queda fijo'));
-    await p.screenshot({ path: 'capturas/06-' + nombre + '-certificar.png' });
-    await p.click('#certificar'); await p.waitForSelector('#avisos .franja.verde');
-    ok(nombre + ': el corte queda certificado y ya no se puede certificar de nuevo', (await p.textContent('#avisos')).includes('Corte certificado') && (await p.locator('#abrirCert').count()) === 0 && mundo.llamadas.some((l) => l[1] === 'corte_certificar'));
-    const [b2] = await Promise.all([p.waitForEvent('download'), p.click('#bajarExcel')]);
-    ok(nombre + ': el Excel del corte certificado lo dice en el nombre', b2.suggestedFilename().includes('-certificado.xlsx'));
-    ok(nombre + ': corte certificado sin desborde', await sinDesborde(p));
-    await p.screenshot({ path: 'capturas/06-' + nombre + '-certificado.png', fullPage: true });
-    await p.click('#quitarCert'); await p.waitForFunction(() => !document.querySelector('#avisos .franja.verde'));
-    ok(nombre + ': el administrador puede quitar la certificación', (await p.locator('#abrirCert').count()) === 1);
+    // Lote urgente 20/10: cerrar corte a mano (certificar). El día límite es un aviso; se cierra desde que terminan las instalaciones.
+    const puedeCerrar = (await p.locator('#abrirCert').count()) === 1;
+    const rango = await p.textContent('#rango');
+    ok(nombre + ': el rango del corte en curso dice el día límite como aviso (sin "cerrado")', /día límite|Día límite|sigue abierto/i.test(rango) && !/Corte cerrado/.test(rango), rango);
+    if(puedeCerrar){
+      await p.click('#abrirCert'); await p.waitForSelector('#hojaCert.ver #certificar');
+      const res = await p.textContent('#hojaCert'); const r = llamo(mundo, 'corte_cierre_resumen').slice(-1)[0];
+      ok(nombre + ': cerrar corte pide el resumen al servidor: cuántas cumplen y cuántas pasan al siguiente', !!r && /\d+ de \d+ comisionan/.test(res) && res.includes('queda fijo') && (!/pasan? al corte siguiente/.test(res) || /\d+ pasan? al corte siguiente/.test(res)), res);
+      await p.screenshot({ path: 'capturas/06-' + nombre + '-certificar.png' });
+      const antes = await p.evaluate(() => document.getElementById('corte').value);
+      await p.click('#certificar'); await p.waitForFunction((a) => document.getElementById('corte').value !== a, antes);
+      ok(nombre + ': al cerrar, el corte en curso pasa al siguiente y queda en la bitácora', (await p.evaluate(() => document.getElementById('corte').selectedOptions[0].textContent)).includes('(en curso)') && (mundo.bitacora || []).some((b) => b.accion === 'corte_cerrado' && b.corte === antes));
+      ok(nombre + ': lo que no cumplió pasa al corte siguiente como último corte', (await p.textContent('#mets')).includes('En su último corte'));
+      await p.selectOption('#corte', antes); await p.waitForSelector('#avisos .franja.verde');
+      ok(nombre + ': el corte cerrado queda fijo y ya no se puede cerrar de nuevo', (await p.textContent('#avisos')).includes('Corte cerrado') && (await p.locator('#abrirCert').count()) === 0 && /Corte cerrado/.test(await p.textContent('#rango')));
+      const [b2] = await Promise.all([p.waitForEvent('download'), p.click('#bajarExcel')]);
+      ok(nombre + ': el Excel del corte cerrado lo dice en el nombre', b2.suggestedFilename().includes('-certificado.xlsx'));
+      ok(nombre + ': corte cerrado sin desborde', await sinDesborde(p));
+      await p.screenshot({ path: 'capturas/06-' + nombre + '-certificado.png', fullPage: true });
+      await p.click('#quitarCert'); await p.waitForFunction(() => !document.querySelector('#avisos .franja.verde'));
+      ok(nombre + ': el administrador puede volver a abrirlo mientras el siguiente siga abierto', (await p.locator('#abrirCert').count()) === 1);
+      // En orden: no se cierra noviembre con octubre abierto
+      const { corte: K } = require('./mundo'); K.fijarHoy('2026-11-20');
+      const adm = mundo.personas.find((x) => x.rol === 'admin'); const e1 = RPC.corte_certificar(mundo, adm, { p_corte: '2026-11-01' });
+      const lid = mundo.personas.find((x) => x.rol === 'lider'); const e2 = RPC.corte_cierre_resumen(mundo, lid, { p_corte: '2026-10-01' });
+      K.fijarHoy(null);
+      ok(nombre + ': los cortes se cierran en orden y el líder no puede cerrar', /Primero cierra el corte anterior/.test(((e1 || {}).__error || {}).message) && !!(e2 || {}).__error);
+    } else {
+      ok(nombre + ': antes de que terminen las instalaciones no se puede cerrar', /se puede cerrar desde/.test((RPC.corte_certificar(mundo, mundo.personas.find((x) => x.rol === 'admin'), { p_corte: await p.evaluate(() => document.getElementById('corte').value) }) || {}).__error.message));
+    }
     await ctx.close();
 
     // Analista Senior: asigna y marca pagos, pero no da excepciones

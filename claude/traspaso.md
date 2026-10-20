@@ -1,7 +1,56 @@
 # Traspaso (se actualiza al cerrar cada sesión)
 
-Actualizado: 14/10/2026 (corrida 14/10 tarde hecha). Publicado: `?v=44`.
+Actualizado: 20/10/2026 (lote urgente comisiones y hojas en curso). Publicado: `?v=45`.
 
+## LOTE URGENTE COMISIONES Y HOJAS (APROBADO por el administrador el 20/10): texto completo
+
+Ejecútalo completo, en este orden, publicando por parte.
+
+Contexto: el 20/10 se movió en la base el límite del corte de octubre al 21 (privado.corte_reglas, fila 2026-10-01: dia_limite 21, dia_certifica 21; noviembre tiene su propia fila 18/18/19). Octubre: 63 filas, 26 cumplen. Septiembre 59/49: no se mueve; probar antes y después de cada parte que toque comisiones.
+
+1. Corte con cierre manual
+- El corte ya no se cierra solo. El día 18 pasa a ser solo un aviso ("Hoy es el día límite del corte"). El corte sigue abierto hasta que el administrador o el Analista Senior lo cierren con "Cerrar corte" (confirmación con resumen: cuántas filas, cuántas cumplen, cuántas pasan al siguiente).
+- Lo que se cumpla (Legal, pago, estatus) antes del cierre cuenta para ese corte. Al cerrar, lo que no cumple pasa al corte siguiente (regla de siempre: si tampoco cumple ahí, se pierde con constancia).
+- Mientras el corte anterior no esté cerrado, Comisiones muestra ese corte como "en curso" y el nuevo como "siguiente".
+- Un corte cerrado (certificado) nunca se mueve. Bitácora de cada cierre.
+
+2. Mover una instalación de corte
+- En la hoja de comisión, "Cambiar de corte": elegir entre el corte anterior todavía abierto o el actual. Solo administrador y Analista Senior, con motivo obligatorio y bitácora. Nunca hacia un corte cerrado ni desde él. La fila muestra la etiqueta "Movida a mano".
+
+3. Pago
+- La carga del TAD y el cruce nunca quitan un pago marcado a mano (verificarlo con una carga real y agregar prueba).
+- Pedir confirmación antes de desmarcar un pago ("¿Quitar el pago de este cliente?").
+- Texto de ayuda en "Revisar pago": "El cliente tiene más de un servicio; el TAD no puede decidir. Marca el pago a mano."
+
+4. Hoja de comisión: documentos
+- La parte de documentos usa la misma subida de la hoja de Clientes (casillas iguales, arrastrar, Subir varios, mismo orden).
+- Va dentro de un bloque plegable "Documentos", cerrado por defecto. Arriba, siempre visible, la lista de chequeo: Legal, pago, orden de Odoo, IP, con su estado.
+- Persona natural: solo se piden RIF y cédula (el teléfono es opcional). No mostrar casillas ni requisitos de empresa (acta, RIF de empresa, correo de empresa). Revisar que esto también aplique en la hoja de Clientes y en el contador de faltantes.
+
+5. Representantes
+- Agregar un representante (2, 3 o 4) y no llenar nada no debe contar como faltante. Si un representante agregado queda vacío, no se pide nada de él y se puede quitar con un botón "Quitar representante". Solo cuenta como faltante si tiene algún dato o archivo.
+
+6. Contrato presencial
+- Con contrato presencial NO son obligatorios: correo del representante legal, correo de la empresa ni número de contacto. Se siguen pidiendo los documentos legales.
+- Hacer la opción más visible: interruptor "Contrato presencial" en la parte de arriba de Documentos (hoja de Clientes y de comisión), con un aviso corto: "El cliente firma en físico. No se piden correos ni teléfono; sí los documentos legales. Comisiona igual."
+- Ajustar faltantes, "Pedir lo que falta" y el paso a Documentos en revisión según esta regla.
+
+7. Hojas (drawers) en teléfono
+- Deslizar hacia abajo cierra la hoja, como en Artesanos: arrastre desde la parte de arriba de la hoja (agarradera visible), la hoja sigue el dedo y se cierra si pasa un umbral o con velocidad; si no, vuelve. Solo transform. No debe chocar con el scroll interno (solo arrastra cuando el contenido está arriba del todo). Respetar prefers-reduced-motion.
+
+Al terminar: pruebas (nuevas para 1, 2, 3, 5 y 6), capturas en escritorio e iPhone, revisión propia, ?v=, commit y push. Septiembre 59/49 y octubre igual antes y después.
+
+**Avance del lote urgente (Claude Code):**
+
+- Antes de empezar: septiembre 59/49, octubre 63/26. test06 ya fallaba por la fecha (esperaba certificar el día 20).
+- **Parte 1: HECHA en v45. Corte con cierre manual.** Septiembre 59/49 y octubre 63/26 antes y después.
+  - Desde el corte de octubre 2026 el límite de Legal y pago es el momento del cierre: mientras el corte está abierto, todo lo que se cumpla cuenta. Septiembre y antes siguen con su calendario (no se mueven).
+  - "Cerrar corte" = la certificación de siempre (foto fija). Lo hacen el administrador o el Analista Senior, desde el día siguiente al fin de sus instalaciones, y en orden (no se cierra noviembre con octubre abierto). Antes de cerrar, una hoja con el resumen del servidor: cuántas comisionan, cuántas pasan al siguiente, cuántas se pierden y cuántas siguen por asignar. Bitácora `corte_cerrado` con esos números.
+  - Al cerrar, lo que no cumplió pasa al corte siguiente como "último corte"; antes de cerrar no aparece en el siguiente. Corte en curso = el abierto más viejo; el nuevo sale en el selector como "(siguiente)".
+  - El día límite es un aviso: en Comisiones "Hoy es el día límite del corte" o "El corte de octubre sigue abierto" (con el botón Cerrar corte para quien puede); en Inicio, en la ficha y en el mensaje de pendientes al líder igual.
+  - **Decisiones propias:** se puede cerrar desde que terminan las instalaciones del corte (octubre: desde el 18/10), no hace falta esperar el día límite. Al cerrar, la pantalla salta al nuevo corte en curso. El administrador puede volver a abrir un corte cerrado solo si el siguiente sigue abierto (antes podía siempre).
+  - Probado en la base con una función temporal que se deshace sola: cerrar octubre hoy daría 63 filas, 26 comisionan, 30 pasan a noviembre y 7 se pierden; el corte en curso pasa a noviembre; noviembre no se puede cerrar antes del 18/11. Queda sin uso `privado.prueba_tmp_cierre` (siempre termina en error).
+  - SQL en `supabase/pruebas/lote_urgente_p1.sql` (migración `corte_cierre_manual`). Pruebas: test06 (cierre, resumen, salto al siguiente, bitácora, reabrir, orden, líder sin permiso), test22 (corte en curso con cierre manual), test03 ajustada (selector con "siguiente").
 ## CORRIDA 14/10 TARDE (APROBADA por el administrador): texto completo
 
 CORRIDA 14/10 tarde (aprobada por el administrador). Primer paso: copia este texto completo al traspaso. Publica por parte (pruebas, capturas 1366x768 y iPhone como admin y como líder, revisión independiente, ?v=, commit y push). Septiembre 59/49 antes y después de cada parte. Migraciones está en pausa: solo se toca su formulario (Parte 3). Nada de nombres ni RIF reales en el repo. Anota las decisiones propias en el traspaso.

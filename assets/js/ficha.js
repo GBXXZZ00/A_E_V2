@@ -129,7 +129,7 @@
   function subCorte(){
     const i = (F.comision || []).find((x) => x.estado === 'ultimo_corte') || (F.comision || []).find((x) => x.estado === 'en_curso');
     if(!i) return '';
-    return i.estado === 'ultimo_corte' ? 'Último corte: límite el ' + fecha(F.corte.limite || F.corte.fin) : 'Corte de ' + mes(F.corte.etiqueta) + ': ' + (F.corte.dias <= 0 ? 'el límite es hoy' : 'faltan ' + plural(F.corte.dias, 'día', 'días'));
+    return i.estado === 'ultimo_corte' ? 'Último corte: límite el ' + fecha(F.corte.limite || F.corte.fin) : 'Corte de ' + mes(F.corte.etiqueta) + ': ' + (F.corte.dias < 0 ? 'abierto hasta que se cierre' : F.corte.dias === 0 ? 'el límite es hoy' : 'faltan ' + plural(F.corte.dias, 'día', 'días'));
   }
   function clienteContacto(){ const c = F.cliente; return { id: c.id, nombre: c.nombre, es_natural: c.es_natural, estatus: c.estatus, falta: F.faltantes, tel: c.tel, correo: c.correo }; }
   function pintarCab(){

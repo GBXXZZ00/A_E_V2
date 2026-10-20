@@ -1,7 +1,7 @@
 // Supabase de mentira para las pruebas: no toca la base real y los PIN son inventados.
 const { chromium, devices } = require(require('child_process').execSync('npm root -g').toString().trim() + '/playwright');
 const H = 'http://127.0.0.1:8765/';
-const { baseDatos, RPC, archivoDrive, driveSubir } = require('./mundo');
+const { baseDatos, RPC, archivoDrive, driveSubir, usar } = require('./mundo');
 // Imagen PNG de 1 x 1 para simular un archivo guardado
 const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
 const PDF_MIN = Buffer.from('%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj 2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj 3 0 obj<</Type/Page/Parent 2 0 R/MediaBox[0 0 200 200]>>endobj\ntrailer<</Root 1 0 R>>\n%%EOF');
@@ -30,7 +30,7 @@ function enlazarMock(m, p){
 async function contexto(navegador, opciones, mundo){
   const ctx = await navegador.newContext(opciones || {});
   const m = mundo || { personas: basePersonas(), llamadas: [], sinRed: false, fallaPerfil: false, lento: 0 };
-  if(!m.datos) m.datos = baseDatos();
+  usar(m); if(!m.datos) m.datos = baseDatos();
   const sesionDe = (p) => ({ access_token: jwt(p.id), token_type: 'bearer', expires_in: 3600, expires_at: ahora() + 3600, refresh_token: 'r-' + p.id,
     user: { id: p.id, aud: 'authenticated', role: 'authenticated', email: p.usuario + '@aev2.app', user_metadata: {} } });
   const quien = (req) => { try { const t = (req.headers().authorization || '').split(' ')[1]; const sub = JSON.parse(Buffer.from(t.split('.')[1], 'base64url')).sub; return m.personas.find((p) => p.id === sub); } catch (e) { return null; } };
@@ -115,7 +115,7 @@ async function contexto(navegador, opciones, mundo){
       if(m.fallaRpc === rp[1] || m.fallaRpc === '*') return j({ message: 'error interno' }, 500);
       if(m.lento) await new Promise((ok) => setTimeout(ok, m.lento));
       if(!RPC[rp[1]]) return j({ code: 'PGRST202', message: 'no existe' }, 404);
-      const res = RPC[rp[1]](m, yo, args);
+      usar(m); const res = RPC[rp[1]](m, yo, args);
       if(res && res.__error) return j(res.__error, 400);
       return j(res === undefined ? null : res);
     }

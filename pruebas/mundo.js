@@ -5,8 +5,12 @@ const DIA = 86400000;
 const hace = (dias, horas) => new Date(Date.now() - dias * DIA - (horas || 0) * 3600000).toISOString();
 
 // ----- Corte con regla por vigencia (igual que privado.corte_reglas), hora de Caracas -----
-// Hasta septiembre 2026: del 21 al 20. Desde octubre 2026: del 18 al 17, límite el 18 y se certifica desde el 19.
-const REGLAS = [['2000-01-01', 21, 20, 20], ['2026-10-01', 18, 18, 19]];
+// Hasta septiembre 2026: del 21 al 20. Octubre 2026: del 18 al 17 con el límite movido al 21. Desde noviembre: límite el 18.
+// Lote urgente 20/10: desde octubre 2026 el corte se cierra a mano (certificar); el límite es el momento del cierre.
+const REGLAS = [['2000-01-01', 21, 20, 20], ['2026-10-01', 18, 21, 21], ['2026-11-01', 18, 18, 19]];
+const DESDE_MANUAL = '2026-10-01';
+let MUNDO = null;   // el mundo en uso: sus cortes cerrados deciden el corte en curso
+const usar = (m) => { MUNDO = m; };
 const caracas = (iso) => new Date(new Date(iso).getTime() - 4 * 3600000);
 const fechaClave = (d) => d.getUTCFullYear() + '-' + String(d.getUTCMonth() + 1).padStart(2, '0') + '-' + String(d.getUTCDate()).padStart(2, '0');
 let hoyFijo = null;   // las pruebas de bordes fijan el día
@@ -22,9 +26,14 @@ const corteInicio = (c) => { const p = masMeses(c, -1); return conDia(p, regla(p
 const corteFin = (c) => conDia(c, regla(c)[1] - 1);
 const corteLimite = (c) => conDia(c, regla(c)[2]);
 const corteCertifica = (c) => conDia(c, regla(c)[3]);
-const enCurso = () => { const c = corteDe(hoy()); const p = masMeses(c, -1); return hoy() <= corteLimite(p) ? p : c; };
+const certDe = (c) => (MUNDO && MUNDO.certificados || {})[c] || null;
+const cerrado = (c) => c < DESDE_MANUAL || !!certDe(c);
+// Corte en curso: el abierto más viejo desde octubre 2026; si no hay, el del calendario
+const enCurso = () => { const cd = corteDe(hoy()); for(let c = DESDE_MANUAL; c <= cd; c = masMeses(c, 1)) if(!cerrado(c)) return c; return cd; };
 const cierre = (c) => new Date(Date.UTC(Number(c.slice(0, 4)), Number(c.slice(5, 7)) - 1, regla(c)[1], 4)).getTime(); // inicio del período siguiente, 00:00 de Caracas
-const limiteTs = (c) => new Date(Date.UTC(Number(c.slice(0, 4)), Number(c.slice(5, 7)) - 1, regla(c)[2] + 1, 4)).getTime(); // fin del día límite
+const limiteTs = (c) => c < DESDE_MANUAL ? new Date(Date.UTC(Number(c.slice(0, 4)), Number(c.slice(5, 7)) - 1, regla(c)[2] + 1, 4)).getTime() // fin del día límite
+  : certDe(c) ? new Date(certDe(c).en).getTime() : Infinity;   // desde octubre 2026: el cierre (abierto, todo cuenta)
+const masDias = (c, n) => fechaClave(new Date(Date.UTC(+c.slice(0, 4), +c.slice(5, 7) - 1, +c.slice(8, 10) + n)));
 const dias = (a, b) => Math.round((Date.UTC(+b.slice(0, 4), +b.slice(5, 7) - 1, +b.slice(8, 10)) - Date.UTC(+a.slice(0, 4), +a.slice(5, 7) - 1, +a.slice(8, 10))) / DIA);
 
 const LEGAL_OK = ['documentos_recibidos', 'contrato_en_curso', 'por_firmar', 'contrato_firmado'];
@@ -282,7 +291,7 @@ function filasComision(m, yo, corte){
     const t = new Date(i.instalada_en).getTime(); if(t < iniAnt || t >= fin || !comisionable(i) || !comisionaEvento(i)) return;
     const leg = c.legal_ok_en ? new Date(c.legal_ok_en).getTime() : null; const pag = i.pago_ok_en ? new Date(i.pago_ok_en).getTime() : null;
     const ook = ordenOk(c, i); const exc = !!(i.excepcion_corte && i.excepcion_corte <= corte); const excAntes = !!(i.excepcion_corte && i.excepcion_corte < corte);
-    if(t < ini && ook && ((leg !== null && pag !== null && leg < lAnt && pag < lAnt) || excAntes)) return;
+    if(t < ini && (!cerrado(masMeses(corte, -1)) || (ook && ((leg !== null && pag !== null && leg < lAnt && pag < lAnt) || excAntes)))) return;
     const dueno = duenoDe(c, i);
     r.push({ instalacion_id: i.id, cliente_id: c.id, nombre: c.nombre, doc: c.doc_tipo + '-' + c.doc_numero, instalada_en: i.instalada_en, lider_id: dueno === c.lider ? c.lider_id : null, lider: dueno || 'Por asignar',
       origen: t >= ini ? 'corte' : 'anterior', legal_ok: leg !== null && leg < lim, pago_ok: pag !== null && pag < lim, cumple: ook && ((leg !== null && pag !== null && leg < lim && pag < lim) || exc),
@@ -726,18 +735,30 @@ const RPC = {
     const c = String(a.p_corte).slice(0, 8) + '01'; if((m.certificados || {})[c]) return error('Ese corte ya está certificado');
     x.i.excepcion_corte = c; x.i.excepcion_motivo = mot; x.i.excepcion_por = yo.nombre; x.c.hilo.push(linea('instalacion', 'excepcion', { motivo: mot, corte: c }, yo.nombre)); return null;
   },
+  corte_cierre_resumen(m, yo, a){
+    if(!esSenior(yo)) return error('Esto lo hace el Analista Senior o el administrador');
+    const c = String(a.p_corte).slice(0, 8) + '01'; const admin = m.personas.find((p) => p.rol === 'admin'); const f = filasComision(m, admin, c);
+    return { corte: c, total: f.length, cumplen: f.filter((x) => x.cumple).length, pasan: f.filter((x) => x.origen === 'corte' && !x.cumple).length,
+      se_pierden: f.filter((x) => x.origen === 'anterior' && !x.cumple).length, por_asignar: f.filter((x) => !x.orden_ok).length };
+  },
+  // Lote urgente 20/10: "Cerrar corte" (certificar). Desde octubre 2026, desde que terminan sus instalaciones y en orden.
   corte_certificar(m, yo, a){
     if(!esSenior(yo)) return error('Esto lo hace el Analista Senior o el administrador');
     const c = String(a.p_corte).slice(0, 8) + '01'; m.certificados = m.certificados || {};
-    if(hoy() < corteCertifica(c)) return error('Este corte se certifica desde el ' + corteCertifica(c).slice(8, 10) + '/' + corteCertifica(c).slice(5, 7));
-    if(m.certificados[c]) return error('Ese corte ya está certificado');
-    const admin = m.personas.find((p) => p.rol === 'admin'); const filas = filasComision(m, admin, c);
-    m.certificados[c] = { en: hace(0), por: yo.nombre, total: filas.length, cumplen: filas.filter((f) => f.cumple).length, filas };
-    return { total: filas.length, cumplen: m.certificados[c].cumplen };
+    if(m.certificados[c]) return error('Ese corte ya está cerrado');
+    if(c >= DESDE_MANUAL){
+      if(hoy() <= corteFin(c)){ const d = masDias(corteFin(c), 1); return error('Este corte se puede cerrar desde el ' + d.slice(8, 10) + '/' + d.slice(5, 7) + ', cuando terminan sus instalaciones'); }
+      if(!cerrado(masMeses(c, -1))) return error('Primero cierra el corte anterior (' + masMeses(c, -1).slice(5, 7) + '/' + masMeses(c, -1).slice(0, 4) + ')');
+    } else if(hoy() < corteCertifica(c)) return error('Este corte se certifica desde el ' + corteCertifica(c).slice(8, 10) + '/' + corteCertifica(c).slice(5, 7));
+    const r = RPC.corte_cierre_resumen(m, yo, a); const admin = m.personas.find((p) => p.rol === 'admin'); const filas = filasComision(m, admin, c);
+    m.certificados[c] = { en: hace(0), por: yo.nombre, total: filas.length, cumplen: r.cumplen, filas };
+    (m.bitacora = m.bitacora || []).push({ accion: 'corte_cerrado', corte: c, por: yo.id, total: r.total, cumplen: r.cumplen, pasan: r.pasan, se_pierden: r.se_pierden });
+    return { total: r.total, cumplen: r.cumplen, pasan: r.pasan, se_pierden: r.se_pierden };
   },
   corte_descertificar(m, yo, a){
     if(yo.rol !== 'admin') return error('No tienes permiso para hacer esto');
     const c = String(a.p_corte).slice(0, 8) + '01'; if(!(m.certificados || {})[c]) return error('Ese corte no está certificado');
+    if(c >= DESDE_MANUAL && cerrado(masMeses(c, 1))) return error('No se puede abrir: el corte siguiente ya está cerrado');
     delete m.certificados[c]; return null;
   },
   instalacion_pago(m, yo, a){
@@ -1023,7 +1044,7 @@ const RPC = {
   },
   comisiones_corte(m, yo, a){
     if(yo.rol === 'aliado') return error('No tienes permiso para hacer esto');
-    const actual = enCurso(); const vmax = corteDe(hoy()); let c = a.p_corte ? String(a.p_corte).slice(0, 8) + '01' : actual; if(c > vmax) c = vmax;
+    const actual = enCurso(); let vmax = corteDe(hoy()); if(vmax < actual) vmax = actual; let c = a.p_corte ? String(a.p_corte).slice(0, 8) + '01' : actual; if(c > vmax) c = vmax;
     const filas = filasComision(m, yo, c);
     const pinst = c === actual ? visibles(m, yo).filter((x) => x.orden && porInstalar(x)).map((x) => ({ orden: x.orden.numero, cliente_id: x.id, nombre: x.nombre, creada_en: x.orden.creada_en, etapa: x.orden.etapa, lider: x.lider })) : [];
     const comp = [5, 4, 3, 2, 1, 0].map((n) => { const k = masMeses(actual, -n); const f = filasComision(m, yo, k); return { corte: k, total: f.filter((x) => x.origen === 'corte').length, cumplen: f.filter((x) => x.cumple).length }; });
@@ -1031,11 +1052,14 @@ const RPC = {
     const A = cuenta(filas), B = cuenta(filasComision(m, yo, masMeses(c, -1)));
     const lideres = Array.from(new Set(Object.keys(A).concat(Object.keys(B)))).map((l) => ({ lider: l, actual: A[l] || 0, anterior: B[l] || 0 })).sort((x, y) => y.actual - x.actual || x.lider.localeCompare(y.lider));
     const cert = (m.certificados || {})[c]; const sen = esSenior(yo);
-    return { corte: c, actual, hoy: hoy(), inicio: corteInicio(c), fin: corteFin(c), limite: corteLimite(c), certifica: corteCertifica(c), dias: dias(hoy(), corteLimite(c)), rol: yo.rol, filas, por_instalar: pinst, comparativa: comp, lideres,
+    const manual = c >= DESDE_MANUAL;
+    return { corte: c, actual, siguiente: vmax > actual ? vmax : null, hoy: hoy(), inicio: corteInicio(c), fin: corteFin(c), limite: corteLimite(c), certifica: corteCertifica(c), dias: dias(hoy(), corteLimite(c)), rol: yo.rol,
+      manual, abierto: !cert && !(!manual && hoy() > corteLimite(c)), cierra_desde: manual ? masDias(corteFin(c), 1) : null, filas, por_instalar: pinst, comparativa: comp, lideres,
       eventos: yo.rol === 'abogado' ? [] : [].concat.apply([], visibles(m, yo).map((x) => x.instalaciones.filter((i) => { const t = new Date(i.instalada_en).getTime();
         return i.es_evento && !i.evento_comisiona && comisionable(i) && t >= cierre(masMeses(c, -1)) && t < cierre(c); }).map((i) => ({ instalacion_id: i.id, cliente_id: x.id, nombre: x.nombre, instalada_en: i.instalada_en, codigo: i.codigo, sucursal: i.sucursal, lider: duenoDe(x, i) || 'Por asignar', evento_manual: !!i.evento_manual })))),
       duenos: sen ? DUENOS : [], certificado: cert ? { en: cert.en, por: cert.por, total: cert.total, cumplen: cert.cumplen } : null,
-      puedo: { asignar: sen && !cert, pago: sen, excepcion: yo.rol === 'admin' && !cert, certificar: sen && !cert && hoy() >= corteCertifica(c), quitar_certificado: yo.rol === 'admin' && !!cert } };
+      puedo: { asignar: sen && !cert, pago: sen, excepcion: yo.rol === 'admin' && !cert, certificar: sen && !cert && c === actual && (manual ? hoy() > corteFin(c) : hoy() >= corteCertifica(c)),
+        quitar_certificado: yo.rol === 'admin' && !!cert && !cerrado(masMeses(c, 1)) } };
   }
 };
 
@@ -1160,4 +1184,4 @@ function archivoDrive(m, yo, id){
   }
   return { error: 'Ese archivo no existe', status: 404 };
 }
-module.exports = { baseDatos, RPC, LUCIA, archivoDrive, driveSubir, horasReloj, corte: { corteDe, corteInicio, corteFin, corteLimite, corteCertifica, enCurso, fijarHoy: (d) => { hoyFijo = d; } } };
+module.exports = { baseDatos, RPC, usar, LUCIA, archivoDrive, driveSubir, horasReloj, corte: { corteDe, corteInicio, corteFin, corteLimite, corteCertifica, enCurso, fijarHoy: (d) => { hoyFijo = d; } } };

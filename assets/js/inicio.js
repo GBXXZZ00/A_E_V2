@@ -11,8 +11,10 @@
   function pintarCorte(d){
     const c = d.corte; if(!c){ $('zonaCorte').innerHTML = ''; return; }
     const m = mes(c.etiqueta); const com = d.comision || {};
-    const titulo = c.dias <= 0 ? 'Hoy es el límite del corte de ' + m : (c.dias === 1 ? 'día' : 'días') + ' para el límite del corte de ' + m;
-    const detalle = 'Instalaciones del ' + fecha(c.inicio) + ' al ' + fecha(c.fin) + '. Legal y pago hasta el ' + fecha(c.limite || c.fin).split(' de ')[0] + '.' +
+    // Lote urgente 20/10: el día límite es un aviso; el corte sigue abierto hasta que se cierra a mano en Comisiones
+    const dl = fecha(c.limite || c.fin).split(' de ')[0];
+    const titulo = c.dias < 0 ? 'El corte de ' + m + ' sigue abierto' : c.dias === 0 ? 'Hoy es el día límite del corte de ' + m : (c.dias === 1 ? 'día' : 'días') + ' para el límite del corte de ' + m;
+    const detalle = 'Instalaciones del ' + fecha(c.inicio) + ' al ' + fecha(c.fin) + '. ' + (c.dias < 0 ? 'El día límite fue el ' + dl + '; lo que se cumpla antes de cerrarlo cuenta.' : 'Legal y pago hasta el ' + dl + '.') +
       (com.total ? ' ' + com.cumplen + ' de ' + plural(com.total, 'instalación', 'instalaciones') + ' ya ' + (com.cumplen === 1 ? 'cumple' : 'cumplen') + '.' : '');
     $('zonaCorte').innerHTML = '<a class="corte" href="comisiones.html" data-ir="corte">' +
       '<div class="dias">' + (c.dias <= 0 ? ic('reloj', 'g') : esc(c.dias)) + '</div>' +
