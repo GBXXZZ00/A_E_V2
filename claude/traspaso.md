@@ -1,6 +1,6 @@
 # Traspaso (se actualiza al cerrar cada sesión)
 
-Actualizado: 20/10/2026 (lote urgente comisiones y hojas en curso). Publicado: `?v=49`.
+Actualizado: 20/10/2026 (lote urgente comisiones y hojas en curso). Publicado: `?v=50`.
 
 ## LOTE URGENTE COMISIONES Y HOJAS (APROBADO por el administrador el 20/10): texto completo
 
@@ -74,6 +74,11 @@ Al terminar: pruebas (nuevas para 1, 2, 3, 5 y 6), capturas en escritorio e iPho
   - Una fila vacía de representante en la base ya no se muestra (solo se ven los que piden el régimen, los que tienen algo y el que se acaba de agregar).
   - **Decisión propia (importante):** la regla nueva solo aplica a clientes **sin Legal aprobado**. Aplicada a todos, 156 clientes ganaban 273 documentos faltantes (74 ya aprobados, casi todos con un representante 2 que trajo la base vieja o la IA con nombre y sin papeles). Así solo cambian 82 clientes que ya tenían otros faltantes (ninguno pasa de completo a incompleto; 1 está en el corte de octubre).
   - SQL en `supabase/pruebas/lote_urgente_p5.sql`. Prueba nueva: test40.
+- **Parte 6: HECHA en v50. Contrato presencial.** Septiembre 59/49 y octubre 63/26 antes y después.
+  - Con contrato presencial ya no se piden el correo del representante, el correo de la empresa ni el número de contacto (`privado.faltantes`); los documentos legales sí. Eso mueve faltantes, "Pedir lo que falta" y el paso a Documentos en revisión (`privado.recalcular` usa los mismos faltantes y corre al cambiar la marca). Hoy hay 1 cliente presencial y no le cambia nada.
+  - El interruptor "Contrato presencial" está arriba de Documentos en la hoja de Clientes y dentro de Documentos en la hoja de comisión, con el aviso "El cliente firma en físico. No se piden correos ni teléfono; sí los documentos legales. Comisiona igual." Lo cambian administrador y abogado (como antes).
+  - **Decisión propia:** el interruptor salió de Datos (quedó una nota que dice que se marca arriba de Documentos) para que haya uno solo.
+  - SQL en `supabase/pruebas/lote_urgente_p6.sql`. Prueba nueva: test41; test28 ajustada.
 ## CORRIDA 14/10 TARDE (APROBADA por el administrador): texto completo
 
 CORRIDA 14/10 tarde (aprobada por el administrador). Primer paso: copia este texto completo al traspaso. Publica por parte (pruebas, capturas 1366x768 y iPhone como admin y como líder, revisión independiente, ?v=, commit y push). Septiembre 59/49 antes y después de cada parte. Migraciones está en pausa: solo se toca su formulario (Parte 3). Nada de nombres ni RIF reales en el repo. Anota las decisiones propias en el traspaso.

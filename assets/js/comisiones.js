@@ -723,6 +723,9 @@
       if((b = t.closest('[data-campo]'))){ window.Ficha.editarCampo(K.F, b.dataset.campo, tras); return; }
       if((b = t.closest('[data-ver]'))){ const cs = b.closest('[data-casilla]'); alExpediente({ tab: 'documentos', casilla: cs ? cs.dataset.casilla : null }); return; }
       if(t.closest('#comVarios')){ window.Ficha.variosA(K.F, tras); return; }
+      if((b = t.closest('[data-marca-cli]'))){ const nuevo = b.getAttribute('aria-checked') !== 'true'; b.disabled = true;
+        rpc('cliente_marca', { p_cliente: K.F.cliente.id, p_marca: b.dataset.marcaCli, p_valor: nuevo }).then(() => { toast(nuevo ? 'Marcado como contrato presencial' : 'Ya no es contrato presencial'); tras(); })
+          .catch((err) => { toast(err.message, 'error'); if(document.contains(b)) b.disabled = false; }); return; }
     }
     if((b = t.closest('[data-ir-doc]'))){ alExpediente({ tab: 'documentos', casilla: b.dataset.irDoc }); return; }
     // Subir un documento o escribir un dato se hace aquí mismo, sin saltar al expediente

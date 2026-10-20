@@ -266,10 +266,10 @@
   // Contacto del representante: una sola casilla con el teléfono y el correo
   function contactoHtml(r, n, obligatorio){
     const tel = String(r.telefono || '').trim(); const co = String(r.correo || '').trim(); const algo = tel || co;
-    // Contrato presencial: del representante 1 basta el teléfono (no se pide su correo)
-    const sinCorreo = n === 1 && !!F.cliente.presencial; const lleno = !!(tel && (co || sinCorreo));
+    // Lote urgente 20/10: con contrato presencial no se piden correos ni teléfono (el contacto queda opcional)
+    const pres = n === 1 && !!F.cliente.presencial; const lleno = !!(tel && co);
     const falta = obligatorio && !lleno;
-    const sub = lleno ? tel + (co ? ' · ' + co : ' · Contrato presencial, sin correo') : algo ? algo + (obligatorio ? '. Falta el ' + (tel ? 'correo' : 'teléfono') : '') : obligatorio ? 'Toca para escribir el teléfono' + (sinCorreo ? '' : ' y el correo') : 'Opcional';
+    const sub = lleno ? tel + ' · ' + co : algo ? algo + (obligatorio ? '. Falta el ' + (tel ? 'correo' : 'teléfono') : '') : obligatorio ? 'Toca para escribir el teléfono y el correo' : pres ? 'Opcional: contrato presencial' : 'Opcional';
     return '<button type="button" class="casilla doc dato ' + (falta ? 'falta' : algo ? 'ok' : '') + '" data-campo="rep:' + n + '"><span class="ico' + (algo && !falta ? '' : ' mas') + '" aria-hidden="true">' + (algo && !falta ? ic('check') : ic('lapiz')) + '</span>' +
       '<span class="tx"><b>Contacto</b><small>' + esc(sub) + '</small></span>' + (falta ? '<span class="chip rojo">Falta</span>' : algo ? ic('lapiz', 'ch') : '') + '</button>';
   }
@@ -280,7 +280,7 @@
     const r = (F.representantes || []).find((x) => x.orden === n) || {};
     const vacio = !requeridoN && !repConAlgo(n);
     return '<section class="bloque" data-grupo="rep' + n + '"><div class="sec">' + (F.cliente.es_natural ? 'Titular' : 'Representante ' + n) + (r.nombre ? '<span>' + esc(r.nombre) + '</span>' : vacio ? '<span>Opcional</span>' : '') + '</div>' +
-      contactoHtml(r, n, requeridoN && !F.cliente.es_natural) +
+      contactoHtml(r, n, requeridoN && !F.cliente.es_natural && !F.cliente.presencial) +
       casillaHtml('cedula', n, { nombre: 'Cédula' }) + casillaHtml('rif_personal', n, { nombre: 'RIF personal' }) +
       (vacio && quitable ? '<button type="button" class="enlace" data-quitar-rep="' + n + '">Quitar representante</button>' : '') + '</section>';
   }
@@ -288,7 +288,7 @@
     const c = F.cliente; const fal = F.faltantes || []; const nr = F.puedo.revisar ? sinMarcar().length : porRevisar().length;
     const aprobados = (F.documentos || []).filter((d) => d.estado === 'aprobado').length;
     const pedirM = c.estatus === 'grandes_negocios' ? 'pedir' : 'recordar';
-    let h = '<div class="res"><div class="r"><b>' + fal.length + '</b><small>' + (fal.length === 1 ? 'Falta' : 'Faltan') + '</small></div><div class="a"><b>' + nr + '</b><small>Por revisar</small></div><div class="v"><b>' + aprobados + '</b><small>' + (aprobados === 1 ? 'Aprobado' : 'Aprobados') + '</small></div></div>' +
+    let h = presencialHtml() + '<div class="res"><div class="r"><b>' + fal.length + '</b><small>' + (fal.length === 1 ? 'Falta' : 'Faltan') + '</small></div><div class="a"><b>' + nr + '</b><small>Por revisar</small></div><div class="v"><b>' + aprobados + '</b><small>' + (aprobados === 1 ? 'Aprobado' : 'Aprobados') + '</small></div></div>' +
       '<div class="acc"><button type="button" class="btn btn-chico btn-2" id="subirVarios"' + (ocupado ? ' disabled' : '') + '>' + ic('subir') + 'Subir varios</button>' +
         (F.puedo.revisar && nr ? '<button type="button" class="btn btn-chico" id="revisarTodo">Revisar ' + nr + '</button>'
           : fal.length ? '<button type="button" class="btn btn-chico" data-paso="pedir:' + pedirM + '">Pedir lo que falta</button>' : '') + '</div>' +
@@ -300,8 +300,14 @@
     $('tab-documentos').innerHTML = h;
   }
   // Las casillas del expediente, en su orden. emb: dentro de otra hoja (la de comisión), sin agregar representantes ni actas
+  // Lote urgente 20/10: el interruptor de contrato presencial va arriba de Documentos (y en la hoja de comisión)
+  function presencialHtml(){
+    const c = F.cliente; if(c.es_natural) return '';
+    return '<div class="interr presencial-docs"><span class="tx">Contrato presencial<small>El cliente firma en físico. No se piden correos ni teléfono; sí los documentos legales. Comisiona igual.</small></span>' +
+      '<button type="button" class="sw" role="switch" aria-checked="' + !!c.presencial + '" data-marca-cli="contrato_presencial" aria-label="Contrato presencial"' + (F.puedo.presencial ? '' : ' disabled') + '></button></div>';
+  }
   function casillasHtml(emb){
-    const c = F.cliente; let h = '';
+    const c = F.cliente; let h = emb ? presencialHtml() : '';
     const nReq = !c.es_natural && c.regimen_firma === 'conjunta' ? 2 : 1;
     // Los representantes que se ven: los que pide el régimen, los que tienen algo y el que se acaba de agregar
     const conAlgo = [2, 3, 4].filter((n) => repConAlgo(n));
@@ -312,7 +318,7 @@
       // Las actas de asamblea se agregan con su botón, hasta 4
       const actas = [1, 2, 3, 4].filter((n) => docDe('acta_asamblea', n)); const libres = [1, 2, 3, 4].filter((n) => !docDe('acta_asamblea', n));
       const mostrar = actas.concat(libres.slice(0, Math.min(emb ? (actas.length ? 0 : 1) : actaExtra, libres.length))).sort();
-      h += '<section class="bloque" data-grupo="empresa"><div class="sec">Empresa</div>' + datoHtml('Correo de la empresa', c.correo_empresa, 'correo_empresa', true) +
+      h += '<section class="bloque" data-grupo="empresa"><div class="sec">Empresa</div>' + datoHtml('Correo de la empresa', c.correo_empresa, 'correo_empresa', !c.presencial) +
         casillaHtml('rif_empresa', 0, { nombre: 'RIF de la empresa' }) + casillaHtml('acta_constitutiva', 0) + (c.es_isp ? casillaHtml('conatel', 0) : '') +
         mostrar.map((n) => casillaHtml('acta_asamblea', n, { sub: 'Toca o suelta el archivo aquí' })).join('') +
         (!emb && mostrar.length < 4 ? '<button type="button" class="btn btn-chico btn-2 btn-ancho" id="agregarActa" style="margin-top:10px">' + ic('mas') + 'Agregar acta de asamblea</button>' : '') + '</section>';
@@ -530,7 +536,7 @@
         [['', 'Sin definir'], ['individual', 'Individual'], ['conjunta', 'Conjunta']].map((x) => '<button type="button" role="radio" aria-checked="' + (r === x[0]) + '" data-regimen="' + x[0] + '" class="' + (r === x[0] ? 'on' : '') + '"' + dis + '>' + x[1] + '</button>').join('') + '</div>' +
         (r === 'conjunta' ? '<p class="nota-chica">Con firma conjunta se piden la cédula y el RIF de dos representantes.</p>' : '') +
         (/Dedicado/.test(c.seg) || c.es_isp ? '<div class="interr"><span class="tx">Proveedor de internet (ISP)<small>Se le pide el permiso de Conatel</small></span><button type="button" class="sw" role="switch" aria-checked="' + !!c.es_isp + '" data-interr="es_isp" aria-label="Proveedor de internet"' + dis + '></button></div>' : '') +
-        '<div class="interr"><span class="tx">Contrato presencial<small>Se firma en persona. Comisiona y no se pide el correo del representante</small></span><button type="button" class="sw" role="switch" aria-checked="' + !!c.presencial + '" data-marca-cli="contrato_presencial" aria-label="Contrato presencial"' + (F.puedo.presencial ? '' : ' disabled') + '></button></div>';
+        '<p class="nota-chica">El contrato presencial se marca arriba de Documentos.</p>';
     }
     h += '<div class="secc">Cartera</div><div class="interr"><span class="tx">Cliente TOP<small>Protegido: los aliados no pueden instalarlo</small></span>' +
       '<button type="button" class="sw" role="switch" aria-checked="' + !!c.es_top + '" data-interr="es_top" aria-label="Cliente TOP"' + (F.puedo.top ? '' : ' disabled') + '></button></div>';
@@ -1299,7 +1305,7 @@
         if(hojaAbierta() === 'hojaEstatus') cerrarHoja(); return cargar(); }).catch((err) => { toast(err.message, 'error'); b.disabled = false; }); return;
     }
     if((b = t.closest('[data-regimen]'))){ if(b.dataset.regimen !== (F.cliente.regimen_firma || '')) accion('cliente_dato', { p_cliente: id, p_campo: 'regimen_firma', p_valor: b.dataset.regimen }, 'Régimen de firma guardado', b); return; }
-    if((b = t.closest('[data-marca-cli]'))){ const nuevo = b.getAttribute('aria-checked') !== 'true'; accion('cliente_marca', { p_cliente: id, p_marca: b.dataset.marcaCli, p_valor: nuevo }, 'Guardado', b); return; }
+    if((b = t.closest('[data-marca-cli]')) && !t.closest('#docsCom')){ const nuevo = b.getAttribute('aria-checked') !== 'true'; accion('cliente_marca', { p_cliente: id, p_marca: b.dataset.marcaCli, p_valor: nuevo }, 'Guardado', b); return; }
     if((b = t.closest('[data-interr]'))){ const nuevo = b.getAttribute('aria-checked') !== 'true'; accion('cliente_dato', { p_cliente: id, p_campo: b.dataset.interr, p_valor: String(nuevo) }, 'Guardado', b); return; }
     if((b = t.closest('[data-gestion]'))){ accion('cliente_gestion', { p_cliente: id, p_cual: b.dataset.gestion, p_hecho: b.dataset.hecho === '1' }, b.dataset.hecho === '1' ? 'Marcada como enviada' : 'Marca quitada', b); return; }
     if((b = t.closest('[data-pago]'))){ accion('instalacion_pago', { p_instalacion: Number(b.dataset.pago), p_pagada: b.dataset.pagada === '1' }, b.dataset.pagada === '1' ? 'Instalación marcada como pagada' : 'Pago quitado', b); return; }

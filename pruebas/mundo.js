@@ -140,8 +140,8 @@ function faltantes(c){
   requeridos(c).forEach((q) => { const d = busca(c, q.casilla, q.numero);
     if(!d) r.push({ k: q.casilla, n: q.numero, t: q.texto, e: 'falta' }); else if(d.estado === 'devuelto') r.push({ k: q.casilla, n: q.numero, t: q.texto, e: 'devuelto', m: d.motivo }); });
   const rp = c.representantes.find((x) => x.orden === 1) || {};
-  if(c.es_natural) return r;   // naturales: solo cédula y RIF personal
-  if(!c.contrato_presencial && !String(rp.correo || '').trim()) r.push({ k: 'correo', n: 1, t: 'correo', e: 'falta', dato: true });
+  if(c.es_natural || c.contrato_presencial) return r;   // naturales: solo cédula y RIF personal; presencial: sin correos ni teléfono
+  if(!String(rp.correo || '').trim()) r.push({ k: 'correo', n: 1, t: 'correo', e: 'falta', dato: true });
   if(!String(rp.telefono || '').trim()) r.push({ k: 'telefono', n: 1, t: 'número de contacto', e: 'falta', dato: true });
   if(!c.es_natural && !String(c.correo_empresa || '').trim()) r.push({ k: 'correo_empresa', n: 0, t: 'correo de la empresa', e: 'falta', dato: true });
   return r;
@@ -557,7 +557,7 @@ const RPC = {
     if(!c.legal_ok_en) return error('Este cliente no tiene Legal listo'); c.legal_ok_en = null; c.legal_como = null; c.hilo.push(linea('dato', 'legal_quitado', { motivo: a.p_motivo }, yo.nombre)); return null; },
   cliente_marca(m, yo, a){ if(!['admin', 'abogado'].includes(yo.rol)) return error('No tienes permiso para hacer esto'); const c = m.datos.clientes.find((x) => x.id === Number(a.p_cliente));
     if(a.p_marca === 'exc_pagada' && yo.rol !== 'admin') return error('Solo el administrador marca la excepción pagada');
-    c[a.p_marca] = !!a.p_valor; c.hilo.push(linea('dato', a.p_marca, { valor: String(!!a.p_valor) }, yo.nombre)); return null; },
+    c[a.p_marca] = !!a.p_valor; c.hilo.push(linea('dato', a.p_marca, { valor: String(!!a.p_valor) }, yo.nombre)); if(a.p_marca === 'contrato_presencial') recalcular(c, yo); return null; },
   dedicado_vgt_correo(m, yo, a){ const c = m.datos.clientes.find((x) => x.id === Number(a.p_cliente)); if(!c || !c.dedicado || !c.dedicado.vgt) return error('No es un cliente dedicado');
     c.dedicado.vgt.correo = a.p_correo; c.dedicado.vgt.faltan = Math.max(0, (c.dedicado.vgt.faltan || 0) - (a.p_correo ? 1 : 0)); return null; },
   // ----- Lote 4: índice del TAD y cambios de categoría y titularidad -----

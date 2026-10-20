@@ -54,13 +54,13 @@ const llamo = (m, f) => m.llamadas.filter((l) => l[1] === f);
     await p.keyboard.press('Escape'); await p.waitForTimeout(300);
 
     // Contrato presencial y excepción pagada
-    await p.waitForSelector('#tab-datos [data-marca-cli="contrato_presencial"]');
-    ok(nombre + ': Datos tiene Contrato presencial y Excepción pagada (admin)', (await p.locator('[data-marca-cli="contrato_presencial"]').count()) === 1 && (await p.locator('[data-marca-cli="exc_pagada"]').count()) === 1);
-    await p.click('[data-marca-cli="contrato_presencial"]'); await p.waitForFunction(() => document.querySelector('[data-marca-cli="contrato_presencial"]').getAttribute('aria-checked') === 'true');
+    await p.click('#tabs [data-tab="documentos"]'); await p.waitForSelector('#tab-documentos [data-marca-cli="contrato_presencial"]');
+    ok(nombre + ': Contrato presencial arriba de Documentos y Excepción pagada en Datos (admin)', (await p.locator('[data-marca-cli="contrato_presencial"]').count()) === 1 && (await p.locator('[data-marca-cli="exc_pagada"]').count()) === 1);
+    await p.click('#tab-documentos [data-marca-cli="contrato_presencial"]'); await p.waitForFunction(() => document.querySelector('#tab-documentos [data-marca-cli="contrato_presencial"]').getAttribute('aria-checked') === 'true');
     ok(nombre + ': marcar contrato presencial pasa por el servidor y queda en el hilo', llamo(mundo, 'cliente_marca').some((l) => l[2].p_marca === 'contrato_presencial' && l[2].p_valor === true) && faro.hilo.some((h) => h.texto === 'contrato_presencial'));
     await p.click('#tabs [data-tab="documentos"]');
     faro.representantes[0].correo = '';
-    await p.evaluate(() => window.Ficha.recargar()); await p.waitForFunction(() => /Contrato presencial, sin correo/.test(document.querySelector('#tab-documentos').textContent));
+    await p.evaluate(() => window.Ficha.recargar()); await p.waitForFunction(() => !!document.querySelector('#tab-documentos [data-campo="rep:1"]') && !document.querySelector('#tab-documentos [data-campo="rep:1"] .chip.rojo'));
     ok(nombre + ': con contrato presencial no se pide el correo del representante', !faro.hilo.some(() => false));
     await p.click('#tabs [data-tab="datos"]');
     await p.click('[data-marca-cli="exc_pagada"]'); await p.waitForFunction(() => document.querySelector('[data-marca-cli="exc_pagada"]').getAttribute('aria-checked') === 'true');
