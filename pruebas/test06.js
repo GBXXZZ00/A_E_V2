@@ -127,7 +127,7 @@ const cerrarHojas = async (p) => { for(let i = 0; i < 4; i++){ if(await p.evalua
     ok(nombre + ': la Analista Senior puede confirmar y marcar el pago', (await q.locator('#asigConfirmar').count()) === 1 && (await q.locator('#pagoCom').count()) === 1 && (await q.locator('#excAbrir').count()) === 0);
     await q.click('#pagoCom'); await q.waitForFunction(() => document.querySelector('#hojaComision').textContent.includes('Quitar pago'));
     ok(nombre + ': marca el pago', s.mundo.llamadas.some((l) => l[1] === 'instalacion_pago' && l[2].p_pagada === true));
-    await q.click('#pagoCom'); await q.waitForFunction(() => document.querySelector('#hojaComision').textContent.includes('Marcar pagada'));
+    await q.click('#pagoCom'); await q.waitForSelector('#pagoSi'); await q.click('#pagoSi'); await q.waitForFunction(() => document.querySelector('#hojaComision').textContent.includes('Marcar pagada'));
     ok(nombre + ': y lo quita', s.mundo.llamadas.some((l) => l[1] === 'instalacion_pago' && l[2].p_pagada === false));
     await s.ctx.close();
 

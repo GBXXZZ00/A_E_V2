@@ -541,7 +541,7 @@
         (fal.length ? '<div class="chk"><span>¿No los tienes?</span><button type="button" class="mini" id="pedirCom">Pedir al cliente</button></div>' : '') + '</div>';
     if(i && i.comisiona){
       h += '<div class="req"><div class="req-t">Pago de instalación<span class="m ' + (pagoOk ? 'verde' : 'rojo') + '">' + (pagoOk ? 'Pagada' : 'Debe') + '</span></div>' +
-        '<p>' + (pagoOk ? (i.pago_manual ? 'Marcada a mano el ' : 'Quedó sin deuda el ') + esc(fecha(i.pago_ok_en)) + '.' : ns > 1 ? 'Tiene ' + ns + ' servicios: el TAD no distingue cuál debe. Se revisa a mano.' : 'El TAD todavía la muestra con deuda.') + '</p>' +
+        '<p>' + (pagoOk ? (i.pago_manual ? 'Marcada a mano el ' : 'Quedó sin deuda el ') + esc(fecha(i.pago_ok_en)) + '.' : ns > 1 ? 'El cliente tiene más de un servicio; el TAD no puede decidir. Marca el pago a mano.' : 'El TAD todavía la muestra con deuda.') + '</p>' +
         (F.puedo.pago ? '<div class="chk"><span>' + (pagoOk ? '¿Fue un error?' : 'Si ya pagó') + '</span><button type="button" class="mini' + (pagoOk ? '' : ' pri') + '" id="pagoCom" data-pagada="' + (pagoOk ? '0' : '1') + '">' + (pagoOk ? 'Quitar pago' : 'Marcar pagada') + '</button></div>'
           : pagoOk ? '' : '<p class="nota-chica">Lo marca el Analista Senior o el administrador.</p>') + '</div>';
       const puedeExc = !!(F.puedo.excepcion && P.excepcion);
@@ -762,7 +762,14 @@
     if((b = t.closest('#legalCheck')) && K){ abrirLegal(b.dataset.quitaLegal === '1'); return; }
     if((b = t.closest('#excQuitar')) && K){ b.disabled = true;
       rpc('instalacion_excepcion', { p_instalacion: K.inst, p_corte: null, p_motivo: null }).then(() => { toast('Excepción quitada'); tras(); }).catch((err) => { toast(err.message, 'error'); if(document.contains(b)) b.disabled = false; }); return; }
-    if((b = t.closest('#pagoCom')) && K){ b.disabled = true; const pagada = b.dataset.pagada === '1';
+    // Lote urgente 20/10: quitar un pago pide confirmación en el mismo lugar
+    if(t.closest('[data-pago-no]')){ const z = $('pagoConfirma'); if(z){ z.remove(); const x = $('pagoCom'); if(x){ x.closest('.chk').classList.remove('hidden'); x.focus(); } } return; }
+    if((b = t.closest('#pagoCom')) && K && b.dataset.pagada === '0'){
+      const fila = b.closest('.chk'); if(!fila || $('pagoConfirma')) return; fila.classList.add('hidden');
+      fila.insertAdjacentHTML('afterend', '<div class="chk" id="pagoConfirma" role="alertdialog" aria-label="Quitar el pago"><span>¿Quitar el pago de este cliente?<small>Deja de contar para la comisión. El TAD no lo vuelve a marcar solo.</small></span>' +
+        '<button type="button" class="mini" data-pago-no>No</button><button type="button" class="mini pri" id="pagoSi" data-pagada="0">Sí, quitar</button></div>');
+      $('pagoSi').focus(); return; }
+    if((b = t.closest('#pagoCom, #pagoSi')) && K){ b.disabled = true; const pagada = b.dataset.pagada === '1';
       rpc('instalacion_pago', { p_instalacion: K.inst, p_pagada: pagada }).then(() => { toast(pagada ? 'Instalación marcada como pagada' : 'Pago quitado'); tras(); }).catch((err) => { toast(err.message, 'error'); if(document.contains(b)) b.disabled = false; }); }
   });
   document.addEventListener('submit', (e) => {

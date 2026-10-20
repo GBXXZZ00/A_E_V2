@@ -49,7 +49,7 @@ const { ok, cerrar } = marcador();
     await p.click('#cabFicha [data-cierra]'); await p.waitForFunction(() => window.Comun.hojasAbiertas().join() === 'hojaComision');
     ok(nombre + ': al cerrarlo se vuelve a la comisión', true);
     const pagos = mundo.llamadas.filter((l) => l[1] === 'instalacion_pago').length;
-    await p.waitForSelector('#pagoCom'); await p.click('#pagoCom'); await p.waitForFunction((n) => true, pagos);
+    await p.waitForSelector('#pagoCom'); await p.click('#pagoCom'); if(await p.locator('#pagoSi').count()) await p.click('#pagoSi');
     await p.waitForFunction(() => Array.from(document.querySelectorAll('.toast')).some((t) => /pagada|Pago quitado/.test(t.textContent)));
     ok(nombre + ': el pago se gestiona desde la hoja', mundo.llamadas.filter((l) => l[1] === 'instalacion_pago').length === pagos + 1);
     await p.click('#abrirExp'); await p.waitForSelector('#hojaFicha.ver #tFicha');

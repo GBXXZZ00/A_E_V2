@@ -1,6 +1,6 @@
 # Traspaso (se actualiza al cerrar cada sesión)
 
-Actualizado: 20/10/2026 (lote urgente comisiones y hojas en curso). Publicado: `?v=46`.
+Actualizado: 20/10/2026 (lote urgente comisiones y hojas en curso). Publicado: `?v=47`.
 
 ## LOTE URGENTE COMISIONES Y HOJAS (APROBADO por el administrador el 20/10): texto completo
 
@@ -57,6 +57,12 @@ Al terminar: pruebas (nuevas para 1, 2, 3, 5 y 6), capturas en escritorio e iPho
   - Probado en la base con función temporal que se deshace sola: sin motivo, desde septiembre (cerrado) o hacia un corte que no está abierto da error; movida a noviembre, octubre baja a 62 y noviembre la trae; de vuelta, octubre 63/26. Queda sin uso `privado.prueba_tmp_mover`.
   - **Decisión propia:** las listas auxiliares (bienvenidas por enviar, eventos del corte, "último corte" en Clientes) siguen contando por la fecha de instalación; solo la comisión usa el corte movido.
   - SQL en `supabase/pruebas/lote_urgente_p2.sql`. Prueba nueva: test37.
+- **Parte 3: HECHA en v47. Pago.** Septiembre 59/49 y octubre 63/26 antes y después.
+  - Verificado con la carga real: la carga del TAD (`tad_cerrar`) y el cruce (`privado.cruzar`) solo marcan pagos vacíos y nunca los quitan; ninguna carga borra ni vuelve a crear instalaciones. En la base, los 6 pagos marcados a mano antes de la carga del TAD del 19/10 siguen marcados y el quitado a mano sigue quitado.
+  - Además, guarda en la base (`privado.pago_respetar`): un pago marcado a mano no se borra ni cambia de fecha por ningún proceso, salvo "Quitar pago". Probado con función temporal que se deshace sola (queda sin uso `privado.prueba_tmp_pago`).
+  - "Quitar pago" pregunta en el mismo lugar: "¿Quitar el pago de este cliente?" con No y "Sí, quitar".
+  - Con más de un servicio, la hoja dice: "El cliente tiene más de un servicio; el TAD no puede decidir. Marca el pago a mano."
+  - SQL en `supabase/pruebas/lote_urgente_p3.sql`. Prueba nueva: test38 (carga del TAD con deuda no quita el pago a mano; quitado a mano no vuelve; confirmación; texto de Revisar pago). test03 y test06 ajustadas a la confirmación.
 ## CORRIDA 14/10 TARDE (APROBADA por el administrador): texto completo
 
 CORRIDA 14/10 tarde (aprobada por el administrador). Primer paso: copia este texto completo al traspaso. Publica por parte (pruebas, capturas 1366x768 y iPhone como admin y como líder, revisión independiente, ?v=, commit y push). Septiembre 59/49 antes y después de cada parte. Migraciones está en pausa: solo se toca su formulario (Parte 3). Nada de nombres ni RIF reales en el repo. Anota las decisiones propias en el traspaso.

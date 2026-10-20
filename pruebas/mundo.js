@@ -781,7 +781,7 @@ const RPC = {
   instalacion_pago(m, yo, a){
     if(!esSenior(yo)) return error('Esto lo hace el Analista Senior o el administrador');
     for(const c of m.datos.clientes){ const i = c.instalaciones.find((x) => x.id === Number(a.p_instalacion));
-      if(i){ i.pago_ok_en = a.p_pagada ? (i.pago_ok_en || hace(0)) : null; i.pago_manual = true; c.hilo.push(linea('pago', a.p_pagada ? 'pagada' : 'pendiente', {}, yo.nombre)); return null; } }
+      if(i){ i.pago_ok_en = a.p_pagada ? (i.pago_ok_en || hace(0)) : null; i.pago_manual = true; i.pago_quitado = !a.p_pagada; c.hilo.push(linea('pago', a.p_pagada ? 'pagada' : 'pendiente', {}, yo.nombre)); return null; } }
     return error('Esa instalación no existe');
   },
   drive_carpeta_info(m, yo, a){
@@ -967,7 +967,12 @@ const RPC = {
   tad_cerrar(m, yo, a){
     const c = (m.cargas || []).find((x) => x.id === a.p_carga && x.estado === 'procesando'); if(!c) return error('Esta carga ya se cerró');
     c.estado = c.resumen.invalidas ? 'con_errores' : 'lista';
-    return Object.assign({}, c.resumen, { pagos_marcados: 0, clientes_total: m.datos.clientes.length, filas: c.filas });
+    // Igual que tad_cerrar: la primera vez que el cliente sale sin deuda se marca el pago; nunca se quita uno marcado
+    // y uno quitado a mano no vuelve solo (privado.pago_respetar)
+    let pagos = 0;
+    m.datos.clientes.filter((cl) => (c.vistas || []).includes(cl.id) && cl.servicios.some((sv) => sv.con_deuda === false)).forEach((cl) => cl.instalaciones.forEach((i) => {
+      if(!i.pago_ok_en && !i.pago_quitado){ i.pago_ok_en = new Date().toISOString(); pagos++; } }));
+    return Object.assign({}, c.resumen, { pagos_marcados: pagos, clientes_total: m.datos.clientes.length, filas: c.filas });
   },
   crudo_iniciar(m, yo, a){
     if(!['admin', 'analista'].includes(yo.rol)) return error('No tienes permiso para hacer esto');
