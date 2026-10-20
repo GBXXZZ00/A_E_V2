@@ -78,10 +78,10 @@
     // Lote urgente 20/10: el corte se cierra a mano; el día límite es un aviso
     $('rango').textContent = 'Instalaciones del ' + fecha(d.inicio) + ' al ' + fecha(d.fin) + '. ' + (d.certificado ? 'Corte cerrado.'
       : sig ? 'Corte siguiente: empieza a contar cuando se cierre el de ' + mes(d.actual) + '.'
-      : enCurso ? (d.dias > 0 ? 'Día límite el ' + lim + ': faltan ' + plural(d.dias, 'día', 'días') + '.' : d.dias === 0 ? 'Hoy es el día límite del corte.' : 'El día límite fue el ' + lim + '. Sigue abierto hasta que se cierre.')
+      : enCurso ? (d.dias > 0 ? 'Día límite el ' + lim + ': ' + (d.dias === 1 ? 'falta ' : 'faltan ') + plural(d.dias, 'día', 'días') + '.' : d.dias === 0 ? 'Hoy es el día límite del corte.' : 'El día límite fue el ' + lim + '. Sigue abierto hasta que se cierre.')
       : d.abierto === false || !d.manual ? 'Corte cerrado.' : 'Sigue abierto.');
     $('mets').innerHTML =
-      '<div class="met negro"><b>' + cumplen + '</b><small>' + (enCurso ? 'Cumplen hasta hoy' : 'Cumplieron') + ' de ' + d.filas.length + '</small></div>' +
+      '<div class="met negro"><b>' + cumplen + '</b><small>' + (enCurso || sig ? 'Cumplen hasta hoy' : 'Cumplieron') + ' de ' + d.filas.length + '</small></div>' +
       '<div class="met"><b>' + propias.length + '</b><small>Instaladas en el corte</small></div>' +
       '<div class="met"><b' + (ult.some((f) => !f.cumple) ? ' class="alerta"' : '') + '>' + ult.filter((f) => !f.cumple).length + '</b><small>En su último corte</small></div>' +
       '<div class="met solo-pc"><b>' + d.filas.filter((f) => !f.legal_ok).length + '</b><small>Les falta legal</small></div>' +
@@ -98,6 +98,7 @@
   function etiquetas(f){
     let h = '';
     if(f.instalador === 'Cambio de categoría') h += '<span class="tagn verde">Cambio de categoría</span>';
+    if(f.movida) h += '<span class="tagn ambar">Movida a mano</span>';
     if(f.por_subir) h += '<span class="tagn ambar">' + (f.aprobado_por_subir ? 'Aprobado, documentos por subir' : 'Archivos por subir') + '</span>';
     if(f.servicio_id) h += f.bienvenida_en ? '<span class="tagn verde">Enviada ' + esc(diaMes(f.bienvenida_en)) + '</span>' : '<span class="tagn">Bienvenida por enviar</span>';
     return h;
@@ -549,13 +550,40 @@
       else if(puedeExc && !ok && !sinAsignar) h += '<div class="req"><div class="req-t">Excepción</div><p>Comisiona aunque no cumpla. Solo la da el administrador y el líder ve el motivo.</p>' +
         '<div class="chk"><span>¿Debe comisionar igual?</span><button type="button" class="mini" id="excAbrir">Dar excepción</button></div></div>';
     }
-    h += bloqueEvento(F, i, P);
+    h += bloqueCorte(i, P) + bloqueEvento(F, i, P);
     const mov = (F.hilo || []).slice(0, 4);
     h += '<div class="req"><div class="req-t">Qué ha pasado</div>' + (mov.length ? '<div class="hilo" style="padding:10px 0 0">' + mov.map(window.Ficha.lineaHilo).join('') + '</div>' : '<p>Todavía no hay movimientos.</p>') +
       ((F.hilo || []).length > 4 ? '<button type="button" class="enlace" id="verHilo">Ver todo el hilo</button>' : '') + '</div>';
     $('cuerpoCom').innerHTML = h;
   }
 
+  // Lote urgente 20/10: cambiar de corte (solo entre el corte en curso y el siguiente, ambos abiertos)
+  function opcionesCorte(i){
+    if(!d || !i || !i.corte) return [];
+    const abiertos = [d.actual, d.siguiente].filter(Boolean);
+    return abiertos.indexOf(i.corte) < 0 ? [] : abiertos.filter((c) => c !== i.corte);
+  }
+  function bloqueCorte(i, P){
+    if(!i || !i.comisiona) return '';
+    const ops = P.asignar ? opcionesCorte(i) : [];
+    if(!i.movida && !ops.length) return '';
+    return '<div class="req"><div class="req-t">Corte' + (i.movida ? '<span class="m ambar">Movida a mano</span>' : '') + '</div>' +
+      '<p>Cuenta en el corte de ' + esc(mes(i.corte)) + '.' + (i.movida ? ' Por su fecha era de ' + esc(mes(i.corte_natural)) + '. Motivo: ' + esc(i.movida_motivo || 'sin motivo') + '.' : '') + '</p>' +
+      (ops.length ? '<div class="chk"><span>¿Debe contar en otro corte?</span><button type="button" class="mini" id="corteCambiar">Cambiar de corte</button></div>' : '') + '</div>';
+  }
+  function abrirCambioCorte(){
+    if(!K || !K.F) return;
+    const i = (K.F.comision || []).find((x) => Number(x.id) === K.inst); const ops = opcionesCorte(i); if(!ops.length) return;
+    hojaChica('hojaCorteMov', 'tCorteMov').innerHTML = cabHoja('tCorteMov', 'Cambiar de corte', K.F.cliente.nombre) + '<form id="formCorteMov" novalidate>' +
+      '<p class="nota">Ahora cuenta en ' + esc(nombreCorte(i.corte).toLowerCase()) + '. Solo se cambia entre cortes abiertos.</p>' +
+      (ops.length === 1 ? '<div class="estado al-gris"><b>Pasa a ' + esc(nombreCorte(ops[0]).toLowerCase()) + '</b><small>Es el otro corte abierto.</small></div><button type="button" class="on" data-corte-mov="' + esc(ops[0]) + '" hidden></button>'
+        : '<span class="rotulo" id="rCorteMov">Pasar a</span><div class="tres" role="radiogroup" aria-labelledby="rCorteMov">' +
+          ops.map((c, n) => '<button type="button" role="radio" data-corte-mov="' + esc(c) + '" aria-checked="' + (n === 0) + '" class="' + (n === 0 ? 'on' : '') + '">' + esc(nombreCorte(c)) + '</button>').join('') + '</div>') +
+      '<label class="rotulo" for="corteMovMotivo">Motivo</label><textarea class="area corta" id="corteMovMotivo" maxlength="500" data-foco></textarea>' +
+      '<p class="nota-chica">Queda en la bitácora y la fila dice "Movida a mano".</p>' +
+      '<div class="error" id="eCorteMov" role="alert"></div><div class="acciones"><button type="submit" class="btn btn-ancho" id="corteMovGuardar">Cambiar de corte</button></div></form>';
+    abrirHoja('hojaCorteMov');
+  }
   // Proforma y carta, arriba de la hoja: el PDF sale siempre con los datos del momento y cada envío queda anotado
   function bloqueProforma(F, i){
     if(!i || !i.servicio_id || !F.puedo.enviar) return '';
@@ -729,6 +757,8 @@
       asignar(f.orden_id, i.dueno, b); return; }
     if(t.closest('#asigBuscar') && A){ buscarOrdenes($('asigBusca').value.trim()); return; }
     if(t.closest('#excAbrir') && K){ abrirExcepcion(); return; }
+    if(t.closest('#corteCambiar') && K){ abrirCambioCorte(); return; }
+    if((b = t.closest('[data-corte-mov]'))){ Array.prototype.forEach.call(document.querySelectorAll('[data-corte-mov]'), (x) => { const on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-checked', on); }); return; }
     if((b = t.closest('#legalCheck')) && K){ abrirLegal(b.dataset.quitaLegal === '1'); return; }
     if((b = t.closest('#excQuitar')) && K){ b.disabled = true;
       rpc('instalacion_excepcion', { p_instalacion: K.inst, p_corte: null, p_motivo: null }).then(() => { toast('Excepción quitada'); tras(); }).catch((err) => { toast(err.message, 'error'); if(document.contains(b)) b.disabled = false; }); return; }
@@ -753,6 +783,13 @@
       b.disabled = true; b.textContent = 'Guardando…';
       rpc(quitar ? 'legal_quitar' : 'legal_aprobar', { p_cliente: K.cliente, p_motivo: m || null }).then(() => { toast(quitar ? 'Legal quitado' : 'Legal aprobado a mano'); if(hojaAbierta() === 'hojaLegal') cerrarHoja(); tras(); })
         .catch((err) => { er.textContent = err.message; b.disabled = false; b.textContent = txt; }); return; }
+    if(e.target.id === 'formCorteMov' && K){ e.preventDefault(); const er = $('eCorteMov'); er.textContent = ''; const m = $('corteMovMotivo').value.trim(); const b = $('corteMovGuardar');
+      const el = document.querySelector('[data-corte-mov].on'); const c = el ? el.dataset.corteMov : '';
+      if(!c){ er.textContent = 'Elige el corte'; return; }
+      if(m.length < 5){ er.textContent = 'Escribe el motivo del cambio'; $('corteMovMotivo').focus(); return; }
+      b.disabled = true; b.textContent = 'Guardando…';
+      rpc('instalacion_mover_corte', { p_instalacion: K.inst, p_corte: c, p_motivo: m }).then(() => { toast('Ahora cuenta en ' + nombreCorte(c).toLowerCase()); if(hojaAbierta() === 'hojaCorteMov') cerrarHoja(); tras(); })
+        .catch((err) => { er.textContent = err.message; b.disabled = false; b.textContent = 'Cambiar de corte'; }); return; }
     if(e.target.id === 'formExc' && K){ e.preventDefault(); const er = $('eExc'); er.textContent = ''; const m = $('excMotivo').value.trim(); const b = $('excGuardar');
       if(m.length < 5){ er.textContent = 'Escribe el motivo de la excepción'; $('excMotivo').focus(); return; }
       b.disabled = true; b.textContent = 'Guardando…';

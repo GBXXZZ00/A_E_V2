@@ -1,6 +1,6 @@
 # Traspaso (se actualiza al cerrar cada sesión)
 
-Actualizado: 20/10/2026 (lote urgente comisiones y hojas en curso). Publicado: `?v=45`.
+Actualizado: 20/10/2026 (lote urgente comisiones y hojas en curso). Publicado: `?v=46`.
 
 ## LOTE URGENTE COMISIONES Y HOJAS (APROBADO por el administrador el 20/10): texto completo
 
@@ -51,6 +51,12 @@ Al terminar: pruebas (nuevas para 1, 2, 3, 5 y 6), capturas en escritorio e iPho
   - **Decisiones propias:** se puede cerrar desde que terminan las instalaciones del corte (octubre: desde el 18/10), no hace falta esperar el día límite. Al cerrar, la pantalla salta al nuevo corte en curso. El administrador puede volver a abrir un corte cerrado solo si el siguiente sigue abierto (antes podía siempre).
   - Probado en la base con una función temporal que se deshace sola: cerrar octubre hoy daría 63 filas, 26 comisionan, 30 pasan a noviembre y 7 se pierden; el corte en curso pasa a noviembre; noviembre no se puede cerrar antes del 18/11. Queda sin uso `privado.prueba_tmp_cierre` (siempre termina en error).
   - SQL en `supabase/pruebas/lote_urgente_p1.sql` (migración `corte_cierre_manual`). Pruebas: test06 (cierre, resumen, salto al siguiente, bitácora, reabrir, orden, líder sin permiso), test22 (corte en curso con cierre manual), test03 ajustada (selector con "siguiente").
+- **Parte 2: HECHA en v46. Mover una instalación de corte.** Septiembre 59/49 y octubre 63/26 antes y después.
+  - En la hoja de comisión, bloque "Corte" con "Cambiar de corte" (solo administrador y Analista Senior): pasa entre el corte en curso y el siguiente (los dos abiertos), con motivo obligatorio (error debajo) y bitácora `instalacion_corte_movida`. Nunca desde ni hacia un corte cerrado. La fila y la hoja dicen "Movida a mano", de qué corte era por su fecha y el motivo. Si se devuelve a su corte por fecha, la marca se quita (la bitácora guarda todo).
+  - Base: columnas `instalaciones.corte_manual`, `corte_manual_motivo`, `corte_manual_por`, `corte_manual_en`; `comision_filas3` cuenta la instalación movida en el corte elegido (y como último corte en el siguiente si no cumple); `fila_extras` lleva `movida`; `cliente_ficha` usa el corte movido. Herramienta interna `privado.reemplazar_en_funcion` para cambiar un tramo exacto de una función grande (falla si el tramo no aparece una sola vez).
+  - Probado en la base con función temporal que se deshace sola: sin motivo, desde septiembre (cerrado) o hacia un corte que no está abierto da error; movida a noviembre, octubre baja a 62 y noviembre la trae; de vuelta, octubre 63/26. Queda sin uso `privado.prueba_tmp_mover`.
+  - **Decisión propia:** las listas auxiliares (bienvenidas por enviar, eventos del corte, "último corte" en Clientes) siguen contando por la fecha de instalación; solo la comisión usa el corte movido.
+  - SQL en `supabase/pruebas/lote_urgente_p2.sql`. Prueba nueva: test37.
 ## CORRIDA 14/10 TARDE (APROBADA por el administrador): texto completo
 
 CORRIDA 14/10 tarde (aprobada por el administrador). Primer paso: copia este texto completo al traspaso. Publica por parte (pruebas, capturas 1366x768 y iPhone como admin y como líder, revisión independiente, ?v=, commit y push). Septiembre 59/49 antes y después de cada parte. Migraciones está en pausa: solo se toca su formulario (Parte 3). Nada de nombres ni RIF reales en el repo. Anota las decisiones propias en el traspaso.

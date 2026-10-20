@@ -288,13 +288,15 @@ function filasComision(m, yo, corte){
   const cert = (m.certificados || {})[corte]; if(cert) return cert.filas.filter((f) => yo.rol !== 'lider' || f.lider_id === yo.id);
   const iniAnt = cierre(masMeses(corte, -2)), ini = cierre(masMeses(corte, -1)), fin = cierre(corte); const lAnt = limiteTs(masMeses(corte, -1)), lim = limiteTs(corte); const r = [];
   visibles(m, yo).forEach((c) => c.instalaciones.forEach((i) => {
-    const t = new Date(i.instalada_en).getTime(); if(t < iniAnt || t >= fin || !comisionable(i) || !comisionaEvento(i)) return;
+    const t = new Date(i.instalada_en).getTime(); const cm = i.corte_manual || null;
+    if((cm ? (cm !== corte && cm !== masMeses(corte, -1)) : (t < iniAnt || t >= fin)) || !comisionable(i) || !comisionaEvento(i)) return;
+    const delCorte = cm ? cm === corte : t >= ini;
     const leg = c.legal_ok_en ? new Date(c.legal_ok_en).getTime() : null; const pag = i.pago_ok_en ? new Date(i.pago_ok_en).getTime() : null;
     const ook = ordenOk(c, i); const exc = !!(i.excepcion_corte && i.excepcion_corte <= corte); const excAntes = !!(i.excepcion_corte && i.excepcion_corte < corte);
-    if(t < ini && (!cerrado(masMeses(corte, -1)) || (ook && ((leg !== null && pag !== null && leg < lAnt && pag < lAnt) || excAntes)))) return;
+    if(!delCorte && (!cerrado(masMeses(corte, -1)) || (ook && ((leg !== null && pag !== null && leg < lAnt && pag < lAnt) || excAntes)))) return;
     const dueno = duenoDe(c, i);
     r.push({ instalacion_id: i.id, cliente_id: c.id, nombre: c.nombre, doc: c.doc_tipo + '-' + c.doc_numero, instalada_en: i.instalada_en, lider_id: dueno === c.lider ? c.lider_id : null, lider: dueno || 'Por asignar',
-      origen: t >= ini ? 'corte' : 'anterior', legal_ok: leg !== null && leg < lim, pago_ok: pag !== null && pag < lim, cumple: ook && ((leg !== null && pag !== null && leg < lim && pag < lim) || exc),
+      origen: delCorte ? 'corte' : 'anterior', movida: !!cm, movida_motivo: i.corte_manual_motivo || null, legal_ok: leg !== null && leg < lim, pago_ok: pag !== null && pag < lim, cumple: ook && ((leg !== null && pag !== null && leg < lim && pag < lim) || exc),
       estatus: c.estatus, codigo: i.codigo, sucursal: i.sucursal, revisar_pago: pag === null && c.servicios.length > 1,
       orden_ok: ook, orden: i.orden ? i.orden.numero : null, orden_id: i.orden ? i.orden.id : null, orden_titulo: i.orden ? i.orden.titulo : null, orden_creador: i.orden ? i.orden.creador : null, cruce: i.cruce,
       es_natural: c.es_natural, instalador: i.instalador, excepcion: exc, excepcion_motivo: i.excepcion_motivo, dueno_manual: !!i.manual,
@@ -519,14 +521,14 @@ const RPC = {
       orden: c.orden, servicios: c.servicios.map((sv) => Object.assign({}, sv, { envios: undefined, carta: cartaDe(m, c, sv), proforma_envio: ultimoEnvio(sv, 'proforma'), bienvenida_envio: ultimoEnvio(sv, 'bienvenida') })), representantes: c.representantes,
       documentos: c.documentos.slice().sort((x, y) => x.casilla.localeCompare(y.casilla) || x.numero - y.numero), requeridos: requeridos(c), faltantes: faltantes(c),
       hilo: c.hilo.slice().sort((x, y) => y.en.localeCompare(x.en) || y.id - x.id).map((h) => Object.assign({ mio: h.autor === yo.nombre }, h)), hilo_total: c.hilo.length,
-      comision: c.instalaciones.map((i) => { const cp = corteDe(fechaClave(caracas(i.instalada_en))); const com = comisionable(i);
+      comision: c.instalaciones.map((i) => { const cn = corteDe(fechaClave(caracas(i.instalada_en))); const cp = i.corte_manual || cn; const com = comisionable(i);
         const ok = c.legal_ok_en && i.pago_ok_en ? Math.max(new Date(c.legal_ok_en).getTime(), new Date(i.pago_ok_en).getTime()) : null;
         const ook = ordenOk(c, i); const comE = com && comisionaEvento(i);
         const estado = !comE ? 'no_comisiona' : !ook ? 'por_asignar' : i.excepcion_corte ? 'cumple' : ok !== null && ok < limiteTs(masMeses(cp, 1)) ? 'cumple' : Date.now() < limiteTs(cp) ? 'en_curso' : Date.now() < limiteTs(masMeses(cp, 1)) ? 'ultimo_corte' : 'perdida';
         return { id: i.id, codigo: i.codigo, sucursal: i.sucursal, categoria: i.categoria, instalada_en: i.instalada_en, pago_ok_en: i.pago_ok_en, pago_manual: i.pago_manual, corte: cp, comisiona: comE, estado, es_evento: !!i.es_evento, evento_comisiona: i.es_evento ? !!i.evento_comisiona : null, evento_manual: !!i.evento_manual, motivo: motivoDe(c, i),
           servicio_id: (c.servicios.find((sv) => sv.codigo === i.codigo) || {}).id || null, es_aliado: i.es_aliado, instalador: i.instalador, orden: i.orden ? i.orden.numero : null, orden_ok: ook, dueno: duenoDe(c, i),
           dueno_whatsapp: m.personas.filter((p) => p.nombre === duenoDe(c, i)).map((p) => p.whatsapp)[0] || null, dueno_correo: m.personas.filter((p) => p.nombre === duenoDe(c, i)).map((p) => p.correo)[0] || null,
-          excepcion_corte: i.excepcion_corte, excepcion_motivo: i.excepcion_motivo, excepcion_por: i.excepcion_por,
+          excepcion_corte: i.excepcion_corte, excepcion_motivo: i.excepcion_motivo, excepcion_por: i.excepcion_por, movida: !!i.corte_manual, movida_motivo: i.corte_manual_motivo || null, corte_natural: cn,
           corte_pago: i.excepcion_corte ? i.excepcion_corte : ok === null ? null : ok < limiteTs(cp) ? cp : masMeses(cp, 1) }; }),
       puedo: { legal: r === 'admin', presencial: ['admin', 'abogado'].includes(r), exc_pagada: r === 'admin', revisar: ['admin', 'abogado'].includes(r), estatus: ['admin', 'abogado'].includes(r), contrato: ['admin', 'abogado'].includes(r), regimen: ['admin', 'abogado'].includes(r), top: r === 'admin', gestion: ['admin', 'analista'].includes(r), pago: esSenior(yo), asignar: esSenior(yo), evento: esSenior(yo), excepcion: r === 'admin', ip: ['admin', 'analista'].includes(r), enviar: ['admin', 'analista', 'lider'].includes(r) } };
   },
@@ -725,6 +727,21 @@ const RPC = {
     else if(!i.orden || i.orden.id !== a.p_orden){ i.orden = { id: a.p_orden, numero: 'PRUEBA-001/4' + a.p_orden, titulo: 'Orden elegida a mano', creador: dueno }; i.cruce = 'manual'; }
     i.confirmada = true; i.manual = true; i.dueno = dueno;
     x.c.hilo.push(linea('instalacion', 'asignada', { dueno, orden: i.orden ? i.orden.numero : null }, yo.nombre)); return null;
+  },
+  // Lote urgente 20/10: cambiar de corte entre el corte en curso y el siguiente (abiertos), con motivo y bitácora
+  instalacion_mover_corte(m, yo, a){
+    if(!esSenior(yo)) return error('Esto lo hace el Analista Senior o el administrador');
+    const x = instPorId(m, a.p_instalacion); if(!x) return error('No se encontró la instalación');
+    const mot = String(a.p_motivo || '').trim(); if(mot.length < 5) return error('Escribe el motivo');
+    const act = enCurso(); const sig = corteDe(hoy()) > act ? corteDe(hoy()) : act; const dest = String(a.p_corte || '').slice(0, 8) + '01';
+    const nat = corteDe(fechaClave(caracas(x.i.instalada_en))); const ef = x.i.corte_manual || nat;
+    if(dest !== act && dest !== sig) return error('Solo se puede pasar al corte en curso o al siguiente');
+    if(cerrado(ef)) return error('Está en un corte cerrado: no se mueve');
+    if(cerrado(dest)) return error('Ese corte ya está cerrado');
+    if(dest === ef) return error('Ya está en ese corte');
+    x.i.corte_manual = dest === nat ? null : dest; x.i.corte_manual_motivo = dest === nat ? null : mot;
+    (m.bitacora = m.bitacora || []).push({ accion: 'instalacion_corte_movida', instalacion: x.i.id, por: yo.id, antes: ef, despues: dest, motivo: mot });
+    return { corte: dest, movida: dest !== nat };
   },
   instalacion_excepcion(m, yo, a){
     if(yo.rol !== 'admin') return error('No tienes permiso para hacer esto');
