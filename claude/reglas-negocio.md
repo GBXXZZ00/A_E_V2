@@ -140,3 +140,5 @@ Sin nombres reales: el repo es público. "Analista Senior" es el responsable de 
 - Notificaciones por módulo, por correo, teléfono y página instalada. No hay "bandeja": el aviso lleva directo al módulo.
 - Las cuentas las crea el administrador desde Usuarios.
 - Pendiente para después: dedicados, migraciones (residencial a PYME, se cobran y exigen documentos), cambios de titularidad, clientes viejos, mensajes al cliente por caso, correo desde el servidor.
+
+- 20/10/2026 (chat del proyecto): el límite del corte de octubre se movió del 18 al 21 (`privado.corte_reglas`, fila 2026-10-01: dia_limite 21, dia_certifica 21) porque el administrador trabajó pagos y Legal el 19 y 20. Noviembre en adelante sigue 18/18/19 (fila nueva 2026-11-01). Octubre pasó de 11 a 26 que cumplen; septiembre 59/49 igual. Siguiente: corte con cierre manual (administrador o Analista Senior) y mover instalación de corte con motivo (lote urgente comisiones).
