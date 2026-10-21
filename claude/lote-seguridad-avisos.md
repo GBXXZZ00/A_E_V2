@@ -34,3 +34,15 @@ Una sola corrida, dos publicaciones: primero S, luego A. Pruebas, capturas 1366x
    - Documentos devueltos: "Hola Oriana, a SUYUNIBA PRIETO le devolví la cédula: está vencida."
    Responsable = el líder dueño; si el paso es del analista, el analista del líder; el administrador elige si hay dos. Queda en la bitácora (`contacto_responsable`).
 5. Nombre de la app en el teléfono: lo decide el administrador (hoy "Empresas"; el iPhone pone "from ..." y eso no se puede quitar).
+
+## Parte C (misma corrida, después de A): lo que faltaba
+1. **Avisos de aliados** que faltan de `claude/notificaciones.md` sección 4: bloqueo (al aliado, a su líder dueño y al administrador), "pago confirmado por el TAD" y "cuenta bloqueada". Probar el recorrido completo con una cuenta de aliado de prueba (pedir permiso, bloqueo, documentos, instalación, pago) y borrarla al final.
+2. **App vieja, decidido el 21/10:**
+   - La fila de la persona natural que pasó el servicio a su empresa se carga en el **cliente empresa**.
+   - **Crear los 9 clientes** que no existen (48 filas de `privado.app_vieja_docs`) con su RIF, y traer sus documentos con `privado.app_vieja_docs_traer()`. Bitácora y prueba con rollback antes.
+3. Revisar que la fila "no tocar" siga sin traer.
+
+## Pendientes que NO son de Code
+- **Repo privado:** el administrador debe pagar GitHub Pro primero. NO OLVIDAR: hasta entonces los documentos de `claude/` son públicos.
+- Requisitos del VGT: después de la reunión con Reina.
+- Google en producción: lo hace el administrador en Google Cloud con guía.
