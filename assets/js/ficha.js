@@ -8,6 +8,8 @@
   // Lote 21/10: Datos, Documentos, Contrato, VGT (solo si tiene), Hilo y Comisión (solo con instalación en un corte)
   const TABS = ['datos', 'documentos', 'contrato', 'vgt', 'hilo', 'comision'];
   const MAX_ARCHIVO = 15 * 1024 * 1024;
+  // Lote 22/10: hasta 10 representantes y 15 actas de asamblea (la base pone el mismo límite)
+  const REPS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]; const ACTAS = REPS.concat([11, 12, 13, 14, 15]);
   const TIPOS = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
 
   let yo = null; let id = 0; let F = null; let tab = 'datos'; let montada = false; let alCerrar = null; let llegada = null;
@@ -235,6 +237,7 @@
   function subCasilla(d){
     const hoy = F.hoy;
     if(d.estado === 'devuelto') return 'Devuelto: ' + (C.MOTIVOS[d.motivo] || 'revisa la nota').toLowerCase();
+    if(d.casilla === 'acta_asamblea') return d.firmado_en ? 'Acta del ' + fecha(d.firmado_en, true) : 'Falta la fecha del acta';
     if(d.firmado_en) return 'Firmado el ' + fecha(d.firmado_en, true) + (d.vence_en ? '. Vence el ' + fecha(d.vence_en, true) : '');
     if(d.vence_en) return (d.vence_en < hoy ? 'Venció el ' : 'Vence el ') + fecha(d.vence_en, true);
     if(d.casilla === 'otro' && d.nota) return d.nota;
@@ -340,18 +343,19 @@
     const c = F.cliente; let h = '';   // en la hoja de comisión la firma (Digital o Física) va en su bloque Legal
     const nReq = !c.es_natural && c.regimen_firma === 'conjunta' ? 2 : 1;
     // Los representantes que se ven: los que pide el régimen, los que tienen algo y el que se acaba de agregar
-    const conAlgo = [2, 3, 4].filter((n) => repConAlgo(n));
+    const conAlgo = REPS.slice(1).filter((n) => repConAlgo(n));
     const nReps = Math.max(nReq, conAlgo.length ? Math.max.apply(null, conAlgo) : 1, emb ? 0 : repExtra);
     for(let n = 1; n <= nReps; n++) h += grupoRep(n, n <= nReq, !emb && n === nReps);
-    if(!emb && !c.es_natural && nReps < 4) h += '<button type="button" class="btn btn-chico btn-2 btn-ancho" id="agregarRep" style="margin-top:12px">Agregar representante</button>';
+    if(!emb && !c.es_natural && nReps < REPS.length) h += '<button type="button" class="btn btn-chico btn-2 btn-ancho" id="agregarRep" style="margin-top:12px">Agregar representante</button>';
     if(!c.es_natural){
-      // Las actas de asamblea se agregan con su botón, hasta 4
-      const actas = [1, 2, 3, 4].filter((n) => docDe('acta_asamblea', n)); const libres = [1, 2, 3, 4].filter((n) => !docDe('acta_asamblea', n));
-      const mostrar = actas.concat(libres.slice(0, Math.min(emb ? (actas.length ? 0 : 1) : actaExtra, libres.length))).sort();
+      // Las actas de asamblea se agregan con su botón, hasta 15; las que tienen fecha van en orden de fecha
+      const actas = ACTAS.filter((n) => docDe('acta_asamblea', n)).sort((a, b) => (docDe('acta_asamblea', a).firmado_en || '9999').localeCompare(docDe('acta_asamblea', b).firmado_en || '9999') || a - b);
+      const libres = ACTAS.filter((n) => !docDe('acta_asamblea', n));
+      const mostrar = actas.concat(libres.slice(0, Math.min(emb ? (actas.length ? 0 : 1) : actaExtra, libres.length)));
       h += '<section class="bloque" data-grupo="empresa"><div class="sec">Empresa</div>' + datoHtml('Correo de la empresa', c.correo_empresa, 'correo_empresa', !c.presencial) +
         casillaHtml('rif_empresa', 0, { nombre: 'RIF de la empresa' }) + casillaHtml('acta_constitutiva', 0) + (c.es_isp ? casillaHtml('conatel', 0, { sub: docDe('conatel', 0) ? undefined : 'Habilitación vigente con atributos de Internet y Transporte' }) : '') +
         mostrar.map((n) => casillaHtml('acta_asamblea', n, { sub: 'Toca o suelta el archivo aquí' })).join('') +
-        (!emb && mostrar.length < 4 ? '<button type="button" class="btn btn-chico btn-2 btn-ancho" id="agregarActa" style="margin-top:10px">' + ic('mas') + 'Agregar acta de asamblea</button>' : '') + '</section>';
+        (!emb && mostrar.length < ACTAS.length ? '<button type="button" class="btn btn-chico btn-2 btn-ancho" id="agregarActa" style="margin-top:10px">' + ic('mas') + 'Agregar acta de asamblea</button>' : '') + '</section>';
     }
     const tieneDed = /Dedicado/.test(c.seg); const tienePyme = !/^Dedicado/.test(c.seg);
     // El contrato aparece cuando ya se envió a firmar (o si ya hay uno guardado). Los naturales no llevan contrato.
@@ -556,6 +560,7 @@
         (x.con_deuda ? '<small style="color:var(--rojo);font-weight:600">Con deuda en el TAD</small>' : '') +
         '<div class="ip-l"><span>' + (x.ip || x.ip6 ? [x.ip ? 'IPv4 ' + esc(x.ip) : '', x.ip6 ? 'IPv6 ' + esc(x.ip6) : ''].filter(Boolean).join(' · ') : 'IP pendiente por asignar') + '</span>' +
           (F.puedo.ip ? '<button type="button" class="enlace" data-ip="' + esc(x.id) + '">' + (x.ip || x.ip6 ? 'Cambiar IP' : 'Escribir IP') + '</button>' : '') + '</div>' +
+        ipConfHtml(x) +
         (F.puedo.enviar && esNuevo() ? '<div class="ip-l env-l"><span>' + esc(estadoEnvio(x)) + '</span><button type="button" class="mini" data-enviar="' + esc(x.id) + '">Proforma y carta</button></div>' : '') + '</div>';
     });
     h += '</div>';
@@ -1061,6 +1066,8 @@
     const nReps = Math.max(nReq, (G.representantes || []).reduce((a, r) => Math.max(a, r.orden), 1));
     if(!c.es_natural){ o.push({ k: 'rif_empresa:0', t: 'RIF de la empresa' }, { k: 'acta_constitutiva:0', t: 'Acta constitutiva' }, { k: 'acta_asamblea:auto', t: 'Acta de asamblea', libre: true }); if(c.es_isp) o.push({ k: 'conatel:0', t: 'Conatel: habilitación vigente' }); }
     for(let n = 1; n <= nReps; n++){ const suf = c.es_natural ? '' : ' rep. ' + n; o.push({ k: 'cedula:' + n, t: 'Cédula' + suf }, { k: 'rif_personal:' + n, t: (c.es_natural ? 'RIF personal' : 'RIF') + suf }); }
+    // Lote 22/10: documentos de un cambio de titular (planilla e identidad del titular actual), cuando la hoja viene desde Migraciones
+    (G.extraCasillas || []).forEach((x) => o.push(x));
     o.push({ k: 'otro:0', t: 'Otro', libre: true });
     return o;
   }
@@ -1101,12 +1108,12 @@
         '<p id="progLote">' + (!lote.length ? 'Todavía no has elegido archivos.' : sinMarcar ? 'Falta marcar ' + plural(sinMarcar, 'archivo', 'archivos') + '.' : 'Todo marcado. Quedan por revisar al guardar.') + '</p></div>';
   }
   async function guardarLote(){
-    const libres = [1, 2, 3, 4].filter((n) => !docDe('acta_asamblea', n)); const items = [];
+    const libres = ACTAS.filter((n) => !docDe('acta_asamblea', n)); const items = [];
     for(const it of lote){
       const cas = [];
       for(const k of Object.keys(it.marcas)){
         const p = k.split(':');
-        if(p[1] === 'auto'){ const n = libres.shift(); if(!n){ toast('Ya están las 4 actas de asamblea. Para cambiar una, reemplázala desde su casilla', 'error'); return; } cas.push({ casilla: p[0], numero: n }); }
+        if(p[1] === 'auto'){ const n = libres.shift(); if(!n){ toast('Ya están las ' + ACTAS.length + ' actas de asamblea. Para cambiar una, reemplázala desde su casilla', 'error'); return; } cas.push({ casilla: p[0], numero: n }); }
         else cas.push({ casilla: p[0], numero: Number(p[1]) });
       }
       if(it.marcas['otro:0'] && String(it.titulo || '').trim().length < 3){ toast('Escribe el nombre de cada archivo marcado como Otro', 'error'); const x = document.querySelector('#hojaVarios [data-titulo="' + lote.indexOf(it) + '"]'); if(x) x.focus(); return; }
@@ -1149,13 +1156,15 @@
       (!mk && iaDe(d.id) && iaDe(d.id).propuesta === 'revisar_a_mano' ? fila('La IA', esc('No pudo decidir: ' + (iaDe(d.id).nota || ''))) : '') +
       fila('Subido', esc(dia(d.subido_en)) + (d.subido_por ? ' por ' + esc(d.subido_por) : '')) +
       (d.estado === 'devuelto' ? fila('Motivo', esc(C.MOTIVOS[d.motivo] || '') + (d.nota ? '. ' + esc(d.nota) : '')) : '') +
-      (d.firmado_en ? fila('Firmado', esc(fecha(d.firmado_en, true))) : '') +
+      (d.casilla === 'acta_asamblea' ? '' : d.firmado_en ? fila('Firmado', esc(fecha(d.firmado_en, true))) : '') +
       (!F.puedo.revisar && d.vence_en ? fila('Vence', esc(fecha(d.vence_en, true))) : '') +
       ((d.comparte || []).length ? fila('También trae', esc(C.lista(d.comparte.map((x) => casilla(x.casilla, x.numero))))) : '') +
       (a ? fila('Archivo', esc(a.nombre || '')) : '') + '</div>' +
       (F.puedo.revisar && !(d.casilla.indexOf('contrato_') === 0 && !F.puedo.contrato) ? '<button type="button" class="btn btn-chico btn-2" id="verReemplazar" style="margin-top:12px">' + ic('subir') + 'Reemplazar archivo</button>' : '') +
       (mk && mk.origen === 'ia' && mk.accion === 'devolver' && rev && rev.puede_cerrar ? '<label class="rotulo arriba" for="excDoc">Si lo apruebas igual, escribe el motivo</label><textarea class="area corta" id="excDoc" maxlength="300"></textarea>' +
         '<p class="nota">Aprobar lo que la IA devolvió es una excepción: queda en la bitácora con tu nombre.</p>' : '') +
+      (d.casilla === 'acta_asamblea' ? '<label class="rotulo arriba" for="fechaActa">Fecha del acta</label><div style="display:flex;gap:10px;align-items:center"><input class="campo" id="fechaActa" style="flex:1;min-width:0" type="date" max="' + esc(F.hoy) + '" value="' + esc(d.firmado_en || '') + '"><button type="button" class="btn btn-chico btn-2" id="guardarFechaActa">Guardar fecha</button></div>' +
+        '<p class="nota">Las actas se ordenan por esta fecha en el expediente.</p><div class="error" id="errFechaActa" role="alert"></div>' : '') +
       (F.puedo.revisar ? '<label class="rotulo arriba" for="venceDoc">Fecha de vencimiento (opcional)</label><input class="campo" id="venceDoc" type="date" value="' + esc(d.vence_en || '') + '">' +
         '<p class="nota">Sirve para avisar antes de que se venza.</p>' : '');
     const puedeSubir = !(d.casilla.indexOf('contrato_') === 0 && !F.puedo.contrato);
@@ -1167,6 +1176,28 @@
         (a && /^https:\/\/drive\.google\.com\//.test(a.url_externa || '') ? '<a class="enlace" id="abrirDrive" href="' + esc(a.url_externa) + '" target="_blank" rel="noopener">Abrir en Drive</a>' : '') + '</div></section>' +
       '<section style="margin-top:14px">' + info + '</section></div></div>' + pie;
     if(ver.url[ver.archivo] !== undefined) mostrarArchivo();
+  }
+  // Lote 22/10: el reporte "Clientes Empresariales" trae otra IP (otro equipo, o distinta a la puesta a mano)
+  function ipConfHtml(x){
+    if(!x.ip_conf) return '';
+    const rep = [x.ip_prop ? 'IPv4 ' + x.ip_prop : '', x.ip6_prop ? 'IPv6 ' + x.ip6_prop : ''].filter(Boolean).join(' · ') || 'sin IP';
+    const por = x.ip_conf === 'equipo' ? 'El reporte trae esta IP con otro equipo' + (x.ip_prop_equipo ? ' (' + x.ip_prop_equipo + ')' : '') : 'La IP escrita a mano no es la del reporte';
+    return '<div class="al-banda ambar ip-conf" role="note"><b>IP por confirmar</b><p>' + esc(por + ': ' + rep + '.') + '</p>' +
+      (F.puedo.ip ? '<p style="margin-top:8px;display:flex;gap:10px;flex-wrap:wrap"><button type="button" class="btn btn-chico" data-ip-usar="' + esc(x.id) + '">Usar la del reporte</button><button type="button" class="btn btn-chico btn-2" data-ip-dejar="' + esc(x.id) + '">Dejar la actual</button></p>' : '') + '</div>';
+  }
+  async function ipConfirmar(b, usar){
+    b.disabled = true;
+    try { await rpc('servicio_ip_confirmar', { p_servicio: Number(usar ? b.dataset.ipUsar : b.dataset.ipDejar), p_usar_reporte: usar }); toast(usar ? 'IP del reporte guardada' : 'Se deja la IP actual'); cargar(); }
+    catch (e) { toast(e.message, 'error'); b.disabled = false; }
+  }
+  // Lote 22/10: fecha de un acta de asamblea (las ordena en el expediente)
+  async function guardarFechaActa(b){
+    const d = docVer(); const v = $('fechaActa').value || null; const er = $('errFechaActa'); if(!d) return;
+    er.textContent = '';
+    if(v && v > F.hoy){ er.textContent = 'La fecha no puede ser futura'; $('fechaActa').focus(); return; }
+    b.disabled = true;
+    try { await rpc('documento_fecha_acta', { p_documento: d.id, p_fecha: v }); d.firmado_en = v; toast('Fecha del acta guardada'); pintarDocumentos(); pintarVer(); }
+    catch (e) { er.textContent = e.message; b.disabled = false; }
   }
   function papel(texto){ return '<div><div class="papel"><i></i><i style="width:70%"></i><i></i><i></i><i style="width:55%"></i><i></i><i style="width:80%"></i></div>' + esc(texto) + '</div>'; }
   function mostrarArchivo(){
@@ -1386,11 +1417,11 @@
     if((b = t.closest('#envManual')) && env){ if(b.dataset.armado !== '1'){ b.dataset.armado = '1'; b.textContent = '¿Seguro? Toca otra vez'; setTimeout(() => { if(document.contains(b)){ b.dataset.armado = ''; b.textContent = 'Ya se envió por fuera'; } }, 4000); return; }
       b.disabled = true; anotarEnvio(env.tipo, 'manual', null); return; }
     if(t.closest('#agregarVgt')){ vgtExtra = Math.min(4, vgtExtra + 1); pintarDedicado(); return; }
-    if(t.closest('#agregarActa')){ actaExtra = Math.min(4, actaExtra + 1); pintarDocumentos(); const cs = document.querySelectorAll('[data-grupo="empresa"] [data-casilla^="acta_asamblea"]'); if(cs.length) cs[cs.length - 1].scrollIntoView({ block: 'center' }); return; }
+    if(t.closest('#agregarActa')){ actaExtra = Math.min(ACTAS.length, actaExtra + 1); pintarDocumentos(); const cs = document.querySelectorAll('[data-grupo="empresa"] [data-casilla^="acta_asamblea"]'); if(cs.length) cs[cs.length - 1].scrollIntoView({ block: 'center' }); return; }
     if((b = t.closest('[data-ver]')) && !t.closest('#docsCom')){ abrirVer(Number(b.dataset.ver)); return; }   // en la hoja de comisión lo maneja comisiones.js
     if((b = t.closest('#hojaFicha [data-campo]'))){ fuera = null; abrirCampo(b.dataset.campo); return; }
     if((b = t.closest('[data-quitar-rep]'))){ repExtra = Math.max(0, Number(b.dataset.quitarRep) - 1); pintarDocumentos(); return; }
-    if(t.closest('#agregarRep')){ const vis = document.querySelectorAll('#tab-documentos [data-grupo^="rep"]').length; const n = Math.max(vis, repExtra, !F.cliente.es_natural && F.cliente.regimen_firma === 'conjunta' ? 2 : 1) + 1; repExtra = Math.min(4, n); pintarDocumentos(); const g = document.querySelector('[data-grupo="rep' + repExtra + '"]'); if(g) g.scrollIntoView({ block: 'center' }); return; }
+    if(t.closest('#agregarRep')){ const vis = document.querySelectorAll('#tab-documentos [data-grupo^="rep"]').length; const n = Math.max(vis, repExtra, !F.cliente.es_natural && F.cliente.regimen_firma === 'conjunta' ? 2 : 1) + 1; repExtra = Math.min(REPS.length, n); pintarDocumentos(); const g = document.querySelector('[data-grupo="rep' + repExtra + '"]'); if(g) g.scrollIntoView({ block: 'center' }); return; }
     if(t.closest('#subirVarios')){ abrirVarios(); return; }
     // Aprobar seleccionados
     if(t.closest('#elegirAprobar')){ selMode = !selMode; selDocs = new Set(); pintarDocumentos(); return; }
@@ -1461,6 +1492,9 @@
     if((b = t.closest('[data-motivo]'))){ ver.nota = $('notaDev').value; ver.motivo = b.dataset.motivo; pintarVer(); return; }
     if(t.closest('#devConfirmar')){ revisar('devolver'); return; }
     if(t.closest('#verReemplazar')){ const d = docVer(); cerrarHoja(); if(d) elegirPara(d.casilla, d.numero); return; }
+    if((b = t.closest('#guardarFechaActa'))){ guardarFechaActa(b); return; }
+    if((b = t.closest('[data-ip-usar]'))){ ipConfirmar(b, true); return; }
+    if((b = t.closest('[data-ip-dejar]'))){ ipConfirmar(b, false); return; }
   });
   document.addEventListener('submit', (e) => {
     if(e.target.id === 'formNota') guardarNota(e);

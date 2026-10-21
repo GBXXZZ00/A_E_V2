@@ -145,20 +145,47 @@
       $('lista').insertAdjacentHTML('beforeend', bandejasExtra());
       return;
     }
+    // Lote 22/10: el corte muestra dos bloques, Instalaciones y Migraciones
+    const inst = filas.filter((f) => !f.migracion); const mig = filas.filter((f) => f.migracion);
+    const extraMig = migExtras();
+    const conMig = mig.length || extraMig;
+    $('lista').innerHTML = (conMig ? '<h2 class="com-bloque">Instalaciones<span>' + plural(inst.length, 'instalación', 'instalaciones') + '</span></h2>' : '') + gruposHtml(inst, '') +
+      (conMig ? '<h2 class="com-bloque">Migraciones<span>' + plural(mig.length, 'migración', 'migraciones') + ' a PYME</span></h2>' + gruposHtml(mig, 'm|') + extraMig : '') + bandejasExtra();
+  }
+  function gruposHtml(filas, pre){
+    if(!filas.length) return '';
     const grupos = []; const idx = {};
     filas.forEach((f) => { const l = f.lider || 'Sin líder'; if(idx[l] === undefined){ idx[l] = grupos.length; grupos.push({ lider: l, filas: [] }); } grupos[idx[l]].filas.push(f); });
     const solo = grupos.length === 1 || !!busca || filtro === 'asignar';
-    $('lista').innerHTML = grupos.map((g) => {
+    return grupos.map((g) => {
       const cumplen = g.filas.filter((f) => f.cumple).length; const ult = g.filas.filter((f) => f.origen === 'anterior' && !f.cumple).length;
-      const abierto = solo || abiertos[g.lider];
-      return '<div class="grupo' + (abierto ? ' abierto' : '') + '" data-lider="' + esc(g.lider) + '">' +
-        '<button type="button" class="grupo-cab" data-grupo="' + esc(g.lider) + '" aria-expanded="' + !!abierto + '"><span class="tx"><b>' + esc(g.lider) + '</b><small>' + plural(g.filas.length, 'instalación', 'instalaciones') +
+      const k = pre + g.lider; const ab = solo || abiertos[k];
+      return '<div class="grupo' + (ab ? ' abierto' : '') + '" data-lider="' + esc(k) + '">' +
+        '<button type="button" class="grupo-cab" data-grupo="' + esc(k) + '" aria-expanded="' + !!ab + '"><span class="tx"><b>' + esc(g.lider) + '</b><small>' + (pre ? plural(g.filas.length, 'migración', 'migraciones') : plural(g.filas.length, 'instalación', 'instalaciones')) +
           (ult ? ' · <span class="mal">' + ult + ' en último corte</span>' : '') + '</small></span><span class="num">' + cumplen + ' de ' + g.filas.length + '</span>' + ic('abajo') + '</button>' +
         '<div class="grupo-cuerpo">' + barraPendientes(g) +
-          bloque(g.lider + '|a', 'Último corte: si no cumplen se pierden', g.filas.filter((f) => f.origen === 'anterior'), 'rojo') +
-          bloque(g.lider + '|c', 'Instaladas en este corte', g.filas.filter((f) => f.origen === 'corte')) +
+          bloque(k + '|a', 'Último corte: si no cumplen se pierden', g.filas.filter((f) => f.origen === 'anterior'), 'rojo') +
+          bloque(k + '|c', pre ? 'Confirmadas en este corte' : 'Instaladas en este corte', g.filas.filter((f) => f.origen === 'corte')) +
         '</div></div>';
-    }).join('') + bandejasExtra();
+    }).join('');
+  }
+  // Migraciones del corte que no comisionan aquí: cambios a residencial (indicador negativo) e histórico pagado fuera de la app
+  let MIG = null;
+  async function cargarMig(mio){
+    try { const r = await rpc('migraciones_corte', { p_corte: d.corte }); if(mio !== pedido) return; MIG = r; if(vista === 'corte') pintarLista(); }
+    catch (e) { MIG = null; }
+  }
+  function migExtras(){
+    if(!MIG || !d || MIG.corte !== d.corte || busca || filtro !== 'todos') return '';
+    const caja = (k, titulo, sub, items, chip, cls) => {
+      if(!items.length) return '';
+      const ab = !!abiertos[k];
+      return '<div class="grupo bandeja-extra' + (ab ? ' abierto' : '') + '" data-lider="' + k + '"><button type="button" class="grupo-cab" data-grupo="' + k + '" aria-expanded="' + ab + '"><span class="tx"><b>' + titulo + '</b><small>' + esc(sub) + '</small></span><span class="num">' + items.length + '</span>' + ic('abajo') + '</button>' +
+        '<div class="grupo-cuerpo">' + items.map((o) => '<a class="fila" href="migraciones.html?f=confirmado&c=' + encodeURIComponent(o.id) + '"><span class="tx"><b>' + esc(o.nombre || 'Sin nombre') + '</b><small>' +
+          esc([fecha(o.en), o.lider].filter(Boolean).join(' · ')) + '</small></span><span class="m ' + cls + '">' + esc(chip) + '</span></a>').join('') + '</div></div>';
+    };
+    return caja('__res', 'Cambios a residencial', 'Indicador negativo del líder. No comisionan', MIG.residencial || [], 'Negativo', 'rojo') +
+      caja('__his', 'Histórico pagado fuera de la app', 'Del consolidado de cambios de categoría. No entran al corte', MIG.historico || [], 'Pagado fuera', 'gris');
   }
   // Lote 21/10: bandejas plegables debajo de la lista: "No comisionan" (anuladas a mano) y, en un corte certificado, "Fuera de la foto"
   function bandejasExtra(){
@@ -210,7 +237,7 @@
   let porDecidir = 0;
   async function cargarPorDecidir(){
     if(!yo || ['admin', 'analista'].indexOf(yo.rol) < 0) return;
-    try { const r = await rpc('trabajo_resumen', {}); if(r) window.Armazon.contadores(r, yo); porDecidir = ((r && r.tipos && r.tipos.cambio_comision) || {}).n || 0; pintarVistas(); }
+    try { const r = await rpc('trabajo_resumen', {}); if(r) window.Armazon.contadores(r, yo); porDecidir = 0; pintarVistas(); }   // lote 22/10: las migraciones ya no se deciden a mano
     catch (e) { /* El aviso es secundario: si falla, Comisiones sigue igual y Migraciones lo muestra */ }
   }
   async function cargarInstalar(){
@@ -450,6 +477,7 @@
       if(mio !== pedido) return;
       d = r; d.filas = d.filas || []; corte = d.corte; cache.guardar(clave, d);
       pintar(); guardarUrl(); if(K && K.F) pintarComision();
+      cargarMig(mio);
     } catch (e) {
       if(mio !== pedido) return;
       if(!d && vista === 'corte') $('lista').innerHTML = '<div class="vacio" role="alert"><b>No se pudieron cargar las comisiones</b><p>' + esc(e.message) + '</p><button type="button" class="btn btn-chico" id="reintentar">Reintentar</button></div>';

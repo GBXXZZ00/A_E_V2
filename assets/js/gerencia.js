@@ -9,7 +9,7 @@
   const SEG = ['PYME', 'Combinado', 'Dedicado corporativo', 'Dedicado ISP'];
   const ORDEN_EST = ['grandes_negocios', 'documentos_solicitados', 'documentos_pendientes', 'documentos_recibidos', 'documentos_en_revision', 'por_firmar', 'contrato_en_curso', 'contrato_firmado'];
   const COMPLETOS = ['documentos_en_revision', 'por_firmar', 'contrato_en_curso', 'contrato_firmado'];
-  const CAM = { categoria: 'Cambio de categoría', titularidad: 'Cambio de titular', ambos: 'Categoría y titular', pyme_otra: 'PYME a otra categoría', sin_solicitud: 'Sin solicitud', error: 'Por error', revertido: 'Revertido' };
+  const CAM = { migracion: 'Migración a PYME', titularidad: 'Cambio de titular', ambos: 'Migración y titular', residencial: 'Cambio a residencial', sin_registro: 'Sin registro', error: 'Por error', revertido: 'Revertido' };
   const ALI = { solicitud: 'Solicitudes', aprobada: 'Aprobadas', instalada: 'Instaladas', referido: 'Referidos', pagada: 'Pagos hechos' };
   const NEG = { sin_permiso: 'Instalado sin autorización', exc_docs: 'Excepción pagada con documentos por subir', pyme_otra: 'PYME a otra categoría', cambio_mal: 'Cambio sin solicitud o por error',
     com_quitada: 'Comisión quitada', orden_15: 'Orden sin instalar más de 15 días', docs_30: 'Cliente sin documentos más de 30 días', poliza_vencida: 'Póliza VGT vencida' };
@@ -145,7 +145,7 @@
     const falB = barras(fal.map(([k, n]) => ({ t: C.capital ? C.capital(k) : k, partes: [{ n, cls: 'ambar', g: { s: 'fal', k }, txt: 'clientes' }] })), { vacio: 'No falta nada en los expedientes en curso.' });
     // Cambios de plan
     const cam = de('cam'); const camR = cam.filter(enRango);
-    const camTipos = barras(Object.keys(CAM).map((k) => ({ t: CAM[k], partes: [{ n: suma(camR.filter((g) => g.k === k)), cls: ['pyme_otra', 'error', 'revertido', 'sin_solicitud'].indexOf(k) >= 0 ? 'rojo' : 't1', g: { s: 'cam', k }, txt: CAM[k] }] })).filter((f) => f.partes[0].n > 0), { vacio: 'Sin cambios de plan en este rango.' });
+    const camTipos = barras(Object.keys(CAM).map((k) => ({ t: CAM[k], partes: [{ n: suma(camR.filter((g) => g.k === k)), cls: ['residencial', 'error', 'revertido', 'sin_registro'].indexOf(k) >= 0 ? 'rojo' : 't1', g: { s: 'cam', k }, txt: CAM[k] }] })).filter((f) => f.partes[0].n > 0), { vacio: 'Sin cambios de plan en este rango.' });
     const camMes = barras(serie.map((m) => ({ t: mesCorto(m), partes: [{ n: suma(cam.filter((g) => g.mes === m && g.k !== 'pyme_otra')), cls: 't1', g: { s: 'cam', mes: m }, txt: 'cambios' }] })));
     // Aliados
     const ali = D.todo ? de('ali', enRango) : [];

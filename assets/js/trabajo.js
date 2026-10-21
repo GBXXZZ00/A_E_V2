@@ -9,8 +9,8 @@
   const MOD = {
     todo: { t: 'Todo', tipos: null },
     expedientes: { t: 'Expedientes', tipos: { docs_faltan: 'Faltan documentos', devuelto: 'Devueltos', por_firmar: 'Por firmar', sin_gestion: 'Sin gestión', rif_verificar: 'RIF por verificar' } },
-    comisiones: { t: 'Comisiones', tipos: { por_instalar: 'Por instalar', por_enviar: 'Por enviar', sin_ip: 'Sin IP', por_asignar: 'Por asignar', certificar: 'Para certificar', sin_cliente: 'Instalación sin cliente', sin_servicio: 'Sin servicio enlazado' } },
-    migraciones: { t: 'Migraciones', tipos: { cambio_emitir: 'Por emitir', sin_solicitud: 'Sin solicitud', cambio_comision: 'Comisión por decidir', planilla: 'Cambio de titular' } },
+    comisiones: { t: 'Comisiones', tipos: { por_instalar: 'Por instalar', por_enviar: 'Por enviar', sin_ip: 'Sin IP', ip_confirmar: 'IP por confirmar', por_asignar: 'Por asignar', certificar: 'Para certificar', sin_cliente: 'Instalación sin cliente', sin_servicio: 'Sin servicio enlazado' } },
+    migraciones: { t: 'Migraciones', tipos: { cambio_emitir: 'Por emitir', sin_registro: 'Sin registro', cambio_revisar: 'Documentos por revisar', planilla: 'Faltan documentos' } },
     dedicados: { t: 'Dedicados', tipos: { vgt: 'VGT incompleto', poliza: 'Pólizas' } },
     aliados: { t: 'Aliados', tipos: { referido: 'Referidos' } }
   };
@@ -18,15 +18,15 @@
   const SALE = {
     docs_faltan: 'Sale cuando se suben los documentos que faltan.', devuelto: 'Sale cuando se sube el documento corregido.', por_firmar: 'Sale cuando el contrato queda firmado.',
     sin_gestion: 'Sale con una gestión en el hilo del cliente.', rif_verificar: 'Sale cuando el administrador corrige el RIF y quita la marca en Editar dedicado.',
-    por_instalar: 'Sale cuando llega la instalación o Odoo cancela la orden.', por_enviar: 'Sale al registrar el envío de la proforma y la carta.', sin_ip: 'Sale al escribir la IP del servicio.',
+    por_instalar: 'Sale cuando llega la instalación o Odoo cancela la orden.', por_enviar: 'Sale al registrar el envío de la proforma y la carta.', sin_ip: 'Sale al escribir la IP del servicio o con el reporte de IP.', ip_confirmar: 'Sale al elegir la IP del reporte o dejar la actual.',
     por_asignar: 'Sale cuando se confirma la orden y a quién pertenece.', certificar: 'Sale cuando cumple Legal y el pago.', sin_cliente: 'Sale cuando la instalación queda enlazada a su cliente.',
-    sin_servicio: 'Sale cuando el TAD trae el servicio de esa instalación.', cambio_emitir: 'Sale al marcarlo Emitido en Migraciones.', sin_solicitud: 'Sale al vincularlo, o marcarlo como error o revertido.',
+    sin_servicio: 'Sale cuando el TAD trae el servicio de esa instalación.', cambio_emitir: 'Sale al marcarlo Hecho en Migraciones.', sin_registro: 'Sale al asignarlo a un líder, o marcarlo como error o revertido.', cambio_revisar: 'Sale al aprobar los documentos en el expediente.',
     cambio_comision: 'Sale al decidir en Migraciones si comisiona.', planilla: 'Sale cuando están todos los documentos del cambio.', vgt: 'Sale cuando se suben los requisitos VGT.',
     poliza: 'Sale al subir la póliza renovada con su vencimiento nuevo.', referido: 'Sale con una gestión en el hilo del cliente.'
   };
   // Enlaces viejos (?f=) a las bandejas de antes
   const VIEJO = { hoy: ['todo', ''], cambios: ['migraciones', 'cambio_emitir'], instalar: ['comisiones', 'por_instalar'], enviar: ['comisiones', 'por_enviar'], ip: ['comisiones', 'sin_ip'],
-    datos: ['todo', ''], sinsol: ['migraciones', 'sin_solicitud'], decidir: ['migraciones', 'cambio_comision'], certificar: ['comisiones', ''], docs: ['expedientes', 'docs_faltan'],
+    datos: ['todo', ''], sinsol: ['migraciones', 'sin_registro'], decidir: ['migraciones', 'cambio_revisar'], certificar: ['comisiones', ''], docs: ['expedientes', 'docs_faltan'],
     firmar: ['expedientes', 'por_firmar'], titular: ['migraciones', 'planilla'], referidos: ['aliados', 'referido'], vgt: ['dedicados', 'vgt'], gestion: ['expedientes', 'sin_gestion'], aliados: ['aliados', ''] };
   const TIPO_TXT = {}; Object.keys(MOD).forEach((m) => { if(MOD[m].tipos) Object.assign(TIPO_TXT, MOD[m].tipos); });
   let yo = null; let D = null; let tab = 'todo'; let sub = ''; let persona = ''; let pedido = 0;
@@ -124,11 +124,11 @@
   // Abrir: el expediente encima; los cambios en Migraciones; las órdenes sin cliente, en Comisiones
   function abrir(f){
     const ref = f.ref || {};
-    if(ref.cambio){ location.href = 'migraciones.html?f=' + ({ cambio_emitir: 'por_emitir', sin_solicitud: 'sin_solicitud', cambio_comision: 'decidir' }[f.tipo] || '') + '&c=' + encodeURIComponent(ref.cambio); return; }
+    if(ref.cambio){ location.href = 'migraciones.html?f=' + ({ cambio_emitir: 'por_emitir', sin_registro: 'sin_registro', cambio_revisar: 'por_revisar', planilla: 'por_revisar' }[f.tipo] || '') + '&c=' + encodeURIComponent(ref.cambio); return; }
     if(f.tipo === 'referido' && !f.cliente_id){ location.href = 'aliados.html'; return; }
     if(f.tipo === 'por_instalar' && !f.cliente_id){ location.href = 'comisiones.html?t=instalar'; return; }
     if(!f.cliente_id){ location.href = 'comisiones.html'; return; }
-    window.Ficha.abrir(f.cliente_id, { yo, alCerrar: cargar, tab: f.tipo === 'certificar' || f.tipo === 'por_enviar' || f.tipo === 'sin_ip' ? 'comision' : f.tipo === 'docs_faltan' || f.tipo === 'devuelto' || f.tipo === 'vgt' || f.tipo === 'poliza' ? 'documentos' : '' });
+    window.Ficha.abrir(f.cliente_id, { yo, alCerrar: cargar, tab: f.tipo === 'certificar' || f.tipo === 'por_enviar' || f.tipo === 'sin_ip' ? 'comision' : f.tipo === 'ip_confirmar' ? 'datos' : f.tipo === 'docs_faltan' || f.tipo === 'devuelto' || f.tipo === 'vgt' || f.tipo === 'poliza' ? 'documentos' : '' });
   }
   const buscar = (k) => (D.filas || []).find((f) => f.tipo + '|' + f.clave === k);
 

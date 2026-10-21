@@ -1,6 +1,17 @@
 # Traspaso (se actualiza al cerrar cada sesión)
 
-Actualizado: 20/10/2026 noche, desde el chat del proyecto. Publicado: `?v=53`.
+Actualizado: 21/10/2026, corrida del lote 22/10. Publicado: `?v=54` (tanda A).
+
+## LOTE 22/10: EN CURSO (corrida del 21/10, tres tandas seguidas, publicando en `main`)
+### Tanda A hecha (v54): actas y representantes, Migraciones, IP y documentos de la app vieja
+- SQL y pruebas en la base: `supabase/pruebas/lote_22oct_a.sql` (migraciones `lote_22oct_a1_*`, `a2_*`, `a3_*`, `a4_*`).
+- A1: hasta 10 representantes (`representantes.orden` 1..10, `cliente_representante`, `documentos_registrar`, correo, `privado.requeridos`) y 15 actas; cada acta lleva su fecha (`documentos.firmado_en`, RPC `documento_fecha_acta`, bitácora `acta_fecha`) y se ordenan por ella. Subir varios numera las actas solas. La IA ya revisaba a todos los representantes; en `reglas.mjs` el orden pasó a numérico (no se volvió a publicar la función: sale con el próximo cambio de la IA).
+- A2 Migraciones: módulo nuevo (`cambios.js` reescrito). Tipos Migración a PYME, Cambio de titular, Ambos y Cambio a residencial; pestañas Por revisar, Por emitir, Por confirmar, Confirmadas y Sin registro (administrador y Senior). Al aprobar los documentos en el expediente pasa solo al analista (trigger `documentos_cambios`); Hecho lo marcan el analista del líder, el coordinador (`perfiles.coordinador`, sin pantalla todavía), el Senior y el administrador. El TAD completo confirma solo; si cambió solo la categoría o solo el plan queda con "Falta cambiar el plan/la categoría". Identidad del servicio = sucursal + código + equipo (`tad_indice.equipo`; las filas viejas toman la clave nueva en la próxima carga). Planilla oficial con fondo JPG y campos del JSON (`Documentos.planillaTitular`, ahora asíncrona). Comisiones: bloques Instalaciones y Migraciones; la migración comisiona sola (Legal y pago) por la fecha en que el TAD la confirma; cambios a residencial e histórico aparte (`migraciones_corte`). Histórico: 45 cambios (50 filas, 5 códigos repetidos) "Pagado fuera de la app", septiembre 27 y octubre 18; no tocan comisiones. Protección del TAD: menos del 95 % se detiene con "Cargar igual"; "No aparece en el TAD" tras dos cargas (`clientes.no_aparece_tad_en`).
+- A3 IP: fuente "IP (Clientes Empresariales)" en Actualizar (`ip_reporte_cargar`), cruce sucursal + código + ONT con servicios PYME; "IP por confirmar" en la ficha con "Usar la del reporte" o "Dejar la actual" (`servicio_ip_confirmar`) y pendiente `ip_confirmar`. Nunca pisa una IP a mano. Falta subir el archivo real del 20/10 (lo sube el administrador).
+- A4: `privado.app_vieja_docs_traer()` cargó 17 archivos (13 documentos nuevos, 4 agregados a uno por revisar). 9 clientes no existen en la app (48 filas): no se crearon, esperan decisión. La fila "confirmar con el administrador" y la "no tocar" siguen sin traer.
+- Decisiones de Claude (falta confirmar): el histórico se agrupó por código y toma el corte de la primera fila; las 5 filas de la hoja "pendiente" también quedaron "Pagado fuera de la app" (lo dice la nota); un documento devuelto que recibe un archivo de la app vieja vuelve a "por revisar"; los cancelados, errores y revertidos se ven plegados al final de Confirmadas; Sin registro asignado de un cambio a residencial queda confirmado de una vez.
+- Referencia: septiembre 46/41 y octubre 68/53 antes y después.
+- Pruebas: test29 y test32 reescritas (Migraciones y Comisiones), test07 con 15 actas, fecha del acta y 10 representantes; `mundo.js` con el flujo nuevo.
 
 ## SIGUIENTE: LOTE 22/10 (`claude/lote-22oct.md`), APROBADO por el administrador el 20/10
 Ejecútalo completo, en tres tandas, con una publicación por tanda:

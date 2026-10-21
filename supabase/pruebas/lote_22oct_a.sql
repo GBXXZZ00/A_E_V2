@@ -1,0 +1,37 @@
+-- Lote 22/10, tanda A. Aplicado con el conector de Supabase (migraciones lote_22oct_a*).
+-- Referencia de comisiones al empezar: septiembre en vivo 46/41 (foto 59/49) y octubre 68/53.
+
+-- A1 (migración lote_22oct_a1_actas_representantes)
+-- representantes.orden entre 1 y 10; cliente_representante hasta 10; documentos_registrar: cédula y RIF 1..10, actas 1..15;
+-- correo_registrar, correo_destino y privado.correo_casillas con el mismo tope; privado.requeridos revisa hasta el representante 10.
+-- public.documento_fecha_acta(documento, fecha): fecha del acta de asamblea en documentos.firmado_en, con bitácora 'acta_fecha'.
+
+-- A3 (migraciones lote_22oct_a3_ip_reporte y lote_22oct_a3_ficha_ip)
+-- cargas.fuente admite 'ip'. servicios: ip_conf ('equipo' | 'mano'), ip_prop, ip6_prop, ip_prop_equipo, ip_descartada, ip_reporte_en.
+-- privado.equipo_norm (HWTC = 48575443), privado.ip_valida, privado.ip6_valida.
+-- public.ip_reporte_cargar(archivo, filas[{s,c,e,ip,ip6,est}]): ignora DISPONIBLE; cruza sucursal + código (sin ceros) + equipo con servicios PYME;
+--   cuadra: llena ip/ip6 si no es a mano; otro equipo o IP a mano distinta: ip_conf. Nunca pisa ip_mano. Bitácora 'ip_reporte'.
+-- public.servicio_ip_confirmar(servicio, usar_reporte): usa la del reporte o deja la actual (y no vuelve a preguntar por esa misma IP).
+-- servicio_ip limpia ip_conf. subidas_ultimas trae ip, base_vieja y dedicados. pendientes(): tipo 'ip_confirmar' para el analista.
+-- Prueba en la base real (función temporal que termina en raise exception, se deshace sola), 21/10:
+--   cuadra con HWTC -> llena 190.1.1.1; otro equipo -> 'equipo'; IP a mano distinta -> 'mano'; DEDICADO -> sin_servicio_pyme; DISPONIBLE -> fuera.
+--   Usar la del reporte -> ip 190.1.1.2, mano false; Dejar la actual -> la siguiente carga con la misma IP ya no la marca.
+
+-- A2 Migraciones (migraciones lote_22oct_a2_*)
+-- cambios: tipos migracion | titularidad | ambos | residencial; estados por_revisar | por_emitir | por_confirmar | confirmado | sin_registro | error | revertido | cancelado;
+--   origen app | tad | historico | archivo; columnas nuevas cliente_id, motivo, aviso (falta_plan | falta_categoria), plan_anterior/nuevo, pagado_fuera, corte,
+--   historico_id, nuevo_correo/telefono/domicilio, rep_nombre/rep_cedula, detectado. perfiles.coordinador + privado.es_coordinador().
+-- tad_indice: clave = sucursal-código-equipo (las filas viejas sucursal-código toman la clave nueva en la siguiente carga); columna equipo.
+--   tad_indice_parte detecta cambios del mismo servicio y claves nuevas parecidas; tad_indice_cerrar resuelve equipo nuevo / código nuevo
+--   (el de antes queda con carga 0), confirma los cambios en curso con privado.cambio_evaluar (o deja el aviso) y crea "Sin registro".
+-- Empresa completa: privado.emp_completa(categoria, plan) = categoría con PYME y plan con EMP.
+-- Protección: privado.tad_tamano (menos del 95 % de la carga anterior se detiene con 'TAD_CORTO'); public.tad_permitir_corto(tipo) da 15 minutos.
+--   tad_cerrar marca clientes.no_aparece_tad_en cuando faltan en dos cargas seguidas (nunca borra).
+-- Documentos: privado.cambio_requisitos (con estado en el expediente); trigger documentos_cambios: al aprobar, privado.cambio_avanzar pasa al analista.
+-- Comisión: privado.cambio_confirmar pone comision 'si' (migración o ambos con líder) y privado.cambio_instalar crea la instalación de cambio
+--   con la fecha en que el TAD lo confirma. cambio_comision ya no decide a mano. fila_extras trae 'migracion'. public.migraciones_corte(corte).
+-- cambios_archivo_cargar (Consulta Cambio de Categoría) solo pone la fecha exacta; ignora RADIUS con categoría anterior numérica.
+-- Histórico: privado.historico_migraciones_cargar() cargó 45 cambios (50 filas, 5 códigos repetidos) "Pagado fuera de la app": septiembre 27, octubre 18.
+-- Prueba en la base real (se deshizo sola): categoría sola -> falta_plan; plan solo -> sin registro falta_categoria; equipo nuevo -> confirmado con comisión;
+--   código nuevo con titular nuevo -> confirmado; cambio a residencial -> confirmado; titular nuevo ya PYME -> sin registro titularidad; TAD corto -> se detiene.
+-- Referencia de comisiones antes y después: septiembre 46/41, octubre 68/53.

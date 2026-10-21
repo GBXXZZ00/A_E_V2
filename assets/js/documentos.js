@@ -341,60 +341,57 @@
     return armarPaginas(hojas, 'Pendientes de ' + x.lider + ', corte de ' + x.corte);
   }
 
-  // ---------- Planilla de cambio de titular (lote 4): misma plantilla oficial, más nítida ----------
+  // ---------- Planilla de cambio de titular (lote 22/10): la hoja oficial como fondo y los datos escritos encima ----------
+  // Fondo: assets/plantillas/cambio_titular_fondo.jpg (carta a 200 ppp). Posiciones: cambio_titular_campos.json, en puntos desde arriba a la izquierda.
   // x: { tipo: 'natural_natural'|'natural_juridico'|'juridico_natural'|'juridico_juridico', servicio, ubicacion, fecha,
-  //      actual: { nombre, doc, natural, direccion, correo, telefono }, nuevo: { igual } }
-  const TIPOS_PLANILLA = [['natural_natural', 'Persona natural a persona natural'], ['natural_juridico', 'Persona natural a persona jurídica'],
-    ['juridico_natural', 'Persona jurídica a persona natural'], ['juridico_juridico', 'Persona jurídica a persona jurídica']];
-  function planillaTitular(x){
-    const d = new Lapiz(); let y = ARRIBA; const vacio = '______________________________';
-    y += d.logo(X0, y, 170) + 18;
-    y += d.texto(X0, y, 'Solicitud de cambio de titular', { tam: 20, negrita: true }) + 4;
-    y += d.texto(X0, y, 'Fecha: ' + (x.fecha || '____/____/________'), { tam: 10.5, color: '#555555' }) + 16;
-    // Tipo de solicitud: cuatro casillas
-    y += titulo(d, y, 'Tipo de solicitud', 8);
-    const col = W / 2;
-    TIPOS_PLANILLA.forEach((t, i) => {
-      const cx = X0 + (i % 2) * col; const cy = y + Math.floor(i / 2) * 26;
-      d.marco(cx, cy, 15, 15, '#333333', 1.2);
-      if(t[0] === x.tipo){ d.texto(cx + 2.5, cy - 1, 'X', { tam: 14, negrita: true }); }
-      d.texto(cx + 24, cy, t[1], { tam: 11 });
-    });
-    y += 2 * 26 + 12;
-    // Texto de la solicitud
+  //      actual: { nombre, doc, natural, direccion, correo, telefono }, nuevo: { igual } }. Devuelve una promesa con el PDF.
+  const PLANTILLA = 'assets/plantillas/cambio_titular_';
+  let fondoPlanilla = null;
+  async function piezasPlanilla(){
+    if(fondoPlanilla) return fondoPlanilla;
+    const [j, c] = await Promise.all([fetch(PLANTILLA + 'fondo.jpg'), fetch(PLANTILLA + 'campos.json')]);
+    if(!j.ok || !c.ok) throw new Error('No se pudo traer la plantilla de la planilla');
+    const b = new Uint8Array(await j.arrayBuffer()); const campos = (await c.json()).campos;
+    // Medidas de la imagen (marcador SOF del JPEG)
+    let k = 2, w = 0, h = 0;
+    while(k < b.length){ const m = b[k + 1]; const L = b[k + 2] * 256 + b[k + 3]; if(m >= 0xC0 && m <= 0xC2){ h = b[k + 5] * 256 + b[k + 6]; w = b[k + 7] * 256 + b[k + 8]; break; } k += 2 + L; }
+    if(!w || !h) throw new Error('La plantilla de la planilla no es un JPEG válido');
+    fondoPlanilla = { jpg: b, w, h, campos }; return fondoPlanilla;
+  }
+  async function planillaTitular(x){
+    const P = await piezasPlanilla(); const C = P.campos; const AZUL = '#0b2a6b'; const TAM = 9; const ALTO_HOJA = 792; const ops = [];
+    const recorta = (t, max) => { let v = String(t || '').replace(/\s+/g, ' ').trim(); while(v && ancho(v, TAM) > max) v = v.slice(0, -1); return v; };
+    const escribe = (x0, base, t) => { if(t) ops.push('BT /F1 ' + TAM + ' Tf ' + rgb(AZUL) + ' rg ' + n2(x0) + ' ' + n2(ALTO_HOJA - base) + ' Td ' + hexTexto(t) + ' Tj ET'); };
+    const campo = (k, t) => {
+      const c = C[k]; if(!c) return;
+      if(c.modo === 'linea') escribe(c.x + 1, c.base, recorta(t, c.ancho - 2));
+      else if(c.modo === 'celda') escribe(c.x + 3, c.y + c.alto / 2 + TAM * 0.35, recorta(t, c.ancho - 6));
+      else if(c.modo === 'marca' && t) escribe(c.x + (c.ancho - ancho('X', TAM)) / 2, c.y + c.alto / 2 + TAM * 0.35, 'X');
+    };
     const a = x.actual || {}; const n = x.nuevo || {};
-    const parrafo = 'Yo, ' + (a.nombre || vacio) + ', titular de la cédula o RIF ' + (a.doc || '____________') + ', solicito traspasar el servicio identificado con el número ' +
-      (x.servicio || '____________') + ' a nombre de ' + (n.nombre || vacio) + ', cédula o RIF ' + (n.doc || '____________') + ', ubicado en ' + (x.ubicacion || vacio) + '.';
-    y += d.texto(X0, y, parrafo, { tam: 11.5, alto: 1.55, max: W }) + 18;
-    // Tabla: titular actual y nuevo titular
-    const filas = [['Nombre o razón social', a.nombre, n.nombre], ['Cédula o RIF', a.doc, n.doc], ['Persona', a.natural === undefined ? '' : a.natural ? 'Natural' : 'Jurídica', n.natural === undefined ? '' : n.natural ? 'Natural' : 'Jurídica'],
-      ['Ubicación', a.direccion, n.direccion], ['Correo', a.correo, n.correo], ['Teléfono', a.telefono, n.telefono]];
-    const c0 = 150; const c1 = (W - c0) / 2;
-    d.caja(X0, y, W, 26, '#F2F3F5');
-    d.texto(X0 + c0 + 10, y + 6, 'Titular actual', { tam: 10.5, negrita: true, color: GRIS }); d.texto(X0 + c0 + c1 + 10, y + 6, 'Nuevo titular', { tam: 10.5, negrita: true, color: GRIS });
-    y += 26;
-    filas.forEach((f) => {
-      const h = Math.max(30, 12 + Math.max(partir(String(f[1] || ''), 10.5, false, c1 - 20).length, partir(String(f[2] || ''), 10.5, false, c1 - 20).length) * 15);
-      d.marco(X0, y, W, h, '#C9CED6', 0.8);
-      d.texto(X0 + 8, y + 8, f[0], { tam: 9.5, color: '#555555', max: c0 - 12 });
-      d.texto(X0 + c0 + 10, y + 7, String(f[1] || ''), { tam: 10.5, negrita: true, max: c1 - 20, alto: 1.4 });
-      d.texto(X0 + c0 + c1 + 10, y + 7, String(f[2] || ''), { tam: 10.5, negrita: true, max: c1 - 20, alto: 1.4 });
-      y += h;
-    });
-    y += 12;
-    y += d.texto(X0, y, 'Anexar copia de la cédula de identidad o del RIF de ambos titulares. Si el nuevo titular es una empresa, también sus documentos legales (RIF, acta constitutiva y cédula del representante).', { tam: 10, color: '#444444', max: W, alto: 1.45 }) + 22;
-    // Firmas y huellas de ambos
-    const ancho2 = (W - 24) / 2;
-    [['Titular actual', a], ['Nuevo titular', n]].forEach((t, i) => {
-      const x0 = X0 + i * (ancho2 + 24); let yy = y;
-      d.texto(x0, yy, t[0], { tam: 11, negrita: true }); yy += 22;
-      d.caja(x0, yy + 50, ancho2, 0.9, '#333333'); d.texto(x0, yy + 56, 'Firma', { tam: 9.5, color: '#555555' });
-      d.texto(x0, yy + 72, 'Nombre: ' + (t[1].nombre || ''), { tam: 9.5, color: '#555555', max: ancho2 });
-      const lado = (ancho2 - 16) / 2; const yh = yy + 100;
-      d.marco(x0, yh, lado, 86, '#999999', 0.8); d.marco(x0 + lado + 16, yh, lado, 86, '#999999', 0.8);
-      d.texto(x0, yh + 92, 'Pulgar derecho', { tam: 9, color: '#555555' }); d.texto(x0 + lado + 16, yh + 92, 'Pulgar izquierdo', { tam: 9, color: '#555555' });
-    });
-    return armarPaginas([d], 'Solicitud de cambio de titular');
+    campo('fecha', x.fecha);
+    ['nn', 'nj', 'jn', 'jj'].forEach((t) => campo('tipo_' + t, { nn: 'natural_natural', nj: 'natural_juridico', jn: 'juridico_natural', jj: 'juridico_juridico' }[t] === x.tipo));
+    campo('yo_actual', a.nombre); campo('servicio', x.servicio); campo('a_nombre_de', n.nombre); campo('ubicacion', x.ubicacion);
+    campo('act_nombre', a.nombre); campo('act_doc', a.doc); campo('act_natural', a.natural === true); campo('act_juridico', a.natural === false);
+    campo('act_ubicacion', a.direccion); campo('act_correo', a.correo); campo('act_telefono', a.telefono);
+    campo('yo_nuevo', n.nombre); campo('doc_nuevo', n.doc);
+    campo('nue_nombre', n.nombre); campo('nue_doc', n.doc); campo('nue_natural', n.natural === true); campo('nue_juridico', n.natural === false);
+    campo('nue_ubicacion', n.direccion); campo('nue_correo', n.correo); campo('nue_telefono', n.telefono);
+    const contenido = 'q 612 0 0 792 0 0 cm /Fondo Do Q\n' + ops.join('\n') + '\n';
+    const partes = []; const pos = []; let largo = 0;
+    const txt = (t) => { const u = new Uint8Array(t.length); for(let i = 0; i < t.length; i++) u[i] = t.charCodeAt(i) & 255; partes.push(u); largo += u.length; };
+    const objeto = (num, cuerpo, flujo) => { pos[num] = largo; txt(num + ' 0 obj\n' + cuerpo); if(flujo){ txt('\nstream\n'); partes.push(flujo); largo += flujo.length; txt('\nendstream'); } txt('\nendobj\n'); };
+    txt('%PDF-1.4\n%\xe2\xe3\xcf\xd3\n');
+    objeto(1, '<< /Type /Catalog /Pages 2 0 R /Lang (es) >>');
+    objeto(2, '<< /Type /Pages /Kids [3 0 R] /Count 1 >>');
+    objeto(3, '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> /XObject << /Fondo 6 0 R >> >> >>');
+    objeto(4, '<< /Length ' + contenido.length + ' >>\nstream\n' + contenido + 'endstream');
+    objeto(5, '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>');
+    objeto(6, '<< /Type /XObject /Subtype /Image /Width ' + P.w + ' /Height ' + P.h + ' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ' + P.jpg.length + ' >>', P.jpg);
+    objeto(7, '<< /Title ' + hexTexto('Solicitud de cambio de titular') + ' /Producer (Airtek Empresas) >>');
+    const inicio = largo;
+    txt('xref\n0 8\n0000000000 65535 f \n' + pos.slice(1).map((p) => String(p).padStart(10, '0') + ' 00000 n \n').join('') + 'trailer\n<< /Size 8 /Root 1 0 R /Info 7 0 R >>\nstartxref\n' + inicio + '\n%%EOF\n');
+    return new Blob(partes, { type: 'application/pdf' });
   }
 
   window.Documentos = { planillaTitular, proforma, carta, pendientes, datosDe, nombreArchivo, telFmt, limpiarNombre, waNumero, PORTAL, _ancho: ancho, _partir: partir };

@@ -28,8 +28,17 @@ const cerrarTodo = async (p) => { for(let i = 0; i < 4; i++){ if(await p.evaluat
     const rep = await p.textContent('[data-grupo="rep1"]');
     ok(nombre + ': Contacto es una sola casilla con teléfono y correo', (await p.locator('[data-grupo="rep1"] [data-campo]').count()) === 1 && rep.includes('Contacto') && rep.includes('0414-555 01 34 · gerente@vidrioselfaro.test') && !rep.includes('Teléfono'));
     ok(nombre + ': actas de asamblea: solo las que hay y un botón para agregar', (await p.locator('[data-casilla^="acta_asamblea"]').count()) === 1 && (await p.locator('#agregarActa').count()) === 1);
-    await p.click('#agregarActa'); await p.click('#agregarActa'); await p.click('#agregarActa');
-    ok(nombre + ': se agregan hasta 4 y el botón desaparece', (await p.locator('[data-casilla^="acta_asamblea"]').count()) === 4 && (await p.locator('#agregarActa').count()) === 0);
+    for(let i = 0; i < 14; i++) await p.click('#agregarActa');
+    ok(nombre + ': se agregan hasta 15 y el botón desaparece', (await p.locator('[data-casilla^="acta_asamblea"]').count()) === 15 && (await p.locator('#agregarActa').count()) === 0);
+    ok(nombre + ': el acta sin fecha lo dice', (await p.textContent('[data-casilla="acta_asamblea:1"]')).includes('Falta la fecha del acta'));
+    // Lote 22/10: cada acta lleva su fecha
+    await p.click('[data-casilla="acta_asamblea:1"]'); await p.waitForSelector('#fechaActa');
+    await p.fill('#fechaActa', '2019-05-20'); await p.click('#guardarFechaActa');
+    await p.waitForFunction(() => /Acta del/.test(document.querySelector('#tab-documentos [data-casilla="acta_asamblea:1"]').textContent));
+    ok(nombre + ': guarda la fecha del acta y la muestra', mundo.llamadas.some((l) => l[1] === 'documento_fecha_acta' && l[2].p_fecha === '2019-05-20'));
+    await cerrarTodo(p); await abrirCliente(p, 'Vidrios El Faro'); await p.click('[data-tab="documentos"]');
+    for(let i = 0; i < 9; i++) await p.click('#agregarRep');
+    ok(nombre + ': se agregan hasta 10 representantes', (await p.locator('#tab-documentos [data-grupo^="rep"]').count()) === 10 && (await p.locator('#agregarRep').count()) === 0);
     ok(nombre + ': en revisión todavía no se ve el contrato', (await p.locator('[data-grupo="contrato"]').count()) === 0);
     await p.screenshot({ path: 'capturas/07-' + nombre + '-documentos.png' });
     await cerrarTodo(p);

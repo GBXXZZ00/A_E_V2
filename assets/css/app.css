@@ -1175,3 +1175,22 @@ button.ge-li{cursor:pointer}
 .ctr-firma .rotulo{display:block;margin-bottom:6px}
 .ctr-t .chip + .chip{margin-left:6px}
 @media (prefers-reduced-motion:reduce){ .chip-btn{transition:none} }
+
+/* Lote 22/10: Migraciones (formulario de una pantalla) y bloques del corte */
+.cam-tipos{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.cam-tipo{display:flex;flex-direction:column;align-items:flex-start;gap:3px;min-height:64px;padding:10px 12px;border:1.5px solid var(--line);border-radius:14px;background:#fff;text-align:left;transition:transform .16s var(--ease-out)}
+.cam-tipo b{font-size:14px} .cam-tipo small{font-size:12.5px;color:var(--text2);line-height:1.35}
+.cam-tipo.on{border-color:var(--accent);background:var(--azul-bg)}
+.cam-tipo:active{transform:scale(.97)}
+.cam-soltar{margin-top:2px}
+.cam-arch{list-style:none;margin:10px 0 0;padding:0}
+.cam-arch li{display:flex;align-items:center;gap:10px;min-height:44px;padding:4px 0;border-top:1px solid var(--line);font-size:13px}
+.cam-arch li span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cam-cerrados{margin-top:14px}
+.cam-cerrados summary{min-height:44px;display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:var(--text2);cursor:pointer}
+.cam-cerrados summary em{font-style:normal;font-weight:600}
+.com-bloque{display:flex;align-items:baseline;gap:10px;margin:18px 0 8px;font-size:16px;font-weight:700}
+.com-bloque:first-child{margin-top:4px}
+.com-bloque span{font-size:12.5px;font-weight:600;color:var(--text2)}
+@media (max-width:420px){ .cam-tipos{grid-template-columns:1fr} }
+@media (prefers-reduced-motion:reduce){ .cam-tipo:active{transform:none} }

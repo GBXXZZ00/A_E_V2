@@ -232,7 +232,7 @@ export function evaluar(e){
       else if(!junta.length) punto('firmantes', 'Firmantes', 'mano', 'No se pudo leer quiénes forman la junta. Míralo en el acta.', { pagina: pg(designa || actas[0]) });
       else {
         const conjunta = conRegimen.regimen_firma === 'conjunta';
-        const nums = (e.representantes || []).map((r) => r.orden).concat(docs.filter((d) => d.casilla === 'cedula').map((d) => d.numero)).filter((v, i, a) => a.indexOf(v) === i).sort();
+        const nums = (e.representantes || []).map((r) => r.orden).concat(docs.filter((d) => d.casilla === 'cedula').map((d) => d.numero)).filter((v, i, a) => a.indexOf(v) === i).sort((a, b) => a - b);
         // Nombre y cédula del representante: de su cédula, o de su RIF personal (V + cédula + dígito)
         const quien = (n) => {
           const dc = docs.find((d) => d.casilla === 'cedula' && d.numero === n); const hc = dc && H[dc.id];

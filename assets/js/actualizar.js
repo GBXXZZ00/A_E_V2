@@ -8,7 +8,7 @@
   const LOTE_INDICE = 4000;   // lote 4: índice liviano del TAD completo (todas las filas, para buscar servicios)
   const OBLIGATORIAS = ['s', 'c', 'd', 'n'];
   const BASURA = ['nan', '#n/a', '#ref!', '#value!', 'null', 'undefined'];
-  let yo = null; let lista = []; let ocupado = false; let fin = null;
+  let yo = null; let lista = []; let ocupado = false; let fin = null; let corto = null;
   const TOPE_TAD = 60000; const LOTE_CRUDO = 200;
 
   // ---------- Leer el archivo ----------
@@ -149,12 +149,13 @@
   const TIPOS = {
     tad: { nombre: 'TAD', pide: ['sucursal', 'cliente', 'documento', 'nombre'] },
     cambios: { nombre: 'Cambios de categoría', pide: ['codigo', 'categoria_anterior', 'categoria_actual'] },
+    ip: { nombre: 'IP (Clientes Empresariales)', pide: ['sucursal', 'cliente', 'ont', 'ipv4'] },
     instalaciones: { nombre: 'Órdenes de instalación', pide: ['codcliente', 'feccump', 'cedula'] },
     odoo: { nombre: 'Órdenes de Odoo', pide: ['etapa', 'cliente'], alguna: ['odt', 'cod_orden_de_trabajo'] },
     base_vieja: { nombre: 'Base de la app anterior', pide: ['razon_social', 'rif', 'estatus_legal'] },
     dedicados: { nombre: 'Dedicados (archivo de la analista)', pide: ['__por_hojas__'] }
   };
-  const ORDEN = ['tad', 'cambios', 'base_vieja', 'odoo', 'instalaciones', 'dedicados'];
+  const ORDEN = ['tad', 'cambios', 'ip', 'base_vieja', 'odoo', 'instalaciones', 'dedicados'];
   const clave = (h) => normalizeStr(h).replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
   function reconocer(cab){
     return ORDEN.find((t) => TIPOS[t].pide.every((c) => cab.indexOf(c) >= 0) && (!TIPOS[t].alguna || TIPOS[t].alguna.some((c) => cab.indexOf(c) >= 0))) || null;
@@ -209,7 +210,7 @@
         Object.keys(COLUMNAS).forEach((k) => { o[k] = idx[k] >= 0 ? limpio(f[idx[k]]) : ''; });
         o.f = fechaIso(o.f);
         const doc = soloDoc(o.d);
-        if(/[1-9]/.test(o.s) && /[1-9]/.test(o.c)) indice.push({ s: o.s, c: o.c, t: o.t, d: o.d, n: o.n, p: o.p, ca: o.ca, es: o.es, di: o.di, pon: iPon >= 0 ? limpio(f[iPon]) : '' });
+        if(/[1-9]/.test(o.s) && /[1-9]/.test(o.c)) indice.push({ s: o.s, c: o.c, e: o.e, t: o.t, d: o.d, n: o.n, p: o.p, ca: o.ca, es: o.es, di: o.di, pon: iPon >= 0 ? limpio(f[iPon]) : '' });
         if(!/^[1-9][0-9]{4,9}$/.test(doc) || !o.n || !/[1-9]/.test(o.s) || !/[1-9]/.test(o.c)){ malas++; return true; }
         if(!o.t) o.t = 'J';
         if(esEmpresa(o.ca, o.p, doc, conocidos)){ datos.push(o); clientes.add(doc); }
@@ -225,6 +226,7 @@
       }
       if(!hay){ total--; return true; }
       if(tipo === 'cambios' && !o.codigo){ total--; return true; }
+      if(tipo === 'ip' && /^disponible$/i.test(o.estado || '')){ fuera++; return true; }   // IP libres, sin cliente
       if(tipo === 'instalaciones' && !esEmpresa(o.categoria, o.profile, soloDoc(o.cedula), conocidos)){ fuera++; return true; }
       if(tipo === 'instalaciones' && /^\d{4}-\d\d-\d\d/.test(o.feccump || '') && (!desde || o.feccump < desde)) desde = o.feccump.slice(0, 10);
       if(tipo === 'base_vieja'){ const r = soloDoc(o.rif); if(r) rifs.push(r); }
@@ -251,7 +253,8 @@
     if(a.leyendo) return '<small>' + (a.espera ? 'En espera' : 'Leyendo' + (a.avance ? ' ' + a.avance + ' %' : '...')) + '</small>';
     if(a.resultado) return '<small>' + esc(a.resultado) + '</small>';
     if(a.tipo === 'dedicados') return '<small>' + plural(a.clientes, 'cliente', 'clientes') + ' y ' + plural(a.enlaces, 'enlace', 'enlaces') + '. Se aplica al subirlo; no toca comisiones</small>';
-    if(a.tipo === 'cambios') return '<small>' + plural(a.datos.length, 'cambio', 'cambios') + '. Confirma los cambios emitidos y anota los que no tienen solicitud</small>';
+    if(a.tipo === 'ip') return '<small>' + plural(a.datos.length, 'IP asignada', 'IP asignadas') + (a.fuera ? ' · ' + num(a.fuera) + ' disponibles quedan fuera' : '') + '. Llena la IP de los servicios PYME que cuadran</small>';
+    if(a.tipo === 'cambios') return '<small>' + plural(a.datos.length, 'cambio', 'cambios') + '. Pone la fecha exacta de los cambios de Migraciones</small>';
     if(a.tipo === 'tad') return '<small>' + num(a.datos.length) + ' servicios de ' + num(a.clientes) + ' clientes' + (a.indice ? ' · índice de ' + num(a.indice.length) + ' filas para buscar servicios' : '') + (a.fuera ? ' · ' + num(a.fuera) + ' residenciales quedan fuera' : '') + (a.malas ? ' · ' + plural(a.malas, 'fila', 'filas') + ' sin RIF, nombre o código' : '') + '</small>';
     if(a.tipo === 'instalaciones' && !a.estado) return '<small>' + plural(a.datos.length, 'fila', 'filas') + (a.fuera ? ' de empresas' : '') + (a.desde ? ' · desde el ' + esc(fecha(a.desde)) : '') + '</small>' +
       '<small class="para-que">' + (a.soloAliados ? '<b>Va solo a Aliados</b> (instalaciones por mes). No entra al cruce ni toca comisiones.' : '<b>Va a comisiones</b> y entra al cruce.') +
@@ -275,6 +278,8 @@
       '<div class="fila carga-f"' + (i === 0 ? ' style="border-top:0"' : '') + ' data-i="' + i + '"><span class="tx"><b>' + esc(a.tipo ? TIPOS[a.tipo].nombre : 'Sin reconocer') + ' · ' + esc(a.nombre) + '</b>' + detalle(a) + '</span>' + marca(a) + '</div>').join('') + '</div>';
     let pie;
     if(ocupado) pie = '<p class="nota-chica">' + (lista.some((a) => a.leyendo) ? 'Leyendo los archivos. Los más pesados pueden tardar un par de minutos.' : 'No cierres esta pantalla hasta que termine.') + '</p>';
+    else if(corto) pie = '<div class="al-banda ambar" role="alert" style="margin-top:14px"><b>El TAD parece incompleto</b><p>' + esc(corto.texto) + '. Si estás seguro de que está completo, cárgalo igual.</p>' +
+      '<p style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap"><button type="button" class="btn btn-chico btn-2" id="limpiar">Quitar todos</button><button type="button" class="btn btn-chico" id="cargarCorto">Cargar igual</button></p></div>';
     else if(fin) pie = '<div class="aviso" style="margin-top:14px"><b>' + esc(fin.titulo) + '</b><p>' + esc(fin.texto) + '</p><p style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap"><button type="button" class="btn btn-chico btn-2" id="otro">Subir otros</button></p></div>';
     else pie = '<div class="acc" style="margin-top:14px"><button type="button" class="btn btn-2" id="limpiar">Quitar todos</button>' + (buenos.length ? '<button type="button" class="btn" id="cargarTodo">Cargar ' + plural(buenos.length, 'archivo', 'archivos') + '</button>' : '') + '</div><p class="nota-chica">No borra nada. Agrega lo nuevo y actualiza lo que ya está.</p>';
     z.innerHTML = filas + (ocupado || fin ? '' : '<div style="margin-top:12px">' + soltar + '</div>') + pie;
@@ -340,11 +345,22 @@
     const filas = a.datos.map((o) => ({ codigo: o.codigo, nombre: o.nombre, fecha: o.fecha, anterior: o.categoria_anterior, actual: o.categoria_actual, operador: o.operador, comentario: o.comentario }));
     const r = await rpc('cambios_archivo_cargar', { p_archivo: a.nombre, p_filas: filas });
     a.estado = 'lista'; a.datos = null;
-    a.resultado = plural(r.filas, 'cambio', 'cambios') + ' · ' + plural(r.confirmados, 'confirmado', 'confirmados') + ' · ' + plural(r.sin_solicitud, 'sin solicitud', 'sin solicitud') + (r.ignoradas ? ' · ' + r.ignoradas + ' ignorados (RADIUS, repetidos o sin PYME)' : '');
+    a.resultado = plural(r.filas, 'cambio', 'cambios') + ' · ' + plural(r.con_fecha, 'cambio con fecha exacta', 'cambios con fecha exacta') + (r.ignoradas ? ' · ' + r.ignoradas + ' ignorados (RADIUS o repetidos)' : '');
+    return r;
+  }
+  // Lote 22/10: reporte "Clientes Empresariales" de Proham (sucursal + código + ONT)
+  async function subirIp(a){
+    a.estado = 'subiendo'; a.hecho = 0; pintar();
+    const filas = a.datos.map((o) => ({ s: o.sucursal, c: o.cliente, e: o.ont, ip: o.ipv4, ip6: o.ipv6, est: o.estado }));
+    const r = await rpc('ip_reporte_cargar', { p_archivo: a.nombre, p_filas: filas });
+    a.estado = 'lista'; a.datos = null;
+    a.resultado = plural(r.cuadran, 'servicio cuadra', 'servicios cuadran') + (r.llenadas ? ' · ' + plural(r.llenadas, 'IP llenada', 'IP llenadas') : '') +
+      (r.por_confirmar ? ' · ' + plural(r.por_confirmar, 'IP por confirmar', 'IP por confirmar') : '') + (r.sin_servicio_pyme ? ' · ' + plural(r.sin_servicio_pyme, 'no está', 'no están') + ' como PYME en el TAD' : '');
     return r;
   }
   async function subir(a){
     if(a.tipo === 'dedicados') return subirDedicados(a);
+    if(a.tipo === 'ip') return subirIp(a);
     if(a.tipo === 'cambios') return subirCambios(a);
     a.estado = 'subiendo'; a.hecho = 0; pintar();
     const tad = a.tipo === 'tad'; const paso = tad ? LOTE : LOTE_CRUDO;
@@ -367,7 +383,7 @@
     a.resultado = tad ? plural(r.clientes_nuevos, 'cliente nuevo', 'clientes nuevos') + ', ' + plural(r.servicios_nuevos, 'servicio nuevo', 'servicios nuevos') + ' y ' + plural(r.servicios_actualizados, 'actualizado', 'actualizados') +
         (r.pagos_marcados ? ' · ' + plural(r.pagos_marcados, 'instalación pagada', 'instalaciones pagadas') : '') + ((r.invalidas || 0) + a.malas ? ' · ' + plural((r.invalidas || 0) + a.malas, 'fila no se pudo leer', 'filas no se pudieron leer') : '')
       : plural(r.guardadas, 'fila guardada', 'filas guardadas') + (a.soloAliados ? ' · solo para aliados, no toca comisiones' : '');
-    if(ri) a.resultado += ' · índice de ' + num(ri.filas) + ' servicios' + (ri.confirmados ? ' · ' + plural(ri.confirmados, 'cambio confirmado', 'cambios confirmados') : '') + (ri.sin_solicitud ? ' · ' + plural(ri.sin_solicitud, 'cambio sin solicitud', 'cambios sin solicitud') : '');
+    if(ri) a.resultado += ' · índice de ' + num(ri.filas) + ' servicios' + (ri.confirmados ? ' · ' + plural(ri.confirmados, 'cambio confirmado', 'cambios confirmados') : '') + (ri.sin_registro ? ' · ' + plural(ri.sin_registro, 'cambio sin registro', 'cambios sin registro') : '') + (ri.avisos ? ' · ' + plural(ri.avisos, 'cambio a medias', 'cambios a medias') : '');
     a.datos = null; return r;
   }
   async function cargarTodo(){
@@ -380,9 +396,11 @@
       catch (e) { a.estado = 'fallo'; a.resultado = null; fallo = e; break; }
     }
     ocupado = false; cache.borrarTodo();
-    if(fallo){ pintar(); toast('La carga se detuvo. ' + fallo.message + '. Puedes volver a intentarlo: no se duplica nada', 'error'); }
+    // Lote 22/10: un TAD con menos del 95 % de las filas de la carga anterior no se aplica sin confirmar
+    if(fallo && /TAD_CORTO/.test(fallo.message)){ corto = { tipo: /TAD completo/.test(fallo.message) ? 'indice' : 'tad', texto: fallo.message.replace(/^.*TAD_CORTO:\s*/, '') }; pintar(); }
+    else if(fallo){ pintar(); toast('La carga se detuvo. ' + fallo.message + '. Puedes volver a intentarlo: no se duplica nada', 'error'); }
     else {
-      const crudos = cola.some((a) => a.tipo !== 'tad' && a.tipo !== 'dedicados' && a.tipo !== 'cambios' && !a.soloAliados);
+      const crudos = cola.some((a) => a.tipo !== 'tad' && a.tipo !== 'dedicados' && a.tipo !== 'cambios' && a.tipo !== 'ip' && !a.soloAliados);
       fin = { titulo: plural(cola.length, 'archivo cargado', 'archivos cargados'), texto: (total !== null ? 'Ahora hay ' + num(total) + ' clientes en total. ' : '') +
         (crudos ? 'Falta un paso: revisa abajo lo que cambia y toca Guardar cruce.' : 'Ya quedó aplicado. No hace falta cruce.') };
       cruce = null; pintar(); toast('Carga completa');
@@ -399,13 +417,13 @@
     }
     throw ultimo;
   }
-  const FUENTES = { tad: 'TAD', odoo: 'Órdenes de Odoo', instalaciones: 'Órdenes de instalación', dedicados: 'Dedicados', base_vieja: 'Base de la app anterior' };
+  const FUENTES = { ip: 'IP (Clientes Empresariales)', tad: 'TAD', odoo: 'Órdenes de Odoo', instalaciones: 'Órdenes de instalación', dedicados: 'Dedicados', base_vieja: 'Base de la app anterior' };
   const marcaCruce = (c) => c.cruce === 'aliados' ? '<span class="m azul">Solo aliados</span>' : c.cruce === 'aplicado' ? '<span class="m verde">Cruce aplicado</span>' : c.cruce === 'pendiente' ? '<span class="m ambar">Falta el cruce</span>' : '<span class="m verde">Aplicada al subir</span>';
   // Última subida de cada archivo: se suben dos veces al día (mañana y tarde)
   async function ultimas(){
     try {
       const u = await rpc('subidas_ultimas', {}); const z = $('ultimas'); if(!z) return;
-      const it = [['tad', 'TAD'], ['indice', 'TAD completo'], ['cambios', 'Cambios de categoría'], ['odoo', 'Odoo'], ['instalaciones', 'Órdenes de instalación']];
+      const it = [['tad', 'TAD'], ['indice', 'TAD completo'], ['cambios', 'Cambios de categoría'], ['odoo', 'Odoo'], ['instalaciones', 'Órdenes de instalación'], ['ip', 'IP'], ['base_vieja', 'Base vieja'], ['dedicados', 'Dedicados']];
       z.innerHTML = it.map((x) => '<span class="ult"><small>' + esc(x[1]) + '</small><b>' + (u[x[0]] ? esc(fecha(u[x[0]]).replace(/ de \d{4}$/, '') + ', ' + hora(u[x[0]])) : 'Nunca') + '</b></span>').join('');
     } catch (e) {}
   }
@@ -471,8 +489,11 @@
   document.addEventListener('click', (e) => {
     const t = e.target;
     if(t.closest('#soltar')){ if(ocupado) return; const i = $('archivos'); i.value = ''; i.click(); return; }
-    if(t.closest('#limpiar') || t.closest('#otro')){ if(ocupado) return; lista = []; fin = null; pintar(); return; }
-    if(t.closest('#cargarTodo')){ cargarTodo(); return; }
+    if(t.closest('#limpiar') || t.closest('#otro')){ if(ocupado) return; lista = []; fin = null; corto = null; pintar(); return; }
+    if(t.closest('#cargarTodo')){ corto = null; cargarTodo(); return; }
+    if(t.closest('#cargarCorto') && corto){ const k = corto; const b = t.closest('#cargarCorto'); b.disabled = true;
+      rpc('tad_permitir_corto', { p_tipo: k.tipo }).then(() => { corto = null; lista.forEach((x) => { if(x.estado === 'fallo') x.estado = null; }); cargarTodo(); })
+        .catch((e) => { b.disabled = false; toast(e.message, 'error'); }); return; }
     if(t.closest('#aplicarCruce')){ correrCruce(true); return; }
     const pq = t.closest('[data-para]'); if(pq){ const a = lista[Number(pq.dataset.para)]; if(a && !ocupado && !a.estado){ a.soloAliados = !a.soloAliados; pintar(); } return; }
     if(t.closest('#reintentarCruce')){ estadoCruce(); }
