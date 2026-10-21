@@ -1325,3 +1325,5 @@ button.ge-li{cursor:pointer}
 .av-lista .fila .ch{align-self:center}
 .av-lista .fila:first-child{border-top:0}
 #hojaAvisos .hoja-pie{margin-top:14px}
+/* Con la campana, en escritorio angosto la cuenta queda solo con el avatar (el nombre sigue en su menú) */
+@media (min-width:900px) and (max-width:1439px){ .barra:has(.campana) .cuenta .tx{display:none} .barra:has(.campana) .cuenta{padding:2px} }
