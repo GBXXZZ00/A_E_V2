@@ -1,8 +1,15 @@
 # Traspaso (se actualiza al cerrar cada sesión)
 
-Actualizado: 21/10/2026, corrida del lote S + A + C. Publicado: `?v=58` (partes S y A).
+Actualizado: 21/10/2026, corrida del lote S + A + C. Publicado: `?v=59` (partes S, A y C).
 
-## LOTE S + A + C (`claude/lote-seguridad-avisos.md`, aprobado el 21/10): EN CURSO, una publicación por parte
+## LOTE S + A + C (`claude/lote-seguridad-avisos.md`, aprobado el 21/10): HECHO, una publicación por parte (v57, v58, v59)
+### Parte C hecha (v59): avisos de aliados y app vieja
+- SQL: `supabase/pruebas/lote_c.sql` (migraciones `lote_c1_avisos_aliados`, `lote_c2_app_vieja`).
+- Avisos de aliados (notificaciones.md sección 4): bloqueo (al aliado con el porqué, sin decirle quién es el líder; al líder dueño "Un aliado intentó tu cliente"; al administrador), permiso aprobado o rechazado (aliado y líder dueño), devuelto (aliado), instalado (aliado), pago registrado (aliado). Además "Pago confirmado en el TAD" al líder (al llenarse `pago_ok_en`) y "Cuenta bloqueada" al administrador (intentos fallidos con el PIN).
+- Recorrido completo de una cuenta de aliado de prueba con las funciones reales y rollback (no quedó ninguna cuenta ni dato): cada evento llega una sola vez a quien corresponde. En la pantalla: test20 con la campana del aliado.
+- El aliado escribe al administrador ("Escribir al administrador", con el número de Ajustes de Aliados) en toda solicitud abierta o instalada.
+- App vieja: la fila de la persona natural quedó en su cliente empresa; se crearon los 9 clientes (ninguna fuente tiene su nombre: quedan como "RIF J-… (app anterior)", documentos recibidos, sin líder) y se trajeron 49 documentos por revisar. La fila "no tocar" sigue sin traer.
+
 ### Parte A hecha (v58): avisos agrupados y contactar al responsable
 - SQL: `supabase/pruebas/lote_a.sql` (migración `lote_a1_avisos_grupos_contacto`); `avisos_push` v2.
 - Hoja de la campana agrupada por categoría (`avisos_mios` trae `grupos`; `avisos_grupo` la lista de un tipo): una fila por tipo con sin leer, total y vencidos, plegable; el "Venció" va como marca roja dentro de su aviso (el aviso `v:` se une a su pendiente `p:`); "Marcar leído este grupo" (`avisos_leer_grupo`) y "Marcar todo leído". El push también agrupa: más de 3 del mismo tipo, uno solo con el número.
@@ -52,9 +59,9 @@ Actualizado: 21/10/2026, corrida del lote S + A + C. Publicado: `?v=58` (partes 
 - Pruebas: test29 y test32 reescritas (Migraciones y Comisiones), test07 con 15 actas, fecha del acta y 10 representantes; `mundo.js` con el flujo nuevo.
 
 ## SIGUIENTE
-- Preguntas abiertas al administrador: (1) la fila de la app vieja "la persona natural pasó el servicio a su empresa": ¿se carga en el cliente empresa? (2) ¿se crean los 9 clientes que no existen (48 filas)?
-- Lo que falta de notificaciones (arriba) y confirmar las decisiones de Claude de las tres tandas.
-- Subir el reporte real de IP del 20/10 (lo hace el administrador en Actualizar).
+- Del administrador: poner su WhatsApp (y el de quien falte: 6 de 11) en Usuarios para que "Contactar" funcione; borrar en el panel de Supabase `drive_prueba`, `drive_inventario` (función y tabla) y `privado.prueba_tmp`; ponerle nombre a los 9 clientes "RIF J-… (app anterior)" al revisar su RIF; subir el reporte real de IP del 20/10 en Actualizar.
+- Confirmar las decisiones de Claude de los lotes 22/10 y S + A + C (lista abajo).
+- Pendientes de negocio: `claude/por-definir.md` (repo privado con GitHub Pro, VGT, Google en producción, correo al cliente).
 
 ## LOTE 22/10 (`claude/lote-22oct.md`), APROBADO el 20/10 (texto del encargo, ya hecho)
 En tres tandas, con una publicación por tanda:
@@ -614,6 +621,9 @@ Antes de cada una: explicar en simple y esperar el OK.
 - Seguridad: migración "endurecer_acceso_y_permisos" (entrada por función de borde con bloqueo, permisos de escritura, sesiones). Con el administrador presente.
 
 ## Decisiones tomadas por Claude que el administrador NO ha confirmado
+- Lote C: los 9 clientes de la app vieja se crearon con nombre provisional "RIF J-… (app anterior)" (no hay nombre en ninguna fuente), sin líder y en "documentos recibidos"; el nombre se corrige al revisar su RIF.
+- Lote C: el aliado sigue usando "Escribir al administrador" (número de Ajustes de Aliados) en vez del botón Contactar, porque el administrador no tiene WhatsApp en Usuarios; no queda en la bitácora.
+- Lote C: el recorrido del aliado se probó en la base con rollback y en el simulador, no con una cuenta real (el conector no deja borrar la cuenta al final).
 - Lote A: "Documentos en revisión" se toma como paso del administrador (así quedó en la propuesta aprobada), aunque la ficha diga "Legal está revisando".
 - Lote A: los mensajes ya escritos de "Contactar" los propuso Claude (uno por caso); se pueden cambiar en WhatsApp antes de enviar.
 - Lote A: el nombre de la app en el teléfono no se tocó (lo decide el administrador).

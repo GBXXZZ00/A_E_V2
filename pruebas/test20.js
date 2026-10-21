@@ -109,8 +109,14 @@ const entrarAliado = (ctx, persona) => entrarComo(ctx, persona, 'aliados');
     const llamo = (f) => m.llamadas.filter((l) => l[0] === 'rpc' && l[1] === f);
 
     // ----- Aliado: entra directo a su módulo -----
+    // Lote C: avisos del aliado (bloqueo, permiso aprobado, pago) en su campana
+    m.datos.avisos = [{ id: 91, tipo: 'aliado', titulo: 'Solicitud bloqueada', texto: 'Comercial Inventada: Ya es cliente de un líder: puedes referirlo.', enlace: 'aliados.html', en: new Date().toISOString(), leido: false, para: 'redes' },
+      { id: 92, tipo: 'aliado_pago', titulo: 'Pago registrado', texto: 'Se registró tu pago por Panaderia Inventada.', enlace: 'aliados.html', en: new Date(Date.now() - 3600e3).toISOString(), leido: false, para: 'redes' }];
     const p = await entrarAliado(ctx, ALIADO); p.on('pageerror', (e) => errores.push(e.message));
     await p.waitForURL('**/aliados.html'); await p.waitForSelector('.al-grande.prin');
+    await p.waitForSelector('#campana .nbadge:not(.hidden)'); await p.click('#campana'); await p.waitForSelector('#hojaAvisos.ver [data-avg="aliado"]');
+    ok(nombre + ': el aliado ve sus avisos agrupados en la campana', (await p.locator('#hojaAvisos [data-avg]').count()) === 2 && /Solicitud bloqueada/.test(await p.textContent('#hojaAvisos')));
+    await p.screenshot({ path: 'capturas/20-' + nombre + '-aliado-avisos.png' }); await p.click('#hojaAvisos [data-cierra]'); await p.waitForSelector('#hojaAvisos:not(.ver)'); await p.waitForTimeout(300);
     ok(nombre + ': el aliado entra directo a su módulo', p.url().endsWith('aliados.html'));
     ok(nombre + ': su inicio ofrece Nueva solicitud y Referir cliente', (await p.textContent('#lista')).includes('Nueva solicitud') && (await p.textContent('#lista')).includes('Referir cliente'));
     ok(nombre + ': Lo que te toca muestra la de recaudos incompletos', (await p.textContent('#lista')).includes('Recaudos incompletos'));
@@ -122,7 +128,7 @@ const entrarAliado = (ctx, persona) => entrarComo(ctx, persona, 'aliados');
     await p.click('.al-grande.prin'); await p.waitForSelector('#hojaNueva.ver [data-subirn="rif_empresa:0"]');
     ok(nombre + ': las demás casillas esperan al RIF', await p.isDisabled('[data-subirn="acta_constitutiva:0"]'));
     await subirEn(p, '[data-subirn="rif_empresa:0"]');
-    await p.waitForSelector('.al-banda.azul'); ok(nombre + ': mientras lee dice que revisa la cartera', (await p.textContent('.al-banda')).includes('revisando la cartera'));
+    await p.waitForSelector('.al-banda.azul:not(.av-push)'); ok(nombre + ': mientras lee dice que revisa la cartera', (await p.textContent('.al-banda:not(.av-push)')).includes('revisando la cartera'));
     await p.waitForSelector('.al-banda.verde');
     ok(nombre + ': RIF libre: Cliente disponible con el nombre', (await p.textContent('.al-banda.verde')).includes('PANADERÍA EJEMPLO'));
     await p.waitForFunction(() => !document.querySelector('[data-subirn="rif_empresa:0"]') || document.querySelector('.al-cas .chip') && !/Subiendo/.test(document.querySelector('.al-cas').textContent));
@@ -139,6 +145,7 @@ const entrarAliado = (ctx, persona) => entrarComo(ctx, persona, 'aliados');
     await p.screenshot({ path: 'capturas/t20-' + nombre + '-carga.png' });
     await p.waitForSelector('#hojaSol .estado.verde', { timeout: 12000 });
     ok(nombre + ': sola pasa a Lista para instalar', (await p.textContent('#hojaSol .estado')).includes('Lista para instalar'));
+    ok(nombre + ': en una solicitud lista el aliado puede escribir al administrador', (await p.locator('#hojaSol [data-acc="whats"]').count()) === 1);
     await p.click('[data-form="curso"]'); await p.waitForSelector('#hojaForm.ver #fFecha'); await p.click('#hojaForm [data-acc="guardarForm"]');
     await p.waitForSelector('#hojaSol .estado.azul');
     ok(nombre + ': marcar instalación en curso', llamo('solicitud_instalacion').length === 1 && (await p.textContent('#hojaSol .estado')).includes('Instalación en curso'));

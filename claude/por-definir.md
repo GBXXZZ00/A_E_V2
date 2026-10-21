@@ -1,5 +1,7 @@
 # Pendientes y lo que falta definir (actualizado 21/10/2026)
 
+**21/10 (tarde):** lote S + A + C publicado (v57 a v59): sesión de 12 h sin uso, cierre de sesiones al restablecer PIN, CORS y CSP; avisos agrupados y Contactar al responsable; avisos de aliados; app vieja cargada (9 clientes creados). Falta que el administrador ponga su WhatsApp en Usuarios y borre en el panel las funciones de Drive de prueba.
+
 **21/10:** octubre certificado. Lote S + A (seguridad y avisos) aprobado: `claude/lote-seguridad-avisos.md`. App vieja decidida (empresa + crear los 9) y avisos de aliados: parte C del mismo lote. **Repo privado pendiente hasta pagar GitHub Pro (no olvidar).** VGT después de reunirse con Reina. Presentación del flujo y documento de reglas de instalaciones y comisiones: después de que el administrador pruebe la app.
 
 La versión del 09/10 sigue en el historial de git. Lo de migraciones, Mi trabajo, gestiones, filtros, IP y notificaciones ya se definió y está en `claude/lote-22oct.md`.
@@ -7,8 +9,8 @@ La versión del 09/10 sigue en el historial de git. Lo de migraciones, Mi trabaj
 ## Mañana 21/10 (chat del proyecto, con el administrador)
 1. **Seguridad**, antes de dar acceso a aliados:
    - repo privado (GitHub Pro, revisar que GitHub Pages siga publicando);
-   - cerrar todas las sesiones al restablecer un PIN;
-   - cierre por inactividad (30 minutos, ajustable);
+   - cerrar todas las sesiones al restablecer un PIN (hecho 21/10, lote S);
+   - cierre por inactividad (hecho 21/10: 12 horas, ajustable por el administrador);
    - copia semanal de la base;
    - borrar funciones de prueba (`drive_prueba`, `drive_inventario` y la tabla vacía `public.drive_inventario`);
    - revisar `ocr_leer`, que está abierta sin sesión.
@@ -22,7 +24,7 @@ La versión del 09/10 sigue en el historial de git. Lo de migraciones, Mi trabaj
 Construido en v26 y conectado con clientes e instalaciones, pero nunca usado: hay 45 aliados, ninguna solicitud y ninguna cuenta de aliado. Antes de dar acceso:
 1. seguridad (arriba);
 2. una cuenta de aliado de prueba y el recorrido completo (pedir permiso, bloqueo, documentos, instalación, pago);
-3. sus notificaciones (en `notificaciones.md` sección 4, incluido el bloqueo que avisa al aliado, al líder dueño y al administrador).
+3. sus notificaciones (hecho 21/10, lote C; probado con una cuenta de prueba en la base y en el simulador).
 
 ## Dedicados (después del lote 22/10)
 - Módulo de la analista: base actualizable, cobranza y finanzas.
@@ -34,6 +36,6 @@ Construido en v26 y conectado con clientes e instalaciones, pero nunca usado: ha
 - Correo al cliente con constancia (fase 2 de notificaciones).
 - Notificaciones de Gerencia.
 - Revisión de documentos con IA: proveedor y clave de pago (sigue pendiente desde el 09/10).
-- Clientes de la base vieja que no están en la app: 9 tienen documentos en `privado.app_vieja_docs` ("cliente no existe en la app"). El administrador decide si se crean.
+- Clientes de la base vieja: los 9 se crearon el 21/10 con nombre provisional "RIF J-… (app anterior)"; falta su nombre real (se pone al revisar el RIF).
 - Cliente de la base vieja con RIF dañado (0, 000000, 3505, 668850): falta el RIF correcto.
 - Pago y TAD: días después de instalar para dar el pago por bueno (hoy ajuste `pago_dias_tad` = 3).

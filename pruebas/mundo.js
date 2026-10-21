@@ -805,7 +805,7 @@ const RPC = {
   // ----- Lote 22/10 tanda C: avisos -----
   avisos_contar(m, yo){ return (m.datos.avisos || []).filter((a) => a.para === yo.usuario && !a.leido).length; },
   // Lote A: agrupados por tipo (nombre del grupo, sin leer, total, vencidos)
-  avisos_mios(m, yo){ const l = (m.datos.avisos || []).filter((a) => a.para === yo.usuario); const NOM = { devuelto: 'Te devolvieron documentos', cambio: 'Migraciones', cliente: 'Clientes', revisar_docs: 'Documentos por revisar', aliado: 'Aliados' };
+  avisos_mios(m, yo){ const l = (m.datos.avisos || []).filter((a) => a.para === yo.usuario); const NOM = { devuelto: 'Te devolvieron documentos', cambio: 'Migraciones', cliente: 'Clientes', revisar_docs: 'Documentos por revisar', aliado: 'Aliados', aliado_pago: 'Pagos de aliados' };
     const g = {}; l.forEach((a) => { const x = g[a.tipo] || (g[a.tipo] = { tipo: a.tipo, nombre: NOM[a.tipo] || 'Otros avisos', sin_leer: 0, total: 0, vencidos: 0, ultimo: a.en }); x.total++; if(!a.leido) x.sin_leer++; if(a.vencido) x.vencidos++; if(a.en > x.ultimo) x.ultimo = a.en; });
     return { sin_leer: l.filter((a) => !a.leido).length, grupos: Object.values(g).sort((a, b) => (b.sin_leer > 0) - (a.sin_leer > 0) || b.vencidos - a.vencidos || (b.ultimo > a.ultimo ? 1 : -1)), avisos: l.slice(0, 5).map((a) => Object.assign({ ids: [a.id] }, a)) }; },
   avisos_grupo(m, yo, a){ return (m.datos.avisos || []).filter((x) => x.para === yo.usuario && x.tipo === a.p_tipo).map((x) => Object.assign({ ids: [x.id] }, x)); },
