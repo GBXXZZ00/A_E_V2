@@ -1303,3 +1303,25 @@ button.ge-li{cursor:pointer}
 .fil-op.sub{padding-left:40px}
 .fil-chip .i{width:14px;height:14px;margin-left:4px}
 @media (prefers-reduced-motion:reduce){ .fil-g summary .i{transition:none} }
+
+/* Lote 22/10 tanda C: campana de avisos en la barra */
+.campana{position:relative;display:grid;place-items:center;width:44px;height:44px;border-radius:50%;color:var(--text);flex:none;transition:transform 120ms var(--ease-out)}
+.campana .i{width:22px;height:22px}
+.campana:active{transform:scale(.97)}
+.campana .nbadge{position:absolute;top:4px;right:2px}
+@media (hover:hover) and (pointer:fine){ .campana:hover{background:var(--surface-2)} }
+.av-lista .av-f .tx b{font-weight:600}
+.av-lista .av-f.nuevo .tx b{font-weight:700}
+.av-lista .av-t{color:var(--text3);font-size:12px}
+.av-push{margin-bottom:12px}
+.av-push-ok{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:10px}
+@media (prefers-reduced-motion:reduce){ .campana:active{transform:none} }
+.campana .nbadge{margin:0;background:var(--rojo);color:#fff}
+.av-lista .pto{width:9px;height:9px;border-radius:50%;flex:none;margin-right:4px;background:var(--line)}
+.av-lista .pto.azul{background:var(--accent)}
+.av-lista .fila{align-items:flex-start;padding:14px 16px;min-height:64px}
+.av-lista .fila .pto{margin-top:7px}
+.av-lista .tx small{white-space:normal;overflow:visible;text-overflow:clip}
+.av-lista .fila .ch{align-self:center}
+.av-lista .fila:first-child{border-top:0}
+#hojaAvisos .hoja-pie{margin-top:14px}

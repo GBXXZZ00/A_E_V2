@@ -1,8 +1,17 @@
 # Traspaso (se actualiza al cerrar cada sesión)
 
-Actualizado: 21/10/2026, corrida del lote 22/10. Publicado: `?v=55` (tandas A y B).
+Actualizado: 21/10/2026, corrida del lote 22/10. Publicado: `?v=56` (tandas A, B y C).
 
-## LOTE 22/10: EN CURSO (corrida del 21/10, tres tandas seguidas, publicando en `main`)
+## LOTE 22/10: HECHO (corrida del 21/10, tres tandas seguidas, publicadas en `main`: v54, v55, v56)
+### Tanda C hecha (v56): avisos en la app y al teléfono (Web Push)
+- SQL: `supabase/pruebas/lote_22oct_c.sql` (migraciones `lote_22oct_c1..c4`), función `avisos_push` (sin librerías, `verify_jwt` apagado; la autoriza la ficha `push_tarea`).
+- En la app (`armazon.js`): campana con contador en la barra (todos menos gerencia), hoja Avisos con los últimos 50, punto azul en los nuevos, tocar uno lo marca leído y abre la tarea exacta, "Marcar todo leído". Se cuentan cada 2 minutos y al volver a la app.
+- Push (`sw.js`): "Activar avisos" dentro de la hoja con la explicación; en iPhone pide instalar la app primero; si está bloqueado dice cómo activarlo; "Dejar de recibirlos aquí". La tarea `avisos_cada_5_min` genera los avisos de Mi trabajo y de la bitácora y los envía. No suena de 10 p.m. a 8 a.m. (Caracas); más de 3 juntos salen en uno.
+- Decisiones de Claude (falta confirmar): las claves VAPID quedaron en la base (`privado.push_claves`), no en secretos de Supabase, porque los secretos se escriben a mano en el panel; lo que ya estaba pendiente el 21/10 entró como leído (sin inundar); el silencio nocturno y el agrupado de más de 3.
+- Falta de `claude/notificaciones.md`: los avisos propios de aliados (bloqueo al aliado y a su líder), "pago confirmado por el TAD" y "cuenta bloqueada". El correo al cliente es fase 2.
+- Pruebas: test45 nueva (campana, lista, leer, enlace). En la base: generar dos veces no repite avisos.
+- Referencia: septiembre 46/41 y octubre 68/53 al empezar y al terminar.
+
 ### Tanda B hecha (v55): Mi trabajo por rol, Gestiones y Filtros con subgrupos
 - SQL: `supabase/pruebas/lote_22oct_b.sql` (migraciones `lote_22oct_b*`).
 - B1 Mi trabajo (`trabajo.js` rehecho según la maqueta, RPC `mi_trabajo`; la RPC vieja `trabajo` sigue para lo publicado antes): saludo y frase del corte, píldoras, 4 tarjetas por rol (la primera ancha; tocar filtra), "Para hoy" por urgencia con botón que abre la acción, cola (administrador: revisar documentos; Legal: elaborar contrato) que ofrece el siguiente al cerrar, gestiones con avance, Equipo (tocar a una persona muestra su lista) e indicadores. Pendientes nuevos en `privado.pendientes_extra()`. Legal ya entra a Mi trabajo. Coordinador: marca nueva en Usuarios ("Coordinador de analistas", `gestionar_usuarios` v13, que además quedó en el repo igual a lo publicado: el repo estaba atrasado).
@@ -21,8 +30,13 @@ Actualizado: 21/10/2026, corrida del lote 22/10. Publicado: `?v=55` (tandas A y 
 - Referencia: septiembre 46/41 y octubre 68/53 antes y después.
 - Pruebas: test29 y test32 reescritas (Migraciones y Comisiones), test07 con 15 actas, fecha del acta y 10 representantes; `mundo.js` con el flujo nuevo.
 
-## SIGUIENTE: LOTE 22/10 (`claude/lote-22oct.md`), APROBADO por el administrador el 20/10
-Ejecútalo completo, en tres tandas, con una publicación por tanda:
+## SIGUIENTE
+- Preguntas abiertas al administrador: (1) la fila de la app vieja "la persona natural pasó el servicio a su empresa": ¿se carga en el cliente empresa? (2) ¿se crean los 9 clientes que no existen (48 filas)?
+- Lo que falta de notificaciones (arriba) y confirmar las decisiones de Claude de las tres tandas.
+- Subir el reporte real de IP del 20/10 (lo hace el administrador en Actualizar).
+
+## LOTE 22/10 (`claude/lote-22oct.md`), APROBADO el 20/10 (texto del encargo, ya hecho)
+En tres tandas, con una publicación por tanda:
 - Tanda A: actas hasta 15 y representantes hasta 10; módulo de Migraciones simple, con planilla, detección con el TAD e histórico de septiembre y octubre; cruce de IP con el reporte "Clientes Empresariales"; documentos de la app vieja.
 - Tanda B: Mi trabajo rehecho por rol (maqueta aprobada en `claude/maquetas/mi-trabajo/`), Gestiones y Filtros con subgrupos.
 - Tanda C: notificaciones según `claude/notificaciones.md` v2, primero en la app y luego push.

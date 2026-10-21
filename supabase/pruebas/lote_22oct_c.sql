@@ -1,0 +1,15 @@
+-- Lote 22/10, tanda C. Aplicado con el conector de Supabase (migraciones lote_22oct_c1..c4) y la función avisos_push.
+-- C1 Avisos: tablas avisos (para, tipo, titulo, texto, enlace, clave única por persona, creado_en, leido_en, apagado_en, push_en)
+--   y push_suscripciones (perfil_id, endpoint, p256dh, auth, fallos, ultimo_ok). RLS sin políticas: solo por funciones.
+--   privado.avisos_generar(): toma los pendientes de Mi trabajo (privado.pendientes_extra y los de siempre) y crea un aviso por
+--   persona y pendiente (privado.avisos_destinos decide a quién); los que ya no están se apagan solos. La primera corrida fue
+--   "semilla": lo que ya estaba pendiente entró como leído, para no inundar a nadie.
+-- C2 Eventos: trigger privado.avisos_bitacora() sobre bitacora (documentos devueltos, cambios confirmados, clientes nuevos, etc.).
+--   RPC avisos_mios(limite), avisos_contar(), avisos_leer(ids o null = todos), push_clave_publica(), push_suscribir, push_quitar.
+-- C3 Claves VAPID: las genera la función avisos_push la primera vez y quedan en privado.push_claves (no en el repo ni en secretos:
+--   la herramienta de secretos exige escribir el valor a mano en el panel). push_tarea_ok y push_claves_guardar solo para service_role,
+--   con la ficha push_tarea de ajustes_app en la cabecera x-tarea.
+-- C4 Tarea programada: pg_cron "avisos_cada_5_min" llama privado.avisos_tarea() (generar y luego net.http_post a avisos_push).
+--   De 10 p.m. a 8 a.m. (Caracas) no suena; más de 3 avisos juntos para una persona salen en una sola notificación.
+-- Probado en la base (21/10): avisos_generar dos veces seguidas no crea nada nuevo y no hay (para, clave) repetidos (una sola vez);
+--   la tarea responde 200 {"ok":true,"silencio":true} en horario de silencio. Prueba del cifrado (RFC 8291) ida y vuelta en Node.

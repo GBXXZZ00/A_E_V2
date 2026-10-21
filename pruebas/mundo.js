@@ -802,6 +802,12 @@ const RPC = {
     return { rol: yo.rol, senior: yo.rol === 'analista' && !!yo.senior, canales: can, hoy: h, dias: Object.assign({}, m.datos.dias || { dias_orden_sin_instalar: '15', dias_sin_documentos: '30', dias_por_enviar: '3', dias_cambio_por_emitir: '2' }),
       personas: yo.rol === 'admin' || can ? m.personas.filter((p) => p.activo && (p.rol === 'analista' || (yo.rol === 'admin' && p.rol === 'lider'))).map((p) => ({ id: p.id, nombre: p.nombre, rol: p.rol })) : [],
       aliados: yo.rol === 'admin' || can ? { solicitudes: 2, referidos: 1, pagos: 1, sin_permiso: 3 } : null, filas }; },
+  // ----- Lote 22/10 tanda C: avisos -----
+  avisos_contar(m, yo){ return (m.datos.avisos || []).filter((a) => a.para === yo.usuario && !a.leido).length; },
+  avisos_mios(m, yo){ const l = (m.datos.avisos || []).filter((a) => a.para === yo.usuario); return { sin_leer: l.filter((a) => !a.leido).length, avisos: l.map((a) => Object.assign({}, a)) }; },
+  avisos_leer(m, yo, a){ (m.datos.avisos || []).filter((x) => x.para === yo.usuario && (a.p_ids === null || (a.p_ids || []).includes(x.id))).forEach((x) => { x.leido = true; }); return null; },
+  push_clave_publica(){ return 'BOrRoQzDyMsrbLLsb4D5j4nGCm6bSV0x9AVdj4ijTm8XUJfvHDl1v0Y2kVQ5WjDN8Y2O1cWv2Eq7S0aRVTDRxS4'; },
+  push_suscribir(){ return null; }, push_quitar(){ return null; },
   // ----- Lote 22/10: Mi trabajo por rol y Gestiones -----
   mi_trabajo(m, yo, a){
     if(!['admin', 'analista', 'lider', 'abogado'].includes(yo.rol)) return error('No tienes permiso para hacer esto');

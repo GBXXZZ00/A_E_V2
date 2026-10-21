@@ -82,3 +82,20 @@ self.addEventListener('fetch', (e) => {
 
 // Para las pruebas (node): funciones puras
 if(typeof module !== 'undefined') module.exports = { versionados, clavePagina, esPagina, esArchivo };
+
+// Lote 22/10: avisos al teléfono y a la laptop (Web Push). Al tocar el aviso se abre la tarea exacta.
+self.addEventListener('push', (e) => {
+  let d = {}; try { d = e.data ? e.data.json() : {}; } catch (err) { d = { titulo: 'Airtek Empresas', texto: e.data ? e.data.text() : '' }; }
+  const enlace = /^[a-z]+\.html(\?.*)?$/.test(d.enlace || '') ? d.enlace : 'trabajo.html';
+  e.waitUntil(self.registration.showNotification(d.titulo || 'Airtek Empresas', { body: d.texto || '', icon: 'assets/img/icon-192.png', badge: 'assets/img/icon-192.png',
+    tag: d.id ? 'aviso-' + d.id : 'avisos', data: { enlace } }));
+});
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close();
+  const url = new URL((e.notification.data && e.notification.data.enlace) || 'trabajo.html', self.registration.scope).href;
+  e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((l) => {
+    const w = l.find((c) => c.url.indexOf(self.registration.scope) === 0);
+    if(w){ return w.navigate(url).then((x) => (x || w).focus()).catch(() => self.clients.openWindow(url)); }
+    return self.clients.openWindow(url);
+  }));
+});
