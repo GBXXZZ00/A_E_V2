@@ -185,9 +185,10 @@
     const b = $('restablecer'); b.disabled = true;
     const pin = pinAzar();
     try {
-      await llamar({ accion: 'pin', id: editando.id, pin });
+      const rp = await llamar({ accion: 'pin', id: editando.id, pin });
       $('pinDe').textContent = 'Usuario: ' + editando.usuario; $('pinNuevo').textContent = pin; $('pinListo').classList.remove('hidden');
-      toast('PIN restablecido');
+      // Lote S: si no se pudieron cerrar sus sesiones abiertas, se dice
+      if(rp && rp.aviso) toast('PIN restablecido. ' + rp.aviso, 'error'); else toast('PIN restablecido');
       cargar();
     } catch (err) { toast(err.message, 'error'); }
     finally { b.disabled = false; }
@@ -199,7 +200,8 @@
     const eraActivo = editando.activo;
     try {
       const r = await llamar({ accion: 'activo', id: editando.id, activo: !editando.activo });
-      toast((eraActivo ? 'Acceso desactivado' : 'Acceso activado') + (r && r.enlazados > 0 ? '. ' + plural(r.enlazados, 'cliente enlazado', 'clientes enlazados') + ' a su cuenta' : ''));
+      if(r && r.aviso) toast(r.aviso, 'error');
+      else toast((eraActivo ? 'Acceso desactivado' : 'Acceso activado') + (r && r.enlazados > 0 ? '. ' + plural(r.enlazados, 'cliente enlazado', 'clientes enlazados') + ' a su cuenta' : ''));
       cerrarHoja();
       await cargar();
     } catch (err) { toast(err.message, 'error'); }
