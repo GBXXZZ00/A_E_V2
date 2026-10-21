@@ -1,0 +1,12 @@
+-- Lote 22/10, tanda B. Aplicado con el conector de Supabase (migraciones lote_22oct_b*).
+-- B1 Mi trabajo: privado.pendientes_extra() (revisar_docs, elaborar_contrato, seguir_firma, contrato_archivo, contrato_vence, revisar_pago,
+--   cerrar_corte, aliado_permisos, aliado_sin_permiso, alerta_carga) y public.mi_trabajo(persona): items por vista (admin/Senior, coordinador,
+--   analista, Legal, líder), gestiones, equipo (vencidos y de hoy por persona), personas e indicadores. La función vieja trabajo() sigue igual.
+--   Probado en la base (21/10): responde en menos de 1 segundo para cada rol.
+-- B2 Gestiones: tablas gestiones, gestion_responsables, gestion_clientes, gestion_historial (RLS sin políticas: solo por funciones).
+--   privado.gestion_meta_ok (expediente completo, actas subidas, contrato firmado, Conatel, VGT), privado.gestiones_archivar (al vencer o cumplirse),
+--   RPC gestiones_lista, gestion_detalle, gestion_crear, gestion_clientes_agregar, gestion_cliente_estado, gestion_cumplir, mi_trabajo_personas.
+--   Crean el administrador, el Analista Senior y el coordinador (perfiles.coordinador, marca nueva en Usuarios y en gestionar_usuarios v13).
+--   "Documentación ISP": 12 clientes de las etiquetas de gestión, 4 responsables (los líderes), plazo 31/10, meta expediente completo; 3 ya cumplen.
+-- B3 Filtros: public.clientes_lista3(filtro, busca, limite, desde, p_f): grupos tipo, estatus, lider, gestion ('id' o 'id:estado'), ctr, vgt, otros;
+--   dentro del grupo se suman, entre grupos se combinan; 'facetas' trae el contador de cada opción con los demás grupos aplicados; tarjeta aparte.

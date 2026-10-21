@@ -228,6 +228,22 @@ function confirmarCambio(m, c, fecha){
   c.comision = ['migracion', 'ambos'].includes(c.tipo) && c.lider_id ? 'si' : 'no'; if(c.comision === 'si') c.instalacion_id = 5000 + c.id;
   c.bitacora.push({ accion: 'cambio_confirmado', en: new Date().toISOString(), por: null });
 }
+// Lote 22/10: gestiones inventadas (una con dos clientes de Lucía)
+function gestionesDe(m){
+  if(m.datos.gestiones) return m.datos.gestiones;
+  const lucia = m.personas.find((p) => p.usuario === 'lucia'); const cs = m.datos.clientes.filter((c) => c.lider_id === (lucia || {}).id).slice(0, 2);
+  const d = new Date(hoy() + 'T12:00:00'); d.setDate(d.getDate() + 3);
+  m.datos.gestiones = [{ id: 1, nombre: 'Documentación ISP', meta: 'expediente_completo', plazo: d.toISOString().slice(0, 10), estado: 'activa', responsables: lucia ? [lucia.id] : [], creado_por: 'Marcos Díaz',
+    clientes: cs.map((c, i) => ({ cliente_id: c.id, estado: i ? 'esperando' : 'contactado', nota: i ? 'Prometió las actas' : null, promesa: i ? hoy() : null, historial: [] })) }];
+  return m.datos.gestiones;
+}
+function gestionJson(m, x, det){
+  const cumple = (c) => c.estado === 'cumplido' || c.estado === 'resuelto';
+  const est = {}; x.clientes.forEach((c) => { est[c.estado] = (est[c.estado] || 0) + 1; });
+  return { id: x.id, nombre: x.nombre, meta: x.meta, plazo: x.plazo, estado: x.estado, creado_por: x.creado_por, cumplida_mano: !!x.cumplida_mano, nota_cumplida: x.nota_cumplida || null,
+    responsables: x.responsables.map((r) => ({ id: r, nombre: (m.personas.find((p) => p.id === r) || {}).nombre })), total: x.clientes.length, hechos: x.clientes.filter(cumple).length, estados: est,
+    clientes: det ? x.clientes.map((c) => { const k = m.datos.clientes.find((z) => z.id === c.cliente_id) || {}; return Object.assign({ nombre: k.nombre, lider: k.lider, cumple: false }, c); }) : null };
+}
 function pendientesBase(m){
   if(m.datos.pendientes) return m.datos.pendientes.concat(pendDecidir(m));
   const cli = (n) => m.datos.clientes.find((c) => c.nombre === n || c.nombre === n + ', C.A.') || m.datos.clientes[0];
@@ -515,6 +531,30 @@ const RPC = {
       servicio: un([].concat.apply([], todos.map((c) => c.servicios.map((s) => norm(s.estado).replace(/^./, (x) => x.toUpperCase()))))), tipo: ['PYME', 'Dedicado ISP', 'Dedicado corporativo', 'Combinado'] };
     return r;
   },
+  // Lote 22/10: Filtros con subgrupos (una u otra dentro del grupo; las dos a la vez entre grupos) y contador por opción
+  clientes_lista3(m, yo, a){
+    const f = a.p_f || {}; const sus = (f.otros || []).includes('suspendidos');
+    const r = RPC.clientes_lista2(m, yo, { p_filtro: a.p_filtro, p_busca: a.p_busca, p_limite: 999, p_desde: 0, p_filtros: { suspendidos: sus ? '1' : '', tarjeta: f.tarjeta || '' } }); if(r && r.__error) return r;
+    const gs = gestionesDe(m).filter((g) => g.estado === 'activa');
+    const info = (x) => { const c = m.datos.clientes.find((k) => k.id === x.id); const t = tarjetaDe(c); const ks = (c.dedicado && c.dedicado.contratos) || [];
+      const ges = []; gs.forEach((g) => { const e = g.clientes.find((k) => k.cliente_id === c.id); if(e) ges.push(g.id + ':' + e.estado); });
+      const cp = contratoPend(c);
+      return { tip: t.pyme && t.ded ? 'combinado' : t.ded === 'corporativo' ? 'dedicado' : t.ded === 'isp' ? 'isp' : 'pyme', est: c.estatus, lid: c.lider || 'Sin líder', ges,
+        ctr: t.ded ? [!ks.some((k) => k.tipo === 'servicio' && k.estatus !== 'sin_contrato') ? 'sin_contrato' : null, ks.some((k) => k.estatus === 'por_firmar') ? 'por_firmar' : null,
+          cp === 'sin_archivo' ? 'firmado_sin_archivo' : null, cp === 'sin_vence' ? 'sin_vence' : null].filter(Boolean) : null,
+        vgt: [ks.some((k) => k.tipo === 'vgt') ? 'con' : null].filter(Boolean) }; };
+    const filas = r.filas.map((x) => Object.assign(x, { _i: info(x) }));
+    const p = { tipo: (i) => !(f.tipo || []).length || f.tipo.includes(i.tip), estatus: (i) => !(f.estatus || []).length || f.estatus.includes(i.est), lider: (i) => !(f.lider || []).length || f.lider.includes(i.lid),
+      gestion: (i) => !(f.gestion || []).length || i.ges.some((g) => f.gestion.includes(g) || f.gestion.includes(g.split(':')[0])), ctr: (i) => !(f.ctr || []).length || (i.ctr || []).some((k) => f.ctr.includes(k)),
+      vgt: (i) => !(f.vgt || []).length || i.vgt.some((k) => f.vgt.includes(k)) };
+    const pasa = (i, salvo) => Object.keys(p).every((k) => k === salvo || p[k](i));
+    const cuenta = (grupo, valores) => { const o = {}; filas.filter((x) => pasa(x._i, grupo)).forEach((x) => valores(x._i).forEach((v) => { o[v] = (o[v] || 0) + 1; })); return o; };
+    const facetas = { tipo: cuenta('tipo', (i) => [i.tip]), estatus: cuenta('estatus', (i) => [i.est]), lider: cuenta('lider', (i) => [i.lid]),
+      gestion: cuenta('gestion', (i) => i.ges.concat(i.ges.map((g) => g.split(':')[0]))), ctr: cuenta('ctr', (i) => i.ctr || []), vgt: cuenta('vgt', (i) => i.vgt) };
+    const sel = filas.filter((x) => pasa(x._i)); const des = Number(a.p_desde) || 0;
+    const pag = sel.slice(des, des + (Number(a.p_limite) || 20)).map((x) => { const y = Object.assign({}, x, { ges: x._i.ges }); delete y._i; return y; });
+    return { conteos: r.conteos, facetas, tarjetas: r.tarjetas, suspendidos: r.suspendidos, gestiones: gs.map((g) => ({ id: g.id, nombre: g.nombre })), total: sel.length, desde: des, rol: yo.rol, hoy: hoy(), filas: pag };
+  },
   clientes_lista(m, yo, a){
     if(yo.rol === 'aliado') return error('No tienes permiso para hacer esto');
     const v = visibles(m, yo); const b = norm(a.p_busca); let bd = String(a.p_busca || '').replace(/\D/g, ''); if(bd.length < 4) bd = '';
@@ -762,6 +802,44 @@ const RPC = {
     return { rol: yo.rol, senior: yo.rol === 'analista' && !!yo.senior, canales: can, hoy: h, dias: Object.assign({}, m.datos.dias || { dias_orden_sin_instalar: '15', dias_sin_documentos: '30', dias_por_enviar: '3', dias_cambio_por_emitir: '2' }),
       personas: yo.rol === 'admin' || can ? m.personas.filter((p) => p.activo && (p.rol === 'analista' || (yo.rol === 'admin' && p.rol === 'lider'))).map((p) => ({ id: p.id, nombre: p.nombre, rol: p.rol })) : [],
       aliados: yo.rol === 'admin' || can ? { solicitudes: 2, referidos: 1, pagos: 1, sin_permiso: 3 } : null, filas }; },
+  // ----- Lote 22/10: Mi trabajo por rol y Gestiones -----
+  mi_trabajo(m, yo, a){
+    if(!['admin', 'analista', 'lider', 'abogado'].includes(yo.rol)) return error('No tienes permiso para hacer esto');
+    const h = hoy(); const jefe = esSenior(yo); const coord = !!yo.coordinador; let quien = yo;
+    if(a.p_persona && a.p_persona !== yo.id){ quien = m.personas.find((p) => p.id === a.p_persona); if(!quien || !(jefe || (coord && quien.rol === 'analista'))) return error('No puedes ver el trabajo de esa persona'); }
+    const vista = quien !== yo ? (quien.rol === 'analista' ? (quien.senior ? 'admin' : quien.coordinador ? 'coord' : 'analista') : quien.rol) : jefe ? 'admin' : coord ? 'coord' : yo.rol;
+    const base = pendientesBase(m).concat(m.datos.extra || []);
+    const g = gestionesDe(m);
+    let items = base.filter((p) => vista === 'admin' ? ['admin', 'senior'].includes(p.para) : vista === 'coord' ? p.para === 'analista' : vista === 'analista' ? p.para === 'analista' && p.analista_id === quien.id
+      : vista === 'abogado' ? p.para === 'abogado' : p.para === 'lider' && p.lider_id === quien.id);
+    if(vista === 'lider') g.filter((x) => x.estado === 'activa' && x.responsables.includes(quien.id)).forEach((x) => x.clientes.filter((c) => !['cumplido', 'resuelto'].includes(c.estado)).forEach((c) => {
+      const cli = m.datos.clientes.find((k) => k.id === c.cliente_id) || {};
+      items.push({ tipo: 'gestion', clave: x.id + ':' + c.cliente_id, cliente_id: c.cliente_id, titulo: cli.nombre, detalle: x.nombre + ' · ' + c.estado, vence: c.promesa || x.plazo, desde: new Date().toISOString(), ref: { gestion: x.id } }); }));
+    const nom = (id) => (m.personas.find((p) => p.id === id) || {}).nombre || null;
+    items = items.map((p) => Object.assign({}, p, { lider: nom(p.lider_id), analista: nom(p.analista_id) }));
+    const equipo = (jefe || coord) && quien === yo ? m.personas.filter((p) => p.activo && p.id !== yo.id && (p.rol === 'analista' || (jefe && ['lider', 'abogado'].includes(p.rol)))).map((p) => {
+      const l = base.filter((x) => (p.rol === 'lider' && x.para === 'lider' && x.lider_id === p.id) || (p.rol === 'analista' && x.para === 'analista' && x.analista_id === p.id) || (p.rol === 'abogado' && x.para === 'abogado'));
+      return { id: p.id, nombre: p.nombre, rol: p.rol === 'lider' ? 'Líder' : p.rol === 'abogado' ? 'Legal' : 'Analista', n: l.length, venc: l.filter((x) => x.vence < h).length, hoy: l.filter((x) => x.vence === h).length }; }).filter((e) => e.n) : [];
+    return { rol: yo.rol, vista, senior: jefe && yo.rol !== 'admin', coordinador: coord, hoy: h, nombre: quien.nombre, persona: quien !== yo ? { id: quien.id, nombre: quien.nombre } : null,
+      corte: enCurso(), limite: hoy(), items, puedo_crear_gestion: jefe || coord,
+      gestiones: g.filter((x) => x.estado === 'activa' && (vista === 'admin' || vista === 'coord' || x.responsables.includes(quien.id))).map((x) => gestionJson(m, x, false)),
+      equipo, personas: jefe || coord ? m.personas.filter((p) => p.activo && p.id !== yo.id && (p.rol === 'analista' || (jefe && ['lider', 'abogado'].includes(p.rol)))).map((p) => ({ id: p.id, nombre: p.nombre, rol: p.rol })) : [],
+      kpis: vista === 'lider' ? { instalaciones: 3, comisionan: 2, falta: 1, migraciones: 1 } : vista === 'admin' ? { instalaciones: 10, comisionan: 7, migraciones: 2, negativos: 1 } : vista === 'abogado' ? { recibidos: 2, por_firmar: 1, firmados: 1, sin_archivo: 1 } : { emitidos: 3, dias_emitir: 1.5, bienvenidas: 4, yo: 1 } }; },
+  mi_trabajo_personas(m, yo){ if(!esSenior(yo) && !yo.coordinador) return error('No tienes permiso para hacer esto');
+    return m.personas.filter((p) => p.activo && ['lider', 'analista', 'abogado', 'admin'].includes(p.rol)).map((p) => ({ id: p.id, nombre: p.nombre, rol: p.rol, rol_txt: p.rol === 'lider' ? 'Líder' : p.rol === 'abogado' ? 'Legal' : p.rol === 'admin' ? 'Administrador' : 'Analista' })); },
+  gestiones_lista(m, yo){ return { puedo_crear: esSenior(yo) || !!yo.coordinador, gestiones: gestionesDe(m).map((x) => gestionJson(m, x, false)) }; },
+  gestion_detalle(m, yo, a){ const x = gestionesDe(m).find((g) => g.id === Number(a.p_id)); if(!x) return error('No encontré esa gestión'); return gestionJson(m, x, true); },
+  gestion_crear(m, yo, a){ if(!esSenior(yo) && !yo.coordinador) return error('Las gestiones las crean el administrador, el Analista Senior y el coordinador');
+    const d = a.p_datos || {}; if(String(d.nombre || '').trim().length < 3) return error('Escribe el nombre de la gestión'); if(!(d.clientes || []).length) return error('Agrega al menos un cliente');
+    const g = gestionesDe(m); const x = { id: g.length + 1, nombre: d.nombre, meta: d.meta, plazo: d.plazo, estado: 'activa', responsables: d.responsables || [], creado_por: yo.nombre,
+      clientes: (d.clientes || []).map((c) => ({ cliente_id: c, estado: 'sin_contacto', nota: null, promesa: null, historial: [{ accion: 'agregado', en: new Date().toISOString(), por: yo.nombre }] })) };
+    g.push(x); return x.id; },
+  gestion_cliente_estado(m, yo, a){ const x = gestionesDe(m).find((g) => g.id === Number(a.p_id)); if(!x) return error('No encontré esa gestión');
+    const c = x.clientes.find((k) => k.cliente_id === Number(a.p_cliente)); if(!c) return error('Ese cliente no está en la gestión');
+    if(a.p_estado === 'resuelto' && !a.p_nota) return error('Escribe cómo se resolvió');
+    Object.assign(c, { estado: a.p_estado, nota: a.p_nota, promesa: a.p_promesa }); c.historial.unshift({ accion: 'estado', estado: a.p_estado, nota: a.p_nota, promesa: a.p_promesa, en: new Date().toISOString(), por: yo.nombre }); return null; },
+  gestion_cumplir(m, yo, a){ const x = gestionesDe(m).find((g) => g.id === Number(a.p_id)); if(!x) return error('No encontré esa gestión'); if(!a.p_nota) return error('Escribe la nota');
+    x.estado = 'cumplida'; x.cumplida_mano = true; x.nota_cumplida = a.p_nota; return null; },
   trabajo_resumen(m, yo){ if(!['admin', 'analista', 'lider'].includes(yo.rol)) return null; const h = hoy(); const l = misPendientes(m, yo, null); const tipos = {};
     l.forEach((p) => { const t = tipos[p.tipo] || (tipos[p.tipo] = { n: 0, rojo: 0 }); t.n++; if(p.vence < h) t.rojo++; });
     const al = yo.rol === 'admin' || !!yo.canales ? { solicitudes: 2, referidos: 1, pagos: 1, sin_permiso: 3 } : null; const modulos = {};

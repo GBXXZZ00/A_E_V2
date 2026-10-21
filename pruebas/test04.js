@@ -4,6 +4,7 @@ const { ok, cerrar } = marcador();
 const PDF = { name: 'cedula.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4 prueba') };
 const llamo = (m, f) => m.llamadas.filter((l) => l[0] === 'rpc' && l[1] === f);
 const abiertas = (p) => p.evaluate(() => window.Comun.hojasAbiertas());
+const marcarFiltro = async (p, k, v) => { if(!(await p.evaluate(() => !!document.querySelector('#hojaFiltros.ver')))){ await p.click('#abrirFiltros'); await p.waitForSelector('#hojaFiltros.ver'); } await p.evaluate((g) => { const d = document.querySelector('#filGrupos details[data-g="' + g + '"]'); if(d) d.open = true; }, k); await p.click('[data-fil="' + k + '|' + v + '"]'); };
 (async () => {
   const nav = await chromium.launch(); const errores = [];
   for(const [nombre, dispositivo] of [['tel', TEL], ['pc', PC]]){
@@ -103,10 +104,10 @@ const abiertas = (p) => p.evaluate(() => window.Comun.hojasAbiertas());
     ok(nombre + ': la nota entra al hilo como texto', (await p.locator('#hilo b:text-is("manda")').count()) === 0 && llamo(mundo, 'cliente_nota').length === 1);
     ok(nombre + ': expediente sin desborde', await sinDesborde(p));
 
-    const listas = llamo(mundo, 'clientes_lista2').length;
+    const listas = llamo(mundo, 'clientes_lista3').length;
     await p.click('#cabFicha [data-cierra]'); await p.waitForFunction(() => !window.Comun.hojaAbierta());
     await p.waitForFunction((n) => true, listas);
-    ok(nombre + ': al cerrar vuelve a la lista y la refresca', (await p.locator('.cli').count()) === 1 && llamo(mundo, 'clientes_lista2').length > listas);
+    ok(nombre + ': al cerrar vuelve a la lista y la refresca', (await p.locator('.cli').count()) === 1 && llamo(mundo, 'clientes_lista3').length > listas);
     await p.click('.cli'); await p.waitForSelector('#hojaFicha.ver #tFicha'); await p.goBack(); await p.waitForFunction(() => !window.Comun.hojaAbierta());
     ok(nombre + ': el botón Atrás cierra el expediente sin salir de Clientes', p.url().includes('clientes.html') && (await p.locator('.cli').count()) === 1);
     await ctx.close();
@@ -115,15 +116,15 @@ const abiertas = (p) => p.evaluate(() => window.Comun.hojasAbiertas());
     const b = await contexto(nav, dispositivo); const m = b.mundo;
     const q = await entrar(b.ctx, 'marcos', '482913'); q.on('pageerror', (e) => errores.push(e.message));
     await q.goto(H + 'clientes.html?f=todos'); await q.waitForSelector('.cli');
-    if(nombre === 'tel'){ await q.click('#abrirFiltros'); await q.waitForSelector('#hojaFiltros.ver'); await q.selectOption('#tlider', 'Tomás Guerra'); await q.screenshot({ path: 'capturas/04-tel-filtros.png' }); await q.click('#verFiltrados'); }
-    else await q.selectOption('#plider', 'Tomás Guerra');
-    await q.waitForFunction(() => { const f = document.querySelectorAll('.cli'); return f.length > 0 && location.search.includes('lider='); });
+    await marcarFiltro(q, 'lider', 'Tomás Guerra'); await q.screenshot({ path: 'capturas/04-' + nombre + '-filtros.png' }); await q.click('#verFiltrados');
+    await q.waitForFunction(() => { const f = document.querySelectorAll('.cli'); return f.length > 0 && location.search.includes('lid='); });
     await q.waitForFunction(() => document.getElementById('cuentaLista').textContent.includes('Quitar filtros'));
-    const filtrado = llamo(m, 'clientes_lista2').slice(-1)[0][2];
-    ok(nombre + ': el filtro de líder viaja al servidor y queda en la dirección', filtrado.p_filtros.lider === 'Tomás Guerra' && q.url().includes('lider='));
-    if(nombre === 'pc'){ await q.selectOption('#pestatus', 'documentos_solicitados'); await q.waitForFunction(() => location.search.includes('estatus=')); ok('pc: los filtros se combinan', llamo(m, 'clientes_lista2').slice(-1)[0][2].p_filtros.estatus === 'documentos_solicitados'); }
-    await q.click('#quitarFiltros'); await q.waitForFunction(() => !location.search.includes('lider='));
-    ok(nombre + ': Quitar filtros los limpia (solo queda la tarjeta)', Object.keys(llamo(m, 'clientes_lista2').slice(-1)[0][2].p_filtros).filter((k) => k !== 'tarjeta' && llamo(m, 'clientes_lista2').slice(-1)[0][2].p_filtros[k]).length === 0);
+    const filtrado = llamo(m, 'clientes_lista3').slice(-1)[0][2];
+    ok(nombre + ': el filtro de líder viaja al servidor y queda en la dirección', (filtrado.p_f.lider || []).includes('Tomás Guerra') && q.url().includes('lid='));
+    if(nombre === 'pc'){ await marcarFiltro(q, 'estatus', 'documentos_solicitados'); await q.waitForFunction(() => location.search.includes('est=')); await q.click('#verFiltrados'); ok('pc: los filtros se combinan', (llamo(m, 'clientes_lista3').slice(-1)[0][2].p_f.estatus || []).includes('documentos_solicitados') && (llamo(m, 'clientes_lista3').slice(-1)[0][2].p_f.lider || []).length === 1); }
+    ok(nombre + ': el filtro puesto se ve como chip con X', /Líder: Tomás Guerra/.test(await q.textContent('#gestionCuentas')));
+    await q.click('#quitarFiltros'); await q.waitForFunction(() => !location.search.includes('lid='));
+    ok(nombre + ': Quitar filtros los limpia (solo queda la tarjeta)', Object.keys(llamo(m, 'clientes_lista3').slice(-1)[0][2].p_f).filter((k) => k !== 'tarjeta').length === 0);
 
     await q.goto(H + 'cliente.html?id=1001&t=documentos&revisar=1'); await q.waitForSelector('#hojaVer.ver');
     ok(nombre + ': el enlace viejo lleva a Clientes con el expediente y la revisión encima', q.url().includes('clientes.html') && (await abiertas(q)).join() === 'hojaFicha,hojaVer' && (await q.textContent('#hojaVer')).includes('Documento 1 de 4'));

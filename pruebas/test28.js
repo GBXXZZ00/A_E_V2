@@ -96,7 +96,7 @@ const llamo = (m, f) => m.llamadas.filter((l) => l[1] === f);
     // Corrida 14/10 tarde: sin pantalla Dedicados; el dedicado se ve en Clientes (tarjeta ISP) con su etiqueta VGT
     await p.goto(H + 'clientes.html?s=isp&f=todos'); await p.waitForSelector('#lista .cli');
     ok(nombre + ': la fila lleva la etiqueta VGT', (await p.textContent('.cli[data-cliente="' + a.id + '"]')).includes('VGT'));
-    ok(nombre + ': filtros (lote 21/10): Segmento y VGT, sin Enlaces ni Pólizas', (await p.locator('[data-sel="vgt"]').count()) >= 1 && (await p.locator('[data-sel="segmento"]').count()) >= 1 && (await p.locator('[data-sel="enlaces"], [data-sel="poliza"]').count()) === 0);
+    ok(nombre + ': filtros (lote 21/10): Segmento y VGT, sin Enlaces ni Pólizas', (await p.locator('[data-fil^="vgt|"]').count()) >= 1 && (await p.locator('[data-fil^="tipo|"]').count()) >= 1 && (await p.locator('[data-fil^="enlaces|"], [data-fil^="poliza|"]').count()) === 0);
     await p.click('.cli[data-cliente="' + a.id + '"]'); await p.waitForSelector('#hojaFicha.ver #tab-datos');
     await p.waitForFunction(() => (document.querySelector('#tab-datos') || {}).textContent.includes('Requisitos VGT'), null, { timeout: 8000 }).catch(() => {});
     const dts = await p.textContent('#tab-datos');

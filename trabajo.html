@@ -9,37 +9,42 @@
 <link rel="expect" href="#navListo" blocking="render">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="assets/img/icon-192.png">
-<link rel="stylesheet" href="assets/css/base.css?v=54">
-<link rel="stylesheet" href="assets/css/modulos.css?v=54">
-<link rel="stylesheet" href="assets/css/app.css?v=54">
+<link rel="stylesheet" href="assets/css/base.css?v=55">
+<link rel="stylesheet" href="assets/css/modulos.css?v=55">
+<link rel="stylesheet" href="assets/css/app.css?v=55">
 </head>
 <body>
-<header class="barra" id="barra"><a class="marca" href="inicio.html" aria-label="Inicio"><img class="logo" src="assets/img/logo.svg?v=54" alt="Airtek" width="96" height="12"><span>Empresas</span></a></header>
+<header class="barra" id="barra"><a class="marca" href="inicio.html" aria-label="Inicio"><img class="logo" src="assets/img/logo.svg?v=55" alt="Airtek" width="96" height="12"><span>Empresas</span></a></header>
 <main class="pagina">
-  <div class="cabeza">
-    <h1 class="titulo">Mi trabajo</h1>
+  <div class="mt-cab">
+    <div><h1 class="titulo" id="saludo">Mi trabajo</h1><p class="sub" id="frase">&nbsp;</p></div>
+    <div class="mt-res" id="pildoras"></div>
+  </div>
+  <div class="mt-herr">
+    <button type="button" class="enlace hidden" id="volverPersona" data-tr="volver">Volver a mi trabajo</button>
     <div class="selector-corte hidden" id="zonaPersona"><label class="solo-lector" for="persona">Ver el trabajo de</label><select id="persona" aria-label="Ver el trabajo de"></select></div>
   </div>
-  <p class="sub" id="resumen">&nbsp;</p>
-  <div class="filtros una" id="filtros" role="tablist" aria-label="Módulos"></div>
-  <div class="filtros una tr-subs hidden" id="subs" role="group" aria-label="Tipo de pendiente"></div>
-  <p class="ayuda-filtro" id="ayuda" role="note"></p>
-  <div id="lista" aria-live="polite"></div>
-  <div id="zonaDias"></div>
+  <div class="al-banda azul hidden mt-cola-barra" id="barraCola" role="status"></div>
+  <section class="mt-grid" id="tarjetas" aria-label="Grupos de trabajo"></section>
+  <div class="mt-cuerpo">
+    <section class="mt-izq" id="cuerpo" aria-live="polite"></section>
+    <aside class="mt-der" id="lado"></aside>
+  </div>
 </main>
 <script src="assets/vendor/supabase.js?v=1"></script>
 <script src="assets/js/supabase-client.js?v=1"></script>
-<script src="assets/js/comun.js?v=54"></script>
-<script src="assets/js/sesion.js?v=54"></script>
-<script src="assets/js/armazon.js?v=54"></script>
+<script src="assets/js/comun.js?v=55"></script>
+<script src="assets/js/sesion.js?v=55"></script>
+<script src="assets/js/armazon.js?v=55"></script>
 <i id="navListo" hidden></i>
-<script src="assets/js/archivos.js?v=54"></script>
-<script src="assets/js/marca.js?v=54"></script>
-<script src="assets/js/documentos.js?v=54"></script>
-<script src="assets/js/pedir.js?v=54"></script>
-<script src="assets/js/ficha.js?v=54"></script>
-<script src="assets/js/dedicado-ficha.js?v=54"></script>
-<script src="assets/js/cliente-gestion.js?v=54"></script>
-<script src="assets/js/trabajo.js?v=54"></script>
+<script src="assets/js/archivos.js?v=55"></script>
+<script src="assets/js/marca.js?v=55"></script>
+<script src="assets/js/documentos.js?v=55"></script>
+<script src="assets/js/pedir.js?v=55"></script>
+<script src="assets/js/ficha.js?v=55"></script>
+<script src="assets/js/dedicado-ficha.js?v=55"></script>
+<script src="assets/js/cliente-gestion.js?v=55"></script>
+<script src="assets/js/gestiones.js?v=55"></script>
+<script src="assets/js/trabajo.js?v=55"></script>
 </body>
 </html>

@@ -31,15 +31,15 @@ function preparar(m){
     ok(nombre + ': los atajos sirven para las tres (con Faltan documentos)', ['En curso', 'Por revisar', 'Sin gestión', 'Faltan documentos', 'Todos'].every((x) => at.includes(x)));
     await p.click('#filtros [data-filtro="todos"]'); await p.waitForFunction(() => /Vidrios El Faro/.test(document.getElementById('lista').textContent));
     ok(nombre + ': el combinado sale en PYME con su etiqueta "PYME + Dedicado" y el ISP solo no', /PYME \+ Dedicado/.test(await p.locator('.cli', { hasText: 'Vidrios El Faro' }).textContent()) && !(await p.textContent('#lista')).includes('Tornillos El Yunque'));
-    ok(nombre + ': lote 21/10: filtros Segmento, Líder, Estatus legal y VGT; sin Enlaces', (await p.locator('[data-sel="enlaces"]').count()) === 0 && (await p.locator('[data-sel="segmento"]').count()) >= 1 && (await p.locator('[data-sel="vgt"]').count()) >= 1);
+    ok(nombre + ': lote 21/10: filtros Segmento, Líder, Estatus legal y VGT; sin Enlaces', (await p.locator('[data-fil^="enlaces|"]').count()) === 0 && (await p.locator('[data-fil^="tipo|"]').count()) >= 1 && (await p.locator('[data-fil^="vgt|"]').count()) >= 1);
     ok(nombre + ': sin desborde', await sinDesborde(p));
     await p.screenshot({ path: 'capturas/34-' + nombre + '-admin-pyme.png', fullPage: true });
     // Dedicado corporativo: el combinado también sale aquí, con los filtros VGT y Enlaces
     await p.click('#tarjetas [data-tarjeta="corporativo"]'); await p.waitForFunction(() => /Vidrios El Faro/.test(document.getElementById('lista').textContent) && /Dedicado corporativo/.test(document.getElementById('cuentaLista').textContent));
     ok(nombre + ': el combinado también sale en Dedicado corporativo', (await p.getAttribute('#tarjetas [data-tarjeta="corporativo"]', 'aria-pressed')) === 'true');
-    ok(nombre + ': en las tarjetas de dedicados está VGT y ya no Enlaces', (await p.locator('[data-sel="vgt"]').count()) >= 1 && (await p.locator('[data-sel="enlaces"]').count()) === 0);
-    const llam = mundo.llamadas.filter((l) => l[1] === 'clientes_lista2').slice(-1)[0][2];
-    ok(nombre + ': la tarjeta viaja al servidor y queda en la dirección', llam.p_filtros.tarjeta === 'corporativo' && p.url().includes('s=corporativo'));
+    ok(nombre + ': en las tarjetas de dedicados está VGT y ya no Enlaces', (await p.locator('[data-fil^="vgt|"]').count()) >= 1 && (await p.locator('[data-fil^="enlaces|"]').count()) === 0);
+    const llam = mundo.llamadas.filter((l) => l[1] === 'clientes_lista3').slice(-1)[0][2];
+    ok(nombre + ': la tarjeta viaja al servidor y queda en la dirección', llam.p_f.tarjeta === 'corporativo' && p.url().includes('s=corporativo'));
     // ISP y se recuerda
     await p.click('#tarjetas [data-tarjeta="isp"]'); await p.waitForFunction(() => /Tornillos El Yunque/.test(document.getElementById('lista').textContent));
     await p.screenshot({ path: 'capturas/34-' + nombre + '-admin-isp.png', fullPage: true });

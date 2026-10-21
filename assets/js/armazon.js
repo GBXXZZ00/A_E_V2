@@ -8,7 +8,7 @@
   const NAV = [
     { id: 'inicio', texto: 'Inicio', icono: 'casa', enlace: 'inicio.html' },
     { id: 'comisiones', texto: 'Comisiones', icono: 'barras', enlace: 'comisiones.html' },
-    { id: 'trabajo', texto: 'Mi trabajo', icono: 'check', enlace: 'trabajo.html', roles: ['admin', 'analista', 'lider'], soloPc: true },
+    { id: 'trabajo', texto: 'Mi trabajo', icono: 'check', enlace: 'trabajo.html', roles: ['admin', 'analista', 'lider', 'abogado'], soloPc: true },
     { id: 'clientes', texto: 'Clientes', icono: 'edificio', enlace: 'clientes.html' },
     // En el teléfono entra solo si la barra de abajo no pasa de 5 botones (el administrador la abre desde Inicio)
     { id: 'migraciones', texto: 'Migraciones', icono: 'cambio', enlace: 'migraciones.html', roles: ['admin', 'analista', 'lider'], opcionalTel: true },

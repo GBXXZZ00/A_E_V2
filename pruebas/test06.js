@@ -15,7 +15,7 @@ const cerrarHojas = async (p) => { for(let i = 0; i < 4; i++){ if(await p.evalua
     ok(nombre + ': avisa de las pendientes por asignar', (await p.textContent('#avisos')).includes('2 pendientes por asignar') && (await p.locator('[data-filtro="asignar"] em').first().textContent()) === '2');
     await p.screenshot({ path: 'capturas/06-' + nombre + '-comisiones.png', fullPage: true });
     await p.click('#avisos [data-filtro="asignar"]');
-    ok(nombre + ': la bandeja trae solo las pendientes, ya abiertas', (await p.locator('[data-com]').count()) === 2 && p.url().includes('f=asignar') && (await p.locator('#avisos .franja.ambar').count()) === 0);
+    ok(nombre + ': la bandeja trae solo las pendientes, ya abiertas', (await p.locator('[data-com]').count()) === 2 && p.url().includes('f=asignar') && (await p.locator('#avisos .franja.ambar:not(:has-text("día límite"))').count()) === 0);
     const t = await p.textContent('#lista');
     ok(nombre + ': Sin orden en rojo y orden por confirmar', (await p.locator('#lista .tx-rojo').textContent()) === 'Sin orden' && /Orden \d+ por confirmar/.test(await p.locator('#lista .tx-ambar').textContent()) && t.includes('Por asignar'));
     ok(nombre + ': bandeja sin desborde', await sinDesborde(p));
@@ -54,7 +54,7 @@ const cerrarHojas = async (p) => { for(let i = 0; i < 4; i++){ if(await p.evalua
     await cerrarHojas(p);
     await p.waitForFunction(() => !document.querySelector('[data-filtro="asignar"] em') || document.querySelector('[data-filtro="asignar"] em').textContent === '0');
     await p.click('[data-filtro="todos"]');
-    ok(nombre + ': sin pendientes desaparecen el aviso y el filtro', (await p.locator('#avisos .franja').count()) === 0 && (await p.locator('[data-filtro="asignar"]').count()) === 0);
+    ok(nombre + ': sin pendientes desaparecen el aviso y el filtro', (await p.locator('#avisos .franja:not(:has-text("día límite"))').count()) === 0 && (await p.locator('[data-filtro="asignar"]').count()) === 0);
 
     // Buscador y marca Natural
     await p.fill('#busca', 'kiosco'); await p.waitForFunction(() => document.querySelectorAll('#lista [data-com]').length === 1);

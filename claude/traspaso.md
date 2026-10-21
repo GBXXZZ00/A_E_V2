@@ -1,8 +1,16 @@
 # Traspaso (se actualiza al cerrar cada sesión)
 
-Actualizado: 21/10/2026, corrida del lote 22/10. Publicado: `?v=54` (tanda A).
+Actualizado: 21/10/2026, corrida del lote 22/10. Publicado: `?v=55` (tandas A y B).
 
 ## LOTE 22/10: EN CURSO (corrida del 21/10, tres tandas seguidas, publicando en `main`)
+### Tanda B hecha (v55): Mi trabajo por rol, Gestiones y Filtros con subgrupos
+- SQL: `supabase/pruebas/lote_22oct_b.sql` (migraciones `lote_22oct_b*`).
+- B1 Mi trabajo (`trabajo.js` rehecho según la maqueta, RPC `mi_trabajo`; la RPC vieja `trabajo` sigue para lo publicado antes): saludo y frase del corte, píldoras, 4 tarjetas por rol (la primera ancha; tocar filtra), "Para hoy" por urgencia con botón que abre la acción, cola (administrador: revisar documentos; Legal: elaborar contrato) que ofrece el siguiente al cerrar, gestiones con avance, Equipo (tocar a una persona muestra su lista) e indicadores. Pendientes nuevos en `privado.pendientes_extra()`. Legal ya entra a Mi trabajo. Coordinador: marca nueva en Usuarios ("Coordinador de analistas", `gestionar_usuarios` v13, que además quedó en el repo igual a lo publicado: el repo estaba atrasado).
+- B2 Gestiones (`gestiones.js`): crear (administrador, Senior, coordinador) con meta de lista cerrada, plazo, responsables y clientes; estado por cliente con nota, fecha prometida e historial; marcar cumplida a mano con nota; se archivan solas al vencer o cumplirse. "Documentación ISP" creada con las 12 etiquetas (plazo 31/10, decisión de Claude).
+- B3 Filtros (`clientes.js`, RPC `clientes_lista3`): un botón Filtros (hoja en teléfono, panel en escritorio) con grupos plegables y contador por opción; dentro del grupo se suman, entre grupos se combinan; chips con X; los atajos y las tarjetas se quedan. Salieron Sucursal y Estado del servicio (no estaban en el lote). Las etiquetas de gestión siguen en la ficha y en la fila, pero el filtro es por gestiones.
+- Decisiones de Claude (falta confirmar): Senior y administrador ven la misma vista; si el Senior tiene tareas de analista salen en "Otras tareas"; el plazo de "Documentación ISP".
+- Pruebas: test30 reescrita (Mi trabajo y Gestiones por rol); ajustadas 04, 25, 28, 34, 44 (filtros) y 06 (el aviso del día límite depende de la fecha).
+
 ### Tanda A hecha (v54): actas y representantes, Migraciones, IP y documentos de la app vieja
 - SQL y pruebas en la base: `supabase/pruebas/lote_22oct_a.sql` (migraciones `lote_22oct_a1_*`, `a2_*`, `a3_*`, `a4_*`).
 - A1: hasta 10 representantes (`representantes.orden` 1..10, `cliente_representante`, `documentos_registrar`, correo, `privado.requeridos`) y 15 actas; cada acta lleva su fecha (`documentos.firmado_en`, RPC `documento_fecha_acta`, bitácora `acta_fecha`) y se ordenan por ella. Subir varios numera las actas solas. La IA ya revisaba a todos los representantes; en `reglas.mjs` el orden pasó a numérico (no se volvió a publicar la función: sale con el próximo cambio de la IA).

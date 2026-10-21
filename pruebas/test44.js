@@ -7,7 +7,7 @@ const { chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar } = requir
 const { ok, cerrar } = marcador();
 
 const llamo = (m, f) => m.llamadas.filter((l) => l[0] === 'rpc' && l[1] === f);
-const ultLista = (m) => llamo(m, 'clientes_lista2').slice(-1)[0][2];
+const ultLista = (m) => llamo(m, 'clientes_lista3').slice(-1)[0][2];
 async function cerrarHojas(p){ for(let i = 0; i < 5 && await p.evaluate(() => !!window.Comun.hojaAbierta()); i++){ await p.keyboard.press('Escape'); await p.waitForTimeout(260); } }
 const archivo = (n, mime) => ({ name: n, mimeType: mime || 'application/pdf', buffer: Buffer.from('%PDF-1.4 prueba ' + n) });
 
@@ -24,18 +24,25 @@ const archivo = (n, mime) => ({ name: n, mimeType: mime || 'application/pdf', bu
     const sus = cs.find((x) => x.nombre.indexOf('Relleno Inventado 00') === 0); sus.suspendido_en = new Date().toISOString(); sus.suspendido_nota = 'Cliente de prueba suspendido';
     const firm = cs.find((x) => x.nombre.indexOf('Relleno Inventado 01') === 0); firm.estatus = 'contrato_firmado'; firm.estatus_desde = new Date().toISOString(); firm.documentos = firm.documentos.filter((d) => d.casilla.indexOf('contrato_') !== 0);
 
-    const p = await entrar(ctx, 'marcos', '482913'); p.on('pageerror', (e) => errores.push(e.message));
+    const p = await entrar(ctx, 'marcos', '482913'); p.on('pageerror', (e) => { errores.push(e.message); if(process.env.DEP) console.log('PILA', e.stack); });
     await p.evaluate(() => { try { localStorage.removeItem('ae_cli_tarjeta'); } catch (e) {} });
     await p.goto(H + 'clientes.html'); await p.waitForSelector('#lista .cli');
     // ---------- Lista ----------
     const at = await p.evaluate(() => Array.from(document.querySelectorAll('#filtros [data-filtro]')).map((b) => b.dataset.filtro));
     ok(nombre + ': "Todos" es el primer atajo y el que está puesto', at[0] === 'todos' && (await p.getAttribute('#filtros [data-filtro="todos"]', 'aria-pressed')) === 'true' && ultLista(mundo).p_filtro === 'todos');
     ok(nombre + ': los atajos de siempre siguen', ['en_curso', 'por_revisar', 'sin_gestion', 'faltan', 'por_subir'].every((x) => at.includes(x)));
-    const sels = await p.evaluate(() => Array.from(document.querySelectorAll('#selsPc [data-sel]')).map((x) => x.dataset.sel));
-    ok(nombre + ': filtros Segmento, Líder, Estatus legal y VGT (sin Enlaces ni Pólizas)', ['segmento', 'lider', 'estatus', 'vgt'].every((k) => sels.includes(k)) && !sels.includes('enlaces') && !sels.includes('poliza'));
-    const segOps = await p.evaluate(() => Array.from(document.querySelectorAll('#selsPc [data-sel="segmento"] option')).map((o) => o.textContent).join('|'));
-    const vgtOps = await p.evaluate(() => Array.from(document.querySelectorAll('#selsPc [data-sel="vgt"] option')).map((o) => o.textContent).join('|'));
-    ok(nombre + ': Segmento trae PYME, Dedicado, Dedicado ISP y Combinado; VGT trae requisitos incompletos', segOps.includes('PYME|Dedicado|Dedicado ISP|Combinado') && vgtOps.includes('Con VGT') && vgtOps.includes('VGT por firmar') && vgtOps.includes('Requisitos VGT incompletos'));
+    // Lote 22/10: un solo botón Filtros con grupos y contadores
+    await p.click('#abrirFiltros'); await p.waitForSelector('#hojaFiltros.ver #filGrupos details');
+    const grs = await p.evaluate(() => Array.from(document.querySelectorAll('#filGrupos details[data-g]')).map((x) => x.dataset.g));
+    ok(nombre + ': Filtros trae Tipo, Estatus legal, Líder, Gestiones, Contrato de dedicado, VGT y Otros', ['tipo', 'estatus', 'lider', 'gestion', 'ctr', 'vgt', 'otros'].every((k) => grs.includes(k)));
+    await p.evaluate(() => document.querySelectorAll('#filGrupos details').forEach((d) => { d.open = true; }));
+    const txf = await p.textContent('#filGrupos');
+    ok(nombre + ': cada opción con su contador; contrato de dedicado con sus 6 opciones', /PYME \+ Dedicado/.test(txf) && /Vence en 60 días/.test(txf) && /Firmado sin archivo/.test(txf) && /Requisitos VGT incompletos/.test(txf) && (await p.locator('#filGrupos .fil-op em').count()) > 10);
+    await p.click('[data-fil="tipo|pyme"]'); await p.click('[data-fil="tipo|combinado"]'); await p.waitForFunction(() => location.search.includes('tipo=pyme%7Ccombinado') || location.search.includes('tipo=pyme|combinado'));
+    ok(nombre + ': dentro de un grupo se suman', JSON.stringify((ultLista(mundo).p_f || {}).tipo) === '["pyme","combinado"]');
+    await p.screenshot({ path: 'capturas/44-' + nombre + '-filtros.png' });
+    await p.click('[data-fil="tipo|pyme"]'); await p.click('[data-fil="tipo|combinado"]'); await p.click('#verFiltrados');
+    await p.waitForFunction(() => !location.search.includes('tipo='));
     ok(nombre + ': el suspendido no sale en la lista', !(await p.textContent('#lista')).includes('Relleno Inventado 00'));
     ok(nombre + ': la fila del combinado dice PYME + Dedicado', (await p.textContent('#lista')).includes('PYME + Dedicado') || !cs.some((x) => x.dedicado && x.servicios.some((s) => !/dedicad/.test(s.categoria))));
     // Páginas con flechas
@@ -57,15 +64,11 @@ const archivo = (n, mime) => ({ name: n, mimeType: mime || 'application/pdf', bu
     await p.waitForFunction((id) => { const c = document.querySelector('.cli[data-cliente="' + id + '"]'); return c && /Contactado/.test(c.textContent); }, idP);
     ok(nombre + ': con un toque queda la etiqueta en la fila, con su nota en el servidor', llamo(mundo, 'cliente_etiqueta').some((l) => l[2].p_etiqueta === 'contactado' && l[2].p_nota === 'Llamó la asistente'));
     ok(nombre + ': la etiqueta no cambia el estatus', cs.find((x) => x.id === idP).estatus === (mundo.datos.clientes.find((x) => x.id === idP) || {}).estatus);
-    await p.waitForFunction(() => /Contactado\s*1/.test(document.getElementById('gestionCuentas').textContent));
-    ok(nombre + ': arriba la cuenta de cada etiqueta', /Contactado\s*1/.test(await p.textContent('#gestionCuentas')) && (await p.textContent('#gestionCuentas')).includes('Esperando documentos'));
-    await p.click('[data-etq-filtro="contactado"]'); await p.waitForFunction(() => document.querySelectorAll('#lista .cli').length === 1);
-    ok(nombre + ': tocar la cuenta filtra por la etiqueta', ultLista(mundo).p_filtros.gestion === 'contactado' && p.url().includes('g=contactado'));
-    await p.click('[data-etq-filtro="contactado"]'); await p.waitForFunction(() => document.querySelectorAll('#lista .cli').length > 1);
-    // Ver suspendidos
-    await p.click('#verSus'); await p.waitForFunction(() => /Relleno Inventado 00/.test(document.getElementById('lista').textContent));
-    ok(nombre + ': "Ver suspendidos" los muestra aparte con su etiqueta', ultLista(mundo).p_filtros.suspendidos === '1' && (await p.textContent('#lista')).includes('Suspendido') && (await p.locator('#lista .cli').count()) === 1);
-    await p.click('#verSus'); await p.waitForFunction(() => !/Relleno Inventado 00/.test(document.getElementById('lista').textContent));
+    // Suspendidos: ahora en Filtros, Otros
+    await p.click('#abrirFiltros'); await p.waitForSelector('#hojaFiltros.ver'); await p.evaluate(() => { document.querySelector('#filGrupos details[data-g="otros"]').open = true; });
+    await p.click('[data-fil="otros|suspendidos"]'); await p.click('#verFiltrados'); await p.waitForFunction(() => /Relleno Inventado 00/.test(document.getElementById('lista').textContent));
+    ok(nombre + ': Otros: Suspendidos los muestra aparte con su etiqueta', (ultLista(mundo).p_f.otros || []).includes('suspendidos') && (await p.textContent('#lista')).includes('Suspendido') && (await p.locator('#lista .cli').count()) === 1);
+    await p.click('#gestionCuentas [data-quitar-fil="otros|suspendidos"]'); await p.waitForFunction(() => !/Relleno Inventado 00/.test(document.getElementById('lista').textContent));
     ok(nombre + ': lista sin desborde', await sinDesborde(p));
     await p.screenshot({ path: 'capturas/44-' + nombre + '-lista.png' });
 

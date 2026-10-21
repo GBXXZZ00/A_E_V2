@@ -41,7 +41,7 @@
     $('lista').innerHTML = '<div class="lista">' + usuarios.map((u, i) => {
       const est = !u.activo ? '<span class="chip chip-off">Sin acceso</span>'
         : u.debe_cambiar_pin ? '<span class="chip chip-warn">PIN temporal</span>' : '<span class="chip chip-ok">Activo</span>';
-      const rol = u.gerencia ? 'Gerencia (solo lectura)' : u.rol === 'analista' && u.senior ? 'Analista Senior' : (S.ROLES[u.rol] || u.rol);
+      const rol = u.gerencia ? 'Gerencia (solo lectura)' : u.rol === 'analista' && u.senior ? 'Analista Senior' : u.rol === 'analista' && u.coordinador ? 'Coordinador de analistas' : (S.ROLES[u.rol] || u.rol);
       return '<button type="button" class="persona' + (u.activo ? '' : ' inactiva') + '" data-i="' + i + '">' +
         '<span class="quien"><span class="av" aria-hidden="true">' + esc(iniciales(u.nombre)) + '</span><b>' + esc(u.nombre) + '</b>' +
         '<span class="det"><span class="solo-pc">' + esc(u.usuario) + (u.cargo ? ' · ' + esc(u.cargo) : '') + '</span>' +
@@ -81,7 +81,7 @@
     $('fNombre').value = u ? u.nombre : '';
     $('fUsuario').value = u ? u.usuario : ''; $('fUsuario').disabled = !!u;
     $('fCargo').value = u ? (u.cargo || '') : '';
-    $('fRol').value = u ? (u.gerencia ? 'gerencia' : u.rol === 'analista' && u.senior ? 'analista_senior' : u.rol) : 'lider';
+    $('fRol').value = u ? (u.gerencia ? 'gerencia' : u.rol === 'analista' && u.senior ? 'analista_senior' : u.rol === 'analista' && u.coordinador ? 'analista_coord' : u.rol) : 'lider';
     $('fWhatsapp').value = u ? (u.whatsapp || '') : ''; $('fCorreo').value = u ? (u.correo || '') : '';
     $('fEquipo').value = u ? u.equipo : 'ventas';
     zonaAnalista(u);
@@ -117,7 +117,7 @@
     if(correo && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(correo)){ $('eCorreo').textContent = 'Ese correo no parece válido'; ok = false; }
     if(!ok) return null;
     const rolForm = $('fRol').value;
-    return { nombre, usuario, pin, cargo: $('fCargo').value.trim(), rol: rolForm === 'analista_senior' ? 'analista' : rolForm, senior: rolForm === 'analista_senior', whatsapp: wa, correo, equipo: $('fEquipo').value,
+    return { nombre, usuario, pin, cargo: $('fCargo').value.trim(), rol: rolForm === 'analista_senior' || rolForm === 'analista_coord' ? 'analista' : rolForm, senior: rolForm === 'analista_senior', coordinador: rolForm === 'analista_coord', whatsapp: wa, correo, equipo: $('fEquipo').value,
       codigo_vendedor: cod ? Number(cod) : null, nombre_odoo: $('fOdoo').value.trim() };
   }
 
