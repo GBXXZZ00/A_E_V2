@@ -41,7 +41,8 @@ const visible = (p, id) => p.locator('#' + id).isVisible();
   ok('admin ve Usuarios en su menú de cuenta', await p.locator('#hojaCuenta a[data-ir="usuarios"]').isVisible());
   await p.screenshot({ path: 'capturas/01-tel-cuenta.png' });
 
-  // Otra pestaña: la sesión no se hereda, pero el usuario y el equipo sí se recuerdan
+  // Lote S: la sesión queda en el dispositivo; tras 13 horas sin uso pide el PIN, y el usuario y el equipo se recuerdan
+  await p.evaluate(() => localStorage.setItem('ae_actividad', String(Date.now() - 13 * 3600e3)));
   let p2 = await ctx.newPage(); p2.on('pageerror', (e) => errores.push(e.message));
   await p2.goto(H + 'index.html'); await p2.waitForSelector('#pasoPin:not(.hidden)');
   ok('al volver abre directo en el PIN', (await p2.textContent('#tPin')) === 'Hola, Marcos');
@@ -70,9 +71,9 @@ const visible = (p, id) => p.locator('#' + id).isVisible();
   // Equipo que no corresponde, cuenta desactivada, sin sesión y sin internet
   ({ ctx, mundo } = await contexto(nav, TEL));
   p = await ctx.newPage(); p.on('pageerror', (e) => errores.push(e.message));
-  await p.goto(H + 'inicio.html'); await p.waitForURL('**/index.html');
+  await p.goto(H + 'inicio.html'); await p.waitForURL(/index\.html/);
   ok('sin sesión, Inicio devuelve al acceso', true);
-  await p.goto(H + 'usuarios.html'); await p.waitForURL('**/index.html');
+  await p.goto(H + 'usuarios.html'); await p.waitForURL(/index\.html/);
   ok('sin sesión, Usuarios devuelve al acceso', true);
   await p.waitForSelector('#pasoEquipo:not(.hidden)');
   await p.click('[data-equipo="aliados"]'); await p.fill('#usuario', 'lucia'); await p.click('#seguir'); await pin(p, '739105');
@@ -127,7 +128,7 @@ const visible = (p, id) => p.locator('#' + id).isVisible();
   // Un corte de internet dentro de la app no cierra la sesión
   mundo.sinRed = true;
   await p.goto(H + 'usuarios.html'); await p.waitForSelector('#reintentarSesion');
-  ok('sin internet dentro de la app: avisa y no cierra la sesión', (await p.evaluate(() => JSON.stringify(Object.assign({}, sessionStorage)).includes('access_token'))));
+  ok('sin internet dentro de la app: avisa y no cierra la sesión', (await p.evaluate(() => JSON.stringify(Object.assign({}, localStorage)).includes('access_token'))));
   mundo.sinRed = false;
   await p.click('#reintentarSesion'); await p.waitForSelector('.persona');
   ok('Reintentar vuelve a cargar', true);

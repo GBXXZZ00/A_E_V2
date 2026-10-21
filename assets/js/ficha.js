@@ -17,6 +17,7 @@
   let hiloTodo = false; let soloNotas = false; let repExtra = 0; let actaExtra = 0;
   let fuera = null;               // { cliente, F, alTerminar }: se sube o se escribe desde otra hoja, sin abrir el expediente
   let ocupado = false;            // hay subidas en la cola
+  if(window.AE_ocupado) window.AE_ocupado(() => ocupado); // Lote S: no cerrar la sesión por inactividad con subidas en curso
   let subiendo = {};              // casillas que se están subiendo ('12|cedula:1': texto): se ven con su barra en la misma fila
   const cola = []; let trabajando = false;   // lote 21/10: subidas en segundo plano, una tras otra
   let selMode = false; let selDocs = new Set();   // "Aprobar seleccionados"

@@ -9,6 +9,7 @@
   const OBLIGATORIAS = ['s', 'c', 'd', 'n'];
   const BASURA = ['nan', '#n/a', '#ref!', '#value!', 'null', 'undefined'];
   let yo = null; let lista = []; let ocupado = false; let fin = null; let corto = null;
+  if(window.AE_ocupado) window.AE_ocupado(() => ocupado); // Lote S: no cerrar la sesión con una carga en curso
   const TOPE_TAD = 60000; const LOTE_CRUDO = 200;
 
   // ---------- Leer el archivo ----------

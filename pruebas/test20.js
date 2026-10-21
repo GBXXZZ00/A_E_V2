@@ -92,7 +92,7 @@ async function rutas(ctx, m){
 const PDF = { name: 'rif.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4 prueba') };
 async function subirEn(p, sel){ const [fc] = await Promise.all([p.waitForEvent('filechooser'), p.click(sel)]); await fc.setFiles(PDF); }
 async function entrarComo(ctx, persona, equipo){
-  const p = await ctx.newPage(); await p.goto(H + 'index.html'); await p.evaluate(() => { localStorage.clear(); sessionStorage.clear(); }); await p.goto(H + 'index.html');
+  const p = await ctx.newPage(); await p.goto(H + 'privacidad.html'); await p.evaluate(() => { localStorage.clear(); sessionStorage.clear(); }); await p.goto(H + 'index.html');
   await p.waitForSelector('#pasoEquipo:not(.hidden)');
   await p.click('[data-equipo="' + equipo + '"]'); await p.fill('#usuario', persona.usuario); await p.click('#seguir');
   const pc = await p.evaluate(() => window.matchMedia('(min-width:900px)').matches); await pin(p, persona.pin, pc);

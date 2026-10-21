@@ -7,6 +7,7 @@
   const NOMBRES = { liberado: 'Liberado', exclusiva: 'Exclusiva', diseno: 'Diseño', construccion: 'Construcción', permiso_vgt: 'Permiso VGT' };
   const num = (n) => Number(n || 0).toLocaleString('es-VE');
   let yo = null; let actual = null; let leido = null; let ocupado = false; let paso = ''; let resumen = null; let error = '';
+  if(window.AE_ocupado) window.AE_ocupado(() => ocupado); // Lote S: no cerrar la sesión leyendo un mapa
 
   function reparto(r){ return Object.keys(NOMBRES).filter((k) => r && r[k]).map((k) => NOMBRES[k] + ' ' + num(r[k])).join(' · '); }
   function pintar(){

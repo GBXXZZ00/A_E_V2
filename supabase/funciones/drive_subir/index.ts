@@ -5,8 +5,17 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
+// Lote S: solo la app publicada (y localhost para pruebas) puede llamar esta función
+const ORIGENES = /^(https:\/\/gbxxzz00\.github\.io|http:\/\/(localhost|127\.0\.0\.1)(:\d+)?)$/;
+// Toda respuesta (también OPTIONS y errores) sale con el origen permitido de esa petición
+const conOrigen = (req: Request, r: Response) => {
+  const o = req.headers.get("Origin") || "";
+  const h = new Headers(r.headers);
+  h.set("Access-Control-Allow-Origin", ORIGENES.test(o) ? o : "https://gbxxzz00.github.io");
+  h.set("Vary", "Origin");
+  return new Response(r.body, { status: r.status, statusText: r.statusText, headers: h });
+};
 const cors = {
-  "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
@@ -72,7 +81,7 @@ async function crearCarpeta(nombre: string, padre: string): Promise<string> {
 const TIPOS = ["application/pdf", "image/jpeg", "image/png", "image/webp"];
 const MAX = 15 * 1024 * 1024;
 
-Deno.serve(async (req: Request) => {
+async function atender(req: Request): Promise<Response> {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return fallo("Método no permitido", 405);
   try {
@@ -98,6 +107,9 @@ Deno.serve(async (req: Request) => {
     });
     const { data: u } = await db.auth.getUser(sesion.replace(/^Bearer\s+/i, ""));
     if (!u?.user) return fallo("Tu sesión venció. Entra de nuevo", 401);
+    // Lote S: una sesión cerrada por el administrador (PIN restablecido o cuenta desactivada) ya no vale
+    const { data: sv, error: esv } = await db.rpc("sesion_viva");
+    if (esv || !sv || sv.viva !== true) return fallo("Tu sesión se cerró. Entra de nuevo", 401);
     const { data: d, error } = await db.rpc("drive_destino", { p_cliente: cliente });
     if (error) {
       const m = error.code === "P0001" ? error.message : "No tienes acceso a este cliente";
@@ -150,4 +162,6 @@ Deno.serve(async (req: Request) => {
     console.error(e);
     return fallo("Algo falló en el servidor. Intenta de nuevo", 500);
   }
-});
+}
+
+Deno.serve(async (req: Request) => conOrigen(req, await atender(req)));

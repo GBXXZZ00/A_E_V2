@@ -32,8 +32,8 @@
   }
   function idSesionGuardada(){
     try {
-      const k = Object.keys(sessionStorage).find((x) => /^sb-.+-auth-token$/.test(x)); if(!k) return null;
-      const s = JSON.parse(sessionStorage.getItem(k) || 'null'); return s && s.user ? s.user.id : null;
+      const k = Object.keys(localStorage).find((x) => /^sb-.+-auth-token$/.test(x)); if(!k) return null;
+      const s = JSON.parse(localStorage.getItem(k) || 'null'); return s && s.user ? s.user.id : null;
     } catch (e) { return null; }
   }
   function perfilGuardado(roles){
@@ -99,7 +99,7 @@
       }
     } else sesion = await entrarDirecto(usuario, pin);
     const data = { session: sesion };
-    perfilActual = null; guardarPerfil(null);
+    perfilActual = null; guardarPerfil(null); marcarActividad(true); guardar('ae_vencio', null);
     // Lo que quedó en pantalla de otra persona no se le muestra a quien entra
     if(window.Comun && window.Comun.cache) window.Comun.cache.borrarTodo();
     return data.session;
@@ -108,9 +108,11 @@
     perfilActual = null; guardarPerfil(null);
     if(window.Comun && window.Comun.cache) window.Comun.cache.borrarTodo();
     // Se avisa al servidor, pero sin quedar esperando si tarda: la sesión del dispositivo se borra igual
-    const fuera = db ? db.auth.signOut().catch(() => {}) : Promise.resolve();
+    // Lote S: solo este equipo (el teléfono de la misma persona sigue con su sesión)
+    const fuera = db ? db.auth.signOut({ scope: 'local' }).catch(() => {}) : Promise.resolve();
     await Promise.race([fuera, new Promise((ok) => setTimeout(ok, 1500))]);
-    try { Object.keys(sessionStorage).filter((k) => /^sb-.+-auth-token$/.test(k)).forEach((k) => sessionStorage.removeItem(k)); } catch (e) {}
+    [window.localStorage, window.sessionStorage].forEach((m) => { try { Object.keys(m).filter((k) => /^sb-.+-auth-token$/.test(k)).forEach((k) => m.removeItem(k)); } catch (e) {} });
+    guardar(K_ACT, null);
   }
   // Comprueba el PIN actual de quien ya entró (para el cambio voluntario)
   async function verificarPin(usuario, pin){
@@ -137,6 +139,40 @@
   function pinFacil(pin){ return /^(\d)\1{5}$/.test(pin) || pin === '123456' || pin === '654321'; }
   function puedeEntrar(p, equipo){ return !!p && (p.equipo === 'ambos' || p.equipo === equipo); }
 
+  // ---------- Lote S: sesión hasta N horas sin uso ----------
+  // La última actividad (toque, tecla, volver a la app) se guarda en el dispositivo. Si pasó más que el ajuste, se sale.
+  // Nunca se cierra con subidas o cargas en curso: cada módulo con cola registra su "ocupado" en AE_ocupado.
+  const K_ACT = 'ae_actividad'; const K_HORAS = 'ae_inactividad_h'; let ultimaMarca = 0;
+  const ocupados = [];
+  // También cuenta como ocupado una hoja abierta con algo escrito sin guardar
+  const escritoSinGuardar = () => Array.from(document.querySelectorAll('.hoja.ver input, .hoja.ver textarea')).some((x) =>
+    x.type === 'checkbox' || x.type === 'radio' ? x.checked !== x.defaultChecked : x.type !== 'file' && x.type !== 'hidden' && x.value !== x.defaultValue);
+  window.AE_ocupado = (fn) => { if(typeof fn === 'function'){ ocupados.push(fn); return false; } return escritoSinGuardar() || ocupados.some((f) => { try { return !!f(); } catch (e) { return false; } }); };
+  function horasInactividad(){ const h = Number(leer(K_HORAS)); return h >= 1 && h <= 72 ? h : 12; }
+  function guardarHoras(h){ h = Number(h); if(h >= 1 && h <= 72) guardar(K_HORAS, String(h)); }
+  function marcarActividad(forzar){ const ahora = Date.now(); if(forzar || ahora - ultimaMarca > 60000){ ultimaMarca = ahora; guardar(K_ACT, String(ahora)); } }
+  function vencida(){ const t = Number(leer(K_ACT)); return !!t && Date.now() - t > horasInactividad() * 3600e3; }
+  // Destino para volver después del PIN: solo páginas propias
+  const destinoValido = (d) => typeof d === 'string' && /^[a-z]+\.html(\?[^#]*)?$/.test(d) && d.indexOf('index.html') !== 0;
+  function conDestino(pagina){
+    const aqui = location.pathname.split('/').pop() + location.search;
+    return destinoValido(aqui) ? pagina + '?ir=' + encodeURIComponent(aqui) : pagina;
+  }
+  function destino(){ const d = new URLSearchParams(location.search).get('ir'); return destinoValido(d) ? d : 'inicio.html'; }
+  let cerrando = false;
+  async function revisarInactividad(){
+    if(cerrando || !idSesionGuardada()) return false;
+    if(!vencida()){ marcarActividad(); return false; }
+    if(window.AE_ocupado()){ marcarActividad(true); return false; }
+    cerrando = true; await salir(); guardar('ae_vencio', '1'); location.replace(conDestino('index.html')); return true;
+  }
+  if(idSesionGuardada() && !leer(K_ACT)) marcarActividad(true);
+  ['pointerdown', 'keydown'].forEach((t) => document.addEventListener(t, () => { revisarInactividad(); }, { capture: true, passive: true }));
+  // Si la sesión venció, el toque que la descubrió no hace nada (no compite con la salida)
+  document.addEventListener('click', (e) => { if(cerrando){ e.preventDefault(); e.stopPropagation(); } }, true);
+  document.addEventListener('visibilitychange', () => { if(!document.hidden) revisarInactividad(); });
+  setInterval(() => { if(vencida()) revisarInactividad(); }, 300000);
+
   // En los módulos: sin sesión válida se vuelve a la pantalla de acceso
   async function requerir(roles){
     let p = null;
@@ -148,7 +184,7 @@
       const b = document.getElementById('reintentarSesion'); if(b) b.addEventListener('click', () => location.reload());
       return null;
     }
-    if(!p || !p.activo){ await salir(); location.replace('index.html'); return null; }
+    if(!p || !p.activo){ await salir(); location.replace(conDestino('index.html')); return null; }
     if(p.debe_cambiar_pin){ location.replace('index.html#cambiar'); return null; }
     if(p.rol === 'gerencia' && !(roles && roles.indexOf('gerencia') >= 0)){ location.replace('gerencia.html'); return null; }
     if(roles && roles.indexOf(p.rol) < 0){ location.replace('inicio.html'); return null; }
@@ -156,5 +192,6 @@
   }
 
   window.Sesion = { EQUIPOS, ROLES, equipoGuardado, guardarEquipo, usuarioGuardado, guardarUsuario,
-    sesionActual, perfil, perfilGuardado, firma, entrar, salir, verificarPin, cambiarPin, pinFacil, puedeEntrar, requerir };
+    sesionActual, perfil, perfilGuardado, firma, entrar, salir, verificarPin, cambiarPin, pinFacil, puedeEntrar, requerir,
+    horasInactividad, guardarHoras, destino, conDestino };
 })();

@@ -5,20 +5,41 @@
 // en la base privado.rol_actual() devuelve 'gerencia' y solo la pantalla Gerencia le responde.
 // Corrida urgente 14/10: al crear, editar o activar un líder se enlazan solos los clientes que tienen su nombre y no tienen cuenta.
 // Lote 22/10: marca de coordinador de analistas (ve y hace lo de todos los analistas).
+// Lote S (21/10): CORS solo para la app publicada; restablecer PIN o desactivar cierra las sesiones abiertas.
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
 const DOMINIO = "@aev2.app";
 const ROLES = ["admin", "abogado", "lider", "analista", "aliado", "gerencia"];
 const EQUIPOS = ["ventas", "aliados", "ambos"];
+// Lote S: solo la app publicada (y localhost para pruebas) puede llamar esta función
+const ORIGENES = /^(https:\/\/gbxxzz00\.github\.io|http:\/\/(localhost|127\.0\.0\.1)(:\d+)?)$/;
+// Toda respuesta (también OPTIONS y errores) sale con el origen permitido de esa petición
+const conOrigen = (req: Request, r: Response) => {
+  const o = req.headers.get("Origin") || "";
+  const h = new Headers(r.headers);
+  h.set("Access-Control-Allow-Origin", ORIGENES.test(o) ? o : "https://gbxxzz00.github.io");
+  h.set("Vary", "Origin");
+  return new Response(r.body, { status: r.status, statusText: r.statusText, headers: h });
+};
 const cors = {
-  "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 const resp = (cuerpo: unknown, status = 200) =>
   new Response(JSON.stringify(cuerpo), { status, headers: { ...cors, "Content-Type": "application/json" } });
 const fallo = (mensaje: string, status = 400) => resp({ error: mensaje }, status);
+
+// Lote S: cierra las sesiones abiertas de esa persona (la base las rechaza desde ahora)
+// deno-lint-ignore no-explicit-any
+async function cerrarSesiones(admin: any, id: string): Promise<boolean> {
+  try {
+    const { error } = await admin.rpc("sesiones_cerrar", { p_id: id });
+    if (error) { console.error("sesiones_cerrar", error); return false; }
+    return true;
+  } catch (e) { console.error("sesiones_cerrar", e); return false; }
+}
+const AVISO_SESIONES = "No se pudieron cerrar las sesiones abiertas de esa persona. Intenta de nuevo";
 
 // PIN temporal: 6 números. Quien entra con él está obligado a cambiarlo por uno que no sea fácil.
 const pinTemporal = (p: unknown) => typeof p === "string" && /^\d{6}$/.test(p);
@@ -71,7 +92,7 @@ function datosPerfil(b: Record<string, unknown>) {
   };
 }
 
-Deno.serve(async (req: Request) => {
+async function atender(req: Request): Promise<Response> {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return fallo("Método no permitido", 405);
   try {
@@ -81,6 +102,10 @@ Deno.serve(async (req: Request) => {
     const token = (req.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "");
     const { data: quien, error: eQuien } = await admin.auth.getUser(token);
     if (eQuien || !quien?.user) return fallo("Sesión vencida. Vuelve a entrar", 401);
+    // Lote S: una sesión cerrada por el administrador (PIN restablecido o cuenta desactivada) ya no vale
+    const u = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!, { auth: { persistSession: false, autoRefreshToken: false }, global: { headers: { Authorization: "Bearer " + token } } });
+    const { data: sv, error: esv } = await u.rpc("sesion_viva");
+    if (esv || !sv || sv.viva !== true) return fallo("Tu sesión se cerró. Entra de nuevo", 401);
     const yo = quien.user.id;
     const { data: miPerfil } = await admin.from("perfiles").select("rol, activo, gerencia").eq("id", yo).maybeSingle();
     if (!miPerfil || !miPerfil.activo || miPerfil.rol !== "admin" || miPerfil.gerencia) return fallo("Solo el administrador puede hacer esto", 403);
@@ -143,8 +168,9 @@ Deno.serve(async (req: Request) => {
       if (error) return fallo("No se pudo cambiar el PIN", 500);
       await admin.from("perfiles").update({ debe_cambiar_pin: true }).eq("id", id);
       await admin.rpc("acceso_desbloquear", { p_usuario: per.usuario });
+      const cerradas = id === yo || await cerrarSesiones(admin, id);
       await anotar("pin_restablecido", id, null);
-      return resp({ ok: true });
+      return resp(cerradas ? { ok: true } : { ok: true, aviso: AVISO_SESIONES });
     }
 
     if (accion === "activo") {
@@ -152,12 +178,13 @@ Deno.serve(async (req: Request) => {
       if (id === yo && !activo) return fallo("No puedes desactivar tu propia cuenta");
       const { error: eBan } = await admin.auth.admin.updateUserById(id, { ban_duration: activo ? "none" : "876000h" });
       if (eBan) return fallo("No se pudo cambiar el acceso", 500);
+      const cerradas = activo || await cerrarSesiones(admin, id);
       const { error } = await admin.from("perfiles").update({ activo }).eq("id", id);
       if (error) return fallo("No se pudo guardar", 500);
       await anotar(activo ? "usuario_activado" : "usuario_desactivado", id, { activo });
       const { data: per } = await admin.from("perfiles").select("rol").eq("id", id).maybeSingle();
       const enlazados = activo && per && per.rol === "lider" ? await enlazar(admin, id) : null;
-      return resp({ ok: true, enlazados });
+      return resp(cerradas ? { ok: true, enlazados } : { ok: true, aviso: AVISO_SESIONES, enlazados });
     }
 
     return fallo("Acción no reconocida");
@@ -165,4 +192,6 @@ Deno.serve(async (req: Request) => {
     console.error(e);
     return fallo("Algo falló en el servidor. Intenta de nuevo", 500);
   }
-});
+}
+
+Deno.serve(async (req: Request) => conOrigen(req, await atender(req)));

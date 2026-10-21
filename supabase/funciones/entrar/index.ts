@@ -7,8 +7,17 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
 const DOMINIO = "@aev2.app";
+// Lote S: solo la app publicada (y localhost para pruebas) puede llamar esta función
+const ORIGENES = /^(https:\/\/gbxxzz00\.github\.io|http:\/\/(localhost|127\.0\.0\.1)(:\d+)?)$/;
+// Toda respuesta (también OPTIONS y errores) sale con el origen permitido de esa petición
+const conOrigen = (req: Request, r: Response) => {
+  const o = req.headers.get("Origin") || "";
+  const h = new Headers(r.headers);
+  h.set("Access-Control-Allow-Origin", ORIGENES.test(o) ? o : "https://gbxxzz00.github.io");
+  h.set("Vary", "Origin");
+  return new Response(r.body, { status: r.status, statusText: r.statusText, headers: h });
+};
 const cors = {
-  "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
@@ -35,7 +44,7 @@ const espera = (hasta: string | null) => {
   return Math.max(1, Math.ceil((new Date(hasta).getTime() - Date.now()) / 60000));
 };
 
-Deno.serve(async (req: Request) => {
+async function atender(req: Request): Promise<Response> {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return fallo("Método no permitido", 405);
   try {
@@ -52,6 +61,10 @@ Deno.serve(async (req: Request) => {
       const token = (req.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "");
       const { data: q, error: eq } = await admin.auth.getUser(token);
       if (eq || !q?.user?.email?.endsWith(DOMINIO)) return fallo("Tu sesión venció. Entra de nuevo", 401);
+      // Lote S: una sesión cerrada por el administrador (PIN restablecido o cuenta desactivada) ya no vale
+      const u = createClient(url, llavePublica, { auth: { persistSession: false, autoRefreshToken: false }, global: { headers: { Authorization: "Bearer " + token } } });
+      const { data: sv, error: esv } = await u.rpc("sesion_viva");
+      if (esv || !sv || sv.viva !== true) return fallo("Tu sesión se cerró. Entra de nuevo", 401);
       const pin = typeof b.pin_nuevo === "string" ? b.pin_nuevo : "";
       if (!/^\d{6}$/.test(pin) || pinFacil(pin)) return fallo("El PIN debe tener 6 números y no ser uno fácil de adivinar");
       const usuario = q.user.email.slice(0, -DOMINIO.length);
@@ -103,4 +116,6 @@ Deno.serve(async (req: Request) => {
     console.error(e);
     return fallo("No se pudo entrar. Intenta de nuevo", 500);
   }
-});
+}
+
+Deno.serve(async (req: Request) => conOrigen(req, await atender(req)));

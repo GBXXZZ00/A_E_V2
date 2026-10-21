@@ -2,13 +2,11 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com/leaflet@1.9.4/; style-src 'self' 'unsafe-inline' https://unpkg.com/leaflet@1.9.4/; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://server.arcgisonline.com https://unpkg.com/leaflet@1.9.4/; font-src 'self'; connect-src 'self' https://tgjcwgvaybidcawkqksm.supabase.co wss://tgjcwgvaybidcawkqksm.supabase.co; frame-src 'self' blob:; worker-src 'self' blob:; manifest-src 'self'; object-src 'self' blob:; base-uri 'self'; form-action 'self'">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
 <title>Dedicados</title>
-<script>
-// Dedicados ya no es una pantalla: todo está en Clientes (tarjeta ISP, o la hoja del cliente si el enlace la traía).
-(function(){ var u = new URLSearchParams(location.search); var n = new URLSearchParams(); if(Number(u.get('c'))){ n.set('c', u.get('c')); if(u.get('t')) n.set('t', u.get('t')); } else n.set('s', 'isp'); location.replace('clientes.html?' + n.toString()); })();
-</script>
+<script src="assets/js/enlaces-viejos.js?v=57"></script>
 </head>
 <body></body>
 </html>

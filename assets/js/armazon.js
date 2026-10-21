@@ -52,6 +52,7 @@
     }
     if(conNav) contadores(null, p);
     if(p.rol !== 'gerencia') avisosIniciar(p);
+    sesionIniciar();
 
     let hoja = $('hojaCuenta');
     if(!hoja){
@@ -73,6 +74,7 @@
         (ini.usuarios ? esc(ini.usuarios) + ' con acceso' : 'Cuentas, roles y PIN del equipo') + '</small></span>' + ic('derecha', 'ch') + '</a>' : '') +
       (equipo !== 'aliados' && sube && window.ACTUALIZAR_LISTO ? '<a class="op" href="actualizar.html" data-ir="actualizar"><span class="ic">' + ic('actualizar') + '</span><span class="tx">Actualizar datos<small id="dTad">' +
         (ini.tad_en ? 'Último TAD: ' + esc(fecha(ini.tad_en)) : 'Odoo, instalaciones y TAD') + '</small></span>' + ic('derecha', 'ch') + '</a>' : '') +
+      (equipo !== 'aliados' && admin ? '<button type="button" class="op" data-inact="1"><span class="ic">' + ic('candado') + '</span><span class="tx">Cierre por falta de uso<small id="dInact">Después de ' + esc(S.horasInactividad()) + ' horas sin usar la app</small></span>' + ic('derecha', 'ch') + '</button>' : '') +
       (equipo !== 'aliados' && admin ? '<button type="button" class="op" data-ocr-aj="1"><span class="ic">' + ic('doc') + '</span><span class="tx">Lectura con OCR<small>Qué se lee sin IA</small></span>' + ic('derecha', 'ch') + '</button>' : '') +
       '<div class="rot">Mi cuenta</div>' +
       '<a class="op" href="index.html#cambiar" data-foco><span class="ic">' + ic('candado') + '</span><span class="tx">Cambiar PIN</span>' + ic('derecha', 'ch') + '</a>' +
@@ -214,6 +216,43 @@
     }
   });
   document.addEventListener('visibilitychange', () => { if(!document.hidden && avYo) contarAvisos(); });
+
+  // ---------- Lote S: la sesión sigue viva (no la cerró el administrador) y horas sin uso ----------
+  let sesReloj = null; let sesPidiendo = false;
+  async function revisarSesion(){
+    if(sesPidiendo || !navigator.onLine) return; sesPidiendo = true;
+    try {
+      const r = await rpc('sesion_viva', {});
+      if(r && r.horas) S.guardarHoras(r.horas);
+      if(r && r.viva === false){ await S.salir(); try { localStorage.setItem('ae_vencio', 'cerrada'); } catch (e) {} location.replace('index.html'); }
+    } catch (e) { /* sin red o error del servidor: no se cierra nada */ }
+    finally { sesPidiendo = false; }
+  }
+  function sesionIniciar(){
+    revisarSesion();
+    clearInterval(sesReloj); sesReloj = setInterval(() => { if(!document.hidden) revisarSesion(); }, 120000);
+  }
+  document.addEventListener('visibilitychange', () => { if(!document.hidden && sesReloj) revisarSesion(); });
+  function abrirInact(){
+    let h = $('hojaInact');
+    if(!h){ h = document.createElement('section'); h.id = 'hojaInact'; h.className = 'hoja'; h.setAttribute('role', 'dialog'); h.setAttribute('aria-modal', 'true'); h.setAttribute('aria-labelledby', 'tInact'); h.setAttribute('aria-hidden', 'true'); document.body.appendChild(h); prepararHojas(); }
+    h.innerHTML = '<div class="cab"><div><h2 id="tInact">Cierre por falta de uso</h2><p class="sub-hoja">Si nadie toca la app en ese tiempo, pide el PIN otra vez. Vale para todos; cada equipo lo toma la próxima vez que abra la app.</p></div><button type="button" class="cerrar" data-cierra="1" aria-label="Cerrar">' + ic('x') + '</button></div>' +
+      '<div><label class="rotulo" for="inactHoras">Horas sin uso (de 1 a 72)</label><input class="campo" id="inactHoras" type="number" inputmode="numeric" min="1" max="72" step="1" value="' + esc(S.horasInactividad()) + '"><div class="error" id="eInact" role="alert"></div></div>' +
+      '<div class="hoja-pie"><button type="button" class="btn" data-inact-guardar="1">Guardar</button></div>';
+    abrirHoja('hojaInact');
+  }
+  document.addEventListener('click', async (ev) => {
+    const t = ev.target; let b;
+    if(t.closest('[data-inact]')){ abrirInact(); return; }
+    if((b = t.closest('[data-inact-guardar]'))){
+      const n = Number($('inactHoras').value); const er = $('eInact'); er.textContent = '';
+      if(!Number.isInteger(n) || n < 1 || n > 72){ er.textContent = 'Escribe un número entero entre 1 y 72'; return; }
+      b.disabled = true;
+      try { const r = await rpc('inactividad_guardar', { p_horas: n }); S.guardarHoras(r.horas); const d = $('dInact'); if(d) d.textContent = 'Después de ' + r.horas + ' horas sin usar la app'; toast('Listo. La app pide el PIN tras ' + r.horas + ' horas sin uso'); cerrarHoja(); }
+      catch (e) { er.textContent = e.message || 'No se pudo guardar'; }
+      finally { b.disabled = false; }
+    }
+  });
 
   // Corrida 14/10 tarde: ajustes del OCR (solo el administrador). Arrancan en NO; con NO todo sigue como antes (la IA)
   const AJ_OCR = [['aliados', 'Usar OCR en aliados', 'El RIF de una solicitud se lee con OCR; si es dudoso, con la IA'],

@@ -1,6 +1,7 @@
 // Lote 22/10: envía los avisos nuevos como notificaciones push (Web Push con VAPID, cifrado aes128gcm, sin librerías).
 // La llama la tarea programada de la base cada 5 minutos (privado.avisos_tarea) con su clave en la cabecera x-tarea.
 // Entre 10 p.m. y 8 a.m. (hora de Caracas) no suena: lo de la noche sale a las 8 a.m.
+// Lote A: los avisos se agrupan por tipo (más de 3 del mismo tipo, uno solo con el número).
 // Las claves VAPID se generan aquí la primera vez y quedan en privado.push_claves: nunca están en el repo.
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
@@ -66,7 +67,7 @@ Deno.serve(async (req: Request) => {
     const hora = Number(new Intl.DateTimeFormat("en-US", { hour: "numeric", hour12: false, timeZone: "America/Caracas" }).format(new Date()));
     if (hora < 8 || hora >= 22) return resp({ ok: true, silencio: true });
     const desde = new Date(Date.now() - 36 * 3600 * 1000).toISOString();
-    const { data: avisos, error } = await db.from("avisos").select("id, para, titulo, texto, enlace")
+    const { data: avisos, error } = await db.from("avisos").select("id, para, tipo, titulo, texto, enlace")
       .is("push_en", null).is("leido_en", null).is("apagado_en", null).gte("creado_en", desde).order("creado_en").limit(300);
     if (error) throw error;
     if (!avisos?.length) return resp({ ok: true, enviados: 0 });
@@ -75,10 +76,13 @@ Deno.serve(async (req: Request) => {
     const { data: subs } = await db.from("push_suscripciones").select("id, perfil_id, endpoint, p256dh, auth, fallos").in("perfil_id", [...porPersona.keys()]).lt("fallos", 5);
     let enviados = 0;
     for (const [persona, l] of porPersona) {
-      // Más de 3 avisos juntos salen en uno solo
-      const m = l.length > 3 ? { titulo: "Tienes " + l.length + " avisos nuevos", texto: l.slice(0, 3).map((a) => a.titulo).join(" · "), enlace: "trabajo.html", id: 0 }
-        : null;
-      const mensajes = m ? [m] : l.map((a) => ({ titulo: a.titulo, texto: a.texto, enlace: a.enlace, id: a.id }));
+      // Lote A: más de 3 del mismo tipo salen en uno solo con el número; si aun así son más de 3 mensajes, uno solo con el total
+      const porTipo = new Map<string, typeof l>();
+      for (const a of l) { const t = porTipo.get(a.tipo) || []; t.push(a); porTipo.set(a.tipo, t); }
+      let mensajes = [...porTipo.values()].flatMap((t) => t.length > 3
+        ? [{ titulo: t[0].titulo + " (" + t.length + ")", texto: t.slice(0, 2).map((a) => a.texto).join(" · "), enlace: "trabajo.html", id: 0 }]
+        : t.map((a) => ({ titulo: a.titulo, texto: a.texto, enlace: a.enlace, id: a.id })));
+      if (mensajes.length > 3) mensajes = [{ titulo: "Tienes " + l.length + " avisos nuevos", texto: mensajes.slice(0, 3).map((m) => m.titulo).join(" · "), enlace: "trabajo.html", id: 0 }];
       for (const s of (subs || []).filter((x) => x.perfil_id === persona)) {
         for (const msg of mensajes) {
           try {

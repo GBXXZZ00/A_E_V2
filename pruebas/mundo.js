@@ -808,6 +808,9 @@ const RPC = {
   avisos_leer(m, yo, a){ (m.datos.avisos || []).filter((x) => x.para === yo.usuario && (a.p_ids === null || (a.p_ids || []).includes(x.id))).forEach((x) => { x.leido = true; }); return null; },
   push_clave_publica(){ return 'BOrRoQzDyMsrbLLsb4D5j4nGCm6bSV0x9AVdj4ijTm8XUJfvHDl1v0Y2kVQ5WjDN8Y2O1cWv2Eq7S0aRVTDRxS4'; },
   push_suscribir(){ return null; }, push_quitar(){ return null; },
+  // Lote S: sesión viva (la prueba la puede cerrar con m.datos.sesionCerrada) y horas sin uso
+  sesion_viva(m){ return { viva: !m.datos.sesionCerrada, horas: m.datos.inactividadHoras || 12 }; },
+  inactividad_guardar(m, yo, a){ if(yo.rol !== 'admin') throw new Error('Solo el administrador'); m.datos.inactividadHoras = a.p_horas; return { horas: a.p_horas }; },
   // ----- Lote 22/10: Mi trabajo por rol y Gestiones -----
   mi_trabajo(m, yo, a){
     if(!['admin', 'analista', 'lider', 'abogado'].includes(yo.rol)) return error('No tienes permiso para hacer esto');

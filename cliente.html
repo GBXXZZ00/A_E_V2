@@ -2,13 +2,11 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://unpkg.com/leaflet@1.9.4/; style-src 'self' 'unsafe-inline' https://unpkg.com/leaflet@1.9.4/; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://server.arcgisonline.com https://unpkg.com/leaflet@1.9.4/; font-src 'self'; connect-src 'self' https://tgjcwgvaybidcawkqksm.supabase.co wss://tgjcwgvaybidcawkqksm.supabase.co; frame-src 'self' blob:; worker-src 'self' blob:; manifest-src 'self'; object-src 'self' blob:; base-uri 'self'; form-action 'self'">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
 <title>Cliente</title>
-<script>
-// El expediente ahora se abre encima de la lista de Clientes. Los enlaces viejos llegan aquí y se llevan allá.
-(function(){ var u = new URLSearchParams(location.search); var n = new URLSearchParams(); if(u.get('id')) n.set('c', u.get('id')); ['t','revisar','pedir'].forEach(function(k){ if(u.get(k)) n.set(k, u.get(k)); }); location.replace('clientes.html' + (n.toString() ? '?' + n.toString() : '')); })();
-</script>
+<script src="assets/js/enlaces-viejos.js?v=57"></script>
 </head>
 <body></body>
 </html>

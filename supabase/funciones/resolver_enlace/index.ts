@@ -3,8 +3,17 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
+// Lote S: solo la app publicada (y localhost para pruebas) puede llamar esta función
+const ORIGENES = /^(https:\/\/gbxxzz00\.github\.io|http:\/\/(localhost|127\.0\.0\.1)(:\d+)?)$/;
+// Toda respuesta (también OPTIONS y errores) sale con el origen permitido de esa petición
+const conOrigen = (req: Request, r: Response) => {
+  const o = req.headers.get("Origin") || "";
+  const h = new Headers(r.headers);
+  h.set("Access-Control-Allow-Origin", ORIGENES.test(o) ? o : "https://gbxxzz00.github.io");
+  h.set("Vary", "Origin");
+  return new Response(r.body, { status: r.status, statusText: r.statusText, headers: h });
+};
 const cors = {
-  "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
@@ -31,7 +40,7 @@ function coordenadas(texto: string, pagina = false): { lat: number; lng: number 
   return null;
 }
 
-Deno.serve(async (req: Request) => {
+async function atender(req: Request): Promise<Response> {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return resp({ error: "Método no permitido" }, 405);
   try {
@@ -69,4 +78,6 @@ Deno.serve(async (req: Request) => {
     console.error(e);
     return resp({ error: "No pude abrir el enlace. Intenta de nuevo" }, 502);
   }
-});
+}
+
+Deno.serve(async (req: Request) => conOrigen(req, await atender(req)));

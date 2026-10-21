@@ -10,8 +10,17 @@ import { leer, VERSION } from "./lectores.mjs";
 
 const URL_BASE = Deno.env.get("SUPABASE_URL")!;
 const db = createClient(URL_BASE, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false, autoRefreshToken: false } });
+// Lote S: solo la app publicada (y localhost para pruebas) puede llamar esta función
+const ORIGENES = /^(https:\/\/gbxxzz00\.github\.io|http:\/\/(localhost|127\.0\.0\.1)(:\d+)?)$/;
+// Toda respuesta (también OPTIONS y errores) sale con el origen permitido de esa petición
+const conOrigen = (req: Request, r: Response) => {
+  const o = req.headers.get("Origin") || "";
+  const h = new Headers(r.headers);
+  h.set("Access-Control-Allow-Origin", ORIGENES.test(o) ? o : "https://gbxxzz00.github.io");
+  h.set("Vary", "Origin");
+  return new Response(r.body, { status: r.status, statusText: r.statusText, headers: h });
+};
 const cors = {
-  "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
@@ -147,6 +156,10 @@ async function suelto(req: Request): Promise<Response> {
   if (!/^Bearer\s+\S+/i.test(sesion)) return respuesta({ error: "Tu sesión venció. Entra de nuevo" }, 401);
   const { data: u } = await db.auth.getUser(sesion.replace(/^Bearer\s+/i, ""));
   if (!u?.user) return respuesta({ error: "Tu sesión venció. Entra de nuevo" }, 401);
+  // Lote S: una sesión cerrada por el administrador (PIN restablecido o cuenta desactivada) ya no vale
+  const yo = createClient(URL_BASE, Deno.env.get("SUPABASE_ANON_KEY")!, { auth: { persistSession: false, autoRefreshToken: false }, global: { headers: { Authorization: "Bearer " + sesion.replace(/^Bearer\s+/i, "") } } });
+  const { data: sv, error: esv } = await yo.rpc("sesion_viva");
+  if (esv || !sv || sv.viva !== true) return respuesta({ error: "Tu sesión se cerró. Entra de nuevo" }, 401);
   // Solo cuentas activas y con tope por hora (cada lectura sube una copia al Drive de la empresa)
   const { data: uso, error: eu } = await db.rpc("ocr_uso_registrar", { p_usuario: u.user.id });
   if (eu) return respuesta({ estado: "sin_lectura", error: "No se pudo comprobar tu cuenta" });
@@ -168,7 +181,7 @@ async function suelto(req: Request): Promise<Response> {
   }
 }
 
-Deno.serve(async (req: Request) => {
+async function atender(req: Request): Promise<Response> {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return respuesta({ error: "Método no permitido" }, 405);
   try {
@@ -202,4 +215,6 @@ Deno.serve(async (req: Request) => {
     console.error(e);
     return respuesta({ estado: "sin_lectura", error: "Algo falló en el servidor" }, 200);
   }
-});
+}
+
+Deno.serve(async (req: Request) => conOrigen(req, await atender(req)));

@@ -5,7 +5,7 @@ Aprobado por el administrador el 20/10. Ejecútalo completo, en este orden, sigu
 ## Contexto (cambios hechos en la base desde el chat del proyecto, 20/10)
 - Septiembre: la foto certificada (59/49) no se toca. El cálculo vivo quedó en 46/41: 10 instalaciones que no se pagaron pasaron a octubre (`instalaciones.corte_manual`), Pinytex y Agencia Naviera quedaron pagadas en septiembre (`corte_manual` + `excepcion_corte`), Alkosto anulada (`anulada_en`, se pagó como migración). Octubre: 68 filas, 49 comisionan. Esa es la referencia de este lote.
 - Testigos de Jehová: evento que no comisiona. Totalcom: pago quitado (el TAD lo dio solvente antes de facturar la instalación).
-- Cuentas nuevas: maria (líder), elizabeth y ender (analistas), PIN 123456 con cambio obligatorio.
+- Cuentas nuevas: maria (líder), elizabeth y ender (analistas), PIN temporal con cambio obligatorio.
 - Base nueva, SIN pantalla todavía: `clientes.suspendido_en/suspendido_por/suspendido_nota` (9 clientes suspendidos), `dedicados.excluido_en/excluido_motivo` (1: no es dedicado), `dedicado_contratos.falta_archivo` (Navegantes: firmado sin archivo), tabla `cliente_gestion` (cliente_id, etiqueta contactado | sin_contacto | esperando, fecha, nota, por, en; RLS sin políticas, todo por funciones; 12 etiquetas cargadas).
 - Funciones de ajuste de un solo uso que quedaron en la base y no se pueden borrar: `privado.ajuste_tj_20oct`, `ajuste_cortes_20oct`, `ajuste_analistas_20oct`, `ajuste_dedicados_20oct`, `ajuste_galait_20oct`. No las llames.
 

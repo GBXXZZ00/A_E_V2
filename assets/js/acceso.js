@@ -145,7 +145,7 @@
     try {
       await S.cambiarPin(valor);
       toast('Listo, tu PIN cambió');
-      setTimeout(() => location.replace('inicio.html'), 700);
+      setTimeout(() => location.replace(S.destino()), 700);
     } catch (e) {
       bloquear(false);
       const m = String((e && e.message) || '').toLowerCase();
@@ -168,7 +168,7 @@
       }
       S.guardarUsuario(p);
       if(p.debe_cambiar_pin){ voluntario = false; pinActual = valor; return pasoNuevoPin(); }
-      location.replace('inicio.html');
+      location.replace(S.destino());
     } catch (e) {
       // Si el PIN era bueno pero falló lo que sigue, no se deja una sesión a medias
       if(dentro) await S.salir();
@@ -187,7 +187,7 @@
     const a = e.currentTarget.dataset.accion;
     if(a === 'equipo') return pasoEquipo();
     if(a === 'otro'){ S.guardarUsuario(null); usuario = ''; $('usuario').value = ''; return pasoUsuario(); }
-    if(a === 'inicio') return location.replace('inicio.html');
+    if(a === 'inicio') return location.replace(S.destino());
     if(a === 'salir'){ await S.salir(); arrancar(); }
   });
 
@@ -201,8 +201,11 @@
       usuario = p.usuario;
       if(p.debe_cambiar_pin){ voluntario = false; return pasoNuevoPin(); }
       if(location.hash === '#cambiar'){ voluntario = true; return pasoPinActual(); }
-      return location.replace('inicio.html');
+      return location.replace(S.destino());
     }
+    // Lote S: la sesión se cerró sola por falta de uso o porque el administrador la cerró
+    let vencio = null; try { vencio = localStorage.getItem('ae_vencio'); localStorage.removeItem('ae_vencio'); } catch (e) {}
+    if(vencio) toast(vencio === 'cerrada' ? 'Tu sesión se cerró. Entra de nuevo' : 'Tu sesión se cerró por falta de uso. Entra de nuevo con tu PIN');
     if(!equipo) return pasoEquipo();
     const u = S.usuarioGuardado();
     if(u){ usuario = u.usuario; return pasoPin(u); }
