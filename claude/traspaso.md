@@ -1,8 +1,16 @@
 # Traspaso (se actualiza al cerrar cada sesión)
 
-Actualizado: 21/10/2026, corrida del lote S + A + C. Publicado: `?v=57` (parte S).
+Actualizado: 21/10/2026, corrida del lote S + A + C. Publicado: `?v=58` (partes S y A).
 
 ## LOTE S + A + C (`claude/lote-seguridad-avisos.md`, aprobado el 21/10): EN CURSO, una publicación por parte
+### Parte A hecha (v58): avisos agrupados y contactar al responsable
+- SQL: `supabase/pruebas/lote_a.sql` (migración `lote_a1_avisos_grupos_contacto`); `avisos_push` v2.
+- Hoja de la campana agrupada por categoría (`avisos_mios` trae `grupos`; `avisos_grupo` la lista de un tipo): una fila por tipo con sin leer, total y vencidos, plegable; el "Venció" va como marca roja dentro de su aviso (el aviso `v:` se une a su pendiente `p:`); "Marcar leído este grupo" (`avisos_leer_grupo`) y "Marcar todo leído". El push también agrupa: más de 3 del mismo tipo, uno solo con el número.
+- Tarjeta "Activar alertas" en Inicio (todos menos gerencia), misma lógica que la hoja; desaparece cuando ese equipo ya las tiene.
+- Teléfono: se ven la campana y el icono de usuario (una regla vieja de `base.css` escondía el avatar).
+- "Contactar al responsable" (`contacto.js`, RPC `contacto_destino` y `contacto_anotar`) en la ficha del cliente (también en Documentos), la hoja de migración y la de comisión. Reglas en `claude/reglas-negocio.md`.
+- Pruebas: test45 reescrita (grupos, tarjeta, avatar, contactar).
+
 ### Parte S hecha (v57): seguridad
 - SQL: `supabase/pruebas/lote_s.sql` (migración `lote_s1_sesiones`).
 - Sesión en el dispositivo (`localStorage`) que se cierra tras N horas sin uso (12 por defecto; el administrador lo cambia en su hoja de cuenta, "Cierre por falta de uso", RPC `inactividad_guardar`, ajuste `inactividad_horas`). Se revisa en `supabase-client.js` antes de crear el cliente y en `sesion.js` al tocar, al volver a la app y cada 5 minutos. Con subidas o cargas en curso no se cierra (`window.AE_ocupado`, lo registran `ficha.js`, `actualizar.js` y `mapared.js`).
@@ -605,6 +613,9 @@ Antes de cada una: explicar en simple y esperar el OK.
 - Seguridad: migración "endurecer_acceso_y_permisos" (entrada por función de borde con bloqueo, permisos de escritura, sesiones). Con el administrador presente.
 
 ## Decisiones tomadas por Claude que el administrador NO ha confirmado
+- Lote A: "Documentos en revisión" se toma como paso del administrador (así quedó en la propuesta aprobada), aunque la ficha diga "Legal está revisando".
+- Lote A: los mensajes ya escritos de "Contactar" los propuso Claude (uno por caso); se pueden cambiar en WhatsApp antes de enviar.
+- Lote A: el nombre de la app en el teléfono no se tocó (lo decide el administrador).
 - Lote S: cerrar sesiones no borra `auth.sessions` (el conector cancela los borrados): se marca la hora en `perfiles.sesiones_desde` y la base rechaza toda sesión anterior.
 - Lote S: lo que el lote pedía borrar (`drive_inventario`, `prueba_tmp`, las funciones de Drive de prueba) quedó sin permisos; lo borra el administrador en el panel.
 - Lote S: la CSP permite estilos en línea (`'unsafe-inline'` solo en estilos; la app los usa en muchas pantallas); los scripts quedan estrictos.

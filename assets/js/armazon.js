@@ -138,25 +138,31 @@
     catch (e) { /* la campana es de ayuda: si falla, la página sigue */ }
     finally { avPidiendo = false; }
   }
+  async function pintarTarjetaAlertas(){
+    const z = $('zonaAlertas'); if(!z || !avYo) return;
+    let html = ''; try { html = await bloquePush(true); } catch (e) { html = ''; }
+    z.innerHTML = html ? '<div class="av-inicio">' + html + '</div>' : '';
+  }
   function avisosIniciar(p){
-    avYo = p; contarAvisos();
+    avYo = p; contarAvisos(); pintarTarjetaAlertas();
     clearInterval(avReloj); avReloj = setInterval(() => { if(!document.hidden) contarAvisos(); }, 120000);
   }
   const pushPosible = () => 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window && location.protocol === 'https:';
   const esIphone = () => /iPhone|iPad|iPod/.test(navigator.userAgent) && !(window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches);
   async function suscripcionActual(){ try { const r = await navigator.serviceWorker.ready; return await r.pushManager.getSubscription(); } catch (e) { return null; } }
   const deB64u = (s) => { const b = atob(s.replace(/-/g, '+').replace(/_/g, '/') + '==='.slice((s.length + 3) % 4)); return Uint8Array.from(b, (c) => c.charCodeAt(0)); };
-  async function bloquePush(){
+  // Lote A: la misma lógica sirve para la tarjeta "Activar alertas" de Inicio (enInicio), que no sale si ya están activas
+  async function bloquePush(enInicio){
     if(esIphone()) return '<div class="al-banda azul av-push" role="note"><b>Avisos en este iPhone</b><p>Primero instala la app: en Safari toca Compartir y luego "Agregar a inicio". Ábrela desde ahí y activa los avisos aquí.</p></div>';
     if(!pushPosible()) return '';
     if(Notification.permission === 'denied') return '<div class="al-banda ambar av-push" role="note"><b>Los avisos están bloqueados en este equipo</b><p>Actívalos en los permisos del navegador para este sitio y vuelve a abrir esta lista.</p></div>';
     const s = await suscripcionActual();
-    if(s && Notification.permission === 'granted') return '<p class="nota-chica av-push-ok">Este equipo recibe los avisos. No suenan de 10 p.m. a 8 a.m.<button type="button" class="enlace" data-av="quitarPush">Dejar de recibirlos aquí</button></p>';
+    if(s && Notification.permission === 'granted') return enInicio ? '' : '<p class="nota-chica av-push-ok">Este equipo recibe los avisos. No suenan de 10 p.m. a 8 a.m.<button type="button" class="enlace" data-av="quitarPush">Dejar de recibirlos aquí</button></p>';
     return '<div class="al-banda azul av-push" role="note"><b>Recibe los avisos en este equipo</b><p>Te llega al momento lo que te toca hacer, aunque la app esté cerrada: documentos por revisar, contratos, cambios, pagos. No suenan de 10 p.m. a 8 a.m.</p>' +
-      '<p style="margin-top:10px"><button type="button" class="btn btn-chico" data-av="activar">Activar avisos</button></p><div class="error" id="eAvPush" role="alert"></div></div>';
+      '<p style="margin-top:10px"><button type="button" class="btn btn-chico" data-av="activar">' + (enInicio ? 'Activar alertas' : 'Activar avisos') + '</button></p><div class="error" role="alert"></div></div>';
   }
   async function activarPush(b){
-    const er = $('eAvPush'); if(er) er.textContent = ''; b.disabled = true;
+    const caja = b.closest('.av-push'); const er = caja && caja.querySelector('.error'); if(er) er.textContent = ''; b.disabled = true;
     try {
       const clave = await rpc('push_clave_publica', {});
       if(!clave) throw new Error('Los avisos al teléfono todavía se están preparando. Intenta en unos minutos');
@@ -166,45 +172,85 @@
       const s = (await reg.pushManager.getSubscription()) || await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: deB64u(clave) });
       const j = s.toJSON();
       await rpc('push_suscribir', { p_endpoint: j.endpoint, p_p256dh: j.keys.p256dh, p_auth: j.keys.auth, p_agente: navigator.userAgent.slice(0, 200) });
-      toast('Listo. Este equipo recibirá los avisos'); pintarAvisos();
+      toast('Listo. Este equipo recibirá los avisos'); if($('hojaAvisos')) pintarAvisos(); pintarTarjetaAlertas();
     } catch (e) { if(er) er.textContent = e.message || 'No se pudo activar'; else toast(e.message, 'error'); b.disabled = false; }
   }
   async function quitarPush(){
-    try { const s = await suscripcionActual(); if(s){ await rpc('push_quitar', { p_endpoint: s.endpoint }); await s.unsubscribe(); } toast('Este equipo ya no recibe avisos'); pintarAvisos(); }
+    try { const s = await suscripcionActual(); if(s){ await rpc('push_quitar', { p_endpoint: s.endpoint }); await s.unsubscribe(); } toast('Este equipo ya no recibe avisos'); pintarAvisos(); pintarTarjetaAlertas(); }
     catch (e) { toast(e.message, 'error'); }
   }
-  let AV = null;
+  // Lote A: los avisos se agrupan por categoría (una fila por tipo con sin leer y total, plegable); el "Venció" va como marca roja
+  let AV = null; const GR = {}; const abiertos = new Set();
   function hojaAvisos(){
     let h = $('hojaAvisos');
     if(!h){ h = document.createElement('section'); h.id = 'hojaAvisos'; h.className = 'hoja'; h.setAttribute('role', 'dialog'); h.setAttribute('aria-modal', 'true'); h.setAttribute('aria-labelledby', 'tAvisos'); h.setAttribute('aria-hidden', 'true'); document.body.appendChild(h); prepararHojas(); }
     return h;
   }
   const hace = (t) => { const m = Math.max(0, Math.round((Date.now() - new Date(t).getTime()) / 60000)); return m < 1 ? 'Ahora' : m < 60 ? 'Hace ' + m + ' min' : m < 1440 ? 'Hace ' + Math.round(m / 60) + ' h' : fecha(t); };
+  const filaAviso = (a) => '<button type="button" class="fila av-f' + (a.leido ? '' : ' nuevo') + '" data-aviso="' + esc(a.id) + '" data-tipo="' + esc(a.tipo) + '"><span class="pto ' + (a.leido ? 'gris' : 'azul') + '" aria-hidden="true"></span><span class="tx"><b>' + esc(a.titulo) + '</b><small>' + esc(a.texto || '') + '</small><small class="av-t">' +
+    (a.vencido ? '<span class="av-venc">Venció</span>' : '') + esc(hace(a.en)) + '</small></span>' + ic('derecha', 'ch') + '</button>';
+  function grupoHtml(g){
+    const ab = abiertos.has(g.tipo); const l = GR[g.tipo];
+    const cuerpo = !ab ? '' : !l ? '<div class="sk-bloque av-sk"><span class="sk" style="height:56px;border-radius:12px"></span><span class="sk" style="height:56px;border-radius:12px"></span></div>'
+      : l.error ? '<div class="vacio" role="alert"><b>No se pudo cargar</b><p>' + esc(l.error) + '</p><button type="button" class="btn btn-chico" data-avg="' + esc(g.tipo) + '" data-reabrir="1">Reintentar</button></div>'
+      : l.map(filaAviso).join('') + (g.sin_leer ? '<div class="av-g-pie"><button type="button" class="enlace" data-av-leer-g="' + esc(g.tipo) + '">Marcar leído este grupo</button></div>' : '');
+    return '<div class="grupo av-lista' + (ab ? ' abierto' : '') + '"><button type="button" class="grupo-cab" data-avg="' + esc(g.tipo) + '" aria-expanded="' + ab + '"><span class="tx"><b>' + esc(g.nombre) + '</b><small>' +
+      (g.sin_leer ? esc(g.sin_leer) + ' sin leer · ' : '') + esc(g.total) + (g.total === 1 ? ' aviso' : ' avisos') + (g.vencidos ? ' · <span class="mal">' + esc(g.vencidos) + (g.vencidos === 1 ? ' vencido' : ' vencidos') + '</span>' : '') + '</small></span>' +
+      (g.sin_leer ? '<b class="nbadge">' + esc(g.sin_leer > 99 ? '99+' : g.sin_leer) + '</b>' : '') + ic('abajo') + '</button><div class="grupo-cuerpo">' + cuerpo + '</div></div>';
+  }
   async function pintarAvisos(){
     const h = hojaAvisos(); const push = await bloquePush();
     let cuerpo;
     if(!AV) cuerpo = '<div class="sk-bloque"><span class="sk" style="height:60px;border-radius:16px"></span><span class="sk" style="height:60px;border-radius:16px"></span><span class="sk" style="height:60px;border-radius:16px"></span></div>';
     else if(AV.error) cuerpo = '<div class="vacio" role="alert"><b>No se pudieron cargar los avisos</b><p>' + esc(AV.error) + '</p><button type="button" class="btn btn-chico" data-av="reintentar">Reintentar</button></div>';
-    else if(!AV.avisos.length) cuerpo = '<div class="vacio"><b>No tienes avisos</b><p>Cuando algo te toque, aparece aquí y en Mi trabajo.</p></div>';
-    else cuerpo = '<div class="grupo abierto av-lista">' + AV.avisos.map((a) => '<button type="button" class="fila av-f' + (a.leido ? '' : ' nuevo') + '" data-aviso="' + esc(a.id) + '"><span class="pto ' + (a.leido ? 'gris' : 'azul') + '" aria-hidden="true"></span><span class="tx"><b>' + esc(a.titulo) + '</b><small>' + esc(a.texto || '') + '</small><small class="av-t">' + esc(hace(a.en)) + '</small></span>' + ic('derecha', 'ch') + '</button>').join('') + '</div>';
-    h.innerHTML = '<div class="cab"><div><h2 id="tAvisos">Avisos</h2><p class="sub-hoja">' + (AV && AV.sin_leer ? esc(AV.sin_leer + (AV.sin_leer === 1 ? ' sin leer' : ' sin leer')) + '. Toca uno para ir a la tarea.' : 'Toca uno para ir a la tarea. Se apagan solos cuando se resuelven.') + '</p></div>' +
+    else if(!(AV.grupos || []).length) cuerpo = '<div class="vacio"><b>No tienes avisos</b><p>Cuando algo te toque, aparece aquí y en Mi trabajo.</p></div>';
+    else cuerpo = AV.grupos.map(grupoHtml).join('');
+    h.innerHTML = '<div class="cab"><div><h2 id="tAvisos">Avisos</h2><p class="sub-hoja">' + (AV && AV.sin_leer ? esc(AV.sin_leer) + ' sin leer. Abre un grupo y toca un aviso para ir a la tarea.' : 'Abre un grupo y toca un aviso para ir a la tarea. Se apagan solos cuando se resuelven.') + '</p></div>' +
       '<button type="button" class="cerrar" data-cierra="1" aria-label="Cerrar">' + ic('x') + '</button></div><div class="hoja-cuerpo">' + push + cuerpo + '</div>' +
       (AV && AV.sin_leer ? '<div class="hoja-pie"><button type="button" class="btn btn-2" data-av="leerTodo">Marcar todo leído</button></div>' : '');
   }
-  async function abrirAvisos(){
-    AV = null; pintarAvisos(); abrirHoja('hojaAvisos');
-    try { AV = await rpc('avisos_mios', { p_limite: 50 }); pintarCampana(AV.sin_leer); cache.guardar(K_AV, { uid: avYo && avYo.id, en: Date.now(), n: AV.sin_leer }); }
-    catch (e) { AV = { error: e.message }; }
+  async function cargarGrupo(tipo){
+    GR[tipo] = null; pintarAvisos();
+    try { GR[tipo] = await rpc('avisos_grupo', { p_tipo: tipo, p_limite: 60 }); } catch (e) { GR[tipo] = { error: e.message }; }
     pintarAvisos();
+  }
+  async function abrirAvisos(){
+    AV = null; Object.keys(GR).forEach((k) => delete GR[k]); pintarAvisos(); abrirHoja('hojaAvisos');
+    try {
+      AV = await rpc('avisos_mios', { p_limite: 5 }); pintarCampana(AV.sin_leer); cache.guardar(K_AV, { uid: avYo && avYo.id, en: Date.now(), n: AV.sin_leer });
+      // Si hay un solo grupo, o el primero tiene sin leer, se abre solo
+      abiertos.clear(); if(AV.grupos && AV.grupos[0] && (AV.grupos.length === 1 || AV.grupos[0].sin_leer)) abiertos.add(AV.grupos[0].tipo);
+    } catch (e) { AV = { error: e.message }; }
+    pintarAvisos();
+    abiertos.forEach((t) => cargarGrupo(t));
+  }
+  function marcarLeidos(tipo, n){
+    const g = AV && (AV.grupos || []).find((x) => x.tipo === tipo); if(!g) return;
+    const k = Math.min(n, g.sin_leer); g.sin_leer -= k; AV.sin_leer = Math.max(0, AV.sin_leer - k);
+    pintarCampana(AV.sin_leer); cache.guardar(K_AV, { uid: avYo && avYo.id, en: Date.now(), n: AV.sin_leer });
   }
   document.addEventListener('click', async (ev) => {
     const t = ev.target; let b;
     if(t.closest('#campana')){ abrirAvisos(); return; }
+    if((b = t.closest('[data-avg]'))){
+      const tipo = b.dataset.avg;
+      if(b.dataset.reabrir){ cargarGrupo(tipo); return; }
+      if(abiertos.has(tipo)){ abiertos.delete(tipo); pintarAvisos(); return; }
+      abiertos.add(tipo); if(GR[tipo] && !GR[tipo].error) pintarAvisos(); else cargarGrupo(tipo);
+      return;
+    }
     if((b = t.closest('[data-aviso]'))){
-      const a = AV && AV.avisos.find((x) => String(x.id) === b.dataset.aviso); if(!a) return;
-      try { if(!a.leido) await rpc('avisos_leer', { p_ids: [a.id] }); } catch (e) {}
+      const l = GR[b.dataset.tipo] || []; const a = Array.isArray(l) && l.find((x) => String(x.id) === b.dataset.aviso); if(!a) return;
+      try { if(!a.leido) await rpc('avisos_leer', { p_ids: a.ids || [a.id] }); } catch (e) {}
       cache.guardar(K_AV, { uid: avYo && avYo.id, en: 0, n: 0 });
       if(a.enlace && /^[a-z]+\.html(\?.*)?$/.test(a.enlace)) location.href = a.enlace; else cerrarHoja();
+      return;
+    }
+    if((b = t.closest('[data-av-leer-g]'))){
+      const tipo = b.dataset.avLeerG; b.disabled = true;
+      try { await rpc('avisos_leer_grupo', { p_tipo: tipo }); const l = GR[tipo]; const n = Array.isArray(l) ? l.filter((a) => !a.leido).length : 0; if(Array.isArray(l)) l.forEach((a) => { a.leido = true; });
+        const g = (AV.grupos || []).find((x) => x.tipo === tipo); marcarLeidos(tipo, g ? g.sin_leer : n); pintarAvisos(); }
+      catch (e) { toast(e.message, 'error'); b.disabled = false; }
       return;
     }
     if((b = t.closest('[data-av]'))){
@@ -212,7 +258,7 @@
       if(x === 'reintentar') abrirAvisos();
       else if(x === 'activar') activarPush(b);
       else if(x === 'quitarPush') quitarPush();
-      else if(x === 'leerTodo'){ b.disabled = true; try { await rpc('avisos_leer', { p_ids: null }); AV.avisos.forEach((a) => { a.leido = true; }); AV.sin_leer = 0; pintarCampana(0); cache.guardar(K_AV, { uid: avYo && avYo.id, en: Date.now(), n: 0 }); pintarAvisos(); } catch (e) { toast(e.message, 'error'); b.disabled = false; } }
+      else if(x === 'leerTodo'){ b.disabled = true; try { await rpc('avisos_leer', { p_ids: null }); Object.values(GR).forEach((l) => { if(Array.isArray(l)) l.forEach((a) => { a.leido = true; }); }); (AV.grupos || []).forEach((g) => { g.sin_leer = 0; }); AV.sin_leer = 0; pintarCampana(0); cache.guardar(K_AV, { uid: avYo && avYo.id, en: Date.now(), n: 0 }); pintarAvisos(); } catch (e) { toast(e.message, 'error'); b.disabled = false; } }
     }
   });
   document.addEventListener('visibilitychange', () => { if(!document.hidden && avYo) contarAvisos(); });

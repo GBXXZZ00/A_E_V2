@@ -804,10 +804,25 @@ const RPC = {
       aliados: yo.rol === 'admin' || can ? { solicitudes: 2, referidos: 1, pagos: 1, sin_permiso: 3 } : null, filas }; },
   // ----- Lote 22/10 tanda C: avisos -----
   avisos_contar(m, yo){ return (m.datos.avisos || []).filter((a) => a.para === yo.usuario && !a.leido).length; },
-  avisos_mios(m, yo){ const l = (m.datos.avisos || []).filter((a) => a.para === yo.usuario); return { sin_leer: l.filter((a) => !a.leido).length, avisos: l.map((a) => Object.assign({}, a)) }; },
+  // Lote A: agrupados por tipo (nombre del grupo, sin leer, total, vencidos)
+  avisos_mios(m, yo){ const l = (m.datos.avisos || []).filter((a) => a.para === yo.usuario); const NOM = { devuelto: 'Te devolvieron documentos', cambio: 'Migraciones', cliente: 'Clientes', revisar_docs: 'Documentos por revisar', aliado: 'Aliados' };
+    const g = {}; l.forEach((a) => { const x = g[a.tipo] || (g[a.tipo] = { tipo: a.tipo, nombre: NOM[a.tipo] || 'Otros avisos', sin_leer: 0, total: 0, vencidos: 0, ultimo: a.en }); x.total++; if(!a.leido) x.sin_leer++; if(a.vencido) x.vencidos++; if(a.en > x.ultimo) x.ultimo = a.en; });
+    return { sin_leer: l.filter((a) => !a.leido).length, grupos: Object.values(g).sort((a, b) => (b.sin_leer > 0) - (a.sin_leer > 0) || b.vencidos - a.vencidos || (b.ultimo > a.ultimo ? 1 : -1)), avisos: l.slice(0, 5).map((a) => Object.assign({ ids: [a.id] }, a)) }; },
+  avisos_grupo(m, yo, a){ return (m.datos.avisos || []).filter((x) => x.para === yo.usuario && x.tipo === a.p_tipo).map((x) => Object.assign({ ids: [x.id] }, x)); },
+  avisos_leer_grupo(m, yo, a){ (m.datos.avisos || []).filter((x) => x.para === yo.usuario && x.tipo === a.p_tipo).forEach((x) => { x.leido = true; }); return null; },
   avisos_leer(m, yo, a){ (m.datos.avisos || []).filter((x) => x.para === yo.usuario && (a.p_ids === null || (a.p_ids || []).includes(x.id))).forEach((x) => { x.leido = true; }); return null; },
   push_clave_publica(){ return 'BOrRoQzDyMsrbLLsb4D5j4nGCm6bSV0x9AVdj4ijTm8XUJfvHDl1v0Y2kVQ5WjDN8Y2O1cWv2Eq7S0aRVTDRxS4'; },
   push_suscribir(){ return null; }, push_quitar(){ return null; },
+  // Lote A: contactar al responsable (versión corta de public.contacto_destino)
+  contacto_destino(m, yo, a){
+    const adm = m.personas.find((p) => p.rol === 'admin' && !p.gerencia); const c = a.p_caso === 'cliente' ? m.datos.clientes.find((x) => x.id === a.p_id) : null;
+    const lid = (c && m.personas.find((p) => p.id === c.lider_id)) || m.personas.find((p) => p.rol === 'lider');
+    const paso = yo.rol === 'aliado' || a.p_falta === 'pago' || (c && ['documentos_recibidos', 'documentos_en_revision'].includes(c.estatus)) ? 'admin' : 'lider';
+    const dest = paso === 'admin' ? adm : lid; const propio = !!dest && dest.id === yo.id;
+    return { paso, motivo: paso === 'admin' ? (a.p_caso === 'comision' ? 'com_pago' : 'docs_revisar') : a.p_caso === 'cambio' ? 'cambio_listo' : 'general', propio, cliente: c ? c.nombre : 'Cliente', detalle: {},
+      destinos: propio || !dest ? [] : [{ id: dest.id, nombre: dest.nombre, rol: dest.rol, whatsapp: dest.whatsapp === undefined ? '04141234567' : dest.whatsapp, correo: dest.correo || null }] };
+  },
+  contacto_anotar(){ return null; },
   // Lote S: sesión viva (la prueba la puede cerrar con m.datos.sesionCerrada) y horas sin uso
   sesion_viva(m){ return { viva: !m.datos.sesionCerrada, horas: m.datos.inactividadHoras || 12 }; },
   inactividad_guardar(m, yo, a){ if(yo.rol !== 'admin') throw new Error('Solo el administrador'); m.datos.inactividadHoras = a.p_horas; return { horas: a.p_horas }; },

@@ -313,6 +313,7 @@
     const d = V.d; const P = (D && D.puedo) || {}; const e = ESTADO[d.estado] || ['', d.estado];
     $('tCam').textContent = TIPO[d.tipo] || 'Cambio';
     let h = '<div class="estado ' + (e[0] || 'gris') + '"><b>' + esc(e[1]) + '</b><small>' + esc(siguePaso(d)) + '</small></div>';
+    if(window.Contacto) h += window.Contacto.boton('cambio', d.id || V.id);   // Lote A: contactar a quien tiene el paso
     if(d.aviso && d.estado !== 'confirmado') h += '<div class="al-banda ambar" role="note"><b>' + esc(AVISO[d.aviso]) + '</b><p>El TAD ya muestra ' + (d.aviso === 'falta_plan' ? 'la categoría PYME, pero el plan sigue siendo residencial.' : 'el plan EMP, pero la categoría sigue siendo residencial.') + ' Pide que lo completen en Proham.</p></div>';
     if(d.tipo === 'residencial' && d.motivo) h += '<div class="al-banda rojo" role="note"><b>Cambio a residencial</b><p>' + esc(d.motivo) + '</p></div>';
     const t = d.titular || {};
@@ -351,7 +352,7 @@
     const notaAcc = (d.estado === 'por_revisar' && P.revisar) || d.estado === 'sin_registro' || ((d.estado === 'por_emitir' || d.estado === 'por_confirmar') && P.confirmar) || puedeCancelar(d);
     if(notaAcc) h += '<label class="rotulo arriba" for="camNotaAcc">Nota</label><textarea class="area corta" id="camNotaAcc" maxlength="500"></textarea><div class="error" id="eCamAcc" role="alert"></div>';
     h += '<div class="secc">Qué ha pasado</div>' + ((d.bitacora || []).length ? '<div class="datos">' + d.bitacora.map((x) => fila(fecha(x.en) + ' ' + C.hora(x.en), esc(TEXTO_BIT[x.accion] || x.accion) + (x.por ? ' · ' + esc(C.primerNombre(x.por)) : ''))).join('') + '</div>' : '<p class="nota-chica">Sin movimientos.</p>');
-    $('cCam').innerHTML = h;
+    $('cCam').innerHTML = h; if(window.Contacto) window.Contacto.llenar($('cCam'));
     // Acciones según el estado y quién mira
     const acc = [];
     if(puedeCancelar(d)) acc.push(['cancelar', 'Cancelar', 'btn-2']);

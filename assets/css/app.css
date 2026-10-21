@@ -1327,3 +1327,20 @@ button.ge-li{cursor:pointer}
 #hojaAvisos .hoja-pie{margin-top:14px}
 /* Con la campana, en escritorio angosto la cuenta queda solo con el avatar (el nombre sigue en su menú) */
 @media (min-width:900px) and (max-width:1439px){ .barra:has(.campana) .cuenta .tx{display:none} .barra:has(.campana) .cuenta{padding:2px} }
+/* Lote A: en el teléfono se ven la campana y el icono de usuario (base.css escondía todo span de la cuenta) */
+@media (max-width:899px){ .cuenta .av{display:grid} .cuenta .tx{display:none} }
+/* Lote A: avisos agrupados por categoría */
+.av-lista + .av-lista{margin-top:8px}
+.av-lista .grupo-cab .nbadge{position:static;margin:0;background:var(--rojo);color:#fff}
+.av-venc{display:inline-block;margin-right:6px;padding:1px 7px;border-radius:var(--pill);background:var(--rojo-bg);color:var(--rojo);font-weight:700;font-size:11.5px}
+.av-g-pie{display:flex;justify-content:flex-end;padding:10px 16px;border-top:1px solid var(--line)}
+.av-sk{padding:10px 14px}
+.av-inicio{margin-top:16px}
+/* Lote A: Contactar al responsable */
+.ct-zona:empty{display:none}
+.ct-zona{margin-top:12px}
+.ct-btn{display:inline-flex;align-items:center;gap:8px;white-space:nowrap}
+.ct-btn .i{width:18px;height:18px}
+.ct-lista{margin-top:8px;border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.ct-lista .fila:first-child{border-top:0}
+.ct-op .i{width:20px;height:20px;color:var(--verde)}

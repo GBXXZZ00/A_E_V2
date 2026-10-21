@@ -502,7 +502,10 @@
     const f = d.filas.find((x) => String(x.instalacion_id) === String(inst)) || (d.eventos || []).find((x) => String(x.instalacion_id) === String(inst)) || {};
     K = { inst: Number(inst), cliente: Number(cliente), F: null }; profAbierto = false;
     $('cabCom').innerHTML = '<div class="f-cab"><div class="tx"><h2 class="nom" id="tCom">' + esc(f.nombre || 'Cliente') + '</h2><p class="dat">' + esc([f.sucursal && f.codigo ? f.sucursal + '-' + f.codigo : f.codigo, f.instalada_en ? 'Instalado el ' + fecha(f.instalada_en) : ''].filter(Boolean).join(' · ')) + '</p></div>' +
-      '<button type="button" class="cerrar" data-cierra="1" aria-label="Cerrar">' + ic('x') + '</button></div>';
+      '<button type="button" class="cerrar" data-cierra="1" aria-label="Cerrar">' + ic('x') + '</button></div>' +
+      // Lote A: contactar a quien tiene lo que falta para comisionar
+      (window.Contacto && f.instalacion_id ? window.Contacto.boton('comision', f.instalacion_id, !f.orden_ok ? 'orden' : !f.legal_ok ? 'legal' : !f.pago_ok ? 'pago' : '') : '');
+    if(window.Contacto) window.Contacto.llenar($('cabCom'));
     $('cuerpoCom').innerHTML = '<div class="sk-bloque"><span class="sk" style="height:64px;border-radius:16px"></span><span class="sk" style="height:150px;border-radius:16px"></span><span class="sk" style="height:90px;border-radius:16px"></span></div>';
     abrirHoja('hojaComision');
     cargarComision();

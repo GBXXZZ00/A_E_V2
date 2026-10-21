@@ -167,3 +167,12 @@ Sin nombres reales: el repo es público. "Analista Senior" es el responsable de 
 - IP: se llena sola con el reporte "Clientes Empresariales"; "IP por confirmar" solo cuando no cuadra; siempre editable a mano. Los dedicados no entran, salvo que se les instale un servicio PYME nuevo.
 - Gestiones: grupos con meta, plazo y responsables; cada cliente con su estado e historial.
 - Notificaciones: encadenadas entre procesos y al momento; a cada líder, cada 3 días, la lista de sus clientes a los que les faltan documentos. Gerencia: por definir.
+
+## Contactar al responsable (decidido por el administrador el 21/10)
+- Un solo botón "Contactar" en cada hoja (cliente y sus documentos, migración, comisión) que va a quien tiene el paso que falta. Lo decide la base (`contacto_destino`), no la pantalla.
+- El aliado solo contacta al administrador.
+- El administrador es un paso indispensable: si lo que falta es suyo (revisar documentos, Legal, pago, revisar un cambio, cargar el TAD), el botón de quien mire (líder, analista, Senior) va a él.
+- Si el paso es del líder o del analista, el botón va a esa persona (si el líder no tiene analista: el coordinador; si no hay, el administrador).
+- Si el paso es de quien está mirando, no sale "Contactar": le toca su acción.
+- Solo cuando mira el administrador (o Senior o coordinador) y el paso es del analista, el botón deja elegir también al líder.
+- Abre WhatsApp con el mensaje escrito según el caso (o el correo si no tiene WhatsApp) y queda en la bitácora (`contacto_responsable`).
