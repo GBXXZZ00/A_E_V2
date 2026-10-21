@@ -4,6 +4,7 @@ Actualizado: 21/10/2026, corrida del lote S + A + C. Publicado: `?v=59` (partes 
 
 ## LOTE S + A + C (`claude/lote-seguridad-avisos.md`, aprobado el 21/10): HECHO, una publicación por parte (v57, v58, v59)
 ### Parte C hecha (v59): avisos de aliados y app vieja
+- Lote completo: batería entera 46 de 46; comisiones septiembre 46/41 y octubre 75 de 83 (certificado) al empezar y al terminar.
 - SQL: `supabase/pruebas/lote_c.sql` (migraciones `lote_c1_avisos_aliados`, `lote_c2_app_vieja`).
 - Avisos de aliados (notificaciones.md sección 4): bloqueo (al aliado con el porqué, sin decirle quién es el líder; al líder dueño "Un aliado intentó tu cliente"; al administrador), permiso aprobado o rechazado (aliado y líder dueño), devuelto (aliado), instalado (aliado), pago registrado (aliado). Además "Pago confirmado en el TAD" al líder (al llenarse `pago_ok_en`) y "Cuenta bloqueada" al administrador (intentos fallidos con el PIN).
 - Recorrido completo de una cuenta de aliado de prueba con las funciones reales y rollback (no quedó ninguna cuenta ni dato): cada evento llega una sola vez a quien corresponde. En la pantalla: test20 con la campana del aliado.
