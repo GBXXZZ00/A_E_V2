@@ -822,7 +822,7 @@ const RPC = {
     return { paso, motivo: paso === 'admin' ? (a.p_caso === 'comision' ? 'com_pago' : 'docs_revisar') : a.p_caso === 'cambio' ? 'cambio_listo' : 'general', propio, cliente: c ? c.nombre : 'Cliente', detalle: {},
       destinos: propio || !dest ? [] : [{ id: dest.id, nombre: dest.nombre, rol: dest.rol, whatsapp: dest.whatsapp === undefined ? '04141234567' : dest.whatsapp, correo: dest.correo || null }] };
   },
-  contacto_anotar(){ return null; },
+  contacto_anotar2(){ return null; },
   // Lote S: sesión viva (la prueba la puede cerrar con m.datos.sesionCerrada) y horas sin uso
   sesion_viva(m){ return { viva: !m.datos.sesionCerrada, horas: m.datos.inactividadHoras || 12 }; },
   inactividad_guardar(m, yo, a){ if(yo.rol !== 'admin') throw new Error('Solo el administrador'); m.datos.inactividadHoras = a.p_horas; return { horas: a.p_horas }; },

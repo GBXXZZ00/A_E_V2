@@ -1343,4 +1343,6 @@ button.ge-li{cursor:pointer}
 .ct-btn .i{width:18px;height:18px}
 .ct-lista{margin-top:8px;border:1px solid var(--line);border-radius:16px;overflow:hidden}
 .ct-lista .fila:first-child{border-top:0}
-.ct-op .i{width:20px;height:20px;color:var(--verde)}
+.ct-op .i{width:20px;height:20px}
+.ct-op.ct-wa .i{color:var(--verde)}
+.av-no{margin-top:6px}

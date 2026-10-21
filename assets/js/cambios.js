@@ -313,7 +313,7 @@
     const d = V.d; const P = (D && D.puedo) || {}; const e = ESTADO[d.estado] || ['', d.estado];
     $('tCam').textContent = TIPO[d.tipo] || 'Cambio';
     let h = '<div class="estado ' + (e[0] || 'gris') + '"><b>' + esc(e[1]) + '</b><small>' + esc(siguePaso(d)) + '</small></div>';
-    if(window.Contacto) h += window.Contacto.boton('cambio', d.id || V.id);   // Lote A: contactar a quien tiene el paso
+    if(window.Contacto) h += window.Contacto.boton('cambio', d.id || V.id, '', d.estado + ':' + (d.aviso || ''));   // Lote A: contactar a quien tiene el paso
     if(d.aviso && d.estado !== 'confirmado') h += '<div class="al-banda ambar" role="note"><b>' + esc(AVISO[d.aviso]) + '</b><p>El TAD ya muestra ' + (d.aviso === 'falta_plan' ? 'la categoría PYME, pero el plan sigue siendo residencial.' : 'el plan EMP, pero la categoría sigue siendo residencial.') + ' Pide que lo completen en Proham.</p></div>';
     if(d.tipo === 'residencial' && d.motivo) h += '<div class="al-banda rojo" role="note"><b>Cambio a residencial</b><p>' + esc(d.motivo) + '</p></div>';
     const t = d.titular || {};

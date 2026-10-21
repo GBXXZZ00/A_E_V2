@@ -43,13 +43,14 @@
   const quien = (p) => primerNombre(p.nombre) + (ROL[p.rol] ? ' (' + ROL[p.rol] + ')' : '');
 
   // Marca donde va el botón: se llena sola al pintar la hoja
-  const boton = (caso, id, falta) => id ? '<div class="ct-zona" data-ct-caso="' + esc(caso) + '" data-ct-id="' + esc(id) + '"' + (falta ? ' data-ct-falta="' + esc(falta) + '"' : '') + '></div>' : '';
+  // estado: el estatus que ve la pantalla; si cambia, se vuelve a preguntar (no se usa lo guardado)
+  const boton = (caso, id, falta, estado) => id ? '<div class="ct-zona" data-ct-caso="' + esc(caso) + '" data-ct-id="' + esc(id) + '"' + (falta ? ' data-ct-falta="' + esc(falta) + '"' : '') + (estado ? ' data-ct-estado="' + esc(estado) + '"' : '') + '></div>' : '';
   const DATOS = new WeakMap(); const MEMO = new Map();
   async function llenar(raiz){
     const zonas = (raiz || document).querySelectorAll('.ct-zona[data-ct-id]:not([data-ct-listo])');
     for(const z of zonas){
       z.setAttribute('data-ct-listo', '1');
-      let d; const k = z.dataset.ctCaso + ':' + z.dataset.ctId + ':' + (z.dataset.ctFalta || '');
+      let d; const k = z.dataset.ctCaso + ':' + z.dataset.ctId + ':' + (z.dataset.ctFalta || '') + ':' + (z.dataset.ctEstado || '');
       try {
         // La cabecera se repinta seguido: se guarda un minuto
         const m = MEMO.get(k); if(m && Date.now() - m.en < 60000) d = await m.p;
@@ -64,7 +65,7 @@
         const p = d.destinos[0]; const e = enlace(d, p);
         z.innerHTML = '<a class="btn btn-2 btn-chico ct-btn" href="' + esc(e.url) + '" target="_blank" rel="noopener" data-ct-para="' + esc(p.id) + '" data-ct-medio="' + e.medio + '">' + ic(e.medio === 'whatsapp' ? 'wa' : 'correo') + '<span>Contactar a ' + esc(primerNombre(p.nombre)) + '</span></a>';
       } else {
-        z.innerHTML = '<button type="button" class="btn btn-2 btn-chico ct-btn" data-ct-elegir="1" aria-expanded="false">' + ic('wa') + '<span>Contactar</span></button><div class="ct-lista hidden"></div>';
+        z.innerHTML = '<button type="button" class="btn btn-2 btn-chico ct-btn" data-ct-elegir="1" aria-expanded="false">' + ic(conDato.some((p) => p.whatsapp) ? 'wa' : 'correo') + '<span>Contactar</span></button><div class="ct-lista hidden"></div>';
       }
     }
   }
@@ -74,14 +75,14 @@
       const z = b.closest('.ct-zona'); const d = DATOS.get(z); const l = z.querySelector('.ct-lista'); if(!d) return;
       const abierto = l.classList.toggle('hidden') === false; b.setAttribute('aria-expanded', String(abierto));
       if(abierto) l.innerHTML = d.destinos.map((p) => { const e = enlace(d, p);
-        return e ? '<a class="fila ct-op" href="' + esc(e.url) + '" target="_blank" rel="noopener" data-ct-para="' + esc(p.id) + '" data-ct-medio="' + e.medio + '">' + ic(e.medio === 'whatsapp' ? 'wa' : 'correo') + '<span class="tx"><b>' + esc(quien(p)) + '</b><small>' + (e.medio === 'whatsapp' ? 'WhatsApp' : 'Correo') + '</small></span></a>'
+        return e ? '<a class="fila ct-op' + (e.medio === 'whatsapp' ? ' ct-wa' : '') + '" href="' + esc(e.url) + '" target="_blank" rel="noopener" data-ct-para="' + esc(p.id) + '" data-ct-medio="' + e.medio + '">' + ic(e.medio === 'whatsapp' ? 'wa' : 'correo') + '<span class="tx"><b>' + esc(quien(p)) + '</b><small>' + (e.medio === 'whatsapp' ? 'WhatsApp' : 'Correo') + '</small></span></a>'
           : '<p class="nota-chica">' + esc(quien(p)) + ': falta su WhatsApp en Usuarios.</p>'; }).join('');
       return;
     }
     if((b = t.closest('[data-ct-para]'))){
       const z = b.closest('.ct-zona'); const d = DATOS.get(z); if(!d) return;
       // Queda en la bitácora; si falla, el mensaje igual se abre
-      rpc('contacto_anotar', { p_caso: z.dataset.ctCaso, p_id: Number(z.dataset.ctId), p_para: b.dataset.ctPara, p_medio: b.dataset.ctMedio, p_motivo: d.motivo || '' })
+      rpc('contacto_anotar2', { p_caso: z.dataset.ctCaso, p_id: Number(z.dataset.ctId), p_falta: z.dataset.ctFalta || null, p_para: b.dataset.ctPara, p_medio: b.dataset.ctMedio })
         .catch(() => toast('Se abrió el mensaje, pero no quedó anotado. Revisa tu internet', 'error'));
     }
   });

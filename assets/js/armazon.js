@@ -140,8 +140,10 @@
   }
   async function pintarTarjetaAlertas(){
     const z = $('zonaAlertas'); if(!z || !avYo) return;
-    let html = ''; try { html = await bloquePush(true); } catch (e) { html = ''; }
-    z.innerHTML = html ? '<div class="av-inicio">' + html + '</div>' : '';
+    // "Ahora no" la esconde en este equipo por 14 días (es una ayuda, no una tarea)
+    let ya = 0; try { ya = Number(localStorage.getItem('ae_alertas_no')) || 0; } catch (e) {}
+    let html = ''; if(Date.now() - ya > 14 * 86400e3){ try { html = await bloquePush(true); } catch (e) { html = ''; } }
+    z.innerHTML = html ? '<div class="av-inicio">' + html.replace(/<\/div>$/, '<p class="av-no"><button type="button" class="enlace" data-av="ahoraNo">Ahora no</button></p></div>') + '</div>' : '';
   }
   function avisosIniciar(p){
     avYo = p; contarAvisos(); pintarTarjetaAlertas();
@@ -155,7 +157,7 @@
   async function bloquePush(enInicio){
     if(esIphone()) return '<div class="al-banda azul av-push" role="note"><b>Avisos en este iPhone</b><p>Primero instala la app: en Safari toca Compartir y luego "Agregar a inicio". Ábrela desde ahí y activa los avisos aquí.</p></div>';
     if(!pushPosible()) return '';
-    if(Notification.permission === 'denied') return '<div class="al-banda ambar av-push" role="note"><b>Los avisos están bloqueados en este equipo</b><p>Actívalos en los permisos del navegador para este sitio y vuelve a abrir esta lista.</p></div>';
+    if(Notification.permission === 'denied') return '<div class="al-banda ambar av-push" role="note"><b>Los avisos están bloqueados en este equipo</b><p>Actívalos en los permisos del navegador para este sitio y ' + (enInicio ? 'vuelve a abrir la app' : 'vuelve a abrir esta lista') + '.</p></div>';
     const s = await suscripcionActual();
     if(s && Notification.permission === 'granted') return enInicio ? '' : '<p class="nota-chica av-push-ok">Este equipo recibe los avisos. No suenan de 10 p.m. a 8 a.m.<button type="button" class="enlace" data-av="quitarPush">Dejar de recibirlos aquí</button></p>';
     return '<div class="al-banda azul av-push" role="note"><b>Recibe los avisos en este equipo</b><p>Te llega al momento lo que te toca hacer, aunque la app esté cerrada: documentos por revisar, contratos, cambios, pagos. No suenan de 10 p.m. a 8 a.m.</p>' +
@@ -209,13 +211,15 @@
       '<button type="button" class="cerrar" data-cierra="1" aria-label="Cerrar">' + ic('x') + '</button></div><div class="hoja-cuerpo">' + push + cuerpo + '</div>' +
       (AV && AV.sin_leer ? '<div class="hoja-pie"><button type="button" class="btn btn-2" data-av="leerTodo">Marcar todo leído</button></div>' : '');
   }
+  const PIDE = {};   // número de la última petición por grupo: una respuesta vieja no pisa la nueva
   async function cargarGrupo(tipo){
-    GR[tipo] = null; pintarAvisos();
-    try { GR[tipo] = await rpc('avisos_grupo', { p_tipo: tipo, p_limite: 60 }); } catch (e) { GR[tipo] = { error: e.message }; }
-    pintarAvisos();
+    const n = (PIDE[tipo] || 0) + 1; PIDE[tipo] = n; GR[tipo] = null; pintarAvisos();
+    let r; try { r = await rpc('avisos_grupo', { p_tipo: tipo, p_limite: 60 }); } catch (e) { r = { error: e.message }; }
+    if(PIDE[tipo] !== n) return;
+    GR[tipo] = r; pintarAvisos();
   }
   async function abrirAvisos(){
-    AV = null; Object.keys(GR).forEach((k) => delete GR[k]); pintarAvisos(); abrirHoja('hojaAvisos');
+    AV = null; Object.keys(GR).forEach((k) => { delete GR[k]; PIDE[k] = (PIDE[k] || 0) + 1; }); pintarAvisos(); abrirHoja('hojaAvisos');
     try {
       AV = await rpc('avisos_mios', { p_limite: 5 }); pintarCampana(AV.sin_leer); cache.guardar(K_AV, { uid: avYo && avYo.id, en: Date.now(), n: AV.sin_leer });
       // Si hay un solo grupo, o el primero tiene sin leer, se abre solo
@@ -236,12 +240,12 @@
       const tipo = b.dataset.avg;
       if(b.dataset.reabrir){ cargarGrupo(tipo); return; }
       if(abiertos.has(tipo)){ abiertos.delete(tipo); pintarAvisos(); return; }
-      abiertos.add(tipo); if(GR[tipo] && !GR[tipo].error) pintarAvisos(); else cargarGrupo(tipo);
+      abiertos.add(tipo); if(GR[tipo] && !GR[tipo].error) pintarAvisos(); else if(GR[tipo] !== null) cargarGrupo(tipo); else pintarAvisos();
       return;
     }
     if((b = t.closest('[data-aviso]'))){
       const l = GR[b.dataset.tipo] || []; const a = Array.isArray(l) && l.find((x) => String(x.id) === b.dataset.aviso); if(!a) return;
-      try { if(!a.leido) await rpc('avisos_leer', { p_ids: a.ids || [a.id] }); } catch (e) {}
+      try { if(!a.leido){ await rpc('avisos_leer', { p_ids: a.ids || [a.id] }); a.leido = true; marcarLeidos(a.tipo, 1); } } catch (e) {}
       cache.guardar(K_AV, { uid: avYo && avYo.id, en: 0, n: 0 });
       if(a.enlace && /^[a-z]+\.html(\?.*)?$/.test(a.enlace)) location.href = a.enlace; else cerrarHoja();
       return;
@@ -256,6 +260,7 @@
     if((b = t.closest('[data-av]'))){
       const x = b.dataset.av;
       if(x === 'reintentar') abrirAvisos();
+      else if(x === 'ahoraNo'){ try { localStorage.setItem('ae_alertas_no', String(Date.now())); } catch (e) {} pintarTarjetaAlertas(); }
       else if(x === 'activar') activarPush(b);
       else if(x === 'quitarPush') quitarPush();
       else if(x === 'leerTodo'){ b.disabled = true; try { await rpc('avisos_leer', { p_ids: null }); Object.values(GR).forEach((l) => { if(Array.isArray(l)) l.forEach((a) => { a.leido = true; }); }); (AV.grupos || []).forEach((g) => { g.sin_leer = 0; }); AV.sin_leer = 0; pintarCampana(0); cache.guardar(K_AV, { uid: avYo && avYo.id, en: Date.now(), n: 0 }); pintarAvisos(); } catch (e) { toast(e.message, 'error'); b.disabled = false; } }

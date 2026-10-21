@@ -153,7 +153,7 @@
       '<div class="contacto">' + window.Pedir.iconos(clienteContacto()) + '</div>' +
       (p ? '<div class="paso ' + p.tono + '" id="paso"><span class="tx">' + esc(p.texto) + (sub ? '<small>' + esc(sub) + '</small>' : '') + '</span>' +
         (p.boton ? '<button type="button" class="btn btn-chico" data-paso="' + esc(p.accion) + '">' + esc(p.boton) + '</button>' : '') + '</div>' : '') +
-      (window.Contacto ? window.Contacto.boton('cliente', c.id) : '');   // Lote A: contactar a quien tiene el paso
+      (window.Contacto ? window.Contacto.boton('cliente', c.id, '', c.estatus + ':' + (F.documentos || []).filter((x) => x.estado === 'devuelto').length) : '');   // Lote A: contactar a quien tiene el paso
     if(window.Contacto) window.Contacto.llenar($('cabFicha'));
     const nr = F.puedo.revisar ? sinMarcar().length : porRevisar().length; const t = $('tabs').querySelector('[data-tab="documentos"]');
     if(t) t.innerHTML = 'Documentos' + (nr ? '<em>' + nr + '</em>' : '');

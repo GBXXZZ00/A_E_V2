@@ -22,6 +22,8 @@ const llamo = (m, f) => m.llamadas.filter((l) => l[1] === f);
     // Tarjeta "Activar alertas" en Inicio: en iPhone pide instalar primero; sin https en la laptop no sale
     await p.waitForTimeout(300);
     ok(nombre + ': la tarjeta de alertas de Inicio sigue la misma lógica', nombre === 'tel' ? /instala la app/i.test(await p.textContent('#zonaAlertas')) : (await p.locator('#zonaAlertas .av-push').count()) === 0);
+    if(nombre === 'tel'){ await p.screenshot({ path: 'capturas/45-tel-inicio-alertas.png' }); await p.click('#zonaAlertas [data-av="ahoraNo"]'); await p.waitForTimeout(200);
+      ok('tel: "Ahora no" esconde la tarjeta de alertas', (await p.locator('#zonaAlertas .av-push').count()) === 0); }
     await p.click('#campana'); await p.waitForSelector('#hojaAvisos.ver [data-avg]');
     ok(nombre + ': los avisos salen agrupados por categoría', (await p.locator('#hojaAvisos [data-avg]').count()) === 3 && /2 sin leer · 2 avisos/.test(await p.textContent('#hojaAvisos [data-avg="devuelto"]')));
     await p.waitForSelector('#hojaAvisos [data-aviso="4"]');
@@ -46,7 +48,7 @@ const llamo = (m, f) => m.llamadas.filter((l) => l[1] === f);
     ok(nombre + ': el líder contacta al administrador por WhatsApp con el mensaje escrito', /^https:\/\/wa\.me\/58\d+\?text=/.test(href) && decodeURIComponent(href).includes('me revisas los documentos de ' + c.nombre) && /Contactar a Marcos/.test(await p.textContent('#cabFicha .ct-btn')));
     await p.evaluate(() => { const a = document.querySelector('#cabFicha .ct-btn'); a.removeAttribute('target'); a.addEventListener('click', (e) => e.preventDefault()); });
     await p.click('#cabFicha .ct-btn'); await p.waitForTimeout(300);
-    ok(nombre + ': el contacto queda en la bitácora', llamo(mundo, 'contacto_anotar').some((l) => l[2].p_medio === 'whatsapp' && l[2].p_caso === 'cliente'));
+    ok(nombre + ': el contacto queda en la bitácora', llamo(mundo, 'contacto_anotar2').some((l) => l[2].p_medio === 'whatsapp' && l[2].p_caso === 'cliente'));
     await p.screenshot({ path: 'capturas/45-' + nombre + '-contactar.png' });
     await ctx.close();
   }

@@ -10,6 +10,7 @@ Actualizado: 21/10/2026, corrida del lote S + A + C. Publicado: `?v=58` (partes 
 - Teléfono: se ven la campana y el icono de usuario (una regla vieja de `base.css` escondía el avatar).
 - "Contactar al responsable" (`contacto.js`, RPC `contacto_destino` y `contacto_anotar`) en la ficha del cliente (también en Documentos), la hoja de migración y la de comisión. Reglas en `claude/reglas-negocio.md`.
 - Pruebas: test45 reescrita (grupos, tarjeta, avatar, contactar).
+- Revisión independiente (9 puntos, todos atendidos; migración `lote_a3_contacto_revision`): el aliado solo consulta sus solicitudes (antes podía ver nombres de clientes por id); la bitácora solo anota un contacto a un responsable real (`contacto_anotar2`); el dueño de una comisión se calcula como en Comisiones; los eventos no muestran Contactar; la tarjeta de Inicio tiene "Ahora no" (14 días en ese equipo); la campana baja al tocar un aviso; una respuesta vieja no pisa un grupo.
 
 ### Parte S hecha (v57): seguridad
 - SQL: `supabase/pruebas/lote_s.sql` (migración `lote_s1_sesiones`).
