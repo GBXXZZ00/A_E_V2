@@ -636,7 +636,7 @@
       else if(k === 'cartera') acc = '<button type="button" class="btn btn-chico" data-acc="referirSol" data-id="' + esc(d.id) + '">Referir cliente</button>';
       else if(k === 'excepcion' || k === 'revision') acc = '<button type="button" class="btn btn-chico btn-2" data-acc="whats">Escribir al administrador</button>';
       // Lote C: el aliado solo contacta al administrador, y puede hacerlo en toda solicitud abierta o instalada
-      if(acc.indexOf('data-acc="whats"') < 0 && ['borrador', 'analizando', 'noprocede', 'cerrada', 'vencida', 'pagada'].indexOf(k) < 0) acc += '<button type="button" class="btn btn-chico btn-2" data-acc="whats">Escribir al administrador</button>';
+      if(acc.indexOf('data-acc="whats"') < 0 && ['recaudos', 'excepcion', 'revision', 'lista', 'listaobs', 'curso', 'instalada'].indexOf(k) >= 0) acc += '<button type="button" class="btn btn-chico btn-2" data-acc="whats">Escribir al administrador</button>';
     } else {
       if(k === 'excepcion') acc = '<button type="button" class="btn btn-chico" data-form="decidir" data-modo="aprobar">Admitir excepción</button><button type="button" class="btn btn-chico btn-2" data-form="decidir" data-modo="negar">Negar</button>';
       else if(k === 'revision') acc = '<button type="button" class="btn btn-chico" data-form="decidir" data-modo="aprobar">Aprobar</button><button type="button" class="btn btn-chico btn-2" data-form="decidir" data-modo="devolver">Pedir corregir</button>';

@@ -97,3 +97,77 @@ end $function$;
 create or replace trigger instalacion_pago_tad after update of pago_ok_en on public.instalaciones for each row
   when (old.pago_ok_en is null and new.pago_ok_en is not null and new.lider_id is not null and new.anulada_en is null)
   execute function privado.avisos_pago_tad();
+
+-- C3 (revisión independiente, migración lote_c3_avisos_revision). Probado con rollback: usuario inventado bloqueado -> 0 avisos;
+--   cuenta real bloqueada dos veces el mismo día -> 1 aviso; pago marcado a mano -> 'Pago marcado'.
+-- Lote C3 (revisión independiente): textos del bloqueo al aliado, cuenta bloqueada solo de cuentas reales (una vez por día), pago marcado a mano.
+create or replace function privado.avisos_aliados()
+ returns trigger language plpgsql security definer set search_path to ''
+as $function$
+declare s public.aliado_solicitudes; r public.aliado_referidos; a public.aliados; c public.clientes; p record; quien uuid; mot text; nom text; e text;
+begin
+  begin
+    if new.accion in ('aliado_bloqueado', 'aliado_intento_top', 'aliado_decision') or (new.accion = 'pago_aliado' and new.tabla = 'aliado_solicitudes') then
+      select * into s from public.aliado_solicitudes where id = new.registro_id::bigint;
+      select * into a from public.aliados where id = s.aliado_id;
+      select x.id into quien from public.perfiles x where x.id = a.perfil_id and x.activo;
+      if s.cliente_id is not null then select * into c from public.clientes where id = s.cliente_id; end if;
+      nom := coalesce(c.nombre, s.nombre, 'el cliente');
+    end if;
+    if new.accion in ('aliado_bloqueado', 'aliado_intento_top') then
+      mot := case new.despues ->> 'bloqueo' when 'top' then 'Es un cliente reservado de la empresa.' when 'cartera' then 'Ya es cliente de un líder: puedes referirlo.'
+        when 'odoo' then 'Ya hay una orden en curso para ese cliente.' when 'otro_aliado' then 'Otro aliado ya lo está gestionando.' else 'Ya es cliente de la empresa.' end;
+      -- Al aliado, lo mismo que dice su pantalla (no se le dice si es TOP ni quién lo gestiona); el detalle es para el administrador
+      if quien is not null then perform privado.aviso_poner(quien, 'aliado', 'Solicitud bloqueada', nom || ': ' || case when s.etiqueta = 'cartera' then 'Cliente en cartera: puedes referirlo.' else 'En gestión por otro.' end,
+        'aliados.html?s=' || s.id, 'b:' || new.id, false); end if;
+      if c.lider_id is not null then perform privado.aviso_poner(c.lider_id, 'aliado', 'Un aliado intentó tu cliente', coalesce(a.nombre, 'Un aliado') || ' pidió permiso por ' || nom || '. Quedó bloqueado.', 'clientes.html?c=' || c.id, 'b:' || new.id, false); end if;
+      for p in select x.id from public.perfiles x where x.activo and x.rol = 'admin' and not coalesce(x.gerencia, false) loop
+        perform privado.aviso_poner(p.id, 'aliado', 'Aliado bloqueado', coalesce(a.nombre, 'Un aliado') || ' intentó ' || nom || '. ' || mot, 'aliados.html?s=' || s.id, 'b:' || new.id, false);
+      end loop;
+    elsif new.accion = 'aliado_decision' then
+      e := new.despues ->> 'etiqueta';
+      if quien is not null and e in ('lista', 'noprocede', 'recaudos') then
+        perform privado.aviso_poner(quien, 'aliado', case e when 'lista' then 'Permiso aprobado' when 'noprocede' then 'Permiso rechazado' else 'Te devolvieron la solicitud' end,
+          nom || ': ' || case e when 'lista' then 'ya puedes instalar.' else coalesce(nullif(new.despues ->> 'texto', ''), 'revisa la respuesta del administrador.') end, 'aliados.html?s=' || s.id, 'b:' || new.id, false);
+      end if;
+      if c.lider_id is not null and e in ('lista', 'noprocede') then
+        perform privado.aviso_poner(c.lider_id, 'aliado', case e when 'lista' then 'Aprobaron un permiso de aliado' else 'Rechazaron un permiso de aliado' end,
+          coalesce(a.nombre, 'Un aliado') || ' por ' || nom || '.', 'clientes.html?c=' || c.id, 'b:' || new.id, false);
+      end if;
+    elsif new.accion = 'pago_aliado' then
+      if new.tabla = 'aliado_referidos' then
+        select * into r from public.aliado_referidos where id = new.registro_id::bigint;
+        select x.id into quien from public.perfiles x join public.aliados y on y.perfil_id = x.id where y.id = r.aliado_id and x.activo;
+        nom := coalesce(nullif(btrim(coalesce(r.nombre, '') || ' ' || coalesce(r.apellido, '')), ''), 'tu referido');
+      end if;
+      if quien is not null then perform privado.aviso_poner(quien, 'aliado_pago', 'Pago registrado', 'Se registró tu pago por ' || nom || '.', 'aliados.html', 'b:' || new.id, false); end if;
+    elsif new.accion = 'acceso_bloqueado' then
+      -- Solo cuentas que existen, con su nombre, y un aviso por cuenta y por día (probar usuarios inventados no llena la campana)
+      select x.nombre into nom from public.perfiles x where x.usuario = new.registro_id and x.activo;
+      if nom is not null then
+        for p in select x.id from public.perfiles x where x.activo and x.rol = 'admin' and not coalesce(x.gerencia, false) loop
+          perform privado.aviso_poner(p.id, 'cuenta', 'Cuenta bloqueada', 'La cuenta de ' || nom || ' se bloqueó por intentos fallidos con el PIN. Si fue la persona, restablécele el PIN en Usuarios.', 'usuarios.html',
+            'acc:' || new.registro_id || ':' || privado.hoy(), false);
+        end loop;
+      end if;
+    end if;
+  exception when others then
+    raise warning 'aviso de aliado no creado: %', sqlerrm;
+  end;
+  return null;
+end $function$;
+
+create or replace function privado.avisos_pago_tad()
+ returns trigger language plpgsql security definer set search_path to ''
+as $function$
+begin
+  begin
+    -- Si lo marcó el propio líder, no se le avisa; si fue a mano, no se dice que fue el TAD
+    if new.lider_id is distinct from (select auth.uid()) then
+      perform privado.aviso_poner(new.lider_id, 'comision', case when new.pago_manual then 'Pago marcado' else 'Pago confirmado en el TAD' end, coalesce(new.nombre, 'Tu cliente') || ': el pago de la instalación ya está.',
+        case when new.cliente_id is not null then 'clientes.html?c=' || new.cliente_id || '&t=comision' else 'comisiones.html' end, 'pagotad:' || new.id, false);
+    end if;
+  exception when others then raise warning 'aviso de pago no creado: %', sqlerrm;
+  end;
+  return null;
+end $function$;
