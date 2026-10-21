@@ -1,4 +1,6 @@
-# Pendientes y lo que falta definir (actualizado 20/10/2026, noche)
+# Pendientes y lo que falta definir (actualizado 21/10/2026)
+
+**21/10:** octubre certificado. Lote S + A (seguridad y avisos) aprobado: `claude/lote-seguridad-avisos.md`. Falta definir para la misma corrida: nomenclatura de Odoo, requisitos del VGT, las 2 preguntas de la app vieja y el nombre de la app.
 
 La versión del 09/10 sigue en el historial de git. Lo de migraciones, Mi trabajo, gestiones, filtros, IP y notificaciones ya se definió y está en `claude/lote-22oct.md`.
 
