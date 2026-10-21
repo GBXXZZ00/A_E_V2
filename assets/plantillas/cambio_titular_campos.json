@@ -1,0 +1,178 @@
+{
+ "hoja": "carta 612x792 pt",
+ "unidad": "pt desde la esquina superior izquierda",
+ "fuente": "Helvetica 9 pt, color #0b2a6b",
+ "modos": {
+  "linea": "escribir con la linea base en \"base\", desde \"x\", recortar a \"ancho\"",
+  "celda": "centrar vertical en la celda",
+  "marca": "una X centrada en la casilla"
+ },
+ "campos": {
+  "fecha": {
+   "modo": "linea",
+   "x": 426.9,
+   "base": 122.1,
+   "ancho": 115.2
+  },
+  "tipo_nn": {
+   "modo": "marca",
+   "x": 123.4,
+   "y": 180.9,
+   "ancho": 7.2,
+   "alto": 9
+  },
+  "tipo_nj": {
+   "modo": "marca",
+   "x": 265,
+   "y": 180.9,
+   "ancho": 7.2,
+   "alto": 9
+  },
+  "tipo_jn": {
+   "modo": "marca",
+   "x": 406.8,
+   "y": 180.9,
+   "ancho": 7.2,
+   "alto": 9
+  },
+  "tipo_jj": {
+   "modo": "marca",
+   "x": 548.6,
+   "y": 180.9,
+   "ancho": 7.2,
+   "alto": 9
+  },
+  "yo_actual": {
+   "modo": "linea",
+   "x": 36.1,
+   "base": 224.4,
+   "ancho": 140.4
+  },
+  "servicio": {
+   "modo": "linea",
+   "x": 23,
+   "base": 258.2,
+   "ancho": 92.2
+  },
+  "a_nombre_de": {
+   "modo": "linea",
+   "x": 172.3,
+   "base": 258.2,
+   "ancho": 256.3
+  },
+  "ubicacion": {
+   "modo": "linea",
+   "x": 23,
+   "base": 275.1,
+   "ancho": 561.6
+  },
+  "act_nombre": {
+   "modo": "linea",
+   "x": 39.6,
+   "base": 321.5,
+   "ancho": 170
+  },
+  "act_doc": {
+   "modo": "celda",
+   "x": 217.8,
+   "y": 310.7,
+   "alto": 24.5,
+   "ancho": 134.3
+  },
+  "act_natural": {
+   "modo": "marca",
+   "x": 396.3,
+   "y": 318,
+   "ancho": 7.2,
+   "alto": 9
+  },
+  "act_juridico": {
+   "modo": "marca",
+   "x": 513.3,
+   "y": 318,
+   "ancho": 7.2,
+   "alto": 9
+  },
+  "act_ubicacion": {
+   "modo": "celda",
+   "x": 26.4,
+   "y": 349.5,
+   "alto": 19.4,
+   "ancho": 183.9
+  },
+  "act_correo": {
+   "modo": "celda",
+   "x": 217.8,
+   "y": 349.5,
+   "alto": 19.4,
+   "ancho": 134.3
+  },
+  "act_telefono": {
+   "modo": "celda",
+   "x": 359.6,
+   "y": 349.5,
+   "alto": 19.4,
+   "ancho": 226.4
+  },
+  "yo_nuevo": {
+   "modo": "linea",
+   "x": 228.5,
+   "base": 400.8,
+   "ancho": 108
+  },
+  "doc_nuevo": {
+   "modo": "linea",
+   "x": 505.4,
+   "base": 400.8,
+   "ancho": 56.2
+  },
+  "nue_nombre": {
+   "modo": "linea",
+   "x": 39.6,
+   "base": 480.6,
+   "ancho": 170
+  },
+  "nue_doc": {
+   "modo": "celda",
+   "x": 217.8,
+   "y": 469.8,
+   "alto": 24.5,
+   "ancho": 134.3
+  },
+  "nue_natural": {
+   "modo": "marca",
+   "x": 396.3,
+   "y": 477.2,
+   "ancho": 7.2,
+   "alto": 9
+  },
+  "nue_juridico": {
+   "modo": "marca",
+   "x": 513.3,
+   "y": 477.2,
+   "ancho": 7.2,
+   "alto": 9
+  },
+  "nue_ubicacion": {
+   "modo": "celda",
+   "x": 26.4,
+   "y": 508.7,
+   "alto": 19.4,
+   "ancho": 183.9
+  },
+  "nue_correo": {
+   "modo": "celda",
+   "x": 217.8,
+   "y": 508.7,
+   "alto": 19.4,
+   "ancho": 134.3
+  },
+  "nue_telefono": {
+   "modo": "celda",
+   "x": 359.6,
+   "y": 508.7,
+   "alto": 19.4,
+   "ancho": 226.4
+  }
+ }
+}

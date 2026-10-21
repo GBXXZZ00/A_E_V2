@@ -1,6 +1,21 @@
 # Traspaso (se actualiza al cerrar cada sesión)
 
-Actualizado: 20/10/2026 (lote 21/10 completo: tandas A y B). Publicado: `?v=53`.
+Actualizado: 20/10/2026 noche, desde el chat del proyecto. Publicado: `?v=53`.
+
+## SIGUIENTE: LOTE 22/10 (`claude/lote-22oct.md`), APROBADO por el administrador el 20/10
+Ejecútalo completo, en tres tandas, con una publicación por tanda:
+- Tanda A: actas hasta 15 y representantes hasta 10; módulo de Migraciones simple, con planilla, detección con el TAD e histórico de septiembre y octubre; cruce de IP con el reporte "Clientes Empresariales"; documentos de la app vieja.
+- Tanda B: Mi trabajo rehecho por rol (maqueta aprobada en `claude/maquetas/mi-trabajo/`), Gestiones y Filtros con subgrupos.
+- Tanda C: notificaciones según `claude/notificaciones.md` v2, primero en la app y luego push.
+
+Datos en la base, no en el repo: `privado.migraciones_historico` (50) y `privado.app_vieja_docs` (67). Planilla en `assets/plantillas/`.
+
+Pendientes y lo de mañana: `claude/por-definir.md`.
+
+Hecho hoy desde el chat del proyecto, en la base:
+- Un cliente dedicado pasó de corporativo a ISP (bitácora `cambio_tipo_cliente`).
+- Análisis de migraciones con 4 TAD, consolidado de comisiones y reportes de Proham. El método quedó en el lote.
+- Cruce de prueba de IP. El método quedó en el lote.
 
 ## LOTE 21/10 (`claude/lote-21oct.md`, aprobado): en dos tandas
 Decidido con el administrador: tanda A = partes 1 y 2 (comisiones), publicada en v52; tanda B = partes 3, 4 y 5 (Clientes lista, Clientes hoja, velocidad de documentos), en otra publicación. **Lote 21/10 terminado (tanda B en v53).** Siguiente: lo que el administrador pida tras probar.

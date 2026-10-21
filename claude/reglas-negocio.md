@@ -158,3 +158,12 @@ Sin nombres reales: el repo es público. "Analista Senior" es el responsable de 
 - Un dedicado excluido no cuenta como dedicado.
 - Firma del contrato: Digital o Física. Física = contrato presencial (no se piden correos ni teléfono). Al marcar un contrato Firmado la fecha de vencimiento es obligatoria. Firmado sin archivo o sin vencimiento queda marcado en la lista y en la bandeja de Legal.
 - Cambiar el líder del cliente no cambia el dueño de las comisiones ya cargadas.
+
+## Decidido 20/10 noche (chat del proyecto)
+- Revisión de documentos: cuando el líder o un aliado sube documentos, los revisa el administrador. Legal entra cuando el cliente pasa a Documentos recibidos (elaborar el contrato).
+- Coordinador de analistas: ve todo lo de los analistas y puede hacer sus tareas si hace falta.
+- Migraciones: desde el 21/10 todo cambio se registra en la app. Al cambiar de categoría en Proham se cambian el plan y la categoría a la vez. Al aprobar los documentos, el cambio pasa solo al analista. Persona natural: cédula y RIF. El negativo se llama "Cambio a residencial". Septiembre y octubre quedan como histórico "Pagado fuera de la app".
+- Planilla de cambio de titular: idéntica a la oficial, prellenada y generada al registrar.
+- IP: se llena sola con el reporte "Clientes Empresariales"; "IP por confirmar" solo cuando no cuadra; siempre editable a mano. Los dedicados no entran, salvo que se les instale un servicio PYME nuevo.
+- Gestiones: grupos con meta, plazo y responsables; cada cliente con su estado e historial.
+- Notificaciones: encadenadas entre procesos y al momento; a cada líder, cada 3 días, la lista de sus clientes a los que les faltan documentos. Gerencia: por definir.

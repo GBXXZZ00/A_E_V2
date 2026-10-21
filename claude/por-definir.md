@@ -1,59 +1,37 @@
-# Lo que falta definir con el administrador y sus pendientes (09/10/2026)
+# Pendientes y lo que falta definir (actualizado 20/10/2026, noche)
 
-Hasta el martes 13/10 el administrador casi no tiene uso disponible en su chat del proyecto. Mientras tanto, las definiciones se conversan AQUÍ, en Claude Code: pregunta de a pocas cosas, en simple, y anota cada respuesta en `claude/reglas-negocio.md`. No programes un módulo de esta lista hasta tener sus respuestas.
+La versión del 09/10 sigue en el historial de git. Lo de migraciones, Mi trabajo, gestiones, filtros, IP y notificaciones ya se definió y está en `claude/lote-22oct.md`.
 
-## 1. Revisión de documentos con IA (va de la mano con aliados)
-Lo que ya se sabe:
-- La IA solo lee y propone; el veredicto es determinista y vive en el servidor. Es una marca aparte del estatus legal (falta la columna).
-- Corre en una función de borde que lee el archivo de Drive. Nunca pasan documentos reales por el repo.
-- Lee el expediente completo. El nombre del representante lo llena ella, no una persona.
-- Se ejecuta cuando el administrador lo decida, no sola al subir.
-- Hay unos 2.460 archivos ya cargados; la mayoría de los clientes ya fue revisada por Legal, así que sirve de comparación para medir si la IA acierta.
-- La app vieja usaba Gemini con la cuenta personal del administrador y funcionaba a medias. No hay presupuesto: el costo debe ser mínimo.
-- Reglas del script viejo que deben pasar al servidor: vigencia de cédula y RIF, que los nombres coincidan entre cédula y RIF, que el representante aparezca en el acta, que la razón social del RIF coincida con el acta, régimen de firma (conjunta exige a todos los representantes; separada basta uno completo).
-Por preguntar: qué proveedor y con qué clave; si se revisa por cliente con un botón o por lote; qué ve el administrador cuando la IA y Legal no coinciden; qué hacer con varios documentos escaneados en un solo archivo.
+## Mañana 21/10 (chat del proyecto, con el administrador)
+1. **Seguridad**, antes de dar acceso a aliados:
+   - repo privado (GitHub Pro, revisar que GitHub Pages siga publicando);
+   - cerrar todas las sesiones al restablecer un PIN;
+   - cierre por inactividad (30 minutos, ajustable);
+   - copia semanal de la base;
+   - borrar funciones de prueba (`drive_prueba`, `drive_inventario` y la tabla vacía `public.drive_inventario`);
+   - revisar `ocr_leer`, que está abierta sin sesión.
+2. **Google:** confirmar que el permiso de Drive está en producción (que no venza cada 7 días); el de Gmail (lectura) también; y el permiso de enviar correo, para la fase 2 de notificaciones.
+3. **Presentación** del flujo de la app con instrucciones de uso.
+4. **Reglas de nomenclatura** para subir las instalaciones a Odoo.
+5. **Requisitos del VGT:** los dice el administrador.
+6. El administrador tiene anotadas varias cosas que debe probar antes de abrir la app.
 
-## 2. Módulo de aliados
-Lo que ya se sabe:
-- Los aliados no suben a Odoo: piden permiso, se revisan sus documentos y de ahí sigue todo. Hoy lo hacían en una app aparte.
-- Un aliado puede instalar lo que otro registró. Si el cliente ya está en gestión de un líder o es TOP, el aliado queda bloqueado.
-- En la base existe `privado.aliados_appsheet`: 79 expedientes viejos con su situación (instalado 70, pendiente_por_instalacion 3, instalado_sin_cliente 2, consulta 4). Son las "consultas viejas" y deben verse con el indicador de cuáles se instalaron.
-- Sus documentos ya están en los clientes, subidos como "Aliado: nombre".
-- Proforma y carta de bienvenida serán obligatorias en este módulo.
-- En Factibilidad, Planta Externa es zona donde el aliado no puede instalar.
-Por preguntar: qué ve y qué puede hacer un aliado al entrar; cómo pide permiso por un cliente y quién aprueba; si usa Factibilidad; cómo se le avisa que un cliente está bloqueado; si la IA revisa su expediente antes de que lo vea el administrador.
+## Aliados
+Construido en v26 y conectado con clientes e instalaciones, pero nunca usado: hay 45 aliados, ninguna solicitud y ninguna cuenta de aliado. Antes de dar acceso:
+1. seguridad (arriba);
+2. una cuenta de aliado de prueba y el recorrido completo (pedir permiso, bloqueo, documentos, instalación, pago);
+3. sus notificaciones (en `notificaciones.md` sección 4, incluido el bloqueo que avisa al aliado, al líder dueño y al administrador).
 
-## 3. Migraciones y cambios de titularidad (el administrador dice que es sencillo)
-- Migración: residencial que pasa a PYME. Se cobra, exige documentos y comisiona. Hoy llega por correo, él aprueba y el analista la emite a mano.
-- Cambio de titularidad: el titular pasa de un nombre a otro; puede ir junto con una migración. El analista entrega una carta que el cliente llena.
-- Idea del administrador: primero se registra la solicitud y, con ese registro, se evalúa cuando se cumpla en la base (comparando una carga del TAD con la anterior).
-Por preguntar: quién registra la solicitud, qué documentos exige cada caso y cómo entra al corte de comisión.
+## Dedicados (después del lote 22/10)
+- Módulo de la analista: base actualizable, cobranza y finanzas.
+- Cambiar el tipo de cliente desde la hoja (hoy el tipo vive en dos sitios: `clientes.es_isp` y `dedicados.tipo`; unificarlo).
+- Contratos (el filtro va en el lote 22/10).
 
-## 4. Dedicados
-No comisionan, pero pasan por aprobación y contrato. Falta todo, incluido su texto de Odoo.
-
-## 5. Ideas nuevas del administrador (09/10)
-- Bot que revisa el correo y sube a la app los documentos que mandan los clientes o líderes. Ojo: leer Gmail exige otro permiso de Google, más estricto que el de Drive.
-- Elaborar el contrato con lo que ya hay en la base (datos del cliente, del registro y de los firmantes).
-
-## Pendientes del administrador
-- Martes 13/10: subir el KMZ real en Actualizar; pasar el permiso de Google a producción (vence cerca del 15/10); cambiar el secreto de Google; seguridad de acceso, con él presente.
-- Crear usuarios: el Analista Senior y los líderes con su WhatsApp y correo.
-- Probar con el Analista Senior comisiones y expediente.
-- Que el Analista Senior revise 6 clientes instalados por un aliado que figuran en cartera de un líder (dos de ellos con orden de Odoo del líder).
-
-## Cabos sueltos de datos (se resuelven en el chat del proyecto, desde el martes)
-- 4 expedientes de aliados sin rastro de instalación.
-- Una carpeta de Drive de aliados con subcarpetas de código AL-, sin cliente identificado (59 archivos).
-- 2 correos con error de tecleo que entraron tal cual.
-- 12 carpetas de Drive con archivos cuyo RIF no existe como cliente.
-- Decidir si se recalcula el estatus de 166 clientes cuyos documentos entraron por revisar.
-- Borrar la tabla vacía `public.drive_inventario`.
-- De dónde sale el líder de cartera en la carga del cruce (hay clientes instalados por aliado asignados a un líder).
-
-## Más adelante
-Mensajes al cliente por caso, correo desde el servidor, gestión de clientes viejos, avisos al teléfono, indicador de tiempo de instalación.
-
-## Anotado 20/10 (chat del proyecto)
-- Mi trabajo: rehacerlo bien cuando toquemos ese módulo (al administrador no le gusta cómo quedó). Incluir la bandeja "Legal aprobado a mano: revisar" (clientes con Legal aprobado como excepción y documentos pendientes; se gestionan desde el cliente y salen al pasarlo a Recibidos u otro estatus).
-- Pago y TAD: el TAD puede dar "solvente" antes de que se facture la instalación (caso dedicado del 07/10). Definir cuántos días después de instalar se genera la cuenta por cobrar antes de dar el pago por bueno.
+## Otros
+- Pantalla de correos: lo que el lector de Gmail ya subió (519 archivos a 91 clientes) y terminar de revisar el correo desde marzo.
+- Correo al cliente con constancia (fase 2 de notificaciones).
+- Notificaciones de Gerencia.
+- Revisión de documentos con IA: proveedor y clave de pago (sigue pendiente desde el 09/10).
+- Clientes de la base vieja que no están en la app: 9 tienen documentos en `privado.app_vieja_docs` ("cliente no existe en la app"). El administrador decide si se crean.
+- Cliente de la base vieja con RIF dañado (0, 000000, 3505, 668850): falta el RIF correcto.
+- Pago y TAD: días después de instalar para dar el pago por bueno (hoy ajuste `pago_dias_tad` = 3).

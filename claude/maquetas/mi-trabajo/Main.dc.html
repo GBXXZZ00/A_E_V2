@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Mi trabajo</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap">
+<style>
+body{margin:0;background:#F5F6F7}
+a{color:#2B5CFF}a:hover{color:#1A3FC4}
+.mt{font-family:Inter,system-ui,sans-serif;color:#111315;background:#F5F6F7;min-height:100%;font-size:14px;line-height:1.45;-webkit-font-smoothing:antialiased}
+.bar{background:#fff;border-bottom:1px solid #E3E6EA}
+.bar-in{max-width:1280px;margin:0 auto;padding:0 32px;height:60px;display:flex;align-items:center;gap:28px}
+.logo{font-weight:800;letter-spacing:.06em;color:#2B5CFF;font-size:17px}
+.nav{display:flex;gap:4px;flex:1;flex-wrap:wrap}
+.nav a{text-decoration:none;color:#5B636E;font-weight:500;padding:8px 12px;border-radius:999px;font-size:13.5px;display:flex;gap:6px;align-items:center}
+.nav a.on{background:#111315;color:#fff}
+.nav .n{background:#C0271B;color:#fff;border-radius:999px;font-size:11px;font-weight:700;padding:1px 6px}
+.yo{display:flex;align-items:center;gap:10px;color:#5B636E;font-size:13px}
+.av{width:34px;height:34px;border-radius:50%;background:#ECEEF1;display:flex;align-items:center;justify-content:center;font-weight:700;color:#111315;font-size:13px}
+.wrap{max-width:1280px;margin:0 auto;padding:28px 32px 40px;display:flex;flex-direction:column;gap:22px}
+.cab{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.cab h1{margin:0;font-size:26px;font-weight:700;letter-spacing:-.01em}
+.cab p{margin:4px 0 0;color:#5B636E}
+.res{display:flex;gap:8px;flex-wrap:wrap}
+.pill{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:5px 11px;font-size:12.5px;font-weight:600;white-space:nowrap}
+.p-r{background:#FCEDEB;color:#A32117}.p-a{background:#FBF1DC;color:#8A5A00}.p-v{background:#E7F5EE;color:#11734B}.p-g{background:#ECEEF1;color:#3F4650}.p-b{background:#E8ECF9;color:#1B3A9E}
+.grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}
+.card{all:unset;box-sizing:border-box;cursor:pointer;background:#fff;border:1px solid #E3E6EA;border-radius:20px;padding:18px 18px 16px;display:flex;flex-direction:column;gap:10px;min-height:168px;transition:transform 140ms cubic-bezier(.23,1,.32,1),border-color 140ms}
+.card:active{transform:scale(.97)}
+.card.g2{grid-column:span 2}
+.card.sel{border-color:#2B5CFF;box-shadow:0 0 0 3px rgba(43,92,255,.14)}
+.card:focus-visible{outline:2px solid #2B5CFF;outline-offset:2px}
+.c-top{display:flex;align-items:center;gap:10px}
+.ico{width:36px;height:36px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex:none}
+.ico svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.t-b{background:#E8ECF9;color:#1B3A9E}.t-v{background:#E7F5EE;color:#11734B}.t-a{background:#FBF1DC;color:#8A5A00}.t-m{background:#F0EBFA;color:#5B3AA6}.t-r{background:#FCEDEB;color:#A32117}.t-g{background:#ECEEF1;color:#3F4650}
+.c-tit{font-weight:600;font-size:14.5px}
+.c-sub{color:#5B636E;font-size:12.5px}
+.c-num{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.big{font-size:38px;font-weight:700;letter-spacing:-.02em;line-height:1}
+.c-pie{margin-top:auto;color:#5B636E;font-size:12.5px;border-top:1px solid #EEF0F2;padding-top:10px;display:flex;justify-content:space-between;gap:8px}
+.c-pie b{color:#111315;font-weight:600}
+.cuerpo{display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap}
+.izq{flex:999 1 560px;min-width:0;background:#fff;border:1px solid #E3E6EA;border-radius:20px;padding:6px 0 8px}
+.der{flex:1 1 320px;min-width:0;display:flex;flex-direction:column;gap:18px}
+.sec-h{display:flex;align-items:center;justify-content:space-between;padding:14px 20px 8px;gap:12px;flex-wrap:wrap}
+.sec-h h2{margin:0;font-size:16px;font-weight:700}
+.sec-h small{color:#5B636E}
+.limpiar{all:unset;cursor:pointer;color:#2B5CFF;font-weight:600;font-size:13px;padding:6px 8px;border-radius:8px}
+.it{display:flex;align-items:center;gap:14px;padding:12px 20px}
+.it + .it{border-top:1px solid #F1F2F4}
+.dot{width:9px;height:9px;border-radius:50%;flex:none}
+.d-venc{background:#C0271B}.d-hoy{background:#D08A00}.d-ok{background:#11734B}.d-nuevo{background:#2B5CFF}
+.it-txt{flex:1;min-width:0}
+.it-a{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.it-a span{color:#5B636E;font-weight:500}
+.it-m{color:#5B636E;font-size:12.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.btn{all:unset;box-sizing:border-box;cursor:pointer;height:36px;padding:0 14px;border-radius:999px;font-weight:600;font-size:13px;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;transition:transform 120ms cubic-bezier(.23,1,.32,1)}
+.btn:active{transform:scale(.97)}
+.b1{background:#111315;color:#fff}.b2{background:#F5F6F7;color:#111315;border:1px solid #E3E6EA}
+.panel{background:#fff;border:1px solid #E3E6EA;border-radius:20px;padding:16px 18px;display:flex;flex-direction:column;gap:12px}
+.panel h3{margin:0;font-size:15px;font-weight:700;display:flex;justify-content:space-between;align-items:center}
+.ges{display:flex;flex-direction:column;gap:7px}
+.ges + .ges{border-top:1px solid #F1F2F4;padding-top:12px}
+.ges-t{display:flex;justify-content:space-between;gap:8px;font-weight:600}
+.ges-m{color:#5B636E;font-size:12.5px}
+.barra{height:8px;background:#ECEEF1;border-radius:999px;overflow:hidden}
+.barra i{display:block;height:100%;background:#2B5CFF;border-radius:999px}
+.eq{display:flex;align-items:center;gap:10px}
+.eq + .eq{border-top:1px solid #F1F2F4;padding-top:10px}
+.eq-n{flex:1;min-width:0}
+.eq-n b{display:block;font-weight:600}
+.eq-n small{color:#5B636E}
+.kpi{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.k{background:#F5F6F7;border-radius:14px;padding:10px 12px}
+.k b{display:block;font-size:22px;font-weight:700}
+.k small{color:#5B636E}
+.cola{background:#111315;color:#fff;border-radius:20px;padding:18px;display:flex;flex-direction:column;gap:10px}
+.cola p{margin:0;color:#C9CDD3;font-size:13px}
+.cola .btn{background:#fff;color:#111315;align-self:flex-start}
+.abajo{display:none}
+@media (max-width:760px){
+ .bar-in{padding:0 16px;height:54px}.nav,.yo span{display:none}
+ .wrap{padding:16px 16px 96px;gap:16px}
+ .cab h1{font-size:22px}
+ .grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+ .card{min-height:150px;padding:14px;border-radius:18px}
+ .big{font-size:32px}
+ .it{padding:12px 16px;flex-wrap:wrap}.it .btn{margin-left:23px}
+ .sec-h{padding:12px 16px 6px}
+ .abajo{display:flex;position:sticky;bottom:0;background:#fff;border-top:1px solid #E3E6EA;justify-content:space-around;padding:8px 6px 10px}
+ .abajo a{text-decoration:none;color:#5B636E;font-size:11px;font-weight:600;display:flex;flex-direction:column;align-items:center;gap:3px;min-width:56px;min-height:44px;justify-content:center}
+ .abajo a.on{color:#2B5CFF}
+ .abajo svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+}
+@media (hover:hover) and (pointer:fine){.card:hover{border-color:#C9CED6}.b2:hover{background:#ECEEF1}}
+@media (prefers-reduced-motion:reduce){.card,.btn{transition:none}}
+</style>
+</helmet>
+<div class="mt">
+ <header class="bar"><div class="bar-in">
+  <div class="logo">AIRTEK</div>
+  <nav class="nav" aria-label="Menú">
+   <a href="#">Inicio</a><a href="#" class="on">Mi trabajo <span class="n">{{total}}</span></a><a href="#">Clientes</a><a href="#">Comisiones</a><a href="#">Migraciones</a><sc-if value="{{verAliados}}" hint-placeholder-val="{{false}}"><a href="#">Aliados</a></sc-if>
+  </nav>
+  <div class="yo"><span>{{rolNombre}}</span><div class="av">{{iniciales}}</div></div>
+ </div></header>
+
+ <main class="wrap">
+  <div class="cab">
+   <div><h1>{{saludo}}</h1><p>{{subtitulo}}</p></div>
+   <div class="res">
+    <span class="pill p-r">{{vencidos}} vencidos</span><span class="pill p-a">{{hoy}} vencen hoy</span><span class="pill p-g">{{total}} en total</span>
+   </div>
+  </div>
+
+  <section class="grid" aria-label="Grupos de trabajo">
+   <sc-for list="{{grupos}}" as="g" hint-placeholder-count="4">
+    <button type="button" class="{{g.cls}}" onClick="{{g.pick}}" aria-pressed="{{g.sel}}">
+     <div class="c-top"><div class="{{g.tono}}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="{{g.d}}"></path></svg></div><div><div class="c-tit">{{g.titulo}}</div><div class="c-sub">{{g.sub}}</div></div></div>
+     <div class="c-num"><span class="big">{{g.num}}</span><sc-if value="{{g.venc}}" hint-placeholder-val="{{true}}"><span class="pill p-r">{{g.venc}} vencidos</span></sc-if><sc-if value="{{g.hoy}}" hint-placeholder-val="{{false}}"><span class="pill p-a">{{g.hoy}} hoy</span></sc-if></div>
+     <div class="c-pie"><span>{{g.pie}}</span><b>{{g.pieDer}}</b></div>
+    </button>
+   </sc-for>
+  </section>
+
+  <div class="cuerpo">
+   <section class="izq" aria-label="Para hoy">
+    <div class="sec-h"><div><h2>{{listaTitulo}}</h2><small>Ordenado por urgencia. Cada tarea sale sola cuando se resuelve.</small></div><sc-if value="{{haySel}}" hint-placeholder-val="{{false}}"><button type="button" class="limpiar" onClick="{{limpiar}}">Ver todo</button></sc-if></div>
+    <sc-for list="{{items}}" as="it" hint-placeholder-count="6">
+     <div class="it">
+      <span class="{{it.dot}}" aria-hidden="true"></span>
+      <div class="it-txt"><div class="it-a">{{it.accion}} <span>· {{it.cliente}}</span></div><div class="it-m">{{it.motivo}}</div></div>
+      <span class="{{it.plazoCls}}">{{it.plazo}}</span>
+      <button type="button" class="{{it.btnCls}}">{{it.boton}}</button>
+     </div>
+    </sc-for>
+   </section>
+
+   <aside class="der">
+    <sc-if value="{{cola}}" hint-placeholder-val="{{false}}">
+     <div class="cola"><b style="font-size:16px">{{cola.titulo}}</b><p>{{cola.texto}}</p><button type="button" class="btn">{{cola.boton}}</button></div>
+    </sc-if>
+    <sc-if value="{{gestiones.length}}" hint-placeholder-val="{{true}}">
+     <div class="panel"><h3>{{gestTitulo}} <button type="button" class="limpiar">{{gestBoton}}</button></h3>
+      <sc-for list="{{gestiones}}" as="ge" hint-placeholder-count="2">
+       <div class="ges"><div class="ges-t"><span>{{ge.nombre}}</span><span class="{{ge.plazoCls}}">{{ge.plazo}}</span></div><div class="ges-m">{{ge.meta}}</div><div class="barra"><i style="width: {{ge.pct}}"></i></div><div class="ges-m"><b style="color:#111315">{{ge.avance}}</b> · {{ge.detalle}}</div></div>
+      </sc-for>
+     </div>
+    </sc-if>
+    <sc-if value="{{equipo.length}}" hint-placeholder-val="{{false}}">
+     <div class="panel"><h3>Equipo <small style="font-weight:500;color:#5B636E">vencidos · hoy</small></h3>
+      <sc-for list="{{equipo}}" as="e" hint-placeholder-count="4">
+       <div class="eq"><div class="av">{{e.ini}}</div><div class="eq-n"><b>{{e.nombre}}</b><small>{{e.rol}}</small></div><span class="{{e.vCls}}">{{e.venc}}</span><span class="pill p-a">{{e.hoy}}</span></div>
+      </sc-for>
+     </div>
+    </sc-if>
+    <div class="panel"><h3>{{kpiTitulo}}</h3>
+     <div class="kpi"><sc-for list="{{kpis}}" as="k" hint-placeholder-count="4"><div class="k"><b>{{k.v}}</b><small>{{k.t}}</small></div></sc-for></div>
+    </div>
+   </aside>
+  </div>
+ </main>
+
+ <nav class="abajo" aria-label="Menú del teléfono">
+  <a href="#"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"></path></svg>Inicio</a>
+  <a href="#" class="on"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11l3 3 8-8M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"></path></svg>Mi trabajo</a>
+  <a href="#"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2M10 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM21 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"></path></svg>Clientes</a>
+  <a href="#"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>Comisiones</a>
+  <a href="#"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"></path></svg>Más</a>
+ </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"rol":{"editor":"enum","options":["lider","analista","coord","legal","admin"],"default":"lider"},"$preview":{"width":1366,"height":980}}'>
+class Component extends DCLogic {
+  constructor(p){ super(p); this.state = { sel: null }; }
+  datos(rol){
+    const I = {
+      doc:'M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8zM14 3v5h5M9 13h6M9 17h4',
+      firma:'M3 17c3 0 4-6 7-6s2 6 5 6 4-3 6-3M3 21h18',
+      inst:'M12 2v6M5 9h14l-1 11H6zM9 13v4M15 13v4',
+      meta:'M12 21a9 9 0 1 1 0-18 9 9 0 0 1 0 18zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zM12 12h.01',
+      emitir:'M22 2L11 13M22 2l-7 20-4-9-9-4z',
+      sobre:'M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zM22 6l-10 7L2 6',
+      ip:'M5 12h14M12 5v14M4 4h16v16H4z',
+      pago:'M2 7h20v12H2zM2 11h20M6 15h3',
+      lupa:'M11 19a8 8 0 1 1 0-16 8 8 0 0 1 0 16zM21 21l-4.3-4.3',
+      contrato:'M6 2h9l5 5v15H6zM14 2v6h6M9 14l2 2 4-4',
+      check:'M20 6L9 17l-5-5',
+      decidir:'M12 3v18M3 7l9-4 9 4M5 7l-2 6a4 4 0 0 0 4 0zM19 7l-2 6a4 4 0 0 0 4 0z',
+      alerta:'M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0zM12 9v4M12 17h.01',
+      equipo:'M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2M10 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM21 21v-2a4 4 0 0 0-3-3.9'
+    };
+    if(rol === 'analista') return {
+      nombre:'Carla', ini:'CG', rolNombre:'Analista', saludo:'Buenas tardes, Carla', subtitulo:'Llevas a 3 líderes: Laura, Rosa y Daniel.',
+      grupos:[
+        {id:'emi', titulo:'Emitir cambios', sub:'Migraciones con documentos aprobados', num:5, venc:1, hoy:2, pie:'Más viejo: 3 días', pieDer:'Ver cola', d:I.emitir, tono:'t-b', g2:true},
+        {id:'bien', titulo:'Bienvenidas y proformas', sub:'Instalados del corte', num:7, venc:0, hoy:3, pie:'Corte octubre', pieDer:'7 por enviar', d:I.sobre, tono:'t-v'},
+        {id:'ip', titulo:'IP por confirmar', sub:'El cruce no cuadró o no está en el reporte', num:2, venc:1, hoy:0, pie:'Cruce automático de hoy', pieDer:'2', d:I.ip, tono:'t-m'},
+        {id:'pago', titulo:'Revisar pago', sub:'Más de un servicio o factura nueva', num:3, venc:0, hoy:1, pie:'TAD del 20/10', pieDer:'3 dudas', d:I.pago, tono:'t-a'}
+      ],
+      items:[
+        ['emi','venc','Emitir migración a PYME','Farmacia San Rafael','Documentos aprobados el 17/10 · líder Laura','Vencido','Marcar hecho'],
+        ['ip','venc','Confirmar IP','Inversiones Delta 21','Instalado el 15/10 · no sale en el reporte de clientes empresariales','Vencido','Confirmar'],
+        ['emi','hoy','Falta cambiar el plan','Bodegón La Esquina','El TAD ya dice PYME-1GB pero el plan sigue BRONCE-RES','Hoy','Revisar'],
+        ['bien','hoy','Enviar bienvenida','Clínica Los Olivos','Comisiona en octubre · IP lista','Hoy','Enviar'],
+        ['pago','hoy','Revisar pago','Grupo Norte 2025','Tiene 2 servicios en el mismo RIF','Hoy','Revisar'],
+        ['bien','ok','Enviar proforma','Ferretería El Puente','Instalado el 19/10','Mañana','Enviar']
+      ],
+      gestTitulo:'Gestiones donde participo', gestBoton:'Ver todas',
+      gestiones:[{nombre:'Bienvenidas de octubre', meta:'Enviar todas antes del cierre', avance:'18 de 25', pct:'72%', detalle:'faltan 7', plazo:'Vence el 21/10', plazoCls:'pill p-a'}],
+      kpiTitulo:'Mi semana', kpis:[{v:'12',t:'cambios emitidos'},{v:'1,4 días',t:'tiempo para emitir'},{v:'21',t:'bienvenidas enviadas'},{v:'0',t:'devueltos por error'}]
+    };
+    if(rol === 'legal') return {
+      nombre:'Paula', ini:'PL', rolNombre:'Legal', saludo:'Buenos días, Paula', subtitulo:'Entran aquí los clientes en Documentos recibidos: toca el contrato.',
+      grupos:[
+        {id:'con', titulo:'Elaborar contrato', sub:'Clientes en Documentos recibidos', num:11, venc:3, hoy:2, pie:'Llegaron 4 desde ayer', pieDer:'Empezar', d:I.contrato, tono:'t-b', g2:true},
+        {id:'fir', titulo:'Por firmar', sub:'Contrato enviado al cliente', num:8, venc:1, hoy:0, pie:'Digital 5 · Físico 3', pieDer:'8', d:I.firma, tono:'t-m'},
+        {id:'arch', titulo:'Firmado sin archivo', sub:'Falta el escaneado o el vencimiento', num:6, venc:0, hoy:1, pie:'Dedicados', pieDer:'6', d:I.doc, tono:'t-a'},
+        {id:'ven', titulo:'Por vencer', sub:'Contratos en los próximos 60 días', num:4, venc:0, hoy:0, pie:'Renovar con el líder', pieDer:'4', d:I.alerta, tono:'t-g'}
+      ],
+      items:[
+        ['con','venc','Elaborar contrato','Cable Norte','Dedicado ISP · pasó a Documentos recibidos el 15/10','Vencido','Elaborar'],
+        ['con','venc','Elaborar contrato','Moda Prima','PYME · recibidos el 16/10','Vencido','Elaborar'],
+        ['fir','venc','Seguir firma','Inversiones Delta 21','Enviado para firma digital el 14/10','Vencido','Reenviar'],
+        ['con','hoy','Elaborar contrato','Bodegón El Puerto','Cambio de titular aprobado · contrato a nombre nuevo','Hoy','Elaborar'],
+        ['arch','hoy','Subir contrato firmado','Red Marina','Firmado en físico sin escaneado','Hoy','Subir'],
+        ['ven','ok','Contrato por vencer','Telecom Lago','Vence el 30/11 · avisar al líder','En 40 días','Avisar']
+      ],
+      cola:{titulo:'Contratos en cola', texto:'11 clientes en Documentos recibidos, del más viejo al más nuevo. Al terminar uno se abre el siguiente.', boton:'Empezar'},
+      gestTitulo:'Gestiones', gestBoton:'Ver todas',
+      gestiones:[{nombre:'Contratos de dedicados', meta:'Firmado con archivo y vencimiento', avance:'30 de 117', pct:'26%', detalle:'67 sin contrato', plazo:'30/11', plazoCls:'pill p-g'}],
+      kpiTitulo:'Mi semana', kpis:[{v:'9',t:'contratos elaborados'},{v:'2 días',t:'de recibido a contrato'},{v:'7',t:'firmados'},{v:'6',t:'sin archivo'}]
+    };
+    if(rol === 'coord') return {
+      nombre:'Marcos', ini:'MV', rolNombre:'Coordinador', saludo:'Buenos días, Marcos', subtitulo:'Ves el trabajo de todos los analistas y puedes hacerlo tú si hace falta.',
+      grupos:[
+        {id:'emi', titulo:'Emitir cambios', sub:'De todos los analistas', num:9, venc:2, hoy:3, pie:'Carla 5 · Sofía 4', pieDer:'Ver por analista', d:I.emitir, tono:'t-b', g2:true},
+        {id:'bien', titulo:'Bienvenidas y proformas', sub:'Corte de octubre', num:12, venc:1, hoy:4, pie:'Carla 7 · Sofía 5', pieDer:'12', d:I.sobre, tono:'t-v'},
+        {id:'ip', titulo:'IP por confirmar', sub:'El reporte no cuadró', num:3, venc:0, hoy:1, pie:'Del cruce de hoy', pieDer:'3', d:I.ip, tono:'t-m'},
+        {id:'pago', titulo:'Revisar pago', sub:'Dudas del TAD', num:5, venc:1, hoy:1, pie:'Factura nueva del mes: 2', pieDer:'5', d:I.pago, tono:'t-a'}
+      ],
+      items:[
+        ['emi','venc','Emitir migración a PYME','Farmacia San Rafael','Analista Carla · aprobado hace 3 días','Vencido','Hacerlo yo'],
+        ['bien','venc','Enviar bienvenida','Grupo Norte 2025','Analista Sofía · instalado el 12/10','Vencido','Hacerlo yo'],
+        ['ip','hoy','Confirmar IP','Ferretería El Puente','El equipo del reporte no es el del TAD','Hoy','Confirmar'],
+        ['pago','hoy','Revisar pago','Clínica Los Olivos','Factura nueva del mes después del día 20','Hoy','Revisar'],
+        ['emi','hoy','Falta cambiar el plan','Bodegón La Esquina','Categoría PYME, plan sigue residencial','Hoy','Avisar']
+      ],
+      gestTitulo:'Gestiones del equipo', gestBoton:'Ver todas',
+      gestiones:[{nombre:'Bienvenidas de octubre', meta:'Todas enviadas antes del cierre', avance:'30 de 42', pct:'71%', detalle:'faltan 12', plazo:'21/10', plazoCls:'pill p-a'}],
+      equipo:[
+        {ini:'CG', nombre:'Carla Gómez', rol:'Analista · 19 pendientes', venc:3, hoy:6},
+        {ini:'SL', nombre:'Sofía León', rol:'Analista · 10 pendientes', venc:1, hoy:3}
+      ],
+      kpiTitulo:'Equipo esta semana', kpis:[{v:'21',t:'cambios emitidos'},{v:'1,6 días',t:'tiempo para emitir'},{v:'38',t:'bienvenidas'},{v:'4',t:'tareas que hice yo'}]
+    };
+    if(rol === 'admin') return {
+      nombre:'Administrador', ini:'AD', rolNombre:'Administrador', saludo:'Buenos días, Administrador', subtitulo:'Corte de octubre abierto · día límite 21/10.', verAliados:true,
+      grupos:[
+        {id:'rev', titulo:'Revisar documentos', sub:'Lo que subieron líderes, aliados y el correo', num:23, venc:4, hoy:6, pie:'Llegaron 9 hoy · 5 por correo', pieDer:'Empezar', d:I.lupa, tono:'t-b', g2:true},
+        {id:'dec', titulo:'Por decidir', sub:'Corte, comisiones, sin registro', num:9, venc:2, hoy:3, pie:'Cerrar corte de octubre', pieDer:'9', d:I.decidir, tono:'t-r'},
+        {id:'ali', titulo:'Aliados', sub:'Permisos y bloqueos', num:4, venc:1, hoy:0, pie:'2 bloqueados', pieDer:'4', d:I.inst, tono:'t-m'},
+        {id:'ale', titulo:'Alertas', sub:'Cargas y datos', num:2, venc:0, hoy:2, pie:'TAD subido hace 3 h', pieDer:'2', d:I.alerta, tono:'t-a'}
+      ],
+      items:[
+        ['rev','venc','Revisar expediente','Inversiones Parque','5 archivos nuevos · subió el aliado Aliado Uno hace 4 días','Vencido','Revisar'],
+        ['rev','venc','Revisar expediente','Telecom Lago','12 actas de asamblea nuevas','Vencido','Revisar'],
+        ['dec','venc','Cerrar corte de octubre','Comisiones','63 filas · 49 cumplen · 14 pasan a noviembre','Vencido','Revisar y cerrar'],
+        ['rev','hoy','Revisar expediente','Moda Prima','6 archivos · llegaron por correo hoy','Hoy','Revisar'],
+        ['dec','venc','Decidir comisión de evento','Evento comunitario','El Analista Senior lo dejó por decidir','Vencido','Decidir'],
+        ['dec','hoy','Cambio sin registro','Hotel Mirador','El TAD lo muestra en PYME y nadie lo registró','Hoy','Asignar líder'],
+        ['ali','venc','Permiso de aliado','Distribuidora Sur','Aliado Uno pide instalar · cliente en cartera de Laura','Vencido','Revisar'],
+        ['ale','hoy','TAD con menos filas','Subidas','La carga trae 6% menos filas que la anterior','Hoy','Revisar'],
+      ],
+      cola:{titulo:'Revisión en cola', texto:'23 expedientes, del más viejo al más nuevo. Al cerrar uno se abre el siguiente.', boton:'Empezar a revisar'},
+      gestTitulo:'Gestiones activas', gestBoton:'Nueva gestión',
+      gestiones:[
+        {nombre:'Documentación ISP', meta:'Expediente completo · 12 clientes', avance:'7 de 12', pct:'58%', detalle:'5 esperan actas', plazo:'Viernes', plazoCls:'pill p-a'},
+        {nombre:'Contratos de dedicados', meta:'Firmado con archivo y vencimiento', avance:'30 de 117', pct:'26%', detalle:'67 sin contrato', plazo:'30/11', plazoCls:'pill p-g'}
+      ],
+      equipo:[
+        {ini:'LM', nombre:'Laura Méndez', rol:'Líder · 18 pendientes', venc:4, hoy:3},
+        {ini:'RP', nombre:'Rosa Pérez', rol:'Líder · 11 pendientes', venc:2, hoy:1},
+        {ini:'CG', nombre:'Carla Gómez', rol:'Analista · 19 pendientes', venc:3, hoy:6},
+        {ini:'PL', nombre:'Paula (Legal)', rol:'Legal · 50 pendientes', venc:5, hoy:9},
+        {ini:'AT', nombre:'Ana Torres', rol:'Líder · 6 pendientes', venc:0, hoy:2}
+      ],
+      kpiTitulo:'Corte de octubre', kpis:[{v:'68',t:'instalaciones'},{v:'49',t:'comisionan'},{v:'19',t:'migraciones'},{v:'3',t:'negativos'}]
+    };
+    return {
+      nombre:'Laura', ini:'LM', rolNombre:'Líder', saludo:'Buenos días, Laura', subtitulo:'El corte de octubre cierra el 21/10. Te faltan 3 clientes para comisionar.',
+      grupos:[
+        {id:'doc', titulo:'Conseguir documentos', sub:'Faltan o Legal los devolvió', num:9, venc:3, hoy:2, pie:'Devueltos por Legal: 4', pieDer:'Pedir a todos', d:I.doc, tono:'t-b', g2:true},
+        {id:'fir', titulo:'Hacer firmar', sub:'Contratos y planillas', num:4, venc:1, hoy:0, pie:'2 planillas de titular', pieDer:'4', d:I.firma, tono:'t-m'},
+        {id:'ins', titulo:'Por instalar', sub:'Ventas con orden en Odoo', num:3, venc:0, hoy:1, pie:'Reloj más viejo: 6 días', pieDer:'3', d:I.inst, tono:'t-v'},
+        {id:'ges', titulo:'Mis gestiones', sub:'Metas con plazo', num:2, venc:0, hoy:1, pie:'Documentación ISP', pieDer:'7 de 12', d:I.meta, tono:'t-a'}
+      ],
+      items:[
+        ['doc','venc','Corregir cédula','Comercial Ejemplo','Legal la devolvió: vencida · cuenta para octubre','Vencido','Pedir por WhatsApp'],
+        ['doc','venc','Subir RIF de la empresa','Farmacia San Rafael','Falta para comisionar en octubre','Vencido','Subir'],
+        ['fir','venc','Hacer firmar contrato','Inversiones Delta 21','Contrato PYME listo desde el 14/10','Vencido','Enviar'],
+        ['doc','hoy','Subir acta de asamblea','Distribuidora Andes','Falta para comisionar en octubre','Hoy','Subir'],
+        ['ges','hoy','Dar seguimiento','Red Veloz','Esperando actas · prometió entregar hoy','Hoy','Registrar'],
+        ['ins','hoy','Instalación pendiente','Clínica Los Olivos','Orden de Odoo de hace 6 días','Hoy','Ver orden'],
+        ['fir','ok','Enviar planilla de titular','Bodegón El Puerto','Planilla lista para firmar','Mañana','Enviar']
+      ],
+      gestTitulo:'Mis gestiones', gestBoton:'Ver todas',
+      gestiones:[
+        {nombre:'Documentación ISP', meta:'Expediente completo antes del viernes', avance:'7 de 12', pct:'58%', detalle:'3 esperando · 2 sin contacto', plazo:'Vence el viernes', plazoCls:'pill p-a'},
+        {nombre:'Bienvenidas de octubre', meta:'Datos completos para enviar', avance:'9 de 10', pct:'90%', detalle:'falta 1', plazo:'21/10', plazoCls:'pill p-g'}
+      ],
+      kpiTitulo:'Mi corte de octubre', kpis:[{v:'14',t:'instalaciones'},{v:'11',t:'comisionan'},{v:'3',t:'les falta algo'},{v:'2',t:'migraciones'}]
+    };
+  }
+  renderVals(){
+    const rol = this.props.rol ?? 'lider';
+    const D = this.datos(rol);
+    const sel = this.state.sel;
+    const P = {venc:'pill p-r', hoy:'pill p-a', ok:'pill p-g'};
+    const items = D.items.map(r => ({grupo:r[0], accion:r[2], cliente:r[3], motivo:r[4], plazo:r[5], boton:r[6], dot:'dot d-' + r[1], plazoCls:P[r[1]], btnCls: r[1] === 'venc' ? 'btn b1' : 'btn b2'})).filter(x => !sel || x.grupo === sel);
+    const grupos = D.grupos.map(g => Object.assign({}, g, {
+      sel: sel === g.id ? 'true' : 'false',
+      cls: 'card' + (g.g2 ? ' g2' : '') + (sel === g.id ? ' sel' : ''),
+      tono: 'ico ' + g.tono,
+      pick: () => this.setState({ sel: this.state.sel === g.id ? null : g.id })
+    }));
+    const total = D.grupos.reduce((a,g)=>a+g.num,0), venc = D.grupos.reduce((a,g)=>a+g.venc,0), hoy = D.grupos.reduce((a,g)=>a+g.hoy,0);
+    const gsel = D.grupos.find(g => g.id === sel);
+    return {
+      saludo:D.saludo, subtitulo:D.subtitulo, rolNombre:D.rolNombre, iniciales:D.ini, verAliados:!!D.verAliados,
+      total, vencidos:venc, hoy, grupos, items,
+      listaTitulo: gsel ? gsel.titulo : 'Para hoy', haySel: !!sel, limpiar: () => this.setState({ sel: null }),
+      cola: D.cola || null, gestTitulo:D.gestTitulo, gestBoton:D.gestBoton, gestiones:D.gestiones || [],
+      equipo:(D.equipo || []).map(e => Object.assign({}, e, {vCls: e.venc ? 'pill p-r' : 'pill p-g'})),
+      kpiTitulo:D.kpiTitulo, kpis:D.kpis
+    };
+  }
+}
+</script>
+</body>
+</html>
