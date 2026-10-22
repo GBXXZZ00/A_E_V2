@@ -1,8 +1,9 @@
 # Traspaso (se actualiza al cerrar cada sesión)
 
-Actualizado: 22/10/2026, corrida del lote S + A + C y Parte D. Publicado: `?v=60`.
+Actualizado: 22/10/2026, corrida del lote S + A + C y Parte D. Publicado: `?v=61`.
 
-## PARTE D HECHA (22/10, v60): VGT solo exige las 2 pólizas
+## PARTE D HECHA (22/10, v60 y ajuste v61): VGT exige las 2 pólizas y la propuesta comercial
+- Ajuste del administrador (v61, migración `parte_d2_vgt_tres_requisitos`, bitácora `regla_vgt` parte_d2): la propuesta comercial vuelve a ser obligatoria; actas de cambios sustanciales, poder, habilitación, tendido y factibilidad salen de la ficha (nadie había subido nada en esas casillas). A los 8 clientes con VGT les faltan 3. El bloque se llama "Requisitos VGT" y debajo solo "Opcional": el correo. Textos: "Faltan N requisitos para VGT", filtro "Faltan requisitos VGT".
 - SQL: `supabase/pruebas/parte_d.sql` (migración `parte_d_vgt_polizas`, bitácora `regla_vgt`). Regla en `claude/reglas-negocio.md`.
 - Obligatorias solo la póliza de responsabilidad civil general y la patronal; el correo de VGT y lo demás (habilitación, propuesta, tendido, factibilidad, actas, poder) quedan opcionales. A los 8 clientes con VGT ahora les faltan 2 (antes 7).
 - Ficha: el bloque se llama "Pólizas para VGT" con las 2 pólizas arriba y "Opcional para VGT" debajo (correo y el resto). Ficha del dedicado "Pólizas VGT"; filtro de Clientes "Faltan pólizas VGT"; Mi trabajo "Subir pólizas VGT"; el aviso dice "Faltan las 2 pólizas para VGT".

@@ -88,19 +88,18 @@ const llamo = (m, f) => m.llamadas.filter((l) => l[1] === f);
     a.dedicado = { tipo: 'isp', ejecutiva: 'Nora Quintero', activo: true, verificar: false, ruta_documentos: 'cargar', cods: ['501'], enlaces: [], contactos: [],
       contratos: [{ id: 11, tipo: 'servicio', estatus: 'firmado' }, { id: 12, tipo: 'vgt', estatus: 'en_elaboracion', proyecto: 'Ruta Inventada Uno', numero: null, postes: 12, en_uso: 'SI', estado: 'Zulia' },
         { id: 13, tipo: 'vgt', estatus: 'en_elaboracion', proyecto: 'Ruta Inventada Dos', postes: 8, en_uso: 'EN PROYECTO', odt: 'ODT-9' }, { id: 14, tipo: 'colocation', estatus: 'sin_contrato', sitio: 'Sitio Inventado', municipio: 'Maracaibo' }],
-      vgt: { correo: null, faltan: 2, polizas: [{ numero: 66, vence_en: new Date(Date.now() + 10 * 864e5).toISOString().slice(0, 10) }],
-        requisitos: [[60, 'asamblea', 'Acta de asamblea de cambios sustanciales', false, false], [61, 'asamblea', 'Acta de asamblea de cambios sustanciales 2', false, false], [64, 'poder', 'Poder de representación', false, false],
-          [65, 'habilitacion', 'Habilitación con atributos de internet y transporte en las zonas', false, false], [66, 'poliza_rc', 'Póliza de responsabilidad civil general', true, true], [67, 'poliza_patronal', 'Póliza de responsabilidad patronal', true, true],
-          [68, 'propuesta', 'Propuesta comercial firmada y sellada', false, false], [69, 'tendido', 'Planilla de solicitud de tendido aprobada', false, false], [70, 'factibilidad', 'Aprobación de factibilidad técnica (correo)', false, false]]
+      vgt: { correo: null, faltan: 3, polizas: [{ numero: 66, vence_en: new Date(Date.now() + 10 * 864e5).toISOString().slice(0, 10) }],
+        requisitos: [[66, 'poliza_rc', 'Póliza de responsabilidad civil general', true, true], [67, 'poliza_patronal', 'Póliza de responsabilidad patronal', true, true],
+          [68, 'propuesta', 'Propuesta comercial firmada y sellada', true, false]]
           .map((r) => ({ numero: r[0], clave: r[1], texto: r[2], requerido: r[3], vence: r[4] })) } };
     // Corrida 14/10 tarde: sin pantalla Dedicados; el dedicado se ve en Clientes (tarjeta ISP) con su etiqueta VGT
     await p.goto(H + 'clientes.html?s=isp&f=todos'); await p.waitForSelector('#lista .cli');
     ok(nombre + ': la fila lleva la etiqueta VGT', (await p.textContent('.cli[data-cliente="' + a.id + '"]')).includes('VGT'));
     ok(nombre + ': filtros (lote 21/10): Segmento y VGT, sin Enlaces ni Pólizas', (await p.locator('[data-fil^="vgt|"]').count()) >= 1 && (await p.locator('[data-fil^="tipo|"]').count()) >= 1 && (await p.locator('[data-fil^="enlaces|"], [data-fil^="poliza|"]').count()) === 0);
     await p.click('.cli[data-cliente="' + a.id + '"]'); await p.waitForSelector('#hojaFicha.ver #tab-datos');
-    await p.waitForFunction(() => (document.querySelector('#tab-datos') || {}).textContent.includes('Pólizas VGT'), null, { timeout: 8000 }).catch(() => {});
+    await p.waitForFunction(() => (document.querySelector('#tab-datos') || {}).textContent.includes('Requisitos VGT'), null, { timeout: 8000 }).catch(() => {});
     const dts = await p.textContent('#tab-datos');
-    ok(nombre + ': Datos dice Líder (no Ejecutiva) y las pólizas VGT', dts.includes('Líder') && !dts.includes('Ejecutiva') && dts.includes('Pólizas VGT') && dts.includes('Faltan las 2'));
+    ok(nombre + ': Datos dice Líder (no Ejecutiva) y los requisitos VGT', dts.includes('Líder') && !dts.includes('Ejecutiva') && dts.includes('Requisitos VGT') && dts.includes('Faltan 3'));
     // Lote 21/10: Contrato (servicio y colocation) y VGT en su pestaña (contrato, proyectos, requisitos y pólizas)
     await p.click('#tabs [data-tab="contrato"]'); await p.waitForSelector('#tab-contrato.on .ctr-t');
     const ct = await p.textContent('#tab-contrato');
@@ -111,12 +110,13 @@ const llamo = (m, f) => m.llamadas.filter((l) => l[1] === f);
     ok(nombre + ': la pestaña VGT trae el contrato con proyectos y total de postes', (await p.locator('#tab-vgt .ctr-vgt').count()) === 1 && tv.includes('Ruta Inventada Uno') && tv.includes('Ruta Inventada Dos') && tv.includes('20 postes') && tv.includes('En proyecto') && tv.includes('ODT ODT-9'));
     ok(nombre + ': Documentos ya no trae los requisitos VGT', (await p.locator('#tab-documentos [data-grupo="vgt"]').count()) === 0);
     const vg = await p.textContent('[data-grupo="vgt"]');
-    // Parte D (22/10): solo las 2 pólizas son obligatorias; el correo y lo demás van debajo como opcionales
-    ok(nombre + ': Pólizas para VGT con su contador; el correo y lo demás opcionales', vg.includes('Faltan las 2') && vg.indexOf('Póliza de responsabilidad civil general') < vg.indexOf('Opcional para VGT') && vg.indexOf('Opcional para VGT') < vg.indexOf('Correo para notificaciones') && vg.indexOf('Opcional para VGT') < vg.indexOf('Aprobación de factibilidad técnica'));
+    await p.locator('[data-grupo="vgt"]').screenshot({ path: 'capturas/28-' + nombre + '-vgt.png' });
+    // Parte D (22/10): solo las 2 pólizas y la propuesta; el correo opcional debajo; lo demás ya no sale
+    ok(nombre + ': Requisitos VGT: 2 pólizas y propuesta, el correo opcional y nada más', vg.includes('Faltan 3') && vg.includes('Propuesta comercial firmada y sellada') && vg.indexOf('Póliza de responsabilidad patronal') < vg.indexOf('Opcional') && vg.indexOf('Opcional') < vg.indexOf('Correo para notificaciones') && !vg.includes('factibilidad') && !vg.includes('Poder') && !vg.includes('cambios sustanciales'))
     ok(nombre + ': la póliza que vence en menos de 30 días avisa', vg.includes('Pide la renovación'));
-    ok(nombre + ': las actas de cambios sustanciales se agregan de una en una', (await p.locator('[data-grupo="vgt"] [data-casilla="otro:60"]').count()) === 1 && (await p.locator('[data-grupo="vgt"] [data-casilla="otro:61"]').count()) === 0);
-    await p.click('#agregarVgt'); ok(nombre + ': Agregar muestra otra', (await p.locator('[data-grupo="vgt"] [data-casilla="otro:61"]').count()) === 1);
-    ok(nombre + ': Otros documentos no muestra las casillas VGT', (await p.locator('[data-grupo="otros"] [data-casilla="otro:65"]').count()) === 0);
+    ok(nombre + ': ya no hay actas de cambios sustanciales ni botón para agregarlas', (await p.locator('[data-grupo="vgt"] [data-casilla="otro:60"]').count()) === 0 && (await p.locator('#agregarVgt').count()) === 0);
+    ok(nombre + ': la propuesta comercial es obligatoria', (await p.locator('[data-grupo="vgt"] [data-casilla="otro:68"]').count()) === 1);
+    ok(nombre + ': Otros documentos no muestra las casillas VGT', (await p.locator('[data-grupo="otros"] [data-casilla="otro:68"]').count()) === 0);
     await p.click('[data-grupo="vgt"] [data-campo="vgt_correo"]'); await p.waitForSelector('#hojaCampo.ver #cCorreo');
     await p.fill('#cCorreo', 'avisos@inventada.test'); await p.click('#guardarCampo'); await p.waitForFunction(() => !document.querySelector('#hojaCampo.ver'));
     ok(nombre + ': el correo de notificaciones se guarda en el servidor', llamo(mundo, 'dedicado_vgt_correo').length === 1);

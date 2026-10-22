@@ -5,3 +5,5 @@
 -- privado.vgt_textos_parte_d(): pasó al texto nuevo los 8 avisos de VGT ya creados.
 -- Probado con rollback (22/10): de 8 clientes con VGT, a todos les faltaban 7 y ahora 2; una póliza de prueba que vence en 20 días avisó al líder y al administrador.
 -- Comisiones sin cambio: septiembre 46/41, octubre 75 de 83.
+-- Ajuste del mismo día (migración parte_d2_vgt_tres_requisitos, bitácora regla_vgt parte_d2): vgt_requisitos() devuelve solo 66, 67 y 68 (los tres obligatorios);
+--   ninguna de las casillas quitadas (60 a 65, 69, 70) tenía documentos. Pendiente: "Faltan N requisitos para VGT". Probado con rollback: 8 clientes, faltan 3.

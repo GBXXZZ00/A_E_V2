@@ -44,7 +44,7 @@ async function cerrarHojas(p){ for(let i = 0; i < 5 && await p.evaluate(() => !!
     const filaIsp = await p.locator('#lista .cli[data-cliente="' + a.id + '"]').textContent();
     ok(nombre + ': la fila lleva la etiqueta VGT y la póliza por vencer', filaIsp.includes('VGT') && /Póliza vence \d\d\/\d\d/.test(filaIsp));
     ok(nombre + ': en las tarjetas de dedicados hay atajo VGT con su número', /VGT\s*1/.test(await p.textContent('#filtros [data-filtro="vgt"]')));
-    ok(nombre + ': lote 21/10: sin filtro de Pólizas; VGT con Faltan pólizas VGT', (await p.locator('[data-fil^="poliza|"]').count()) === 0 && (await p.locator('[data-fil="vgt|incompletos"], #selsTel [data-sel="vgt"] option[value="incompletos"]').count()) >= 1);
+    ok(nombre + ': lote 21/10: sin filtro de Pólizas; VGT con Faltan requisitos VGT', (await p.locator('[data-fil^="poliza|"]').count()) === 0 && (await p.locator('[data-fil="vgt|incompletos"], #selsTel [data-sel="vgt"] option[value="incompletos"]').count()) >= 1);
     await p.click('#filtros [data-filtro="vgt"]'); await p.waitForFunction(() => document.querySelectorAll('#lista .cli').length === 1);
     ok(nombre + ': el atajo VGT deja solo a los que tienen VGT', (await p.textContent('#lista')).includes('Tornillos El Yunque'));
     await p.click('#tarjetas [data-tarjeta="corporativo"]'); await p.click('#filtros [data-filtro="todos"]'); await p.waitForFunction(() => /Posada Brisa Marina/.test(document.getElementById('lista').textContent));

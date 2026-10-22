@@ -25,7 +25,7 @@
   ];
   const FIJAS = { tipo: [['pyme', 'PYME'], ['dedicado', 'Dedicado corporativo'], ['isp', 'Dedicado ISP'], ['combinado', 'PYME + Dedicado']],
     ctr: [['sin_contrato', 'Sin contrato'], ['por_firmar', 'Por firmar'], ['por_actualizar', 'Por actualizar'], ['firmado_sin_archivo', 'Firmado sin archivo'], ['sin_vence', 'Sin vencimiento'], ['vence_60', 'Vence en 60 días']],
-    vgt: [['con', 'Con VGT'], ['por_firmar', 'VGT por firmar'], ['incompletos', 'Faltan pólizas VGT']], otros: [['suspendidos', 'Suspendidos']] };
+    vgt: [['con', 'Con VGT'], ['por_firmar', 'VGT por firmar'], ['incompletos', 'Faltan requisitos VGT']], otros: [['suspendidos', 'Suspendidos']] };
   const EST_GES = [['contactado', 'Contactado'], ['sin_contacto', 'Sin contacto'], ['esperando', 'Esperando'], ['cumplido', 'Cumplido'], ['resuelto', 'Resuelto']];
   let tarjeta = 'pyme'; let nTarjetas = null;
   const esDed = () => tarjeta === 'corporativo' || tarjeta === 'isp';
