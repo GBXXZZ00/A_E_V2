@@ -1,0 +1,8 @@
+-- VGT claro (22/10, Partes D y F), paso 1: base. Migración vgt_claro_tramos.
+-- dedicado_contratos: en_uso en lista cerrada (SI, EN PROYECTO, NO, NEGADA); negada_motivo y negada_en.
+-- public.dedicado_tramo_editar(id, campos): solo administrador; uso, postes, fecha, proyecto y ODT; NEGADA pide motivo y fecha.
+--   Bitácora (vgt_tramo / vgt_negada), hilo del cliente, y avisos al líder: "Solicitud de VGT negada", "VGT activo: pedir las pólizas", "Sin VGT en uso".
+-- privado.odt_orden(odt): enlaza la ODT con la orden de Odoo si está cargada (hoy las ODT de VGT no están en ordenes_odoo).
+-- dedicado_json trae odt_orden, negada_motivo y negada_en. aviso_titulo('vgt') = "Pedir pólizas VGT". contacto_destino(cliente, id, 'vgt') va al líder con los tramos.
+-- Probado con rollback (22/10): sin motivo no niega; negar el único tramo saca al cliente de VGT y avisa al líder; volver a En uso lo devuelve y avisa "pedir las pólizas";
+--   hilo 2 y bitácora 2; el JSON trae odt_orden y el motivo; contacto va al líder con los tramos.
