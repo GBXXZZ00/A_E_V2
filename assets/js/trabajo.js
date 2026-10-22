@@ -36,7 +36,7 @@
   GRUPOS.coord = GRUPOS.analista;
   // Qué se hace con cada tipo: [acción, botón]
   const ACC = {
-    docs_faltan: ['Conseguir documentos', 'Pedir'], devuelto: ['Corregir documento devuelto', 'Pedir'], sin_gestion: ['Pedir documentos', 'Pedir'], vgt: ['Completar requisitos VGT', 'Subir'],
+    docs_faltan: ['Conseguir documentos', 'Pedir'], devuelto: ['Corregir documento devuelto', 'Pedir'], sin_gestion: ['Pedir documentos', 'Pedir'], vgt: ['Subir pólizas VGT', 'Subir'],
     poliza: ['Renovar póliza', 'Pedir'], referido: ['Contactar referido', 'Contactar'], rif_verificar: ['Verificar RIF', 'Revisar'], por_firmar: ['Hacer firmar contrato', 'Enviar'],
     planilla: ['Documentos del cambio', 'Subir'], por_instalar: ['Instalación pendiente', 'Ver orden'], gestion: ['Dar seguimiento', 'Registrar'],
     cambio_emitir: ['Emitir en Proham', 'Marcar hecho'], por_enviar: ['Enviar bienvenida y proforma', 'Enviar'], sin_ip: ['Falta la IP', 'Escribir IP'], ip_confirmar: ['Confirmar IP', 'Confirmar'],

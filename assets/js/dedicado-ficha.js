@@ -32,7 +32,7 @@
       fila('Líder', esc(D.ejecutiva || 'Sin asignar') + (F.puedo && F.puedo.lider_cambiar ? '<button type="button" class="enlace" data-lider-cambiar="dedicado">Cambiar</button>' : '')) +
       fila('Documentos', D.vacias ? '<span class="chip ambar">' + esc(D.vacias === 1 ? 'Falta 1' : 'Faltan ' + D.vacias) + '</span>' : '<span class="chip verde">Completos</span>') +
       (D.vacias && D.ruta_documentos ? fila('Qué hacer', esc(RUTAS[D.ruta_documentos])) : '') +
-      (D.vgt ? fila('Requisitos VGT', D.vgt.faltan ? '<span class="chip ambar">' + esc(D.vgt.faltan === 1 ? 'Falta 1' : 'Faltan ' + D.vgt.faltan) + '</span>' : '<span class="chip verde">Completos</span>') : '') +
+      (D.vgt ? fila('Pólizas VGT', D.vgt.faltan ? '<span class="chip ambar">' + esc(D.vgt.faltan === 1 ? 'Falta 1' : 'Faltan las 2') + '</span>' : '<span class="chip verde">Completas</span>') : '') +
       (D.tipo === 'isp' && D.plazo ? fila('Plazo ISP', esc('Semana del ' + ddmm(addDias(D.plazo, -4)))) : '') +
       fila('Contrato', esc(D.ruta_contrato || 'Sin siguiente paso')) +
       (D.estatus_anterior ? fila('App vieja', esc(C.capital(String(D.estatus_anterior).toLowerCase())) + ' <small class="ded-gris">no confiable</small>') : '') +

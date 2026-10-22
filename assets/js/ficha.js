@@ -375,6 +375,7 @@
     return h;
   }
   // Lote 3: requisitos VGT, con su propio contador. Los comunes (actas, RIF, cédulas, Conatel) no se repiten.
+  // Parte D (22/10): solo se exigen las 2 pólizas; el correo y lo demás quedan como opcionales, debajo.
   let vgtExtra = 0;
   function grupoVgt(){
     const V = (F.cliente.dedicado || {}).vgt; if(!V) return '';
@@ -387,12 +388,14 @@
       const r = R.find((x) => x.numero === p.numero) || {}; const d = C.diasEntre(hoy, p.vence_en);
       return '<div class="al-banda ' + (d < 0 ? 'rojo' : 'ambar') + '" role="note"><b>' + esc(r.texto || 'Póliza') + '</b><p>' + esc(d < 0 ? 'Venció el ' + fecha(p.vence_en) + '. Pide la renovación.' : 'Vence el ' + fecha(p.vence_en) + '. Pide la renovación antes.') + '</p></div>';
     }).join('');
-    return '<section class="bloque" data-grupo="vgt"><div class="sec">Requisitos VGT<span>' + (V.faltan ? (V.faltan === 1 ? 'Falta 1' : 'Faltan ' + V.faltan) : 'Completos') + '</span></div>' + aviso +
+    return '<section class="bloque" data-grupo="vgt"><div class="sec">Pólizas para VGT<span>' + (V.faltan ? (V.faltan === 1 ? 'Falta 1' : 'Faltan las 2') : 'Completas') + '</span></div>' + aviso +
+      R.filter((r) => r.requerido).map((r) => casillaHtml('otro', r.numero, { nombre: r.texto, req: true, sub: sub(r) })).join('') +
+      '<p class="nota-chica">El contrato VGT no pasa a Por firmar mientras falten las pólizas. La fecha de vencimiento se escribe al revisarlas; 30 días antes te avisamos.</p>' +
+      '<div class="rot">Opcional para VGT</div>' +
       datoHtml('Correo para notificaciones', V.correo, 'vgt_correo', true) +
       verAsam.map((r) => casillaHtml('otro', r.numero, { nombre: r.texto.replace(/ \d$/, ''), req: false, sub: sub(r) })).join('') +
       (verAsam.length < asam.length ? '<button type="button" class="btn btn-chico btn-2 btn-ancho" id="agregarVgt" style="margin-top:10px">' + ic('mas') + 'Agregar acta de cambios sustanciales</button>' : '') +
-      R.filter((r) => r.clave !== 'asamblea').map((r) => casillaHtml('otro', r.numero, { nombre: r.texto, req: r.requerido, sub: sub(r) })).join('') +
-      '<p class="nota-chica">El contrato VGT no pasa a Por firmar mientras falten requisitos. La fecha de vencimiento de las pólizas se escribe al revisarlas.</p></section>';
+      R.filter((r) => r.clave !== 'asamblea' && !r.requerido).map((r) => casillaHtml('otro', r.numero, { nombre: r.texto, req: false, sub: sub(r) })).join('') + '</section>';
   }
   const resumenMarcas = () => { const ap = marcas().filter((m) => m.accion === 'aprobar').length; const dv = marcas().length - ap;
     return [ap ? plural(ap, 'para aprobar', 'para aprobar') : '', dv ? plural(dv, 'para devolver', 'para devolver') : ''].filter(Boolean).join(' y '); };

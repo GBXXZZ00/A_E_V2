@@ -176,3 +176,9 @@ Sin nombres reales: el repo es público. "Analista Senior" es el responsable de 
 - Si el paso es de quien está mirando, no sale "Contactar": le toca su acción.
 - Solo cuando mira el administrador (o Senior o coordinador) y el paso es del analista, el botón deja elegir también al líder.
 - Abre WhatsApp con el mensaje escrito según el caso (o el correo si no tiene WhatsApp) y queda en la bitácora (`contacto_responsable`).
+
+## VGT: requisitos (decidido por el administrador el 22/10, Parte D)
+- Además del expediente completo, para VGT solo se exigen dos pólizas: responsabilidad civil general (casilla otro 66) y responsabilidad patronal (67), las dos con vencimiento.
+- Habilitación, propuesta comercial, planilla de tendido, factibilidad técnica, actas de cambios sustanciales, poder y el correo de VGT son opcionales.
+- Las pólizas vencen: 30 días antes llega el aviso al líder y al administrador.
+- El modelo de póliza (RC general, sin datos del cliente) lo comparte el administrador con los líderes.

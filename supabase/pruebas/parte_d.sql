@@ -1,0 +1,7 @@
+-- Parte D (22/10): VGT solo exige las 2 pólizas. Migración parte_d_vgt_polizas (con bitácora 'regla_vgt').
+-- privado.vgt_requisitos(): requerido solo 66 y 67; privado.vgt_faltan(): ya no suma el correo de VGT.
+-- privado.pendientes(): el pendiente 'vgt' dice "Falta 1 póliza para VGT" o "Faltan las 2 pólizas para VGT".
+-- privado.avisos_generar(): el aviso 'poliza' (30 días antes) llega también a los administradores, además del líder.
+-- privado.vgt_textos_parte_d(): pasó al texto nuevo los 8 avisos de VGT ya creados.
+-- Probado con rollback (22/10): de 8 clientes con VGT, a todos les faltaban 7 y ahora 2; una póliza de prueba que vence en 20 días avisó al líder y al administrador.
+-- Comisiones sin cambio: septiembre 46/41, octubre 75 de 83.

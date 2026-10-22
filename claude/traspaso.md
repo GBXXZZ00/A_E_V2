@@ -1,6 +1,13 @@
 # Traspaso (se actualiza al cerrar cada sesión)
 
-Actualizado: 21/10/2026, corrida del lote S + A + C. Publicado: `?v=59` (partes S, A y C).
+Actualizado: 22/10/2026, corrida del lote S + A + C y Parte D. Publicado: `?v=60`.
+
+## PARTE D HECHA (22/10, v60): VGT solo exige las 2 pólizas
+- SQL: `supabase/pruebas/parte_d.sql` (migración `parte_d_vgt_polizas`, bitácora `regla_vgt`). Regla en `claude/reglas-negocio.md`.
+- Obligatorias solo la póliza de responsabilidad civil general y la patronal; el correo de VGT y lo demás (habilitación, propuesta, tendido, factibilidad, actas, poder) quedan opcionales. A los 8 clientes con VGT ahora les faltan 2 (antes 7).
+- Ficha: el bloque se llama "Pólizas para VGT" con las 2 pólizas arriba y "Opcional para VGT" debajo (correo y el resto). Ficha del dedicado "Pólizas VGT"; filtro de Clientes "Faltan pólizas VGT"; Mi trabajo "Subir pólizas VGT"; el aviso dice "Faltan las 2 pólizas para VGT".
+- Póliza por vencer: 30 días antes, aviso al líder y al administrador.
+- Pruebas: test28 y test25 ajustadas; test30 sin cambios. Comisiones 46/41 y 75 de 83 sin cambio.
 
 ## LOTE S + A + C (`claude/lote-seguridad-avisos.md`, aprobado el 21/10): HECHO, una publicación por parte (v57, v58, v59)
 ### Parte C hecha (v59): avisos de aliados y app vieja
