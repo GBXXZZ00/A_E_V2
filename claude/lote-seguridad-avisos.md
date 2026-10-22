@@ -46,3 +46,11 @@ Una sola corrida, dos publicaciones: primero S, luego A. Pruebas, capturas 1366x
 - **Repo privado:** el administrador debe pagar GitHub Pro primero. NO OLVIDAR: hasta entonces los documentos de `claude/` son públicos.
 - Requisitos del VGT: después de la reunión con Reina.
 - Google en producción: lo hace el administrador en Google Cloud con guía.
+
+## Parte D (22/10, decidido por el administrador): requisitos de VGT
+- Para VGT solo se piden, además del expediente completo del cliente, **dos pólizas**: responsabilidad civil general (66) y responsabilidad patronal (67), las dos con vencimiento.
+- En `privado.vgt_requisitos()` dejar `requerido = false` en habilitación (65), propuesta comercial (68), planilla de tendido (69) y factibilidad técnica (70); siguen como opcionales para quien quiera subirlos. Las actas de asamblea (60 a 63) y el poder (64) siguen opcionales.
+- `privado.vgt_faltan()` ya no suma el correo de VGT (`dedicados.vgt_correo`): el correo queda como dato opcional.
+- Revisar textos, contadores y filtros que digan "7 recaudos" o similares (ficha del dedicado, Clientes, Mi trabajo, avisos) para que hablen de las 2 pólizas.
+- Las pólizas vencen: aviso 30 días antes del vencimiento al líder y al administrador.
+- Modelo de póliza (RC general de Oceánica, sin datos del cliente) disponible para los líderes: lo comparte el administrador.
