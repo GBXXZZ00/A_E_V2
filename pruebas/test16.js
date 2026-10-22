@@ -160,6 +160,26 @@ const M = (r, doc) => r.marcas.find((m) => m.documento === doc) || {};
   ok('RIF viejo vencido sigue siendo problema', M(r, 13).propuesta === 'problema');
   r = evaluar(base((e) => { e.lecturas[3].documentos[0].fecha_vencimiento = null; }));
   ok('RIF sin vencimiento y sin formato nuevo: a mano', M(r, 13).propuesta === 'revisar_a_mano');
+  // ---------- Parte E (22/10): actas varias. Datos inventados que reproducen el caso Totalcom y cada tipo de error ----------
+  const junta6 = [['PEDRO JOSE EJEMPLO', '11111111'], ['ANA UNO', '30000001'], ['LUIS DOS', '30000002'], ['RITA TRES', '30000003'], ['JOSE CUATRO', '30000004'], ['EVA CINCO', '30000005']].map((x) => ({ nombre: x[0], cedula: x[1], cargo: 'Director' }));
+  const segunda = (e, numero, archivo, datos) => { e.documentos.push({ id: 30 + numero, casilla: 'acta_asamblea', numero, estado: 'por_revisar', archivos: [archivo] }); e.lecturas[archivo] = { estado: 'ok', documentos: [Object.assign({ tipo: 'acta_asamblea', pagina_inicio: 1, legible: true }, datos)] }; };
+  // E1 (Totalcom): constitutiva de 1998 y una "aclaratoria" de 2023 marcada "otro" que trae la junta completa por 5 años
+  r = evaluar(base((e) => { Object.assign(acta(e), { fecha_inscripcion: '1998-03-02', duracion_anos: 50, junta_anos: 10 }); asamblea(e, { fecha_inscripcion: '2023-12-12', asamblea_temas: ['otro'], junta: junta6, junta_anos: 5 }); }));
+  ok('E1 Totalcom: la junta del acta "otro" de 2023 cuenta y está vigente hasta el 12/12/2028', P(r, 'junta').estado === 'ok' && /12\/12\/2028/.test(P(r, 'junta').detalle) && r.veredicto === 'apto', P(r, 'junta'));
+  ok('E1: la fuente de la junta es el acta de asamblea', r.fuentes && r.fuentes.junta && r.fuentes.junta.casilla === 'acta_asamblea' && r.fuentes.junta.inscripcion === '2023-12-12');
+  // E2: un acta más nueva cambia la razón social aunque el tema diga "otro"
+  r = evaluar(base((e) => { Object.assign(acta(e), { razon_social: 'EJEMPLO VIEJO, S.R.L.' }); asamblea(e, { fecha_inscripcion: '2022-05-05', asamblea_temas: ['otro'], razon_social: 'EJEMPLO UNO, C.A.' }); }));
+  ok('E2: la razón social sale del acta más reciente que la trae', P(r, 'razon_social').estado === 'ok' && r.fuentes.nombre.casilla === 'acta_asamblea', P(r, 'razon_social'));
+  // E3: domicilio nuevo en un acta "otro"; un acta que solo dice la ciudad no lo pisa
+  r = evaluar(base((e) => { Object.assign(acta(e), { direccion: 'Calle Vieja 1, Galpon 9, Cabimas, Zulia' }); asamblea(e, { fecha_inscripcion: '2021-01-20', asamblea_temas: ['otro'], direccion: DIR }); segunda(e, 2, 9, { fecha_inscripcion: '2024-02-02', asamblea_temas: ['aumento_capital'], direccion: 'Maracaibo' }); }));
+  ok('E3: el domicilio sale del acta más reciente con dirección completa', P(r, 'domicilio').estado === 'ok' && r.fuentes.domicilio.inscripcion === '2021-01-20', P(r, 'domicilio'));
+  // E4: actas subidas en desorden (la n.º 1 es la más nueva): manda la fecha de inscripción, no el número de casilla
+  r = evaluar(base((e) => { Object.assign(acta(e), { fecha_inscripcion: '1998-03-02', junta_anos: 10 }); asamblea(e, { fecha_inscripcion: '2024-06-30', asamblea_temas: ['ratificacion_junta'], junta: junta6.slice(0, 2), junta_anos: 5 }); segunda(e, 2, 9, { fecha_inscripcion: '2012-04-04', asamblea_temas: ['cambio_junta'], junta: junta6.slice(0, 1), junta_anos: 5 }); }));
+  ok('E4: con actas en desorden toma la más reciente por inscripción (vigente hasta 30/06/2029)', P(r, 'junta').estado === 'ok' && /30\/06\/2029/.test(P(r, 'junta').detalle), P(r, 'junta'));
+  ok('E4: las actas quedan ordenadas por fecha de inscripción', r.fuentes.actas.map((a) => a.inscripcion).join() === '1998-03-02,2012-04-04,2024-06-30');
+  // E5: un acta más nueva sin junta y sin tema de junta no cambia quién la designó
+  r = evaluar(base((e) => { Object.assign(acta(e), { fecha_inscripcion: '1998-03-02', junta_anos: 10 }); asamblea(e, { fecha_inscripcion: '2025-01-15', asamblea_temas: ['aumento_capital'] }); }));
+  ok('E5: un acta sin junta no cuenta como designación (la junta de 1998 sigue vencida)', P(r, 'junta').estado === 'bloquea' && r.fuentes.junta.casilla === 'acta_constitutiva', P(r, 'junta'));
   ok('sin guion largo en los textos', !JSON.stringify(evaluar(base((e) => { Object.assign(acta(e), { fecha_inscripcion: '1990-02-01', duracion_anos: null }); }))).includes('—'));
   cerrar();
 })();

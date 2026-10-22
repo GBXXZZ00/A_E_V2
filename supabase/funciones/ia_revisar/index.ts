@@ -121,6 +121,10 @@ Reglas:
   * regimen_firma: cómo firman los directores (no los apoderados): separada, conjunta, o conjunta_o_separada si dice "conjunta y/o separadamente"; no_dice si no aparece;
   * clausula_sucursales: si permite abrir sucursales u oficinas en otros lugares;
   * asamblea_temas: qué decidió la asamblea (cambio de nombre, de domicilio, de junta, ratificación de junta, prórroga, aumento de capital u otro).
+    Marca por lo que el acta HACE, no por cómo se titula: aunque diga "aclaratoria", "reforma", "modificación de estatutos" u otra palabra,
+    si nombra, elige, ratifica o reconforma la junta directiva usa cambio_junta (personas nuevas) o ratificacion_junta (las mismas) y llena junta y junta_anos;
+    si cambia la razón social usa cambio_nombre y llena razon_social con el nombre nuevo; si cambia el domicilio usa cambio_domicilio y llena direccion completa.
+    Usa "otro" solo si no trata ninguno de esos temas. Un acta puede tener varios temas a la vez.
 - Contrato: si está firmado y quién firma.
 - tipo "poder" para un poder notariado; "otro" para lo que no sea ninguno de los anteriores.`;
 

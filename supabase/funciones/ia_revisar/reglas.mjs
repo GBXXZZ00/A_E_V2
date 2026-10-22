@@ -1,7 +1,7 @@
 // Reglas de la revisión con IA (claude/ia-reglas.md). La IA solo lee; aquí se decide, siempre igual con los mismos datos.
 // Corre en la función de borde ia_revisar y en las pruebas (pruebas/test16.js). Sin dependencias.
 
-export const VERSION_REGLAS = '3';
+export const VERSION_REGLAS = '4';
 
 // ---------- Texto y fechas ----------
 export function norm(s){
@@ -180,12 +180,18 @@ export function evaluar(e){
   if(!c.es_natural && !(e.faltantes || []).some((f) => f.dato)) punto('contacto', 'Teléfono y correo del representante', 'ok', 'Están en el expediente.');
 
   // ---------- Empresa: actas, junta, firmantes, domicilio ----------
+  let fuentesOut = null;
   if(!c.es_natural){
     const dActa = docs.find((d) => d.casilla === 'acta_constitutiva'); const acta = dActa && marcas[dActa.id] && marcas[dActa.id].propuesta === 'bien' ? H[dActa.id] : null;
     const asambleas = docs.filter((d) => d.casilla === 'acta_asamblea' && marcas[d.id] && marcas[d.id].propuesta === 'bien').map((d) => Object.assign({ _doc: d }, H[d.id], { _insc: fecha(H[d.id].fecha_inscripcion) })).filter((a) => a._insc).sort((a, b) => a._insc.localeCompare(b._insc));
     const inscActa = acta ? fecha(acta.fecha_inscripcion) : null;
-    const actas = acta && inscActa ? [Object.assign({ _doc: dActa, _insc: inscActa }, acta)].concat(asambleas) : asambleas;
+    const actaC = acta && inscActa ? Object.assign({ _doc: dActa, _insc: inscActa }, acta) : null;
+    // Parte E (22/10): todas las actas ordenadas por fecha de inscripción (también la constitutiva); a igual fecha, la constitutiva primero
+    const actas = (actaC ? [actaC] : []).concat(asambleas).sort((a, b) => a._insc.localeCompare(b._insc) || (a === actaC ? -1 : b === actaC ? 1 : 0));
     const ultimaCon = (f) => actas.filter(f).slice(-1)[0] || null;
+    const temas = (a) => a.asamblea_temas || [];
+    const conDir = (a, n) => a.direccion && palabras(a.direccion).size >= n;
+    const fuentes = {};   // de qué acta salió cada dato (para la auditoría y para el detalle)
     const pg = (a) => (a ? nombreCasilla(a._doc.casilla, a._doc.numero) + (a.pagina_inicio ? ' · página ' + a.pagina_inicio : '') : '');
 
     if(!acta){
@@ -193,28 +199,32 @@ export function evaluar(e){
     } else {
       // Razón social (regla 7)
       const dRif = docs.find((d) => d.casilla === 'rif_empresa'); const hRif = dRif ? H[dRif.id] : null;
-      const cambioNombre = ultimaCon((a) => (a.asamblea_temas || []).includes('cambio_nombre') && a.razon_social);
-      const rsActa = (cambioNombre && cambioNombre.razon_social) || acta.razon_social || acta.nombre;
+      // Parte E: la razón social sale del acta más reciente que la trae, diga lo que diga el tema
+      const conNombre = ultimaCon((a) => a.razon_social || a.nombre);
+      const cambioNombre = conNombre && conNombre !== actaC ? conNombre : null;
+      const rsActa = conNombre ? (conNombre.razon_social || conNombre.nombre) : null; fuentes.nombre = conNombre;
       const rsRif = hRif && (hRif.razon_social || hRif.nombre);
       if(rsActa && rsRif){
         const p = parecido(rsActa, rsRif);
         if(p !== null && p >= 0.6) punto('razon_social', 'Razón social igual a la del RIF', 'ok', rsActa + '.');
-        else punto('razon_social', 'Razón social distinta a la del RIF', 'bloquea', 'El acta dice ' + rsActa + ' y el RIF dice ' + rsRif + '.', { pagina: pg(cambioNombre || actas[0]), falta: 'Acta de asamblea de cambio de nombre' });
+        else punto('razon_social', 'Razón social distinta a la del RIF', 'bloquea', 'El acta dice ' + rsActa + ' y el RIF dice ' + rsRif + '.', { pagina: pg(cambioNombre || actaC), falta: 'Acta de asamblea de cambio de nombre' });
       }
 
       // Duración de la empresa (regla 10)
-      if(acta.duracion_indefinida) punto('duracion', 'Duración de la empresa', 'ok', 'El acta dice que no vence.', { pagina: pg(actas[0]) });
+      if(acta.duracion_indefinida) punto('duracion', 'Duración de la empresa', 'ok', 'El acta dice que no vence.', { pagina: pg(actaC) });
       else {
         const anos = Number(acta.duracion_anos) > 0 ? Number(acta.duracion_anos) : 30;
         const vence = masAnios(inscActa, anos); const ult = asambleas.slice(-1)[0];
         const base = (Number(acta.duracion_anos) > 0 ? anos + ' años' : 'No dice la duración en ninguna página: se toman 30 años') + ' desde el ' + fechaTexto(inscActa);
-        if(vence >= hoy) punto('duracion', 'Duración de la empresa', 'ok', base + '. Vigente hasta el ' + fechaTexto(vence) + '.', { pagina: pg(actas[0]) });
+        if(vence >= hoy) punto('duracion', 'Duración de la empresa', 'ok', base + '. Vigente hasta el ' + fechaTexto(vence) + '.', { pagina: pg(actaC) });
         else if(ult && masAnios(ult._insc, 10) >= hoy) punto('duracion', 'Duración de la empresa', 'ok', base + ' venció el ' + fechaTexto(vence) + ', pero la asamblea inscrita el ' + fechaTexto(ult._insc) + ' la renueva hasta el ' + fechaTexto(masAnios(ult._insc, 10)) + '.', { pagina: pg(ult) });
-        else punto('duracion', 'Empresa vencida', 'bloquea', base + ': venció el ' + fechaTexto(vence) + '.', { pagina: pg(actas[0]), falta: 'Acta de asamblea de prórroga de la empresa' });
+        else punto('duracion', 'Empresa vencida', 'bloquea', base + ': venció el ' + fechaTexto(vence) + '.', { pagina: pg(actaC), falta: 'Acta de asamblea de prórroga de la empresa' });
       }
 
       // Junta vigente (reglas 12, 13 y 14)
-      const designa = ultimaCon((a) => a === actas[0] || (a.asamblea_temas || []).some((t) => t === 'cambio_junta' || t === 'ratificacion_junta'));
+      // Parte E (caso Totalcom): designa la junta el acta más reciente que la nombra (con al menos una persona) o que dice cambiarla o ratificarla,
+      // aunque el lector haya marcado el tema como "otro" (por ejemplo una "aclaratoria" que trae la junta completa)
+      const designa = ultimaCon((a) => a === actaC || (a.junta || []).length > 0 || temas(a).some((t) => t === 'cambio_junta' || t === 'ratificacion_junta')); fuentes.junta = designa;
       if(designa){
         const anosJ = Number(designa.junta_anos) > 0 ? Number(designa.junta_anos) : Number(acta.junta_anos) > 0 ? Number(acta.junta_anos) : 10;
         const venceJ = masAnios(designa._insc, anosJ); const perm = !!(designa.clausula_permanencia || acta.clausula_permanencia);
@@ -229,7 +239,7 @@ export function evaluar(e){
       const conRegimen = ultimaCon((a) => a.regimen_firma && a.regimen_firma !== 'no_dice');
       const junta = (designa && (designa.junta || []).length ? designa.junta : acta.junta) || [];
       if(!conRegimen) punto('firmantes', 'Régimen de firma', 'mano', 'No se encontró cómo firman los directores. Míralo en el acta.');
-      else if(!junta.length) punto('firmantes', 'Firmantes', 'mano', 'No se pudo leer quiénes forman la junta. Míralo en el acta.', { pagina: pg(designa || actas[0]) });
+      else if(!junta.length) punto('firmantes', 'Firmantes', 'mano', 'No se pudo leer quiénes forman la junta. Míralo en el acta.', { pagina: pg(designa || actaC) });
       else {
         const conjunta = conRegimen.regimen_firma === 'conjunta';
         const nums = (e.representantes || []).map((r) => r.orden).concat(docs.filter((d) => d.casilla === 'cedula').map((d) => d.numero)).filter((v, i, a) => a.indexOf(v) === i).sort((a, b) => a - b);
@@ -262,7 +272,7 @@ export function evaluar(e){
         if(completos.length >= necesita) punto('firmantes', 'Firmantes', 'ok', 'Firma ' + reg + '. ' + completos.join(' y ') + (completos.length === 1 ? ' está en la junta y tiene cédula y RIF bien.' : ' están en la junta y tienen cédula y RIF bien.'), { pagina: pg(conRegimen) });
         else if(x) punto('firmantes', 'Firmantes', 'ok', 'Excepción: ' + x.motivo, { excepcion: x.motivo });
         else if(dudosos.length && completos.length + dudosos.length >= necesita) punto('firmantes', 'Firmantes', 'mano', 'Depende de lo que decidas con los documentos de ' + dudosos.join(' y ') + '.', { pagina: pg(conRegimen) });
-        else if(fuera.length) punto('firmantes', 'Firmante fuera de la junta', 'bloquea', fuera.join(' y ') + ' no aparece en la junta vigente. Si firma con un poder, súbelo en Otros y concede la excepción.', { pagina: pg(designa || actas[0]), falta: 'Representante que esté en la junta vigente', excepcionable: true });
+        else if(fuera.length) punto('firmantes', 'Firmante fuera de la junta', 'bloquea', fuera.join(' y ') + ' no aparece en la junta vigente. Si firma con un poder, súbelo en Otros y concede la excepción.', { pagina: pg(designa || actaC), falta: 'Representante que esté en la junta vigente', excepcionable: true });
         else punto('firmantes', 'Firmantes', 'bloquea', 'Firma ' + reg + ': hace falta ' + (necesita === 2 ? 'otro representante' : 'un representante') + ' de la junta con cédula y RIF bien.', { pagina: pg(conRegimen), falta: conjunta ? 'Cédula y RIF del segundo representante que firma' : 'Cédula y RIF del representante que firma' });
         const app = c.regimen_firma === 'conjunta' ? 'conjunta' : c.regimen_firma === 'individual' ? 'separada' : null;
         const acta2 = conjunta ? 'conjunta' : 'separada';
@@ -270,17 +280,21 @@ export function evaluar(e){
       }
 
       // Domicilio (regla 8)
-      const cambioDom = ultimaCon((a) => (a.asamblea_temas || []).includes('cambio_domicilio') && a.direccion);
-      const dirActa = (cambioDom && cambioDom.direccion) || acta.direccion; const dirRif = hRif && hRif.direccion;
-      if(acta.clausula_sucursales) punto('domicilio', 'Domicilio', 'ok', 'El acta permite sucursales: no hace falta que coincida con el RIF.', { pagina: pg(actas[0]) });
+      // Parte E: el domicilio sale del acta más reciente que trae la dirección completa (si ninguna, la más reciente que traiga alguna)
+      const conDom = ultimaCon((a) => conDir(a, 3)) || ultimaCon((a) => conDir(a, 1));
+      const cambioDom = conDom && conDom !== actaC ? conDom : null; fuentes.domicilio = conDom;
+      const dirActa = conDom ? conDom.direccion : null; const dirRif = hRif && hRif.direccion;
+      if(acta.clausula_sucursales) punto('domicilio', 'Domicilio', 'ok', 'El acta permite sucursales: no hace falta que coincida con el RIF.', { pagina: pg(actaC) });
       else if(!dirActa || !dirRif) punto('domicilio', 'Domicilio', 'mano', 'No se leyó la dirección ' + (!dirActa ? 'del acta' : 'del RIF') + '. Compáralas tú.');
-      else if(palabras(dirActa).size < 3) punto('domicilio', 'Domicilio', 'mano', 'El acta solo trae ' + dirActa + '. Compara con el RIF a mano.', { pagina: pg(cambioDom || actas[0]) });
+      else if(palabras(dirActa).size < 3) punto('domicilio', 'Domicilio', 'mano', 'El acta solo trae ' + dirActa + '. Compara con el RIF a mano.', { pagina: pg(cambioDom || actaC) });
       else {
         const p = parecido(dirActa, dirRif);
-        if(p !== null && p >= 0.65) punto('domicilio', 'Domicilio igual al del RIF', 'ok', 'Se parece en un ' + pct(p) + '.', { pagina: pg(cambioDom || actas[0]) });
-        else punto('domicilio', 'Domicilio distinto al del RIF', 'bloquea', 'La dirección ' + (cambioDom ? 'de la última asamblea' : 'del acta') + ' se parece en un ' + pct(p || 0) + ' a la del RIF.', { pagina: pg(cambioDom || actas[0]), falta: 'Acta de asamblea de cambio de domicilio' });
+        if(p !== null && p >= 0.65) punto('domicilio', 'Domicilio igual al del RIF', 'ok', 'Se parece en un ' + pct(p) + '.', { pagina: pg(cambioDom || actaC) });
+        else punto('domicilio', 'Domicilio distinto al del RIF', 'bloquea', 'La dirección ' + (cambioDom ? 'de la última asamblea' : 'del acta') + ' se parece en un ' + pct(p || 0) + ' a la del RIF.', { pagina: pg(cambioDom || actaC), falta: 'Acta de asamblea de cambio de domicilio' });
       }
     }
+    const fu = (a) => (a ? { casilla: a._doc.casilla, numero: a._doc.numero, inscripcion: a._insc } : null);
+    fuentesOut = { actas: actas.map(fu), junta: fu(fuentes.junta), nombre: fu(fuentes.nombre), domicilio: fu(fuentes.domicilio) };
   }
 
   // Lo que trae un archivo y nadie marcó (regla 21)
@@ -310,7 +324,7 @@ export function evaluar(e){
   const veredicto = ms.some((m) => m.propuesta === 'problema') || puntos.some((p) => p.estado === 'bloquea') ? 'no_apto'
     : ms.some((m) => m.propuesta === 'revisar_a_mano') || puntos.some((p) => p.estado === 'mano') ? 'revisar_a_mano' : 'apto';
   const representantes = Object.keys(nombresRep).map((n) => ({ orden: Number(n), nombre: String(nombresRep[n]).trim().slice(0, 120) }));
-  return { veredicto, puntos, marcas: ms, representantes, version: VERSION_REGLAS };
+  return { veredicto, puntos, marcas: ms, representantes, version: VERSION_REGLAS, fuentes: fuentesOut };
 }
 
 const TEMAS = { cambio_nombre: 'cambio de nombre', cambio_domicilio: 'cambio de domicilio', cambio_junta: 'cambio de junta', ratificacion_junta: 'ratificación de junta', prorroga: 'prórroga', aumento_capital: 'aumento de capital', otro: 'otros temas' };
