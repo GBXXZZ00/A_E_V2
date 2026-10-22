@@ -54,3 +54,9 @@ Una sola corrida, dos publicaciones: primero S, luego A. Pruebas, capturas 1366x
 - Revisar textos, contadores y filtros que digan "7 recaudos" o similares (ficha del dedicado, Clientes, Mi trabajo, avisos) para que hablen de las 2 pólizas.
 - Las pólizas vencen: aviso 30 días antes del vencimiento al líder y al administrador.
 - Modelo de póliza (RC general de Oceánica, sin datos del cliente) disponible para los líderes: lo comparte el administrador.
+
+## Parte E (22/10): la IA no toma la junta de un acta de asamblea marcada "otro"
+- Caso real: TOTALCOM VENEZUELA CA (cliente 985, corrida 22). Acta de asamblea del 16/10/2023, inscrita el 12/12/2023, trae la junta completa (6 personas) y 5 años, pero el lector la marcó con tema `otro` ("aclaratoria de la cláusula XII sobre la conformación de la Junta Directiva"). `reglas.mjs` línea ~217 solo cuenta como designación las actas con tema `cambio_junta` o `ratificacion_junta`, así que tomó la constitutiva de 1998 y bloqueó "Junta vencida".
+- Arreglo: un acta de asamblea que trae `junta` con al menos una persona cuenta como designación aunque el tema sea otro (y se toma la más reciente por fecha de inscripción). Además, ajustar el prompt del lector para que marque `ratificacion_junta` o `cambio_junta` cuando el acta nombra la junta.
+- Prueba nueva con este caso (junta vigente hasta 12/12/2028). Volver a correr Totalcom después del arreglo.
+- Ojo también: la corrida 22 se lanzó a las 18:31 UTC y las lecturas de las actas terminaron a las 18:33. Revisar que la corrida espere a las lecturas nuevas o se repita sola al terminar.
