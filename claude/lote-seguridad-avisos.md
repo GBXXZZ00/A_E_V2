@@ -60,3 +60,13 @@ Una sola corrida, dos publicaciones: primero S, luego A. Pruebas, capturas 1366x
 - Arreglo: un acta de asamblea que trae `junta` con al menos una persona cuenta como designación aunque el tema sea otro (y se toma la más reciente por fecha de inscripción). Además, ajustar el prompt del lector para que marque `ratificacion_junta` o `cambio_junta` cuando el acta nombra la junta.
 - Prueba nueva con este caso (junta vigente hasta 12/12/2028). Volver a correr Totalcom después del arreglo.
 - Ojo también: la corrida 22 se lanzó a las 18:31 UTC y las lecturas de las actas terminaron a las 18:33. Revisar que la corrida espere a las lecturas nuevas o se repita sola al terminar.
+
+## Parte F (22/10): VGT solo cuenta lo que está en uso
+- YA APLICADO en la base desde el chat del proyecto (migración `vgt_solo_en_uso_22oct`): `privado.tiene_vgt()` solo es verdadero si el cliente tiene un tramo VGT con `en_uso` SI o EN PROYECTO. Totalcom (tramo 906, Arapuey - Sabana de Mendoza) quedó `en_uso = 'NEGADA'` con nota y bitácora `vgt_negada`.
+- Regla del administrador: lo que no está en uso no se cuenta. EN PROYECTO pide pólizas (el contrato va antes de usarlo) pero no suma postes.
+- Falta en la app:
+  1. Lista cerrada para `en_uso`: SI, EN PROYECTO, NO, NEGADA. Que el administrador la pueda cambiar en la ficha del dedicado (hoy `dedicado_contrato_editar` no deja tocar `en_uso`), con bitácora.
+  2. Contadores en la ficha y en Dedicados: "postes en uso · en proyecto · sin uso o negados". Los totales de postes solo suman SI.
+  3. Si un tramo pasa a SI o EN PROYECTO y el cliente no tenía VGT, aviso al líder: "pedir las pólizas".
+  4. Los tramos NO y NEGADA se ven plegados como historial.
+5. **Órdenes de trabajo (ODT de infraestructura) visibles para Legal**: cada tramo muestra su ODT (`dedicado_contratos.odt`, viene de la columna "ODT INFRA" de la BD consolidada de VGT). Si la ODT existe en `ordenes_odoo`, enlazarla y mostrar su título y fecha. Al elaborar o emitir el contrato VGT, el abogado ve en la misma pantalla todos los tramos en uso o en proyecto con su ruta, postes, fecha y ODT, para copiarlos al contrato. El administrador puede escribir o corregir la ODT desde el menú "⋯" del tramo. Hoy solo 2 tramos tienen ODT (Gigapop Dabauro 393378 y 4 Ever Plug La Polar 361352) y Colnetwork El Encanto dice "REVISAR": mostrar "Sin ODT" como pendiente.

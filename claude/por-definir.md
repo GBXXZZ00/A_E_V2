@@ -20,6 +20,10 @@ La versión del 09/10 sigue en el historial de git. Lo de migraciones, Mi trabaj
 5. **Requisitos del VGT:** los dice el administrador.
 6. El administrador tiene anotadas varias cosas que debe probar antes de abrir la app.
 
+
+## Solicitudes de VGT (después de Dedicados, pedido del administrador 22/10)
+Módulo para el control total de las solicitudes de VGT: registro de cada solicitud (cliente, ruta o proyecto, estado, postes, fecha), estados (solicitada, en evaluación, aprobada, negada con motivo, en proyecto, en uso), quién la aprobó o negó, ODT de infraestructura, contrato y pólizas, e historial. Reemplaza la BD consolidada de VGT en Excel. Requisitos con Reina (todavía no se ha reunido con ella).
+
 ## Aliados
 Construido en v26 y conectado con clientes e instalaciones, pero nunca usado: hay 45 aliados, ninguna solicitud y ninguna cuenta de aliado. Antes de dar acceso:
 1. seguridad (arriba);
