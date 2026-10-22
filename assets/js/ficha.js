@@ -388,7 +388,12 @@
       const r = R.find((x) => x.numero === p.numero) || {}; const d = C.diasEntre(hoy, p.vence_en);
       return '<div class="al-banda ' + (d < 0 ? 'rojo' : 'ambar') + '" role="note"><b>' + esc(r.texto || 'Póliza') + '</b><p>' + esc(d < 0 ? 'Venció el ' + fecha(p.vence_en) + '. Pide la renovación.' : 'Vence el ' + fecha(p.vence_en) + '. Pide la renovación antes.') + '</p></div>';
     }).join('');
-    return '<section class="bloque" data-grupo="vgt"><div class="sec">Requisitos VGT<span>' + (V.faltan ? (V.faltan === 1 ? 'Falta 1' : 'Faltan ' + V.faltan) : 'Completos') + '</span></div>' + aviso +
+    // 22/10: una póliza sin fecha de vencimiento no puede avisar antes de vencer
+    const sinFecha = R.filter((r) => r.vence).map((r) => docDe('otro', r.numero)).filter((d) => d && d.estado !== 'devuelto' && !d.vence_en);
+    const faltaFecha = sinFecha.length ? '<div class="al-banda ambar" role="note"><b>' + (sinFecha.length === 1 ? 'Falta la fecha de vencimiento de una póliza' : 'Falta la fecha de vencimiento de las pólizas') + '</b><p>' +
+      (F.puedo.revisar ? 'Toca la póliza, escribe la fecha de vencimiento y guarda. Sin fecha no te podemos avisar antes de que venza.' : 'Pídele al administrador que la escriba. Sin fecha no te podemos avisar antes de que venza.') + '</p></div>' : '';
+    return '<section class="bloque" data-grupo="vgt"><div class="sec">Requisitos VGT<span>' + (V.faltan ? (V.faltan === 1 ? 'Falta 1' : 'Faltan ' + V.faltan) : 'Completos') + '</span></div>' +
+      '<p class="nota-chica estado-sub' + (colaDe(id) ? '' : ' hidden') + '" role="status"><span class="cargando-linea"><i></i><span class="texto-sub">' + esc(textoCola()) + '</span></span></p>' + aviso + faltaFecha +
       R.filter((r) => r.requerido).map((r) => casillaHtml('otro', r.numero, { nombre: r.texto, req: true, sub: sub(r) })).join('') +
       '<p class="nota-chica">El contrato VGT no pasa a Por firmar mientras falte alguno. La fecha de vencimiento de las pólizas se escribe al revisarlas; 30 días antes te avisamos.</p>' +
       '<div class="rot">Opcional</div>' +
@@ -906,11 +911,12 @@
   }
   function pintarCola(){
     const z = $('estadoSubida'); if(z){ z.classList.toggle('hidden', !cola.length); const tx = $('textoSubida'); if(tx) tx.textContent = textoCola(); }
+    Array.prototype.forEach.call(document.querySelectorAll('.estado-sub'), (x) => { x.classList.toggle('hidden', !colaDe(id)); const tx = x.querySelector('.texto-sub'); if(tx) tx.textContent = textoCola(); });
     const q = $('subidaCom'); if(q){ q.classList.toggle('hidden', !cola.length); if(cola.length) q.lastChild.textContent = textoCola(); }
   }
   function repintarSubida(t){
     if(t.f) document.dispatchEvent(new CustomEvent('ficha-subida'));   // la hoja de comisión pinta su casilla
-    else if(t.cli === id && F) pintarDocumentos();
+    else if(t.cli === id && F){ pintarDocumentos(); if($('tab-vgt') && $('tab-vgt').innerHTML) pintarDedicado(); }   // 22/10: la pestaña VGT también dice "Subiendo"
     pintarCola();
   }
   // Cada archivo va a Drive por la función drive_subir: carpeta "RIF - NOMBRE" del cliente (se crea sola) y subcarpeta por tipo de servicio
@@ -1027,6 +1033,7 @@
     const files = Array.prototype.slice.call($('archivo').files || []); if(!files.length || !destino) return;
     const d = destino; destino = null;
     if(d.casilla.indexOf('contrato_') === 0){ abrirFechas(d, files); return; }
+    if(esPoliza(d)){ abrirVence(d, files); return; }
     if(d.casilla === 'otro' && d.numero < 60){ abrirOtro(d, files); return; }
     guardarItems([{ files, casillas: [d] }]);
   }
@@ -1044,6 +1051,22 @@
     if(n.length < 3){ $('eOtro').textContent = 'Escribe qué documento es'; $('oNombre').focus(); return; }
     const c = campo; cerrarHoja(); fuera = c.f || null;
     guardarItems([{ files: c.files, casillas: [c.destino], titulo: n, nota: $('oNota').value.trim() || null }]);
+  }
+  // 22/10: las pólizas de VGT piden su fecha de vencimiento al subirse (así avisa 30 días antes aunque se apruebe sola)
+  const esPoliza = (d) => d.casilla === 'otro' && [66, 67].indexOf(Number(d.numero)) >= 0;
+  function abrirVence(d, files){
+    campo = { tipo: 'poliza', destino: { casilla: 'otro', numero: Number(d.numero) }, files, f: fuera }; fuera = null;
+    $('hojaCampo').innerHTML = cabHoja('tCampo', casilla('otro', Number(d.numero)), files.length === 1 ? files[0].name : files.length + ' archivos') + '<form id="formVence" novalidate>' +
+      '<label class="rotulo" for="pVence">Fecha de vencimiento de la póliza</label><input class="campo" id="pVence" type="date" data-foco><div class="error" id="ePVence" role="alert"></div>' +
+      '<p class="nota">30 días antes te avisamos a ti y al administrador para pedir la renovación.</p>' +
+      '<div class="acciones"><button type="submit" class="btn btn-ancho">Subir póliza</button></div></form>';
+    abrirHoja('hojaCampo');
+  }
+  function guardarVence(e){
+    e.preventDefault(); const v = $('pVence').value; $('ePVence').textContent = '';
+    if(!v){ $('ePVence').textContent = 'Pon la fecha en que vence la póliza'; $('pVence').focus(); return; }
+    const c = campo; cerrarHoja(); fuera = c.f || null;
+    guardarItems([{ files: c.files, casillas: [c.destino], vence_en: v }]);
   }
   // El contrato pide la fecha de firma antes de guardarse
   function abrirFechas(d, files){
@@ -1506,6 +1529,7 @@
     if(e.target.id === 'formNota') guardarNota(e);
     else if(e.target.id === 'formCampo') guardarCampo(e);
     else if(e.target.id === 'formFechas') guardarFechas(e);
+    else if(e.target.id === 'formVence') guardarVence(e);
     else if(e.target.id === 'formOtro') guardarOtro(e);
   });
   document.addEventListener('visibilitychange', () => { if(!document.hidden && F && id && !ocupado && !encima()) cargar(); });
@@ -1517,6 +1541,7 @@
     const c = e.target.closest('[data-suelta]');
     if(c){ const p = c.dataset.casilla.split(':'); const d = { casilla: p[0], numero: Number(p[1]) }; fuera = null;
       if(d.casilla.indexOf('contrato_') === 0){ abrirFechas(d, files); return; }
+      if(esPoliza(d)){ abrirVence(d, files); return; }
       if(d.casilla === 'otro' && d.numero < 60){ abrirOtro(d, files); return; }
       guardarItems([{ files, casillas: [d] }]); return; }
     abrirVarios(); agregarLote(files);
@@ -1616,6 +1641,7 @@
     montar();
     fuera = { cliente: ficha.cliente.id, F: ficha, alTerminar };
     if(cas.indexOf('contrato_') === 0){ abrirFechas({ casilla: cas, numero: num }, files); return; }
+    if(esPoliza({ casilla: cas, numero: num })){ abrirVence({ casilla: cas, numero: num }, files); return; }
     if(cas === 'otro' && num < 60){ abrirOtro({ casilla: cas, numero: num }, files); return; }
     guardarItems([{ files, casillas: [{ casilla: cas, numero: num }] }]);
   }

@@ -1,6 +1,11 @@
 # Traspaso (se actualiza al cerrar cada sesión)
 
-Actualizado: 22/10/2026, corrida del lote S + A + C y Parte D. Publicado: `?v=61`.
+Actualizado: 22/10/2026, corrida del lote S + A + C y Parte D. Publicado: `?v=62`.
+
+## ARREGLO 22/10 (v62): subir en la pestaña VGT y fecha de las pólizas
+- Las subidas de hoy sí se guardaban (RIF, constitutiva, cédula, acta y las 2 pólizas de un cliente), pero la pestaña VGT no mostraba "Subiendo" ni cambiaba la casilla hasta terminar. Ahora se repinta al subir y tiene su barra de avance.
+- Al subir una póliza (66 o 67) se pide la fecha de vencimiento (obligatoria); sin fecha el aviso de 30 días no puede salir. Las pólizas que ya están sin fecha muestran "Falta la fecha de vencimiento" (el administrador la escribe al abrirla y Guardar).
+- Pruebas: test28 (subir póliza con fecha), test07, test04 y test25.
 
 ## PARTE D HECHA (22/10, v60 y ajuste v61): VGT exige las 2 pólizas y la propuesta comercial
 - Ajuste del administrador (v61, migración `parte_d2_vgt_tres_requisitos`, bitácora `regla_vgt` parte_d2): la propuesta comercial vuelve a ser obligatoria; actas de cambios sustanciales, poder, habilitación, tendido y factibilidad salen de la ficha (nadie había subido nada en esas casillas). A los 8 clientes con VGT les faltan 3. El bloque se llama "Requisitos VGT" y debajo solo "Opcional": el correo. Textos: "Faltan N requisitos para VGT", filtro "Faltan requisitos VGT".

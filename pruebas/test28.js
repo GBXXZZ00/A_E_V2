@@ -116,6 +116,16 @@ const llamo = (m, f) => m.llamadas.filter((l) => l[1] === f);
     ok(nombre + ': la póliza que vence en menos de 30 días avisa', vg.includes('Pide la renovación'));
     ok(nombre + ': ya no hay actas de cambios sustanciales ni botón para agregarlas', (await p.locator('[data-grupo="vgt"] [data-casilla="otro:60"]').count()) === 0 && (await p.locator('#agregarVgt').count()) === 0);
     ok(nombre + ': la propuesta comercial es obligatoria', (await p.locator('[data-grupo="vgt"] [data-casilla="otro:68"]').count()) === 1);
+    // 22/10: la póliza pide su fecha de vencimiento al subirse; la pestaña VGT dice "Subiendo"
+    { const [fc] = await Promise.all([p.waitForEvent('filechooser'), p.locator('[data-grupo="vgt"] [data-subir="otro:67"]').click()]);
+      await fc.setFiles({ name: 'patronal.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4 prueba') });
+      await p.waitForSelector('#hojaCampo.ver #pVence'); await p.click('#formVence [type="submit"]');
+      ok(nombre + ': la póliza no se sube sin fecha de vencimiento', /fecha en que vence/.test(await p.textContent('#ePVence')));
+      await p.fill('#pVence', '2027-03-31'); await p.click('#formVence [type="submit"]');
+      await p.waitForFunction(() => document.querySelector('#tab-vgt .tx-subida, #tab-vgt .estado-sub:not(.hidden)') || 0, null, { timeout: 4000 }).catch(() => {});
+      await p.waitForFunction(() => !document.querySelector('#tab-vgt .estado-sub:not(.hidden)'), null, { timeout: 15000 });
+      const reg = mundo.llamadas.filter((l) => l[1] === 'documentos_registrar').pop();
+      ok(nombre + ': la póliza se guarda con su vencimiento', !!reg && JSON.stringify(reg[2]).includes('2027-03-31') && JSON.stringify(reg[2]).includes('"numero":67')); }
     ok(nombre + ': Otros documentos no muestra las casillas VGT', (await p.locator('[data-grupo="otros"] [data-casilla="otro:68"]').count()) === 0);
     await p.click('[data-grupo="vgt"] [data-campo="vgt_correo"]'); await p.waitForSelector('#hojaCampo.ver #cCorreo');
     await p.fill('#cCorreo', 'avisos@inventada.test'); await p.click('#guardarCampo'); await p.waitForFunction(() => !document.querySelector('#hojaCampo.ver'));
