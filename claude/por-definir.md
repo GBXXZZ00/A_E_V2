@@ -1,4 +1,6 @@
-# Pendientes y lo que falta definir (actualizado 21/10/2026)
+# Pendientes y lo que falta definir (actualizado 23/10/2026)
+
+**23/10:** Lote G aprobado (datos accionables por módulo, tablero gerencial, vista y avisos del gerente, modo práctica): `claude/lote-g-datos-tablero-practica.md`. Va después del lote S+A+C+D+E+F. Luego: pruebas por rol, ajustes y presentaciones en vivo.
 
 **21/10 (tarde):** lote S + A + C publicado (v57 a v59): sesión de 12 h sin uso, cierre de sesiones al restablecer PIN, CORS y CSP; avisos agrupados y Contactar al responsable; avisos de aliados; app vieja cargada (9 clientes creados). Falta que el administrador ponga su WhatsApp en Usuarios y borre en el panel las funciones de Drive de prueba.
 
