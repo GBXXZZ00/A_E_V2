@@ -70,3 +70,18 @@ Objetivo: en la presentación, cada asistente escanea un QR, instala la app, ent
 ## Después de este lote (no programar todavía)
 - Guía de pruebas por rol y cuentas `prueba.lider`, `prueba.analista`, `prueba.abogado`, `prueba.aliado`, `prueba.gerencia` (las crea el administrador).
 - Presentación HTML en vivo por público (líderes, analistas y canales, gerente; aliados al final con piloto), con QR de instalación, lámina "instala la app primero" (iPhone) y botón de aviso en vivo. La arma Claude en el chat del proyecto cuando el lote esté probado.
+
+## CORRIDA ÚNICA 23/10 (presupuesto de tokens limitado: hacer SOLO esto, en este orden)
+El administrador tiene poco presupuesto. No leer el traspaso completo (pesa 130 KB): solo la primera sección y `claude/por-definir.md`. Sin maquetas aparte: seguir los patrones visuales que ya tiene la app. Una sola publicación al final con pruebas; capturas solo de lo nuevo (escritorio e iPhone).
+
+1. **Seguridad (parte S de `lote-seguridad-avisos.md`)**: completa. Es obligatoria antes de dar acceso.
+2. **Arreglos cortos**: icono de usuario en el teléfono (A3), avisos agrupados por categoría (A2), regla de la junta en `reglas.mjs` para actas de asamblea que traen junta aunque el tema sea "otro" (E, sin la auditoría masiva), VGT solo exige las 2 pólizas (D) y `en_uso` editable con "Denegar solicitud" desde el menú del tramo (F punto 1).
+3. **Panel por módulo (reemplaza el diseño de G2)**: nueva pantalla "Panel" con el MISMO diseño de la app: una tarjeta por módulo (Comisiones, Clientes, Migraciones, Revisión, Dedicados, Aliados, Factibilidad) con 2 o 3 números del mes, una minigráfica de 6 meses (Chart.js) y su alerta. Al tocar una tarjeta abre el tablero del módulo: gráfica por mes con selector Mes a mes / Año contra año, filtro por líder y lista de lo que hay que gestionar; tocar una barra o número filtra la lista. Iván (gerencia) ve todo en solo lectura; el líder ve solo lo suyo. Una RPC por módulo, cacheada.
+4. **Franja de números en cada módulo (G1, versión corta)**: 3 o 4 números arriba de cada lista que filtran al tocarlos. Sin "Para hoy" por ahora.
+5. **Modo práctica (G4) = entorno de pruebas y de presentación**:
+   - Crear 5 cuentas `prueba.lider`, `prueba.analista`, `prueba.abogado`, `prueba.aliado`, `prueba.gerencia` (PIN temporal, cambio obligatorio) que entran SIEMPRE en modo práctica, y un interruptor "Modo práctica" para cualquier otra cuenta.
+   - Casos de práctica por rol, precargados y marcados `practica = true`, aislados de comisiones, conteos, panel, avisos reales y Drive real (prueba automática que lo demuestre).
+   - Recuadro de instrucciones paso a paso dentro de cada caso.
+   - Botones del administrador: "Enviar aviso de práctica" (a todos o por rol) y "Reiniciar práctica".
+   - Entregar al final una guía corta en `claude/guia-pruebas.md`: con qué cuenta entrar, qué caso abrir y qué revisar en cada módulo.
+6. Queda para después (NO hacer ahora): contactar al responsable (A4), avisos de aliados (C1), app vieja (C2), auditoría masiva de la IA, el resto de VGT (G y Parte F puntos 2 a 5), avisos del gerente (G3).
