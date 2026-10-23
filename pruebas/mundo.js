@@ -876,6 +876,20 @@ const RPC = {
   lideres_analistas(m, yo){ if(yo.rol !== 'admin') return error('No tienes permiso para hacer esto'); const l = {}; m.personas.filter((p) => p.rol === 'lider').forEach((p) => { l[p.id] = p.analista_id || null; });
     return { lideres: l, analistas: m.personas.filter((p) => p.rol === 'analista' && p.activo).map((p) => ({ id: p.id, nombre: p.nombre })) }; },
   // Lote 7: Gerencia. Los hechos inventados imitan privado.gerencia_hechos; los filtros y permisos, privado.gerencia_filtrado.
+  // Corrida 23/10: Panel por módulo. Series por mes y lista de lo que hay que gestionar; el líder ve solo lo suyo
+  panel(m, yo, a){
+    if(!['admin', 'analista', 'lider', 'abogado', 'gerencia'].includes(yo.rol)) return error('No tienes permiso');
+    const lid = yo.rol === 'lider' ? yo.id : a.p_lider || null; const mes = (iso) => String(iso || '').slice(0, 7) + '-01';
+    const cs = m.datos.clientes.filter((c) => !lid || c.lider_id === lid); const series = []; const suma = (mo, me, k) => { let f = series.find((x) => x.m === mo && x.mes === me); if(!f){ f = { m: mo, mes: me, a: 0, b: 0 }; series.push(f); } f[k]++; };
+    cs.forEach((c) => { suma('clientes', mes(c.creado_en || hace(3)), 'a'); if(c.legal_ok_en) suma('clientes', mes(c.legal_ok_en), 'b'); (c.documentos || []).forEach((d) => { if(d.subido_en) suma('revision', mes(d.subido_en), 'a'); }); });
+    const h = mes(hace(0)); const ant = masMeses(h, -1); [[h, 6, 1], [ant, 4, 2]].forEach(([me, x, y]) => { for(let i = 0; i < x; i++) suma('comisiones', me, 'a'); for(let i = 0; i < y; i++) suma('comisiones', me, 'b'); });
+    const nom = (id) => (m.personas.find((p) => p.id === id) || {}).nombre || null;
+    const gestion = cs.filter((c) => ['documentos_pendientes', 'documentos_solicitados', 'por_firmar', 'documentos_en_revision'].includes(c.estatus)).map((c, i) => ({
+      m: c.estatus === 'documentos_en_revision' ? 'revision' : 'clientes', t: c.estatus, c: c.id, n: c.nombre, x: c.estatus === 'por_firmar' ? 'Falta la firma' : c.estatus === 'documentos_en_revision' ? 'Documentos por revisar' : 'Faltan documentos',
+      l: nom(c.lider_id), d: c.estatus_desde || hace(i * 20), v: null }));
+    const pv = gestion.find((g) => g.m === 'clientes'); if(pv) pv.v = fechaClave(new Date(Date.now() - 3 * DIA));
+    return { rol: yo.rol, hoy: hoy(), lideres: yo.rol === 'lider' ? [] : m.personas.filter((p) => p.rol === 'lider' && p.activo !== false).map((p) => ({ id: p.id, nombre: p.nombre })), series, gestion };
+  },
   gerencia(m, yo, a){ const f = gerFiltrar(m, yo, a); if(f.__error) return f; const r = efectivo(yo);
     const g = new Map(); f.forEach((h) => { const d = ['com', 'ins', 'ali', 'ded'].includes(h.s) ? h.detalle : null; const k = [h.s, h.k, h.mes, h.lider_id, d].join('|');
       const x = g.get(k) || { s: h.s, k: h.k, mes: h.mes, l: h.lider_id, ln: (m.personas.find((p) => p.id === h.lider_id) || {}).nombre || null, d, c: 0, n: null, _n: [] }; x.c++; if(h.n !== null && h.n !== undefined) x._n.push(h.n); g.set(k, x); });

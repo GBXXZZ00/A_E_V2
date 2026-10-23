@@ -37,6 +37,7 @@ async function contexto(navegador, opciones, mundo){
   // Leaflet por CDN y los mosaicos del mapa: se sirven desde la copia local para no depender de internet
   await ctx.route('https://unpkg.com/leaflet@1.9.4/dist/**', (r) => { const f = r.request().url().split('/dist/')[1].split('?')[0];
     try { return r.fulfill({ status: 200, contentType: f.endsWith('.css') ? 'text/css' : 'application/javascript', headers: { 'access-control-allow-origin': '*' }, body: require('fs').readFileSync(__dirname + '/vendor/leaflet/' + f) }); } catch (e) { return r.fulfill({ status: 404, body: '' }); } });
+  await ctx.route('https://cdn.jsdelivr.net/npm/chart.js@4.4.1/**', (r) => r.fulfill({ status: 200, contentType: 'application/javascript', headers: { 'access-control-allow-origin': '*' }, body: require('fs').readFileSync(__dirname + '/vendor/chart/chart.umd.min.js') }));
   await ctx.route(/tile\.openstreetmap\.org|arcgisonline\.com/, (r) => r.fulfill({ status: 200, contentType: 'image/png', body: PNG }));
   await ctx.route('**/*.supabase.co/**', async (r) => {
     const req = r.request(); const u = decodeURIComponent(req.url());

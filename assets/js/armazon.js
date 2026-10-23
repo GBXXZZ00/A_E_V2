@@ -7,6 +7,7 @@
 
   const NAV = [
     { id: 'inicio', texto: 'Inicio', icono: 'casa', enlace: 'inicio.html' },
+    { id: 'panel', texto: 'Panel', icono: 'tablero', enlace: 'panel.html', roles: ['admin', 'analista', 'lider', 'abogado', 'gerencia'], soloPc: true },
     { id: 'comisiones', texto: 'Comisiones', icono: 'barras', enlace: 'comisiones.html' },
     { id: 'trabajo', texto: 'Mi trabajo', icono: 'check', enlace: 'trabajo.html', roles: ['admin', 'analista', 'lider', 'abogado'], soloPc: true },
     { id: 'clientes', texto: 'Clientes', icono: 'edificio', enlace: 'clientes.html' },
@@ -19,7 +20,7 @@
   ];
 
   // Un módulo se ve por rol o, para un líder, por su marca (líder de dedicados)
-  const puedeVer = (n, p) => p.rol === 'gerencia' ? n.id === 'gerencia' : !n.roles || n.roles.indexOf(p.rol) >= 0 || (n.marca && p.rol === 'lider' && !!p[n.marca]);
+  const puedeVer = (n, p) => p.rol === 'gerencia' ? (n.id === 'gerencia' || n.id === 'panel') : !n.roles || n.roles.indexOf(p.rol) >= 0 || (n.marca && p.rol === 'lider' && !!p[n.marca]);
   // opciones: { activo: 'inicio'|'comisiones'|'clientes'|'factibilidad'|'revision'|'aliados'|null, sinNav: bool, volver: {enlace, texto}, acciones: html }
   let montado = null;   // { clave, res }: lo que ya está dibujado, para no repetirlo al confirmar la sesión
   function montar(p, opciones){

@@ -1358,3 +1358,49 @@ button.ge-li{cursor:pointer}
 .vgt-hist{margin-top:10px;border:1px dashed var(--line);border-radius:14px;padding:8px 12px}
 .vgt-hist summary{cursor:pointer;font-size:13px;font-weight:600;color:var(--text2);min-height:32px;display:flex;align-items:center}
 .chip.gris{background:var(--surface-2);color:var(--text2)}
+
+/* Corrida 23/10: Panel por módulo */
+.pn-filtro{margin-top:14px;max-width:320px}
+#zonaPn{transition:opacity 160ms var(--ease-out)}
+#zonaPn.pn-cargando{opacity:.55}
+.pn-grid{display:grid;grid-template-columns:1fr;gap:10px;margin-top:18px}
+.pn-sk{display:block;height:178px;border-radius:20px}
+.pn-card{display:flex;flex-direction:column;gap:10px;width:100%;padding:14px 16px;border:1px solid var(--line);border-radius:20px;background:#fff;color:var(--text);font:inherit;text-align:left;cursor:pointer;min-width:0;transition:transform 160ms var(--ease-out)}
+.pn-card:active{transform:scale(.97)}
+.pn-cab{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.pn-cab b{font-size:16px;font-weight:800;letter-spacing:-.01em}
+.pn-nums{display:flex;flex-wrap:wrap;gap:6px 22px}
+.pn-num{display:flex;flex-direction:column;min-width:0}
+.pn-num em{font-style:normal;font-size:26px;font-weight:800;letter-spacing:-.02em;line-height:1.1;font-variant-numeric:tabular-nums}
+.pn-num em.pn-rojo{color:var(--rojo)}
+.pn-num small{font-size:12px;color:var(--text2)}
+.pn-dif{font-weight:700}.pn-dif.sube{color:var(--verde)}
+.pn-mini{display:block;position:relative;height:56px}
+.pn-singraf{font-size:12px;color:var(--text2)}
+.pn-modo{margin-top:6px}
+.pn-graf{position:relative;height:220px;margin-top:14px}
+.pn-ley{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;margin-top:8px;font-size:12.5px;color:var(--text2)}
+.pn-pt{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:-6px}
+.pn-tip{flex-basis:100%}
+.pn-fnums{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:14px}
+.pn-fn{display:flex;flex-direction:column;align-items:flex-start;min-height:44px;padding:8px 14px;border:1px solid var(--line);border-radius:14px;background:#fff;font:inherit;color:var(--text);cursor:pointer;transition:transform 160ms var(--ease-out)}
+.pn-fn:active{transform:scale(.97)}
+.pn-fn em{font-style:normal;font-size:20px;font-weight:800;font-variant-numeric:tabular-nums}
+.pn-fn small{font-size:12px;color:var(--text2)}
+.pn-fn.on{border-color:var(--azul);background:var(--azul-bg)}
+.pn-fn.pn-rojo em{color:var(--rojo)}
+.pn-ir{margin-left:auto;white-space:nowrap}
+.pn-cuenta{margin-top:16px;font-size:13px;color:var(--text2)}
+.pn-quitar{display:inline-flex;align-items:center;gap:4px;margin-top:14px}
+.pn-quitar button{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border:0;background:none;color:inherit;cursor:pointer}
+#listaPn .ge-li small.pn-rojo{color:var(--rojo);font-weight:700}
+@media (min-width:900px){
+  .pn-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .pn-graf{height:260px}
+}
+@media (hover:hover) and (pointer:fine){
+  .pn-card:hover,.pn-fn:hover{border-color:var(--azul)}
+}
+@media (prefers-reduced-motion:reduce){
+  .pn-card,.pn-fn{transition:none}
+}

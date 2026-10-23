@@ -54,7 +54,7 @@ const GINA = { id: '77777777-7777-4777-8777-777777777700', usuario: 'gina', pin:
     if(pc){ await g.locator('#pinCampo').focus(); await g.keyboard.type('640218', { delay: 15 }); } else for(const n of '640218') await g.locator('.tecla[data-k="' + n + '"]').click();
     await g.waitForURL('**/gerencia.html**'); await g.waitForSelector('#zonaG .ge-bento .ge-n');
     ok(nombre + ': la cuenta Gerencia entra directo a Gerencia y ve negativos', (await g.locator('#secNeg').count()) === 1);
-    ok(nombre + ': su menú solo tiene Gerencia', await g.evaluate(() => [...document.querySelectorAll('.navpc a, #navTel a, nav a')].every((a) => /gerencia\.html|inicio\.html|#/.test(a.getAttribute('href') || ''))));
+    ok(nombre + ': su menú solo tiene Gerencia y el Panel', await g.evaluate(() => [...document.querySelectorAll('.navpc a, #navTel a, nav a')].every((a) => /gerencia\.html|panel\.html|inicio\.html|#/.test(a.getAttribute('href') || ''))));
     await g.locator('#secCom .ge-p.verde').last().click(); await g.waitForSelector('#hojaG.ver .ge-li');
     ok(nombre + ': Gerencia ve la lista pero no abre fichas', (await g.locator('#hojaG button.ge-li').count()) === 0);
     await cerrarHojas(g);

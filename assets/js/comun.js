@@ -49,6 +49,7 @@
   const ICONOS = {
     casa: 'M3 11l9-8 9 8v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z',
     barras: 'M4 20V10M10 20V4M16 20v-7M22 20H2',
+    tablero: 'M3 3h8v8H3zM13 3h8v5h-8zM13 11h8v10h-8zM3 14h8v7H3z',
     edificio: 'M4 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16M16 9h2a2 2 0 0 1 2 2v10M2 21h20M8 7h4M8 11h4M8 15h4',
     abajo: 'm6 9 6 6 6-6', arriba: 'm6 15 6-6 6 6', derecha: 'm9 6 6 6-6 6', izquierda: 'm15 6-6 6 6 6',
     etiqueta: 'M3 12V4a1 1 0 0 1 1-1h8l9 9-9 9zM7.5 7.5h.01',
