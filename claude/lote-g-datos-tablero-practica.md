@@ -29,7 +29,12 @@ Diseño de primera, denso y claro (estilo panel B2B del proyecto, Chart.js, grid
 - **Filtros arriba:** período (mes calendario o corte de comisiones), comparar contra (mes anterior, mismo mes del año pasado, promedio de 3 meses), líder, sucursal, segmento (PYME, dedicado ISP, dedicado corporativo, aliado).
 - **Bloques:**
   1. Instalaciones: del mes y del corte, comisionables, por líder (top y comparativa), tendencia 6 meses.
-  2. Calidad de la venta: perdidas, churn de infancia (baja antes de N días; N ajustable, por defecto 90) y churn real, recuperados.
+  2. Calidad de la venta: perdidas, churn de infancia y churn real, reactivados. **Regla del administrador (23/10):**
+     - Se mide con marcas de tiempo por servicio: fecha de instalación, fecha de la ÚLTIMA suspensión y fecha de la última habilitación.
+     - **Churn de infancia:** la última suspensión ocurrió dentro de N días desde la instalación (N ajustable, por defecto 90) y NO hubo habilitación después.
+     - **Churn real:** la última suspensión ocurrió después de esos N días y NO hubo habilitación después.
+     - Si el servicio se habilitó DESPUÉS de su última suspensión, NO es churn: es **reactivación** (se cuenta aparte como "reactivados").
+     - Hoy la base NO guarda el historial de estados con fecha (solo el estado actual del TAD). Hace falta: (a) tabla `servicio_estados` que registre cada cambio de estado entre cargas del TAD con la fecha de la carga (desde ya, para tener historia), y (b) si Proham tiene un reporte de suspensiones y reconexiones con fecha, una fuente nueva en Actualizar que lo cargue con la fecha exacta (el administrador confirma si existe). Mientras no haya historia suficiente, el bloque dice "en construcción" y no inventa cifras.
   3. Tiempo de instalación: de la orden de Odoo a instalada (mediana y percentil 90), órdenes vencidas sin instalar, reprogramaciones.
   4. Cambios de categoría: migraciones a PYME (positivo) y cambios a residencial (negativo), por líder.
   5. Comisiones: cumplen vs no cumplen y por qué (Legal, pago, orden), monto del corte, excepciones.
