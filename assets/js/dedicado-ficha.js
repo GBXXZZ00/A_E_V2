@@ -3,7 +3,7 @@
 (function(){
   'use strict';
   const C = window.Comun;
-  const { $, esc, ic, rpc, toast, fecha, abrirHoja, cerrarHoja, prepararHojas } = C;
+  const { $, esc, ic, rpc, toast, fecha, abrirHoja, cerrarHoja, prepararHojas, plural } = C;
 
   const RUTAS = { cargar: 'Cargar a la app (ya se recibieron)', completar: 'Revisar y completar en la app', pedir: 'Pedir al cliente', validar: 'Validar con la analista dónde están' };
   const CONTRATO = {
@@ -137,15 +137,57 @@
   function vgt(ficha, quien){
     F = ficha; yo = quien || yo; const D = F.cliente.dedicado; if(!D) return '';
     const l = (D.contratos || []).filter((k) => k.tipo === 'vgt'); if(!l.length) return '';
-    const k = l[0]; const postes = l.reduce((a, x) => a + (Number(x.postes) || 0), 0);
-    const uso = (u) => { const t = String(u || '').toUpperCase(); return t === 'SI' ? 'En uso' : t === 'NO' ? 'No' : t === 'EN PROYECTO' ? 'En proyecto' : (u || ''); };
-    const cuerpo = '<div class="datos">' + fila('Contrato', k.numero ? 'N° ' + esc(k.numero) : gris('Sin número')) +
+    const k = l[0]; const U = (u) => String(u || '').toUpperCase();
+    // 23/10 (Parte F): solo cuentan los tramos En uso o En proyecto; los demás van plegados como historial
+    const usos = l.filter((x) => U(x.en_uso) === 'SI'); const proy = l.filter((x) => U(x.en_uso) === 'EN PROYECTO'); const resto = l.filter((x) => ['SI', 'EN PROYECTO'].indexOf(U(x.en_uso)) < 0);
+    const suma = (a) => a.reduce((t, x) => t + (Number(x.postes) || 0), 0);
+    const faltan = (D.vgt && D.vgt.faltan) || 0; const falta = faltan ? 'falta: ' + (faltan === 1 ? '1 requisito' : faltan + ' requisitos') : 'requisitos completos';
+    const neg = resto.find((x) => U(x.en_uso) === 'NEGADA');
+    const est = usos.length ? ['verde', 'VGT en uso · ' + suma(usos) + ' postes · ' + falta]
+      : proy.length ? ['azul', 'En proyecto · ' + (faltan ? 'pedir pólizas' : 'requisitos completos')]
+      : neg ? ['rojo', 'Solicitud negada'] : ['gris', 'Sin VGT en uso'];
+    const sub = usos.length || proy.length ? [usos.length ? plural(usos.length, 'tramo en uso', 'tramos en uso') : '', proy.length ? plural(proy.length, 'tramo en proyecto', 'tramos en proyecto') : ''].filter(Boolean).join(', ')
+      : neg ? (neg.negada_en ? 'Negada el ' + fecha(neg.negada_en) : 'Negada') + (neg.negada_motivo ? ': ' + neg.negada_motivo : '') + '. No se le piden pólizas' : 'No se le piden pólizas';
+    const CH = { SI: ['verde', 'En uso'], 'EN PROYECTO': ['azul', 'En proyecto'], NO: ['gris', 'No'], NEGADA: ['rojo', 'Negada'] };
+    const odt = (x) => { const o = String(x.odt || '').trim(); if(!o || /revisar/i.test(o)) return '<span class="chip ambar">Sin ODT</span>';
+      return 'ODT ' + esc(o) + (x.odt_orden ? ' · ' + esc(String(x.odt_orden.titulo || '').slice(0, 60)) + (x.odt_orden.creada_en ? ', ' + esc(fecha(x.odt_orden.creada_en)) : '') : ''); };
+    const tramo = (x) => { const c = CH[U(x.en_uso)] || ['gris', x.en_uso || 'Sin dato'];
+      return '<div class="vgt-tramo"><div class="tx"><b>' + esc(x.proyecto || 'Sin nombre') + '</b><small>' + esc([x.estado, x.postes ? x.postes + ' postes' : '', x.fecha].filter(Boolean).join(' · ')) + '</small><small>' + odt(x) + '</small>' +
+        (U(x.en_uso) === 'NEGADA' && x.negada_motivo ? '<small class="mal">' + esc(x.negada_motivo) + '</small>' : '') + '</div><span class="chip ' + c[0] + '">' + esc(c[1]) + '</span>' +
+        (esAdmin() ? '<button type="button" class="vgt-mas" data-tramo-menu="' + esc(x.id) + '" aria-label="Opciones del tramo">⋯</button>' : '') + '</div>'; };
+    const cuerpo = '<div class="estado ' + est[0] + ' vgt-est"><b>' + esc(est[1]) + '</b><small>' + esc(sub) + '</small></div>' +
+      '<div class="datos">' + fila('Contrato', k.numero ? 'N° ' + esc(k.numero) : gris('Sin número')) +
         fila('Firmado', k.firmado_en ? esc(fecha(k.firmado_en)) : gris('Sin fecha')) + fila('Vence', k.vence_en ? esc(fecha(k.vence_en)) : k.vence ? esc(k.vence) : gris('Sin fecha')) + '</div>' +
-      '<div class="ctr-proy"><div class="ctr-proy-t"><span>' + esc(l.length === 1 ? '1 proyecto' : l.length + ' proyectos') + '</span><span>' + esc(postes + ' postes') + '</span></div>' +
-      l.map((x) => '<div class="ctr-p"><b>' + esc(x.proyecto || 'Sin nombre') + '</b><small>' + esc([x.estado, x.postes ? x.postes + ' postes' : '', uso(x.en_uso), x.odt ? 'ODT ' + x.odt : ''].filter(Boolean).join(' · ')) + '</small></div>').join('') + '</div>';
+      '<div class="ctr-proy"><div class="ctr-proy-t"><span>' + esc(suma(usos) + ' postes en uso · ' + suma(proy) + ' en proyecto') + '</span></div>' +
+      usos.concat(proy).map(tramo).join('') + (usos.length + proy.length ? '' : '<p class="nota-chica">Ningún tramo en uso ni en proyecto.</p>') + '</div>' +
+      (resto.length ? '<details class="vgt-hist"><summary>Historial: ' + esc(plural(resto.length, 'tramo sin uso o negado', 'tramos sin uso o negados')) + '</summary>' + resto.map(tramo).join('') + '</details>' : '');
     return tarjeta('Contrato VGT', chip(k.estatus) + pendTag(k.estatus === 'firmado', !k.falta_archivo, k.vence_en), cuerpo, k.id, 'ctr-vgt');
   }
-
+  // Menú del tramo (solo administrador): uso, denegar con motivo y fecha, editar datos. Todo queda en la bitácora y en el hilo.
+  let tramoEd = null;
+  function abrirTramo(id, paso){
+    const x = ((F && F.cliente.dedicado && F.cliente.dedicado.contratos) || []).find((k) => String(k.id) === String(id)); if(!x || !esAdmin()) return;
+    tramoEd = x; const h = hoja('hojaTramo', 'tTramo'); const U = String(x.en_uso || '').toUpperCase();
+    const op = (v, t) => '<button type="button" class="op" data-tramo-uso="' + v + '"' + (U === v ? ' disabled' : '') + '><span class="tx">' + esc(t) + (U === v ? '<small>Así está ahora</small>' : '') + '</span></button>';
+    h.innerHTML = cab('tTramo', paso === 'negar' ? 'Denegar solicitud' : paso === 'editar' ? 'Editar tramo' : 'Tramo VGT', (x.proyecto || 'Sin nombre') + (x.postes ? ' · ' + x.postes + ' postes' : '')) +
+      (paso === 'negar' ? '<form id="formNegar" novalidate><label class="rotulo" for="nMot">Motivo</label><textarea class="area corta" id="nMot" maxlength="500"></textarea><div class="error" id="eNMot" role="alert"></div>' +
+          '<label class="rotulo arriba" for="nFecha">Fecha de la negativa</label><input class="campo" id="nFecha" type="date" max="' + esc(F.hoy || '') + '"><div class="error" id="eNFecha" role="alert"></div>' +
+          '<p class="nota">Si era el único tramo en uso o en proyecto, el cliente sale de VGT, ya no se le piden pólizas y le avisamos al líder.</p><div class="acciones"><button type="submit" class="btn btn-peligro btn-ancho">Denegar</button></div></form>'
+        : paso === 'editar' ? '<form id="formTramo" novalidate><label class="rotulo" for="tProy">Proyecto o ruta</label><input class="campo" id="tProy" maxlength="200" value="' + esc(x.proyecto || '') + '">' +
+          '<label class="rotulo arriba" for="tPostes">Postes</label><input class="campo" id="tPostes" inputmode="numeric" maxlength="5" value="' + esc(x.postes == null ? '' : x.postes) + '"><div class="error" id="eTPostes" role="alert"></div>' +
+          '<label class="rotulo arriba" for="tFecha">Fecha</label><input class="campo" id="tFecha" maxlength="60" value="' + esc(x.fecha || '') + '">' +
+          '<label class="rotulo arriba" for="tOdt">ODT de infraestructura</label><input class="campo" id="tOdt" maxlength="80" value="' + esc(x.odt || '') + '"><p class="nota">Vacía o "REVISAR", el tramo sale como Sin ODT.</p>' +
+          '<div class="acciones"><button type="submit" class="btn btn-ancho">Guardar</button></div></form>'
+        : '<div class="rot">Uso</div>' + op('SI', 'Marcar en uso') + op('EN PROYECTO', 'Marcar en proyecto') + op('NO', 'Marcar sin uso') +
+          '<div class="rot">Datos</div><button type="button" class="op" data-tramo-paso="editar"><span class="tx">Editar postes, fecha, proyecto y ODT</span></button>' +
+          (U !== 'NEGADA' ? '<button type="button" class="op salir" data-tramo-paso="negar"><span class="tx">Denegar solicitud</span></button>' : ''));
+    abrirHoja('hojaTramo');
+  }
+  async function guardarTramo(campos, b){
+    if(!tramoEd) return; if(b) b.disabled = true;
+    try { await rpc('dedicado_tramo_editar', { p_id: tramoEd.id, p_campos: campos }); toast('Tramo guardado'); cerrarHoja(); if(window.Ficha) window.Ficha.recargar(); }
+    catch (e) { toast(e.message, 'error'); if(b) b.disabled = false; }
+  }
   // ---------- Hojas de edición (solo administrador) ----------
   function hoja(idHoja, idTitulo){
     let h = $(idHoja);
@@ -216,6 +258,9 @@
       enlAbierto = { cliente: F && F.cliente.id, abierto: ab }; return;
     }
     if((b = t.closest('[data-ctr-editar]'))){ abrirContrato(b.dataset.ctrEditar); return; }
+    if((b = t.closest('[data-tramo-menu]'))){ abrirTramo(b.dataset.tramoMenu); return; }
+    if((b = t.closest('[data-tramo-paso]')) && tramoEd){ abrirTramo(tramoEd.id, b.dataset.tramoPaso); return; }
+    if((b = t.closest('[data-tramo-uso]')) && tramoEd){ guardarTramo({ en_uso: b.dataset.tramoUso }, b); return; }
     // Firma Digital o Física de un contrato dedicado (solo administrador)
     if((b = t.closest('[data-firma-ctr]')) && esAdmin()){ if(b.classList.contains('on')) return; const v = b.dataset.valor; b.disabled = true;
       rpc('dedicado_contrato_editar', { p_id: Number(b.dataset.firmaCtr), p_campos: { firma: v } }).then(() => { toast(v === 'fisica' ? 'Firma física' : 'Firma digital'); if(window.Ficha) window.Ficha.recargar(); })
@@ -224,6 +269,14 @@
     if((b = t.closest('#dVer'))){ b.setAttribute('aria-checked', String(b.getAttribute('aria-checked') !== 'true')); }
   });
   document.addEventListener('submit', (e) => { if(e.target.id === 'formDed' || e.target.id === 'formCtr') guardar(e); });
+  document.addEventListener('submit', (e) => {
+    if(e.target.id === 'formNegar'){ e.preventDefault(); const m = $('nMot').value.trim(); const f = $('nFecha').value; $('eNMot').textContent = ''; $('eNFecha').textContent = '';
+      if(m.length < 5){ $('eNMot').textContent = 'Escribe el motivo de la negativa'; return; } if(!f){ $('eNFecha').textContent = 'Pon la fecha de la negativa'; return; }
+      guardarTramo({ en_uso: 'NEGADA', motivo: m, negada_en: f }, e.target.querySelector('[type="submit"]')); }
+    if(e.target.id === 'formTramo'){ e.preventDefault(); const p = $('tPostes').value.trim(); $('eTPostes').textContent = '';
+      if(p && !/^\d{1,5}$/.test(p)){ $('eTPostes').textContent = 'Los postes son un número entero'; return; }
+      guardarTramo({ proyecto: $('tProy').value, postes: p, fecha: $('tFecha').value, odt: $('tOdt').value }, e.target.querySelector('[type="submit"]')); }
+  });
 
   window.FichaDedicado = { datos, contratos, vgt, RUTAS, CONTRATO };
 })();

@@ -113,6 +113,7 @@ Reglas:
 - Actas (constitutiva o de asamblea): revisa TODAS las páginas, no solo la cláusula. Busca:
   * fecha_inscripcion: la fecha en que el Registro Mercantil inscribió el documento, no la fecha de la reunión. Suele estar en la nota o sello de registro,
     al principio, al final o en el margen, con frases como "quedó inscrito", "inscrito en el Registro Mercantil", "bajo el N°", "Tomo"; las fechas pueden venir en letras;
+    la nota del Registro suele repetirse en varias páginas (sello, nota marginal, comprobante final): si una está borrosa, usa otra; si ves varias, usa la de inscripción, no la de presentación;
   * razon_social y direccion (domicilio de la empresa) completos; si en una página solo dice la ciudad, busca en las otras;
   * duracion_anos de la empresa, o duracion_indefinida si dice que no vence; null si no aparece en ninguna página;
   * junta: quiénes forman la junta directiva con su cédula y cargo (en el acta constitutiva suele estar en las disposiciones finales o transitorias); junta_anos: por cuántos años la designan;
@@ -314,10 +315,11 @@ async function trabajar(corrida: number) {
   }
 }
 // Lectura adelantada: un archivo de una solicitud de aliado se lee apenas se sube, así el resultado sale rápido al enviar
-async function leerSuelto(archivo: number) {
+// 23/10: releer = true vuelve a leer aunque ya tenga lectura (para corregir una lectura que no encontró la fecha del Registro)
+async function leerSuelto(archivo: number, releer = false) {
   const { data, error } = await db.rpc("ia_archivo_datos", { p_archivo: archivo });
   if (error || !data) { console.error("ia_archivo_datos", error?.message); return; }
-  if (data.leido || !CLAVE()) return;
+  if ((data.leido && !releer) || !CLAVE()) return;
   const aj = (data.ajustes || {}) as Record<string, string>;
   try {
     const modelo = await elegirModelo(aj.modelo);
@@ -343,7 +345,7 @@ Deno.serve(async (req: Request) => {
   TAREA = tk;
   const b = (await req.json().catch(() => ({}))) as Record<string, unknown>;
   const archivo = Number(b.archivo);
-  if (Number.isInteger(archivo) && archivo > 0) { EdgeRuntime.waitUntil(leerSuelto(archivo)); return respuesta({ ok: true }, 202); }
+  if (Number.isInteger(archivo) && archivo > 0) { EdgeRuntime.waitUntil(leerSuelto(archivo, b.releer === true)); return respuesta({ ok: true }, 202); }
   const corrida = Number(b.corrida);
   if (!Number.isInteger(corrida) || corrida < 1) return respuesta({ error: "Falta la corrida" }, 400);
   // Responde enseguida; el trabajo sigue en segundo plano

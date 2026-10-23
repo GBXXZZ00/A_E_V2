@@ -180,6 +180,11 @@ const M = (r, doc) => r.marcas.find((m) => m.documento === doc) || {};
   // E5: un acta más nueva sin junta y sin tema de junta no cambia quién la designó
   r = evaluar(base((e) => { Object.assign(acta(e), { fecha_inscripcion: '1998-03-02', junta_anos: 10 }); asamblea(e, { fecha_inscripcion: '2025-01-15', asamblea_temas: ['aumento_capital'] }); }));
   ok('E5: un acta sin junta no cuenta como designación (la junta de 1998 sigue vencida)', P(r, 'junta').estado === 'bloquea' && r.fuentes.junta.casilla === 'acta_constitutiva', P(r, 'junta'));
+  // E6 (23/10): acta de 1 página sin fecha de inscripción: vuelve a quien la subió para que suba el acta completa
+  r = evaluar(base((e) => { Object.assign(acta(e), { fecha_inscripcion: null, pagina_inicio: 1, pagina_fin: 1 }); }));
+  ok('E6: acta de una página sin inscripción es problema (sube el acta completa)', M(r, 14).propuesta === 'problema' && /Sube el acta completa/.test(M(r, 14).nota) && r.veredicto === 'no_apto', M(r, 14));
+  r = evaluar(base((e) => { Object.assign(acta(e), { fecha_inscripcion: null, pagina_inicio: 1, pagina_fin: 12 }); }));
+  ok('E6: acta completa sin fecha leída sigue a mano', M(r, 14).propuesta === 'revisar_a_mano');
   ok('sin guion largo en los textos', !JSON.stringify(evaluar(base((e) => { Object.assign(acta(e), { fecha_inscripcion: '1990-02-01', duracion_anos: null }); }))).includes('—'));
   cerrar();
 })();

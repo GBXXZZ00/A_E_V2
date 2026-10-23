@@ -1346,3 +1346,15 @@ button.ge-li{cursor:pointer}
 .ct-op .i{width:20px;height:20px}
 .ct-op.ct-wa .i{color:var(--verde)}
 .av-no{margin-top:6px}
+/* 23/10: tramos VGT (cabecera de estado, filas con chip, historial plegado y menú del administrador) */
+.vgt-est{margin:0 0 10px}
+.estado.verde.vgt-est{background:var(--verde-bg);color:var(--verde)} .estado.azul.vgt-est{background:var(--azul-bg,#E8ECF9);color:var(--accent)}
+.estado.gris.vgt-est{background:var(--surface-2);color:var(--text2)} .estado.rojo.vgt-est{background:var(--rojo-bg);color:var(--rojo)}
+.vgt-tramo{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
+.vgt-tramo .tx{flex:1;min-width:0} .vgt-tramo b{display:block;font-size:14.5px} .vgt-tramo small{display:block;font-size:12.5px;color:var(--text2)}
+.vgt-tramo small.mal{color:var(--rojo)}
+.vgt-mas{width:44px;height:36px;border-radius:10px;font-size:20px;line-height:1;color:var(--text2);flex:none}
+@media (hover:hover) and (pointer:fine){ .vgt-mas:hover{background:var(--surface-2)} }
+.vgt-hist{margin-top:10px;border:1px dashed var(--line);border-radius:14px;padding:8px 12px}
+.vgt-hist summary{cursor:pointer;font-size:13px;font-weight:600;color:var(--text2);min-height:32px;display:flex;align-items:center}
+.chip.gris{background:var(--surface-2);color:var(--text2)}

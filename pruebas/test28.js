@@ -107,7 +107,17 @@ const llamo = (m, f) => m.llamadas.filter((l) => l[1] === f);
     await p.screenshot({ path: 'capturas/28-' + nombre + '-contratos.png', fullPage: true });
     await p.click('#tabs [data-tab="vgt"]'); await p.waitForSelector('#tab-vgt.on [data-grupo="vgt"]');
     const tv = await p.textContent('#tab-vgt');
-    ok(nombre + ': la pestaña VGT trae el contrato con proyectos y total de postes', (await p.locator('#tab-vgt .ctr-vgt').count()) === 1 && tv.includes('Ruta Inventada Uno') && tv.includes('Ruta Inventada Dos') && tv.includes('20 postes') && tv.includes('En proyecto') && tv.includes('ODT ODT-9'));
+    ok(nombre + ': la pestaña VGT trae el contrato con proyectos y total de postes', (await p.locator('#tab-vgt .ctr-vgt').count()) === 1 && tv.includes('Ruta Inventada Uno') && tv.includes('Ruta Inventada Dos') && tv.includes('12 postes en uso · 8 en proyecto') && tv.includes('En proyecto') && tv.includes('ODT ODT-9') && /VGT en uso · 12 postes/.test(tv));
+    // 23/10 (Parte F): menú del tramo (administrador): denegar pide motivo y fecha
+    if(await p.locator('#tab-vgt [data-tramo-menu="12"]').count()){
+      await p.click('#tab-vgt [data-tramo-menu="12"]'); await p.waitForSelector('#hojaTramo.ver [data-tramo-paso="negar"]');
+      await p.click('#hojaTramo [data-tramo-paso="negar"]'); await p.waitForSelector('#formNegar'); await p.click('#formNegar [type="submit"]');
+      ok(nombre + ': denegar sin motivo avisa debajo del campo', /motivo/.test(await p.textContent('#eNMot')));
+      await p.fill('#nMot', 'El ente no aprobó el tramo'); await p.fill('#nFecha', '2026-10-15'); await p.click('#formNegar [type="submit"]');
+      await p.waitForFunction(() => !document.querySelector('#hojaTramo.ver'), null, { timeout: 8000 });
+      const lt = mundo.llamadas.filter((l) => l[1] === 'dedicado_tramo_editar').pop();
+      ok(nombre + ': denegar guarda NEGADA con motivo y fecha', !!lt && lt[2].p_id === 12 && lt[2].p_campos.en_uso === 'NEGADA' && lt[2].p_campos.negada_en === '2026-10-15');
+    } else ok(nombre + ': el administrador ve el menú del tramo', false);
     ok(nombre + ': Documentos ya no trae los requisitos VGT', (await p.locator('#tab-documentos [data-grupo="vgt"]').count()) === 0);
     const vg = await p.textContent('[data-grupo="vgt"]');
     await p.locator('[data-grupo="vgt"]').screenshot({ path: 'capturas/28-' + nombre + '-vgt.png' });

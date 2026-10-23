@@ -823,6 +823,8 @@ const RPC = {
       destinos: propio || !dest ? [] : [{ id: dest.id, nombre: dest.nombre, rol: dest.rol, whatsapp: dest.whatsapp === undefined ? '04141234567' : dest.whatsapp, correo: dest.correo || null }] };
   },
   contacto_anotar2(){ return null; },
+  // 23/10: menú del tramo VGT (solo administrador)
+  dedicado_tramo_editar(m, yo, a){ if(yo.rol !== 'admin') throw new Error('No tienes permiso para hacer esto'); return {}; },
   // Lote S: sesión viva (la prueba la puede cerrar con m.datos.sesionCerrada) y horas sin uso
   sesion_viva(m){ return { viva: !m.datos.sesionCerrada, horas: m.datos.inactividadHoras || 12 }; },
   inactividad_guardar(m, yo, a){ if(yo.rol !== 'admin') throw new Error('Solo el administrador'); m.datos.inactividadHoras = a.p_horas; return { horas: a.p_horas }; },

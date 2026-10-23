@@ -37,7 +37,7 @@
       (conNav ? '<nav class="navpc" aria-label="Navegación">' + NAV.filter((n) => puedeVer(n, p)).map((n) => '<a href="' + n.enlace + '" data-nav="' + n.id + '"' + (o.activo === n.id ? ' class="on" aria-current="page"' : '') + '>' + n.texto + '</a>').join('') + '</nav>' : '') +
       '<span class="sep"></span>' +
       (o.acciones ? '<div class="acciones-bar" id="accionesBar">' + o.acciones + '</div>' : '') +
-      (p.rol !== 'gerencia' ? campanaHtml() : '') +
+      campanaHtml() +   // 23/10: gerencia también tiene campana (resumen de pedidos de aliados)
       '<button type="button" class="cuenta" id="cuenta" data-abre="hojaCuenta" aria-label="Mi cuenta">' +
         '<span class="tx"><b>' + esc(p.nombre) + '</b><small>' + esc(cargo) + '</small></span><span class="av" aria-hidden="true">' + esc(iniciales(p.nombre)) + '</span></button>';
     document.body.classList.toggle('modo-ficha', !!o.volver);
@@ -51,7 +51,7 @@
       nav.innerHTML = tel.map((n) => '<a href="' + n.enlace + '" data-nav="' + n.id + '"' + (o.activo === n.id ? ' class="on" aria-current="page"' : '') + '><span>' + ic(n.icono) + '</span>' + n.texto + '</a>').join('');
     }
     if(conNav) contadores(null, p);
-    if(p.rol !== 'gerencia') avisosIniciar(p);
+    avisosIniciar(p);
     sesionIniciar();
 
     let hoja = $('hojaCuenta');

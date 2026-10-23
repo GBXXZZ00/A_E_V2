@@ -150,6 +150,10 @@ export function evaluar(e){
     }
     if(d.casilla === 'acta_constitutiva' || d.casilla === 'acta_asamblea'){
       const insc = fecha(h.fecha_inscripcion);
+      // 23/10: un acta de 1 o 2 páginas sin fecha de inscripción está incompleta: vuelve a quien la subió (aliado o líder) con lo que debe hacer
+      const pags = Number(h.pagina_fin) > 0 && Number(h.pagina_inicio) > 0 ? Number(h.pagina_fin) - Number(h.pagina_inicio) + 1 : null;
+      const faltanPags = /falta[n]? (las |la )?p[aá]gina/i.test(String(h.observacion || ''));
+      if(!insc && ((pags !== null && pags <= 2) || faltanPags)){ marca(d, 'problema', 'otro', 'El acta está incompleta' + (pags ? ' (' + pags + (pags === 1 ? ' página' : ' páginas') + ')' : '') + ' y no trae la nota de inscripción del Registro. Sube el acta completa, con el sello y la fecha del Registro.', h); return; }
       if(!insc){ marca(d, 'revisar_a_mano', null, 'No se leyó la fecha de inscripción en el Registro.', h); return; }
       marca(d, 'bien', null, 'Inscrita el ' + fechaTexto(insc) + '.' + (d.casilla === 'acta_asamblea' && (h.asamblea_temas || []).length ? ' Trata: ' + h.asamblea_temas.map((t) => TEMAS[t] || t).join(', ') + '.' : ''), h, { inscripcion: insc }); return;
     }
