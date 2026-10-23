@@ -1404,3 +1404,14 @@ button.ge-li{cursor:pointer}
 @media (prefers-reduced-motion:reduce){
   .pn-card,.pn-fn{transition:none}
 }
+
+/* Corrida 23/10: modo práctica */
+.pr-banda{position:sticky;top:0;z-index:60;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 16px;padding-top:calc(6px + var(--safe-t));background:var(--ambar-bg);color:var(--ambar);font-size:13px}
+.pr-banda b{font-weight:800}
+.pr-acc{display:flex;gap:4px;flex:none}
+.pr-acc button{min-height:36px;padding:0 10px;border:0;border-radius:var(--pill);background:transparent;color:var(--ambar);font:inherit;font-weight:700;white-space:nowrap;cursor:pointer}
+.pr-acc button:active{transform:scale(.97)}
+.pr-pasos{display:grid;gap:10px;margin:14px 0 14px 20px;font-size:14.5px;line-height:1.45}
+.pr-caja{display:flex;flex-direction:column;gap:2px;margin:10px 0 0;padding:10px 14px;border-radius:14px;background:var(--ambar-bg);color:var(--ambar);font-size:13px}
+@media (hover:hover) and (pointer:fine){.pr-acc button:hover{background:rgba(117,75,0,.08)}}
+@media (max-width:420px){.pr-banda > span:first-child{font-size:12px}}

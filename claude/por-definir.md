@@ -45,3 +45,9 @@ Construido en v26 y conectado con clientes e instalaciones, pero nunca usado: ha
 - Clientes de la base vieja: los 9 se crearon el 21/10 con nombre provisional "RIF J-… (app anterior)"; falta su nombre real (se pone al revisar el RIF).
 - Cliente de la base vieja con RIF dañado (0, 000000, 3505, 668850): falta el RIF correcto.
 - Pago y TAD: días después de instalar para dar el pago por bueno (hoy ajuste `pago_dias_tad` = 3).
+
+## Después de la corrida 23/10
+- Crear la cuenta de gerencia (Iván): sin ella los avisos de gerencia no le llegan a nadie.
+- Repetir la revisión con IA sola cuando una lectura termina después de lanzada la corrida (hoy hay que relanzarla).
+- Modo práctica entre varios teléfonos (hoy cada dispositivo tiene su propio mundo; los avisos de práctica no salen como push).
+- Quedan para después, como se acordó: ficha VGT reorganizada (Documentos + VGT), tabla "Copiar datos" de Legal, filtro VGT en Clientes, Parte F puntos 2 a 5, auditoría masiva de la IA y G3.

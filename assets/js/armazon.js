@@ -78,6 +78,8 @@
       (equipo !== 'aliados' && admin ? '<button type="button" class="op" data-inact="1"><span class="ic">' + ic('candado') + '</span><span class="tx">Cierre por falta de uso<small id="dInact">Después de ' + esc(S.horasInactividad()) + ' horas sin usar la app</small></span>' + ic('derecha', 'ch') + '</button>' : '') +
       (equipo !== 'aliados' && admin ? '<button type="button" class="op" data-ocr-aj="1"><span class="ic">' + ic('doc') + '</span><span class="tx">Lectura con OCR<small>Qué se lee sin IA</small></span>' + ic('derecha', 'ch') + '</button>' : '') +
       '<div class="rot">Mi cuenta</div>' +
+      (window.Practica && window.Practica.activo() ? '<button type="button" class="op" data-practica="1"><span class="ic">' + ic('salir') + '</span><span class="tx">Salir del modo práctica<small>Vuelve a entrar con tu cuenta y tu PIN</small></span></button>'
+        : p.rol !== 'aliado' ? '<button type="button" class="op" data-practica="1"><span class="ic">' + ic('check') + '</span><span class="tx">Modo práctica<small>Casos inventados para probar; no toca datos reales</small></span>' + ic('derecha', 'ch') + '</button>' : '') +
       '<a class="op" href="index.html#cambiar" data-foco><span class="ic">' + ic('candado') + '</span><span class="tx">Cambiar PIN</span>' + ic('derecha', 'ch') + '</a>' +
       '<button type="button" class="op salir" id="salir"><span class="ic">' + ic('salir') + '</span><span class="tx">Salir</span></button>';
     prepararHojas();
