@@ -84,4 +84,5 @@ El administrador tiene poco presupuesto. No leer el traspaso completo (pesa 130 
    - Recuadro de instrucciones paso a paso dentro de cada caso.
    - Botones del administrador: "Enviar aviso de práctica" (a todos o por rol) y "Reiniciar práctica".
    - Entregar al final una guía corta en `claude/guia-pruebas.md`: con qué cuenta entrar, qué caso abrir y qué revisar en cada módulo.
-6. Queda para después (NO hacer ahora): contactar al responsable (A4), avisos de aliados (C1), app vieja (C2), auditoría masiva de la IA, el resto de VGT (G y Parte F puntos 2 a 5), avisos del gerente (G3).
+5b. **Avisos de aliados (pedido del administrador 23/10, entra en esta corrida)**: cuando un aliado pide permiso sobre un cliente, aviso en la app y push al líder dueño de ese cliente y al administrador; también a Iván (gerencia) como resumen. Además, de `claude/notificaciones.md` sección 4: bloqueo (al aliado, a su líder dueño y al administrador), "pago confirmado por el TAD" y "cuenta bloqueada". Incluir un caso de práctica: el aliado de prueba pide un cliente del líder de prueba y al líder le llega el aviso.
+6. Queda para después (NO hacer ahora): contactar al responsable (A4), app vieja (C2), auditoría masiva de la IA, el resto de VGT (G y Parte F puntos 2 a 5), avisos del gerente (G3).
