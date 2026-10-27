@@ -8,7 +8,8 @@
   const POR_PAGINA = 30;
   const ATAJOS = [
     { id: 'todos', t: 'Todos' }, { id: 'en_curso', t: 'En curso' }, { id: 'por_revisar', t: 'Por revisar' }, { id: 'sin_gestion', t: 'Sin gestión' },
-    { id: 'faltan', t: 'Faltan documentos' }, { id: 'por_subir', t: 'Archivos por subir' }, { id: 'vgt', t: 'VGT', ded: true }
+    { id: 'faltan', t: 'Faltan documentos' }, { id: 'por_subir', t: 'Archivos por subir' }, { id: 'vgt', t: 'VGT', ded: true },
+    { id: 'revisar_fecha', t: 'Revisar fecha', ded: true }   // lote 27/10: contratos de dedicados sin vencimiento, para ponerlo a mano
   ];
   const DEF = 'todos';
   const GESTION = window.Comun.GESTION || { contactado: 'Contactado', sin_contacto: 'Sin contacto', esperando: 'Esperando documentos' };
@@ -27,7 +28,7 @@
     ctr: [['sin_contrato', 'Sin contrato'], ['por_firmar', 'Por firmar'], ['por_actualizar', 'Por actualizar'], ['firmado_sin_archivo', 'Firmado sin archivo'], ['sin_vence', 'Sin vencimiento'], ['vence_60', 'Vence en 60 días']],
     vgt: [['con', 'Con VGT'], ['por_firmar', 'VGT por firmar'], ['incompletos', 'Faltan requisitos VGT']], otros: [['suspendidos', 'Suspendidos']] };
   const EST_GES = [['contactado', 'Contactado'], ['sin_contacto', 'Sin contacto'], ['esperando', 'Esperando'], ['cumplido', 'Cumplido'], ['resuelto', 'Resuelto']];
-  let tarjeta = 'pyme'; let nTarjetas = null;
+  let tarjeta = 'pyme'; let nTarjetas = null; let RES = null;
   const esDed = () => tarjeta === 'corporativo' || tarjeta === 'isp';
   const atajosDe = () => ATAJOS.filter((x) => !x.ded || esDed());
   // Al salir de las tarjetas de dedicados se suelta su atajo
@@ -174,7 +175,7 @@
   function esqueletos(){ let h = ''; for(let i = 0; i < 6; i++) h += '<div class="sk-cli" aria-hidden="true"><span class="sk" style="width:40px;height:40px;border-radius:12px"></span><span class="sk-tx"><span class="sk" style="width:' + (45 + i * 7) + '%;height:14px"></span><span class="sk" style="width:' + (30 + i * 5) + '%;height:11px"></span></span></div>'; return h; }
 
   async function pedirLista(de, limite){
-    return rpc('clientes_lista3', { p_filtro: filtro, p_busca: q, p_limite: limite, p_desde: de, p_f: Object.assign({}, sel, { tarjeta: tarjeta === 'todas' ? '' : tarjeta }) });
+    return rpc('clientes_lista3', { p_filtro: filtro === 'revisar_fecha' ? DEF : filtro, p_busca: q, p_limite: limite, p_desde: de, p_f: Object.assign({}, sel, filtro === 'revisar_fecha' ? { ctr: ['sin_vence'] } : {}, { tarjeta: tarjeta === 'todas' ? '' : tarjeta }) });
   }
   function recibir(d){
     filas = d.filas || [];
@@ -231,7 +232,7 @@
     const t = e.target; let b;
     if((b = t.closest('#tarjetas [data-tarjeta]'))){
       if(b.dataset.tarjeta === tarjeta && !q) return;
-      tarjeta = b.dataset.tarjeta; guardarTarjeta(); soltarDed();
+      tarjeta = b.dataset.tarjeta; guardarTarjeta(); soltarDed(); if(RES) RES.cambiarModulo();
       q = ''; $('busca').value = ''; guardarUrl(); pintarTarjetas(); pintarAtajos(); pintarSels(); cargar(); return;
     }
     if(t.closest('#lista [data-tarjeta-todas]')){ tarjeta = 'todas'; soltarDed(); guardarUrl(); pintarTarjetas(); pintarSels(); cargar(); return; }
@@ -260,7 +261,9 @@
   window.Armazon.arrancar(['admin', 'abogado', 'lider', 'analista'], { activo: 'clientes' }, (p) => {
     yo = p; rol = yo.rol;
     window.Ficha.montar(); window.Ficha.alContactarFuera(refrescar);
-    const u = leerUrl(); $('busca').value = q; guardarTarjeta(); pintarTarjetas(); pintarAtajos(); pintarSels();
+    // Lote 27/10: Lista | Resumen. Con las tarjetas de dedicados, el Resumen es el de Dedicados
+    const u = leerUrl();
+    if(window.Resumen) RES = window.Resumen.enModulo({ modulo: () => esDed() ? 'dedicados' : 'clientes', yo: p }); $('busca').value = q; guardarTarjeta(); pintarTarjetas(); pintarAtajos(); pintarSels();
     cargar();
     // Enlace directo a un expediente (desde Inicio o un aviso)
     if(u.c){ guardarUrl(); abrirCliente(u.c, { tab: u.t, revisar: u.revisar, pedir: u.pedir }); }

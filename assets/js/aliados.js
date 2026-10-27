@@ -838,6 +838,7 @@
     if(window.Ficha && modo === 'admin'){ window.Ficha.montar(); }
     $('titulo').textContent = modo === 'equipo' || modo === 'admin' ? 'Aliados comerciales' : 'Hola, ' + (window.Comun.primerNombre(yo.nombre) || yo.nombre);
     leerUrl(); pintarTabs(); cargar(); cargarAjustes();
+    if(window.Resumen && (modo === 'admin' || modo === 'equipo')) window.Resumen.enModulo({ modulo: 'aliados', yo: p });   // lote 27/10
     const s = Number(new URLSearchParams(location.search).get('s')) || 0;
     if(s) abrirSol(s);
   }, (p) => { yo = p; });

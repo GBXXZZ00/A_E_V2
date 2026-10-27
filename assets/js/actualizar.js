@@ -5,7 +5,8 @@
   const S = window.Sesion;
   const LOTE = 400;
   const COLUMNAS = { s: 'sucursal', c: 'cliente', t: 'tipo', d: 'documento', f: 'fecha_instalacion', n: 'nombre', e: 'equipo', p: 'plan', es: 'estado', ca: 'categoria', cx: 'cxcpendiente', te: 'telefono', di: 'direccion' };
-  const LOTE_INDICE = 4000;   // lote 4: índice liviano del TAD completo (todas las filas, para buscar servicios)
+  const LOTE_INDICE = 1500;   // lote 27/10: lotes más chicos del índice del TAD completo (solo las filas que cambiaron)
+  const LOTE_COMPARAR = 10000; // claves y huellas que se comparan por llamada
   const OBLIGATORIAS = ['s', 'c', 'd', 'n'];
   const BASURA = ['nan', '#n/a', '#ref!', '#value!', 'null', 'undefined'];
   let yo = null; let lista = []; let ocupado = false; let fin = null; let corto = null;
@@ -252,6 +253,8 @@
   function detalle(a){
     if(a.error) return '<small style="color:var(--rojo)">' + esc(a.error) + '</small>';
     if(a.leyendo) return '<small>' + (a.espera ? 'En espera' : 'Leyendo' + (a.avance ? ' ' + a.avance + ' %' : '...')) + '</small>';
+    if(a.resultado && a.indiceFallo && a.indice) return '<small>' + esc(a.resultado) + '</small><small class="para-que"><b>Empresas cargadas. El índice de residenciales quedó a medias</b> (' + Math.round((a.hecho || 0) * 100 / Math.max(1, a.indice.length)) + ' %). Comisiones y clientes ya usan este TAD; falta el índice para Migraciones y la búsqueda de servicios. ' +
+      '<button type="button" class="enlace" data-seguir="' + lista.indexOf(a) + '">Seguir con el índice</button></small>';
     if(a.resultado) return '<small>' + esc(a.resultado) + '</small>';
     if(a.tipo === 'dedicados') return '<small>' + plural(a.clientes, 'cliente', 'clientes') + ' y ' + plural(a.enlaces, 'enlace', 'enlaces') + '. Se aplica al subirlo; no toca comisiones</small>';
     if(a.tipo === 'ip') return '<small>' + plural(a.datos.length, 'IP asignada', 'IP asignadas') + (a.fuera ? ' · ' + num(a.fuera) + ' disponibles quedan fuera' : '') + '. Llena la IP de los servicios PYME que cuadran</small>';
@@ -265,9 +268,10 @@
   function marca(a){
     if(a.error) return '<span class="m rojo">No sirve</span>';
     if(a.leyendo) return '<span class="m">' + (a.espera ? 'En espera' : 'Leyendo') + '</span>';
+    if(a.estado === 'lista' && a.indiceFallo && a.indice) return '<span class="m ambar">Índice a medias</span>';
     if(a.estado === 'lista') return '<span class="m verde">Cargado</span>';
     if(a.estado === 'fallo') return '<span class="m rojo">Se detuvo</span>';
-    if(a.estado === 'subiendo') return '<span class="m ambar">' + (a.fase ? a.fase + ' ' : '') + Math.round(a.hecho * 100 / Math.max(1, a.fase ? a.indice.length : a.datos.length)) + ' %</span>';
+    if(a.estado === 'subiendo') return '<span class="m ambar">' + (a.fase ? a.fase + ' ' : '') + Math.round((a.hecho || 0) * 100 / Math.max(1, a.fase ? (a.indice || []).length : (a.datos || []).length)) + ' %</span>';
     return '<span class="m">Listo para cargar</span>';
   }
   function pintar(){
@@ -329,17 +333,43 @@
     a.resultado = plural(r.dedicados, 'dedicado', 'dedicados') + ' · ' + plural(r.nuevos, 'cliente nuevo', 'clientes nuevos') + ' · ' + plural(r.enlaces, 'enlace', 'enlaces') + (r.verificar ? ' · ' + r.verificar + ' por verificar' : '');
     return r;
   }
-  // Índice del TAD completo: actualiza encima por lotes; al cerrar confirma titularidades y anota cambios sin solicitud
+  // Índice del TAD completo (lote 27/10): se comparan clave y huella y solo suben las filas que cambiaron.
+  // Si se corta, la misma carga retoma donde quedó (lo ya subido tiene la huella al día y no se repite).
+  function huella(o){
+    const t = [o.s, o.c, o.e, o.t, o.d, o.n, o.p, o.ca, o.es, o.di, o.pon].map((v) => v == null ? '' : String(v)).join('\u0001');
+    let h1 = 0x811c9dc5, h2 = 5381;
+    for(let i = 0; i < t.length; i++){ const c = t.charCodeAt(i); h1 = Math.imul(h1 ^ c, 0x01000193); h2 = (Math.imul(h2, 33) + c) | 0; }
+    return (h1 >>> 0).toString(36) + (h2 >>> 0).toString(36) + t.length.toString(36);
+  }
   async function subirIndice(a){
     if(!a.indice || !a.indice.length) return null;
-    a.fase = 'Índice'; a.hecho = 0; pintar();
+    a.fase = 'Índice'; a.hecho = 0; a.indiceFallo = null; pintar();
     const k = await rpc('tad_indice_iniciar', { p_archivo: a.nombre, p_total: a.indice.length });
-    for(let i = 0; i < a.indice.length; i += LOTE_INDICE){
-      await conReintento(() => rpc('tad_indice_parte', { p_carga: k, p_filas: a.indice.slice(i, i + LOTE_INDICE) }));
-      a.hecho = Math.min(i + LOTE_INDICE, a.indice.length); pintar();
-      await new Promise((ok) => setTimeout(ok, 0));   // no bloquea la pantalla
+    let subidas = 0;
+    for(let i = 0; i < a.indice.length; i += LOTE_COMPARAR){
+      const trozo = a.indice.slice(i, i + LOTE_COMPARAR);
+      trozo.forEach((o) => { if(!o.h) o.h = huella(o); });
+      const faltan = await conReintento(() => rpc('tad_indice_comparar', { p_carga: k, p_filas: trozo.map((o) => ({ s: o.s, c: o.c, e: o.e, h: o.h })) }));
+      const cambiaron = (faltan || []).map((j) => trozo[j]).filter(Boolean);
+      for(let j = 0; j < cambiaron.length; j += LOTE_INDICE){
+        await conReintento(() => rpc('tad_indice_parte', { p_carga: k, p_filas: cambiaron.slice(j, j + LOTE_INDICE) }));
+        await new Promise((ok) => setTimeout(ok, 0));   // no bloquea la pantalla
+      }
+      subidas += cambiaron.length;
+      a.hecho = Math.min(i + LOTE_COMPARAR, a.indice.length); pintar();
     }
-    const r = await rpc('tad_indice_cerrar', { p_carga: k }); a.fase = null; a.indice = null; return r;
+    const r = await rpc('tad_indice_cerrar', { p_carga: k }); a.fase = null; a.indice = null; r.subidas = subidas; return r;
+  }
+  function textoIndice(ri){
+    return ' · índice de ' + num(ri.filas) + ' servicios (' + plural(ri.subidas || 0, 'cambió', 'cambiaron') + ')' + (ri.confirmados ? ' · ' + plural(ri.confirmados, 'cambio confirmado', 'cambios confirmados') : '') + (ri.sin_registro ? ' · ' + plural(ri.sin_registro, 'cambio sin registro', 'cambios sin registro') : '') + (ri.avisos ? ' · ' + plural(ri.avisos, 'cambio a medias', 'cambios a medias') : '');
+  }
+  // Lote 27/10: si el índice falla, las empresas ya quedaron cargadas; se sigue luego con el mismo archivo
+  async function seguirIndice(a){
+    if(ocupado || !a.indice) return;
+    ocupado = true; a.estado = 'subiendo'; a.fase = 'Índice'; pintar();
+    try { const ri = await subirIndice(a); a.resultado = (a.resultadoBase || '') + textoIndice(ri); toast('Índice de residenciales al día'); }
+    catch (e) { a.indiceFallo = e.message; a.fase = null; toast('El índice se detuvo otra vez. ' + e.message + '. Vuelve a tocar Seguir con el índice: retoma donde quedó', 'error'); }
+    a.estado = 'lista'; ocupado = false; pintar(); ultimas();
   }
   async function subirCambios(a){
     a.estado = 'subiendo'; a.hecho = 0; pintar();
@@ -379,12 +409,14 @@
       a.hecho = Math.min(i + paso, a.datos.length); pintar();
     }
     const r = await rpc(tad ? 'tad_cerrar' : 'crudo_cerrar', { p_carga: carga });
-    const ri = tad ? await subirIndice(a) : null;
+    let ri = null;
+    if(tad){ try { ri = await subirIndice(a); } catch (e) { a.indiceFallo = e.message; a.fase = null; } }
     a.estado = 'lista';
     a.resultado = tad ? plural(r.clientes_nuevos, 'cliente nuevo', 'clientes nuevos') + ', ' + plural(r.servicios_nuevos, 'servicio nuevo', 'servicios nuevos') + ' y ' + plural(r.servicios_actualizados, 'actualizado', 'actualizados') +
         (r.pagos_marcados ? ' · ' + plural(r.pagos_marcados, 'instalación pagada', 'instalaciones pagadas') : '') + ((r.invalidas || 0) + a.malas ? ' · ' + plural((r.invalidas || 0) + a.malas, 'fila no se pudo leer', 'filas no se pudieron leer') : '')
       : plural(r.guardadas, 'fila guardada', 'filas guardadas') + (a.soloAliados ? ' · solo para aliados, no toca comisiones' : '');
-    if(ri) a.resultado += ' · índice de ' + num(ri.filas) + ' servicios' + (ri.confirmados ? ' · ' + plural(ri.confirmados, 'cambio confirmado', 'cambios confirmados') : '') + (ri.sin_registro ? ' · ' + plural(ri.sin_registro, 'cambio sin registro', 'cambios sin registro') : '') + (ri.avisos ? ' · ' + plural(ri.avisos, 'cambio a medias', 'cambios a medias') : '');
+    a.resultadoBase = a.resultado;
+    if(ri) a.resultado += textoIndice(ri);
     a.datos = null; return r;
   }
   async function cargarTodo(){
@@ -403,8 +435,9 @@
     else {
       const crudos = cola.some((a) => a.tipo !== 'tad' && a.tipo !== 'dedicados' && a.tipo !== 'cambios' && a.tipo !== 'ip' && !a.soloAliados);
       fin = { titulo: plural(cola.length, 'archivo cargado', 'archivos cargados'), texto: (total !== null ? 'Ahora hay ' + num(total) + ' clientes en total. ' : '') +
-        (crudos ? 'Falta un paso: revisa abajo lo que cambia y toca Guardar cruce.' : 'Ya quedó aplicado. No hace falta cruce.') };
-      cruce = null; pintar(); toast('Carga completa');
+        (crudos ? 'Falta un paso: revisa abajo lo que cambia y toca Guardar cruce.' : 'Ya quedó aplicado. No hace falta cruce.') +
+        (cola.some((a) => a.indiceFallo && a.indice) ? ' El índice de residenciales quedó a medias: toca Seguir con el índice en el TAD de arriba.' : '') };
+      cruce = null; pintar(); toast(cola.some((a) => a.indiceFallo && a.indice) ? 'TAD de empresas cargado. Falta terminar el índice' : 'Carga completa');
       if(crudos) correrCruce(false); else estadoCruce();
     }
     cargas();
@@ -496,6 +529,7 @@
       rpc('tad_permitir_corto', { p_tipo: k.tipo }).then(() => { corto = null; lista.forEach((x) => { if(x.estado === 'fallo') x.estado = null; }); cargarTodo(); })
         .catch((e) => { b.disabled = false; toast(e.message, 'error'); }); return; }
     if(t.closest('#aplicarCruce')){ correrCruce(true); return; }
+    const sg = t.closest('[data-seguir]'); if(sg){ const a = lista[Number(sg.dataset.seguir)]; if(a) seguirIndice(a); return; }
     const pq = t.closest('[data-para]'); if(pq){ const a = lista[Number(pq.dataset.para)]; if(a && !ocupado && !a.estado){ a.soloAliados = !a.soloAliados; pintar(); } return; }
     if(t.closest('#reintentarCruce')){ estadoCruce(); }
   });

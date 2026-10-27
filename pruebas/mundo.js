@@ -27,7 +27,8 @@ const corteFin = (c) => conDia(c, regla(c)[1] - 1);
 const corteLimite = (c) => conDia(c, regla(c)[2]);
 const corteCertifica = (c) => conDia(c, regla(c)[3]);
 const certDe = (c) => (MUNDO && MUNDO.certificados || {})[c] || null;
-const cerrado = (c) => c < DESDE_MANUAL || !!certDe(c);
+// Lote 27/10: con la fecha real (sin día fijo), los cortes anteriores al del calendario cuentan como cerrados, así las pruebas no dependen del día
+const cerrado = (c) => c < DESDE_MANUAL || !!certDe(c) || (!hoyFijo && !(MUNDO && MUNDO.cortesAbiertos) && c < corteDe(hoy()));
 // Corte en curso: el abierto más viejo desde octubre 2026; si no hay, el del calendario
 const enCurso = () => { const cd = corteDe(hoy()); for(let c = DESDE_MANUAL; c <= cd; c = masMeses(c, 1)) if(!cerrado(c)) return c; return cd; };
 const cierre = (c) => new Date(Date.UTC(Number(c.slice(0, 4)), Number(c.slice(5, 7)) - 1, regla(c)[1], 4)).getTime(); // inicio del período siguiente, 00:00 de Caracas
@@ -59,7 +60,9 @@ const linea = (tipo, texto, detalle, autor, en) => ({ id: ++sec, tipo, texto: te
 function baseDatos(){
   sec = 1000;
   // Días desde el inicio del corte actual, para poner instalaciones dentro y antes de él
-  const actual = enCurso(); const dentro = Math.max(1, Math.min(8, dias(corteInicio(actual), hoy())));
+  // Lote 27/10: si el corte en curso ya pasó su fin de calendario (sigue abierto hasta cerrarlo), "dentro" cae antes de su fin
+  const actual = enCurso(); const refDentro = hoy() < corteFin(actual) ? hoy() : corteFin(actual);
+  const dentro = dias(masDias(refDentro, -Math.max(1, Math.min(8, dias(corteInicio(actual), refDentro)))), hoy());
   const antes = dias(corteInicio(actual), hoy()) + 6;
   const cs = [];
   // 1. En revisión, con escaneo que trae dos documentos. De la líder Lucía.
@@ -446,6 +449,62 @@ function gerFiltrar(m, yo, a){
     .map((h) => Object.assign({}, h, { detalle: !todo && h.s === 'ins' ? null : h.detalle }));
 }
 
+
+// ----- Lote 27/10: Resumen en pequeño (mismas formas que privado.res_*) -----
+const GRUPO_LEGAL = (e) => e === 'grandes_negocios' ? 'completo' : e === 'contrato_firmado' ? 'firmado' : ['por_firmar', 'contrato_en_curso'].includes(e) ? 'por_firmar' : ['documentos_recibidos', 'documentos_en_revision'].includes(e) ? 'revision' : 'faltan';
+const LEGAL_ORDEN = ['completo', 'firmado', 'por_firmar', 'revision', 'faltan'];
+const vistosRes = (m, yo) => yo.rol === 'gerencia' ? m.datos.clientes.filter((c) => !c.unido_a) : visibles(m, yo);
+const segRes = (c) => { const t = tarjetaDe(c); return t.ded === 'isp' ? 'isp' : t.ded === 'corporativo' && !t.pyme ? 'corporativo' : 'pyme'; };
+const mesDe = (f) => String(f || '').slice(0, 7);
+const habilitado = (s) => /habil/i.test(s.estado || '');
+function resumenMundo(m, yo, mod, hasta){
+  const cs = vistosRes(m, yo); const mes = mesDe(hasta); const meses = []; for(let i = 24; i >= 0; i--) meses.push(masMeses(mes + '-01', -i).slice(0, 7));
+  const srv = []; cs.forEach((c) => (c.servicios || []).forEach((s) => { if(!c.es_isp && s.fecha_instalacion) srv.push({ c, s, mes: mesDe(s.fecha_instalacion) }); }));
+  const serie = meses.map((x) => ({ m: x, x, a: srv.filter((y) => y.mes === x && habilitado(y.s)).length, b: srv.filter((y) => y.mes === x && !habilitado(y.s)).length }));
+  const del = srv.filter((y) => y.mes === mes);
+  const leg = ['pyme', 'corporativo', 'isp'].map((sg) => ({ l: sg === 'pyme' ? 'PYME' : sg === 'corporativo' ? 'Dedicado corporativo' : 'Dedicado ISP', x: sg, v: LEGAL_ORDEN.map((g) => cs.filter((c) => segRes(c) === sg && GRUPO_LEGAL(c.estatus) === g).length) }));
+  const lid = {}; del.forEach((y) => { const k = y.c.lider_id || 'sin'; lid[k] = lid[k] || { l: y.c.lider || 'Sin líder', a: 0, x: mes + '|' + k, c: k === 'sin' ? 'w' : null }; lid[k].a++; });
+  const comp = cs.filter((c) => GRUPO_LEGAL(c.estatus) === 'completo').length; const falt = cs.filter((c) => GRUPO_LEGAL(c.estatus) === 'faltan').length;
+  const ords = ordenesAbiertas(m, yo.rol === 'gerencia' ? { rol: 'admin' } : yo).map((o) => Object.assign({ dias: Math.max(0, dias(fechaClave(caracas(o.creada_en || hace(0))), hoy())) }, o));
+  const ant = [['a', 'Menos de 15 días', null, (d) => d < 15], ['b', '15 a 60 días', 'w', (d) => d >= 15 && d < 60], ['c', '60 a 180 días', 'b', (d) => d >= 60 && d < 180], ['d', 'Más de 180 días', 'b', (d) => d >= 180]].map((b) => ({ l: b[1], x: b[0], c: b[2], a: ords.filter((o) => b[3](o.dias)).length }));
+  const ins = []; cs.forEach((c) => (c.instalaciones || []).forEach((i) => ins.push({ c, i, mes: mesDe(fechaClave(caracas(i.instalada_en))) })));
+  const cortes = [-2, -1, 0].map((k) => { const x = masMeses(mes + '-01', k).slice(0, 7); return { l: x, x, a: ins.filter((y) => y.mes === x && y.i.pago_ok_en).length, b: ins.filter((y) => y.mes === x && !y.i.pago_ok_en).length }; });
+  const num = (id, v, l, sx, g, x, o) => Object.assign({ id, v, l, s: sx, g, x }, o || {});
+  const R = {
+    clientes: { nums: [num('total', cs.length, 'Clientes', '', 'seg', 'todos'), num('completos', cs.length ? Math.round(comp * 100 / cs.length) : 0, 'Expedientes completos', comp + ' de ' + cs.length, 'legal', 'todos:completo', { fmt: 'pct' }),
+        num('faltan', falt, 'Faltan documentos', 'Hay que pedírselos al cliente', 'legal', 'todos:faltan', { tono: 'w' }), num('mes', del.length, 'Instalados en el mes', '', 'inst', mes, { cmp: 10 })],
+      charts: [{ id: 'inst', tipo: 'mes', w: 2.2, t: 'Instalaciones PYME', s: del.length + ' en el mes', data: serie }, { id: 'lider', tipo: 'h', w: 1, t: 'Por líder', s: '', data: Object.values(lid) },
+        { id: 'legal', tipo: 's', w: 1.5, t: 'Estatus legal por segmento', s: 'Dónde está cada expediente hoy', data: leg }, { id: 'cal', tipo: 'cal', w: 1, t: 'Siguen habilitadas', s: '', data: serie.slice(-12).map((y) => ({ m: y.m, x: y.x, a: y.a, b: y.a + y.b })) }] },
+    comisiones: { nums: [num('corte', ins.filter((y) => y.mes === mes).length, 'Instaladas en el mes', '', 'cortes', mes), num('sinpago', ins.filter((y) => y.mes === mes && !y.i.pago_ok_en).length, 'Sin pago', 'Bloquean la comisión', 'cortes', mes + '|sinpago', { tono: 'w' }),
+        num('sininst', ords.length, 'Sin instalar', ords.filter((o) => o.dias >= 15).length + ' pasan de 15 días', 'sin_instalar', 'todas', { tono: 'w' }), num('mediana', 1, 'De orden a instalación', 'Mediana', 'mediana', mes, { fmt: 'dias' })],
+      charts: [{ id: 'cortes', tipo: 'v', w: 1.4, t: 'Instaladas por mes', s: 'Con pago y sin pago', data: cortes, l1: 'Con pago', l2: 'Sin pago' }, { id: 'sin_instalar', tipo: 'h', w: 1, t: 'Sin instalar por antigüedad', s: 'Órdenes de Odoo abiertas', data: ant },
+        { id: 'monto', tipo: 'hueco', w: 1, t: 'Monto del corte', s: '', h: 'Se llena cuando la app calcule el monto.' }] },
+    revision: { nums: [num('cola', 0, 'Por revisar', '', 'ant', 'todos'), num('m90', 0, 'Esperan más de 90 días', '', 'ant', 'd'), num('sem', 0, 'Llegaron esta semana', '', 'ant', 'a'), num('cerradas', 0, 'Revisiones cerradas', '', 'cerradas', '30')],
+      charts: [{ id: 'legal', tipo: 's', w: 1, t: 'Estatus legal por segmento', s: '', data: leg }] },
+    migraciones: { nums: [num('conf', 0, 'Confirmadas', '', 'lider', 'todos'), num('mes', 0, 'En el mes', '', 'mes', mes), num('rev', 0, 'Por revisar', '', 'estado', 'por_revisar'), num('emi', 0, 'Por emitir', '', 'estado', 'por_emitir')],
+      charts: [{ id: 'residencial', tipo: 'hueco', w: 1, t: 'Cambios a residencial', s: '', h: 'Se llena con cada carga del TAD.' }] },
+    factibilidad: { nums: [num('n', 0, 'Consultas', '', 'res', 'todas'), num('red', 0, 'Con red', '', 'res', 'hay_red'), num('sin', 0, 'Sin red', '0 zonas con demanda', 'res', 'sin_red'), num('exc', 0, 'Excepción', '', 'res', 'excepcion')],
+      charts: [{ id: 'zonas', tipo: 'h', w: 1.4, t: 'Demanda sin red por zona', s: '', data: [], vacio: 'Ninguna consulta sin red en este período.' }] },
+    dedicados: { nums: [num('act', cs.filter((c) => segRes(c) !== 'pyme').length, 'Dedicados', '', 'activos', 'todos'), num('postes', 0, 'Postes VGT', '', 'tipo', 'vgt'), num('pol', 0, 'Deben pólizas VGT', '', 'polizas', 'todos'), num('sinv', 0, 'Contratos sin vencimiento', '', 'sin_vence', 'todos')],
+      charts: [{ id: 'legal', tipo: 's', w: 1, t: 'Estatus legal', s: 'Por tipo de dedicado', data: leg.slice(1) }, { id: 'ingresos', tipo: 'hueco', w: 1, t: 'Ingresos de dedicados', s: '', h: 'Espacio reservado.' }] },
+    aliados: { nums: [num('al', 0, 'Aliados', '', 'aliados', 'todos'), num('sol', 0, 'Solicitudes', '', 'embudo', 'sol'), num('ins', 0, 'Instaladas', '', 'embudo', 'ins'), num('pag', 0, 'Pagadas', '', 'embudo', 'pag')],
+      charts: [{ id: 'embudo', tipo: 'h', w: 1, t: 'Embudo', s: '', data: [], vacio: 'Todavía no hay solicitudes.' }] }
+  };
+  if(mod === 'gerencia') return { inst: { v: del.length, hab: del.filter((y) => habilitado(y.s)).length, ant: 0, ant_t: 'mes anterior', cmp: 10, cmp_t: 'el año anterior', serie: serie.slice(-12) },
+    anio: { v: srv.length, ant: 0, cmp: null, desde: 'ene', hasta: 'oct', anio_ant: 2025 }, sin_instalar: R.comisiones.nums[2], corte: { v: R.comisiones.nums[0].v, sinpago: R.comisiones.nums[1].v, l: 'Instaladas en el mes' },
+    completos: R.clientes.nums[1], migraciones: { v: 0, rev: 0 }, dedicados: { v: R.dedicados.nums[0].v, s: '', pol: 0 }, calidad: { v: 90, data: serie.slice(-12).map((y) => ({ m: y.m, a: y.a, b: y.a + y.b })) }, legal: leg, sin_red: { zonas: 0, consultas: 0, top: null } };
+  return R[mod] || R.clientes;
+}
+function filasResumen(m, yo, mod, g, x, hasta){
+  const cs = vistosRes(m, yo); const p = x.split('|'); const fc = (c, e, t) => ({ c: c.id, n: c.nombre, s: (c.lider || 'Sin líder'), e, t });
+  if(g === 'legal' || g === 'seg'){ const sg = g === 'seg' ? x : x.split(':')[0]; const gr = g === 'seg' ? null : x.split(':')[1];
+    return cs.filter((c) => (sg === 'todos' || segRes(c) === sg) && (!gr || GRUPO_LEGAL(c.estatus) === gr)).map((c) => fc(c, c.estatus, GRUPO_LEGAL(c.estatus) === 'completo' ? 'ok' : 'w')); }
+  if(['inst', 'cal', 'lider'].includes(g) && mod === 'clientes') return cs.filter((c) => !c.es_isp && (c.servicios || []).some((s) => mesDe(s.fecha_instalacion) === p[0]) && (g !== 'lider' || (c.lider_id || 'sin') === p[1])).map((c) => fc(c, 'Habilitado', 'ok'));
+  if(g === 'sin_instalar') return ordenesAbiertas(m, yo.rol === 'gerencia' ? { rol: 'admin' } : yo).map((o) => ({ c: o.cliente_id, n: o.cliente || 'Sin cliente en la app', s: 'Orden ' + o.numero + ' · ' + o.lider, e: 'Abierta', t: 'w' }));
+  if(mod === 'comisiones') return cs.filter((c) => (c.instalaciones || []).some((i) => mesDe(fechaClave(caracas(i.instalada_en))) === p[0])).map((c) => fc(c, 'Con pago', 'ok'));
+  if(mod === 'dedicados' && g === 'activos') return cs.filter((c) => segRes(c) !== 'pyme').map((c) => fc(c, segRes(c) === 'isp' ? 'ISP' : 'Corporativo', ''));
+  return [];
+}
 const RPC = {
   inicio_datos(m, yo){
     if(yo.rol === 'aliado') return { rol: yo.rol, hoy: hoy() };
@@ -709,12 +768,73 @@ const RPC = {
     c[a.p_marca] = !!a.p_valor; c.hilo.push(linea('dato', a.p_marca, { valor: String(!!a.p_valor) }, yo.nombre)); if(a.p_marca === 'contrato_presencial') recalcular(c, yo); return null; },
   dedicado_vgt_correo(m, yo, a){ const c = m.datos.clientes.find((x) => x.id === Number(a.p_cliente)); if(!c || !c.dedicado || !c.dedicado.vgt) return error('No es un cliente dedicado');
     c.dedicado.vgt.correo = a.p_correo; c.dedicado.vgt.faltan = Math.max(0, (c.dedicado.vgt.faltan || 0) - (a.p_correo ? 1 : 0)); return null; },
+  // ----- Lote 27/10: Comisiones, atajos Sin instalar (con el RIF) y Sin líder -----
+  ordenes_sin_instalar_lista(m, yo){
+    if(!['admin', 'analista', 'lider', 'gerencia'].includes(yo.rol)) return error('No tienes permiso para hacer esto');
+    const filas = ordenesAbiertas(m, yo).map((o) => { const c = m.datos.clientes.find((x) => x.id === o.cliente_id); const d = Math.max(0, dias(fechaClave(caracas(o.creada_en || hace(0))), hoy()));
+      return { orden_id: o.orden_id, numero: o.numero, titulo: o.titulo, etapa: o.etapa, dias: d, creada_en: o.creada_en, cliente_id: o.cliente_id, cliente: o.cliente_id ? o.cliente : null, provisional: o.provisional, lider: o.lider,
+        falta: !c ? 'Falta el cliente en la app' : c.provisional ? 'Falta el RIF del cliente' : 'Faltan documentos' }; });
+    return { dias_alerta: m.diasAlerta || 15, puede_ajustar: yo.rol === 'admin', puede_subir: ['admin', 'analista', 'lider'].includes(yo.rol), filas: filas.sort((x, y) => y.dias - x.dias) };
+  },
+  orden_dias_guardar(m, yo, a){ if(yo.rol !== 'admin') return error('No tienes permiso para hacer esto'); const n = Number(a.p_dias); if(!Number.isInteger(n) || n < 1 || n > 180) return error('Escribe un número de días entre 1 y 180');
+    m.diasAlerta = n; (m.bitacora = m.bitacora || []).push({ usuario: yo.usuario, accion: 'orden_dias_alerta', despues: { dias: n }, en: new Date().toISOString() }); return n; },
+  orden_cliente_rif(m, yo, a){
+    if(!['admin', 'analista', 'lider'].includes(yo.rol)) return error('No tienes permiso para hacer esto');
+    const num = String(a.p_rif || '').replace(/\D/g, '').replace(/^0+/, ''); if(!/^[1-9]\d{4,9}$/.test(num)) return error('Ese RIF no parece válido. Escríbelo con la letra y los números, por ejemplo J-12345678-9');
+    const id = Number(a.p_orden); const sIdx = (m.datos.sueltas || []).findIndex((o) => o.id === id); const dueño = m.datos.clientes.find((c) => c.orden && (c.orden.id || c.id) === id);
+    if(sIdx < 0 && !dueño) return error('Esa orden no existe');
+    if(yo.rol === 'lider' && dueño && dueño.lider_id !== yo.id) return error('Esa orden no es tuya');
+    let c = m.datos.clientes.find((x) => !x.unido_a && x.doc_numero === num); let nuevo = false;
+    if(!c){ if(!a.p_nombre) return error('Ese RIF no está en la app. Escribe el nombre del cliente para crearlo');
+      c = cliente({ nombre: a.p_nombre, doc_numero: num, estatus: 'documentos_pendientes', lider_id: yo.rol === 'lider' ? yo.id : null, lider: yo.rol === 'lider' ? yo.nombre : null }); m.datos.clientes.push(c); nuevo = true; }
+    if(sIdx >= 0){ const o = m.datos.sueltas.splice(sIdx, 1)[0]; c.orden = { id: o.id, numero: o.numero, titulo: o.titulo, creada_en: o.creada_en, etapa: o.etapa }; }
+    else if(dueño !== c){ c.orden = dueño.orden; if(dueño.provisional) dueño.unido_a = c.id; dueño.orden = null; }
+    (m.bitacora = m.bitacora || []).push({ usuario: yo.usuario, accion: nuevo ? 'cliente_creado_orden' : 'orden_cliente', registro_id: String(id), despues: { cliente: c.id }, en: new Date().toISOString() });
+    return { cliente_id: c.id, nuevo, nombre: c.nombre };
+  },
+  orden_enviar_revision(m, yo, a){
+    const c = m.datos.clientes.find((x) => x.id === Number(a.p_cliente)); if(!c) return error('Ese cliente no existe');
+    const n = (c.documentos || []).filter((d) => d.estado === 'por_revisar').length; if(!n) return error('Sube al menos un documento antes de enviarlo a revisión');
+    (m.bitacora = m.bitacora || []).push({ usuario: yo.usuario, accion: 'enviado_revision', registro_id: String(c.id), en: new Date().toISOString() }); return { documentos: n };
+  },
+  sin_lider_lista(m, yo){
+    if(!['admin', 'analista', 'gerencia'].includes(yo.rol)) return error('No tienes permiso para hacer esto'); const mes = hoy().slice(0, 7);
+    return { mes: mes + '-01', puede: yo.rol === 'admin' || esSenior(yo), lideres: m.personas.filter((p) => p.rol === 'lider' && p.activo !== false).map((p) => ({ id: p.id, nombre: p.nombre })),
+      filas: m.datos.clientes.filter((c) => !c.unido_a && !c.lider_id && !c.es_isp && (c.servicios || []).some((s) => String(s.fecha_instalacion || '').slice(0, 7) === mes))
+        .map((c) => ({ cliente_id: c.id, nombre: c.nombre, doc: 'J-' + c.doc_numero, fecha: c.servicios[0].fecha_instalacion, codigos: c.servicios.map((s) => s.sucursal + '-' + s.codigo).join(', '), estado: c.servicios[0].estado })) };
+  },
+  clientes_lider_lote(m, yo, a){
+    if(!(yo.rol === 'admin' || esSenior(yo))) return error('Esto lo hace el Analista Senior o el administrador');
+    const l = m.personas.find((p) => p.id === a.p_lider && p.rol === 'lider'); if(!l) return error('Elige un líder activo');
+    let n = 0; (a.p_clientes || []).forEach((id) => { const c = m.datos.clientes.find((x) => x.id === Number(id)); if(!c || c.lider_id === l.id) return; c.lider_id = l.id; c.lider = l.nombre; n++;
+      (m.bitacora = m.bitacora || []).push({ usuario: yo.usuario, accion: 'cliente_lider', registro_id: String(c.id), despues: { lider: l.nombre, en_lote: true }, en: new Date().toISOString() }); });
+    return n;
+  },
+  // ----- Lote 27/10: Resumen por módulo y su detalle (versión chica de privado.res_*) -----
+  modulo_resumen(m, yo, a){
+    if(!['admin', 'analista', 'lider', 'abogado', 'gerencia'].includes(yo.rol)) return error('No tienes permiso para hacer esto');
+    if((a.p_modulo === 'revision' && yo.rol === 'lider') || (a.p_modulo === 'comisiones' && yo.rol === 'abogado' && !yo.gerencia)) return error('No tienes permiso para ver este resumen');
+    m.resumenes = (m.resumenes || []).concat([a.p_modulo]);
+    return Object.assign(resumenMundo(m, yo, a.p_modulo, a.p_hasta || hoy()), { modulo: a.p_modulo, desde: a.p_desde, hasta: a.p_hasta, rol: yo.rol, solo_lectura: yo.rol === 'gerencia' || !!yo.gerencia });
+  },
+  modulo_detalle(m, yo, a){
+    if(!['admin', 'analista', 'lider', 'abogado', 'gerencia'].includes(yo.rol)) return error('No tienes permiso para hacer esto');
+    const f = filasResumen(m, yo, a.p_modulo, a.p_grafica, String(a.p_valor || ''), a.p_hasta || hoy()); const pg = Math.max(0, Number(a.p_pagina) || 0); const pp = Number(a.p_pagina) < 0 ? 5000 : 50;
+    m.detalles = (m.detalles || []).concat([[a.p_modulo, a.p_grafica, a.p_valor, a.p_pagina]]);
+    return { total: f.length, pagina: pg, por_pagina: pp, filas: f.slice(pg * pp, pg * pp + pp), lista: a.p_grafica === 'legal' ? 'clientes.html?f=todos' : a.p_grafica === 'sin_instalar' ? 'comisiones.html?t=sin_instalar' : null };
+  },
   // ----- Lote 22/10: índice del TAD (sucursal + código + equipo) y Migraciones -----
   tad_indice_iniciar(m, yo, a){ if(yo.rol !== 'admin') return error('No tienes permiso para hacer esto'); const k = m.datos.cambiosK || (m.datos.cambiosK = { idx: {}, cargas: [], filas: [], sec: 0, archivo: null });
+    const abierta = k.cargas.find((c) => !c.en && c.archivo === a.p_archivo); if(abierta) return abierta.id;
     k.cargas.push({ id: k.cargas.length + 1, archivo: a.p_archivo, filas: 0 }); return k.cargas.length; },
   tad_indice_parte(m, yo, a){ const k = m.datos.cambiosK; (a.p_filas || []).forEach((f) => { const c = String(f.c).replace(/^0+/, ''); const e = f.e ? String(f.e).toUpperCase() : ''; const cl = f.s + '-' + c + '-' + e;
-      k.idx[cl] = { clave: cl, sucursal: f.s, codigo: c, equipo: e || null, doc_tipo: f.t, doc_numero: String(f.d || '').replace(/\D/g, '').replace(/^0+/, ''), nombre: f.n, plan: f.p, categoria: f.ca, estado: f.es, direccion: f.di, pon: f.pon || null, carga: a.p_carga }; });
+      k.idx[cl] = { clave: cl, sucursal: f.s, codigo: c, equipo: e || null, doc_tipo: f.t, doc_numero: String(f.d || '').replace(/\D/g, '').replace(/^0+/, ''), nombre: f.n, plan: f.p, categoria: f.ca, estado: f.es, direccion: f.di, pon: f.pon || null, carga: a.p_carga, huella: f.h || null }; });
     k.cargas[a.p_carga - 1].filas += (a.p_filas || []).length; return (a.p_filas || []).length; },
+  // Lote 27/10: solo suben las filas cuya huella cambió; las iguales se marcan como vistas en esta carga
+  tad_indice_comparar(m, yo, a){ if(yo.rol !== 'admin') return error('No tienes permiso para hacer esto'); const k = m.datos.cambiosK; const faltan = [];
+    (a.p_filas || []).forEach((f, i) => { const cl = f.s + '-' + String(f.c).replace(/^0+/, '') + '-' + (f.e ? String(f.e).toUpperCase() : ''); const x = k.idx[cl];
+      if(x && f.h && x.huella === f.h){ if(x.carga !== a.p_carga){ x.carga = a.p_carga; k.cargas[a.p_carga - 1].filas++; } } else faltan.push(i); });
+    m.comparadas = (m.comparadas || 0) + (a.p_filas || []).length; return faltan; },
   tad_indice_cerrar(m, yo, a){ const k = m.datos.cambiosK; k.vigente = a.p_carga; k.cargas[a.p_carga - 1].en = new Date().toISOString(); let conf = 0; let avisos = 0;
     k.filas.filter((c) => ['por_emitir', 'por_confirmar'].includes(c.estado)).forEach((c) => { const ev = evaluarCambio(k, c); if(ev === 'ok'){ confirmarCambio(m, c); conf++; } else if(ev){ c.aviso = ev; avisos++; } });
     return { filas: k.cargas[a.p_carga - 1].filas, confirmados: conf, sin_registro: 0, avisos }; },
@@ -811,6 +931,7 @@ const RPC = {
   avisos_grupo(m, yo, a){ return (m.datos.avisos || []).filter((x) => x.para === yo.usuario && x.tipo === a.p_tipo).map((x) => Object.assign({ ids: [x.id] }, x)); },
   avisos_leer_grupo(m, yo, a){ (m.datos.avisos || []).filter((x) => x.para === yo.usuario && x.tipo === a.p_tipo).forEach((x) => { x.leido = true; }); return null; },
   avisos_leer(m, yo, a){ (m.datos.avisos || []).filter((x) => x.para === yo.usuario && (a.p_ids === null || (a.p_ids || []).includes(x.id))).forEach((x) => { x.leido = true; }); return null; },
+  avisos_activos(m, yo){ if(yo.rol !== 'admin') return error('No tienes permiso para hacer esto'); const r = {}; (m.suscripciones || []).forEach((x) => { r[x] = { n: ((r[x] || {}).n || 0) + 1 }; }); return r; },   // lote 27/10
   push_clave_publica(){ return 'BOrRoQzDyMsrbLLsb4D5j4nGCm6bSV0x9AVdj4ijTm8XUJfvHDl1v0Y2kVQ5WjDN8Y2O1cWv2Eq7S0aRVTDRxS4'; },
   push_suscribir(){ return null; }, push_quitar(){ return null; },
   // Lote A: contactar al responsable (versión corta de public.contacto_destino)
@@ -1367,7 +1488,7 @@ const RPC = {
     const cert = (m.certificados || {})[c]; const sen = esSenior(yo);
     const manual = c >= DESDE_MANUAL;
     return { corte: c, actual, siguiente: vmax > actual ? vmax : null, hoy: hoy(), inicio: corteInicio(c), fin: corteFin(c), limite: corteLimite(c), certifica: corteCertifica(c), dias: dias(hoy(), corteLimite(c)), rol: yo.rol,
-      manual, abierto: !cert && !(!manual && hoy() > corteLimite(c)), cierra_desde: manual ? masDias(corteFin(c), 1) : null, filas, por_instalar: pinst, comparativa: comp, lideres,
+      manual, abierto: !cert && !cerrado(c) && !(!manual && hoy() > corteLimite(c)), cierra_desde: manual ? masDias(corteFin(c), 1) : null, filas, por_instalar: pinst, comparativa: comp, lideres,
       eventos: yo.rol === 'abogado' ? [] : [].concat.apply([], visibles(m, yo).map((x) => x.instalaciones.filter((i) => { const t = new Date(i.instalada_en).getTime();
         return i.es_evento && !i.evento_comisiona && comisionable(i) && t >= cierre(masMeses(c, -1)) && t < cierre(c); }).map((i) => ({ instalacion_id: i.id, cliente_id: x.id, nombre: x.nombre, instalada_en: i.instalada_en, codigo: i.codigo, sucursal: i.sucursal, lider: duenoDe(x, i) || 'Por asignar', evento_manual: !!i.evento_manual })))),
       duenos: sen ? DUENOS : [], certificado: cert ? { en: cert.en, por: cert.por, total: cert.total, cumplen: cert.cumplen } : null,

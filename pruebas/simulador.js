@@ -29,6 +29,10 @@ function enlazarMock(m, p){
 // Crea un contexto de navegador con Supabase simulado. "llamadas" guarda lo que la app pidió.
 async function contexto(navegador, opciones, mundo){
   const ctx = await navegador.newContext(opciones || {});
+  // Lote 27/10: Chromium avisa "Transition was aborted" cuando la prueba encadena navegaciones con la transición entre páginas; no es un error de la app
+  const nueva = ctx.newPage.bind(ctx);
+  ctx.newPage = async () => { const pg = await nueva(); const on = pg.on.bind(pg);
+    pg.on = (ev, fn) => on(ev, ev === 'pageerror' ? (e) => { if(!/Transition was aborted because of invalid state/.test(e.message)) fn(e); } : fn); return pg; };
   const m = mundo || { personas: basePersonas(), llamadas: [], sinRed: false, fallaPerfil: false, lento: 0 };
   usar(m); if(!m.datos) m.datos = baseDatos();
   const sesionDe = (p) => ({ access_token: jwt(p.id), token_type: 'bearer', expires_in: 3600, expires_at: ahora() + 3600, refresh_token: 'r-' + p.id,

@@ -31,6 +31,10 @@
   // El usuario para entrar: sin acentos ni espacios y en minúscula
   function limpiarUsuario(v){ return normalizeStr(v).replace(/[^a-z0-9]/g, ''); }
 
+  // Lote 27/10: quién tiene los avisos activos en algún equipo (solo lo ve el administrador)
+  let AV = null;
+  const avisoChip = (u) => !AV ? '' : AV[u.id] ? '<span class="chip verde">Activos' + (AV[u.id].n > 1 ? ' (' + AV[u.id].n + ')' : '') + '</span>' : '<span class="chip gris">Sin activar</span>';
+  async function cargarAvisos(){ try { AV = await rpc('avisos_activos', {}); pintar(); } catch (e) { AV = null; } }
   function pintar(){
     const activos = usuarios.filter((u) => u.activo).length;
     $('resumen').textContent = usuarios.length ? activos + ' con acceso' + (usuarios.length > activos ? ', ' + (usuarios.length - activos) + ' sin acceso' : '') : '';
@@ -45,11 +49,12 @@
       return '<button type="button" class="persona' + (u.activo ? '' : ' inactiva') + '" data-i="' + i + '">' +
         '<span class="quien"><span class="av" aria-hidden="true">' + esc(iniciales(u.nombre)) + '</span><b>' + esc(u.nombre) + '</b>' +
         '<span class="det"><span class="solo-pc">' + esc(u.usuario) + (u.cargo ? ' · ' + esc(u.cargo) : '') + '</span>' +
-        '<span class="solo-tel">' + esc(rol) + ' · ' + esc(u.usuario) + '</span></span></span>' +
+        '<span class="solo-tel">' + esc(rol) + ' · ' + esc(u.usuario) + (AV && u.activo ? ' · ' + (AV[u.id] ? 'avisos activos' : 'sin avisos') : '') + '</span></span></span>' +
         '<span class="solo-pc">' + esc(rol) + '</span>' +
         '<span class="solo-pc">' + esc(EQ[u.equipo] || '') + '</span>' +
         '<span class="solo-pc">' + esc(u.nombre_odoo || 'Sin asignar') + '</span>' +
         '<span class="solo-pc">' + (u.codigo_vendedor ? '#' + esc(u.codigo_vendedor) : '') + '</span>' +
+        '<span class="solo-pc">' + avisoChip(u) + '</span>' +
         '<span class="est">' + est + '</span></button>';
     }).join('') + '</div>';
   }
@@ -65,7 +70,7 @@
       const r = await llamar({ accion: 'listar' });
       usuarios = r.usuarios || [];
       cache.guardar('usuarios', usuarios);
-      pintar();
+      pintar(); cargarAvisos();
     } catch (e) {
       if(guardado && guardado.length){ pintar(); }
       else { $('resumen').textContent = ''; $('lista').innerHTML = '<div class="vacio"><b>No se pudo cargar la lista</b><p>' + esc(e.message) + '</p><button type="button" class="btn btn-chico" id="reintentar">Reintentar</button></div>'; }

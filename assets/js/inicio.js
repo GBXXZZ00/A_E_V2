@@ -105,8 +105,6 @@
     if(['admin', 'lider', 'analista'].indexOf(rol) >= 0) activos.push({ id: 'factibilidad', nombre: 'Factibilidad', icono: 'wifi', enlace: 'factibilidad.html', texto: 'Si una ubicación tiene red' });
     activos.push({ id: 'aliados', nombre: 'Aliados', icono: 'usuarios', enlace: 'aliados.html',
       texto: rol === 'admin' ? 'Solicitudes, referidos y pagos de aliados' : canales ? 'Tus solicitudes, referidos y pagos' : 'Registro de aliados e instalados, para ver' });
-    if(['admin', 'analista', 'lider', 'abogado'].indexOf(rol) >= 0) activos.push({ id: 'panel', nombre: 'Panel', icono: 'tablero', enlace: 'panel.html',
-      texto: rol === 'lider' ? 'Cómo va cada módulo y lo tuyo por gestionar' : 'Cómo va cada módulo, con gráficas y lo que hay que gestionar' });
     if(['admin', 'analista', 'lider', 'abogado'].indexOf(rol) >= 0) activos.push({ id: 'gerencia', nombre: 'Gerencia', icono: 'barras', enlace: 'gerencia.html',
       texto: rol === 'lider' ? 'Tus números: instalaciones, comisiones y expedientes' : 'Resumen del negocio por mes, líder y segmento' });
     if(rol === 'admin' || rol === 'abogado') activos.push({ id: 'revision', nombre: 'Revisión', icono: 'doc', enlace: 'revision.html', texto: rol === 'admin' ? 'Documentos por revisar, también con IA' : 'Tus contratos por hacer y por firmar' });

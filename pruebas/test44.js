@@ -37,7 +37,7 @@ const archivo = (n, mime) => ({ name: n, mimeType: mime || 'application/pdf', bu
     ok(nombre + ': Filtros trae Tipo, Estatus legal, Líder, Gestiones, Contrato de dedicado, VGT y Otros', ['tipo', 'estatus', 'lider', 'gestion', 'ctr', 'vgt', 'otros'].every((k) => grs.includes(k)));
     await p.evaluate(() => document.querySelectorAll('#filGrupos details').forEach((d) => { d.open = true; }));
     const txf = await p.textContent('#filGrupos');
-    ok(nombre + ': cada opción con su contador; contrato de dedicado con sus 6 opciones', /PYME \+ Dedicado/.test(txf) && /Vence en 60 días/.test(txf) && /Firmado sin archivo/.test(txf) && /Requisitos VGT incompletos/.test(txf) && (await p.locator('#filGrupos .fil-op em').count()) > 10);
+    ok(nombre + ': cada opción con su contador; contrato de dedicado con sus 6 opciones', /PYME \+ Dedicado/.test(txf) && /Vence en 60 días/.test(txf) && /Firmado sin archivo/.test(txf) && /Requisitos VGT incompletos|Faltan requisitos VGT/.test(txf) && (await p.locator('#filGrupos .fil-op em').count()) > 10);
     await p.click('[data-fil="tipo|pyme"]'); await p.click('[data-fil="tipo|combinado"]'); await p.waitForFunction(() => location.search.includes('tipo=pyme%7Ccombinado') || location.search.includes('tipo=pyme|combinado'));
     ok(nombre + ': dentro de un grupo se suman', JSON.stringify((ultLista(mundo).p_f || {}).tipo) === '["pyme","combinado"]');
     await p.screenshot({ path: 'capturas/44-' + nombre + '-filtros.png' });

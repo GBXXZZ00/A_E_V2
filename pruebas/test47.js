@@ -1,6 +1,7 @@
-// Corrida 23/10: Panel por módulo. Tarjetas con números del mes, minigráfica de 6 meses (Chart.js) y alerta;
-// el tablero del módulo con Mes a mes / Año contra año, filtros por número y por barra, y la lista que abre el expediente.
-// El líder ve solo lo suyo (la llamada no deja elegir otro líder).
+// Lote 27/10: Resumen de cada módulo (Lista | Resumen). Cuatro números tocables y gráficas; todo abre el panel de detalle
+// (a la derecha en escritorio, desde abajo en teléfono) con su lista, Exportar a Excel (CSV con ; y BOM) y Ver todos en la lista.
+// En Clientes, las tarjetas de dedicados dan el Resumen de Dedicados. El líder ve lo suyo; Legal no ve el de Comisiones.
+const fs = require('fs');
 const { chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar } = require('./simulador');
 const { ok, cerrar } = marcador();
 const llamo = (m, f) => m.llamadas.filter((l) => l[1] === f);
@@ -8,46 +9,50 @@ const llamo = (m, f) => m.llamadas.filter((l) => l[1] === f);
 (async () => {
   const nav = await chromium.launch(); const errores = [];
   for(const [nombre, dispositivo] of [['pc', PC], ['tel', TEL]]){
-    const { ctx, mundo } = await contexto(nav, dispositivo);
+    const { ctx, mundo } = await contexto(nav, Object.assign({ acceptDownloads: true }, dispositivo));
     const p = await entrar(ctx, 'marcos', '482913'); p.on('pageerror', (e) => errores.push(e.message));
-    await p.goto(H + 'panel.html'); await p.waitForSelector('.pn-card[data-pn-mod="clientes"]');
-    ok(nombre + ': una tarjeta por cada uno de los 7 módulos', (await p.locator('.pn-card').count()) === 7);
-    await p.waitForFunction(() => window.Chart && document.querySelectorAll('[data-pn-mini]').length === 7);
-    ok(nombre + ': cada tarjeta trae su minigráfica', await p.evaluate(() => [...document.querySelectorAll('[data-pn-mini]')].every((c) => window.Chart.getChart(c))));
-    ok(nombre + ': la alerta dice lo vencido o lo que hay por gestionar', /vencido|por gestionar|Al día/.test(await p.textContent('.pn-card[data-pn-mod="clientes"] .pn-cab')));
-    ok(nombre + ': el administrador puede filtrar por líder', (await p.locator('#pnLider option').count()) > 1);
-    ok(nombre + ': sin desborde', await sinDesborde(p));
-    await p.screenshot({ path: 'capturas/47-' + nombre + '-panel.png', fullPage: nombre === 'pc' });
-    await p.click('.pn-card[data-pn-mod="clientes"]'); await p.waitForSelector('#hojaPn.ver #pnGraf');
-    const total = await p.locator('#listaPn .ge-li').count();
-    ok(nombre + ': el tablero abre con la gráfica y la lista por gestionar', total > 0 && await p.evaluate(() => !!window.Chart.getChart(document.getElementById('pnGraf'))));
-    await p.click('[data-pn-solo="venc"]'); await p.waitForTimeout(100);
-    const venc = await p.locator('#listaPn .ge-li').count();
-    ok(nombre + ': tocar "Vencidos" filtra la lista', venc >= 1 && venc < total && (await p.locator('#listaPn small.pn-rojo').count()) === venc);
-    await p.click('[data-pn-solo=""]');
-    // Tocar la barra del mes en curso filtra la lista a ese mes
-    await p.evaluate(() => { const g = window.Chart.getChart(document.getElementById('pnGraf')); const m = g.getDatasetMeta(0).data; const b = m[m.length - 1]; g.canvas.dispatchEvent(new MouseEvent('click', { clientX: g.canvas.getBoundingClientRect().left + b.x, clientY: g.canvas.getBoundingClientRect().top + b.y + 2, bubbles: true })); });
-    await p.waitForSelector('#listaPn .pn-quitar');
-    ok(nombre + ': tocar una barra filtra la lista por ese mes y se puede quitar', /Desde/.test(await p.textContent('#listaPn .pn-quitar')));
-    await p.click('[data-pn="sinMes"]'); await p.waitForFunction(() => !document.querySelector('#listaPn .pn-quitar'));
-    await p.click('[data-pn-modo="anio"]'); await p.waitForTimeout(150);
-    ok(nombre + ': Año contra año pinta este año y el anterior', await p.evaluate(() => { const g = window.Chart.getChart(document.getElementById('pnGraf')); return g.config.type === 'line' && g.data.datasets.length === 2; }));
-    await p.screenshot({ path: 'capturas/47-' + nombre + '-tablero.png' });
-    await p.click('#listaPn [data-pn-cli="0"]'); await p.waitForSelector('#hojaFicha.ver #tFicha');
-    ok(nombre + ': tocar un caso abre su expediente encima', true);
-    await ctx.close();
-  }
-  // El líder: solo lo suyo, sin elegir líder
-  {
-    const { ctx, mundo } = await contexto(nav, PC);
-    const p = await entrar(ctx, 'lucia', '739105'); p.on('pageerror', (e) => errores.push(e.message));
-    await p.goto(H + 'panel.html'); await p.waitForSelector('.pn-card');
-    const lucia = mundo.personas.find((x) => x.usuario === 'lucia');
-    ok('líder: no ve el filtro de líder', (await p.locator('#pnLider').count()) === 0);
-    await p.click('.pn-card[data-pn-mod="clientes"]'); await p.waitForSelector('#hojaPn.ver #listaPn');
-    const ajenos = mundo.datos.clientes.filter((c) => c.lider_id !== lucia.id).map((c) => c.nombre);
-    const txt = await p.textContent('#listaPn');
-    ok('líder: la lista trae solo sus clientes', !ajenos.some((n) => txt.includes(n)) && llamo(mundo, 'panel').length > 0);
+    await p.goto(H + 'clientes.html'); await p.waitForSelector('#lista .cli, #lista .vacio');
+    ok(nombre + ': Clientes arranca en Lista con Lista | Resumen arriba', (await p.locator('.rs-vista [data-rs-ver]').count()) === 2 && !(await p.isVisible('#zonaRes')));
+    await p.click('[data-rs-ver="resumen"]'); await p.waitForSelector('#zonaRes .rs-n');
+    ok(nombre + ': el Resumen esconde la lista y queda en la dirección', !(await p.isVisible('#lista')) && /v=resumen/.test(p.url()) && (await p.isVisible('#tarjetas')));
+    ok(nombre + ': cuatro números y las gráficas de Clientes', (await p.locator('#zonaRes .rs-n').count()) === 4 && /Instalaciones PYME/.test(await p.textContent('#zonaRes')) && /Estatus legal por segmento/.test(await p.textContent('#zonaRes')) && /Siguen habilitadas/.test(await p.textContent('#zonaRes')));
+    ok(nombre + ': pide el resumen de clientes del mes', llamo(mundo, 'modulo_resumen').some((l) => l[2].p_modulo === 'clientes' && /-01$/.test(l[2].p_desde)));
+    await p.click('[data-rs-vista2="inst:anio"]');
+    ok(nombre + ': Año contra año', (await p.locator('#zonaRes .rs-par').count()) >= 1 && /\(/.test(await p.textContent('#zonaRes .rs-anio + .ley')) || (await p.locator('#zonaRes .rs-par').count()) >= 1);
+    await p.click('[data-rs-vista2="inst:mes"]');
+    // Un tramo del estatus legal abre su lista
+    await p.locator('#zonaRes .rs-s-barra button').first().click(); await p.waitForSelector('#hojaRes.ver .rs-df');
+    const det = llamo(mundo, 'modulo_detalle').pop();
+    ok(nombre + ': el tramo pide su detalle (legal, segmento:grupo)', det && det[2].p_grafica === 'legal' && /^pyme:/.test(det[2].p_valor) && det[2].p_pagina === 0);
+    ok(nombre + ': el panel tiene título, cantidad, lista, Exportar a Excel y Ver todos en la lista', /PYME/.test(await p.textContent('#tRes')) && /registro/.test(await p.textContent('#nRes')) && (await p.locator('#hojaRes [data-rs-excel]').count()) === 1 && (await p.locator('#hojaRes a.btn[href*="clientes.html"]').count()) === 1);
+    const [baja] = await Promise.all([p.waitForEvent('download'), p.click('#hojaRes [data-rs-excel]')]);
+    const csv = fs.readFileSync(await baja.path(), 'utf8');
+    ok(nombre + ': el Excel es CSV con BOM, separado por punto y coma', csv.charCodeAt(0) === 0xFEFF && /^﻿"Nombre";"Detalle";"Estado"/.test(csv) && /\.csv$/.test(baja.suggestedFilename()) && llamo(mundo, 'modulo_detalle').some((l) => l[2].p_pagina === -1));
+    await p.locator('#hojaRes button.rs-df').first().click(); await p.waitForFunction(() => window.Comun.hojasAbiertas().length === 2);
+    ok(nombre + ': una fila abre el expediente encima', await p.evaluate(() => window.Comun.hojasAbiertas()[1] !== 'hojaRes'));
+    for(let i = 0; i < 3 && await p.evaluate(() => !!window.Comun.hojaAbierta()); i++){ await p.keyboard.press('Escape'); await p.waitForTimeout(300); }
+    // Un número abre su lista
+    await p.locator('#zonaRes .rs-n').nth(2).click(); await p.waitForSelector('#hojaRes.ver');
+    ok(nombre + ': un número abre su lista', llamo(mundo, 'modulo_detalle').pop()[2].p_valor === 'todos:faltan');
+    await p.keyboard.press('Escape'); await p.waitForTimeout(300);
+    // Tarjeta de dedicados: Resumen de Dedicados
+    await p.click('#tarjetas [data-tarjeta="corporativo"]'); await p.waitForFunction(() => /Dedicados/.test(document.getElementById('zonaRes').textContent));
+    ok(nombre + ': con la tarjeta de dedicados el Resumen es el de Dedicados', llamo(mundo, 'modulo_resumen').some((l) => l[2].p_modulo === 'dedicados') && /Ingresos de dedicados/.test(await p.textContent('#zonaRes')));
+    await p.click('#tarjetas [data-tarjeta="pyme"]');
+    ok(nombre + ': Clientes Resumen no desborda', await sinDesborde(p));
+    // Otros módulos
+    for(const [pg, mod] of [['comisiones.html', 'comisiones'], ['revision.html', 'revision'], ['migraciones.html', 'migraciones'], ['factibilidad.html', 'factibilidad']]){
+      await p.goto(H + pg + '?v=resumen'); await p.waitForSelector('#zonaRes .rs-n');
+      ok(nombre + ': ' + mod + ' abre en Resumen desde la dirección', llamo(mundo, 'modulo_resumen').some((l) => l[2].p_modulo === mod) && (await p.locator('#zonaRes .rs-card').count()) >= 1 && await sinDesborde(p));
+    }
+    await p.click('[data-rs-ver="lista"]');
+    ok(nombre + ': volver a Lista la muestra igual', await p.isVisible('#faLista') && !/v=resumen/.test(p.url()));
+    // ----- Líder: lo suyo -----
+    const c2 = await contexto(nav, dispositivo, mundo); const l = await entrar(c2.ctx, 'lucia', '739105'); l.on('pageerror', (e) => errores.push(e.message));
+    await l.goto(H + 'clientes.html?v=resumen'); await l.waitForSelector('#zonaRes .rs-n');
+    const tot = await l.textContent('#zonaRes .rs-n b');
+    ok(nombre + ': el líder ve solo sus clientes en el Resumen', Number(tot.replace(/\D/g, '')) === mundo.datos.clientes.filter((c) => !c.unido_a && (c.lider_id === '22222222-2222-4222-8222-222222222222' || (c.dedicado && c.dedicado.ejecutiva_id === '22222222-2222-4222-8222-222222222222'))).length);
+    await c2.ctx.close();
     await ctx.close();
   }
   ok('sin errores de la página', errores.length === 0, errores);

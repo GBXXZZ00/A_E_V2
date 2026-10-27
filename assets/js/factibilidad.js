@@ -391,6 +391,7 @@
     let f = 'abiertas'; try { f = new URL(location.href).searchParams.get('f') || 'abiertas'; } catch (e) {}
     filtro = ATAJOS.some((a) => a[0] === f) ? f : 'abiertas';
     montarHojas(); cargar(); pintarAyuda();
+    if(window.Resumen) window.Resumen.enModulo({ modulo: 'factibilidad', yo });   // lote 27/10
     const compartido = tomarCompartido();
     if(compartido){ formulario({ texto: compartido }); const a = $('faAyuda'); if(a) a.textContent = 'Llegó desde WhatsApp. Elige el tipo de cliente y toca Consultar.'; }
   }

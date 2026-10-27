@@ -1,5 +1,6 @@
-// Lote 7 (14/10): Gerencia, primera versión. Resumen por mes o rango, líder y segmento; cada número o barra abre su lista y de ahí la ficha;
-// Descargar Excel; administrador y Gerencia ven aliados y negativos; el líder solo lo suyo; la cuenta Gerencia es de solo lectura.
+// Lote 27/10: Gerencia nueva. Inicio propio con tarjetas (instalaciones, en el año, órdenes sin instalar, comisiones, expedientes,
+// migraciones, dedicados, calidad, estatus legal, demanda sin red, ingresos por armar y avisos), filtros Período y Comparar con;
+// cada tarjeta abre el Resumen de su módulo encima en solo lectura. La cuenta Gerencia entra directo y no abre fichas.
 const { chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar } = require('./simulador');
 const { ok, cerrar } = marcador();
 const llamo = (m, f) => m.llamadas.filter((l) => l[1] === f);
@@ -13,59 +14,46 @@ const GINA = { id: '77777777-7777-4777-8777-777777777700', usuario: 'gina', pin:
     // ----- Administrador -----
     const p = await entrar(ctx, 'marcos', '482913'); p.on('pageerror', (e) => errores.push(e.message));
     await p.waitForSelector('#zonaModulos a.mod');
-    ok(nombre + ': Inicio tiene el módulo Gerencia', (await p.locator('#zonaModulos [data-modulo="gerencia"]').count()) === 1);
-    await p.goto(H + 'gerencia.html'); await p.waitForSelector('#zonaG .ge-bento .ge-n');
-    ok(nombre + ': arranca en el corte en curso del servidor', (await p.inputValue('#gDesde')) === '2026-10-01' && (await p.inputValue('#gHasta')) === '2026-10-01' && /octubre/i.test(await p.textContent('#subG')));
+    ok(nombre + ': Inicio tiene Gerencia y ya no tiene Panel', (await p.locator('#zonaModulos [data-modulo="gerencia"]').count()) === 1 && (await p.locator('#zonaModulos [data-modulo="panel"]').count()) === 0);
+    await p.goto(H + 'gerencia.html'); await p.waitForSelector('#zonaG .gt-grid button.gtj');
     const z = await p.textContent('#zonaG');
-    ok(nombre + ': portada con clientes activos, instalaciones contra el mes anterior, comisiones, expedientes y negativos', /Clientes activos\s*4/.test(z) && /\+1 contra el mes anterior/.test(z) && /Certificado|Corte abierto/.test(z) && /Expedientes completos/.test(z) && (await p.locator('.ge-k.neg').count()) === 1);
-    ok(nombre + ': el administrador ve Aliados y Negativos', (await p.locator('#secAli').count()) === 1 && (await p.locator('#secNeg').count()) === 1);
-    ok(nombre + ': septiembre sale como certificado en la serie de comisiones', /sep 26\s*Certificado/.test(await p.textContent('#secCom')));
-    ok(nombre + ': sin desborde', await sinDesborde(p));
-    await p.screenshot({ path: 'capturas/31-' + nombre + '-admin.png', fullPage: true });
-    // Una barra abre su lista y de ahí la ficha
-    await p.locator('#secCom .ge-t').first().locator('.ge-p.verde').last().click(); await p.waitForSelector('#hojaG.ver .ge-li');
-    ok(nombre + ': tocar una barra abre la lista de esa barra', /Comisiones que cumplen/.test(await p.textContent('#tG')) && /Vidrios El Faro/.test(await p.textContent('#cuerpoLista')) && llamo(mundo, 'gerencia_lista').slice(-1)[0][2].p_mes === '2026-10-01');
-    await p.screenshot({ path: 'capturas/31-' + nombre + '-lista.png' });
-    await p.locator('#hojaG button.ge-li', { hasText: 'Vidrios El Faro' }).click(); await p.waitForSelector('#hojaFicha.ver');
-    ok(nombre + ': de la lista se abre la ficha encima', await p.evaluate(() => window.Comun.hojasAbiertas().join() === 'hojaG,hojaFicha'));
+    ok(nombre + ': tarjetas de la maqueta y Demanda sin red', ['Instalaciones PYME', 'En el año', 'Órdenes sin instalar', 'Comisiones del corte', 'Expedientes completos', 'Migraciones a PYME', 'Dedicados', 'Calidad de la venta', 'Estatus legal', 'Demanda sin red', 'Ingresos de dedicados', 'Tus avisos'].every((t) => z.includes(t)));
+    ok(nombre + ': pide el resumen de gerencia con el período y la comparación', llamo(mundo, 'modulo_resumen').some((l) => l[2].p_modulo === 'gerencia' && l[2].p_comparar === 'anio' && /^\d{4}-\d{2}-01$/.test(l[2].p_desde)));
+    await p.selectOption('#cmpG', 'mes'); await p.waitForTimeout(300);
+    ok(nombre + ': Comparar con cambia la llamada', llamo(mundo, 'modulo_resumen').some((l) => l[2].p_modulo === 'gerencia' && l[2].p_comparar === 'mes'));
+    ok(nombre + ': Ingresos de dedicados es un hueco por armar y no se toca', (await p.locator('.gtj.hueco').count()) === 1 && /Por armar/.test(await p.textContent('.gtj.hueco')));
+    await p.locator('.gtj[data-gt="comisiones"]').first().click(); await p.waitForSelector('#hojaGMod.ver .rs-n');
+    ok(nombre + ': la tarjeta abre el Resumen de su módulo encima, en solo lectura', /Comisiones/.test(await p.textContent('#tGMod')) && /solo lectura/i.test(await p.textContent('#hojaGMod')));
+    await p.locator('#hojaGMod .rs-n').first().click(); await p.waitForSelector('#hojaRes.ver .hoja-cuerpo');
+    ok(nombre + ': el número abre su lista encima del resumen', await p.evaluate(() => window.Comun.hojasAbiertas().join(',') === 'hojaGMod,hojaRes'));
+    ok(nombre + ': en solo lectura no hay Ver todos en la lista', (await p.locator('#hojaRes a.btn').count()) === 0);
     await cerrarHojas(p);
-    // Negativos tocables
-    await p.locator('#secNeg .ge-ng', { hasText: 'Instalado sin autorización' }).click(); await p.waitForSelector('#hojaG.ver .ge-li');
-    ok(nombre + ': un negativo abre su lista', /Tornillos El Yunque/.test(await p.textContent('#cuerpoLista')));
-    await cerrarHojas(p);
-    // Filtros: rango inválido y segmento
-    await p.selectOption('#gDesde', '2026-10-01'); await p.selectOption('#gHasta', '2026-09-01');
-    ok(nombre + ': un rango al revés da error debajo', /antes de/.test(await p.textContent('#eRango')));
-    await p.selectOption('#gHasta', '2026-10-01'); await p.selectOption('#gSeg', 'Dedicado ISP'); await p.waitForFunction(() => /Clientes activos\s*1/.test(document.getElementById('zonaG').textContent));
-    ok(nombre + ': el segmento filtra en el servidor y queda en la dirección', llamo(mundo, 'gerencia').slice(-1)[0][2].p_segmento === 'Dedicado ISP' && p.url().includes('s=Dedicado'));
-    await p.selectOption('#gSeg', ''); await p.waitForFunction(() => /Clientes activos\s*4/.test(document.getElementById('zonaG').textContent));
-    const [dl] = await Promise.all([p.waitForEvent('download'), p.click('#excelG')]);
-    ok(nombre + ': Descargar Excel baja el resumen', /^Gerencia_2026-10\.xlsx$/.test(dl.suggestedFilename()));
-    // ----- Líder: solo lo suyo, sin aliados ni negativos -----
-    const c2 = await contexto(nav, dispositivo, mundo); const q = await entrar(c2.ctx, 'lucia', '739105'); q.on('pageerror', (e) => errores.push(e.message));
-    await q.goto(H + 'gerencia.html'); await q.waitForSelector('#zonaG .ge-bento .ge-n');
-    ok(nombre + ': el líder ve solo sus clientes, sin filtro de líder ni aliados ni negativos', /Clientes activos\s*2/.test(await q.textContent('#zonaG')) && (await q.locator('#gLider').count()) === 0 && (await q.locator('#secAli, #secNeg, .ge-k.neg').count()) === 0);
-    await q.screenshot({ path: 'capturas/31-' + nombre + '-lider.png', fullPage: true });
-    await c2.ctx.close();
+    ok(nombre + ': Gerencia no desborda', await sinDesborde(p));
+    await p.goto(H + 'panel.html'); await p.waitForURL('**/inicio.html**');
+    ok(nombre + ': panel.html lleva a Inicio', true);
     // ----- Cuenta Gerencia: solo lectura, entra directo a Gerencia -----
     const c3 = await contexto(nav, dispositivo, mundo); const g = await c3.ctx.newPage(); g.on('pageerror', (e) => errores.push(e.message));
     await g.goto(H + 'index.html'); await g.waitForSelector('#pasoEquipo:not(.hidden)'); await g.click('[data-equipo="ventas"]'); await g.fill('#usuario', 'gina'); await g.click('#seguir');
     const pc = await g.evaluate(() => window.matchMedia('(min-width:900px)').matches);
     if(pc){ await g.locator('#pinCampo').focus(); await g.keyboard.type('640218', { delay: 15 }); } else for(const n of '640218') await g.locator('.tecla[data-k="' + n + '"]').click();
-    await g.waitForURL('**/gerencia.html**'); await g.waitForSelector('#zonaG .ge-bento .ge-n');
-    ok(nombre + ': la cuenta Gerencia entra directo a Gerencia y ve negativos', (await g.locator('#secNeg').count()) === 1);
-    ok(nombre + ': su menú solo tiene Gerencia y el Panel', await g.evaluate(() => [...document.querySelectorAll('.navpc a, #navTel a, nav a')].every((a) => /gerencia\.html|panel\.html|inicio\.html|#/.test(a.getAttribute('href') || ''))));
-    await g.locator('#secCom .ge-p.verde').last().click(); await g.waitForSelector('#hojaG.ver .ge-li');
-    ok(nombre + ': Gerencia ve la lista pero no abre fichas', (await g.locator('#hojaG button.ge-li').count()) === 0);
+    await g.waitForURL('**/gerencia.html**'); await g.waitForSelector('#zonaG button.gtj');
+    ok(nombre + ': la cuenta Gerencia entra directo a Gerencia y ve Comisiones', (await g.locator('.gtj[data-gt="comisiones"]').count()) >= 1);
+    ok(nombre + ': su menú solo tiene Gerencia', await g.evaluate(() => [...document.querySelectorAll('.navpc a, #navTel a, nav a')].every((a) => /gerencia\.html|inicio\.html|#/.test(a.getAttribute('href') || ''))));
+    await g.locator('.gtj[data-gt="clientes"]').first().click(); await g.waitForSelector('#hojaGMod.ver .rs-s-barra button');
+    await g.locator('#hojaGMod .rs-s-barra button').first().click(); await g.waitForSelector('#hojaRes.ver .rs-df');
+    ok(nombre + ': Gerencia ve la lista pero no abre fichas', (await g.locator('#hojaRes button.rs-df').count()) === 0);
     await cerrarHojas(g);
     await g.goto(H + 'clientes.html'); await g.waitForURL('**/gerencia.html**');
     ok(nombre + ': si Gerencia intenta entrar a otro módulo vuelve a Gerencia', true);
     await c3.ctx.close();
-    // ----- Usuarios: la opción Gerencia -----
-    await p.goto(H + 'usuarios.html'); await p.waitForSelector('#lista button');
-    ok(nombre + ': Usuarios muestra la cuenta como Gerencia (solo lectura) y ofrece la opción', /Gerencia \(solo lectura\)/.test(await p.textContent('#lista')) && (await p.locator('#fRol option[value="gerencia"]').count()) === 1);
+    // ----- Usuarios: la opción Gerencia y la columna Avisos -----
+    mundo.suscripciones = ['11111111-1111-4111-8111-111111111111'];
+    await p.goto(H + 'usuarios.html'); await p.waitForSelector('#lista button'); await p.waitForFunction(() => /Sin activar/.test(document.getElementById('lista').textContent));
+    ok(nombre + ': Usuarios muestra Gerencia (solo lectura) y ofrece la opción', /Gerencia \(solo lectura\)/.test(await p.textContent('#lista')) && (await p.locator('#fRol option[value="gerencia"]').count()) === 1);
+    ok(nombre + ': columna Avisos: activos para quien tiene equipo, Sin activar para los demás', pc0(await p.textContent('#lista')));
     await ctx.close();
   }
   ok('sin errores de la página', errores.length === 0, errores);
   await nav.close(); cerrar();
 })();
+function pc0(t){ return /Activos|avisos activos/.test(t) && /Sin activar|sin avisos/.test(t); }

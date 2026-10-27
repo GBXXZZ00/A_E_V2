@@ -221,6 +221,7 @@
   window.Armazon.arrancar(['admin', 'abogado'], { activo: 'revision' }, (p) => {
     yo = p; rol = yo.rol;
     window.Ficha.montar(); window.Ficha.alContactarFuera(refrescar);
+    if(window.Resumen) window.Resumen.enModulo({ modulo: 'revision', yo: p });   // lote 27/10
     leerUrl(); $('busca').value = q; pintarAtajos();
     cargar(false);
     const c = Number(new URLSearchParams(location.search).get('c')) || 0;

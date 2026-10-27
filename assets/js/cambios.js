@@ -462,6 +462,7 @@
   if(bq) bq.addEventListener('input', () => { clearTimeout(tBusca); tBusca = setTimeout(() => { busca = bq.value.trim(); guardarUrl(); pintar(); }, 140); });
   window.Armazon.arrancar(['admin', 'analista', 'lider'], { activo: 'migraciones' }, (p) => {
     yo = p; activo = true; window.Ficha.montar(); leerUrl();
+    if(window.Resumen) window.Resumen.enModulo({ modulo: 'migraciones', yo: p });   // lote 27/10
     busca = (new URLSearchParams(location.search).get('q') || '').slice(0, 60); if(bq) bq.value = busca;
     if(!D){ const g = C.cache.leer('cambios:' + p.rol); if(g) D = g; }
     if(D) pintar(); cargar();

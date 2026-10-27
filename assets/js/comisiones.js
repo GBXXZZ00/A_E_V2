@@ -17,12 +17,12 @@
     const u = new URLSearchParams(location.search);
     const f = u.get('f'); filtro = FILTROS.some((x) => x.id === f) ? f : 'todos';
     busca = (u.get('q') || '').slice(0, 60);
-    vista = u.get('t') === 'instalar' ? 'instalar' : 'corte';
+    vista = ['instalar', 'sin_instalar', 'sin_lider'].indexOf(u.get('t')) >= 0 ? u.get('t') : 'corte';   // lote 27/10: Sin instalar y Sin líder
     const c = u.get('c'); corte = /^\d{4}-(0[1-9]|1[0-2])/.test(c || '') ? c.slice(0, 7) + '-01' : '';
   }
   function guardarUrl(){
     const u = new URLSearchParams();
-    if(vista === 'instalar') u.set('t', 'instalar');
+    if(vista !== 'corte') u.set('t', vista);
     if(filtro !== 'todos' && vista === 'corte') u.set('f', filtro);
     if(busca) u.set('q', busca);
     if(d && corte && corte !== d.actual) u.set('c', corte.slice(0, 7));
@@ -222,7 +222,9 @@
   function pintarVistas(){
     if(!conInstalar()){ $('vistas').innerHTML = ''; return; }
     const rojas = PI ? vigentes(PI.filas).filter((o) => o.color === 'rojo').length : 0;
-    $('vistas').innerHTML = [['corte', 'Corte'], ['instalar', 'Por instalar']].map((x) => '<button type="button" role="tab" data-vista="' + x[0] + '" aria-selected="' + (vista === x[0]) + '" class="' + (vista === x[0] ? 'on' : '') + '">' + x[1] +
+    const vs = [['corte', 'Corte'], ['instalar', 'Por instalar'], ['sin_instalar', 'Sin instalar']].concat(['admin', 'analista'].indexOf(yo.rol) >= 0 ? [['sin_lider', 'Sin líder']] : []);
+    if(vs.every((x) => x[0] !== vista)) vista = 'corte';
+    $('vistas').innerHTML = vs.map((x) => '<button type="button" role="tab" data-vista="' + x[0] + '" aria-selected="' + (vista === x[0]) + '" class="' + (vista === x[0] ? 'on' : '') + '">' + x[1] +
       (x[0] === 'instalar' && rojas ? ' <em>' + rojas + '</em>' : '') + '</button>').join('');
     // Los cambios viven en Migraciones; aquí solo el aviso de los que esperan la decisión de comisión
     const av = $('avisoCam'); if(av) av.innerHTML = porDecidir ? '<a class="cam-dec" href="migraciones.html?f=decidir">' + ic('cambio') + '<span>' + esc(plural(porDecidir, 'cambio por decidir', 'cambios por decidir')) + '<small>Se deciden en Migraciones</small></span>' + ic('derecha', 'ch') + '</a>' : '';
@@ -230,8 +232,9 @@
   }
   function cambiarVista(v){
     if(v === vista) return; vista = v; guardarUrl(); pintarVistas();
-    if(vista === 'instalar') cargarInstalar(); else if(d){ pintarLista(); pintarLado(); } else cargar();
+    if(vista === 'instalar') cargarInstalar(); else if(vista !== 'corte') extra(); else if(d){ pintarLista(); pintarLado(); } else cargar();
   }
+  const extra = () => { if(window.SinInstalar) window.SinInstalar.mostrar(vista, $('lista'), yo, busca); };
   // Cambios a PYME confirmados que esperan Sí o No de comisión (se deciden en Migraciones). Sale del mismo resumen de Mi trabajo,
   // así solo lo ven el Analista Senior y el administrador (los que deciden)
   let porDecidir = 0;
@@ -963,13 +966,15 @@
   });
   document.addEventListener('keydown', (e) => { if(e.key === 'Enter' && e.target.id === 'asigBusca'){ e.preventDefault(); if(A) buscarOrdenes(e.target.value.trim()); } });
   let tBusca = null;
-  $('busca').addEventListener('input', () => { clearTimeout(tBusca); tBusca = setTimeout(() => { busca = $('busca').value.trim(); guardarUrl(); if(vista === 'instalar') pintarInstalar(); else if(d) pintarLista(); }, 140); });
+  $('busca').addEventListener('input', () => { clearTimeout(tBusca); tBusca = setTimeout(() => { busca = $('busca').value.trim(); guardarUrl(); if(vista === 'instalar') pintarInstalar(); else if(vista !== 'corte'){ if(window.SinInstalar) window.SinInstalar.buscar(busca); } else if(d) pintarLista(); }, 140); });
   $('corte').addEventListener('change', () => { corte = $('corte').value; d = null; cargar(); });
 
   window.Armazon.arrancar(['admin', 'abogado', 'lider', 'analista'], { activo: 'comisiones' }, (p) => {
     yo = p;
     window.Ficha.montar();
+    if(window.Resumen && p.rol !== 'abogado') window.Resumen.enModulo({ modulo: 'comisiones', yo: p });   // lote 27/10
     leerUrl(); $('busca').value = busca; pintarFiltros(); pintarVistas();
     cargar(); if(conInstalar()){ cargarInstalar(); cargarPorDecidir(); }
+    if(vista === 'sin_instalar' || vista === 'sin_lider') extra();
   }, (p) => { yo = p; });
 })();

@@ -155,7 +155,7 @@
     var c = M.datos.clientes.find(function(x){ return x.id === s.cliente_id; }); if(!c) return;
     var d = M.personas.find(function(p){ return p.id === c.lider_id; });
     if(d) aviso(d.usuario, 'cliente', 'Un aliado pidió tu cliente', (s.aliado || 'Un aliado') + ' pidió instalar a ' + c.nombre + '. Revisa la solicitud con el administrador.', 'clientes.html?c=' + c.id);
-    M.personas.filter(function(p){ return p.rol === 'admin' || p.gerencia; }).forEach(function(p){ aviso(p.usuario, 'cliente', 'Solicitud de aliado', (s.aliado || 'Un aliado') + ' pidió a ' + c.nombre + '.', p.gerencia ? 'panel.html' : 'aliados.html'); });
+    M.personas.filter(function(p){ return p.rol === 'admin' || p.gerencia; }).forEach(function(p){ aviso(p.usuario, 'cliente', 'Solicitud de aliado', (s.aliado || 'Un aliado') + ' pidió a ' + c.nombre + '.', p.gerencia ? 'gerencia.html' : 'aliados.html'); });
   }
 
   // Todo pedido al servidor pasa por aquí: con el modo encendido nunca sale a internet

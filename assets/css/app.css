@@ -1415,3 +1415,221 @@ button.ge-li{cursor:pointer}
 .pr-caja{display:flex;flex-direction:column;gap:2px;margin:10px 0 0;padding:10px 14px;border-radius:14px;background:var(--ambar-bg);color:var(--ambar);font-size:13px}
 @media (hover:hover) and (pointer:fine){.pr-acc button:hover{background:rgba(117,75,0,.08)}}
 @media (max-width:420px){.pr-banda > span:first-child{font-size:12px}}
+
+/* ---------- Lote 27/10: Resumen con gráficas (Lista | Resumen) y panel de detalle ---------- */
+.cabeza .rs-vista{margin-right:auto}
+.rs-vista{display:inline-flex;gap:4px;padding:4px;border-radius:var(--pill);background:var(--surface-2);flex:none}
+.rs-vista button{height:38px;padding:0 18px;border-radius:var(--pill);font-size:14px;font-weight:600;color:var(--text2);white-space:nowrap;transition:transform 120ms var(--ease-out)}
+.rs-vista button.on{background:var(--text);color:#fff}
+.rs-vista button:active{transform:scale(.97)}
+.pagina.ver-res > :not(.cabeza):not(#zonaRes){display:none !important}
+.pagina.ver-res > .cabeza ~ .cabeza{display:none !important}
+.pagina.ver-res > .cabeza > :not(.titulo):not(.rs-vista){display:none !important}
+/* En Clientes las tarjetas siguen a la vista: PYME da el Resumen de Clientes y las de dedicados el de Dedicados */
+.pagina.ver-res > #tarjetas.tclis{display:flex !important}
+.rs{margin-top:16px;display:flex;flex-direction:column;gap:16px}
+.rs.rs-actualizando .rs-nums,.rs.rs-actualizando .rs-fila{opacity:.7;transition:opacity 200ms var(--ease-out)}
+.rs-barra{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.rs-per{display:flex;align-items:center;gap:8px}
+.rs-sel.campo{height:44px;width:auto;min-width:170px;padding:0 42px 0 16px;border:1.5px solid var(--line);font-size:14px;font-weight:600}
+.rs-ayuda{font-size:13px;color:var(--text2)}
+.rs-nums{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.rs-n{display:flex;flex-direction:column;align-items:flex-start;gap:1px;min-height:96px;padding:14px 16px;border-radius:18px;background:var(--surface-2);text-align:left;transition:transform 120ms var(--ease-out)}
+.rs-n:active{transform:scale(.97)}
+.rs-n b{display:flex;align-items:center;gap:8px;font-size:28px;font-weight:800;letter-spacing:-.02em;line-height:1.1;white-space:nowrap}
+.rs-n span{font-size:13px;font-weight:600}
+.rs-n small{font-size:12px;color:var(--text2)}
+.rs-n.w{background:var(--ambar-bg)} .rs-n.b{background:var(--rojo-bg)}
+.rs-cmp{display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:var(--pill);font-size:12px;font-weight:700;letter-spacing:0}
+.rs-cmp.sube{background:var(--verde-bg);color:var(--verde)} .rs-cmp.baja{background:var(--rojo-bg);color:var(--rojo)}
+.rs-fila{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px}
+.rs-fila.sola{grid-template-columns:minmax(0,1fr)}
+.rs-card{display:flex;flex-direction:column;min-width:0;padding:20px;border:1px solid var(--line);border-radius:22px;background:#fff}
+.rs-card.hueco{background:#fff}
+.rs-cab{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap}
+.rs-cab h3{font-size:16px;font-weight:800}
+.rs-cab p{margin-top:2px;font-size:13px;color:var(--text2)}
+.rs-tipo{margin-top:auto;padding-top:12px;font-size:12px;color:var(--text2)}
+.rs-nota{margin-top:10px;font-size:13px;color:var(--text2)}
+.rs-seg{display:inline-flex;gap:4px;padding:4px;margin-top:12px;border-radius:var(--pill);background:var(--surface-2);align-self:flex-start}
+.rs-seg button{height:34px;padding:0 14px;border-radius:var(--pill);font-size:13px;font-weight:600;color:var(--text2);white-space:nowrap}
+.rs-seg button.on{background:var(--text);color:#fff}
+/* Gráfica de barras verticales con líneas de referencia */
+.rs-plot{position:relative;height:220px;margin-top:18px;padding-left:34px}
+.rs-ref{position:absolute;left:34px;right:0;top:18px;bottom:22px}
+.rs-ref span{position:absolute;left:0;right:0;height:1px;background:#EEF0F2}
+.rs-ref em{position:absolute;left:-34px;width:28px;transform:translateY(-50%);font-style:normal;font-size:10px;color:var(--text3);text-align:right}
+.rs-cols{position:absolute;left:34px;right:0;top:18px;bottom:22px;display:flex;align-items:flex-end;gap:12px}
+.rs-meses .rs-cols{gap:4px}
+.rs-vb{position:relative;flex:1;height:100%;min-width:0;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;border-radius:8px;transition:transform 120ms var(--ease-out)}
+.rs-vb .pila{position:relative;display:flex;flex-direction:column;width:100%;max-width:var(--bw,44px);min-height:3px;transform-origin:bottom}
+.rs-meses .rs-vb .pila{max-width:24px}
+.rs-vb .pila em{position:absolute;bottom:100%;left:50%;transform:translateX(-50%);padding-bottom:4px;font-style:normal;font-size:12px;font-weight:700;white-space:nowrap}
+.rs-meses .rs-vb .pila em{font-size:10px;color:var(--text2)}
+.rs-vb .pila i{display:block;min-height:0}
+.rs-vb .pila .a{background:var(--text);border-radius:0 0 6px 6px}
+.rs-vb .pila .b{background:#E0A93B;border-radius:6px 6px 0 0}
+.rs-vb .pila .b[style^="flex:0 "] + .a{border-radius:6px}
+.rs-meses .rs-vb .pila .a{border-radius:0 0 4px 4px} .rs-meses .rs-vb .pila .b{border-radius:4px 4px 0 0}
+.rs-meses .rs-vb .pila .b[style^="flex:0 "] + .a{border-radius:4px}
+.rs-vb.hoy{background:var(--surface-2)}
+.rs-vb.hoy .pila em{color:var(--text);font-size:11px}
+.rs-vb .fant{position:absolute;left:50%;width:min(24px,90%);height:2px;margin-bottom:-1px;transform:translateX(-50%);background:#C9CED6;border-radius:1px;z-index:1;pointer-events:none}
+.rs-x{position:absolute;left:34px;right:0;bottom:0;display:flex;gap:12px}
+.rs-meses .rs-x{gap:4px}
+.rs-x span{flex:1;min-width:0;text-align:center;font-size:11px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rs-meses .rs-x span{font-size:10px;overflow:visible}
+.rs-x span.hoy{font-weight:800;color:var(--text)}
+.rs-anio .rs-cols{gap:10px}
+.rs-par{flex:1;height:100%;display:flex;justify-content:center;align-items:flex-end;gap:3px;min-width:0;border-radius:8px}
+.rs-par i{display:block;width:14px;max-width:45%;border-radius:4px 4px 0 0;transform-origin:bottom}
+.rs-par .ant{background:#B7BDC6} .rs-par .act{background:var(--text)}
+/* Barras horizontales */
+.rs-h{margin-top:12px}
+.rs-hb{display:grid;grid-template-columns:minmax(90px,140px) minmax(0,1fr) 52px;gap:12px;align-items:center;width:calc(100% + 12px);min-height:40px;margin:0 -6px;padding:6px;border-radius:10px;text-align:left;transition:transform 120ms var(--ease-out)}
+.rs-hb .l{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rs-hb .pista{display:block;height:14px;border-radius:7px;background:var(--surface-2);overflow:hidden}
+.rs-hb .pista i{display:block;height:100%;border-radius:7px;background:var(--text);transform-origin:left}
+.rs-hb b{font-size:14px;text-align:right}
+/* Estatus legal por segmento */
+.rs-s{display:flex;flex-direction:column;gap:16px;margin-top:16px}
+.rs-s-cab{display:flex;justify-content:space-between;gap:10px;margin-bottom:6px;font-size:13px}
+.rs-s-cab span{color:var(--text2);text-align:right}
+.rs-s-barra{display:flex;gap:2px;height:26px;border-radius:8px;overflow:hidden}
+.rs-s-barra button{min-width:6px;height:100%;transition:opacity 120ms var(--ease-out)}
+/* Siguen habilitadas */
+.rs-cal{display:flex;gap:5px;align-items:flex-end;height:170px;margin-top:16px}
+.rs-cb{flex:1;height:100%;min-width:0;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:4px;border-radius:8px}
+.rs-cb em{font-style:normal;font-size:10px;font-weight:700;color:var(--text2)}
+.rs-cb span{display:block;width:100%;max-width:22px;border-radius:4px 4px 0 0;background:var(--text);transform-origin:bottom}
+.rs-cb.bajo span{background:#E0A93B} .rs-cb.bajo em{color:var(--ambar)}
+.rs-cb small{font-size:10px;color:var(--text2)}
+.rs-hueco{flex:1;min-height:170px;margin-top:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:18px;border:1.5px dashed #C9CED6;border-radius:16px;text-align:center}
+.rs-hueco b{font-size:14px} .rs-hueco span{max-width:32ch;font-size:12px;color:var(--text2)}
+.rs-vacio{flex:1;display:grid;place-items:center;min-height:140px;margin-top:12px;padding:16px;border-radius:16px;background:var(--surface-2);font-size:13px;color:var(--text2);text-align:center}
+/* Colores: solo para estado */
+.c-n{background:var(--text)} .c-ok{background:#11734B} .c-verde2{background:#6FBF97} .c-azul{background:#2B5CFF} .c-azul2{background:#9DB2FF}
+.c-w{background:#E0A93B} .c-b{background:#C0271B} .c-gris{background:#B7BDC6} .c-fant{background:#C9CED6}
+.rs .ley{display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;font-size:12px;color:var(--text2)}
+.rs .ley i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.rs-card .ley i.c-fant{height:3px;border-radius:2px;vertical-align:3px}
+/* Esqueleto con la forma de las gráficas */
+.rs-sk-n{height:96px;border-radius:18px}
+.rs-sk-barras{display:flex;align-items:flex-end;gap:12px;height:170px;margin-top:20px}
+.rs-sk-barras .sk{flex:1;border-radius:6px}
+.rs-sk-h{display:block;height:14px;margin-top:18px;border-radius:7px}
+/* Etiqueta flotante */
+.rs-tip{position:fixed;z-index:120;max-width:260px;padding:8px 12px;border-radius:12px;background:var(--text);color:#fff;font-size:12.5px;line-height:1.35;pointer-events:none;opacity:0;transform:translateY(calc(-100% + 4px));transition:opacity 120ms var(--ease-out),transform 120ms var(--ease-out)}
+.rs-tip.ver{opacity:1;transform:translateY(-100%)}
+/* Panel de detalle */
+.rs-det .hoja-cab .tx small:first-child{font-weight:700}
+.rs-df{display:flex;align-items:center;gap:12px;width:100%;min-height:56px;padding:12px 0;border-top:1px solid #EEF0F2;text-align:left}
+.rs-df:first-child{border-top:0}
+.rs-df .tx{flex:1;min-width:0}
+.rs-df .tx b{display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rs-df .tx small{display:block;font-size:12px;color:var(--text2)}
+.rs-df .chip{flex:none}
+.rs-mas{width:100%;margin-top:12px}
+.rs-det .hoja-pie a.btn{flex:1;min-width:0}
+/* Entrada: solo transform y opacity, menos de 300 ms */
+.rs-entra .rs-n,.rs-entra .rs-card{animation:rs-sube 240ms var(--ease-out) both;animation-delay:calc(var(--i,0) * 30ms)}
+.rs-entra .rs-vb .pila,.rs-entra .rs-cb span,.rs-entra .rs-par i{animation:rs-crece 260ms var(--ease-out) both}
+.rs-entra .rs-hb .pista i{animation:rs-ancho 260ms var(--ease-out) both}
+@keyframes rs-sube{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@keyframes rs-crece{from{opacity:.4;transform:scaleY(.6)}to{opacity:1;transform:none}}
+@keyframes rs-ancho{from{opacity:.4;transform:scaleX(.6)}to{opacity:1;transform:none}}
+@media (hover:hover) and (pointer:fine){
+  .rs-vb:hover,.rs-par:hover,.rs-cb:hover,.rs-hb:hover{background:var(--surface-2)}
+  .rs-s-barra button:hover{opacity:.82}
+  .rs-n:hover{background:var(--surface-3)} .rs-n.w:hover{background:#F6E6C4} .rs-n.b:hover{background:#F8DCD8}
+  .rs-df[data-rs-cli]:hover{background:var(--surface-2)}
+}
+@media (prefers-reduced-motion:reduce){
+  .rs-entra .rs-n,.rs-entra .rs-card,.rs-entra .rs-vb .pila,.rs-entra .rs-cb span,.rs-entra .rs-par i,.rs-entra .rs-hb .pista i{animation:none}
+  .rs-tip{transition:none}
+}
+/* Teléfono: números deslizables y gráficas una debajo de otra */
+@media (max-width:760px){
+  .cabeza .rs-vista{order:3;width:100%;margin-top:6px}
+  .cabeza .rs-vista button{flex:1}
+  .rs-nums{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;margin:0 -20px;padding:0 20px 4px;scroll-padding-inline:20px;scrollbar-width:none}
+  .rs-nums::-webkit-scrollbar{display:none}
+  .rs-n{flex:0 0 42%;scroll-snap-align:start}
+  .rs-fila,.rs-fila.sola{grid-template-columns:minmax(0,1fr) !important}
+  .rs-card{padding:16px}
+  .rs-meses .rs-vb .pila em{display:none}
+  .rs-meses .rs-x span:not(.mk){visibility:hidden}
+  .rs-ayuda{display:none}
+  .rs-hb{grid-template-columns:minmax(80px,110px) minmax(0,1fr) 44px}
+}
+/* ---------- Lote 27/10: Inicio de gerencia ---------- */
+.gt-cabeza{align-items:flex-end;flex-wrap:wrap;gap:14px}
+.gt-cabeza .sub{margin-top:4px}
+.gt-filtros{margin-top:0;min-width:min(100%,500px)}
+.gt-filtros .rotulo{font-size:12px;margin-bottom:4px}
+.gt-filtros .campo{height:44px;font-size:14px;border:1.5px solid var(--line)}
+.gt-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:18px}
+.gtj{display:flex;flex-direction:column;align-items:stretch;justify-content:flex-start;gap:6px;min-width:0;min-height:168px;padding:20px;border-radius:22px;background:var(--surface-2);text-align:left;transition:transform 120ms var(--ease-out)}
+button.gtj:active{transform:scale(.97)}
+.gtj h2{font-size:14px;font-weight:700;color:var(--text2)}
+.gtj .gt-n,.gt-v b{font-size:34px;font-weight:800;letter-spacing:-.02em;line-height:1.05}
+.gtj p{font-size:13px;color:var(--text2)}
+.gtj .chip{align-self:flex-start}
+.gtj .ir{display:flex;align-items:center;gap:4px;margin-top:auto;padding-top:6px;font-size:13px;font-weight:700}
+.gtj .ir svg{width:16px;height:16px}
+.gt-v{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.gtj.grande{grid-column:span 2;grid-row:span 2}
+.gtj.ancha{grid-column:span 2}
+.gtj.oscura{background:var(--text);color:#fff}
+.gtj.oscura h2,.gtj.oscura p,.gtj.oscura .gt-ext{color:#B7BDC6}
+.gtj.oscura .gt-v b{font-size:52px}
+.gtj.ambar{background:var(--ambar-bg)} .gtj.ambar h2{color:var(--ambar)}
+.gtj.hueco{background:#fff;border:1.5px dashed #C9CED6}
+.gtj.hueco > b{font-size:15px}
+.gtj.blanca{background:#fff;border:1px solid var(--line)}
+.gt-barras{display:flex;align-items:flex-end;gap:6px;height:150px;margin-top:12px}
+.gt-barras i{flex:1;border-radius:4px 4px 0 0;background:#5B636E;transform-origin:bottom}
+.gt-barras i.hoy{background:#fff}
+.gt-ext{display:flex;justify-content:space-between;font-size:11px}
+.gt-cal{display:flex;align-items:flex-end;gap:5px;height:70px;margin-top:6px}
+.gt-cal i{flex:1;border-radius:3px 3px 0 0;background:var(--text)} .gt-cal i.bajo{background:#E0A93B}
+.gt-avisos{list-style:none;margin:4px 0 0;padding:0;display:flex;flex-direction:column;gap:8px;font-size:14px}
+.gt-avisos li{display:flex;justify-content:space-between;gap:10px} .gt-avisos small{font-size:13px;color:var(--text2);white-space:nowrap}
+.gt-sk{height:168px;border-radius:22px} .gt-sk.grande{grid-column:span 2;grid-row:span 2;height:auto}
+.gt-hoja .hoja-cuerpo .rs{margin-top:0}
+@media (hover:hover) and (pointer:fine){ button.gtj:hover{background:var(--surface-3)} button.gtj.oscura:hover{background:#24272B} button.gtj.ambar:hover{background:#F6E6C4} }
+@media (min-width:761px){ .hoja.completa.lado.gt-hoja{width:min(1180px,94vw)} }
+@media (max-width:760px){
+  .gt-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .gtj.grande,.gtj.ancha{grid-column:span 2} .gtj.grande{grid-row:auto}
+  .gtj{min-height:150px;padding:16px} .gtj .gt-n,.gt-v b{font-size:28px} .gtj.oscura .gt-v b{font-size:44px}
+  .gt-barras{height:110px}
+  .gt-filtros{min-width:100%}
+}
+/* ---------- Lote 27/10: Comisiones, atajos Sin instalar y Sin líder ---------- */
+.si-cab{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin:6px 0 10px}
+.si-acc{display:flex;gap:8px;flex-wrap:wrap}
+.si-lista{padding:0}
+.si-f{display:flex;align-items:center;gap:12px;min-height:64px;padding:12px 14px;border-top:1px solid #EEF0F2}
+.si-f:first-child{border-top:0}
+.si-f .tx{flex:1;min-width:0}
+.si-f .tx b{display:block;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.si-f .tx small{display:block;font-size:12.5px;color:var(--text2)}
+.si-f .si-falta{color:var(--text)}
+.si-f .m{flex:none}
+.si-f .btn{flex:none}
+.si-marca{cursor:pointer}
+.si-marca input{width:22px;height:22px;flex:none;accent-color:var(--text)}
+.si-cli{margin:14px 0 6px;padding:14px 16px;border-radius:16px;background:var(--surface-2)}
+.si-cli b{display:block} .si-cli small{font-size:13px;color:var(--text2)}
+@media (max-width:760px){ .si-f{flex-wrap:wrap} .si-f .btn{width:100%} }
+/* El cuerpo de estas hojas se desplaza y el pie queda siempre a la vista */
+.rs-det .hoja-cuerpo,#hojaOrden .hoja-cuerpo,.gt-hoja .hoja-cuerpo{min-height:0;overscroll-behavior:contain}
+.rs-det .hoja-pie,#hojaOrden .hoja-pie{flex:none}
+/* Lote 27/10: con cuatro pestañas en Comisiones, en el teléfono se deslizan sin ensanchar la página */
+@media (max-width:760px){
+  .vistas{display:flex;max-width:100%;overflow-x:auto;scrollbar-width:none}
+  .vistas::-webkit-scrollbar{display:none}
+  .vistas button{padding:0 14px;flex:none}
+  .rs-n{min-width:0}
+}
