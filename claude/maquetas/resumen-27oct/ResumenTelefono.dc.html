@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Resumen en teléfono</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap">
+<style>
+body{margin:0;background:#FFFFFF;color:#111315;font-family:"Inter",system-ui,sans-serif;font-size:15px;line-height:1.45}
+a{color:#2B5CFF}a:hover{color:#1B3A9E}
+button{font:inherit;color:inherit;border:0;background:none;padding:0}
+.n{flex:none;width:140px;display:flex;flex-direction:column;align-items:flex-start;padding:14px;border-radius:18px;background:#F5F6F7;text-align:left}
+.n b{font-size:24px;font-weight:800;line-height:1.1}.n span{font-size:12px;font-weight:600}.n small{font-size:11px;color:#5B636E}
+.card{margin:0 16px;padding:16px;border:1px solid #E3E6EA;border-radius:20px}
+.card h3{margin:0;font-size:15px;font-weight:800}.card p{margin:2px 0 0;font-size:12px;color:#5B636E}
+.hb{display:grid;grid-template-columns:96px minmax(0,1fr) 30px;gap:8px;align-items:center;padding:8px 0;width:100%;text-align:left;min-height:44px}
+</style>
+</helmet>
+<div style="width:390px;min-height:1000px;background:#FFFFFF;display:flex;flex-direction:column;gap:14px;padding-bottom:24px">
+  <header style="display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid #E3E6EA"><b style="letter-spacing:.06em">AIRTEK</b><span style="display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:#111315;color:#fff;font-weight:700;font-size:13px">G</span></header>
+  <div style="padding:0 16px;display:flex;flex-direction:column;gap:12px">
+    <h1 style="margin:0;font-size:26px;font-weight:800">Comisiones</h1>
+    <div style="display:flex;gap:4px;background:#F5F6F7;border-radius:999px;padding:4px">
+      <button style="flex:1;height:40px;border-radius:999px;font-weight:600;font-size:13px;color:#5B636E">Lista</button>
+      <button style="flex:1;height:40px;border-radius:999px;background:#111315;color:#fff;font-weight:600;font-size:13px">Resumen</button>
+    </div>
+  </div>
+  <div style="display:flex;gap:8px;overflow:hidden;padding:0 16px">
+    <button class="n"><b>62</b><span>En el corte</span><small>78 en septiembre</small></button>
+    <button class="n" style="background:#FBF1DC"><b>24</b><span>Sin pago</span><small>Bloquean la comisión</small></button>
+    <button class="n" style="background:#FBF1DC"><b>52</b><span>Sin instalar</span></button>
+  </div>
+  <div class="card">
+    <h3>Instaladas por corte</h3><p>Con pago y sin pago</p>
+    <div style="display:flex;gap:18px;align-items:flex-end;height:150px;margin-top:12px;padding:0 10px">
+      <sc-for list="{{barras}}" as="b" hint-placeholder-count="3">
+        <button style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;min-height:44px">
+          <span style="font-size:12px;font-weight:700">{{b.v}}</span>
+          <span style="display:flex;flex-direction:column;width:100%;max-width:56px"><span style="{{b.s2}}"></span><span style="{{b.s1}}"></span></span>
+          <span style="font-size:11px;color:#5B636E">{{b.l}}</span>
+        </button>
+      </sc-for>
+    </div>
+  </div>
+  <div class="card">
+    <h3>Sin instalar por antigüedad</h3><p>Toca una fila para ver las órdenes</p>
+    <div style="margin-top:6px">
+      <sc-for list="{{ant}}" as="a" hint-placeholder-count="4">
+        <button class="hb"><span style="font-size:12px;font-weight:600">{{a.l}}</span><span style="height:12px;border-radius:6px;background:#F5F6F7;overflow:hidden;display:block"><span style="{{a.s}}"></span></span><b style="font-size:13px;text-align:right">{{a.v}}</b></button>
+      </sc-for>
+    </div>
+  </div>
+  <p style="margin:0 16px;font-size:12px;color:#5B636E">En el teléfono las gráficas van una debajo de otra y el detalle sube como hoja desde abajo.</p>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const barras = [['ago',22,1],['sep',63,15],['oct',38,24]].map(([l,a,b]) => ({ l, v:a+b,
+      s1:'display:block;height:' + Math.round(a/80*110) + 'px;background:#111315;border-radius:0 0 6px 6px',
+      s2:'display:block;height:' + Math.round(b/80*110) + 'px;background:#E0A93B;border-radius:6px 6px 0 0' }));
+    const ant = [['Menos de 15 d',5,'#111315'],['15 a 60 d',14,'#E0A93B'],['60 a 180 d',13,'#C0271B'],['Más de 180 d',20,'#C0271B']].map(([l,v,c]) => ({ l, v, s:'display:block;height:12px;border-radius:6px;width:' + Math.round(v/20*100) + '%;background:' + c }));
+    return { barras, ant };
+  }
+}
+</script>
+</body>
+</html>

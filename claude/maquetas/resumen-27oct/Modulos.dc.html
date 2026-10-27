@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Resumen de cada módulo</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap">
+<style>
+body{margin:0;background:#FFFFFF;color:#111315;font-family:"Inter",system-ui,sans-serif;font-size:15px;line-height:1.45}
+a{color:#2B5CFF}a:hover{color:#1B3A9E}
+button{font:inherit;color:inherit;border:0;background:none;padding:0;cursor:pointer}
+.tab{height:40px;padding:0 16px;border-radius:999px;font-weight:600;font-size:14px;color:#5B636E;white-space:nowrap}
+.tab.on{background:#111315;color:#fff}
+.n{display:flex;flex-direction:column;align-items:flex-start;padding:14px 16px;border-radius:18px;background:#F5F6F7;text-align:left;transition:transform 120ms cubic-bezier(.23,1,.32,1)}
+.n:active{transform:scale(.97)}
+.n b{font-size:28px;font-weight:800;letter-spacing:-.02em;line-height:1.1}.n span{font-size:13px;font-weight:600}.n small{font-size:12px;color:#5B636E}
+.card{padding:20px;border:1px solid #E3E6EA;border-radius:22px;min-width:0;display:flex;flex-direction:column}
+.card h3{margin:0;font-size:16px;font-weight:800}
+.card p{margin:2px 0 0;font-size:13px;color:#5B636E}
+.plot{position:relative;height:200px;margin-top:18px;padding-left:34px}
+.gl{position:absolute;left:34px;right:0;height:1px;background:#EEF0F2}
+.gy{position:absolute;left:0;width:28px;text-align:right;font-size:10px;color:#69717C;transform:translateY(-50%)}
+.cols{position:absolute;left:34px;right:0;top:0;bottom:22px;display:flex;align-items:flex-end;gap:12px}
+.vb{flex:1;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:4px;min-width:0;border-radius:8px}
+.vb:hover{background:#F5F6F7}
+.xl{position:absolute;left:34px;right:0;bottom:0;display:flex;gap:12px}
+.xl span{flex:1;text-align:center;font-size:11px;color:#5B636E;white-space:nowrap}
+.hb{display:grid;grid-template-columns:130px minmax(0,1fr) 48px;gap:12px;align-items:center;padding:8px 6px;margin:0 -6px;width:calc(100% + 12px);text-align:left;border-radius:10px}
+.hb:hover{background:#F5F6F7}
+.ley{display:flex;gap:14px;flex-wrap:wrap;margin-top:12px;font-size:12px;color:#5B636E}
+.ley i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px}
+.chip{display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap}
+.fila{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 0;border-top:1px solid #EEF0F2}
+.btn{display:inline-flex;align-items:center;justify-content:center;height:44px;padding:0 18px;border-radius:999px;background:#111315;color:#fff;font-weight:700;font-size:14px;white-space:nowrap}
+.btn2{display:inline-flex;align-items:center;justify-content:center;height:44px;padding:0 18px;border-radius:999px;background:#F5F6F7;font-weight:600;font-size:14px;white-space:nowrap}
+.tip{font-size:12px;color:#5B636E;margin-top:auto;padding-top:12px}
+</style>
+</helmet>
+<div style="position:relative;min-height:1500px;background:#FFFFFF;overflow:hidden">
+  <div style="max-width:1200px;margin:0 auto;padding:32px 32px 64px;display:flex;flex-direction:column;gap:20px">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap">
+      <div><h1 style="margin:0;font-size:28px;font-weight:800;letter-spacing:-.02em">{{m.t}}</h1><p style="margin:2px 0 0;font-size:14px;color:#5B636E">Pestaña Resumen · toca un número o una barra para ver el detalle</p></div>
+      <nav style="display:flex;gap:4px;background:#F5F6F7;border-radius:999px;padding:4px;flex-wrap:wrap" aria-label="Módulo de ejemplo">
+        <sc-for list="{{tabs}}" as="t" hint-placeholder-count="6"><button class="{{t.cls}}" type="button" onClick="{{t.pick}}">{{t.l}}</button></sc-for>
+      </nav>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px">
+      <sc-for list="{{m.nums}}" as="x" hint-placeholder-count="4">
+        <button class="n" type="button" style="{{x.bg}}" onClick="{{x.go}}"><b>{{x.v}}</b><span>{{x.l}}</span><small>{{x.s}}</small></button>
+      </sc-for>
+    </div>
+
+    <div style="{{m.grid}}">
+      <sc-for list="{{m.charts}}" as="c" hint-placeholder-count="2">
+        <div class="card" style="{{c.box}}">
+          <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><div><h3>{{c.t}}</h3><p>{{c.s}}</p></div><sc-if value="{{c.badge}}" hint-placeholder-val="{{false}}"><span class="{{c.bcls}}">{{c.badge}}</span></sc-if></div>
+
+          <sc-if value="{{c.esV}}" hint-placeholder-val="{{true}}">
+            <div class="plot">
+              <sc-for list="{{c.grid}}" as="g" hint-placeholder-count="4"><div class="gl" style="{{g.st}}"></div><span class="gy" style="{{g.st}}">{{g.l}}</span></sc-for>
+              <div class="cols">
+                <sc-for list="{{c.bars}}" as="b" hint-placeholder-count="4">
+                  <button class="vb" type="button" onClick="{{b.go}}" aria-label="{{b.a}}">
+                    <span style="font-size:12px;font-weight:700">{{b.v}}</span>
+                    <span style="display:flex;flex-direction:column;width:100%;max-width:{{c.bw}}"><span style="{{b.s2}}"></span><span style="{{b.s1}}"></span></span>
+                  </button>
+                </sc-for>
+              </div>
+              <div class="xl"><sc-for list="{{c.bars}}" as="b" hint-placeholder-count="4"><span>{{b.l}}</span></sc-for></div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{c.esH}}" hint-placeholder-val="{{false}}">
+            <div style="margin-top:14px">
+              <sc-for list="{{c.bars}}" as="b" hint-placeholder-count="4">
+                <button class="hb" type="button" onClick="{{b.go}}"><span style="font-size:13px;font-weight:600">{{b.l}}</span><span style="height:14px;border-radius:7px;background:#F5F6F7;overflow:hidden;display:block"><span style="{{b.s1}}"></span></span><b style="font-size:14px;text-align:right">{{b.v}}</b></button>
+              </sc-for>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{c.esS}}" hint-placeholder-val="{{false}}">
+            <div style="display:flex;flex-direction:column;gap:16px;margin-top:16px">
+              <sc-for list="{{c.bars}}" as="b" hint-placeholder-count="3">
+                <div><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px"><b>{{b.l}}</b><span style="color:#5B636E">{{b.v}}</span></div>
+                  <div style="display:flex;height:26px;border-radius:8px;overflow:hidden;gap:2px">
+                    <sc-for list="{{b.segs}}" as="g" hint-placeholder-count="5"><button type="button" style="{{g.st}}" onClick="{{g.go}}" aria-label="{{g.a}}"></button></sc-for>
+                  </div></div>
+              </sc-for>
+            </div>
+            <div class="ley"><span><i style="background:#11734B"></i>Completo</span><span><i style="background:#6FBF97"></i>Firmado</span><span><i style="background:#2B5CFF"></i>Por firmar</span><span><i style="background:#9DB2FF"></i>En revisión</span><span><i style="background:#E0A93B"></i>Faltan documentos</span></div>
+          </sc-if>
+
+          <sc-if value="{{c.esHueco}}" hint-placeholder-val="{{false}}">
+            <div style="flex:1;min-height:170px;margin-top:16px;border:1.5px dashed #C9CED6;border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:18px;text-align:center">
+              <b style="font-size:14px">Por armar</b><span style="font-size:12px;color:#5B636E;max-width:30ch">{{c.h}}</span>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{c.ley}}" hint-placeholder-val="{{false}}"><div class="ley"><span><i style="background:#111315"></i>{{c.l1}}</span><span><i style="background:#E0A93B"></i>{{c.l2}}</span></div></sc-if>
+          <sc-if value="{{c.tip}}" hint-placeholder-val="{{false}}"><div class="tip">{{c.tip}}</div></sc-if>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <sc-if value="{{hayDet}}" hint-placeholder-val="{{false}}">
+    <div style="position:absolute;inset:0;background:rgba(17,19,21,.38)" onClick="{{cerrar}}"></div>
+    <aside role="dialog" aria-modal="true" aria-labelledby="tDet" style="position:absolute;top:0;right:0;bottom:0;width:460px;max-width:100%;background:#FFFFFF;box-shadow:0 18px 44px rgba(17,19,21,.16);display:flex;flex-direction:column">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:22px 24px;border-bottom:1px solid #E3E6EA">
+        <div><span style="font-size:12px;font-weight:700;color:#5B636E">{{det.mod}}</span><h2 id="tDet" style="margin:2px 0 0;font-size:20px;font-weight:800">{{det.t}}</h2><p style="margin:2px 0 0;font-size:13px;color:#5B636E">{{det.n}}</p></div>
+        <button type="button" onClick="{{cerrar}}" aria-label="Cerrar" style="flex:none;width:44px;height:44px;border-radius:50%;background:#F5F6F7;display:grid;place-items:center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+      </div>
+      <div style="flex:1;overflow:auto;padding:8px 24px">
+        <sc-for list="{{det.filas}}" as="f" hint-placeholder-count="6">
+          <div class="fila"><div><b style="font-size:14px">{{f.n}}</b><div style="font-size:12px;color:#5B636E">{{f.s}}</div></div><span class="{{f.cls}}">{{f.e}}</span></div>
+        </sc-for>
+        <p style="font-size:12px;color:#5B636E;margin:12px 0">Se muestran los primeros. La lista completa está en el módulo.</p>
+      </div>
+      <div style="display:flex;gap:10px;padding:16px 24px;border-top:1px solid #E3E6EA"><button class="btn2" type="button">Exportar a Excel</button><button class="btn" type="button" style="flex:1">Ver todos en la lista</button></div>
+    </aside>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1366,"height":1500}}'>
+class Component extends DCLogic {
+  constructor(p){ super(p); this.state = { mod:0, det:null }; }
+  renderVals() {
+    const s = this.state, set = (o) => this.setState(o);
+    const nombres = ['Panadería Los Olivos, C.A.','Ferretería El Tornillo','Clínica Dental Sonrisa','Comercial Puerto Nuevo','Talleres San Rafael','Inversiones Lago Azul','Servicios Médicos Zulia','Distribuidora Norte 2020'];
+    const subs = ['Líder A · RIF J-41234567-1','Líder B · RIF J-40987654-3','Líder A · RIF J-50123498-0','Líder C · RIF J-30111222-9','Líder D · RIF J-29555444-1','Líder B · RIF J-29876543-2'];
+    const abrir = (mod, t, n, e, cls) => () => set({ det: { mod, t, n: n + (n === 1 ? ' registro' : ' registros'), filas: nombres.slice(0, Math.min(6, Math.max(1, n))).map((x,i) => ({ n:x, s:subs[i % subs.length], e, cls:'chip ' + (cls||'neu') })) } });
+    const tono = { w:'background:#FBF1DC', b:'background:#FCEDEB' };
+    const N = (mod,v,l,sub,t,e) => ({ v, l, s:sub, bg: tono[t]||'', go: abrir(mod, l, parseInt(String(v).replace('.',''),10)||0, e||l, t==='b'?'bad':t==='w'?'warn':'neu') });
+    const ejes = (mx) => [0,1,2,3].map(i => ({ l: Math.round(mx*i/3).toLocaleString('es-VE'), st: 'bottom:calc(22px + ' + (i/3*100) + '% - ' + (i/3*22) + 'px)' }));
+    const V = (mod,t,sub,data,mx,o) => { o = o||{}; const H = 170;
+      return { t, s:sub, esV:true, esH:false, esS:false, esHueco:false, ley:!!o.l1, l1:o.l1, l2:o.l2, box:'', tip:o.tip||'', badge:o.badge||'', bcls:'chip '+(o.bc||'neu'), bw:o.bw||'44px', grid: ejes(mx),
+        bars: data.map(([l,a,b]) => ({ l, v:(a+(b||0)).toLocaleString('es-VE'), a:l, go: abrir(mod, t + ' · ' + l, a+(b||0), l, 'neu'),
+          s1:'display:block;border-radius:' + (b ? '0 0 6px 6px' : '6px 6px 6px 6px') + ';background:' + (o.c1||'#111315') + ';height:' + Math.max(3,Math.round(a/mx*H)) + 'px',
+          s2:'display:block;border-radius:6px 6px 0 0;background:#E0A93B;height:' + Math.round((b||0)/mx*H) + 'px' })) }; };
+    const Hh = (mod,t,sub,data,mx,o) => { o = o||{};
+      return { t, s:sub, esV:false, esH:true, esS:false, esHueco:false, ley:false, box:'', tip:o.tip||'', badge:o.badge||'', bcls:'chip '+(o.bc||'neu'),
+        bars: data.map(([l,v,c]) => ({ l, v, go: abrir(mod, l, v, l, 'neu'), s1:'display:block;height:14px;border-radius:7px;width:' + (v ? Math.max(3,Math.round(v/mx*100)) : 0) + '%;background:' + (c||'#111315') })) }; };
+    const col = ['#11734B','#6FBF97','#2B5CFF','#9DB2FF','#E0A93B'], nom = ['Completo','Firmado','Por firmar','En revisión','Faltan documentos'];
+    const S = (mod,t,sub,data) => ({ t, s:sub, esV:false, esH:false, esS:true, esHueco:false, ley:false, box:'', tip:'Toca un tramo para ver esos clientes.', badge:'',
+      bars: data.map(([l,v]) => { const tt = v.reduce((a,b)=>a+b,0); return { l, v: tt.toLocaleString('es-VE') + ' · ' + Math.round(v[0]/tt*100) + ' % completos',
+        segs: v.map((x,i) => ({ a: nom[i] + ': ' + x, go: abrir(mod, l + ' · ' + nom[i], x, nom[i], i===4?'warn':i===0?'ok':'neu'), st:'flex:' + x + ' 1 0;min-width:6px;height:100%;background:' + col[i] })) }; }) });
+    const Hu = (t,sub,h) => ({ t, s:sub, h, esV:false, esH:false, esS:false, esHueco:true, ley:false, box:'', tip:'', badge:'' });
+    const G2 = 'display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:16px';
+    const G3 = 'display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr) minmax(0,1fr);gap:16px';
+    const mods = [
+      { t:'Comisiones', grid:G2,
+        nums:[N('Comisiones','62','En el corte','78 en septiembre'),N('Comisiones','24','Sin pago','Bloquean la comisión','w','Sin pago'),N('Comisiones','52','Sin instalar','47 pasan de 15 días','w','Orden abierta'),N('Comisiones','1 día','De orden a instalación','Mediana del corte')],
+        charts:[ V('Comisiones','Instaladas por corte','Con pago confirmado y sin pago',[['agosto',22,1],['septiembre',63,15],['octubre',38,24]],80,{l1:'Con pago',l2:'Sin pago',bw:'72px',badge:'Octubre: 39 % sin pago',bc:'warn'}),
+                 V('Comisiones','Corte de octubre por líder','Lo que cada uno ya cobra y lo que le falta',[['Sin líder',6,5],['Líder A',10,0],['Líder B',4,4],['Líder C',5,1],['Líder D',2,4],['Líder E',4,2],['Líder F',0,3]],12,{l1:'Con pago',l2:'Sin pago',bw:'36px',badge:'11 sin líder',bc:'warn'}),
+                 Hh('Comisiones','Sin instalar por antigüedad','Órdenes de Odoo abiertas',[['Menos de 15 días',5,'#111315'],['15 a 60 días',14,'#E0A93B'],['60 a 180 días',13,'#C0271B'],['Más de 180 días',20,'#C0271B']],20,{tip:'En el detalle, cada orden tiene "Subir documentos".',badge:'25 sin cliente',bc:'warn'}),
+                 Hu('Monto del corte','En bolívares y dólares, por líder','Se llena cuando la app calcule el monto con las tarifas de comisión.') ] },
+      { t:'Revisión (Legal)', grid:G2,
+        nums:[N('Revisión','1.524','Por revisar','La cola más grande','b'),N('Revisión','757','Esperan más de 90 días','','b','Más de 90 días'),N('Revisión','83','Llegaron esta semana',''),N('Revisión','18','Cerradas','Últimos 30 días')],
+        charts:[ Hh('Revisión','Cola por antigüedad','Desde que se subió el documento',[['Menos de 7 días',83,'#111315'],['7 a 30 días',466,'#E0A93B'],['30 a 90 días',218,'#C0271B'],['Más de 90 días',757,'#C0271B']],757,{badge:'Empezar por los más viejos',bc:'bad'}),
+                 Hh('Revisión','Cola por documento','Qué es lo que más espera',[['Cédula',371],['RIF personal',314],['RIF empresa',290],['Acta constitutiva',276],['Acta de asamblea',204],['Otro',45]],371,{tip:'Toca uno para revisar solo ese tipo.'}),
+                 V('Revisión','Revisados por semana','Documentos aprobados',[['14/09',86],['21/09',0],['28/09',0],['05/10',1045],['12/10',220],['19/10',55]],1050,{badge:'Pico: carga de la app vieja'}),
+                 S('Revisión','Estatus legal por segmento','Dónde está cada expediente',[['PYME',[1526,50,166,133,271]],['Dedicados',[39,19,7,5,16]],['ISP',[7,17,2,3,1]]]) ] },
+      { t:'Migraciones', grid:G2,
+        nums:[N('Migraciones','45','Confirmadas','Desde julio'),N('Migraciones','15','En octubre','19 en septiembre'),N('Migraciones','1','Por revisar','','w'),N('Migraciones','0','Por emitir','')],
+        charts:[ V('Migraciones','Confirmadas por mes','Cambios a PYME',[['julio',1],['agosto',10],['septiembre',19],['octubre',15]],20,{bw:'64px'}),
+                 Hh('Migraciones','Confirmadas por líder','Desde julio',[['Líder A',9],['Líder B',7],['Líder C',5],['Líder D',5],['Líder E',4],['Líder F',4]],9),
+                 Hu('Cambios a residencial','En negativo, por líder','Se mide cuando se guarden los cambios de categoría de cada carga del TAD.') ] },
+      { t:'Factibilidad', grid:G2,
+        nums:[N('Factibilidad','14','Consultas','Octubre'),N('Factibilidad','9','Con red','64 %'),N('Factibilidad','4','Sin red',''),N('Factibilidad','1','Excepción','')],
+        charts:[ Hh('Factibilidad','Resultado de las consultas','Octubre',[['Con red',9,'#11734B'],['Sin red',4,'#B7BDC6'],['Excepción',1,'#E0A93B']],9,{tip:'Toca un resultado para ver las consultas.'}),
+                 V('Factibilidad','Por tipo de cliente','Con red y sin red',[['PYME',9,3],['Dedicado',0,2]],12,{l1:'Con red',l2:'Sin red o excepción',bw:'72px'}),
+                 Hu('Terminan en venta','Consultas con red que se instalaron','Cruce de la consulta con la instalación del TAD.') ] },
+      { t:'Dedicados', grid:G2,
+        nums:[N('Dedicados','116','Activos','92 corporativos · 24 ISP'),N('Dedicados','571','Postes VGT','En 17 contratos'),N('Dedicados','8','Deben pólizas VGT','Faltan las 2','w','Faltan pólizas'),N('Dedicados','140','Contratos sin vencimiento','Todos','w','Sin vencimiento')],
+        charts:[ Hh('Dedicados','Contratos por tipo','Servicio, VGT y colocation',[['Servicio',117],['VGT',17,'#2B5CFF'],['Colocation',6,'#6FBF97']],117,{badge:'140 sin fecha de vencimiento',bc:'warn'}),
+                 S('Dedicados','Estatus legal','Por tipo de dedicado',[['Corporativos',[39,19,7,5,16]],['ISP',[7,17,2,3,1]]]),
+                 Hh('Dedicados','Activos por tipo','Corporativos e ISP',[['Corporativos',92],['ISP',24]],92),
+                 Hu('Ingresos de dedicados','Facturación, cobranza y por cliente','Espacio reservado para ingresos y datos de dedicados.') ] },
+      { t:'Aliados', grid:G2,
+        nums:[N('Aliados','45','Aliados','Registrados'),N('Aliados','0','Solicitudes',''),N('Aliados','0','Instaladas',''),N('Aliados','0','Pagadas','')],
+        charts:[ Hh('Aliados','Embudo','De solicitud a pago',[['Solicitudes',0],['Aprobadas',0],['Instaladas',0],['Pagadas',0]],1,{tip:'Se llena con el piloto.'}),
+                 Hu('Aliados más activos','Por solicitudes instaladas','Se llena con las primeras solicitudes.') ] }
+    ];
+    const m = mods[s.mod];
+    return {
+      m, tabs: mods.map((x,i) => ({ l: x.t.split(' ')[0], cls: 'tab' + (i===s.mod ? ' on' : ''), pick: () => set({ mod:i, det:null }) })),
+      hayDet: !!s.det, det: s.det || { mod:'', t:'', n:'', filas:[] }, cerrar: () => set({ det:null })
+    };
+  }
+}
+</script>
+</body>
+</html>

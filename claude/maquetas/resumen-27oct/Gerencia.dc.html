@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Inicio de gerencia</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap">
+<style>
+body{margin:0;background:#FFFFFF;color:#111315;font-family:"Inter",system-ui,sans-serif;font-size:15px;line-height:1.45}
+a{color:#2B5CFF}a:hover{color:#1B3A9E}
+button{font:inherit;color:inherit;border:0;background:none;padding:0}
+.t{display:flex;flex-direction:column;gap:6px;padding:20px;border-radius:22px;background:#F5F6F7;text-align:left;min-width:0}
+.t h2{margin:0;font-size:14px;font-weight:700;color:#5B636E}
+.t .v{font-size:34px;font-weight:800;letter-spacing:-.02em;line-height:1.05}
+.t .s{font-size:13px;color:#5B636E}
+.ir{margin-top:auto;font-size:13px;font-weight:700}
+.chip{display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap}
+.ok{background:#E7F5EE;color:#11734B}.warn{background:#FBF1DC;color:#8A5A00}.bad{background:#FCEDEB;color:#A32117}.neu{background:#ECEEF1;color:#5B636E}
+.sel{height:40px;padding:0 14px;border:1.5px solid #E3E6EA;border-radius:999px;font:inherit;font-size:13px;background:#FFFFFF}
+</style>
+</helmet>
+<div style="background:#FFFFFF">
+  <header style="display:flex;align-items:center;justify-content:space-between;padding:14px 32px;border-bottom:1px solid #E3E6EA">
+    <div style="display:flex;align-items:center;gap:12px"><b style="font-size:18px;letter-spacing:.06em">AIRTEK</b><span style="padding-left:12px;border-left:1.5px solid #E3E6EA;font-weight:600;color:#5B636E;font-size:14px">Empresas</span></div>
+    <span class="chip neu">Gerencia · solo lectura</span>
+  </header>
+  <main style="max-width:1200px;margin:0 auto;padding:28px 32px 64px;display:flex;flex-direction:column;gap:18px">
+    <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:14px">
+      <div><h1 style="margin:0;font-size:28px;font-weight:800;letter-spacing:-.02em">Buenos días</h1><p style="margin:4px 0 0;color:#5B636E;font-size:14px">Octubre 2026 al día 27. Toca una tarjeta para ver su resumen.</p></div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <div><label for="per" style="display:block;font-size:12px;font-weight:600;margin-bottom:4px">Período</label><select id="per" class="sel"><option>Octubre 2026</option><option>Corte de octubre</option></select></div>
+        <div><label for="cmp" style="display:block;font-size:12px;font-weight:600;margin-bottom:4px">Comparar con</label><select id="cmp" class="sel"><option>Octubre 2025</option><option>Septiembre 2026</option><option>Promedio de 3 meses</option></select></div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px">
+      <button class="t" type="button" style="grid-column:span 2;grid-row:span 2;background:#111315;color:#fff">
+        <h2 style="color:#B7BDC6">Instalaciones PYME</h2>
+        <div style="display:flex;align-items:baseline;gap:12px"><span class="v" style="font-size:52px">94</span><span class="chip ok">+19 % vs oct 2025</span></div>
+        <span class="s" style="color:#B7BDC6">92 siguen habilitadas · 99 en septiembre</span>
+        <div style="display:flex;gap:6px;align-items:flex-end;height:150px;margin-top:12px">
+          <sc-for list="{{barras}}" as="b" hint-placeholder-count="12"><span style="{{b}}"></span></sc-for>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:11px;color:#B7BDC6"><span>nov 25</span><span>oct 26</span></div>
+        <span class="ir" style="color:#fff">Ver resumen de Clientes</span>
+      </button>
+      <button class="t" type="button"><h2>En el año</h2><span class="v">880</span><span class="s">Ene a oct. En 2025 fueron 502.</span><span class="chip ok" style="align-self:flex-start">+75 %</span><span class="ir">Ver año contra año</span></button>
+      <button class="t" type="button" style="background:#FBF1DC"><h2 style="color:#8A5A00">Órdenes sin instalar</h2><span class="v">52</span><span class="s" style="color:#6B4A00">47 pasan de 15 días</span><span class="ir">Ver órdenes</span></button>
+      <button class="t" type="button"><h2>Comisiones del corte</h2><span class="v">62</span><span class="s">38 con pago confirmado, 24 sin pago</span><span class="ir">Ver Comisiones</span></button>
+      <button class="t" type="button"><h2>Expedientes completos</h2><span class="v">69 %</span><span class="s">1.572 de 2.262 clientes</span><span class="ir">Ver Clientes</span></button>
+      <button class="t" type="button"><h2>Migraciones a PYME</h2><span class="v">45</span><span class="s">Confirmadas · 1 por revisar</span><span class="ir">Ver Migraciones</span></button>
+      <button class="t" type="button"><h2>Dedicados</h2><span class="v">116</span><span class="s">92 corporativos · 24 ISP · 8 deben pólizas VGT</span><span class="ir">Ver Dedicados</span></button>
+      <button class="t" type="button" style="grid-column:span 2"><h2>Calidad de la venta</h2><div style="display:flex;align-items:baseline;gap:10px"><span class="v">90 %</span><span class="s">de lo instalado en 12 meses sigue habilitado</span></div>
+        <div style="display:flex;gap:5px;align-items:flex-end;height:70px;margin-top:6px"><sc-for list="{{cal}}" as="k" hint-placeholder-count="12"><span style="{{k}}"></span></sc-for></div>
+        <span class="s">Febrero y abril en 77 %. Churn exacto cuando se guarde el historial del TAD.</span></button>
+      <button class="t" type="button"><h2>Estatus legal</h2><span class="v">71 %</span><span class="s">PYME completos. Dedicados 45 %, ISP 23 %</span><span class="ir">Ver por segmento</span></button>
+      <div class="t" style="background:#FFFFFF;border:1.5px dashed #C9CED6"><h2>Ingresos de dedicados</h2><span style="font-size:15px;font-weight:700">Por armar</span><span class="s">Espacio reservado</span></div>
+      <div class="t" style="grid-column:span 2;background:#FFFFFF;border:1px solid #E3E6EA">
+        <h2>Tus avisos</h2>
+        <div style="display:flex;flex-direction:column;gap:8px;font-size:14px">
+          <div style="display:flex;justify-content:space-between;gap:10px"><span>Resumen semanal</span><span style="color:#5B636E">Lunes 8:00</span></div>
+          <div style="display:flex;justify-content:space-between;gap:10px"><span>Cierre de corte certificado</span><span style="color:#5B636E">Al cerrar</span></div>
+          <div style="display:flex;justify-content:space-between;gap:10px"><span>Un aliado pide un cliente</span><span style="color:#5B636E">Al momento</span></div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1366,"height":1240}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const v = [66,66,82,66,90,64,108,119,78,80,99,94];
+    const cal = [95,85,90,77,90,77,93,94,90,90,95,98].map(p => 'flex:1;border-radius:3px 3px 0 0;height:' + Math.round((p-60)/40*70) + 'px;background:' + (p < 80 ? '#E0A93B' : '#111315'));
+    return { cal, barras:v.map((n,i) => 'flex:1;border-radius:4px 4px 0 0;background:' + (i===11 ? '#FFFFFF' : '#5B636E') + ';height:' + Math.round(n/119*150) + 'px') };
+  }
+}
+</script>
+</body>
+</html>
