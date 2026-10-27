@@ -38,8 +38,14 @@ Los números de las maquetas son reales al 27/10 (los nombres son inventados): s
 - Inicio propio, solo lectura, filtros Período y Comparar con. Tarjetas: instalaciones (grande, 12 meses), en el año, órdenes sin instalar, comisiones del corte, expedientes completos, migraciones, dedicados, calidad de la venta ("siguen habilitadas"), estatus legal, hueco de ingresos de dedicados y la lista de sus avisos.
 - Cada tarjeta abre el Resumen de su módulo en solo lectura (sin botones de acción).
 
+## Parte C · Arreglos cortos de gestión (sin maqueta, con el estilo actual)
+1. **Instalaciones sin líder.** Atajo "Sin líder" en la Lista de Comisiones y acción "Asignar líder" para varias a la vez (elige el líder, confirma, bitácora por cada una). Hoy hay 57 de octubre sin líder y no comisionan.
+2. **Fechas de contratos de dedicados.** Ningún contrato tiene `vence_en` (está en `vence_texto` y `fecha_texto`). Convertir a fecha lo que se pueda leer sin dudas, con bitácora; lo que no, queda en la lista "Revisar fecha" de Dedicados para ponerla a mano.
+3. **Avisos activos.** Solo 2 teléfonos tienen avisos. En Inicio, una tarjeta "Activa los avisos en este teléfono" (con "Ahora no") para quien no tenga suscripción, y en Usuarios una columna "Avisos" (activos o no) para el administrador.
+4. **Guía de pruebas.** Actualizar `claude/guia-pruebas.md` con lo de este lote, cuenta por cuenta.
+
 ## Fuera de esta corrida
 Aviso de prueba (va con la presentación), módulo de solicitudes VGT, pantalla de correos, auditoría masiva de la IA, correo al cliente con constancia y tabla "Copiar datos" de Legal.
 
 ## Al terminar
-Pruebas de `pruebas/` más las nuevas (resumen, detalle, sin instalar, drawer con RIF nuevo, permisos del líder y de gerencia); capturas en 1366x768 y en iPhone; los números del Resumen contra los de las maquetas; una revisión independiente al final; subir `?v=`; commit y push a main; actualizar `claude/traspaso.md`. Sin nombres ni datos reales en el repo.
+Pruebas de `pruebas/` más las nuevas (resumen, detalle, sin instalar, drawer con RIF nuevo, asignar líder en lote, fechas de contratos, permisos del líder y de gerencia); capturas en 1366x768 y en iPhone; los números del Resumen contra los de las maquetas; una revisión independiente al final; subir `?v=`; commit y push a main; actualizar `claude/traspaso.md`. Sin nombres ni datos reales en el repo.
