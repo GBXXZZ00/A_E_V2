@@ -232,12 +232,14 @@
   async function excel(){
     const b = $('hojaRes').querySelector('[data-rs-excel]'); if(b){ b.disabled = true; b.textContent = 'Preparando…'; }
     try {
-      const x = await pedir(-1); if(!x) return;
+      const r = rango(D.periodo); const yo = D;
+      const x = await rpc('modulo_detalle', { p_modulo: yo.modulo, p_grafica: yo.g, p_valor: yo.x, p_pagina: -1, p_desde: r.desde, p_hasta: r.hasta }); if(yo !== D) return;
       const lineas = [['Nombre', 'Detalle', 'Estado'].map(celda).join(';')].concat((x.filas || []).map((f) => [f.n, f.s, f.e].map(celda).join(';')));
       const blob = new Blob(['﻿' + lineas.join('\r\n')], { type: 'text/csv;charset=utf-8' });
       const nombre = (NOMBRES[D.modulo] + ' ' + D.t).replace(/[^\wáéíóúñÁÉÍÓÚÑ ]+/g, ' ').trim().replace(/\s+/g, '_').slice(0, 80) + '.csv';
       if(window.Archivos) window.Archivos.descargar(blob, nombre);
-      toast('Listo: ' + num((x.filas || []).length) + ' filas en el Excel');
+      const n = (x.filas || []).length;
+      toast(n < (x.total || 0) ? 'El Excel trae las primeras ' + num(n) + ' de ' + num(x.total) + ' filas. Para el resto, usa Ver todos en la lista' : 'Listo: ' + num(n) + ' filas en el Excel', n < (x.total || 0) ? 'error' : undefined);
     } catch (e) { toast('No se pudo exportar. ' + e.message, 'error'); }
     finally { const b2 = $('hojaRes') && $('hojaRes').querySelector('[data-rs-excel]'); if(b2){ b2.disabled = false; b2.textContent = 'Exportar a Excel'; } }
   }

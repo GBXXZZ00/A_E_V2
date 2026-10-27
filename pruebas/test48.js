@@ -14,7 +14,7 @@ const { ok, cerrar } = marcador();
     // El "servidor real": cualquier llamada que llegue aquí es una falla
     const reales = []; await ctx.route('**/*.supabase.co/**', (r) => { reales.push(r.request().url()); return r.fulfill({ status: 500, body: '{}' }); });
     await ctx.route('https://cdn.jsdelivr.net/npm/chart.js@4.4.1/**', (r) => r.fulfill({ status: 200, contentType: 'application/javascript', headers: { 'access-control-allow-origin': '*' }, body: fs.readFileSync(__dirname + '/vendor/chart/chart.umd.min.js') }));
-    const p = await ctx.newPage(); p.on('pageerror', (e) => errores.push(e.message));
+    const p = await ctx.newPage(); p.on('pageerror', (e) => { if(!/Transition was aborted because of invalid state/.test(e.message)) errores.push(e.message); });   // aviso de Chromium al encadenar navegaciones, no es de la app
     const pc = nombre === 'pc';
     const entrarComo = async (u, clave) => {
       // Como un teléfono que entra con otra cuenta: se olvida el usuario recordado, pero se queda el mundo de práctica

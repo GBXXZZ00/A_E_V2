@@ -2,7 +2,9 @@
 // con motivo y bitácora; la fila dice "Movida a mano"; nunca desde ni hacia un corte cerrado; el líder no puede.
 const { chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar, plegables } = require('./simulador');
 const { ok, cerrar } = marcador();
-const { RPC } = require('./mundo');
+const { RPC, corte } = require('./mundo');
+// Lote 27/10: con un día fijo el corte en curso sigue abierto pasado su fin (es el caso de esta prueba: dos cortes abiertos)
+const hoyReal = new Date(Date.now() - 4 * 3600000).toISOString().slice(0, 10); corte.fijarHoy(hoyReal);
 const llamo = (m, f) => m.llamadas.filter((l) => l[1] === f);
 const cerrarHojas = async (p) => { for(let i = 0; i < 4 && await p.evaluate(() => !!window.Comun.hojaAbierta()); i++){ await p.keyboard.press('Escape'); await p.waitForTimeout(260); } };
 

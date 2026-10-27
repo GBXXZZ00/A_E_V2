@@ -34,7 +34,7 @@
   // Lote 27/10: quién tiene los avisos activos en algún equipo (solo lo ve el administrador)
   let AV = null;
   const avisoChip = (u) => !AV ? '' : AV[u.id] ? '<span class="chip verde">Activos' + (AV[u.id].n > 1 ? ' (' + AV[u.id].n + ')' : '') + '</span>' : '<span class="chip gris">Sin activar</span>';
-  async function cargarAvisos(){ try { AV = await rpc('avisos_activos', {}); pintar(); } catch (e) { AV = null; } }
+  async function cargarAvisos(){ try { AV = await rpc('avisos_activos', {}); pintar(); } catch (e) { AV = null; toast('No se pudo ver quién tiene los avisos activos. ' + e.message, 'error'); } }
   function pintar(){
     const activos = usuarios.filter((u) => u.activo).length;
     $('resumen').textContent = usuarios.length ? activos + ' con acceso' + (usuarios.length > activos ? ', ' + (usuarios.length - activos) + ' sin acceso' : '') : '';

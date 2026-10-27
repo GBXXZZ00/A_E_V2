@@ -6,14 +6,14 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 
 const db = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!, { auth: { persistSession: false, autoRefreshToken: false } });
 const DEPOSITO = "copias";
-// tabla: columna para ordenar las páginas
+// tabla: columnas para ordenar las páginas (juntas son únicas, así ninguna fila se repite ni se pierde entre páginas)
 const TABLAS: Record<string, string> = {
-  clientes: "id", servicios: "id", servicio_estados: "id", representantes: "id", documentos: "id", documento_archivos: "documento_id", archivos: "id",
+  clientes: "id", servicios: "id", servicio_estados: "id", representantes: "id", documentos: "id", documento_archivos: "documento_id,archivo_id", archivos: "id",
   hilo: "id", bitacora: "id", ordenes_odoo: "id", instalaciones: "id", cortes_certificados: "corte", cambios: "id",
   dedicados: "cliente_id", dedicado_contratos: "id", dedicado_enlaces: "id", dedicado_contactos: "id",
   consultas_fact: "id", aliados: "id", aliado_solicitudes: "id", aliado_referidos: "id", aliado_hilo: "id",
-  revisiones: "id", revision_marcas: "documento_id", ia_corridas: "id", ia_marcas: "corrida_id", ia_lecturas: "archivo_id",
-  cliente_gestion: "cliente_id", gestiones: "id", gestion_clientes: "gestion_id", gestion_responsables: "gestion_id", gestion_historial: "id",
+  revisiones: "id", revision_marcas: "documento_id", ia_corridas: "id", ia_marcas: "corrida_id,documento_id", ia_lecturas: "archivo_id,version_lector",
+  cliente_gestion: "cliente_id", gestiones: "id", gestion_clientes: "gestion_id,cliente_id", gestion_responsables: "gestion_id,perfil_id", gestion_historial: "id",
   envios: "id", cargas: "id",
 };
 // Columnas que nunca salen de la base
@@ -27,7 +27,9 @@ async function gzip(texto: string) {
 async function copiar(dia: string, tabla: string, orden: string, columnas = "*") {
   const filas: string[] = [];
   for (let i = 0; ; i += 1000) {
-    const { data, error } = await db.from(tabla).select(columnas).order(orden, { ascending: true }).range(i, i + 999);
+    let q = db.from(tabla).select(columnas);
+    for (const c of orden.split(",")) q = q.order(c, { ascending: true });
+    const { data, error } = await q.range(i, i + 999);
     if (error) throw new Error(tabla + ": " + error.message);
     for (const f of data || []) filas.push(JSON.stringify(f));
     if (!data || data.length < 1000) break;
@@ -44,8 +46,10 @@ async function trabajar() {
     try { res[t] = await copiar(dia, t, o); } catch (e) { res[t] = "error: " + (e as Error).message; fallas++; }
   }
   try { res.perfiles = await copiar(dia, "perfiles", "id", PERFIL); } catch (e) { res.perfiles = "error: " + (e as Error).message; fallas++; }
-  await db.storage.from(DEPOSITO).upload(dia + "/indice.json", new TextEncoder().encode(JSON.stringify({ dia, tablas: res }, null, 1)), { contentType: "application/json", upsert: true });
-  await db.from("bitacora").insert({ usuario_id: null, accion: "copia_semanal", tabla: "copias", registro_id: dia, despues: { tablas: Object.keys(res).length, fallas } });
+  const { error: ei } = await db.storage.from(DEPOSITO).upload(dia + "/indice.json", new TextEncoder().encode(JSON.stringify({ dia, tablas: res }, null, 1)), { contentType: "application/json", upsert: true });
+  if (ei) { console.error("indice", ei.message); fallas++; }
+  const { error: eb } = await db.from("bitacora").insert({ usuario_id: null, accion: "copia_semanal", tabla: "copias", registro_id: dia, despues: { tablas: Object.keys(res).length, fallas } });
+  if (eb) console.error("bitacora", eb.message);
 }
 
 Deno.serve(async (req: Request) => {

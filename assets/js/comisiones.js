@@ -220,7 +220,7 @@
   // ---------- Pestaña Por instalar: órdenes de Odoo abiertas sin instalación, con su reloj ----------
   const conInstalar = () => !!yo && ['admin', 'analista', 'lider'].indexOf(yo.rol) >= 0;
   function pintarVistas(){
-    if(!conInstalar()){ $('vistas').innerHTML = ''; return; }
+    if(!conInstalar()){ $('vistas').innerHTML = ''; vista = 'corte'; return; }
     const rojas = PI ? vigentes(PI.filas).filter((o) => o.color === 'rojo').length : 0;
     const vs = [['corte', 'Corte'], ['instalar', 'Por instalar'], ['sin_instalar', 'Sin instalar']].concat(['admin', 'analista'].indexOf(yo.rol) >= 0 ? [['sin_lider', 'Sin líder']] : []);
     if(vs.every((x) => x[0] !== vista)) vista = 'corte';
@@ -975,6 +975,6 @@
     if(window.Resumen && p.rol !== 'abogado') window.Resumen.enModulo({ modulo: 'comisiones', yo: p });   // lote 27/10
     leerUrl(); $('busca').value = busca; pintarFiltros(); pintarVistas();
     cargar(); if(conInstalar()){ cargarInstalar(); cargarPorDecidir(); }
-    if(vista === 'sin_instalar' || vista === 'sin_lider') extra();
+    if((vista === 'sin_instalar' || vista === 'sin_lider') && conInstalar()) extra();
   }, (p) => { yo = p; });
 })();
