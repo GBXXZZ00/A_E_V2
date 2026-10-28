@@ -40,3 +40,11 @@ Le encanta en general. La hoja (drawer) de comisión queda tal cual.
 - nuevo · media: suspendidos antes de 60 días (churn de infancia) por líder en Comisiones; suspendidos en general van en Clientes.
 - nuevo · media: competencia del mes: ranking de instalaciones del corte por líder, podio y "Líder del mes", visible para los líderes (por confirmar qué ven).
 - duda · IP: "Falta la IP" no depende de documentos: la IP viene de un archivo que aún no se carga; hoy se escribe a mano.
+- Decisiones del administrador (27/10, noche):
+  - Órdenes: prioridad a las del mes que pasan de 24 horas (reloj de 8 a. m. a 10 p. m., ya acordado); notificación al líder en cuanto pasan 24 horas (hoy el aviso es a los 15 días). Las de meses anteriores van como "viejas", aparte.
+  - Las pestañas actuales (Corte / Sin instalar / Sin líder) son lo que más confunde: rehacerlas.
+  - Ranking: los líderes ven el ranking completo y debe verse bien.
+  - Detalle de las gráficas: quiere verlo en maqueta; la lista actual se ve feísima y rara.
+  - Comisiones se organiza por equipos, en pestañas grandes con subgrupos por persona: Ventas corporativas (líderes), Canales de atención (analistas y coordinadora, un solo ranking de equipo; se ayudan con recepción de documentos y pago) y Aliados comerciales (cada aliado y su ranking, y comparados como grupo). Sirve para su gestión y la de los analistas.
+  - Reasignación de cartera: más adelante.
+  - Por definir: cómo se reconoce una venta de Canales de atención en los datos.
