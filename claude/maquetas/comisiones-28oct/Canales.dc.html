@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Comisiones, Canales de atención</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#F5F6F7;font-family:Inter,system-ui,sans-serif;color:#111315}
+*{box-sizing:border-box}
+.app{display:flex;flex-wrap:wrap;min-height:1080px}
+.side{flex:0 0 220px;background:#fff;border-right:1px solid #E3E6EA;padding:22px 14px;display:flex;flex-direction:column;gap:4px}
+.logo{font-weight:700;font-size:18px;padding:0 10px 18px}.logo span{color:#5B636E;font-weight:500}
+.nav{padding:10px 12px;border-radius:12px;font-size:14px;color:#5B636E;font-weight:500;text-decoration:none}
+.nav.on{background:#E8EEFF;color:#1F45C4;font-weight:600}
+.main{flex:999 1 700px;min-width:0;padding:26px 34px;display:flex;flex-direction:column;gap:16px}
+.top{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+h1{margin:0;font-size:26px;font-weight:700}
+.sw{display:flex;background:#ECEEF1;border-radius:999px;padding:3px}
+.sw b{padding:7px 16px;border-radius:999px;font-size:13px;font-weight:600;color:#5B636E}
+.sw b.on{background:#fff;color:#111315;box-shadow:0 1px 3px rgba(17,19,21,.12)}
+.corte{margin-left:auto;display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #E3E6EA;border-radius:14px;padding:8px 14px;font-size:13px;font-family:inherit}
+.corte strong{font-size:14px}.muted{color:#5B636E}
+.rol{font-size:12px;font-weight:600;background:#F0EBFA;color:#5B3AA6;border-radius:999px;padding:5px 11px}
+.teams{display:flex;gap:6px;border-bottom:1px solid #E3E6EA;flex-wrap:wrap}
+.team{padding:12px 18px;font-size:15px;font-weight:600;color:#5B636E;border:0;border-bottom:3px solid transparent;display:flex;gap:8px;align-items:center;background:none;font-family:inherit}
+.team.on{color:#111315;border-color:#2B5CFF}
+.cnt{background:#ECEEF1;border-radius:999px;font-size:12px;padding:2px 8px;color:#111315}
+.team.on .cnt{background:#2B5CFF;color:#fff}
+.nota{font-size:13px;color:#5B636E}
+.tiles{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
+.tile{background:#fff;border:1px solid #E3E6EA;border-radius:16px;padding:12px 16px;font-family:inherit;text-align:left}
+.tile .n{font-size:24px;font-weight:700}.tile .t{font-size:12px;color:#5B636E;font-weight:500}
+.tile.w .n{color:#754B00}.tile.r .n{color:#A32117}.tile.ok .n{color:#0F6642}
+.tile.hi{background:#FBF1DC;border-color:#F0DDB0}
+.grp{background:#fff;border:1px solid #E3E6EA;border-radius:18px;overflow:hidden}
+.gh{width:100%;display:flex;align-items:center;gap:12px;padding:14px 18px;background:#fff;border:0;font-family:inherit;text-align:left}
+.gh .chev{color:#5B636E;display:flex}
+.gh .av{width:34px;height:34px;border-radius:999px;background:#ECEEF1;font-weight:700;font-size:12px;display:flex;align-items:center;justify-content:center}
+.gh .nm{font-size:15px;font-weight:700}.gh .rl{font-size:12px;color:#5B636E;font-weight:500}
+.gh .stats{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
+.row{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,.8fr) minmax(0,1fr) minmax(0,1.5fr) minmax(0,1.4fr);gap:12px;align-items:center;padding:12px 18px}
+.row.hd{font-size:12px;color:#69717C;font-weight:600;background:#FAFAFB;border-top:1px solid #F0F1F3}
+.row+.row{border-top:1px solid #F0F1F3}
+.cn{font-weight:600;font-size:14px}.sub{font-size:12px;color:#5B636E;margin-top:2px}
+.st{display:flex;gap:6px;flex-wrap:wrap}
+.p{font-size:12px;font-weight:600;border-radius:999px;padding:4px 9px}
+.p.ok{background:#E7F5EE;color:#0F6642}.p.w{background:#FBF1DC;color:#754B00}.p.r{background:#FCEDEB;color:#A32117}.p.g{background:#ECEEF1;color:#3B424B}
+</style>
+</helmet>
+<div class="app">
+  <nav class="side" aria-label="Menú">
+    <div class="logo">airtek <span>Empresas</span></div>
+    <a class="nav" href="#">Inicio</a><a class="nav" href="#">Clientes</a><a class="nav on" href="#">Comisiones</a><a class="nav" href="#">Revisión</a><a class="nav" href="#">Migraciones</a>
+  </nav>
+  <main class="main">
+    <div class="top">
+      <h1>Comisiones</h1>
+      <div class="sw"><b class="on">Lista</b><b>Resumen</b></div>
+      <span class="rol">Canales de atención: ve lo mismo que el administrador</span>
+      <button class="corte"><span class="muted">Corte</span><strong>Noviembre</strong><span class="muted">faltan 22 días</span></button>
+    </div>
+    <div style="display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,.7fr);gap:12px">
+      <div class="tile" style="display:flex;gap:12px;align-items:center"><div class="n" style="font-size:28px">27</div><div><div style="font-weight:600">Instalaciones PYME</div><div class="t">4 comisionan</div></div></div>
+      <div class="tile" style="display:flex;gap:12px;align-items:center"><div class="n" style="font-size:28px">3</div><div><div style="font-weight:600">Cambios de categoría</div><div class="t">Del corte</div></div></div>
+      <div class="tile hi" style="display:flex;gap:12px;align-items:center"><div class="n" style="font-size:24px;color:#754B00">10</div><div><div style="font-weight:600">Cartas y proformas</div><div class="t">por enviar</div></div></div>
+    </div>
+    <div class="teams" role="tablist">
+      <button class="team">Ventas corporativas <span class="cnt">16</span></button>
+      <button class="team on">Canales de atención <span class="cnt">7</span></button>
+      <button class="team">Aliados comerciales <span class="cnt">4</span></button>
+    </div>
+    <div class="nota">Misma Lista que el administrador: todas las pestañas, agrupadas por dueño. Aquí, la pestaña Canales con sus usuarios. No tiene cerrar corte ni excepciones.</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <span class="p g" style="padding:7px 13px;font-size:13px;background:#111315;color:#fff">Todas 7</span><span class="p g" style="padding:7px 13px;font-size:13px">Comisionan 2</span><span class="p g" style="padding:7px 13px;font-size:13px">Falta legal 4</span><span class="p g" style="padding:7px 13px;font-size:13px">Sin pago 5</span><span class="p g" style="padding:7px 13px;font-size:13px">Del corte anterior 2</span>
+    </div>
+    <sc-for list="{{gente}}" as="g" hint-placeholder-count="5">
+      <div class="grp">
+        <button class="gh"><span class="chev" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="{{g.ch}}"/></svg></span><span class="av">{{g.i}}</span><span><span class="nm">{{g.n}}</span> <span class="rl">· {{g.r}}</span></span>
+          <span class="stats"><span class="p g">{{g.t}} instaladas</span><span class="p ok">{{g.c}} comisiona</span><span class="p w">{{g.l}} falta legal</span></span></button>
+        <sc-if value="{{g.abierto}}" hint-placeholder-val="{{false}}">
+          <div class="row hd"><div>Cliente</div><div>Instalada</div><div>Orden de Odoo</div><div>Qué falta</div><div>Carta y proforma</div></div>
+          <sc-for list="{{g.filas}}" as="f">
+            <div class="row">
+              <div><div class="cn">{{f.c}}</div><div class="sub">{{f.rif}}</div></div>
+              <div style="font-size:14px">{{f.f}}</div>
+              <div style="font-size:14px">{{f.o}}<div class="sub">Montada por Inés Cabrera</div></div>
+              <div class="st"><sc-for list="{{f.p}}" as="x"><span class="p {{x.k}}">{{x.t}}</span></sc-for></div>
+              <div><span class="p {{f.ek}}">{{f.e}}</span></div>
+            </div>
+          </sc-for>
+        </sc-if>
+      </div>
+    </sc-for>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1366,"height":1080}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const cerr = 'M9 6l6 6-6 6', abr = 'M6 9l6 6 6-6';
+    return {
+      gente: [
+        { i: 'IC', n: 'Inés Cabrera', r: 'Coordinadora', t: 2, c: 1, l: 1, ch: cerr, abierto: false, filas: [] },
+        { i: 'PL', n: 'Pedro Leal', r: 'Analista', t: 2, c: 1, l: 1, ch: abr, abierto: true, filas: [
+          { c: 'Bodegón La Esquina', rif: 'J-50112233-4', f: '23/10', o: 'ODO-3418', p: [{ k: 'ok', t: 'Comisiona' }], ek: 'ok', e: 'Enviada 24/10 por Pedro' },
+          { c: 'Estudio Jurídico Prieto', rif: 'J-40998811-2', f: '26/10', o: 'ODO-3445', p: [{ k: 'w', t: 'Falta acta de asamblea' }, { k: 'r', t: 'Debe instalación' }], ek: 'w', e: 'Por enviar · 1 día' }
+        ] },
+        { i: 'MG', n: 'Marta Gil', r: 'Analista', t: 1, c: 0, l: 1, ch: cerr, abierto: false, filas: [] },
+        { i: 'SV', n: 'Sofía Vera', r: 'Analista', t: 1, c: 0, l: 1, ch: cerr, abierto: false, filas: [] },
+        { i: 'TR', n: 'Tomás Rey', r: 'Analista', t: 1, c: 0, l: 0, ch: cerr, abierto: false, filas: [] }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

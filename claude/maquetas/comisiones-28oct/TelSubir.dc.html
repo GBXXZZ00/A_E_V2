@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Subir documentos en el teléfono</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;font-family:Inter,system-ui,sans-serif;color:#111315}
+*{box-sizing:border-box}
+.ph{width:390px;height:844px;background:#9B9EA3;display:flex;flex-direction:column;justify-content:flex-end;overflow:hidden}
+.sh{background:#fff;border-radius:22px 22px 0 0;height:800px;padding:10px 16px 18px;display:flex;flex-direction:column;gap:11px}
+.gr{width:40px;height:5px;border-radius:999px;background:#D5D8DD;align-self:center}
+.hd{display:flex;align-items:flex-start}
+h2{margin:0;font-size:18px}.s{font-size:12px;color:#5B636E;margin-top:3px}
+.x{margin-left:auto;width:44px;height:44px;border-radius:999px;border:1px solid #E3E6EA;background:#fff;font-size:18px;font-family:inherit;flex:0 0 44px}
+.ord{background:#F5F6F7;border-radius:12px;padding:10px 12px;font-size:13px}.ord b{display:block;font-size:14px}
+.grp{font-size:12px;font-weight:700;color:#5B636E}
+.li{display:flex;align-items:center;gap:10px;border:1px solid #E3E6EA;border-radius:12px;padding:10px 12px;font-size:14px;min-height:48px}
+.ic{width:22px;height:22px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex:0 0 22px}
+.li.ok .ic{background:#E7F5EE;color:#0F6642}.li.no .ic{background:#ECEEF1;color:#5B636E}
+.f{margin-left:auto;font-size:12px;color:#5B636E}
+.two{margin-left:auto;display:flex;gap:6px}
+.two button{font-size:12px;font-weight:600;color:#1F45C4;border:1px solid #D5DEFF;border-radius:999px;padding:7px 10px;background:#fff;font-family:inherit;min-height:36px}
+.pie{margin-top:auto;display:flex;flex-direction:column;gap:8px}
+.prog{font-size:12px;color:#5B636E}.prog b{color:#111315}
+.bt{border-radius:14px;padding:13px;font-size:15px;font-weight:600;font-family:inherit;border:0;background:#2B5CFF;color:#fff;min-height:50px}
+.bt.sec{background:#fff;color:#111315;border:1px solid #E3E6EA}
+</style>
+</helmet>
+<div class="ph">
+  <div class="sh" role="dialog" aria-label="Subir documentos">
+    <span class="gr" aria-hidden="true"></span>
+    <div class="hd"><div><h2>Bodegón Sur, C.A.</h2><div class="s">J-50112233-4 · cliente nuevo</div></div><button class="x" aria-label="Cerrar">×</button></div>
+    <div class="ord"><b>Sin orden de Odoo por ahora</b>Se une sola cuando aparezca · Buscar orden</div>
+    <div class="grp">Representante legal</div>
+    <div class="li ok"><span class="ic">✓</span>Teléfono y correo<span class="f">listo</span></div>
+    <div class="li ok"><span class="ic">✓</span>Cédula<span class="f">foto</span></div>
+    <div class="li no"><span class="ic">+</span>RIF personal<span class="two"><button>Foto</button><button>Archivo</button></span></div>
+    <div class="grp">Empresa</div>
+    <div class="li ok"><span class="ic">✓</span>RIF de la empresa<span class="f">pdf</span></div>
+    <div class="li no"><span class="ic">+</span>Acta constitutiva<span class="two"><button>Foto</button><button>Archivo</button></span></div>
+    <div class="li no"><span class="ic">+</span>Acta de asamblea<span class="two"><button>Foto</button><button>Archivo</button></span></div>
+    <div class="pie">
+      <div class="prog"><b>4 de 7 listos.</b> Lo de WhatsApp se sube con "Archivo".</div>
+      <button class="bt sec">Guardar lo que llevo</button>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

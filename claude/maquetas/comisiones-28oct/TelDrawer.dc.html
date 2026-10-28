@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Hoja de comisión en el teléfono</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;font-family:Inter,system-ui,sans-serif;color:#111315}
+*{box-sizing:border-box}
+.ph{width:390px;height:844px;background:#9B9EA3;display:flex;flex-direction:column;justify-content:flex-end;overflow:hidden}
+.sh{background:#fff;border-radius:22px 22px 0 0;height:780px;padding:10px 16px 22px;display:flex;flex-direction:column;gap:12px}
+.gr{width:40px;height:5px;border-radius:999px;background:#D5D8DD;align-self:center}
+.hd{display:flex;align-items:flex-start}
+h2{margin:0;font-size:19px}.s{font-size:12px;color:#5B636E;margin-top:3px}
+.x{margin-left:auto;width:44px;height:44px;border-radius:999px;border:1px solid #E3E6EA;background:#fff;font-size:18px;font-family:inherit;flex:0 0 44px}
+.ban{background:#E7F5EE;border:2px solid #8CCBAE;border-radius:16px;padding:12px 14px}
+.ban b{color:#0F6642;font-size:15px}.ban div{font-size:12px;color:#3B424B;margin-top:2px}
+.fold{display:flex;align-items:center;gap:10px;border:1px solid #E3E6EA;border-radius:14px;padding:13px 14px;font-size:14px;font-weight:600;background:#fff;font-family:inherit;width:100%;text-align:left;min-height:48px}
+.dot{width:10px;height:10px;border-radius:999px;background:#0F6642;flex:0 0 10px}
+.p{margin-left:auto;font-size:12px;font-weight:600;border-radius:999px;padding:4px 9px;background:#E7F5EE;color:#0F6642}
+.row2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:auto}
+.bt{border-radius:14px;padding:12px 8px;font-size:14px;font-weight:600;font-family:inherit;border:1px solid #E3E6EA;background:#fff;min-height:48px}
+</style>
+</helmet>
+<div class="ph">
+  <div class="sh" role="dialog" aria-label="Hoja de comisión">
+    <span class="gr" aria-hidden="true"></span>
+    <div class="hd"><div><h2>Inversiones La Ceiba, C.A.</h2><div class="s">Código 88412 · Rosa Paredes · instalada 22/10</div></div><button class="x" aria-label="Cerrar">×</button></div>
+    <div class="ban"><b>Comisiona en noviembre</b><div>Legal, pago y orden listos. Carta y proforma enviadas por Canales.</div></div>
+    <button class="fold"><span class="dot"></span>Legal<span class="p">Listo</span></button>
+    <button class="fold"><span class="dot"></span>Pago<span class="p">Listo</span></button>
+    <button class="fold"><span class="dot"></span>Carta y proforma<span class="p">Enviada por Canales</span></button>
+    <button class="fold"><span class="dot"></span>Orden de Odoo<span class="p">ODO-3412</span></button>
+    <button class="fold" style="justify-content:space-between">Hilo <span style="font-size:12px;color:#5B636E">8 registros</span></button>
+    <div class="row2"><button class="bt">Contactar a la líder</button><button class="bt">Más acciones</button></div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

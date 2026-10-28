@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Comisiones, detalle de una gráfica</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#F5F6F7;font-family:Inter,system-ui,sans-serif;color:#111315}
+*{box-sizing:border-box}
+.wrap{display:flex;flex-wrap:wrap;min-height:1460px;background:rgba(17,19,21,.28)}
+.fondo{flex:999 1 560px;min-width:0;padding:30px;display:flex;flex-direction:column;gap:14px;opacity:.55}
+.ph{background:#fff;border-radius:18px;height:90px}.ph.t{height:520px}
+.dr{flex:0 1 620px;background:#fff;box-shadow:0 18px 44px rgba(17,19,21,.14);border-radius:22px 0 0 22px;padding:26px 28px;display:flex;flex-direction:column;gap:18px}
+.hd{display:flex;align-items:flex-start;gap:12px}
+.ey{font-size:12px;font-weight:600;color:#5B636E}
+h2{margin:2px 0 0;font-size:22px;font-weight:700}
+.x{margin-left:auto;width:40px;height:40px;border-radius:999px;border:1px solid #E3E6EA;background:#fff;font-size:18px;font-family:inherit}
+.tot{display:flex;align-items:flex-end;gap:14px}
+.tot .v{font-size:52px;font-weight:700;line-height:1;color:#754B00}
+.tot .c{font-size:13px;color:#5B636E;padding-bottom:6px}.tot .c b{color:#0F6642}
+.sec{font-size:13px;font-weight:700;color:#3B424B}
+.pl{display:grid;grid-template-columns:130px minmax(0,1fr) 28px;gap:10px;align-items:center;font-size:13px;padding:3px 0;background:none;border:0;font-family:inherit;text-align:left;width:100%}
+.bar{height:16px;background:#F0F1F3;border-radius:6px;overflow:hidden;display:flex}
+.bw{background:#E3A93B;height:100%}
+.tools{display:flex;gap:8px;flex-wrap:wrap}
+.chip{border:1px solid #E3E6EA;background:#fff;border-radius:999px;padding:7px 12px;font-size:13px;font-weight:500;font-family:inherit}
+.chip.on{background:#111315;color:#fff;border-color:#111315}
+.buscar{display:flex;flex-direction:column;gap:4px}
+.buscar label{font-size:12px;font-weight:600;color:#5B636E}
+.buscar input{border:1px solid #E3E6EA;border-radius:12px;padding:10px 12px;font-size:14px;font-family:inherit}
+.grp{border:1px solid #E3E6EA;border-radius:16px;overflow:hidden}
+.gh{width:100%;display:flex;align-items:center;gap:10px;padding:12px 14px;background:#FAFAFB;border:0;font-family:inherit;text-align:left}
+.gh .nm{font-weight:700;font-size:14px}.gh .ct{margin-left:auto;font-size:12px;font-weight:600;background:#FBF1DC;color:#754B00;border-radius:999px;padding:3px 9px}
+.it{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;align-items:center;padding:11px 14px;border-top:1px solid #F0F1F3}
+.cn{font-weight:600;font-size:14px}.cm{font-size:12px;color:#5B636E}
+.p{font-size:12px;font-weight:600;border-radius:999px;padding:4px 9px}.p.w{background:#FBF1DC;color:#754B00}.p.r{background:#FCEDEB;color:#A32117}
+.pie{display:flex;gap:10px;border-top:1px solid #F0F1F3;padding-top:16px;margin-top:auto}
+.bt{flex:1;border-radius:14px;padding:13px;font-size:14px;font-weight:600;font-family:inherit}
+.bt.a{background:#fff;border:1px solid #E3E6EA}.bt.b{background:#2B5CFF;color:#fff;border:0}
+.nota{font-size:12px;color:#5B636E}
+</style>
+</helmet>
+<div class="wrap">
+  <div class="fondo" aria-hidden="true"><div class="ph"></div><div class="ph"></div><div class="ph t"></div><div class="ph t"></div></div>
+  <aside class="dr" aria-label="Detalle">
+    <div class="hd">
+      <div><div class="ey">Corte de noviembre · Resumen</div><h2>Carta y proforma por enviar</h2></div>
+      <button class="x" aria-label="Cerrar">×</button>
+    </div>
+    <div class="tot"><span class="v">8</span><span class="c">19 ya enviadas · <b>14 por Canales</b>, 5 por el líder</span></div>
+    <div>
+      <div class="sec" style="margin-bottom:8px">Por líder</div>
+      <sc-for list="{{pl}}" as="p" hint-placeholder-count="4">
+        <button class="pl"><span>{{p.n}}</span><span class="bar"><span class="bw" style="width: {{p.w}}%"></span></span><b>{{p.v}}</b></button>
+      </sc-for>
+    </div>
+    <div class="tools"><button class="chip on">Por enviar 8</button><button class="chip">Esperan la IP 3</button><button class="chip">Enviadas 19</button></div>
+    <div class="buscar"><label for="bq">Buscar cliente</label><input id="bq" value=""></div>
+    <sc-for list="{{grupos}}" as="g" hint-placeholder-count="3">
+      <div class="grp">
+        <button class="gh"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5B636E" stroke-width="2.5" aria-hidden="true"><path d="{{g.ch}}"/></svg><span class="nm">{{g.n}}</span><span class="ct">{{g.c}} por enviar</span></button>
+        <sc-for list="{{g.filas}}" as="f">
+          <div class="it"><div><div class="cn">{{f.c}}</div><div class="cm">Instalada {{f.f}}</div></div><span class="p {{f.k}}">{{f.d}}</span></div>
+        </sc-for>
+      </div>
+    </sc-for>
+    <div class="nota">Cada grupo se abre y se cierra. El mismo detalle, agrupado por líder, se usa en todos los módulos.</div>
+    <div class="pie"><button class="bt a">Exportar a Excel</button><button class="bt b">Ir a enviar</button></div>
+  </aside>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1366,"height":1460}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const abr = 'M6 9l6 6 6-6', cerr = 'M9 6l6 6-6 6';
+    const pl = [['Ana Ferrer', 3], ['Rosa Paredes', 2], ['Luisa Mora', 1], ['Carla Rivas', 1], ['Pedro Leal', 1]].map(([n, v]) => ({ n, v, w: (v / 3) * 100 }));
+    return {
+      pl,
+      grupos: [
+        { n: 'Ana Ferrer', c: 3, ch: abr, filas: [
+          { c: 'Clínica Dental Sonrisa', f: 'hace 3 días', d: 'Esperando 3 días', k: 'r' },
+          { c: 'Agencia de Viajes Sol', f: 'hace 2 días', d: 'Esperando 2 días', k: 'w' },
+          { c: 'Mueblería Don Pepe', f: 'hace 1 día', d: 'Esperando 1 día', k: 'w' }
+        ] },
+        { n: 'Rosa Paredes', c: 2, ch: cerr, filas: [] },
+        { n: 'Luisa Mora', c: 1, ch: cerr, filas: [] }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Comisiones, por instalar</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#F5F6F7;font-family:Inter,system-ui,sans-serif;color:#111315}
+*{box-sizing:border-box}
+.wrap{display:flex;flex-wrap:wrap;min-height:1080px;background:rgba(17,19,21,.28)}
+.fondo{flex:999 1 560px;min-width:0;padding:30px;display:flex;flex-direction:column;gap:14px;opacity:.55}
+.ph{background:#fff;border-radius:18px;height:70px}.ph.t{height:420px}
+.dr{flex:0 1 600px;background:#fff;min-height:1080px;box-shadow:0 18px 44px rgba(17,19,21,.14);border-radius:22px 0 0 22px;padding:26px 28px;display:flex;flex-direction:column;gap:16px}
+.hd{display:flex;align-items:flex-start;gap:12px}
+h2{margin:0;font-size:22px;font-weight:700}.sub{font-size:13px;color:#5B636E;margin-top:4px}
+.x{margin-left:auto;width:40px;height:40px;border-radius:999px;border:1px solid #E3E6EA;background:#fff;font-size:18px;font-family:inherit}
+.tabs{display:flex;background:#ECEEF1;border-radius:999px;padding:3px}
+.tabs b{flex:1;text-align:center;padding:9px 10px;border-radius:999px;font-size:13px;font-weight:600;color:#5B636E}
+.tabs b.on{background:#fff;color:#111315;box-shadow:0 1px 3px rgba(17,19,21,.12)}
+.cta{background:#2B5CFF;color:#fff;border:0;border-radius:16px;padding:14px 16px;font-size:15px;font-weight:600;font-family:inherit;text-align:left}
+.cta span{display:block;font-size:12px;font-weight:500;color:#DCE4FF;margin-top:2px}
+.ord{border:1px solid #E3E6EA;border-radius:16px;padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.l1{display:flex;align-items:center;gap:10px}
+.on{font-size:12px;font-weight:600;color:#5B636E}
+.hr{margin-left:auto;font-size:13px;font-weight:700;border-radius:999px;padding:4px 10px}
+.hr.w{background:#FBF1DC;color:#754B00}.hr.r{background:#FCEDEB;color:#A32117}
+.cl{font-size:15px;font-weight:600}.cl.no{color:#A32117}
+.meta{font-size:12px;color:#5B636E}
+.l3{display:flex;align-items:center;gap:8px}
+.p{font-size:12px;font-weight:600;border-radius:999px;padding:4px 9px}
+.p.ok{background:#E7F5EE;color:#0F6642}.p.g{background:#ECEEF1;color:#3B424B}
+.act{margin-left:auto;font-size:13px;font-weight:600;color:#1F45C4;border:1px solid #D5DEFF;background:#fff;border-radius:999px;padding:7px 12px;font-family:inherit}
+.pie{font-size:12px;color:#5B636E;border-top:1px solid #F0F1F3;padding-top:12px}
+</style>
+</helmet>
+<div class="wrap">
+  <div class="fondo" aria-hidden="true"><div class="ph"></div><div class="ph"></div><div class="ph t"></div></div>
+  <aside class="dr" aria-label="Por instalar">
+    <div class="hd">
+      <div><h2>Por instalar</h2><div class="sub">Órdenes de Odoo de noviembre sin instalación. El reloj cuenta de 8 a. m. a 10 p. m.</div></div>
+      <button class="x" aria-label="Cerrar">×</button>
+    </div>
+    <div class="tabs"><b class="on">Pasan de 24 horas · 6</b><b>Menos de 24 horas · 3</b><b>Viejas · 38</b></div>
+    <div style="display:flex;flex-direction:column;gap:5px"><label for="bo" style="font-size:12px;font-weight:600;color:#5B636E">Buscar la orden</label><input id="bo" value="trigal" style="border:1px solid #2B5CFF;border-radius:12px;padding:11px 12px;font-size:14px;font-family:inherit"><span style="font-size:12px;color:#5B636E">Por número de orden, nombre o RIF</span></div>
+    <div class="ord" style="border-color:#2B5CFF;background:#F7F9FF">
+      <div class="l1"><span class="on">ODO-3420 · Rosa Paredes</span><span class="hr w">30 horas</span></div>
+      <div class="cl">Panadería El Trigal</div>
+      <div class="l3"><span class="p g">Sin documentos</span><button class="act" style="background:#2B5CFF;color:#fff;border-color:#2B5CFF">Elegir y subir documentos</button></div>
+    </div>
+    <div style="border:1.5px dashed #C9CDD3;border-radius:16px;padding:14px 16px;display:flex;flex-direction:column;gap:10px">
+      <div style="font-size:14px;font-weight:600">¿No aparece la orden? Súbelo igual</div>
+      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px">
+        <div style="display:flex;flex-direction:column;gap:4px"><label for="pn" style="font-size:12px;font-weight:600;color:#5B636E">Posible nombre del cliente</label><input id="pn" style="border:1px solid #E3E6EA;border-radius:12px;padding:10px 12px;font-family:inherit;font-size:14px"></div>
+        <div style="display:flex;flex-direction:column;gap:4px"><label for="pr" style="font-size:12px;font-weight:600;color:#5B636E">RIF o cédula</label><input id="pr" style="border:1px solid #E3E6EA;border-radius:12px;padding:10px 12px;font-family:inherit;font-size:14px"></div>
+      </div>
+      <span style="font-size:12px;color:#5B636E">Queda como "Pendiente por instalar". Cuando el cruce con Odoo o el TAD lo encuentre, se une solo. Si ya existe uno parecido, te pregunta "¿Es este cliente?".</span>
+      <button class="act" style="margin-left:0;align-self:flex-start">Continuar y subir documentos</button>
+    </div>
+    <div style="font-size:13px;font-weight:700;color:#3B424B;margin-top:4px">Órdenes que pasan de 24 horas</div>
+    <sc-for list="{{ords}}" as="o" hint-placeholder-count="5">
+      <div class="ord">
+        <div class="l1"><span class="on">{{o.n}} · {{o.l}}</span><span class="hr {{o.k}}">{{o.h}}</span></div>
+        <div class="cl {{o.cc}}">{{o.c}}</div>
+        <div class="meta">Creada {{o.f}} · {{o.e}}</div>
+        <div class="l3"><span class="p {{o.dk}}">{{o.d}}</span><button class="act">{{o.a}}</button></div>
+      </div>
+    </sc-for>
+    <div class="pie">Cuando el TAD trae la instalación, la orden pasa sola al corte con sus documentos. El líder recibe un aviso al pasar las 24 horas.</div>
+  </aside>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1366,"height":1080}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      ords: [
+        { n: 'ODO-3401', l: 'Rosa Paredes', h: '5 días', k: 'r', c: 'Sin cliente en la app', cc: 'no', f: '22/10', e: 'Reprogramada', d: 'Sin documentos', dk: 'g', a: 'Subir documentos' },
+        { n: 'ODO-3422', l: 'Ana Ferrer', h: '3 días', k: 'r', c: 'Agropecuaria El Samán', cc: '', f: '24/10', e: 'En planificación', d: 'Documentos subidos', dk: 'ok', a: 'Ver cliente' },
+        { n: 'ODO-3433', l: 'Inés Cabrera', h: '52 horas', k: 'w', c: 'Sin cliente en la app', cc: 'no', f: '25/10', e: 'Asignada a cuadrilla', d: 'Sin documentos', dk: 'g', a: 'Subir documentos' },
+        { n: 'ODO-3438', l: 'Luisa Mora', h: '30 horas', k: 'w', c: 'Óptica Visión Clara', cc: '', f: '26/10', e: 'En planificación', d: 'Documentos subidos', dk: 'ok', a: 'Ver cliente' },
+        { n: 'ODO-3441', l: 'Carla Rivas', h: '26 horas', k: 'w', c: 'Sin cliente en la app', cc: 'no', f: '26/10', e: 'Nueva', d: 'Sin documentos', dk: 'g', a: 'Subir documentos' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

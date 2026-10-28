@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Comisiones, resumen por corte</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#F5F6F7;font-family:Inter,system-ui,sans-serif;color:#111315}
+*{box-sizing:border-box}
+.main{max-width:1366px;padding:26px 34px 40px;display:flex;flex-direction:column;gap:16px}
+.top{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+h1{margin:0;font-size:26px;font-weight:700}
+.sw{display:flex;background:#ECEEF1;border-radius:999px;padding:3px}
+.sw b{padding:7px 16px;border-radius:999px;font-size:13px;font-weight:600;color:#5B636E}
+.sw b.on{background:#fff;color:#111315;box-shadow:0 1px 3px rgba(17,19,21,.12)}
+.sel{display:flex;gap:8px;margin-left:auto;flex-wrap:wrap}
+.dd{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid #E3E6EA;border-radius:14px;padding:8px 14px;font-size:13px;font-family:inherit}
+.dd span{color:#5B636E}.dd strong{font-size:14px}
+.ban{display:flex;align-items:center;gap:14px;background:#111315;color:#fff;border-radius:18px;padding:14px 20px}
+.ban .t{font-size:13px;color:#C9CDD3}.ban .n{font-size:18px;font-weight:700}
+.ban .r{margin-left:auto;font-size:13px;color:#C9CDD3}
+.nums{display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr;gap:12px}
+.num{background:#fff;border:1px solid #E3E6EA;border-radius:18px;padding:16px 18px;font-family:inherit;text-align:left}
+.num .l{font-size:13px;color:#5B636E;font-weight:500}.num .v{font-size:34px;font-weight:700;margin-top:4px}
+.num .c{font-size:12px;color:#5B636E;margin-top:2px}.num.w .v{color:#754B00}.num.big .v{font-size:44px}
+.g2{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(0,1fr);gap:14px}
+.g3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.card{background:#fff;border:1px solid #E3E6EA;border-radius:20px;padding:18px 20px;display:flex;flex-direction:column;gap:14px}
+.ch{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}.ch h3{margin:0;font-size:16px}.ch .s{font-size:12px;color:#5B636E}
+.mini{display:flex;background:#ECEEF1;border-radius:999px;padding:3px;margin-left:auto}
+.mini b{padding:5px 11px;border-radius:999px;font-size:12px;font-weight:600;color:#5B636E}.mini b.on{background:#fff;color:#111315}
+.pod{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;align-items:end}
+.pc{border-radius:16px;padding:14px;display:flex;flex-direction:column;align-items:center;gap:6px;background:#F5F6F7;font-family:inherit;border:0}
+.pc.p1{background:#E8EEFF;padding-top:22px}
+.pos{width:28px;height:28px;border-radius:999px;background:#fff;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center}
+.pc.p1 .pos{background:#2B5CFF;color:#fff}
+.pav{width:46px;height:46px;border-radius:999px;background:#fff;display:flex;align-items:center;justify-content:center;font-weight:700}
+.pn{font-weight:600;font-size:14px}.pv{font-size:22px;font-weight:700}.ps{font-size:12px;color:#5B636E}
+.tag{font-size:11px;font-weight:700;background:#2B5CFF;color:#fff;border-radius:999px;padding:3px 8px}
+.rk{display:grid;grid-template-columns:22px 150px minmax(0,1fr) 112px;gap:10px;align-items:center;font-size:13px;padding:6px 0;background:none;border:0;font-family:inherit;text-align:left;width:100%}
+.rk .i{color:#69717C;font-weight:600}
+.bar{height:14px;background:#F0F1F3;border-radius:999px;display:flex;overflow:hidden}
+.b1{background:#0F6642;height:100%}.b2{background:#9FD3BA;height:100%}
+.rv{font-weight:700}.rv span{font-weight:500;color:#5B636E}
+.leg{display:flex;gap:14px;font-size:12px;color:#5B636E}.leg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.eq{display:flex;flex-direction:column;gap:6px;padding:8px 0;background:none;border:0;font-family:inherit;text-align:left;width:100%}
+.eq .t{display:flex;justify-content:space-between;font-size:14px;font-weight:600}.eq .t span{font-weight:500;color:#5B636E;font-size:12px}
+.vb{display:flex;gap:14px;align-items:flex-end;height:190px;padding-top:24px;border-bottom:1px solid #E3E6EA;background:repeating-linear-gradient(to top,transparent 0,transparent 47px,#F0F1F3 47px,#F0F1F3 48px)}
+.col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:4px;background:none;border:0;font-family:inherit}
+.col .v{font-size:12px;font-weight:700}
+.stack{width:100%;max-width:44px;display:flex;flex-direction:column-reverse;border-radius:8px 8px 0 0;overflow:hidden}
+.sA{background:#1F45C4}.sB{background:#BFCBFF}
+.col.cur .stack{outline:2px dashed #2B5CFF;outline-offset:2px}
+.xl{display:flex;gap:14px}.xl span{flex:1;text-align:center;font-size:12px;color:#5B636E}
+.hb{display:grid;grid-template-columns:120px minmax(0,1fr) 34px;gap:10px;align-items:center;font-size:13px;background:none;border:0;font-family:inherit;text-align:left;width:100%;padding:4px 0}
+.hb .bar{height:18px;border-radius:6px}
+.fw{background:#E3A93B}.fr{background:#C0271B}.fg{background:#9AA1AB}
+.link{font-size:13px;font-weight:600;color:#1F45C4}
+.hole{border:1.5px dashed #C9CDD3;border-radius:16px;padding:22px;text-align:center;color:#5B636E;font-size:13px}
+.li{display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-bottom:1px solid #F5F6F7}
+.li b{font-weight:700}
+</style>
+</helmet>
+<div class="main">
+  <div class="top">
+    <h1>Comisiones</h1>
+    <div class="sw"><b>Lista</b><b class="on">Resumen</b></div>
+    <div class="sel">
+      <button class="dd"><span>Corte</span><strong>Noviembre (en curso)</strong></button>
+      <button class="dd"><span>Comparar con</span><strong>Octubre, a la misma fecha</strong></button>
+    </div>
+  </div>
+  <div class="ban">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#FFD27A" stroke-width="2" aria-hidden="true"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4zM17 6h3v2a3 3 0 0 1-3 3M7 6H4v2a3 3 0 0 0 3 3"/></svg>
+    <div><div class="t">Líder de octubre</div><div class="n">Ana Ferrer · 15 instaladas, 15 comisionan</div></div>
+    <div class="r">Canales: Inés Cabrera (4) · Aliados: Redes del Lago (5)</div>
+  </div>
+  <div class="nums">
+    <button class="num big"><div class="l">Instaladas en el corte</div><div class="v">27</div><div class="c">31 en octubre a la misma fecha</div></button>
+    <button class="num"><div class="l">Comisionan</div><div class="v">4</div><div class="c">23 esperan legal o pago</div></button>
+    <button class="num w"><div class="l">Por instalar</div><div class="v">6</div><div class="c">Pasan de 24 horas</div></button>
+    <button class="num"><div class="l">De orden a instalación</div><div class="v">2,5 días</div><div class="c">Mediana del corte</div></button>
+  </div>
+  <div class="g2">
+    <div class="card">
+      <div class="ch"><h3>Ranking del corte</h3><span class="s">Instaladas por dueño</span><div class="mini"><b class="on">Líderes</b><b>Canales</b><b>Aliados</b></div></div>
+      <div class="pod">
+        <button class="pc"><span class="pos">2</span><span class="pav">AF</span><span class="pn">Ana Ferrer</span><span class="pv">4</span><span class="ps">1 comisiona</span></button>
+        <button class="pc p1"><span class="tag">Va primera</span><span class="pos">1</span><span class="pav">RP</span><span class="pn">Rosa Paredes</span><span class="pv">5</span><span class="ps">1 comisiona</span></button>
+        <button class="pc"><span class="pos">3</span><span class="pav">LM</span><span class="pn">Luisa Mora</span><span class="pv">3</span><span class="ps">1 comisiona</span></button>
+      </div>
+      <div>
+        <sc-for list="{{rk}}" as="r" hint-placeholder-count="5">
+          <button class="rk"><span class="i">{{r.i}}</span><span>{{r.n}}</span><span class="bar"><span class="b1" style="width: {{r.a}}%"></span><span class="b2" style="width: {{r.b}}%"></span></span><span class="rv">{{r.t}} <span>· {{r.c}} comisionan</span></span></button>
+        </sc-for>
+      </div>
+      <div class="leg"><span><i style="background:#0F6642"></i>Comisiona</span><span><i style="background:#9FD3BA"></i>Instalada, falta legal o pago</span></div>
+    </div>
+    <div class="card">
+      <div class="ch"><h3>Equipos</h3><span class="s">Este corte y octubre completo</span></div>
+      <sc-for list="{{eq}}" as="e" hint-placeholder-count="3">
+        <button class="eq"><span class="t">{{e.n}} <span>{{e.v}} ahora · {{e.o}} en octubre</span></span><span class="bar" style="height:22px;border-radius:8px"><span class="b1" style="width: {{e.a}}%;background:#1F45C4"></span><span class="b2" style="width: {{e.b}}%;background:#BFCBFF"></span></span></button>
+      </sc-for>
+      <div class="leg"><span><i style="background:#1F45C4"></i>Comisiona</span><span><i style="background:#BFCBFF"></i>Pendiente</span></div>
+      <div class="li"><span>Suspendidos antes de 60 días (este corte)</span><b>2</b></div>
+      <div class="li"><span>Siguen habilitadas de octubre</span><b>96 %</b></div>
+    </div>
+  </div>
+  <div class="g3">
+    <div class="card">
+      <div class="ch"><h3>Instaladas por corte</h3><span class="s">Últimos 6 cortes</span></div>
+      <div class="vb">
+        <sc-for list="{{cortes}}" as="c" hint-placeholder-count="6">
+          <button class="col {{c.k}}"><span class="v">{{c.t}}</span><span class="stack" style="height: {{c.h}}px"><span class="sA" style="height: {{c.a}}%"></span><span class="sB" style="height: {{c.b}}%"></span></span></button>
+        </sc-for>
+      </div>
+      <div class="xl"><span>Jun</span><span>Jul</span><span>Ago</span><span>Sep</span><span>Oct</span><span>Nov</span></div>
+      <div class="leg"><span><i style="background:#1F45C4"></i>Comisionan</span><span><i style="background:#BFCBFF"></i>No comisionan</span></div>
+    </div>
+    <div class="card">
+      <div class="ch"><h3>Por instalar</h3><span class="s">Órdenes de noviembre</span></div>
+      <sc-for list="{{horas}}" as="h" hint-placeholder-count="4">
+        <button class="hb"><span>{{h.n}}</span><span class="bar"><span class="{{h.k}}" style="width: {{h.w}}%"></span></span><b>{{h.v}}</b></button>
+      </sc-for>
+      <span class="link">38 órdenes viejas (antes de noviembre)</span>
+    </div>
+    <div class="card">
+      <div class="ch"><h3>Cartas y proformas</h3><span class="s">Del corte, toca para ver por líder</span></div>
+      <button class="eq"><span class="bar" style="height:22px;border-radius:8px"><span style="width:52%;background:#0F6642;height:100%"></span><span style="width:18%;background:#6E8BFF;height:100%"></span><span style="width:30%;background:#E3A93B;height:100%"></span></span></button>
+      <div class="li"><span><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:#0F6642;margin-right:6px"></i>Enviadas por Canales</span><b>14</b></div>
+      <div class="li"><span><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:#6E8BFF;margin-right:6px"></i>Enviadas por el líder</span><b>5</b></div>
+      <div class="li"><span><i style="display:inline-block;width:10px;height:10px;border-radius:3px;background:#E3A93B;margin-right:6px"></i>Por enviar (3 esperan más de 2 días)</span><b>8</b></div>
+      <span class="link">Ir a enviar</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1366,"height":1460}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const mx = 6;
+    const rk = [['4', 'Carla Rivas', 2, 1], ['5', 'Diana Soto', 2, 0], ['6', 'Patricia Ríos', 0, 0]].map(([i, n, t, c]) => ({ i, n, t, c, a: (c / mx) * 100, b: ((t - c) / mx) * 100 }));
+    const eq = [['Ventas corporativas', 16, 3, 49], ['Canales de atención', 7, 1, 16], ['Aliados comerciales', 4, 0, 18]].map(([n, v, c, o]) => ({ n, v, o, a: (c / 20) * 100, b: ((v - c) / 20) * 100 }));
+    const cortes = [[61, 55, ''], [70, 64, ''], [58, 52, ''], [46, 41, ''], [83, 75, ''], [27, 4, 'cur']].map(([t, c, k]) => ({ t, k, h: Math.round((t / 83) * 150), a: (c / t) * 100, b: ((t - c) / t) * 100 }));
+    const horas = [['Menos de 24 h', 3, 'fg'], ['24 a 72 horas', 3, 'fw'], ['3 a 7 días', 2, 'fr'], ['Más de 7 días', 1, 'fr']].map(([n, v, k]) => ({ n, v, k, w: (v / 3) * 100 }));
+    return { rk, eq, cortes, horas };
+  }
+}
+</script>
+</body>
+</html>

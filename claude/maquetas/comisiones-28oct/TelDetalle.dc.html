@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Detalle en el teléfono</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;font-family:Inter,system-ui,sans-serif;color:#111315}
+*{box-sizing:border-box}
+.ph{width:390px;height:844px;background:#9B9EA3;display:flex;flex-direction:column;justify-content:flex-end;overflow:hidden}
+.sh{background:#fff;border-radius:22px 22px 0 0;height:720px;padding:10px 16px 20px;display:flex;flex-direction:column;gap:14px}
+.gr{width:40px;height:5px;border-radius:999px;background:#D5D8DD;align-self:center}
+.hd{display:flex;align-items:flex-start}
+.ey{font-size:12px;color:#5B636E;font-weight:600}h2{margin:2px 0 0;font-size:20px}
+.x{margin-left:auto;width:44px;height:44px;border-radius:999px;border:1px solid #E3E6EA;background:#fff;font-size:18px;font-family:inherit}
+.tot{display:flex;align-items:flex-end;gap:10px}.tot .v{font-size:40px;font-weight:700;line-height:1}.tot .c{font-size:12px;color:#5B636E;padding-bottom:4px}.tot b{color:#A32117}
+.pl{display:grid;grid-template-columns:96px minmax(0,1fr) 20px;gap:8px;align-items:center;font-size:13px;padding:2px 0}
+.bar{height:12px;background:#F0F1F3;border-radius:5px;overflow:hidden;display:flex}.bw{background:#E3A93B}
+.cd{border:1px solid #E3E6EA;border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:6px}
+.cn{font-weight:600;font-size:14px}.cm{font-size:12px;color:#5B636E}
+.ps{display:flex;gap:6px;flex-wrap:wrap}
+.p{font-size:11px;font-weight:600;border-radius:999px;padding:4px 8px}.p.w{background:#FBF1DC;color:#754B00}.p.r{background:#FCEDEB;color:#A32117}
+.pie{display:flex;gap:8px;margin-top:auto}
+.bt{flex:1;border-radius:14px;padding:13px 8px;font-size:14px;font-weight:600;font-family:inherit;min-height:48px}
+.bt.a{background:#fff;border:1px solid #E3E6EA}.bt.b{background:#2B5CFF;color:#fff;border:0}
+</style>
+</helmet>
+<div class="ph">
+  <div class="sh" role="dialog" aria-label="Detalle">
+    <span class="gr" aria-hidden="true"></span>
+    <div class="hd"><div><div class="ey">Corte de noviembre</div><h2>Falta legal</h2></div><button class="x" aria-label="Cerrar">×</button></div>
+    <div class="tot"><span class="v">9</span><span class="c"><b>3 más</b> que en octubre a la misma fecha</span></div>
+    <div>
+      <div class="pl"><span>Rosa Paredes</span><span class="bar"><span class="bw" style="width:100%"></span></span><b>3</b></div>
+      <div class="pl"><span>Ana Ferrer</span><span class="bar"><span class="bw" style="width:66%"></span></span><b>2</b></div>
+      <div class="pl"><span>Carla Rivas</span><span class="bar"><span class="bw" style="width:66%"></span></span><b>2</b></div>
+    </div>
+    <div class="cd"><div class="cn">Panadería El Trigal</div><div class="cm">Rosa Paredes · instalada hace 4 días</div><div class="ps"><span class="p w">Falta cédula</span><span class="p r">Debe instalación</span></div></div>
+    <div class="cd"><div class="cn">Ferretería Los Andes</div><div class="cm">Ana Ferrer · instalada hace 13 días</div><div class="ps"><span class="p w">Falta acta constitutiva</span></div></div>
+    <div class="pie"><button class="bt a">Exportar a Excel</button><button class="bt b">Ver en la lista</button></div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

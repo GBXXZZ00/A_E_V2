@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Hoja de comisión rediseñada</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#F5F6F7;font-family:Inter,system-ui,sans-serif;color:#111315}
+*{box-sizing:border-box}
+.dr{width:560px;min-height:1300px;background:#fff;border-radius:22px;box-shadow:0 18px 44px rgba(17,19,21,.14);padding:22px 24px;display:flex;flex-direction:column;gap:14px}
+.dh{display:flex;align-items:flex-start;gap:10px}
+.dh h2{margin:0;font-size:20px}.dh .s{font-size:12px;color:#5B636E;margin-top:3px}
+.x{margin-left:auto;width:40px;height:40px;border-radius:999px;border:1px solid #E3E6EA;background:#fff;font-size:18px;font-family:inherit}
+.p{font-size:12px;font-weight:600;border-radius:999px;padding:4px 9px}.p.ok{background:#E7F5EE;color:#0F6642}.p.w{background:#FBF1DC;color:#754B00}.p.r{background:#FCEDEB;color:#A32117}
+.sum{display:flex;align-items:center;gap:10px;background:#F5F6F7;border-radius:14px;padding:12px 14px;flex-wrap:wrap}
+.sum b{font-size:14px}.sum .s{font-size:12px;color:#5B636E;width:100%}
+.ck{display:flex;gap:6px;margin-left:auto}
+.card{border-radius:18px;padding:14px 16px;display:flex;flex-direction:column;gap:10px;border:1px solid #E3E6EA}
+.card.w{border:2px solid #C98A12;background:#FFFBF2}
+.card.ok{background:#fff}
+.ct{display:flex;align-items:center;gap:8px}.ct b{font-size:15px}.ct .p{margin-left:auto}
+.dot{width:10px;height:10px;border-radius:999px}.dot.w{background:#C98A12}.dot.ok{background:#0F6642}
+.grp{font-size:12px;font-weight:700;color:#5B636E;margin-top:2px}
+.li{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #EDE3CC;border-radius:12px;padding:9px 12px;font-size:14px}
+.li.ok{border-color:#E3E6EA}
+.li .ic{width:22px;height:22px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex:0 0 22px}
+.li.ok .ic{background:#E7F5EE;color:#0F6642}.li.no .ic{background:#FBF1DC;color:#754B00}
+.li .act{margin-left:auto;font-size:13px;font-weight:600;color:#1F45C4;border:1px dashed #9FB3FF;border-radius:999px;padding:5px 11px;background:#fff;font-family:inherit}
+.li .f{margin-left:auto;font-size:12px;color:#5B636E}
+.lk{font-size:13px;font-weight:600;color:#1F45C4}
+.bt{border-radius:14px;padding:12px;font-size:14px;font-weight:600;font-family:inherit;border:1px solid #E3E6EA;background:#fff;min-height:44px}
+.bt.pr{background:#2B5CFF;color:#fff;border-color:#2B5CFF}
+.nt{font-size:12px;color:#5B636E}
+.fold{display:flex;align-items:center;gap:10px;border:1px solid #E3E6EA;border-radius:14px;padding:12px 14px;font-size:14px;font-weight:600;background:#fff;font-family:inherit;width:100%;text-align:left}
+.fold .p{margin-left:auto}
+.row2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.menu{border:1px solid #E3E6EA;border-radius:16px;box-shadow:0 18px 44px rgba(17,19,21,.14);padding:6px;display:flex;flex-direction:column;background:#fff}
+.menu span{padding:10px 12px;font-size:14px;border-radius:10px}
+</style>
+</helmet>
+<aside class="dr" aria-label="Hoja de comisión">
+  <div class="dh"><div><h2>Panadería El Trigal</h2><div class="s">J-50234567-1 · Código 88420 · Líder Rosa Paredes · instalada 23/10 · corte de noviembre</div></div><button class="x" aria-label="Cerrar">×</button></div>
+  <div class="sum"><b>Aún no comisiona</b><span class="ck"><span class="p w">Legal</span><span class="p w">Pago</span><span class="p ok">Orden</span></span><span class="s">Faltan 2 de 3. Día límite: 18/11 (faltan 22 días).</span></div>
+
+  <section class="card w" aria-label="Legal">
+    <div class="ct"><span class="dot w"></span><b>Legal</b><span class="p w">Falta 1 documento</span></div>
+    <div class="grp">Representante legal</div>
+    <div class="li ok"><span class="ic">✓</span>Teléfono y correo<span class="f">0414 555 2190 · trigal@correo.com</span></div>
+    <div class="li no"><span class="ic">!</span>Cédula<button class="act">+ Subir o arrastrar</button></div>
+    <div class="li ok"><span class="ic">✓</span>RIF personal<span class="f">rif_personal.pdf</span></div>
+    <div class="grp">Empresa</div>
+    <div class="li ok"><span class="ic">✓</span>RIF de la empresa<span class="f">En revisión</span></div>
+    <div class="li ok"><span class="ic">✓</span>Acta constitutiva<span class="f">Aprobada</span></div>
+    <span class="lk">+ Agregar acta de asamblea</span>
+  </section>
+
+  <section class="card w" aria-label="Pago">
+    <div class="ct"><span class="dot w"></span><b>Pago</b><span class="p r">Debe la instalación</span></div>
+    <div class="nt">El TAD lo revisa en cada carga. Último dato: hoy, 8:10 a. m.</div>
+  </section>
+
+  <section class="card w" aria-label="Carta y proforma">
+    <div class="ct"><span class="dot w"></span><b>Carta de bienvenida y proforma</b><span class="p w">Por enviar · 4 días</span></div>
+    <button class="bt pr">Enviar carta y proforma por WhatsApp</button>
+    <span class="lk">O enviar por correo (opcional)</span>
+  </section>
+
+  <button class="fold"><span class="dot ok"></span>Orden de Odoo<span class="p ok">ODO-3420 · creada 22/10</span></button>
+
+  <div class="row2"><button class="bt">Contactar a la líder</button><button class="bt">Ver expediente completo</button></div>
+  <button class="bt" style="text-align:left">Más acciones ▾</button>
+  <div class="menu" aria-label="Más acciones (abierto)"><span>Cambiar de corte</span><span>Dar excepción</span><span>Cambiar dueño</span><span>Marcar como evento</span><span>Escribir una nota</span></div>
+  <button class="fold">Hilo<span class="p" style="background:#ECEEF1;color:#3B424B">7 registros</span></button>
+</aside>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":560,"height":1300}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

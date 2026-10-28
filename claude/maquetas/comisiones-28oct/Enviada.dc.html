@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Hoja de comisión, carta ya enviada</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#F5F6F7;font-family:Inter,system-ui,sans-serif;color:#111315}
+*{box-sizing:border-box}
+.dr{width:560px;min-height:1000px;background:#fff;border-radius:22px;box-shadow:0 18px 44px rgba(17,19,21,.14);padding:22px 24px;display:flex;flex-direction:column;gap:14px}
+.dh{display:flex;align-items:flex-start;gap:10px}
+.dh h2{margin:0;font-size:20px}.dh .s{font-size:12px;color:#5B636E;margin-top:3px}
+.x{margin-left:auto;width:40px;height:40px;border-radius:999px;border:1px solid #E3E6EA;background:#fff;font-size:18px;font-family:inherit}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.p{font-size:12px;font-weight:600;border-radius:999px;padding:4px 9px}.p.ok{background:#E7F5EE;color:#0F6642}.p.b{background:#E8EEFF;color:#1F45C4}.p.w{background:#FBF1DC;color:#754B00}
+.ok{border:2px solid #8CCBAE;background:#F5FBF8;border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.tt{display:flex;align-items:center;gap:8px}.tt b{font-size:16px}
+.ln{display:flex;gap:12px;align-items:flex-start;background:#fff;border:1px solid #DCEFE5;border-radius:12px;padding:11px 12px}
+.ic{width:30px;height:30px;border-radius:999px;display:flex;align-items:center;justify-content:center;flex:0 0 30px}
+.ic.l{background:#E8EEFF;color:#1F45C4}.ic.c{background:#E7F5EE;color:#0F6642}
+.dn{font-weight:600;font-size:14px}.ds{font-size:12px;color:#5B636E;margin-top:2px}
+.bts{display:flex;gap:8px}
+.bt{flex:1;border-radius:14px;padding:11px;font-size:14px;font-weight:600;font-family:inherit;border:1px solid #E3E6EA;background:#fff;min-height:44px}
+.nt{font-size:12px;color:#5B636E}
+.fold{display:flex;align-items:center;justify-content:space-between;border:1px solid #E3E6EA;border-radius:14px;padding:12px 14px;font-size:14px;font-weight:600;background:#fff;font-family:inherit;width:100%}
+.hilo{border-top:1px solid #F0F1F3;padding-top:12px;display:flex;flex-direction:column;gap:8px}
+.hi{font-size:13px;display:flex;gap:8px}.hi span{color:#5B636E;flex:0 0 92px}
+</style>
+</helmet>
+<aside class="dr" aria-label="Hoja de comisión">
+  <div class="dh"><div><h2>Inversiones La Ceiba, C.A.</h2><div class="s">J-40123456-7 · Código 88412 · Líder Rosa Paredes · instalada 22/10</div></div><button class="x" aria-label="Cerrar">×</button></div>
+  <div class="chips"><span class="p ok">Comisiona</span><span class="p ok">Legal listo</span><span class="p ok">Pago listo</span></div>
+  <section class="ok" aria-label="Carta y proforma">
+    <div class="tt"><b>Carta de bienvenida y proforma</b><span class="p ok" style="margin-left:auto">Enviada por Canales</span></div>
+    <div class="ln"><span class="ic c"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg></span><span><span class="dn">Envío de Canales de atención (obligatorio)</span><div class="ds">Pedro Leal · 23/10, 14:10 · por WhatsApp · carta y proforma</div></span></div>
+    <div class="ln" style="border-color:#D5DEFF"><span class="ic l"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg></span><span><span class="dn">Envío de la líder (respaldo)</span><div class="ds">Rosa Paredes · 23/10, 10:42 · por WhatsApp · carta y proforma</div></span></div>
+    <div class="bts"><button class="bt">Ver PDF</button><button class="bt">Volver a enviar</button></div>
+    <div class="nt">Si solo la envió la líder, la sección queda ámbar con "Enviada por la líder · falta Canales" hasta que Canales la envíe.</div>
+  </section>
+  <button class="fold">Legal <span class="p ok">Listo</span></button>
+  <button class="fold">Pago <span class="p ok">Listo</span></button>
+  <button class="fold">Orden de Odoo y documentos <span style="font-size:12px;color:#5B636E">ODO-3412</span></button>
+  <div class="hilo">
+    <div class="hi"><span>23/10 14:10</span>Pedro Leal envió carta y proforma por WhatsApp</div>
+    <div class="hi"><span>23/10 10:42</span>Rosa Paredes envió carta y proforma por WhatsApp (respaldo)</div>
+    <div class="hi"><span>22/10 18:05</span>Instalación cargada desde el TAD</div>
+  </div>
+</aside>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":560,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Comisiones, lista</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#F5F6F7;font-family:Inter,system-ui,sans-serif;color:#111315}
+*{box-sizing:border-box}
+.app{display:flex;flex-wrap:wrap;min-height:1180px}
+.side{flex:0 0 220px;background:#fff;border-right:1px solid #E3E6EA;padding:22px 14px;display:flex;flex-direction:column;gap:4px}
+.logo{font-weight:700;font-size:18px;padding:0 10px 18px}.logo span{color:#5B636E;font-weight:500}
+.nav{padding:10px 12px;border-radius:12px;font-size:14px;color:#5B636E;font-weight:500;text-decoration:none}
+.nav.on{background:#E8EEFF;color:#1F45C4;font-weight:600}
+.main{flex:999 1 700px;min-width:0;padding:26px 34px;display:flex;flex-direction:column;gap:16px}
+.top{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+h1{margin:0;font-size:26px;font-weight:700}
+.sw{display:flex;background:#ECEEF1;border-radius:999px;padding:3px}
+.sw b{padding:7px 16px;border-radius:999px;font-size:13px;font-weight:600;color:#5B636E}
+.sw b.on{background:#fff;color:#111315;box-shadow:0 1px 3px rgba(17,19,21,.12)}
+.corte{margin-left:auto;display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #E3E6EA;border-radius:14px;padding:8px 14px;font-size:13px;font-family:inherit}
+.corte strong{font-size:14px}.muted{color:#5B636E}
+.segs{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,.7fr);gap:12px}
+.seg{background:#fff;border:1px solid #E3E6EA;border-radius:18px;padding:14px 18px;display:flex;align-items:center;gap:14px}
+.seg.on{border:2px solid #2B5CFF}
+.seg .n{font-size:28px;font-weight:700}.seg .t{font-weight:600;font-size:15px}.seg .s{font-size:12px;color:#5B636E}
+.teams{display:flex;gap:6px;border-bottom:1px solid #E3E6EA;flex-wrap:wrap}
+.team{padding:12px 18px;font-size:15px;font-weight:600;color:#5B636E;border:0;border-bottom:3px solid transparent;display:flex;gap:8px;align-items:center;background:none;font-family:inherit}
+.team.on{color:#111315;border-color:#2B5CFF}
+.cnt{background:#ECEEF1;border-radius:999px;font-size:12px;padding:2px 8px;color:#111315}
+.team.on .cnt{background:#2B5CFF;color:#fff}
+.alerts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.al{border-radius:18px;padding:14px 16px;display:flex;flex-direction:column;gap:4px;border:1px solid #E3E6EA;background:#fff;font-family:inherit;text-align:left}
+.al.w{background:#FBF1DC;border-color:#F0DDB0}.al .h{font-size:13px;font-weight:600}.al .big{font-size:24px;font-weight:700}
+.al .s{font-size:12px;color:#5B636E}.al .go{font-size:13px;font-weight:600;color:#1F45C4;margin-top:4px}
+.al.btn{background:#2B5CFF;border-color:#2B5CFF;color:#fff}
+.al.btn .s{color:#DCE4FF}.al.btn .pill{align-self:flex-start;margin-top:6px;background:#fff;color:#1F45C4;border-radius:999px;font-size:12px;font-weight:700;padding:4px 10px}
+.atajos{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.chip{border:1px solid #E3E6EA;background:#fff;border-radius:999px;padding:7px 13px;font-size:13px;font-weight:500;display:flex;gap:6px;align-items:center;font-family:inherit}
+.chip.on{background:#111315;color:#fff;border-color:#111315}
+.chip i{font-style:normal;color:#69717C}.chip.on i{color:#C9CDD3}
+.chip.w{border-color:#F0DDB0;background:#FBF1DC;color:#754B00}
+.grp{background:#fff;border:1px solid #E3E6EA;border-radius:18px;overflow:hidden}
+.gh{width:100%;display:flex;align-items:center;gap:12px;padding:14px 18px;background:#fff;border:0;font-family:inherit;text-align:left}
+.gh .chev{width:22px;height:22px;display:flex;align-items:center;justify-content:center;color:#5B636E}
+.gh .av{width:34px;height:34px;border-radius:999px;background:#ECEEF1;font-weight:700;font-size:12px;display:flex;align-items:center;justify-content:center}
+.gh .nm{font-size:15px;font-weight:700}
+.gh .stats{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
+.row{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,.8fr) minmax(0,.9fr) minmax(0,1.5fr) minmax(0,1.6fr);gap:12px;align-items:center;padding:12px 18px}
+.row.hd{font-size:12px;color:#69717C;font-weight:600;background:#FAFAFB;border-top:1px solid #F0F1F3}
+.row+.row{border-top:1px solid #F0F1F3}
+.cn{font-weight:600;font-size:14px}.sub{font-size:12px;color:#5B636E;margin-top:2px}
+.st{display:flex;gap:6px;flex-wrap:wrap}
+.p{font-size:12px;font-weight:600;border-radius:999px;padding:4px 9px}
+.p.ok{background:#E7F5EE;color:#0F6642}.p.w{background:#FBF1DC;color:#754B00}.p.r{background:#FCEDEB;color:#A32117}.p.b{background:#E8EEFF;color:#1F45C4}.p.g{background:#ECEEF1;color:#3B424B}
+.cp{display:flex;flex-direction:column;gap:3px}.cp .who{font-size:11px;color:#5B636E}
+</style>
+</helmet>
+<div class="app">
+  <nav class="side" aria-label="Menú">
+    <div class="logo">airtek <span>Empresas</span></div>
+    <a class="nav" href="#">Inicio</a><a class="nav" href="#">Clientes</a><a class="nav on" href="#">Comisiones</a><a class="nav" href="#">Revisión</a><a class="nav" href="#">Migraciones</a><a class="nav" href="#">Factibilidad</a><a class="nav" href="#">Aliados</a><a class="nav" href="#">Actualizar</a>
+  </nav>
+  <main class="main">
+    <div class="top">
+      <h1>Comisiones</h1>
+      <div class="sw"><b class="on">Lista</b><b>Resumen</b></div>
+      <button class="corte"><span class="muted">Corte</span><strong>Noviembre</strong><span class="muted">21 oct al 18 nov · faltan 22 días</span></button>
+    </div>
+    <div class="segs">
+      <div class="seg on"><div class="n">27</div><div><div class="t">Instalaciones PYME</div><div class="s">4 comisionan · 9 vienen del corte anterior</div></div></div>
+      <div class="seg"><div class="n">3</div><div><div class="t">Cambios de categoría</div><div class="s">Migraciones confirmadas en este corte</div></div></div>
+      <div class="seg" style="background:#FBF1DC;border-color:#F0DDB0"><div class="n" style="color:#754B00;font-size:22px">8</div><div><div class="t">Cartas y proformas</div><div class="s">por enviar</div></div></div>
+    </div>
+    <div class="teams" role="tablist">
+      <button class="team on">Ventas corporativas <span class="cnt">16</span></button>
+      <button class="team">Canales de atención <span class="cnt">7</span></button>
+      <button class="team">Aliados comerciales <span class="cnt">4</span></button>
+    </div>
+    <div class="alerts">
+      <button class="al w"><span class="h">Por instalar</span><span class="big">6 órdenes</span><span class="s">Del mes, pasan de 24 horas sin instalar</span><span class="go">Ver órdenes</span></button>
+      <button class="al"><span class="h">Por asignar</span><span class="big">2 instalaciones</span><span class="s">Sin dueño: no comisionan hasta asignarlas</span><span class="go">Asignar dueño</span></button>
+      <button class="al btn"><span class="big" style="font-size:17px">Subir documentos de un cliente nuevo</span><span class="s">Buscas su orden de Odoo o lo subes con el posible nombre</span><span class="pill">3 pendientes por instalar</span></button>
+    </div>
+    <div class="atajos">
+      <button class="chip on">Todas <i>16</i></button><button class="chip">Comisionan <i>3</i></button><button class="chip">Falta legal <i>9</i></button><button class="chip">Sin pago <i>11</i></button><button class="chip">Del corte anterior <i>6</i></button><button class="chip">Pendientes por instalar <i>3</i></button>
+    </div>
+    <div class="grp">
+      <button class="gh"><span class="chev" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M6 9l6 6 6-6"/></svg></span><span class="av">RP</span><span class="nm">Rosa Paredes</span>
+        <span class="stats"><span class="p g">5 instaladas</span><span class="p ok">1 comisiona</span><span class="p w">3 falta legal</span><span class="p w">2 por enviar</span></span></button>
+      <div class="row hd"><div>Cliente</div><div>Instalada</div><div>Orden de Odoo</div><div>Qué falta</div><div>Carta y proforma</div></div>
+      <sc-for list="{{filas}}" as="f" hint-placeholder-count="5">
+        <div class="row">
+          <div><div class="cn">{{f.c}}</div><div class="sub">{{f.rif}}</div></div>
+          <div style="font-size:14px">{{f.f}}<div class="sub">{{f.h}}</div></div>
+          <div style="font-size:14px">{{f.o}}</div>
+          <div class="st"><sc-for list="{{f.p}}" as="x"><span class="p {{x.k}}">{{x.t}}</span></sc-for></div>
+          <div class="cp"><span class="p {{f.ek}}" style="align-self:flex-start">{{f.e}}</span><span class="who">{{f.ew}}</span></div>
+        </div>
+      </sc-for>
+    </div>
+    <sc-for list="{{otros}}" as="g" hint-placeholder-count="4">
+      <div class="grp"><button class="gh"><span class="chev" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 6l6 6-6 6"/></svg></span><span class="av">{{g.i}}</span><span class="nm">{{g.n}}</span>
+        <span class="stats"><span class="p g">{{g.t}} instaladas</span><span class="p ok">{{g.c}} comisiona</span><span class="p w">{{g.l}} falta legal</span><span class="p w">{{g.e}} por enviar</span></span></button></div>
+    </sc-for>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1366,"height":1180}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const pe = { ek: 'w', e: 'Por enviar · 4 días', ew: 'Le toca a Canales de atención' };
+    return {
+      filas: [
+        Object.assign({ c: 'Inversiones La Ceiba, C.A.', rif: 'J-40123456-7', f: '22/10', h: 'hace 5 días', o: 'ODO-3412', p: [{ k: 'ok', t: 'Comisiona' }] }, { ek: 'ok', e: 'Enviada 23/10', ew: 'Por Pedro Leal (Canales)' }),
+        Object.assign({ c: 'Panadería El Trigal', rif: 'J-50234567-1', f: '23/10', h: 'hace 4 días', o: 'ODO-3420', p: [{ k: 'w', t: 'Falta cédula' }, { k: 'r', t: 'Debe instalación' }] }, pe),
+        Object.assign({ c: 'Ferretería Los Andes', rif: 'J-31234098-2', f: '14/10', h: 'hace 13 días', o: 'ODO-3377', p: [{ k: 'b', t: 'Del corte anterior' }, { k: 'w', t: 'Falta acta' }] }, { ek: 'b', e: 'Enviada 16/10', ew: 'Por la líder' }),
+        Object.assign({ c: 'Óptica Visión Clara', rif: 'J-50998877-6', f: 'Sin instalar', h: 'orden de hace 3 días', o: 'ODO-3440', p: [{ k: 'g', t: 'Pendiente por instalar' }, { k: 'ok', t: 'Documentos subidos' }] }, { ek: 'g', e: 'Se envía al instalar', ew: '' }),
+        Object.assign({ c: 'Colegio Nueva Esperanza', rif: 'J-30111222-3', f: '26/10', h: 'hace 1 día', o: 'ODO-3444', p: [{ k: 'w', t: 'Falta legal' }, { k: 'r', t: 'Debe instalación' }] }, { ek: 'w', e: 'Por enviar · falta la IP', ew: 'Le toca a Canales de atención' })
+      ],
+      otros: [
+        { i: 'AF', n: 'Ana Ferrer', t: 4, c: 1, l: 2, e: 3 },
+        { i: 'LM', n: 'Luisa Mora', t: 3, c: 1, l: 1, e: 1 },
+        { i: 'CR', n: 'Carla Rivas', t: 2, c: 1, l: 2, e: 1 },
+        { i: 'DS', n: 'Diana Soto', t: 2, c: 0, l: 1, e: 1 }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Subir documentos de un cliente nuevo</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#F5F6F7;font-family:Inter,system-ui,sans-serif;color:#111315}
+*{box-sizing:border-box}
+.dr{width:560px;min-height:1300px;background:#fff;border-radius:22px;box-shadow:0 18px 44px rgba(17,19,21,.14);padding:22px 24px;display:flex;flex-direction:column;gap:14px}
+.dh{display:flex;align-items:flex-start;gap:10px}
+.dh h2{margin:0;font-size:20px}.dh .s{font-size:12px;color:#5B636E;margin-top:3px}
+.x{margin-left:auto;width:40px;height:40px;border-radius:999px;border:1px solid #E3E6EA;background:#fff;font-size:18px;font-family:inherit}
+.steps{display:flex;gap:6px}
+.st{flex:1;display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:#69717C;border-bottom:3px solid #ECEEF1;padding-bottom:8px}
+.st.done{color:#0F6642;border-color:#8CCBAE}.st.on{color:#111315;border-color:#2B5CFF}
+.st i{font-style:normal;width:22px;height:22px;border-radius:999px;background:#ECEEF1;display:flex;align-items:center;justify-content:center;font-size:12px}
+.st.done i{background:#E7F5EE}.st.on i{background:#2B5CFF;color:#fff}
+.ord{border:1px solid #E3E6EA;border-radius:14px;padding:12px 14px;display:flex;align-items:center;gap:10px}
+.ord .t{font-weight:600;font-size:14px}.ord .s{font-size:12px;color:#5B636E}
+.lk{font-size:13px;font-weight:600;color:#1F45C4;margin-left:auto}
+.g2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.fld{display:flex;flex-direction:column;gap:4px}.fld label{font-size:12px;font-weight:600;color:#5B636E}
+.fld input{border:1px solid #E3E6EA;border-radius:12px;padding:10px 12px;font-family:inherit;font-size:14px}
+.fld .h{font-size:12px;color:#0F6642}
+.tg{display:flex;background:#ECEEF1;border-radius:999px;padding:3px;align-self:flex-start}
+.tg b{padding:7px 14px;border-radius:999px;font-size:13px;font-weight:600;color:#5B636E}.tg b.on{background:#fff;color:#111315}
+.drop{border:2px dashed #9FB3FF;background:#F7F9FF;border-radius:16px;padding:16px;text-align:center;font-size:14px;color:#1F45C4;font-weight:600}
+.drop span{display:block;font-size:12px;color:#5B636E;font-weight:500;margin-top:3px}
+.grp{font-size:12px;font-weight:700;color:#5B636E;margin-top:4px}
+.li{display:flex;align-items:center;gap:10px;border:1px solid #E3E6EA;border-radius:12px;padding:10px 12px;font-size:14px}
+.li .ic{width:22px;height:22px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex:0 0 22px}
+.li.ok .ic{background:#E7F5EE;color:#0F6642}.li.no .ic{background:#ECEEF1;color:#5B636E}
+.li .f{margin-left:auto;font-size:12px;color:#5B636E}
+.li .act{margin-left:auto;font-size:13px;font-weight:600;color:#1F45C4;border:1px dashed #9FB3FF;border-radius:999px;padding:5px 11px;background:#fff;font-family:inherit}
+.tel{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;flex:1}
+.tel input{border:1px solid #E3E6EA;border-radius:10px;padding:8px 10px;font-family:inherit;font-size:13px;width:100%}
+.pie{border-top:1px solid #F0F1F3;padding-top:14px;display:flex;flex-direction:column;gap:8px;margin-top:auto}
+.prog{font-size:13px;color:#5B636E}.prog b{color:#111315}
+.bar{height:8px;background:#ECEEF1;border-radius:999px;overflow:hidden}.bar span{display:block;height:100%;width:57%;background:#2B5CFF}
+.bts{display:grid;grid-template-columns:1fr 1.3fr;gap:8px}
+.bt{border-radius:14px;padding:12px;font-size:14px;font-weight:600;font-family:inherit;border:1px solid #E3E6EA;background:#fff;min-height:46px}
+.bt.pr{background:#2B5CFF;color:#fff;border-color:#2B5CFF;opacity:.45}
+.nt{font-size:12px;color:#5B636E}
+</style>
+</helmet>
+<aside class="dr" aria-label="Subir documentos de un cliente nuevo">
+  <div class="dh"><div><h2>Subir documentos de un cliente nuevo</h2><div class="s">Queda como "Pendiente por instalar" hasta que el TAD traiga la instalación</div></div><button class="x" aria-label="Cerrar">×</button></div>
+  <div class="steps"><span class="st done"><i>✓</i>Orden (opcional)</span><span class="st on"><i>2</i>Cliente y documentos</span><span class="st"><i>3</i>Enviar</span></div>
+  <div class="ord" style="border:1.5px dashed #C9CDD3"><div><div class="t">Sin orden de Odoo por ahora</div><div class="s">Se une sola cuando la orden aparezca en Odoo o la instalación en el TAD</div></div><span class="lk">Buscar orden</span></div>
+  <div class="tg"><b class="on">Jurídico</b><b>Natural</b></div>
+  <div class="g2">
+    <div class="fld"><label for="rif">RIF</label><input id="rif" value="J-50112233-4"><span class="h">No existe en la app: se crea al guardar</span></div>
+    <div class="fld"><label for="nom">Posible nombre del cliente</label><input id="nom" value="Bodegón Sur, C.A."></div>
+  </div>
+  <div class="drop">Arrastra aquí varios archivos a la vez<span>Después marcas qué trae cada uno. También puedes subir casilla por casilla.</span></div>
+  <div class="grp">Representante legal</div>
+  <div class="li ok"><span class="ic">✓</span><span style="flex:0 0 auto">Teléfono y correo</span><div class="tel"><input aria-label="Teléfono" value="0414 555 7781"><input aria-label="Correo" value="bodegonsur@correo.com"></div></div>
+  <div class="li ok"><span class="ic">✓</span>Cédula<span class="f">cedula.jpg</span></div>
+  <div class="li no"><span class="ic">+</span>RIF personal<button class="act">+ Subir</button></div>
+  <span class="lk" style="margin-left:0">+ Agregar otro representante</span>
+  <div class="grp">Empresa</div>
+  <div class="li ok"><span class="ic">✓</span>RIF de la empresa<span class="f">rif_empresa.pdf</span></div>
+  <div class="li no"><span class="ic">+</span>Acta constitutiva<button class="act">+ Subir</button></div>
+  <div class="li no"><span class="ic">+</span>Acta de asamblea<button class="act">+ Subir</button></div>
+  <span class="lk" style="margin-left:0">+ Agregar otra acta de asamblea</span>
+  <div class="pie">
+    <div class="prog"><b>4 de 7 listos.</b> Faltan: RIF personal, acta constitutiva y acta de asamblea.</div>
+    <div class="bar"><span></span></div>
+    <div class="bts"><button class="bt">Guardar lo que llevo</button><button class="bt pr">Enviar a revisión</button></div>
+    <div class="nt">"Enviar a revisión" se activa cuando esté todo. Lo guardado ya aparece en la lista del líder como "Pendiente por instalar · documentos subidos".</div>
+  </div>
+</aside>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":560,"height":1300}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

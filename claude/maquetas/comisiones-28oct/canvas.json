@@ -1,0 +1,26 @@
+{"v":3,"createdOnFiles":{"v":1,"at":"2026-10-28T02:30:00Z"},"title":"Comisiones · Maqueta 28/10","launch":{"view":"canvas"},"pages":[],
+"boards":{
+"Main.dc.html":{"x":0,"y":0,"w":1366,"h":1180,"title":"1 · Lista del administrador: agrupada por líder, con carta y proforma","expand":"fill"},
+"Canales.dc.html":{"x":1446,"y":0,"w":1366,"h":1080,"title":"2 · Canales de atención ve todo igual que el administrador (pestaña Canales abierta)","expand":"fill"},
+"PorEnviar.dc.html":{"x":2892,"y":0,"w":1366,"h":1180,"title":"3 · Tarjeta Cartas y proformas: todos los equipos y cambios de categoría, hoja resaltada","expand":"fill"},
+"Enviada.dc.html":{"x":5784,"y":0,"w":560,"h":1000,"title":"3b · Hoja de comisión cuando ya se envió (líder o Canales)"},
+"PorInstalar.dc.html":{"x":4338,"y":0,"w":1366,"h":1500,"title":"4 · Por instalar: buscar la orden o subir con el posible nombre","expand":"fill"},
+"Resumen.dc.html":{"x":0,"y":1900,"w":1366,"h":1460,"title":"5 · Resumen por corte con ranking y cartas","expand":"fill"},
+"Detalle.dc.html":{"x":1446,"y":1900,"w":1366,"h":1460,"title":"6 · Detalle nuevo: por líder y desplegable","expand":"fill"},
+"TelRanking.dc.html":{"x":0,"y":3700,"w":390,"h":1100,"title":"7 · Teléfono: Resumen y ranking"},
+"TelDetalle.dc.html":{"x":470,"y":3700,"w":390,"h":844,"title":"8 · Teléfono: detalle como hoja"},
+"Drawer.dc.html":{"x":0,"y":5400,"w":560,"h":1300,"title":"9 · Hoja de comisión nueva: lo que falta, primero y resaltado"},
+"TelDrawer.dc.html":{"x":640,"y":5400,"w":390,"h":844,"title":"10 · Teléfono: hoja de comisión con todo listo"},
+"SubirDocs.dc.html":{"x":1110,"y":5400,"w":560,"h":1300,"title":"11 · Subir documentos de un cliente nuevo"},
+"TelSubir.dc.html":{"x":1750,"y":5400,"w":390,"h":844,"title":"12 · Teléfono: subir documentos (foto o archivo)"}
+},
+"order":["Main.dc.html","Canales.dc.html","PorEnviar.dc.html","Enviada.dc.html","PorInstalar.dc.html","Resumen.dc.html","Detalle.dc.html","TelRanking.dc.html","TelDetalle.dc.html","Drawer.dc.html","TelDrawer.dc.html","SubirDocs.dc.html","TelSubir.dc.html"],
+"notes":{
+"t1":{"x":0,"y":-300,"text":"Lista: lo que se gestiona","kind":"title1","maxW":6344},
+"t2":{"x":0,"y":1620,"text":"Resumen y detalle","kind":"title1","maxW":2812},
+"t3":{"x":0,"y":3420,"text":"Teléfono","kind":"title1","maxW":860},
+"t4":{"x":0,"y":5120,"text":"Hoja de comisión y subir documentos","kind":"title1","maxW":2140},
+"n1":{"x":2892,"y":1900,"text":"Nombres inventados. Números parecidos a los reales.\n\nQuién ve qué:\n• Administrador: todo.\n• Líder: su lista (con la etiqueta de carta y proforma de cada cliente) + Aliados; gráficas y ranking de todos.\n• Analistas (Canales): todas las pestañas, porque envían cartas y gestionan cobranza; sin cerrar corte ni excepciones.\n• Líder: en clientes de aliados ve la etiqueta de carta y proforma, pero no tiene botón de enviar.
+• Gerencia: Resumen en solo lectura.\n\nMonto del corte: por confirmar (30 $ por cliente).","w":440,"fill":"blue"}
+},
+"designSystems":[]}

@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Comisiones, cartas y proformas por enviar</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#F5F6F7;font-family:Inter,system-ui,sans-serif;color:#111315}
+*{box-sizing:border-box}
+.wrap{display:flex;flex-wrap:wrap;min-height:1180px}
+.main{flex:999 1 600px;min-width:0;padding:26px 30px;display:flex;flex-direction:column;gap:14px}
+.top{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+h1{margin:0;font-size:26px}
+.rol{font-size:12px;font-weight:600;background:#F0EBFA;color:#5B3AA6;border-radius:999px;padding:5px 11px}
+.segs{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) minmax(0,.7fr);gap:10px}
+.seg{background:#fff;border:1px solid #E3E6EA;border-radius:16px;padding:12px 14px;display:flex;align-items:center;gap:12px;font-family:inherit;text-align:left}
+.seg .n{font-size:24px;font-weight:700}.seg .t{font-weight:600;font-size:14px}.seg .s{font-size:12px;color:#5B636E}
+.seg.sm{background:#FBF1DC;border:2px solid #C98A12}.seg.sm .n{color:#754B00;font-size:22px}
+.teams{display:flex;gap:4px;border-bottom:1px solid #E3E6EA;flex-wrap:wrap}
+.team{padding:11px 14px;font-size:14px;font-weight:600;color:#5B636E;border:0;border-bottom:3px solid transparent;background:none;font-family:inherit}
+.team.on{color:#111315;border-color:#2B5CFF}
+.filt{font-size:13px;color:#754B00;font-weight:600}
+.grp{background:#fff;border:1px solid #E3E6EA;border-radius:16px;overflow:hidden}
+.gh{width:100%;display:flex;align-items:center;gap:10px;padding:12px 16px;background:#fff;border:0;font-family:inherit;text-align:left}
+.gh .nm{font-size:15px;font-weight:700}.gh .ct{margin-left:auto;font-size:12px;font-weight:600;background:#FBF1DC;color:#754B00;border-radius:999px;padding:3px 9px}
+.it{width:100%;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 10px;align-items:center;padding:11px 16px;border:0;border-top:1px solid #F0F1F3;background:#fff;font-family:inherit;text-align:left}
+.it.sel{background:#F7F9FF;box-shadow:inset 3px 0 0 #2B5CFF}
+.cn{font-weight:600;font-size:14px}.cm{font-size:12px;color:#5B636E}
+.p{font-size:12px;font-weight:600;border-radius:999px;padding:4px 9px}.p.w{background:#FBF1DC;color:#754B00}.p.r{background:#FCEDEB;color:#A32117}.p.ok{background:#E7F5EE;color:#0F6642}.p.b{background:#E8EEFF;color:#1F45C4}
+.dr{flex:0 1 560px;background:#fff;box-shadow:0 18px 44px rgba(17,19,21,.14);border-radius:22px 0 0 22px;padding:22px 24px;display:flex;flex-direction:column;gap:14px}
+.dh{display:flex;align-items:flex-start;gap:10px}
+.dh h2{margin:0;font-size:20px}.dh .s{font-size:12px;color:#5B636E;margin-top:3px}
+.x{margin-left:auto;width:40px;height:40px;border-radius:999px;border:1px solid #E3E6EA;background:#fff;font-size:18px;font-family:inherit}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.hl{border:2px solid #C98A12;background:#FFFBF2;border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.hl .tt{display:flex;align-items:center;gap:8px}.hl .tt b{font-size:16px}
+.doc{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #EDE3CC;border-radius:12px;padding:10px 12px}
+.doc .dn{font-weight:600;font-size:14px}.doc .ds{font-size:12px;color:#5B636E}
+.doc .pd{margin-left:auto;font-size:12px;font-weight:600;color:#1F45C4}
+.fld{display:flex;flex-direction:column;gap:4px}.fld label{font-size:12px;font-weight:600;color:#5B636E}
+.fld input{border:1px solid #E3E6EA;border-radius:12px;padding:10px 12px;font-family:inherit;font-size:14px;background:#fff}
+.bts{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:8px}
+.bt{border-radius:14px;padding:12px 10px;font-size:14px;font-weight:600;font-family:inherit;border:1px solid #E3E6EA;background:#fff;min-height:46px}
+.bt.pr{background:#2B5CFF;color:#fff;border-color:#2B5CFF}
+.nt{font-size:12px;color:#5B636E}
+.next{border:0;background:#111315;color:#fff;border-radius:14px;padding:13px;font-size:14px;font-weight:600;font-family:inherit}
+.fold{display:flex;align-items:center;justify-content:space-between;border:1px solid #E3E6EA;border-radius:14px;padding:12px 14px;font-size:14px;font-weight:600;background:#fff;font-family:inherit;width:100%}
+.fold span{font-size:12px;font-weight:600}
+</style>
+</helmet>
+<div class="wrap">
+  <main class="main">
+    <div class="top"><h1>Comisiones</h1><span class="rol">Canales de atención: ve lo mismo que el administrador</span><div class="sw" style="display:flex;background:#ECEEF1;border-radius:999px;padding:3px"><b style="padding:7px 16px;border-radius:999px;font-size:13px;background:#fff">Lista</b><b style="padding:7px 16px;border-radius:999px;font-size:13px;color:#5B636E">Resumen</b></div></div>
+    <div class="segs">
+      <button class="seg"><span class="n">27</span><span><span class="t">Instalaciones PYME</span><br><span class="s">4 comisionan</span></span></button>
+      <button class="seg"><span class="n">3</span><span><span class="t">Cambios de categoría</span><br><span class="s">Del corte</span></span></button>
+      <button class="seg sm"><span class="n">10</span><span><span class="t">Cartas y proformas</span><br><span class="s">por enviar</span></span></button>
+    </div>
+    <div class="teams" role="tablist"><button class="team on" style="color:#1F45C4">Ventas corporativas <span style="background:#2B5CFF;color:#fff;border-radius:999px;font-size:12px;padding:2px 8px">6</span></button><button class="team on" style="color:#1F45C4">Canales de atención <span style="background:#2B5CFF;color:#fff;border-radius:999px;font-size:12px;padding:2px 8px">1</span></button><button class="team on" style="color:#1F45C4">Aliados comerciales <span style="background:#2B5CFF;color:#fff;border-radius:999px;font-size:12px;padding:2px 8px">1</span></button></div>
+    <div class="filt">Las tres pestañas quedan marcadas: se ve todo lo que falta por enviar, también los cambios de categoría · quitar filtro</div>
+    <div class="grp">
+      <button class="gh"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5B636E" stroke-width="2.5" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg><span class="nm">Ana Ferrer</span><span class="ct">3 por enviar</span></button>
+      <button class="it sel"><span><span class="cn">Clínica Dental Sonrisa</span><br><span class="cm">Instalada hace 3 días</span></span><span class="p r">Por enviar · 3 días</span></button>
+      <button class="it"><span><span class="cn">Agencia de Viajes Sol</span><br><span class="cm">Instalada hace 2 días</span></span><span class="p w">Por enviar · 2 días</span></button>
+      <button class="it"><span><span class="cn">Mueblería Don Pepe</span><br><span class="cm">Instalada hace 1 día</span></span><span class="p w">Falta la IP</span></button>
+    </div>
+    <div class="grp">
+      <button class="gh"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5B636E" stroke-width="2.5" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg><span class="nm">Rosa Paredes</span><span class="ct">2 por enviar</span></button>
+      <button class="it"><span><span class="cn">Panadería El Trigal</span><br><span class="cm">Instalada hace 4 días</span></span><span class="p r">Por enviar · 4 días</span></button>
+      <button class="it"><span><span class="cn">Inversiones La Ceiba</span><br><span class="cm">La líder la envió el 26/10 · Canales debe enviarla igual</span></span><span class="p b">Enviada por la líder · falta Canales</span></button>
+    </div>
+    <div class="grp"><button class="gh"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5B636E" stroke-width="2.5" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg><span class="nm">Luisa Mora</span><span class="ct">1 por enviar</span></button></div>
+    <div class="grp">
+      <button class="gh"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5B636E" stroke-width="2.5" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg><span class="nm">Pedro Leal</span><span class="cm">· Canales</span><span class="ct">1 por enviar</span></button>
+      <button class="it"><span><span class="cn">Estudio Jurídico Prieto</span><br><span class="cm">Instalada hace 1 día</span></span><span class="p w">Por enviar · 1 día</span></button>
+    </div>
+    <div class="grp">
+      <button class="gh"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5B636E" stroke-width="2.5" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg><span class="nm">Redes del Lago</span><span class="cm">· Aliado</span><span class="ct">1 por enviar</span></button>
+      <button class="it"><span><span class="cn">Farmacia San Rafael</span><br><span class="cm">Instalada hace 2 días · el líder solo la ve, no la envía</span></span><span class="p w">Por enviar · 2 días</span></button>
+    </div>
+    <div class="grp">
+      <button class="gh"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5B636E" stroke-width="2.5" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg><span class="nm">Cambios de categoría</span><span class="ct">2 por enviar</span></button>
+      <button class="it"><span><span class="cn">Lavandería Express</span><br><span class="cm">Residencial a PYME · Luisa Mora · confirmado hace 2 días</span></span><span class="p w">Por enviar · 2 días</span></button>
+      <button class="it"><span><span class="cn">Papelería El Estudiante</span><br><span class="cm">1GB a PYME · Ana Ferrer · confirmado hace 1 día</span></span><span class="p w">Por enviar · 1 día</span></button>
+    </div>
+  </main>
+  <aside class="dr" aria-label="Hoja de comisión">
+    <div class="dh"><div><h2>Clínica Dental Sonrisa</h2><div class="s">J-41239876-0 · Código 88455 · Líder Ana Ferrer · instalada 24/10</div></div><button class="x" aria-label="Cerrar">×</button></div>
+    <div class="chips"><span class="p ok">Legal listo</span><span class="p r">Debe instalación</span></div>
+    <section class="hl" aria-label="Carta y proforma">
+      <div class="tt"><b>Carta de bienvenida y proforma</b><span class="p r" style="margin-left:auto">Por enviar · 3 días</span></div>
+      <div class="nt">Canales de atención debe enviarla siempre. Si la líder la envía, queda marcado, pero no reemplaza el envío de Canales.</div>
+      <div class="doc"><span><span class="dn">Proforma de instalación</span><br><span class="ds">60 $ · servicio de internet · contrato 88455</span></span><span class="pd">Ver PDF</span></div>
+      <div class="doc"><span><span class="dn">Carta de bienvenida</span><br><span class="ds">Con los datos de la líder y la IP</span></span><span class="pd">Ver PDF</span></div>
+      <div class="fld"><label for="ip">IP del servicio</label><input id="ip" value="10.20.6.31"></div>
+      <button class="bt pr" style="width:100%;font-size:15px;padding:14px">Enviar carta y proforma por WhatsApp</button>
+      <div class="nt">Un solo toque: copia el número del cliente (0414 555 2190) y abre WhatsApp con los dos PDF y el mensaje. En la laptop los descarga y abre WhatsApp Web en su chat.</div>
+      <a href="#" style="font-size:13px;font-weight:600;color:#1F45C4">O enviar por correo (opcional)</a>
+    </section>
+    <button class="next">Siguiente por enviar (7) →</button>
+    <button class="fold">Legal <span class="p ok">Listo</span></button>
+    <button class="fold">Pago <span class="p r">Debe instalación</span></button>
+    <button class="fold">Orden de Odoo y documentos <span style="color:#5B636E">ODO-3431</span></button>
+    <button class="fold">Hilo <span style="color:#5B636E">6 registros</span></button>
+  </aside>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1366,"height":1180}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Comisiones en el teléfono</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;font-family:Inter,system-ui,sans-serif;color:#111315}
+*{box-sizing:border-box}
+.ph{width:390px;height:1100px;background:#F5F6F7;display:flex;flex-direction:column;overflow:hidden}
+.in{padding:18px 16px;display:flex;flex-direction:column;gap:14px;flex:1}
+h1{margin:0;font-size:24px}
+.sw{display:flex;background:#ECEEF1;border-radius:999px;padding:3px}
+.sw b{flex:1;text-align:center;padding:9px;border-radius:999px;font-size:14px;font-weight:600;color:#5B636E}.sw b.on{background:#fff;color:#111315}
+.dd{display:flex;justify-content:space-between;align-items:center;background:#fff;border:1px solid #E3E6EA;border-radius:14px;padding:12px 14px;font-size:14px;font-family:inherit;width:100%}
+.dd span{color:#5B636E}
+.ban{background:#111315;color:#fff;border-radius:16px;padding:12px 14px;font-size:13px}.ban b{display:block;font-size:15px;margin-top:2px}
+.nums{display:flex;gap:10px;overflow:hidden;margin-right:-16px}
+.num{flex:0 0 150px;background:#fff;border:1px solid #E3E6EA;border-radius:16px;padding:12px 14px}
+.num .l{font-size:12px;color:#5B636E}.num .v{font-size:28px;font-weight:700}.num.w .v{color:#754B00}
+.card{background:#fff;border:1px solid #E3E6EA;border-radius:18px;padding:14px;display:flex;flex-direction:column;gap:12px}
+.ch{display:flex;align-items:center}.ch h3{margin:0;font-size:16px}
+.mini{display:flex;background:#ECEEF1;border-radius:999px;padding:3px}
+.mini b{flex:1;text-align:center;padding:7px 4px;border-radius:999px;font-size:12px;font-weight:600;color:#5B636E}.mini b.on{background:#fff;color:#111315}
+.pod{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;align-items:end}
+.pc{border-radius:14px;padding:10px 6px;display:flex;flex-direction:column;align-items:center;gap:4px;background:#F5F6F7}
+.pc.p1{background:#E8EEFF;padding-top:16px}
+.pos{width:24px;height:24px;border-radius:999px;background:#fff;font-weight:700;font-size:12px;display:flex;align-items:center;justify-content:center}
+.pc.p1 .pos{background:#2B5CFF;color:#fff}
+.pn{font-weight:600;font-size:12px;text-align:center}.pv{font-size:20px;font-weight:700}
+.rk{display:grid;grid-template-columns:18px 92px minmax(0,1fr) 22px;gap:8px;align-items:center;font-size:13px;padding:5px 0}
+.bar{height:12px;background:#F0F1F3;border-radius:999px;display:flex;overflow:hidden}
+.b1{background:#0F6642}.b2{background:#9FD3BA}
+.nav{display:flex;justify-content:space-around;background:#fff;border-top:1px solid #E3E6EA;padding:10px 6px 22px}
+.nav span{font-size:11px;font-weight:600;color:#69717C;text-align:center}.nav span.on{color:#1F45C4}
+</style>
+</helmet>
+<div class="ph">
+  <div class="in">
+    <h1>Comisiones</h1>
+    <div class="sw"><b>Lista</b><b class="on">Resumen</b></div>
+    <button class="dd"><span>Corte</span><strong>Noviembre (en curso)</strong></button>
+    <div class="ban">Líder de octubre<b>Ana Ferrer · 15 instaladas</b></div>
+    <div class="nums">
+      <div class="num"><div class="l">Instaladas en el corte</div><div class="v">27</div></div>
+      <div class="num"><div class="l">Comisionan</div><div class="v">4</div></div>
+      <div class="num w"><div class="l">Por instalar</div><div class="v">6</div></div>
+    </div>
+    <div class="card">
+      <div class="ch"><h3>Ranking del corte</h3></div>
+      <div class="mini"><b class="on">Líderes</b><b>Canales</b><b>Aliados</b></div>
+      <div class="pod">
+        <div class="pc"><span class="pos">2</span><span class="pn">Ana Ferrer</span><span class="pv">4</span></div>
+        <div class="pc p1"><span class="pos">1</span><span class="pn">Rosa Paredes</span><span class="pv">5</span></div>
+        <div class="pc"><span class="pos">3</span><span class="pn">Luisa Mora</span><span class="pv">3</span></div>
+      </div>
+      <div class="rk"><span>4</span><span>Carla Rivas</span><span class="bar"><span class="b1" style="width:16%"></span><span class="b2" style="width:17%"></span></span><b>2</b></div>
+      <div class="rk"><span>5</span><span>Diana Soto</span><span class="bar"><span class="b2" style="width:33%"></span></span><b>2</b></div>
+    </div>
+    <div class="card">
+      <div class="ch"><h3>Equipos</h3></div>
+      <div class="rk" style="grid-template-columns:120px minmax(0,1fr) 22px"><span>Ventas corporativas</span><span class="bar"><span class="b1" style="width:15%;background:#1F45C4"></span><span class="b2" style="width:65%;background:#BFCBFF"></span></span><b>16</b></div>
+      <div class="rk" style="grid-template-columns:120px minmax(0,1fr) 22px"><span>Canales de atención</span><span class="bar"><span class="b1" style="width:5%;background:#1F45C4"></span><span class="b2" style="width:30%;background:#BFCBFF"></span></span><b>7</b></div>
+      <div class="rk" style="grid-template-columns:120px minmax(0,1fr) 22px"><span>Aliados comerciales</span><span class="bar"><span class="b2" style="width:20%;background:#BFCBFF"></span></span><b>4</b></div>
+    </div>
+  </div>
+  <nav class="nav" aria-label="Menú"><span>Inicio</span><span>Clientes</span><span class="on">Comisiones</span><span>Revisión</span><span>Más</span></nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1100}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
