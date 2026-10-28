@@ -89,3 +89,14 @@ Maqueta en `claude/maquetas/mi-trabajo-28oct/`. Decisiones:
 - Por rol: todos los que venden tienen "Mis ventas" (devueltos, faltan para comisionar, por instalar); Legal ve el tablero de contratos (Para elaborar, Enviado a firmar, Firmado falta subir, Listo) y vencimientos; Canales: cartas y proformas, IP, apoyo con pago y documentos; líder: lo suyo y sus gestiones.
 - Contratos y VGT en la hoja del cliente: solo rediseño visual con el mismo proceso (contratos con "Poner fecha" o "Falta subir", tramos en tabla, requisitos en checklist). El proceso VGT (solicitudes, propuesta automática) queda para después, con Dedicados al final.
 - Estado: maqueta presentada; el administrador pidió seguir con el siguiente módulo.
+
+## Regla de diseño (28/10, después del lote 28/10)
+- En un rediseño NUNCA se quita una función manual. Antes de cerrar un lote de pantallas, comparar función por función con la versión anterior (botones, acciones, confirmaciones) y no perder ninguna. Las acciones frecuentes van a la vista, no escondidas en menús o secciones plegadas.
+
+## Fallas encontradas al usar v67 (28/10, tarde) · para el lote urgente 28/10-B
+- Comisiones: se perdieron confirmar o elegir la orden de Odoo, "¿Es este cliente?" de provisionales y elegir dueño del provisional; las demás acciones quedaron escondidas en "Más acciones" o plegadas.
+- Carta y proforma: se perdió la marca de "ya fue enviada" (quién y cuándo) que debe verse en la lista, la hoja y los pendientes.
+- Permisos: la Analista Senior puede verificar (aprobar o devolver) documentos y no le corresponde.
+- Cambio de PIN obligatorio: la sesión se cierra al guardar el PIN y la marca "debe cambiar" queda puesta (círculo). Se destrabó a mano a Ender.
+- IA: acta constitutiva legible sin junta, duración ni domicilio queda "a mano" con un mensaje confuso; el mismo archivo subido dos veces se lee y paga dos veces.
+- Mi trabajo: los números de Inicio y del buzón se cuentan por separado y pueden no coincidir.
