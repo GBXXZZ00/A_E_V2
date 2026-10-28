@@ -17,6 +17,7 @@ Formato: módulo · tipo (falla / cambio / mejora) · prioridad (alta / media / 
 
 **Actualizar:**
 - cambio · alta: arriba, una lista "Qué toca actualizar": cada archivo (TAD, Odoo, Órdenes de instalación, KMZ y los que vengan) con la fecha de su última carga y si está al día o atrasado.
+  Frecuencia: TAD, Odoo y Órdenes todos los días en la mañana, y una carga opcional a las 5 p. m.; KMZ solo cuando cambie el mapa.
 - cambio · alta: una sola zona de subida para todo, incluido el KMZ (hoy el KMZ va aparte).
 - cambio · media: historial de cargas agrupado por fecha; al tocar una fecha se despliega qué se subió (archivo, hora, quién, resultado).
 - cambio · baja: quitar los botones "Ver comisiones" y "Ver factibilidad".
@@ -26,3 +27,16 @@ Formato: módulo · tipo (falla / cambio / mejora) · prioridad (alta / media / 
 
 ## Pruebas por rol (al final)
 Probar cada módulo desde las otras cuentas (líder, analista, Senior, abogado, aliado, gerencia), con el modo práctica o con cuentas reales.
+
+## Módulo 2 · Comisiones (probado 27/10)
+Le encanta en general. La hoja (drawer) de comisión queda tal cual.
+- diseño · alta: Comisiones se siente mal organizado. Propuesta (por aprobar con maqueta): dos tarjetas arriba "Instalaciones PYME" | "Cambios de categoría" (como las de Clientes), y pestañas Corte | Por instalar | Por asignar. "Sin instalar" y "Sin líder" no se entienden con esos nombres.
+- cambio · alta: "Por instalar" = órdenes de Odoo abiertas, se ven poco. Botón visible "Subir documentos de un cliente nuevo" con drawer como el de asignar, que muestra las órdenes de Odoo no cumplidas para elegir la suya. El líder ve esa venta en su corte como "No instalada · documentos subidos" y pasa sola al corte al instalarse.
+- cambio · alta: solo órdenes recientes (ventana de comisión, 45 días); las viejas aparte, no en la vista normal.
+- falla · alta: el Resumen de Comisiones cuenta por mes de calendario (octubre) mientras la lista va por corte (noviembre). Debe ir por corte, con selector de corte (actual, anterior...) y comparar con el anterior.
+- falla · alta: la gráfica por líder no se nota ni se entiende; la de sin instalar por antigüedad tampoco.
+- diseño · alta: el panel de detalle de las gráficas es feo y no se entiende. Debe abrir algo bonito: agrupado por líder con barras pequeñas y totales, y debajo tarjetas de clientes con chips de estado. Maqueta primero.
+- nuevo · media: atajos claros para gestión actual: "Falta legal" y "Sin pago" del corte, con cantidad por líder.
+- nuevo · media: suspendidos antes de 60 días (churn de infancia) por líder en Comisiones; suspendidos en general van en Clientes.
+- nuevo · media: competencia del mes: ranking de instalaciones del corte por líder, podio y "Líder del mes", visible para los líderes (por confirmar qué ven).
+- duda · IP: "Falta la IP" no depende de documentos: la IP viene de un archivo que aún no se carga; hoy se escribe a mano.
