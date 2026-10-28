@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Ida y vuelta en Mi trabajo</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#fff;font-family:Inter,system-ui,sans-serif;color:#111315}
+*{box-sizing:border-box}
+.wrap{width:1366px;height:640px;padding:36px 40px;display:flex;flex-direction:column;gap:22px}
+h2{margin:0;font-size:22px}
+.flow{display:flex;align-items:stretch;gap:0}
+.box{flex:1;border:2px solid #E3E6EA;border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:6px;background:#F5F6F7}
+.box b{font-size:16px}.box span{font-size:13px;color:#5B636E}
+.box.d{background:#fff;border-color:#2B5CFF}
+.box.d2{background:#fff;border-color:#5B3AA6}
+.ar{width:110px;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:8px;font-size:12px;font-weight:600;text-align:center}
+.ar .f{color:#1F45C4}.ar .b{color:#A32117}
+.rules{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.r{border:1px solid #E3E6EA;border-radius:16px;padding:14px 16px}
+.r b{font-size:14px;display:block;margin-bottom:4px}.r span{font-size:13px;color:#3B424B}
+</style>
+</helmet>
+<div class="wrap">
+  <h2>Ida y vuelta: nunca sales de donde estabas</h2>
+  <div class="flow">
+    <div class="box"><b>Inicio</b><span>Como hoy, con los pendientes agrupados.</span><span>Tocas "Devueltos 3".</span></div>
+    <div class="ar"><span class="f">toca un grupo →</span><span class="b">← atrás</span></div>
+    <div class="box"><b>Mi trabajo · Devueltos</b><span>La checklist de ese grupo.</span><span>Tocas Ir en "Cédula de Panadería El Trigal".</span></div>
+    <div class="ar"><span class="f">Ir →</span><span class="b">← X, atrás o deslizar</span></div>
+    <div class="box d"><b>Hoja del cliente (encima)</b><span>Abierta en Documentos, con la cédula resaltada.</span><span>Subes la nueva: aviso "Se quitó de tus pendientes".</span></div>
+    <div class="ar"><span class="f">Ver expediente →</span><span class="b">← atrás</span></div>
+    <div class="box d2"><b>Otra hoja apilada</b><span>Por ejemplo, la comisión de ese cliente.</span><span>Atrás te devuelve a la hoja anterior.</span></div>
+  </div>
+  <div class="rules">
+    <div class="r"><b>Al cerrar</b><span>Vuelves al mismo punto del buzón; el ítem ya aparece tachado y el número baja.</span></div>
+    <div class="r"><b>Siguiente pendiente</b><span>Dentro de la hoja, un botón te pasa al próximo del mismo grupo sin volver al buzón.</span></div>
+    <div class="r"><b>Ver en el módulo</b><span>Si quieres la vista completa, cada hoja tiene "Ver en Comisiones" (o en Clientes), y desde ahí "Volver a Mi trabajo".</span></div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1366,"height":640}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

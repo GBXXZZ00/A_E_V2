@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Mi trabajo, líder</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#F5F6F7;font-family:Inter,system-ui,sans-serif;color:#111315}
+*{box-sizing:border-box}
+.main{max-width:1366px;padding:26px 34px;display:flex;flex-direction:column;gap:16px}
+.top{display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap}
+h1{margin:0;font-size:26px}.sub{font-size:14px;color:#5B636E;margin-top:4px}
+.rol{font-size:12px;font-weight:600;background:#E7F5EE;color:#0F6642;border-radius:999px;padding:5px 11px}
+.nums{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.num{background:#fff;border:1px solid #E3E6EA;border-radius:16px;padding:12px 16px;font-family:inherit;text-align:left}
+.num .v{font-size:26px;font-weight:700}.num .l{font-size:12px;color:#5B636E}
+.num.r .v{color:#A32117}.num.w .v{color:#754B00}.num.b .v{color:#1F45C4}
+.cols{display:grid;grid-template-columns:250px minmax(0,1fr);gap:18px;align-items:start}
+.mods{display:flex;flex-direction:column;gap:6px}
+.md{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #E3E6EA;border-radius:14px;padding:11px 14px;font-family:inherit;font-size:14px;font-weight:600;text-align:left}
+.md.on{border:2px solid #2B5CFF;background:#F7F9FF}
+.md .c{margin-left:auto;font-size:12px;border-radius:999px;padding:2px 9px;background:#ECEEF1}
+.md .c.r{background:#FCEDEB;color:#A32117}.md .c.w{background:#FBF1DC;color:#754B00}
+.rgt{display:flex;flex-direction:column;gap:14px}
+.sec{background:#fff;border:1px solid #E3E6EA;border-radius:18px;overflow:hidden}
+.sh{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid #F0F1F3}
+.sh b{font-size:15px}.sh span{font-size:12px;color:#5B636E}
+.it{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:12px;align-items:center;padding:12px 16px;border-top:1px solid #F5F6F7}
+.ck{width:20px;height:20px;border-radius:6px;border:2px solid #C9CDD3}
+.ck.done{background:#0F6642;border-color:#0F6642}
+.tt{font-size:14px;font-weight:600}.mt{font-size:12px;color:#5B636E;margin-top:2px}
+.done .tt{text-decoration:line-through;color:#69717C}
+.ir{font-size:13px;font-weight:600;color:#1F45C4;border:1px solid #D5DEFF;border-radius:999px;padding:7px 14px;background:#fff;font-family:inherit}
+.ir.pr{background:#2B5CFF;color:#fff;border-color:#2B5CFF}
+.p{font-size:11px;font-weight:700;border-radius:999px;padding:2px 7px;margin-left:6px;vertical-align:1px}.p.r{background:#FCEDEB;color:#A32117}.p.w{background:#FBF1DC;color:#754B00}
+.est{display:flex;gap:6px}
+.e{font-size:12px;font-weight:600;border:1px solid #E3E6EA;border-radius:999px;padding:6px 10px;background:#fff;font-family:inherit}
+.e.on{background:#111315;color:#fff;border-color:#111315}
+</style>
+</helmet>
+<div class="main">
+  <div class="top"><div><h1>Mi trabajo</h1><div class="sub">Buenos días, Rosa. Tienes 9 cosas por hacer; 3 bloquean tu comisión.</div></div><span class="rol">Vista de una líder</span></div>
+  <div class="nums">
+    <button class="num r"><div class="v">3</div><div class="l">Documentos devueltos</div></button>
+    <button class="num w"><div class="v">2</div><div class="l">Órdenes de más de 24 horas</div></button>
+    <button class="num"><div class="v">22 días</div><div class="l">Para el cierre del corte (18/11)</div></button>
+    <button class="num b"><div class="v">1.º</div><div class="l">En el ranking del corte</div></button>
+  </div>
+  <div class="cols">
+    <div class="mods" role="tablist">
+      <button class="md on">Todo<span class="c">9</span></button>
+      <button class="md">Devueltos<span class="c r">3</span></button>
+      <button class="md">Faltan para comisionar<span class="c w">2</span></button>
+      <button class="md">Por instalar<span class="c w">2</span></button>
+      <button class="md">Gestiones asignadas<span class="c">1</span></button>
+      <button class="md">Mis notas<span class="c">1</span></button>
+    </div>
+    <div class="rgt">
+      <section class="sec">
+        <div class="sh"><b>Devueltos</b><span>sube otra vez lo que se devolvió</span></div>
+        <div class="it"><span class="ck"></span><div><div class="tt">Cédula de Panadería El Trigal<span class="p r">en el corte</span></div><div class="mt">Motivo: ilegible. "La foto salió borrosa, pedir otra con buena luz"</div></div><button class="ir pr">Subir otra</button></div>
+        <div class="it"><span class="ck"></span><div><div class="tt">Acta constitutiva de Distribuidora Mara Sur</div><div class="mt">Motivo: incompleta, faltan páginas</div></div><button class="ir">Ir</button></div>
+        <div class="it done"><span class="ck done"></span><div><div class="tt">RIF de Inversiones Delta 21</div><div class="mt">Lo subiste hoy 9:12 a. m.</div></div><span></span></div>
+      </section>
+      <section class="sec">
+        <div class="sh"><b>Faltan para comisionar</b><span>corte de noviembre, límite 18/11</span></div>
+        <div class="it"><span class="ck"></span><div><div class="tt">Colegio Nueva Esperanza: cédula y RIF del representante</div><div class="mt">Instalado hace 1 día · también debe la instalación</div></div><button class="ir">Pedir al cliente</button></div>
+      </section>
+      <section class="sec">
+        <div class="sh"><b>Por instalar</b><span>órdenes del mes de más de 24 horas</span></div>
+        <div class="it"><span class="ck"></span><div><div class="tt">ODO-3401 · 5 días sin instalar<span class="p r">reprogramada</span></div><div class="mt">Sin cliente en la app: adelanta los documentos</div></div><button class="ir pr">Subir documentos</button></div>
+      </section>
+      <section class="sec">
+        <div class="sh"><b>Gestión asignada: Recientes sin documentos</b><span>meta 18/11 · 6 de 41</span></div>
+        <div class="it"><span class="ck"></span><div><div class="tt">Repuestos El Zuliano</div><div class="mt">Instalado 08/2026 · 0414 555 7781</div></div><div class="est"><button class="e">Contactado</button><button class="e">Sin contacto</button><button class="e">Esperando</button></div></div>
+        <div class="it"><span class="ck"></span><div><div class="tt">Gimnasio Fuerza Total</div><div class="mt">Esperando desde el 25/10: "manda los papeles el viernes"</div></div><div class="est"><button class="e">Contactado</button><button class="e">Sin contacto</button><button class="e on">Esperando</button></div></div>
+      </section>
+      <section class="sec">
+        <div class="sh"><b>Mis notas</b><span>estas sí se marcan a mano</span></div>
+        <div class="it"><span class="ck"></span><div><div class="tt">Llamar a la clínica para el acta de asamblea</div><div class="mt">Recordar jueves 10:00 a. m.</div></div><span></span></div>
+      </section>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1366,"height":1080}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Revisar documentos en lote</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#F5F6F7;font-family:Inter,system-ui,sans-serif;color:#111315}
+*{box-sizing:border-box}
+.main{max-width:1366px;padding:24px 34px;display:flex;flex-direction:column;gap:14px;min-height:1100px;position:relative}
+.top{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.back{font-size:13px;font-weight:600;color:#1F45C4}
+h1{margin:0;font-size:24px}
+.prog{font-size:13px;color:#5B636E}.prog b{color:#0F6642}
+.flt{display:flex;gap:8px;flex-wrap:wrap}
+.f{border:1px solid #E3E6EA;background:#fff;border-radius:999px;padding:8px 14px;font-size:13px;font-weight:600;font-family:inherit;display:flex;gap:6px;align-items:center}
+.f.on{background:#111315;color:#fff;border-color:#111315}
+.f i{width:9px;height:9px;border-radius:999px;display:inline-block}
+.f.cor{margin-left:auto;background:#FBF1DC;border-color:#F0DDB0;color:#754B00}
+.bar{position:sticky;top:0;display:flex;align-items:center;gap:10px;background:#111315;color:#fff;border-radius:16px;padding:12px 16px;flex-wrap:wrap}
+.bar b{font-size:14px}
+.ba{border:0;border-radius:12px;padding:10px 14px;font-size:14px;font-weight:600;font-family:inherit}
+.ba.ok{background:#0F6642;color:#fff;margin-left:auto}.ba.no{background:#fff;color:#A32117}.ba.ia{background:#2A2E33;color:#fff;border:1px solid #3B424B}
+.grp{background:#fff;border:1px solid #E3E6EA;border-radius:16px;overflow:hidden}
+.gh{display:flex;align-items:center;gap:10px;padding:12px 16px;background:#FAFAFB}
+.gh b{font-size:15px}.gh .s{font-size:12px;color:#5B636E}
+.gh .acts{margin-left:auto;display:flex;gap:6px}
+.a{font-size:12px;font-weight:600;color:#1F45C4;border:1px solid #D5DEFF;border-radius:999px;padding:6px 11px;background:#fff;font-family:inherit}
+.row{display:grid;grid-template-columns:24px minmax(0,1.1fr) minmax(0,1.6fr) auto;gap:12px;align-items:center;padding:10px 16px;border-top:1px solid #F0F1F3}
+.cb{width:20px;height:20px;border-radius:6px;border:2px solid #C9CDD3}
+.cb.on{background:#2B5CFF;border-color:#2B5CFF}
+.dn{font-size:14px;font-weight:600}.dm{font-size:12px;color:#5B636E}
+.p{font-size:12px;font-weight:600;border-radius:999px;padding:3px 9px;margin-right:6px}.p.ok{background:#E7F5EE;color:#0F6642}.p.r{background:#FCEDEB;color:#A32117}.p.w{background:#FBF1DC;color:#754B00}.p.g{background:#ECEEF1;color:#3B424B}
+.why{font-size:12px;color:#3B424B}
+.toast{position:absolute;left:50%;bottom:24px;transform:translateX(-50%);background:#111315;color:#fff;border-radius:14px;padding:12px 18px;font-size:14px;display:flex;gap:10px;align-items:center;box-shadow:0 18px 44px rgba(17,19,21,.2)}
+.toast b{color:#8CCBAE}
+.toast2{position:absolute;right:34px;bottom:84px;background:#E7F5EE;border:1px solid #8CCBAE;color:#0F6642;border-radius:14px;padding:12px 16px;font-size:13px;font-weight:600}
+</style>
+</helmet>
+<div class="main">
+  <div class="top"><span class="back">← Mi trabajo</span><h1>Revisar documentos</h1><span class="prog">329 clientes · hoy aprobaste <b>12</b></span></div>
+  <div class="flt">
+    <button class="f on"><i style="background:#0F6642"></i>IA: Apto 41</button>
+    <button class="f"><i style="background:#C0271B"></i>IA: No apto 18</button>
+    <button class="f"><i style="background:#C98A12"></i>A mano 9</button>
+    <button class="f"><i style="background:#9AA1AB"></i>Sin leer 261</button>
+    <button class="f cor">Solo el corte de noviembre 27</button>
+  </div>
+  <div class="bar"><b>14 documentos de 6 clientes seleccionados</b><button class="ba ia">Leer con IA</button><button class="ba no">Devolver con el motivo de la IA</button><button class="ba ok">Aprobar seleccionados</button></div>
+
+  <div class="grp">
+    <div class="gh"><span class="cb on"></span><b>Inversiones La Ceiba, C.A.</b><span class="s">Rosa Paredes · 3 documentos · en el corte</span><span class="acts"><button class="a">Abrir en Drive</button><button class="a">Ver uno por uno</button></span></div>
+    <div class="row"><span class="cb on"></span><div><div class="dn">Cédula</div><div class="dm">representante 1</div></div><div class="why"><span class="p ok">Apto</span>Vigente hasta 2031; nombre igual al acta</div><span class="dm">hace 4 días</span></div>
+    <div class="row"><span class="cb on"></span><div><div class="dn">RIF personal</div><div class="dm">representante 1</div></div><div class="why"><span class="p ok">Apto</span>RIF digital, coincide con la cédula</div><span class="dm">hace 4 días</span></div>
+    <div class="row"><span class="cb on"></span><div><div class="dn">Acta de asamblea</div><div class="dm">2024</div></div><div class="why"><span class="p ok">Apto</span>Junta vigente hasta 12/2028</div><span class="dm">hace 4 días</span></div>
+  </div>
+  <div class="grp">
+    <div class="gh"><span class="cb on"></span><b>Distribuidora Mara Sur</b><span class="s">Luisa Mora · 2 documentos · espera 142 días</span><span class="acts"><button class="a">Abrir en Drive</button><button class="a">Ver uno por uno</button></span></div>
+    <div class="row"><span class="cb on"></span><div><div class="dn">RIF de la empresa</div><div class="dm">empresa</div></div><div class="why"><span class="p ok">Apto</span>Vence 03/2027</div><span class="dm">hace 142 días</span></div>
+    <div class="row"><span class="cb on"></span><div><div class="dn">Acta constitutiva</div><div class="dm">empresa</div></div><div class="why"><span class="p ok">Apto</span>Registro y sello completos</div><span class="dm">hace 142 días</span></div>
+  </div>
+  <div class="grp">
+    <div class="gh"><span class="cb"></span><b>Colegio Nueva Esperanza</b><span class="s">Diana Soto · 1 documento</span><span class="acts"><button class="a">Abrir en Drive</button><button class="a">Ver uno por uno</button></span></div>
+    <div class="row"><span class="cb"></span><div><div class="dn">Cédula</div><div class="dm">representante 1</div></div><div class="why"><span class="p r">No apto</span>Vencida en 2024: pedir la nueva</div><span class="dm">hace 1 día</span></div>
+  </div>
+  <div class="toast2">¡Bien! Inversiones La Ceiba ya tiene todo para comisionar</div>
+  <div class="toast"><b>12 aprobados.</b> Se quitaron de tus pendientes · quedan 317 <span style="color:#9FB3FF;font-weight:600">Deshacer</span></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1366,"height":1100}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

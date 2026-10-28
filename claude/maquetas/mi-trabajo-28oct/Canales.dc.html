@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Mi trabajo, Canales de atención</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#F5F6F7;font-family:Inter,system-ui,sans-serif;color:#111315}
+*{box-sizing:border-box}
+.main{max-width:1366px;padding:26px 34px;display:flex;flex-direction:column;gap:16px}
+.top{display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap}
+h1{margin:0;font-size:26px}.sub{font-size:14px;color:#5B636E;margin-top:4px}
+.rol{font-size:12px;font-weight:600;background:#F0EBFA;color:#5B3AA6;border-radius:999px;padding:5px 11px}
+.nums{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.num{background:#fff;border:1px solid #E3E6EA;border-radius:16px;padding:12px 16px;font-family:inherit;text-align:left}
+.num .v{font-size:26px;font-weight:700}.num .l{font-size:12px;color:#5B636E}
+.num.w .v{color:#754B00}.num.r .v{color:#A32117}
+.cols{display:grid;grid-template-columns:250px minmax(0,1fr);gap:18px;align-items:start}
+.mods{display:flex;flex-direction:column;gap:6px}
+.md{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #E3E6EA;border-radius:14px;padding:11px 14px;font-family:inherit;font-size:14px;font-weight:600;text-align:left}
+.md.on{border:2px solid #2B5CFF;background:#F7F9FF}
+.md .c{margin-left:auto;font-size:12px;border-radius:999px;padding:2px 9px;background:#ECEEF1}
+.md .c.w{background:#FBF1DC;color:#754B00}
+.rgt{display:flex;flex-direction:column;gap:14px}
+.sec{background:#fff;border:1px solid #E3E6EA;border-radius:18px;overflow:hidden}
+.sh{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid #F0F1F3}
+.sh b{font-size:15px}.sh span{font-size:12px;color:#5B636E}
+.grp{font-size:12px;font-weight:700;color:#5B636E;padding:10px 16px 0}
+.it{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:12px;align-items:center;padding:11px 16px;border-top:1px solid #F5F6F7}
+.ck{width:20px;height:20px;border-radius:6px;border:2px solid #C9CDD3}
+.tt{font-size:14px;font-weight:600}.mt{font-size:12px;color:#5B636E;margin-top:2px}
+.ir{font-size:13px;font-weight:600;color:#1F45C4;border:1px solid #D5DEFF;border-radius:999px;padding:7px 14px;background:#fff;font-family:inherit}
+.ir.pr{background:#2B5CFF;color:#fff;border-color:#2B5CFF}
+.p{font-size:11px;font-weight:700;border-radius:999px;padding:2px 7px;margin-left:6px;vertical-align:1px}.p.r{background:#FCEDEB;color:#A32117}.p.w{background:#FBF1DC;color:#754B00}.p.b{background:#E8EEFF;color:#1F45C4}
+</style>
+</helmet>
+<div class="main">
+  <div class="top"><div><h1>Mi trabajo</h1><div class="sub">Buenos días, Pedro. El equipo tiene 10 cartas por enviar; 3 esperan más de 2 días.</div></div><span class="rol">Vista de Canales de atención</span></div>
+  <div class="nums">
+    <button class="num w"><div class="v">10</div><div class="l">Cartas y proformas por enviar</div></button>
+    <button class="num"><div class="v">3</div><div class="l">IP por escribir</div></button>
+    <button class="num r"><div class="v">11</div><div class="l">Del corte sin pago</div></button>
+    <button class="num w"><div class="v">9</div><div class="l">Del corte con falta legal</div></button>
+  </div>
+  <div class="cols">
+    <div class="mods" role="tablist">
+      <button class="md on">Todo<span class="c">36</span></button>
+      <span style="font-size:11px;font-weight:700;color:#5B636E;padding:6px 4px 0">MIS VENTAS</span>
+      <button class="md">Devueltos<span class="c w">1</span></button>
+      <button class="md">Faltan para comisionar<span class="c w">1</span></button>
+      <button class="md">Por instalar<span class="c">1</span></button>
+      <span style="font-size:11px;font-weight:700;color:#5B636E;padding:6px 4px 0">MI ROL: CANALES</span>
+      <button class="md">Cartas y proformas<span class="c w">10</span></button>
+      <button class="md">IP por escribir<span class="c">3</span></button>
+      <button class="md">Apoyo con pago<span class="c">11</span></button>
+      <button class="md">Apoyo con documentos<span class="c">9</span></button>
+      <button class="md">Mis notas<span class="c">0</span></button>
+    </div>
+    <div class="rgt">
+      <section class="sec">
+        <div class="sh"><b>Mis ventas</b><span>lo mismo que un líder: lo que tú instalaste</span></div>
+        <div class="it"><span class="ck"></span><div><div class="tt">Acta de asamblea de Estudio Jurídico Prieto devuelta<span class="p r">en el corte</span></div><div class="mt">Motivo: junta vencida, pedir acta de ratificación</div></div><button class="ir pr">Subir otra</button></div>
+        <div class="it"><span class="ck"></span><div><div class="tt">ODO-3460 · 30 horas sin instalar</div><div class="mt">Sin cliente en la app: adelanta los documentos</div></div><button class="ir">Subir documentos</button></div>
+      </section>
+      <section class="sec">
+        <div class="sh"><b>Cartas y proformas por enviar</b><span>de todos los equipos · obligatorio para Canales</span></div>
+        <div class="grp">ANA FERRER</div>
+        <div class="it"><span class="ck"></span><div><div class="tt">Clínica Dental Sonrisa<span class="p r">3 días</span></div><div class="mt">Instalada el 24/10 · IP lista</div></div><button class="ir pr">Enviar</button></div>
+        <div class="it"><span class="ck"></span><div><div class="tt">Agencia de Viajes Sol<span class="p w">2 días</span></div><div class="mt">Instalada el 25/10 · IP lista</div></div><button class="ir pr">Enviar</button></div>
+        <div class="grp">ROSA PAREDES</div>
+        <div class="it"><span class="ck"></span><div><div class="tt">Inversiones La Ceiba<span class="p b">la líder ya la envió</span></div><div class="mt">Falta el envío de Canales</div></div><button class="ir pr">Enviar</button></div>
+        <div class="grp">CAMBIOS DE CATEGORÍA</div>
+        <div class="it"><span class="ck"></span><div><div class="tt">Lavandería Express<span class="p w">2 días</span></div><div class="mt">Residencial a PYME · Luisa Mora</div></div><button class="ir pr">Enviar</button></div>
+      </section>
+      <section class="sec">
+        <div class="sh"><b>IP por escribir</b><span>sin IP no sale la carta</span></div>
+        <div class="it"><span class="ck"></span><div><div class="tt">Mueblería Don Pepe · MBO-88466</div><div class="mt">Instalada ayer</div></div><button class="ir">Escribir IP</button></div>
+      </section>
+      <section class="sec">
+        <div class="sh"><b>Apoyo con pago</b><span>del corte, por dueño · el TAD lo revisa en cada carga</span></div>
+        <div class="it"><span class="ck"></span><div><div class="tt">Panadería El Trigal · debe la instalación</div><div class="mt">Rosa Paredes · faltan 22 días para el cierre</div></div><button class="ir">Ir</button></div>
+      </section>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1366,"height":960}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

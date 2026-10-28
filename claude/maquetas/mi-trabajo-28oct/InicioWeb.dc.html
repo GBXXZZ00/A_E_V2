@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Inicio en escritorio</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#F5F6F7;font-family:Inter,system-ui,sans-serif;color:#111315}
+*{box-sizing:border-box}
+.app{display:flex;flex-wrap:wrap;min-height:860px}
+.side{flex:0 0 220px;background:#fff;border-right:1px solid #E3E6EA;padding:22px 14px;display:flex;flex-direction:column;gap:4px}
+.logo{font-weight:700;font-size:18px;padding:0 10px 18px}.logo span{color:#5B636E;font-weight:500}
+.nav{padding:10px 12px;border-radius:12px;font-size:14px;color:#5B636E;font-weight:500;text-decoration:none;display:flex;justify-content:space-between;align-items:center}
+.nav.on{background:#E8EEFF;color:#1F45C4;font-weight:600}
+.nav.new{border:2px dashed #2B5CFF}
+.nav em{font-style:normal;background:#C0271B;color:#fff;border-radius:999px;font-size:11px;padding:1px 7px}
+.main{flex:999 1 700px;min-width:0;padding:26px 34px;display:flex;flex-direction:column;gap:16px}
+h1{margin:0;font-size:26px}.sub{font-size:14px;color:#5B636E;margin-top:4px}
+.g{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:16px;align-items:start}
+.big{background:#111315;color:#fff;border-radius:20px;padding:20px}
+.big b{font-size:40px;display:block}.big span{font-size:13px;color:#C9CDD3}
+.old{font-size:11px;font-weight:700;color:#5B636E;background:#ECEEF1;border-radius:999px;padding:3px 8px;align-self:flex-start}
+.newt{font-size:11px;font-weight:700;color:#fff;background:#2B5CFF;border-radius:999px;padding:3px 8px}
+.card{background:#fff;border:1px solid #E3E6EA;border-radius:18px;overflow:hidden}
+.ch{display:flex;align-items:center;gap:8px;padding:12px 16px;border-bottom:1px solid #F0F1F3}
+.ch b{font-size:15px}
+.cat{display:flex;align-items:center;gap:8px;padding:11px 16px;border-top:1px solid #F5F6F7;font-size:14px;font-weight:600}
+.cat span{margin-left:auto;font-size:12px;background:#FCEDEB;color:#A32117;border-radius:999px;padding:2px 8px}
+.av{padding:9px 16px 9px 30px;font-size:13px;border-top:1px solid #F5F6F7}.av small{display:block;color:#5B636E;font-size:12px}
+.mt{border:2px solid #2B5CFF}
+.it{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:10px;align-items:center;padding:11px 16px;border-top:1px solid #F5F6F7}
+.ck{width:20px;height:20px;border-radius:6px;border:2px solid #C9CDD3}
+.tt{font-size:14px;font-weight:600}.m{font-size:12px;color:#5B636E}
+.ir{font-size:13px;font-weight:600;color:#1F45C4;border:1px solid #D5DEFF;border-radius:999px;padding:6px 12px;background:#fff;font-family:inherit}
+.all{display:block;margin:12px 16px 14px;border:0;border-radius:14px;background:#2B5CFF;color:#fff;padding:13px;font-size:15px;font-weight:700;font-family:inherit;width:calc(100% - 32px)}
+</style>
+</helmet>
+<div class="app">
+  <nav class="side" aria-label="Menú">
+    <div class="logo">airtek <span>Empresas</span></div>
+    <a class="nav on" href="#">Inicio</a><a class="nav new" href="#">Mi trabajo <em>9</em></a><a class="nav" href="#">Clientes</a><a class="nav" href="#">Comisiones</a><a class="nav" href="#">Migraciones</a><a class="nav" href="#">Factibilidad</a>
+  </nav>
+  <main class="main">
+    <div><h1>Buenos días, Rosa</h1><div class="sub">Lo gris queda como hoy; lo azul es lo nuevo.</div></div>
+    <div class="g">
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <span class="old">COMO HOY</span>
+        <div class="big"><b>22 días</b><span>para el cierre del corte de noviembre</span></div>
+        <section class="card"><div class="ch"><b>Avisos</b></div>
+          <div class="cat">Expedientes<span>2</span></div>
+          <div class="av">Devolvieron la cédula de Panadería El Trigal<small>hace 1 hora</small></div>
+          <div class="av">Aprobaron el RIF de Inversiones Delta 21<small>hoy 9:30 a. m.</small></div>
+          <div class="cat">Comisiones<span>1</span></div>
+          <div class="cat">Gestiones<span>1</span></div>
+        </section>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <span class="newt" style="align-self:flex-start">NUEVO</span>
+        <section class="card mt"><div class="ch"><b>Mis pendientes, agrupados</b><span style="font-size:12px;color:#5B636E">toca un grupo y se abre Mi trabajo en ese grupo</span></div>
+          <div class="it"><span class="ck" style="border-color:#A32117"></span><div><div class="tt">Devueltos</div><div class="m">1 en el corte</div></div><button class="ir">3</button></div>
+          <div class="it"><span class="ck" style="border-color:#C98A12"></span><div><div class="tt">Faltan para comisionar</div><div class="m">límite 18/11</div></div><button class="ir">2</button></div>
+          <div class="it"><span class="ck" style="border-color:#C98A12"></span><div><div class="tt">Por instalar</div><div class="m">órdenes de más de 24 horas</div></div><button class="ir">2</button></div>
+          <div class="it"><span class="ck"></span><div><div class="tt">Gestiones asignadas</div><div class="m">Recientes sin documentos</div></div><button class="ir">1</button></div>
+          <div class="it"><span class="ck"></span><div><div class="tt">Mis notas</div><div class="m">1 para hoy</div></div><button class="ir">1</button></div>
+          <button class="all">Ver todo mi trabajo (9)</button>
+        </section>
+      </div>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1366,"height":860}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

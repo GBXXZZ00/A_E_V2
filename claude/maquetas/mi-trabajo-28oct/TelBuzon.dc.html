@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Buzón en el teléfono</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;font-family:Inter,system-ui,sans-serif;color:#111315}
+*{box-sizing:border-box}
+.ph{width:390px;height:844px;background:#F5F6F7;display:flex;flex-direction:column;overflow:hidden}
+.in{padding:18px 16px;display:flex;flex-direction:column;gap:12px;flex:1;overflow:hidden}
+h1{margin:0;font-size:22px}.s{font-size:13px;color:#5B636E}
+.mods{display:flex;gap:8px;overflow:hidden;margin-right:-16px}
+.md{flex:0 0 auto;border:1px solid #E3E6EA;background:#fff;border-radius:999px;padding:9px 13px;font-size:13px;font-weight:600;font-family:inherit;min-height:40px}
+.md.on{background:#111315;color:#fff;border-color:#111315}
+.md span{margin-left:4px;font-size:12px;opacity:.8}
+.sec{background:#fff;border:1px solid #E3E6EA;border-radius:16px;overflow:hidden}
+.sh{padding:11px 14px;font-weight:700;font-size:14px;border-bottom:1px solid #F0F1F3}
+.it{display:grid;grid-template-columns:22px minmax(0,1fr);gap:10px;padding:12px 14px;border-top:1px solid #F5F6F7}
+.ck{width:20px;height:20px;border-radius:6px;border:2px solid #C9CDD3;margin-top:2px}
+.tt{font-size:14px;font-weight:600}.mt{font-size:12px;color:#5B636E;margin-top:2px}
+.ir{margin-top:8px;font-size:14px;font-weight:600;border-radius:12px;padding:10px;background:#2B5CFF;color:#fff;border:0;font-family:inherit;width:100%;min-height:44px}
+.est{display:flex;gap:6px;margin-top:8px}
+.e{flex:1;font-size:12px;font-weight:600;border:1px solid #E3E6EA;border-radius:10px;padding:9px 4px;background:#fff;font-family:inherit;min-height:40px}
+.nav{display:flex;justify-content:space-around;background:#fff;border-top:1px solid #E3E6EA;padding:10px 6px 22px}
+.nav span{font-size:11px;font-weight:600;color:#69717C}.nav span.on{color:#1F45C4}
+</style>
+</helmet>
+<div class="ph">
+  <div class="in">
+    <div><h1>Mi trabajo</h1><div class="s">9 por hacer · 3 bloquean tu comisión</div></div>
+    <div class="mods"><button class="md on">Todo<span>9</span></button><button class="md">Devueltos<span>3</span></button><button class="md">Comisionar<span>2</span></button><button class="md">Por instalar<span>2</span></button></div>
+    <section class="sec"><div class="sh">Devueltos</div>
+      <div class="it"><span class="ck"></span><div><div class="tt">Cédula de Panadería El Trigal</div><div class="mt">Ilegible: pedir otra con buena luz</div><button class="ir">Subir otra (foto o archivo)</button></div></div>
+    </section>
+    <section class="sec"><div class="sh">Gestión: Recientes sin documentos</div>
+      <div class="it"><span class="ck"></span><div><div class="tt">Repuestos El Zuliano</div><div class="mt">0414 555 7781</div><div class="est"><button class="e">Contactado</button><button class="e">Sin contacto</button><button class="e">Esperando</button></div></div></div>
+    </section>
+  </div>
+  <nav class="nav" aria-label="Menú"><span>Inicio</span><span>Clientes</span><span>Comisiones</span><span class="on">Mi trabajo</span><span>Más</span></nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

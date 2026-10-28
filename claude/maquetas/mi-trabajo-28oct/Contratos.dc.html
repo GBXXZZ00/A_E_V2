@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Hoja del cliente, contratos y VGT</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#F5F6F7;font-family:Inter,system-ui,sans-serif;color:#111315}
+*{box-sizing:border-box}
+.dr{width:600px;min-height:1100px;background:#fff;border-radius:22px;box-shadow:0 18px 44px rgba(17,19,21,.14);padding:22px 24px;display:flex;flex-direction:column;gap:12px}
+.dh{display:flex;align-items:flex-start;gap:10px}.dh h2{margin:0;font-size:20px}.dh .s{font-size:12px;color:#5B636E;margin-top:3px}
+.x{margin-left:auto;width:40px;height:40px;border-radius:999px;border:1px solid #E3E6EA;background:#fff;font-size:18px;font-family:inherit}
+.tabs{display:flex;gap:2px;border-bottom:1px solid #E3E6EA}
+.tabs b{padding:10px 12px;font-size:14px;color:#5B636E;border-bottom:3px solid transparent;font-weight:600}.tabs b.on{color:#111315;border-color:#2B5CFF}
+.tabs em{font-style:normal;background:#C98A12;color:#fff;border-radius:999px;font-size:11px;padding:1px 6px;margin-left:4px}
+.p{font-size:12px;font-weight:600;border-radius:999px;padding:3px 9px}.p.ok{background:#E7F5EE;color:#0F6642}.p.w{background:#FBF1DC;color:#754B00}.p.g{background:#ECEEF1;color:#3B424B}.p.b{background:#E8EEFF;color:#1F45C4}.p.r{background:#FCEDEB;color:#A32117}.p.v{background:#F0EBFA;color:#5B3AA6}
+.sec{font-size:13px;font-weight:700;color:#3B424B;margin-top:6px;display:flex;align-items:center;gap:8px}
+.ct{border:1px solid #E3E6EA;border-radius:14px;padding:12px 14px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;align-items:center}
+.ct b{font-size:14px}.ct .m{font-size:12px;color:#5B636E;grid-column:1 / -1}
+.ct .f{grid-column:1 / -1;display:flex;gap:10px;align-items:center;border-top:1px solid #F0F1F3;padding-top:8px;font-size:12px}
+.lk{font-size:12px;font-weight:600;color:#1F45C4;margin-left:auto}
+.tr{display:grid;grid-template-columns:minmax(0,1.6fr) 60px 70px minmax(0,1fr);gap:10px;align-items:center;padding:10px 12px;border-top:1px solid #F0F1F3;font-size:13px}
+.tr.h{font-size:12px;color:#69717C;font-weight:600;border-top:0;background:#FAFAFB;border-radius:10px}
+.tbl{border:1px solid #E3E6EA;border-radius:14px;overflow:hidden}
+.rq{display:flex;align-items:center;gap:10px;border:1px solid #E3E6EA;border-radius:12px;padding:9px 12px;font-size:14px}
+.ic{width:22px;height:22px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex:0 0 22px}
+.rq.ok .ic{background:#E7F5EE;color:#0F6642}.rq.no .ic{background:#ECEEF1;color:#5B636E}
+.rq .r{margin-left:auto}
+.nt{font-size:12px;color:#5B636E}
+</style>
+</helmet>
+<aside class="dr" aria-label="Hoja del cliente">
+  <div class="dh"><div><h2>Cable Mara Sur, C.A.</h2><div class="s">J-31234567-8 · Dedicado ISP · Líder Carla Rivas</div></div><button class="x" aria-label="Cerrar">×</button></div>
+  <div class="tabs" role="tablist"><b>Datos</b><b>Documentos</b><b class="on">Contratos y VGT<em>2</em></b><b>Hilo</b></div>
+
+  <div class="sec">Contratos <span class="p g">3</span></div>
+  <div class="ct"><b>Servicio de internet dedicado</b><span class="p ok">Firmado</span>
+    <span class="m">N.º 2024-118 · firmado el 12/03/2024 · firma física</span>
+    <div class="f"><span class="p w">Sin fecha de vencimiento</span><span>Texto viejo: "2 años"</span><span class="lk">Poner fecha</span></div></div>
+  <div class="ct"><b>VGT · Ruta Norte</b><span class="p ok">Firmado</span>
+    <span class="m">34 postes · firmado el 05/2025</span>
+    <div class="f"><span class="p r">Falta subir el archivo</span><span class="lk">Subir contrato</span></div></div>
+  <div class="ct"><b>VGT · Ruta Costa</b><span class="p w">Por confirmar</span>
+    <span class="m">56 postes · marcado firmado en la base vieja, sin contrato a la vista</span>
+    <div class="f"><span class="p v">Revisar con Legal</span><span class="lk">Cambiar estatus</span></div></div>
+
+  <div class="sec">VGT · tramos <span class="p g">2</span></div>
+  <div class="tbl">
+    <div class="tr h"><span>Proyecto o ruta</span><span>Postes</span><span>En uso</span><span>ODT · estatus</span></div>
+    <div class="tr"><span><b>Ruta Norte</b><br><span class="nt">Municipio de ejemplo</span></span><span>34</span><span>Sí</span><span>ODT 5512 · <span class="p ok">Firmado</span></span></div>
+    <div class="tr"><span><b>Ruta Costa</b><br><span class="nt">Municipio de ejemplo</span></span><span>56</span><span>Sí</span><span>Sin ODT · <span class="p w">Por confirmar</span></span></div>
+  </div>
+
+  <div class="sec">Requisitos del VGT</div>
+  <div class="rq ok"><span class="ic">✓</span>Expediente del cliente completo<span class="r p ok">Listo</span></div>
+  <div class="rq no"><span class="ic">+</span>Póliza de responsabilidad civil general<span class="r p w">Falta</span></div>
+  <div class="rq no"><span class="ic">+</span>Póliza de responsabilidad patronal<span class="r p w">Falta</span></div>
+  <div class="rq no"><span class="ic">+</span>Propuesta comercial firmada y sellada<span class="r p w">Falta</span></div>
+  <span class="nt">Mismo proceso de hoy, solo ordenado. El módulo de solicitudes VGT y la propuesta automática se definen después.</span>
+</aside>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":600,"height":1100}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

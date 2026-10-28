@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Inicio en el teléfono</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;font-family:Inter,system-ui,sans-serif;color:#111315}
+*{box-sizing:border-box}
+.ph{width:390px;height:844px;background:#F5F6F7;display:flex;flex-direction:column;overflow:hidden}
+.in{padding:18px 16px;display:flex;flex-direction:column;gap:12px;flex:1}
+h1{margin:0;font-size:22px}.s{font-size:13px;color:#5B636E}
+.big{background:#111315;color:#fff;border-radius:18px;padding:16px}
+.big b{font-size:30px}.big span{display:block;font-size:12px;color:#C9CDD3}
+.tag{font-size:11px;font-weight:700;color:#5B636E;letter-spacing:.02em}
+.av{background:#fff;border:1px solid #E3E6EA;border-radius:16px;overflow:hidden}
+.ah{display:flex;align-items:center;gap:8px;padding:12px 14px;font-weight:700;font-size:14px}
+.ah span{margin-left:auto;font-size:12px;background:#FCEDEB;color:#A32117;border-radius:999px;padding:2px 8px}
+.ai{padding:10px 14px;border-top:1px solid #F0F1F3;font-size:13px}.ai small{display:block;color:#5B636E;font-size:12px}
+.cta{border:0;border-radius:16px;background:#2B5CFF;color:#fff;padding:15px;font-size:15px;font-weight:700;font-family:inherit;display:flex;justify-content:space-between;align-items:center;min-height:52px}
+.cta span{background:#fff;color:#1F45C4;border-radius:999px;padding:2px 10px;font-size:13px}
+.nav{display:flex;justify-content:space-around;background:#fff;border-top:1px solid #E3E6EA;padding:10px 6px 22px}
+.nav span{font-size:11px;font-weight:600;color:#69717C}.nav span.on{color:#1F45C4}
+</style>
+</helmet>
+<div class="ph">
+  <div class="in">
+    <div><h1>Buenos días, Rosa</h1><div class="s">Inicio queda como hoy</div></div>
+    <div class="big"><b>22 días</b><span>para el cierre del corte de noviembre</span></div>
+    <span class="tag">AVISOS</span>
+    <div class="av"><div class="ah">Expedientes<span>2 nuevos</span></div>
+      <div class="ai">Devolvieron la cédula de Panadería El Trigal<small>hace 1 hora</small></div>
+      <div class="ai">Aprobaron el RIF de Inversiones Delta 21<small>hoy 9:30 a. m.</small></div></div>
+    <div class="av"><div class="ah">Comisiones<span>1</span></div></div>
+    <button class="cta">Ver todo mi trabajo <span>9</span></button>
+  </div>
+  <nav class="nav" aria-label="Menú"><span class="on">Inicio</span><span>Clientes</span><span>Comisiones</span><span>Mi trabajo</span><span>Más</span></nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

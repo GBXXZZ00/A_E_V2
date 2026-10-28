@@ -1,0 +1,24 @@
+{"v":3,"createdOnFiles":{"v":1,"at":"2026-10-28T03:45:00Z"},"title":"Mi trabajo · Maqueta 28/10","launch":{"view":"canvas"},"pages":[],
+"boards":{
+"InicioWeb.dc.html":{"x":0,"y":0,"w":1366,"h":860,"title":"0 · Inicio como hoy + pendientes agrupados","expand":"fill"},
+"Main.dc.html":{"x":1446,"y":0,"w":1366,"h":1080,"title":"1 · Mi trabajo del administrador: tus tarjetas, compactas","expand":"fill"},
+"RevisionLote.dc.html":{"x":2892,"y":0,"w":1366,"h":1100,"title":"2 · Revisar documentos en lote, con la IA","expand":"fill"},
+"Revision.dc.html":{"x":4338,"y":0,"w":1366,"h":1000,"title":"2b · Solo para los A mano: pantalla partida","expand":"fill"},
+"Legal.dc.html":{"x":5784,"y":0,"w":1366,"h":960,"title":"3 · Mi trabajo de Legal (Reina): tablero de contratos","expand":"fill"},
+"Lider.dc.html":{"x":0,"y":1580,"w":1366,"h":1080,"title":"4 · Mi trabajo del líder","expand":"fill"},
+"Canales.dc.html":{"x":1446,"y":1580,"w":1366,"h":1150,"title":"5 · Mi trabajo de Canales: mis ventas + mi rol","expand":"fill"},
+"IrFlujo.dc.html":{"x":2892,"y":1580,"w":1366,"h":1000,"title":"4b · Al tocar Ir: la hoja se abre encima, en la casilla exacta","expand":"fill"},
+"Navegacion.dc.html":{"x":4338,"y":1580,"w":1366,"h":640,"title":"4c · Ida y vuelta"},
+"TelInicio.dc.html":{"x":0,"y":3060,"w":390,"h":844,"title":"6 · Teléfono: Inicio como hoy + entrada al buzón"},
+"TelBuzon.dc.html":{"x":470,"y":3060,"w":390,"h":844,"title":"7 · Teléfono: Mi trabajo del líder"},
+"TelRevision.dc.html":{"x":940,"y":3060,"w":390,"h":844,"title":"8 · Teléfono: revisar un documento a mano"},
+"Contratos.dc.html":{"x":1410,"y":3060,"w":600,"h":1100,"title":"9 · Hoja del cliente: Contratos y VGT (solo diseño, mismo proceso)"}
+},
+"order":["InicioWeb.dc.html","Main.dc.html","RevisionLote.dc.html","Revision.dc.html","Legal.dc.html","Lider.dc.html","Canales.dc.html","IrFlujo.dc.html","Navegacion.dc.html","TelInicio.dc.html","TelBuzon.dc.html","TelRevision.dc.html","Contratos.dc.html"],
+"notes":{
+"t1":{"x":0,"y":-300,"text":"Inicio, Mi trabajo del administrador, revisión y Legal","kind":"title1","maxW":7150},
+"t2":{"x":0,"y":1280,"text":"Líder, Canales y cómo se navega","kind":"title1","maxW":5704},
+"t3":{"x":0,"y":2760,"text":"Teléfono y hoja de contratos","kind":"title1","maxW":2010},
+"n1":{"x":5784,"y":1580,"text":"Reglas de Mi trabajo:\n• Inicio queda como hoy; sus pendientes salen agrupados y cada grupo abre Mi trabajo en ese grupo.\n• Mi trabajo usa tus tarjetas actuales, más compactas, como vista \"Todo\".\n• Revisar documentos es en lote con la IA: filtros Apto, No apto, A mano y Sin leer; aprobar o devolver varios a la vez; Abrir en Drive. Solo los A mano se revisan uno por uno.\n• Cada ítem tiene Ir: abre la hoja del cliente encima, en la casilla exacta. Al cerrar vuelves al mismo punto y el ítem ya está tachado.\n• Avisos en la misma pantalla al terminar (no al teléfono): \"Se quitó de tus pendientes\" y mensajes en verde cuando algo queda bien.\n• Todos los que venden tienen \"Mis ventas\"; además, lo de su rol.\n• El administrador ve \"El equipo\" y abre el buzón de cada uno en solo consulta.\n\nNombres inventados; cantidades de ejemplo, salvo tus tarjetas actuales.","w":460,"fill":"blue"}
+},
+"designSystems":[]}

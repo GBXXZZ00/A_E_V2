@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Revisar documentos</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#F5F6F7;font-family:Inter,system-ui,sans-serif;color:#111315}
+*{box-sizing:border-box}
+.wrap{display:flex;flex-direction:column;min-height:1000px}
+.bar{display:flex;align-items:center;gap:14px;padding:14px 24px;background:#fff;border-bottom:1px solid #E3E6EA;flex-wrap:wrap}
+.bar h1{margin:0;font-size:20px}
+.dd{display:flex;gap:8px;align-items:center;background:#F5F6F7;border:1px solid #E3E6EA;border-radius:12px;padding:8px 12px;font-size:13px;font-family:inherit}
+.prog{font-size:13px;color:#5B636E}.prog b{color:#0F6642}
+.out{margin-left:auto;font-size:13px;font-weight:600;border:1px solid #E3E6EA;background:#fff;border-radius:999px;padding:8px 14px;font-family:inherit}
+.cols{display:grid;grid-template-columns:290px minmax(0,1fr) 380px;flex:1}
+.cola{background:#fff;border-right:1px solid #E3E6EA;padding:12px;display:flex;flex-direction:column;gap:6px}
+.ql{font-size:12px;font-weight:700;color:#5B636E;padding:4px 6px}
+.q{border:1px solid transparent;border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:3px;font-family:inherit;text-align:left;background:#fff}
+.q.on{border:2px solid #2B5CFF;background:#F7F9FF}
+.q b{font-size:14px}.q span{font-size:12px;color:#5B636E}
+.q .c{display:flex;gap:6px}
+.p{font-size:11px;font-weight:700;border-radius:999px;padding:2px 7px}.p.r{background:#FCEDEB;color:#A32117}.p.w{background:#FBF1DC;color:#754B00}.p.b{background:#E8EEFF;color:#1F45C4}.p.ok{background:#E7F5EE;color:#0F6642}
+.view{padding:18px;display:flex;flex-direction:column;gap:10px}
+.vt{display:flex;align-items:center;gap:10px;font-size:13px;color:#5B636E}
+.vt b{color:#111315;font-size:14px}
+.zoom{margin-left:auto;display:flex;gap:6px}
+.zoom button{width:36px;height:36px;border-radius:10px;border:1px solid #E3E6EA;background:#fff;font-size:16px;font-family:inherit}
+.doc{flex:1;background:#DADDE1;border-radius:16px;display:flex;align-items:center;justify-content:center}
+.paper{width:78%;height:300px;background:#fff;border-radius:12px;box-shadow:0 6px 18px rgba(17,19,21,.12);display:flex;align-items:center;justify-content:center;color:#69717C;font-size:14px;font-weight:600}
+.thumbs{display:flex;gap:8px}
+.th{width:58px;height:74px;border-radius:8px;background:#fff;border:1px solid #E3E6EA;font-size:11px;display:flex;align-items:center;justify-content:center;color:#5B636E}
+.th.on{border:2px solid #2B5CFF}
+.pan{background:#fff;border-left:1px solid #E3E6EA;padding:18px;display:flex;flex-direction:column;gap:12px}
+.pan h2{margin:0;font-size:18px}.pan .s{font-size:12px;color:#5B636E}
+.cas{font-size:13px;font-weight:700;background:#F5F6F7;border-radius:10px;padding:8px 10px}
+.ia{border:2px solid #C98A12;background:#FFFBF2;border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:6px}
+.ia b{font-size:14px}.ia span{font-size:12px;color:#5B4A1E}
+.dat{display:grid;grid-template-columns:110px minmax(0,1fr);gap:4px 10px;font-size:13px}
+.dat span{color:#5B636E}
+.ab{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.bt{border-radius:14px;padding:13px;font-size:15px;font-weight:600;font-family:inherit;border:1px solid #E3E6EA;background:#fff;min-height:48px}
+.bt.ok{background:#0F6642;color:#fff;border-color:#0F6642}.bt.no{background:#fff;color:#A32117;border:2px solid #E7A39D}
+.mot{display:flex;gap:6px;flex-wrap:wrap}
+.m{border:1px solid #E3E6EA;border-radius:999px;padding:6px 10px;font-size:12px;font-weight:600;background:#fff;font-family:inherit}
+.m.on{background:#A32117;color:#fff;border-color:#A32117}
+.fld{display:flex;flex-direction:column;gap:4px}.fld label{font-size:12px;font-weight:600;color:#5B636E}
+.fld input{border:1px solid #E3E6EA;border-radius:10px;padding:9px 10px;font-family:inherit;font-size:13px}
+.nx{display:flex;gap:8px;margin-top:auto}
+.nx button{flex:1;border-radius:14px;padding:12px;font-size:14px;font-weight:600;font-family:inherit;border:0;background:#111315;color:#fff}
+.nx button.s2{background:#fff;color:#111315;border:1px solid #E3E6EA}
+.all{font-size:13px;font-weight:600;color:#1F45C4;border:1px dashed #9FB3FF;border-radius:12px;padding:10px;text-align:center;background:#F7F9FF;font-family:inherit}
+</style>
+</helmet>
+<div class="wrap">
+  <div class="bar"><h1>Revisar documentos</h1><button class="dd">Cola: <b>Corte de noviembre · 27</b> ▾</button><span class="prog">Hoy revisaste <b>4</b> · quedan 1.520</span><button class="out">Volver a Mi trabajo</button></div>
+  <div class="cols">
+    <aside class="cola" aria-label="Cola">
+      <span class="ql">CORTE DE NOVIEMBRE · BLOQUEAN COMISIÓN</span>
+      <button class="q on"><b>Panadería El Trigal</b><span>Rosa Paredes · 3 documentos · espera 4 días</span><span class="c"><span class="p w">IA lista</span><span class="p r">en el corte</span></span></button>
+      <button class="q"><b>Colegio Nueva Esperanza</b><span>Diana Soto · 5 documentos · espera 1 día</span><span class="c"><span class="p w">IA lista</span></span></button>
+      <button class="q"><b>Ferretería Los Andes</b><span>Ana Ferrer · 1 documento · espera 13 días</span><span class="c"><span class="p r">último corte</span></span></button>
+      <span class="ql" style="margin-top:8px">MÁS DE 90 DÍAS · 757</span>
+      <button class="q"><b>Distribuidora Mara Sur</b><span>Luisa Mora · 2 documentos · espera 142 días</span></button>
+      <button class="q"><b>Taller Mecánico Rivas</b><span>Carla Rivas · 1 documento · espera 120 días</span></button>
+    </aside>
+    <section class="view" aria-label="Documento">
+      <div class="vt"><b>cedula_representante.jpg</b> · subido por Rosa Paredes el 23/10 desde el teléfono<span class="zoom"><button aria-label="Alejar">−</button><button aria-label="Acercar">+</button><button aria-label="Girar">↻</button></span></div>
+      <div class="doc"><div class="paper">Vista del documento en grande</div></div>
+      <div class="thumbs"><span class="th on">Cédula</span><span class="th">RIF</span><span class="th">Acta</span></div>
+    </section>
+    <aside class="pan" aria-label="Decisión">
+      <div><h2>Panadería El Trigal</h2><div class="s">J-50234567-1 · documento 1 de 3</div></div>
+      <div class="cas">Casilla: Cédula · representante legal 1</div>
+      <div class="ia"><b>IA: No apto</b><span>La fecha de vencimiento no se lee. El nombre coincide con el acta.</span></div>
+      <div class="dat"><span>Nombre</span><b>Juan Carlos Pérez</b><span>Cédula</span><b>V-12.345.678</b><span>Vence</span><b>no se lee</b></div>
+      <div class="ab"><button class="bt ok">Aprobar</button><button class="bt no">Devolver</button></div>
+      <div class="mot"><button class="m on">Ilegible</button><button class="m">Vencido</button><button class="m">Incompleto</button><button class="m">Falta página</button><button class="m">No corresponde</button><button class="m">Junta vencida: pedir acta</button></div>
+      <div class="fld"><label for="nt">Nota para el líder (opcional)</label><input id="nt" value="La foto salió borrosa, pedir otra con buena luz"></div>
+      <button class="all">Aprobar lo que la IA marcó apto en este cliente (2)</button>
+      <div class="nx"><button class="s2">Siguiente documento</button><button>Siguiente cliente</button></div>
+    </aside>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1366,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

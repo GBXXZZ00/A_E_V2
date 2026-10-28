@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Mi trabajo, Legal</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#F5F6F7;font-family:Inter,system-ui,sans-serif;color:#111315}
+*{box-sizing:border-box}
+.main{max-width:1366px;padding:26px 34px;display:flex;flex-direction:column;gap:16px}
+.top{display:flex;align-items:flex-end;gap:14px;flex-wrap:wrap}
+h1{margin:0;font-size:26px}.sub{font-size:14px;color:#5B636E;margin-top:4px}
+.rol{font-size:12px;font-weight:600;background:#F0EBFA;color:#5B3AA6;border-radius:999px;padding:5px 11px}
+.mods{display:flex;gap:8px;flex-wrap:wrap}
+.md{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid #E3E6EA;border-radius:999px;padding:9px 14px;font-family:inherit;font-size:14px;font-weight:600}
+.md.on{background:#111315;color:#fff;border-color:#111315}
+.md span{font-size:12px;border-radius:999px;padding:1px 8px;background:#ECEEF1;color:#111315}
+.board{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;align-items:start}
+.colm{background:#ECEEF1;border-radius:18px;padding:10px;display:flex;flex-direction:column;gap:8px}
+.ch{display:flex;align-items:center;gap:8px;padding:4px 6px}.ch b{font-size:14px}.ch span{margin-left:auto;font-size:12px;font-weight:700;background:#fff;border-radius:999px;padding:2px 8px}
+.cd{background:#fff;border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:6px;border:1px solid #E3E6EA}
+.cd b{font-size:14px}.cd .s{font-size:12px;color:#5B636E}
+.tags{display:flex;gap:6px;flex-wrap:wrap}
+.p{font-size:11px;font-weight:700;border-radius:999px;padding:2px 8px}.p.b{background:#E8EEFF;color:#1F45C4}.p.v{background:#F0EBFA;color:#5B3AA6}.p.w{background:#FBF1DC;color:#754B00}.p.r{background:#FCEDEB;color:#A32117}.p.ok{background:#E7F5EE;color:#0F6642}.p.g{background:#ECEEF1;color:#3B424B}
+.acts{display:flex;gap:6px}
+.a{font-size:12px;font-weight:600;color:#1F45C4;border:1px solid #D5DEFF;border-radius:999px;padding:6px 10px;background:#fff;font-family:inherit}
+.a.pr{background:#2B5CFF;color:#fff;border-color:#2B5CFF}
+.vence{background:#fff;border:1px solid #E3E6EA;border-radius:18px;overflow:hidden}
+.vh{padding:12px 16px;font-weight:700;font-size:15px;border-bottom:1px solid #F0F1F3}
+.vi{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:12px;align-items:center;padding:11px 16px;border-top:1px solid #F5F6F7}
+.ck{width:20px;height:20px;border-radius:6px;border:2px solid #C9CDD3}
+</style>
+</helmet>
+<div class="main">
+  <div class="top"><div><h1>Mi trabajo</h1><div class="sub">Buenos días, Reina. 8 contratos por elaborar y 3 juntas por vencer.</div></div><span class="rol">Vista de Legal</span></div>
+  <div class="mods"><button class="md on">Contratos <span>21</span></button><button class="md">Vencimientos <span>3</span></button><button class="md">Revisar documentos <span>0</span></button><button class="md">Mis notas <span>1</span></button></div>
+  <div class="board">
+    <div class="colm"><div class="ch"><b>Para elaborar</b><span>8</span></div>
+      <div class="cd"><b>Inversiones La Ceiba, C.A.</b><span class="s">Rosa Paredes · documentos aprobados hace 2 días</span><div class="tags"><span class="p b">PYME</span><span class="p g">Firma digital</span></div><div class="acts"><button class="a">Copiar datos</button><button class="a pr">Subir contrato</button></div></div>
+      <div class="cd"><b>Red Andina, C.A.</b><span class="s">Ana Ferrer · tramo Ruta Norte · 2 pólizas listas</span><div class="tags"><span class="p v">VGT</span><span class="p w">Ver ODT</span></div><div class="acts"><button class="a">Copiar datos</button><button class="a pr">Subir contrato</button></div></div>
+      <div class="cd"><b>Clínica Dental Sonrisa</b><span class="s">Ana Ferrer · aprobado hace 6 días</span><div class="tags"><span class="p b">PYME</span><span class="p r">6 días</span></div><div class="acts"><button class="a">Copiar datos</button><button class="a pr">Subir contrato</button></div></div>
+    </div>
+    <div class="colm"><div class="ch"><b>Enviado a firmar</b><span>12</span></div>
+      <div class="cd"><b>Gimnasio Fuerza Total</b><span class="s">Carla Rivas · enviado hace 9 días</span><div class="tags"><span class="p b">PYME</span><span class="p w">Recordar al cliente</span></div><div class="acts"><button class="a">Recordar</button><button class="a pr">Subir firmado</button></div></div>
+      <div class="cd"><b>Telecom Occidente</b><span class="s">Luisa Mora · enviado hace 3 días</span><div class="tags"><span class="p g">Dedicado ISP</span></div><div class="acts"><button class="a">Recordar</button><button class="a pr">Subir firmado</button></div></div>
+    </div>
+    <div class="colm"><div class="ch"><b>Firmado, falta subir</b><span>5</span></div>
+      <div class="cd"><b>Cable Mara Sur</b><span class="s">Carla Rivas · contrato en el correo</span><div class="tags"><span class="p v">VGT</span><span class="p g">Dedicado ISP</span></div><div class="acts"><button class="a pr">Subir contrato</button></div></div>
+    </div>
+    <div class="colm"><div class="ch"><b>Listo este mes</b><span>6</span></div>
+      <div class="cd"><b>Tienda La Económica</b><span class="s">Luisa Mora · subido el 20/10</span><div class="tags"><span class="p ok">Firmado</span></div></div>
+      <div class="cd"><b>Fibra Rápida</b><span class="s">Diana Soto · subido el 18/10</span><div class="tags"><span class="p ok">Firmado</span><span class="p g">Dedicado ISP</span></div></div>
+    </div>
+  </div>
+  <section class="vence"><div class="vh">Vencimientos próximos · se tachan solos cuando suben el documento nuevo</div>
+    <div class="vi"><span class="ck"></span><div><b style="font-size:14px">Junta directiva de Conexión Total vence en 45 días</b><div style="font-size:12px;color:#5B636E">Pedir acta de asamblea de ratificación · Luisa Mora</div></div><button class="a">Ir</button></div>
+    <div class="vi"><span class="ck"></span><div><b style="font-size:14px">Póliza de RC de Visión Cable vence en 30 días</b><div style="font-size:12px;color:#5B636E">Pedir la renovación · Ana Ferrer</div></div><button class="a">Ir</button></div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1366,"height":960}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

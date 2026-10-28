@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Revisar en el teléfono</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;font-family:Inter,system-ui,sans-serif;color:#111315}
+*{box-sizing:border-box}
+.ph{width:390px;height:844px;background:#111315;display:flex;flex-direction:column;overflow:hidden}
+.hd{display:flex;align-items:center;gap:10px;padding:16px;color:#fff}
+.hd b{font-size:15px}.hd span{font-size:12px;color:#C9CDD3;display:block}
+.x{margin-left:auto;width:44px;height:44px;border-radius:999px;border:1px solid #3B424B;background:none;color:#fff;font-size:18px;font-family:inherit}
+.doc{flex:1;margin:0 16px;border-radius:16px;background:#fff;display:flex;align-items:center;justify-content:center;color:#69717C;font-weight:600;font-size:14px}
+.sheet{background:#fff;border-radius:22px 22px 0 0;margin-top:14px;padding:14px 16px 24px;display:flex;flex-direction:column;gap:10px}
+.cas{display:flex;justify-content:space-between;font-size:13px}.cas b{font-size:14px}
+.ia{border:2px solid #C98A12;background:#FFFBF2;border-radius:12px;padding:10px;font-size:13px}.ia b{display:block}
+.ab{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.bt{border-radius:14px;padding:14px;font-size:16px;font-weight:700;font-family:inherit;min-height:52px}
+.bt.ok{background:#0F6642;color:#fff;border:0}.bt.no{background:#fff;color:#A32117;border:2px solid #E7A39D}
+.nx{border:0;border-radius:14px;background:#ECEEF1;padding:12px;font-size:14px;font-weight:600;font-family:inherit;min-height:46px}
+</style>
+</helmet>
+<div class="ph">
+  <div class="hd"><div><b>Panadería El Trigal</b><span>Cédula · 1 de 3 · quedan 26 del corte</span></div><button class="x" aria-label="Cerrar">×</button></div>
+  <div class="doc">Documento a pantalla completa (se amplía con los dedos)</div>
+  <div class="sheet">
+    <div class="cas"><b>Cédula · representante 1</b><span>IA lista</span></div>
+    <div class="ia"><b>IA: No apto</b>La fecha de vencimiento no se lee.</div>
+    <div class="ab"><button class="bt ok">Aprobar</button><button class="bt no">Devolver</button></div>
+    <button class="nx">Siguiente documento →</button>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
