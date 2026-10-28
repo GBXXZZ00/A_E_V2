@@ -48,3 +48,9 @@ Le encanta en general. La hoja (drawer) de comisión queda tal cual.
   - Comisiones se organiza por equipos, en pestañas grandes con subgrupos por persona: Ventas corporativas (líderes), Canales de atención (analistas y coordinadora, un solo ranking de equipo; se ayudan con recepción de documentos y pago) y Aliados comerciales (cada aliado y su ranking, y comparados como grupo). Sirve para su gestión y la de los analistas.
   - Reasignación de cartera: más adelante.
   - Por definir: cómo se reconoce una venta de Canales de atención en los datos.
+- Corrección del administrador (27/10, 22:19), manda sobre lo anterior:
+  - La Lista de los líderes queda igual: cada líder ve lo suyo y lo de los aliados. Los equipos son solo para Canales de atención: los analistas ven todo su equipo para ayudarse (documentos y pago).
+  - En las gráficas y el ranking todos ven todo, con menos detalle.
+  - Ya definido: aliado = en la orden de instalación aparece el nombre del aliado en vez de "instalador"; Canales de atención = órdenes que monta Patricia en Odoo con el código de vendedor del analista.
+  - Aliados en Comisiones: gráficas, ranking y comisiones de aliados (los líderes también las ven), todo concatenado con el módulo de Aliados comerciales.
+  - Detalle de las gráficas: se rehace el panel de detalle (es un solo componente para todos los módulos): encabezado con total y comparación, reparto por líder con barras, tarjetas de clientes con estado, búsqueda y Excel. Maqueta primero.
