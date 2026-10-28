@@ -26,7 +26,7 @@
   function pendientes(d, rol){
     const c = d.clientes || {}; const com = d.comision || {}; const r = [];
     const admin = rol === 'admin', legal = rol === 'abogado', lider = rol === 'lider', analista = rol === 'analista';
-    if((admin || analista) && window.ACTUALIZAR_LISTO && (d.tad_dias === null || d.tad_dias === undefined || d.tad_dias >= 2)){
+    if((admin || (analista && d.senior)) && window.ACTUALIZAR_LISTO && (d.tad_dias === null || d.tad_dias === undefined || d.tad_dias >= 2)){
       r.push({ c: 'rojo', i: 'actualizar', t: d.tad_dias === null || d.tad_dias === undefined ? 'Todavía no se ha cargado el TAD' : 'TAD sin cargar hace ' + plural(d.tad_dias, 'día', 'días'),
         s: 'Sin TAD no se actualiza el pago de instalación', e: 'actualizar.html', k: 'tad' });
     }
@@ -91,6 +91,28 @@
         '<span class="tx">' + esc(x.t) + '<small>' + esc(x.s) + '</small></span>' + ic('derecha', 'ch') + '</a>').join('') + '</div>';
   }
 
+  // Lote 28/10: "Mis pendientes, agrupados" con los grupos de Mi trabajo; cada grupo abre Mi trabajo en ese grupo
+  const CON_BUZON = ['admin', 'analista', 'lider', 'abogado'];
+  function pintarAgrupados(T, d, rol){
+    const z = $('zonaPendientes'); const B = window.Buzon; if(!B) return;
+    const extra = pendientes(d || {}, rol).filter((x) => x.k === 'tad' || x.k === 'ultimo');
+    const gs = B.grupos(T).filter((g) => g.items.length); const notas = (T.notas || []).filter((x) => !x.hecha);
+    const fila = (href, ico, t, m, n, tono) => '<a class="bz-ini" href="' + esc(href) + '">' + ico + '<span class="tx"><b>' + esc(t) + '</b><small>' + esc(m) + '</small></span><span class="n ' + (tono || '') + '">' + esc(n) + '</span></a>';
+    let h = gs.map((g) => fila('trabajo.html?g=' + g.id, B.icono(g.icono, g.tono), g.titulo, g.venc ? plural(g.venc, 'vencido', 'vencidos') + (g.hoy ? ', ' + g.hoy + ' hoy' : '') : g.hoy ? g.hoy + ' para hoy' : g.sub, g.items.length, g.venc ? 'r' : g.hoy ? 'a' : '')).join('');
+    if(notas.length){ const hoyN = notas.filter((x) => x.recordar && x.recordar <= T.hoy).length; h += fila('trabajo.html?g=notas', B.icono('nota', 'v'), 'Mis notas', hoyN ? hoyN + ' para hoy' : 'Lo que tú anotas', notas.length, hoyN ? 'a' : ''); }
+    const total = (T.items || []).length;
+    z.innerHTML = extra.map((x) => '<a class="pf ' + x.c + '" href="' + esc(x.e) + '" data-pend="' + esc(x.k) + '"><span class="ic">' + ic(x.i) + '</span><span class="tx">' + esc(x.t) + '<small>' + esc(x.s) + '</small></span>' + ic('derecha', 'ch') + '</a>').join('') +
+      '<div class="h2">Mis pendientes, agrupados</div><section class="bz-ini-card">' + (h || '<div class="linea-info">' + ic('check') + 'No tienes nada pendiente por ahora.</div>') +
+      '<a class="btn btn-2 btn-ancho bz-ini-todo" href="trabajo.html">Ver todo mi trabajo' + (total ? ' (' + total + ')' : '') + '</a></section>';
+  }
+  async function cargarAgrupados(p, d){
+    if(CON_BUZON.indexOf(p.rol) < 0) return;
+    const clave = 'inicio_bz:' + p.id; const g = cache.leer(clave); if(g) pintarAgrupados(g, d, p.rol);
+    else $('zonaPendientes').innerHTML = '<div class="h2">Mis pendientes, agrupados</div><div class="pend"><div class="sk" style="height:60px;border-radius:18px"></div><div class="sk" style="height:60px;border-radius:18px"></div><div class="sk" style="height:60px;border-radius:18px"></div></div>';
+    try { const T = await rpc('mi_trabajo', { p_persona: null }); cache.guardar(clave, T); pintarAgrupados(T, d, p.rol); }
+    catch (e) { if(!g) pintarPendientes(d || {}, p.rol); }
+  }
+
   function pintarModulos(d, rol){
     const c = d.clientes || {}; const com = d.comision || {};
     const activos = [
@@ -107,7 +129,7 @@
       texto: rol === 'admin' ? 'Solicitudes, referidos y pagos de aliados' : canales ? 'Tus solicitudes, referidos y pagos' : 'Registro de aliados e instalados, para ver' });
     if(['admin', 'analista', 'lider', 'abogado'].indexOf(rol) >= 0) activos.push({ id: 'gerencia', nombre: 'Gerencia', icono: 'barras', enlace: 'gerencia.html',
       texto: rol === 'lider' ? 'Tus números: instalaciones, comisiones y expedientes' : 'Resumen del negocio por mes, líder y segmento' });
-    if(rol === 'admin' || rol === 'abogado') activos.push({ id: 'revision', nombre: 'Revisión', icono: 'doc', enlace: 'revision.html', texto: rol === 'admin' ? 'Documentos por revisar, también con IA' : 'Tus contratos por hacer y por firmar' });
+    if(rol === 'admin' || rol === 'abogado') activos.push({ id: 'revision', nombre: 'Revisión', icono: 'doc', enlace: rol === 'admin' ? 'trabajo.html?v=lote' : 'trabajo.html', texto: rol === 'admin' ? 'Documentos por revisar, también con IA' : 'Tus contratos por hacer y por firmar' });
     const pronto = PRONTO.filter((m) => m.roles.indexOf(rol) >= 0);
     $('zonaModulos').innerHTML = '<div class="h2 primero">Módulos</div><div class="mods">' +
       activos.map((m) => '<a class="mod" href="' + m.enlace + '" data-modulo="' + m.id + '"><span class="ic">' + ic(m.icono, 'g') + '</span><span><b>' + m.nombre + '</b><small>' + esc(m.texto) + '</small></span></a>').join('') +
@@ -117,7 +139,7 @@
   }
 
   let canales = false;
-  function pintar(d, rol){ pintarCorte(d); pintarPendientes(d, rol); pintarModulos(d, rol); }
+  function pintar(d, rol){ pintarCorte(d); if(CON_BUZON.indexOf(rol) < 0) pintarPendientes(d, rol); pintarModulos(d, rol); }
 
   function esqueletoInicio(){
     $('zonaCorte').innerHTML = '<div class="sk" style="height:92px;border-radius:22px;margin-top:18px"></div>';
@@ -146,6 +168,7 @@
       cache.guardar('inicio', d);
       pintar(d, p.rol);
       window.Armazon.datosMenu(d);
+      cargarAgrupados(p, d);
     } catch (e) {
       if(!guardado){
         $('zonaCorte').innerHTML = ''; $('zonaModulos').innerHTML = '';

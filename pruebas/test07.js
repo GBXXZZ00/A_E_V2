@@ -15,13 +15,13 @@ const cerrarTodo = async (p) => { for(let i = 0; i < 4; i++){ if(await p.evaluat
     await abrirCliente(p, 'Vidrios El Faro');
     ok(nombre + ': servicios del RIF con el número grande', (await p.textContent('.serv-n b')) === '2' && (await p.textContent('.serv-n span')).includes('Servicios en este RIF'));
     ok(nombre + ': con dedicado sí sale el interruptor de ISP', (await p.locator('[data-interr="es_isp"]').count()) === 1);
-    ok(nombre + ': cada servicio muestra su IP y deja cambiarla', (await p.locator('.ip-l:not(.env-l)').count()) === 2 && (await p.textContent('.ip-l')).includes('IPv4 10.24.1.6'));
+    ok(nombre + ': cada servicio muestra su IP y deja cambiarla', (await p.locator('.srv-ip').count()) === 2 && (await p.textContent('.srv-ip')).includes('IPv4 10.24.1.6'));
     await p.locator('[data-ip]').first().click(); await p.waitForSelector('#hojaCampo.ver #cIp');
     await p.fill('#cIp', '999.1.1'); await p.click('#guardarCampo'); await p.waitForFunction(() => document.getElementById('eCampo').textContent.length > 3);
     ok(nombre + ': una IP mal escrita se avisa debajo del campo', (await p.textContent('#eCampo')).includes('IPv4'));
     await p.fill('#cIp', '190.124.30.15'); await p.fill('#cIp6', '2803:1a00:10::1'); await p.screenshot({ path: 'capturas/07-' + nombre + '-ip.png' });
-    await p.click('#guardarCampo'); await p.waitForFunction(() => document.querySelector('.ip-l').textContent.includes('190.124.30.15'));
-    ok(nombre + ': guarda IPv4 e IPv6 del servicio', (await p.textContent('.ip-l')).includes('IPv6 2803:1a00:10::1') && mundo.llamadas.some((l) => l[1] === 'servicio_ip' && l[2].p_ip === '190.124.30.15'));
+    await p.click('#guardarCampo'); await p.waitForFunction(() => document.querySelector('.srv-ip').textContent.includes('190.124.30.15'));
+    ok(nombre + ': guarda IPv4 e IPv6 del servicio', (await p.textContent('.srv-ip')).includes('IPv6 2803:1a00:10::1') && mundo.llamadas.some((l) => l[1] === 'servicio_ip' && l[2].p_ip === '190.124.30.15'));
     ok(nombre + ': Datos sin desborde', await sinDesborde(p));
     await p.screenshot({ path: 'capturas/07-' + nombre + '-datos.png' });
     await p.click('[data-tab="documentos"]');
@@ -57,9 +57,9 @@ const cerrarTodo = async (p) => { for(let i = 0; i < 4; i++){ if(await p.evaluat
 
     // Desde la hoja de comisión: subir y escribir sin abrir el expediente
     await p.goto(H + 'comisiones.html?q=Prueba 7,'); await p.waitForSelector('[data-com]');
-    await p.locator('[data-com]').first().click(); await p.waitForSelector('#hojaComision.ver .req');
+    await p.locator('[data-com]').first().click(); await p.waitForSelector('#hojaComision.ver [data-plg-btn="legal"]');
     const antes = mundo.llamadas.filter((l) => l[1] === 'documentos_registrar').length;
-    await p.click('[data-docs-com]'); await p.waitForSelector('#docsCom [data-subir="cedula:1"]');
+    if(await p.evaluate(() => document.getElementById('docsCom').hidden)) await p.click('[data-docs-com]'); await p.waitForSelector('#docsCom [data-subir="cedula:1"]');
     const [selector] = await Promise.all([p.waitForEvent('filechooser'), p.locator('#docsCom [data-subir="cedula:1"]').click()]);
     mundo.lento = 900;
     await selector.setFiles({ name: 'cedula.png', mimeType: 'image/png', buffer: PNG });

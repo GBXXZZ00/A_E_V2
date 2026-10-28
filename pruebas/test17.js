@@ -13,34 +13,27 @@ const ABOGADA = { id: '77777777-7777-4777-8777-777777777777', usuario: 'sara', p
     m.personas.push(Object.assign({}, ABOGADA));
     const cli = (id) => m.datos.clientes.find((c) => c.id === id);
 
-    // ----- Administrador: el módulo está en la navegación e Inicio -----
+    // ----- Administrador: Revisión vive en Mi trabajo (revisión en lote, lote 28/10) -----
     const p = await entrar(ctx, 'marcos', '482913'); p.on('pageerror', (e) => errores.push(e.message));
     await p.waitForSelector('[data-modulo="revision"]');
-    ok(nombre + ': Inicio muestra el módulo Revisión', (await p.textContent('[data-modulo="revision"]')).includes('Revisión'));
-    ok(nombre + ': la navegación tiene Revisión', (await p.locator(tel ? '#navAbajo a[href="revision.html"]' : '.navpc a[href="revision.html"]').count()) === 1);
-    await p.goto(H + 'revision.html'); await p.waitForSelector('#lista .rv, #lista .vacio');
-    ok(nombre + ': abre en Por revisar con su ayuda', (await p.getAttribute('#filtros [data-bandeja="por_revisar"]', 'class')).includes('on') && /documentos nuevos/.test(await p.textContent('#ayuda')));
-    ok(nombre + ': la bandeja trae el cliente en revisión', (await p.textContent('#lista')).includes('Vidrios El Faro'));
+    ok(nombre + ': Inicio muestra el módulo Revisión y lleva a la revisión en lote', /trabajo\.html\?v=lote/.test(await p.getAttribute('[data-modulo="revision"]', 'href')));
+    ok(nombre + ': la navegación ya no tiene Revisión', (await p.locator(tel ? '#navAbajo a[href="revision.html"]' : '.navpc a[href="revision.html"]').count()) === 0);
+    await p.goto(H + 'revision.html'); await p.waitForURL(/trabajo\.html\?v=lote/); await p.waitForSelector('#rlLista .rl-grp, #rlLista .vacio');
+    ok(nombre + ': la revisión en lote trae el cliente en revisión', (await p.textContent('#rlLista')).includes('Vidrios El Faro'));
     await p.screenshot({ path: 'capturas/17-' + nombre + '-bandeja.png' });
     ok(nombre + ': no desborda', await sinDesborde(p));
 
-    // ----- Marcar varios y lanzar -----
-    await p.click('#filtros [data-bandeja="analizables"]'); await p.waitForFunction(() => document.querySelectorAll('#lista .rv').length > 1);
-    await p.click('[data-marcar="1001"]');
-    const otro = await p.getAttribute('#lista .rv:not(.sel) [data-marcar]:not([disabled])', 'data-marcar');
-    await p.click('[data-marcar="' + otro + '"]');
-    await p.waitForSelector('#accionRv:not(.hidden)');
-    ok(nombre + ': la barra dice cuántos marcó', /2 clientes marcados/.test(await p.textContent('#accionRv')));
-    await p.screenshot({ path: 'capturas/17-' + nombre + '-marcados.png' });
-    await p.click('#revisarIA'); await p.waitForSelector('#hojaLanzar.ver #confirmarIA');
-    ok(nombre + ': antes de gastar dice cuánto va a leer', /archivos nuevos por leer/.test(await p.textContent('#hojaLanzar')) && /US\$/.test(await p.textContent('#hojaLanzar')));
-    await p.click('#confirmarIA'); await p.waitForFunction(() => !document.querySelector('#hojaLanzar.ver'));
-    ok(nombre + ': lanza los dos de una vez', llamo(m, 'ia_lanzar').length === 1 && llamo(m, 'ia_lanzar')[0][2].p_clientes.length === 2);
-    await p.waitForSelector('#filtros [data-bandeja="leyendo"].on');
-    ok(nombre + ': pasa a "La IA está leyendo"', (await p.textContent('#lista')).includes('Leyendo'));
+    // ----- Elegir y leer con IA -----
+    await p.click('[data-rl-cli="1001"]');
+    ok(nombre + ': la barra dice cuántos eligió', /seleccionad/.test(await p.textContent('#rlBar')));
+    await p.click('[data-rl="ia"]'); await p.waitForSelector('#hojaRlIA.ver [data-rl="ia-ok"]');
+    ok(nombre + ': antes de gastar dice cuánto va a leer', /archivos? nuevos? por leer/.test(await p.textContent('#hojaRlIA')) && /US\$/.test(await p.textContent('#hojaRlIA')));
+    await p.click('[data-rl="ia-ok"]'); await p.waitForFunction(() => !document.querySelector('#hojaRlIA.ver'));
+    ok(nombre + ': lanza la lectura del cliente elegido', llamo(m, 'ia_lanzar').length === 1 && llamo(m, 'ia_lanzar')[0][2].p_clientes.join() === '1001');
+    const otro = '1001';
 
     // ----- El expediente muestra el avance y luego el resultado -----
-    await p.click('.rv-cuerpo[data-cliente="1001"]'); await p.waitForSelector('#hojaFicha.ver #iaLeyendo');
+    await p.goto(H + 'clientes.html?c=1001&t=documentos'); await p.waitForSelector('#hojaFicha.ver #iaLeyendo');
     ok(nombre + ': el expediente dice que la IA está leyendo', /La IA está leyendo/.test(await p.textContent('#iaLeyendo')) && /La IA está leyendo/.test(await p.textContent('#paso')));
     m.iaPaso = 20;
     await p.waitForSelector('#iaResultado', { timeout: 15000 });
@@ -81,33 +74,32 @@ const ABOGADA = { id: '77777777-7777-4777-8777-777777777777', usuario: 'sara', p
     ok(nombre + ': queda en el historial como revisión con IA', /con IA/.test(await p.textContent('[data-grupo="revisiones"]')) && cli(1001).ia.estado === 'cerrada');
     await p.keyboard.press('Escape'); await p.waitForFunction(() => !window.Comun.hojaAbierta());
 
-    // ----- Comparar con Legal -----
-    await p.click('#filtros [data-bandeja="comparar"]'); await p.waitForSelector('.cifras-rv');
+    // ----- Comparar con Legal (sigue en revision.html?b=comparar) -----
+    await p.goto(H + 'revision.html?b=comparar'); await p.waitForSelector('.cifras-rv');
     ok(nombre + ': comparar muestra cuántos documentos coinciden', /documentos donde la IA coincide con Legal/.test(await p.textContent('#lista')) && (await p.locator('#lista .rv').count()) >= 1);
     await p.screenshot({ path: 'capturas/17-' + nombre + '-comparar.png' });
     ok(nombre + ': comparar no desborda', await sinDesborde(p));
 
-    // ----- Errores: la IA no termina; la bandeja no carga -----
+    // ----- Errores: la IA no termina; la revisión en lote no carga -----
     m.iaFalla = 'Google no aceptó la clave de Gemini'; m.iaPaso = 1;
     const c2 = Number(otro); Object.assign(cli(c2).ia, { estado: 'leyendo', avance: 0 });
-    await p.goto(H + 'revision.html?c=' + c2); await p.waitForSelector('#hojaFicha.ver #tab-documentos .casilla');
+    await p.goto(H + 'clientes.html?c=' + c2 + '&t=documentos'); await p.waitForSelector('#hojaFicha.ver #tab-documentos .casilla');
     await p.waitForSelector('#reanudarIA');
     ok(nombre + ': si la IA falla lo dice y ofrece Reintentar', /no pudo terminar/.test(await p.textContent('#tab-documentos')) && /clave de Gemini/.test(await p.textContent('#tab-documentos')));
     m.iaFalla = null; await p.click('#reanudarIA'); await p.waitForSelector('#iaLeyendo');
     ok(nombre + ': Reintentar la vuelve a poner a leer', llamo(m, 'ia_reanudar').length === 1);
     await p.keyboard.press('Escape');
-    m.fallaRpc = 'revision_bandeja';
-    await p.goto(H + 'revision.html?b=borradores'); await p.waitForSelector('#lista #reintentar');
-    ok(nombre + ': si la bandeja no carga ofrece Reintentar', true);
-    m.fallaRpc = null; await p.click('#lista #reintentar'); await p.waitForSelector('#lista .rv, #lista .vacio');
+    m.fallaRpc = 'revision_lote_lista';
+    await p.goto(H + 'trabajo.html?v=lote'); await p.waitForSelector('#rlLista [data-rl="reintentar"]');
+    ok(nombre + ': si la revisión en lote no carga ofrece Reintentar', true);
+    m.fallaRpc = null; await p.click('#rlLista [data-rl="reintentar"]'); await p.waitForSelector('#rlLista .rl-grp, #rlLista .vacio');
     ok(nombre + ': Reintentar la carga', true);
 
     // ----- La abogada: su bandeja, sin IA ni casillas -----
     const ab = await contexto(nav, dispositivo, m); const s = await entrar(ab.ctx, 'sara', '640217'); s.on('pageerror', (e) => errores.push(e.message));
-    await s.goto(H + 'revision.html'); await s.waitForSelector('#lista .rv, #lista .vacio');
-    ok(nombre + ': la abogada abre en Para contrato', (await s.getAttribute('#filtros [data-bandeja="contrato"]', 'class')).includes('on') && (await s.locator('#filtros [data-bandeja="comparar"]').count()) === 0);
-    ok(nombre + ': la abogada no marca clientes para la IA', (await s.locator('[data-marcar]').count()) === 0);
-    await s.click('#filtros [data-bandeja="por_revisar"]'); await s.waitForSelector('#lista .rv'); await s.click('.rv-cuerpo[data-cliente="1001"]'); await s.waitForSelector('#hojaFicha.ver #tab-documentos .casilla');
+    await s.goto(H + 'revision.html'); await s.waitForURL(/v=lote/); await s.waitForSelector('#rlLista .rl-grp, #rlLista .vacio');
+    ok(nombre + ': la abogada ve la revisión en lote solo para consultar', (await s.locator('[data-rl-cli], [data-rl-doc]').count()) === 0 && (await s.locator('#rlBar:not(.hidden)').count()) === 0);
+    await s.click('[data-rl-uno="1001"]'); await s.waitForSelector('#hojaFicha.ver #tab-documentos .casilla');
     ok(nombre + ': la abogada no ve Mandar a revisión con IA', (await s.locator('#mandarIA').count()) === 0);
     await s.screenshot({ path: 'capturas/17-' + nombre + '-abogada.png' });
     await ab.ctx.close();
@@ -115,8 +107,8 @@ const ABOGADA = { id: '77777777-7777-4777-8777-777777777777', usuario: 'sara', p
     // ----- El líder no entra -----
     const li = await contexto(nav, dispositivo, m); const l = await entrar(li.ctx, 'lucia', '739105');
     ok(nombre + ': el líder no ve Revisión en la navegación', (await l.locator('a[href="revision.html"]').count()) === 0);
-    await l.goto(H + 'revision.html'); await l.waitForURL('**/inicio.html');
-    ok(nombre + ': si el líder entra a la dirección, vuelve a Inicio', true);
+    await l.goto(H + 'revision.html'); await l.waitForURL(/trabajo\.html/); await l.waitForSelector('#tarjetas .bz-cd');
+    ok(nombre + ': si el líder entra a la dirección, queda en su Mi trabajo, sin la revisión en lote', await l.isHidden('#vistaLote'));
     await li.ctx.close();
     await ctx.close();
   }

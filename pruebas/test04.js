@@ -26,7 +26,7 @@ const marcarFiltro = async (p, k, v) => { if(!(await p.evaluate(() => !!document
     ok(nombre + ': el expediente sale encima y la lista sigue detrás', (await abiertas(p)).join() === 'hojaFicha' && (await p.locator('.cli.sel').count()) === 1 && p.url().includes('clientes.html'));
     ok(nombre + ': abre en Datos', (await p.locator('#tabs .on').textContent()).trim() === 'Datos' && (await p.locator('#tab-datos .tj').count()) >= 3);
     await p.click('[data-tab="documentos"]');
-    ok(nombre + ': Documentos trae los tres números y los bloques', (await p.locator('#tab-documentos .res b').count()) === 3 && (await p.textContent('#tab-documentos')).includes('Contacto') && (await p.locator('[data-grupo="empresa"]').count()) === 0);
+    ok(nombre + ': Documentos trae qué falta, la zona para soltar y los bloques', (await p.locator('#tab-documentos .fd-sum').count()) === 1 && (await p.locator('#subirVarios.fd-drop').count()) === 1 && (await p.textContent('#tab-documentos')).includes('Contacto') && (await p.locator('[data-grupo="empresa"]').count()) === 0);
     ok(nombre + ': el líder no ve botones de revisión', (await p.locator('#revisarTodo').count()) === 0);
     ok(nombre + ': la casilla vacía lleva el signo de más', (await p.locator('[data-subir^="cedula"] .ico.mas').count()) === 1);
     await p.screenshot({ path: 'capturas/04-' + nombre + '-documentos.png' });
@@ -170,8 +170,8 @@ const marcarFiltro = async (p, k, v) => { if(!(await p.evaluate(() => !!document
     ok(nombre + ': Escape cierra solo la de arriba', true);
     await q.locator('[data-enviar]').first().click(); await q.waitForSelector('#hojaEnviar.ver #envManual');
     await q.click('#envManual'); ok(nombre + ': marcar como enviado pide un segundo toque', llamo(m, 'envio_registrar').length === 0);
-    await q.click('#envManual'); await q.waitForFunction(() => /enviada el/i.test(document.getElementById('tab-datos').textContent));
-    ok(nombre + ': el envío por fuera queda anotado', llamo(m, 'envio_registrar').length === 1 && llamo(m, 'envio_registrar')[0][2].p_canal === 'manual');
+    await q.click('#envManual'); await q.waitForFunction(() => /Carta y proforma enviadas/i.test(document.getElementById('tab-datos').textContent));
+    ok(nombre + ': el envío por fuera queda anotado', llamo(m, 'envio_registrar').length + llamo(m, 'carta_enviar').length === 1 && llamo(m, 'envio_registrar').concat(llamo(m, 'carta_enviar'))[0][2].p_canal === 'manual');
     await q.click('[data-tab="comision"]');
     await q.locator('[data-pago]').first().click(); await q.waitForFunction(() => document.querySelectorAll('.toast').length > 0);
     ok(nombre + ': pago manual llama al servidor', llamo(m, 'instalacion_pago').length === 1);

@@ -43,7 +43,7 @@ async function cerrarHojas(p){ for(let i = 0; i < 4 && await p.evaluate(() => !!
 
     const p = await entrar(ctx, 'elena', '315806'); p.on('pageerror', (e) => errores.push(e.message));
     await p.goto(H + 'comisiones.html'); await p.waitForSelector('.grupo');
-    ok(nombre + ': el rango dice el período y el día límite como aviso', /Instalaciones del .+\. (Día límite el \d+|Hoy es el día límite|El día límite fue el \d+)/.test(await p.textContent('#rango')));
+    ok(nombre + ': el rango dice el período y el día límite como aviso', /Del .+\. (Día límite el \d+|Hoy es el día límite|El día límite fue el \d+)/.test(await p.textContent('#rango')));
     // Orden de otra persona: por asignar con su motivo
     await p.click('[data-filtro="asignar"]'); await p.waitForSelector('[data-com]');
     const lista = await p.textContent('#lista');
@@ -52,38 +52,34 @@ async function cerrarHojas(p){ for(let i = 0; i < 4 && await p.evaluate(() => !!
     // Archivos por subir: filtro con contador y etiqueta
     await p.click('[data-filtro="subir"]'); await p.waitForFunction(() => /Tornillos El Yunque/.test(document.getElementById('lista').textContent));
     ok(nombre + ': filtro Archivos por subir con contador', /Archivos por subir\s*\d+/.test(await p.textContent('[data-filtro="subir"]')) && (await p.textContent('#lista')).includes('Tornillos El Yunque'));
-    ok(nombre + ': la fila lleva la etiqueta Archivos por subir sin cambiar la comisión', (await p.locator('#lista .tagn.ambar', { hasText: /por subir/ }).count()) === (await p.locator('#lista [data-com]').count()) && (await p.locator('#lista [data-com]', { hasText: 'Tornillos El Yunque' }).locator('.m.verde').count()) >= 1);
+    ok(nombre + ': la fila lleva la etiqueta Archivos por subir sin cambiar la comisión', (await p.locator('#lista [data-com] .cx-q', { hasText: /Archivos por subir/ }).count()) === (await p.locator('#lista [data-com]').count()) && (await p.locator('#lista [data-com]', { hasText: 'Tornillos El Yunque' }).locator('.chip.verde').count()) >= 1);
     await p.click('[data-filtro="todos"]'); await p.waitForSelector('.grupo');
     await p.locator('.grupo-cab').filter({ hasText: 'Lucía Ferrer' }).click();
-    ok(nombre + ': la fila dice Bienvenida por enviar', (await p.locator('.grupo.abierto .tagn', { hasText: 'Bienvenida por enviar' }).count()) >= 1);
+    ok(nombre + ': la fila dice Carta y proforma por enviar', (await p.locator('.grupo.abierto .cx-cp', { hasText: 'Por enviar' }).count()) >= 1);
     ok(nombre + ': Comisiones sin desborde', await sinDesborde(p));
     await p.screenshot({ path: 'capturas/22-' + nombre + '-comisiones.png', fullPage: true });
 
-    // Hoja de comisión: Proforma y carta arriba, Falta IP, escribir IP, enviar y quién lo envió
-    await p.locator('.grupo.abierto [data-com]').filter({ hasText: 'Vidrios El Faro' }).click(); await p.waitForSelector('#hojaComision.ver .prof');
-    ok(nombre + ': Bienvenida y proforma es un plegable con su estado en la cabecera', (await p.textContent('[data-plg-btn="bienv"]')).includes('Por enviar'));
-    await plegables(p, 'bienv');
-    const prof = await p.textContent('#hojaComision .prof');
-    ok(nombre + ': el plegable trae IP, carta, proforma, Descargar y Enviar', prof.includes('Carta de bienvenida') && prof.includes('Proforma') && (await p.locator('#profBajar').count()) === 1 && (await p.locator('#profEnviar').count()) === 1);
-    ok(nombre + ': sin IP dice "Falta la IP" con el enlace Escribir', /Falta la IP/.test(prof) && (await p.textContent('#profIp')).includes('Escribir'));
-    ok(nombre + ': Descargar y Enviar en una fila', await p.evaluate(() => { const a = document.querySelector('#hojaComision .prof .acc-prof'); const x = [...a.querySelectorAll('.mini')].map((y) => y.getBoundingClientRect().top); return x.length === 2 && Math.abs(x[0] - x[1]) < 2; }));
-    ok(nombre + ': va después de Legal y Pago, antes de los ajustes', await p.evaluate(() => { const o = [...document.querySelectorAll('#cuerpoCom [data-plg]')].map((x) => x.dataset.plg).join(); return /legal,(pago,)?bienv,ajustes/.test(o); }));
+    // Hoja de comisión (lote 28/10): carta y proforma en un solo envío, Falta IP, escribir IP, enviar y quién lo envió
+    await p.locator('.grupo.abierto [data-com]').filter({ hasText: 'Vidrios El Faro' }).click(); await p.waitForSelector('#hojaComision.ver [data-plg-btn="carta"]');
+    ok(nombre + ': Carta y proforma es un plegable con su estado en la cabecera', /falta la IP/.test(await p.textContent('[data-plg-btn="carta"]')));
+    await plegables(p, 'carta');
+    const prof = await p.textContent('#plg-carta');
+    ok(nombre + ': el plegable trae la proforma, la carta, la IP y un solo botón de WhatsApp', prof.includes('Carta de bienvenida') && prof.includes('Proforma') && (await p.locator('#cartaWa').count()) === 1 && (await p.locator('#cartaOtra').count()) === 1);
+    ok(nombre + ': sin IP dice que falta, con el enlace Escribir', /Falta/.test(prof) && (await p.textContent('#profIp')).includes('Escribir'));
     await p.screenshot({ path: 'capturas/22-' + nombre + '-hoja-proforma.png' });
-    const [pdf] = await Promise.all([p.waitForEvent('download'), p.click('#profBajar')]);
-    ok(nombre + ': Descargar baja el PDF con los datos del momento', /\.pdf$/i.test(pdf.suggestedFilename()));
     await p.click('#profIp'); await p.waitForSelector('#hojaCampo.ver #cIp');
     await p.fill('#cIp', '190.124.30.15'); await p.click('#guardarCampo');
-    await p.waitForFunction(() => document.querySelector('#hojaComision .prof') && !/Falta la IP/.test(document.querySelector('#hojaComision .prof').textContent));
+    await p.waitForFunction(() => !/falta la IP/.test(document.querySelector('[data-plg-btn="carta"]').textContent));
     ok(nombre + ': la IP escrita en la hoja de comisión se guarda y quita el Falta IP', mundo.llamadas.some((l) => l[1] === 'servicio_ip' && l[2].p_ip === '190.124.30.15'));
-    await p.click('#profEnviar'); await p.waitForSelector('#hojaEnviar.ver');
-    ok(nombre + ': Enviar abre la hoja de envío encima, sin abrir el expediente', (await p.evaluate(() => window.Comun.hojasAbiertas().join())) === 'hojaComision,hojaEnviar');
+    await plegables(p, 'carta'); await p.click('#cartaOtra'); await p.waitForSelector('#hojaEnviar.ver');
+    ok(nombre + ': Enviar por correo u otro abre la hoja de envío encima, sin abrir el expediente', (await p.evaluate(() => window.Comun.hojasAbiertas().join())) === 'hojaComision,hojaEnviar');
     await p.click('#envManual'); await p.click('#envManual');
-    await p.waitForFunction(() => document.querySelector('#hojaComision .prof') && /Enviada/.test(document.querySelector('#hojaComision .prof').textContent));
-    const prof2 = await p.textContent('#hojaComision .prof');
-    ok(nombre + ': queda anotado quién la envió y cuándo, y se puede reenviar', /enviada por Elena/i.test(prof2) && (await p.textContent('#profEnviar')).includes('Reenviar') && mundo.llamadas.some((l) => l[1] === 'envio_registrar'));
+    await p.waitForFunction(() => /Enviada por Canales/.test(document.querySelector('[data-plg-btn="carta"]').textContent));
+    const prof2 = await p.textContent('#plg-carta');
+    ok(nombre + ': queda anotado quién la envió y cuándo, y se puede volver a enviar', /Elena/.test(prof2) && (await p.textContent('#cartaWa')).includes('Volver a enviar') && mundo.llamadas.some((l) => l[1] === 'carta_enviar'));
     await cerrarHojas(p);
-    await p.waitForFunction(() => [...document.querySelectorAll('.grupo.abierto .tagn')].some((t) => /^Enviada \d\d\/\d\d$/.test(t.textContent)));
-    ok(nombre + ': en la fila queda la etiqueta Enviada con la fecha', true);
+    await p.waitForFunction(() => [...document.querySelectorAll('.grupo.abierto .cx-cp')].some((t) => /Enviada \d\d\/\d\d/.test(t.textContent)));
+    ok(nombre + ': en la fila queda Enviada con la fecha', true);
 
     // Evento a mano: el Analista Senior lo ve aparte y decide si comisiona
     await p.click('[data-filtro="eventos"]'); await p.waitForSelector('#lista [data-com]');
@@ -109,9 +105,9 @@ async function cerrarHojas(p){ for(let i = 0; i < 4 && await p.evaluate(() => !!
     const b = await contexto(nav, dispositivo); Object.assign(cliente(b.mundo, 'Vidrios El Faro, C.A.').instalaciones[0], { es_evento: true, evento_comisiona: true });
     const q = await entrar(b.ctx, 'lucia', '739105'); q.on('pageerror', (e) => errores.push(e.message));
     await q.goto(H + 'comisiones.html'); await q.waitForSelector('[data-com]');
-    await q.locator('[data-com]').filter({ hasText: 'Vidrios El Faro' }).click(); await q.waitForSelector('#hojaComision.ver .req');
+    await q.locator('[data-com]').filter({ hasText: 'Vidrios El Faro' }).click(); await q.waitForSelector('#hojaComision.ver [data-plg-btn="legal"]');
     ok(nombre + ': el líder ve que es evento pero no puede cambiarlo', (await q.textContent('#hojaComision')).includes('Evento: comisiona') && (await q.locator('[data-evento]').count()) === 0);
-    ok(nombre + ': el líder también puede enviar la proforma y la carta', (await q.locator('#profEnviar').count()) === 1);
+    ok(nombre + ': el líder también puede enviar la proforma y la carta', (await q.locator('#cartaWa').count()) === 1);
     await b.ctx.close();
 
     // Usuarios: quienes crean órdenes por otros. Clientes: archivos por subir

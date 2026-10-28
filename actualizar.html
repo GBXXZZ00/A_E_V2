@@ -10,21 +10,25 @@
 <link rel="expect" href="#navListo" blocking="render">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="assets/img/icon-192.png">
-<link rel="stylesheet" href="assets/css/base.css?v=66">
-<link rel="stylesheet" href="assets/css/modulos.css?v=66">
-<link rel="stylesheet" href="assets/css/app.css?v=66">
+<link rel="stylesheet" href="assets/css/base.css?v=67">
+<link rel="stylesheet" href="assets/css/modulos.css?v=67">
+<link rel="stylesheet" href="assets/css/app.css?v=67">
 </head>
 <body>
-<header class="barra" id="barra"><a class="marca" href="inicio.html" aria-label="Inicio"><img class="logo" src="assets/img/logo.svg?v=66" alt="Airtek" width="96" height="12"><span>Empresas</span></a></header>
+<header class="barra" id="barra"><a class="marca" href="inicio.html" aria-label="Inicio"><img class="logo" src="assets/img/logo.svg?v=67" alt="Airtek" width="96" height="12"><span>Empresas</span></a></header>
 <main class="pagina">
   <a class="volver solo-pc" href="inicio.html" style="display:inline-flex"><svg class="i ch" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>Inicio</a>
   <h1 class="titulo">Actualizar datos</h1>
   <p class="sub">Sube los archivos tal como salen de cada sistema, todos juntos. La app reconoce cuál es cada uno.</p>
 
-  <section class="panel" style="margin-top:20px" aria-labelledby="tArch">
-    <span class="tit" id="tArch">Archivos</span>
-    <p class="nota-chica">Todo va aquí: TAD (completo), cambios de categoría, el reporte de IP "Clientes Empresariales", órdenes de Odoo, órdenes de instalación, base de la app anterior, el archivo de dedicados de la analista y el mapa de red (KMZ). <span id="ultimoTad">Todavía no se ha subido ningún TAD.</span></p>
-    <div class="ultimas" id="ultimas" aria-label="Última subida de cada archivo"></div>
+  <section class="panel" style="margin-top:20px" aria-labelledby="tToca">
+    <span class="tit" id="tToca">Qué toca actualizar</span>
+    <div class="ultimas" id="ultimas" aria-live="polite"><span class="sk" style="height:48px;border-radius:12px;display:block"></span></div>
+  </section>
+
+  <section class="panel" style="margin-top:14px" aria-labelledby="tArch">
+    <span class="tit" id="tArch">Subir archivos</span>
+    <p class="nota-chica">Todo va en la misma zona: TAD (completo), cambios de categoría, el reporte de IP "Clientes Empresariales", órdenes de Odoo, órdenes de instalación, base de la app anterior, el archivo de dedicados de la analista y el mapa de red (KMZ). <span id="ultimoTad">Todavía no se ha subido ningún TAD.</span></p>
     <div id="zona" style="margin-top:14px"></div>
     <input type="file" id="archivos" class="hidden" multiple accept=".csv,.xlsx,.txt,.kmz,.kml,text/csv,text/plain,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" tabindex="-1" aria-hidden="true">
     <div class="sub-mapa"><span class="tit-chico" id="tMapa">Mapa de red</span><div id="mapaRed" aria-live="polite"></div></div>
@@ -33,21 +37,21 @@
 
   <section class="panel" style="margin-top:14px" aria-labelledby="tCruce">
     <span class="tit" id="tCruce">Cruce</span>
-    <p class="nota-chica">Une lo que subiste: líder y estatus de la base anterior, órdenes de Odoo e instalaciones. Se prepara solo al terminar la carga: revisa el resumen y guárdalo con un botón. El TAD, el reporte de IP y el archivo de dedicados se aplican al subirlos.</p>
+    <p class="nota-chica">Une lo que subiste: líder y estatus de la base anterior, órdenes de Odoo e instalaciones. Al terminar de cargar toca Cruzar ahora, revisa el resumen y guárdalo. El TAD, el reporte de IP y el archivo de dedicados se aplican al subirlos.</p>
     <div id="cruce" style="margin-top:14px" aria-live="polite"></div>
   </section>
 
-  <h2 class="h2" style="margin-top:26px">Últimas cargas</h2>
+  <h2 class="h2" style="margin-top:26px">Historial</h2>
   <div id="cargas" aria-live="polite"></div>
 </main>
 <script src="assets/vendor/supabase.js?v=1"></script>
-<script src="assets/js/practica.js?v=66"></script>
-<script src="assets/js/supabase-client.js?v=66"></script>
-<script src="assets/js/comun.js?v=66"></script>
-<script src="assets/js/sesion.js?v=66"></script>
-<script src="assets/js/armazon.js?v=66"></script>
+<script src="assets/js/practica.js?v=67"></script>
+<script src="assets/js/supabase-client.js?v=67"></script>
+<script src="assets/js/comun.js?v=67"></script>
+<script src="assets/js/sesion.js?v=67"></script>
+<script src="assets/js/armazon.js?v=67"></script>
 <i id="navListo" hidden></i>
-<script src="assets/js/mapared.js?v=66"></script>
-<script src="assets/js/actualizar.js?v=66"></script>
+<script src="assets/js/mapared.js?v=67"></script>
+<script src="assets/js/actualizar.js?v=67"></script>
 </body>
 </html>

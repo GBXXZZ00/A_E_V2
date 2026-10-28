@@ -165,13 +165,16 @@ const archivo = (n, mime) => ({ name: n, mimeType: mime || 'application/pdf', bu
       await cerrarHojas(p);
     } else ok(nombre + ': (sin cliente con dos por revisar)', true);
 
-    // ---------- Revisión: bandeja Contrato por completar ----------
-    await p.goto(H + 'revision.html'); await p.waitForSelector('#filtros [data-bandeja="contrato_pend"], [data-bandeja="contrato_pend"]');
-    await p.click('[data-bandeja="contrato_pend"]'); await p.waitForFunction(() => /Relleno Inventado 01/.test(document.getElementById('lista').textContent));
-    ok(nombre + ': en Revisión, "Contrato por completar" trae el firmado sin archivo con su etiqueta', (await p.textContent('#lista')).includes('Firmado: falta subir contrato'));
-    await p.locator('.rv-cuerpo', { hasText: 'Relleno Inventado 01' }).click(); await p.waitForSelector('#hojaFicha.ver #tab-contrato.on');
-    ok(nombre + ': abre la hoja en Contrato con el aviso', (await p.textContent('#tab-contrato')).includes('Firmado: falta subir contrato'));
-    await cerrarHojas(p);
+    // ---------- Lote 28/10: "Firmado, falta subir" vive en el Mi trabajo de Legal ----------
+    if(!mundo.personas.some((x) => x.usuario === 'paula')) mundo.personas.push({ id: '88888888-8888-4888-8888-888888888888', usuario: 'paula', pin: '615243', nombre: 'Paula Legal', rol: 'abogado', cargo: 'Legal', equipo: 'ventas', activo: true, debe_cambiar_pin: false });
+    { const f = cs.find((x) => x.nombre.indexOf('Relleno Inventado 01') === 0);   // lo que privado.pendientes() le da a Legal
+      mundo.datos.extra = (mundo.datos.extra || []).concat([{ tipo: 'contrato_archivo', clave: String(f.id), cliente_id: f.id, titulo: f.nombre, detalle: 'Firmado: falta subir contrato', para: 'abogado', vence: new Date().toISOString().slice(0, 10), desde: new Date().toISOString(), ref: {} }]); }
+    const cl = await contexto(nav, dispositivo, mundo); const lg = await entrar(cl.ctx, 'paula', '615243'); lg.on('pageerror', (e) => errores.push(e.message));
+    await lg.goto(H + 'trabajo.html'); await lg.waitForFunction(() => /Relleno Inventado 01/.test((document.getElementById('cuerpo') || {}).textContent || ''));
+    ok(nombre + ': en Mi trabajo de Legal, "Firmado, falta subir" trae el firmado sin archivo', /Firmado, falta subir/.test(await lg.textContent('#cuerpo')));
+    await lg.locator('.bz-kd', { hasText: 'Relleno Inventado 01' }).locator('[data-hacer]').click(); await lg.waitForSelector('#hojaFicha.ver #tab-contrato.on');
+    ok(nombre + ': abre la hoja en Contrato con el aviso', (await lg.textContent('#tab-contrato')).includes('Firmado: falta subir contrato'));
+    await cl.ctx.close();
 
     // ---------- Líder: sin cambiar líder ni suspender ----------
     const c2 = await contexto(nav, dispositivo, mundo); const q = await entrar(c2.ctx, 'lucia', '739105'); q.on('pageerror', (e) => errores.push(e.message));

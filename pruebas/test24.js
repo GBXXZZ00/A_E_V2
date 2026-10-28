@@ -62,18 +62,14 @@ async function arrastrar(p, sobre){
     await p.goto(H + 'comisiones.html'); await p.waitForSelector('#filtros [data-filtro="pago"]');
     await p.click('#filtros [data-filtro="pago"]'); await p.waitForSelector('#ayudaFiltro .ayuda-filtro');
     ok(nombre + ': "Debe instalación" dice qué es (falta el pago según el TAD)', /según el TAD.*no ha pagado la instalación/.test(await p.textContent('#ayudaFiltro .ayuda-filtro')));
-    await p.click('#filtros [data-filtro="asignar"]'); await p.waitForFunction(() => /qué líder/.test((document.querySelector('#ayudaFiltro .ayuda-filtro') || {}).textContent || ''));
+    await p.click('#filtros [data-filtro="asignar"]'); await p.waitForFunction(() => /de quién es la instalación/.test((document.querySelector('#ayudaFiltro .ayuda-filtro') || {}).textContent || ''));
     ok(nombre + ': "Por asignar" dice qué es (no se sabe el dueño) y quién lo resuelve', /Analista Senior/.test(await p.textContent('#ayudaFiltro .ayuda-filtro')));
     await p.screenshot({ path: 'capturas/24-' + nombre + '-ayuda-filtro.png' });
     await p.click('#filtros [data-filtro="todos"]');
     ok(nombre + ': sin filtro no se repite la ayuda', (await p.locator('#ayudaFiltro .ayuda-filtro').count()) === 0);
-    // Por instalar: indicadores arriba y dos bandejas con título y contador
-    await p.goto(H + 'comisiones.html?t=instalar'); await p.waitForSelector('.ins-kpis');
-    const k = await p.textContent('.ins-kpis');
-    ok(nombre + ': indicadores de faltan, promedio, la más vieja y reprogramadas', ['Faltan por instalar', 'Promedio', 'La más vieja', 'Reprogramadas'].every((x) => k.includes(x)));
-    ok(nombre + ': indicadores con faltantes por líder', k.includes('Faltan por líder'));
-    const bandejas = await p.$$eval('.bandeja-ins h3', (a) => a.map((x) => x.textContent));
-    ok(nombre + ': dos bandejas separadas', bandejas.length >= 1 && bandejas[0] === 'Órdenes abiertas sin instalar');
+    // Por instalar (lote 28/10): hoja con pestañas por horas del reloj
+    await p.goto(H + 'comisiones.html?t=instalar'); await p.waitForSelector('#hojaPorInst.ver [data-pi-tab]');
+    ok(nombre + ': Por instalar separa Pasan de 24 horas, Menos de 24 horas y Viejas', (await p.locator('#hojaPorInst [data-pi-tab]').count()) === 3 && /Pasan de 24 horas/.test(await p.textContent('#hojaPorInst')));
     ok(nombre + ': sin desborde', await sinDesborde(p));
     await p.screenshot({ path: 'capturas/24-' + nombre + '-por-instalar.png', fullPage: true });
     await ctx.close();

@@ -66,8 +66,8 @@ async function cerrarHojas(p){ for(let i = 0; i < 5 && await p.evaluate(() => !!
     ok(nombre + ': el enlace suspendido se ve apagado', (await p.locator('.ded-e.apagado').count()) === 1);
     ok(nombre + ': contactos de la empresa con teléfono y correo', datos.includes('Presidencia') && datos.includes('0414-0000001') && datos.includes('info@inventada.test'));
     ok(nombre + ': sin el recuadro de "Sin instalar" de los PYME', !datos.includes('Todavía sin servicio'));
-    ok(nombre + ': hay pestañas Contrato y VGT y no hay Comisión (no comisionan)', await p.evaluate(() => !document.querySelector('#tabs [data-tab="contrato"]').classList.contains('hidden') && !document.querySelector('#tabs [data-tab="vgt"]').classList.contains('hidden') && document.querySelector('#tabs [data-tab="comision"]').classList.contains('hidden')));
-    ok(nombre + ': las pestañas van en orden: Datos, Documentos, Contrato, VGT, Hilo', (await p.evaluate(() => Array.from(document.querySelectorAll('#tabs [data-tab]')).filter((b) => !b.classList.contains('hidden')).map((b) => b.dataset.tab).join())) === 'datos,documentos,contrato,vgt,hilo');
+    ok(nombre + ': hay pestaña Contratos y VGT y no hay Comisión (no comisionan)', await p.evaluate(() => !document.querySelector('#tabs [data-tab="contrato"]').classList.contains('hidden') && document.querySelector('#tabs [data-tab="vgt"]').classList.contains('hidden') && document.querySelector('#tabs [data-tab="comision"]').classList.contains('hidden')));
+    ok(nombre + ': las pestañas van en orden: Datos, Documentos, Contrato, VGT, Hilo', (await p.evaluate(() => Array.from(document.querySelectorAll('#tabs [data-tab]')).filter((b) => !b.classList.contains('hidden')).map((b) => b.dataset.tab).join())) === 'datos,documentos,contrato,hilo');
     ok(nombre + ': desde Datos se puede cambiar el estatus legal', (await p.locator('#tab-datos [data-paso="estatus"]').count()) >= 1);
     await p.screenshot({ path: 'capturas/25-' + nombre + '-ficha-datos.png' });
 
@@ -83,11 +83,9 @@ async function cerrarHojas(p){ for(let i = 0; i < 5 && await p.evaluate(() => !!
     await p.click('#tabs [data-tab="contrato"]'); await p.waitForSelector('#tab-contrato.on [data-ctr-editar]');
     const ctr = await p.textContent('#tab-contrato');
     ok(nombre + ': Contrato con una tarjeta por contrato, su estatus y su firma Digital o Física', ctr.includes('Contrato dedicado') && ctr.includes('Por firmar') && (await p.locator('#tab-contrato .ctr-ded [data-firma-ctr]').count()) === 2);
-    ok(nombre + ': el VGT no va en Contrato', !ctr.includes('Vía de prueba'));
-    await p.click('#tabs [data-tab="vgt"]'); await p.waitForSelector('#tab-vgt.on .ctr-vgt');
-    const vg = await p.textContent('#tab-vgt');
-    ok(nombre + ': la pestaña VGT trae el contrato, los proyectos y los requisitos aparte', vg.includes('Vía de prueba') && vg.includes('12 postes') && (await p.locator('#tab-documentos [data-grupo="vgt"]').count()) === 0);
-    await p.click('#tabs [data-tab="contrato"]');
+    // Lote 28/10 (pantalla 9): en un dedicado, Contratos y VGT van juntos en una pestaña
+    ok(nombre + ': la pestaña se llama Contratos y VGT y trae el contrato, los tramos y los requisitos', /Contratos y VGT/.test(await p.textContent('#tabs [data-tab="contrato"]')) && ctr.includes('Vía de prueba') && ctr.includes('12 postes') && (await p.locator('#tab-contrato .ctr-vgt').count()) === 1 && (await p.locator('#tab-documentos [data-grupo="vgt"]').count()) === 0);
+    ok(nombre + ': ya no hay pestaña VGT aparte', await p.isHidden('#tabs [data-tab="vgt"]'));
     await p.screenshot({ path: 'capturas/25-' + nombre + '-ficha-contratos.png' });
     await p.click('[data-ctr-editar="11"]'); await p.waitForSelector('#hojaCtr.ver');
     await p.selectOption('#kEst', 'firmado'); await p.evaluate(() => { const f = document.querySelector('#kFirma'); f.removeAttribute('max'); f.value = '2099-01-01'; });

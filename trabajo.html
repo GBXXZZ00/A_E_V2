@@ -10,44 +10,49 @@
 <link rel="expect" href="#navListo" blocking="render">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="assets/img/icon-192.png">
-<link rel="stylesheet" href="assets/css/base.css?v=66">
-<link rel="stylesheet" href="assets/css/modulos.css?v=66">
-<link rel="stylesheet" href="assets/css/app.css?v=66">
+<link rel="stylesheet" href="assets/css/base.css?v=67">
+<link rel="stylesheet" href="assets/css/modulos.css?v=67">
+<link rel="stylesheet" href="assets/css/app.css?v=67">
 </head>
 <body>
-<header class="barra" id="barra"><a class="marca" href="inicio.html" aria-label="Inicio"><img class="logo" src="assets/img/logo.svg?v=66" alt="Airtek" width="96" height="12"><span>Empresas</span></a></header>
+<header class="barra" id="barra"><a class="marca" href="inicio.html" aria-label="Inicio"><img class="logo" src="assets/img/logo.svg?v=67" alt="Airtek" width="96" height="12"><span>Empresas</span></a></header>
 <main class="pagina">
   <div class="mt-cab">
     <div><h1 class="titulo" id="saludo">Mi trabajo</h1><p class="sub" id="frase">&nbsp;</p></div>
     <div class="mt-res" id="pildoras"></div>
   </div>
+  <div class="al-banda azul hidden bz-persona" id="bandaPersona" role="status"></div>
   <div class="mt-herr">
-    <button type="button" class="enlace hidden" id="volverPersona" data-tr="volver">Volver a mi trabajo</button>
+    <button type="button" class="btn btn-chico btn-2 hidden" id="btnLote" data-tr="lote">Revisar documentos en lote</button>
     <div class="selector-corte hidden" id="zonaPersona"><label class="solo-lector" for="persona">Ver el trabajo de</label><select id="persona" aria-label="Ver el trabajo de"></select></div>
   </div>
   <div class="al-banda azul hidden mt-cola-barra" id="barraCola" role="status"></div>
-  <section class="mt-grid" id="tarjetas" aria-label="Grupos de trabajo"></section>
-  <div class="mt-cuerpo">
-    <section class="mt-izq" id="cuerpo" aria-live="polite"></section>
-    <aside class="mt-der" id="lado"></aside>
+  <section class="bz-nums hidden" id="nums" aria-label="Números del día"></section>
+  <div class="bz-cols" id="vistaBuzon">
+    <nav class="bz-idx" id="tarjetas" aria-label="Grupos de trabajo"></nav>
+    <section class="bz-der" id="cuerpo" aria-live="polite"></section>
   </div>
+  <section class="hidden" id="vistaLote" aria-label="Revisar documentos en lote"></section>
+  <div class="bz-aviso hidden" id="bzAviso" role="status" aria-live="polite"></div>
 </main>
 <script src="assets/vendor/supabase.js?v=1"></script>
-<script src="assets/js/practica.js?v=66"></script>
-<script src="assets/js/supabase-client.js?v=66"></script>
-<script src="assets/js/comun.js?v=66"></script>
-<script src="assets/js/sesion.js?v=66"></script>
-<script src="assets/js/armazon.js?v=66"></script>
-<script src="assets/js/contacto.js?v=66"></script>
+<script src="assets/js/practica.js?v=67"></script>
+<script src="assets/js/supabase-client.js?v=67"></script>
+<script src="assets/js/comun.js?v=67"></script>
+<script src="assets/js/sesion.js?v=67"></script>
+<script src="assets/js/armazon.js?v=67"></script>
+<script src="assets/js/contacto.js?v=67"></script>
 <i id="navListo" hidden></i>
-<script src="assets/js/archivos.js?v=66"></script>
-<script src="assets/js/marca.js?v=66"></script>
-<script src="assets/js/documentos.js?v=66"></script>
-<script src="assets/js/pedir.js?v=66"></script>
-<script src="assets/js/ficha.js?v=66"></script>
-<script src="assets/js/dedicado-ficha.js?v=66"></script>
-<script src="assets/js/cliente-gestion.js?v=66"></script>
-<script src="assets/js/gestiones.js?v=66"></script>
-<script src="assets/js/trabajo.js?v=66"></script>
+<script src="assets/js/archivos.js?v=67"></script>
+<script src="assets/js/marca.js?v=67"></script>
+<script src="assets/js/documentos.js?v=67"></script>
+<script src="assets/js/pedir.js?v=67"></script>
+<script src="assets/js/ficha.js?v=67"></script>
+<script src="assets/js/dedicado-ficha.js?v=67"></script>
+<script src="assets/js/cliente-gestion.js?v=67"></script>
+<script src="assets/js/gestiones.js?v=67"></script>
+<script src="assets/js/buzon.js?v=67"></script>
+<script src="assets/js/revision-lote.js?v=67"></script>
+<script src="assets/js/trabajo.js?v=67"></script>
 </body>
 </html>

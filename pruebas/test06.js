@@ -4,7 +4,7 @@ const { chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar, plegables
 const { ok, cerrar } = marcador();
 const { RPC } = require('./mundo');
 const llamo = (m, f) => m.llamadas.filter((l) => l[1] === f);
-const abrir = async (p, texto) => { await p.locator('[data-com]').filter({ hasText: texto }).first().click(); await p.waitForSelector('#hojaComision.ver .req'); await plegables(p, 'pago', 'ajustes'); };
+const abrir = async (p, texto) => { await p.locator('[data-com]').filter({ hasText: texto }).first().click(); await p.waitForSelector('#hojaComision.ver [data-plg-btn="legal"]'); await plegables(p, 'pago', 'ajustes'); };
 const cerrarHojas = async (p) => { for(let i = 0; i < 4; i++){ if(await p.evaluate(() => !!window.Comun.hojaAbierta())) await p.keyboard.press('Escape'); } await p.waitForFunction(() => !window.Comun.hojaAbierta()); };
 (async () => {
   const nav = await chromium.launch(); const errores = [];
@@ -12,24 +12,24 @@ const cerrarHojas = async (p) => { for(let i = 0; i < 4; i++){ if(await p.evalua
     const { ctx, mundo } = await contexto(nav, Object.assign({ acceptDownloads: true }, dispositivo));
     const p = await entrar(ctx, 'marcos', '482913'); p.on('pageerror', (e) => errores.push(e.message));
     await p.goto(H + 'comisiones.html'); await p.waitForSelector('.grupo');
-    ok(nombre + ': avisa de las pendientes por asignar', (await p.textContent('#avisos')).includes('2 pendientes por asignar') && (await p.locator('[data-filtro="asignar"] em').first().textContent()) === '2');
+    ok(nombre + ': avisa de las pendientes por asignar', /2 instalaciones/.test(await p.textContent('#alertas [data-filtro="asignar"]')) && /2/.test(await p.textContent('#filtros [data-filtro="asignar"]')));
     await p.screenshot({ path: 'capturas/06-' + nombre + '-comisiones.png', fullPage: true });
-    await p.click('#avisos [data-filtro="asignar"]');
-    ok(nombre + ': la bandeja trae solo las pendientes, ya abiertas', (await p.locator('[data-com]').count()) === 2 && p.url().includes('f=asignar') && (await p.locator('#avisos .franja.ambar:not(:has-text("día límite"))').count()) === 0);
+    await p.click('#alertas [data-filtro="asignar"]');
+    ok(nombre + ': la bandeja trae solo las pendientes, ya abiertas', (await p.locator('[data-com]').count()) === 2 && p.url().includes('f=asignar'));
     const t = await p.textContent('#lista');
-    ok(nombre + ': Sin orden en rojo y orden por confirmar', (await p.locator('#lista .tx-rojo').textContent()) === 'Sin orden' && /Orden \d+ por confirmar/.test(await p.locator('#lista .tx-ambar').textContent()) && t.includes('Por asignar'));
+    ok(nombre + ': Sin orden en rojo y orden por confirmar', (await p.locator('#lista .tx-rojo').textContent()) === 'Sin orden' && /por confirmar/.test(await p.locator('#lista .tx-ambar').first().textContent()) && t.includes('Por asignar'));
     ok(nombre + ': bandeja sin desborde', await sinDesborde(p));
     await p.screenshot({ path: 'capturas/06-' + nombre + '-bandeja.png', fullPage: true });
 
     // Confirmar la orden propuesta
     await abrir(p, 'Comercial de Prueba 8,');
     let h = await p.textContent('#hojaComision');
-    ok(nombre + ': la hoja muestra la orden y a quién se propone', h.includes('Pendiente por asignar') && h.includes('Por confirmar') && h.includes('PRUEBA-001/4') && h.includes('Tomás Guerra (propuesto)'));
+    ok(nombre + ': la hoja muestra la orden y a quién se propone', h.includes('confirme la orden') && h.includes('Por confirmar') && h.includes('PRUEBA-001/4') && h.includes('Tomás Guerra (propuesto)'));
     await p.screenshot({ path: 'capturas/06-' + nombre + '-por-confirmar.png' });
     await p.click('#asigConfirmar'); await p.waitForFunction(() => document.querySelectorAll('#lista [data-com]').length === 1);
     const conf = mundo.llamadas.filter((l) => l[1] === 'instalacion_asignar').pop();
     ok(nombre + ': Confirmar asigna con la orden y el dueño propuestos', conf && conf[2].p_dueno === 'Tomás Guerra' && typeof conf[2].p_orden === 'number');
-    await p.waitForFunction(() => document.querySelector('#hojaComision').textContent.includes('Confirmada'));
+    await p.waitForFunction(() => !document.getElementById('asigConfirmar') && /asignó la comisión/.test(document.getElementById('hojaComision').textContent));
     ok(nombre + ': queda confirmada y en el hilo', (await p.textContent('#hojaComision')).includes('asignó la comisión a Tomás Guerra'));
     await cerrarHojas(p);
 
@@ -52,14 +52,14 @@ const cerrarHojas = async (p) => { for(let i = 0; i < 4; i++){ if(await p.evalua
     ok(nombre + ': asignar a mano manda sin orden y con el dueño elegido', man[2].p_orden === null && man[2].p_dueno === 'Rosa Paredes');
     await p.waitForFunction(() => document.querySelector('#hojaComision').textContent.includes('A mano'));
     await cerrarHojas(p);
-    await p.waitForFunction(() => !document.querySelector('[data-filtro="asignar"] em') || document.querySelector('[data-filtro="asignar"] em').textContent === '0');
-    await p.click('[data-filtro="todos"]');
-    ok(nombre + ': sin pendientes desaparecen el aviso y el filtro', (await p.locator('#avisos .franja:not(:has-text("día límite"))').count()) === 0 && (await p.locator('[data-filtro="asignar"]').count()) === 0);
+    await p.waitForFunction(() => { const e = document.querySelector('#filtros [data-filtro="asignar"]'); return !e || /\b0\b/.test(e.textContent); });
+    await p.click('#filtros [data-filtro="todos"]');
+    ok(nombre + ': sin pendientes el filtro se va y el aviso queda en cero', (await p.locator('#filtros [data-filtro="asignar"]').count()) === 0 && /0 instalaciones/.test(await p.textContent('#alertas')));
 
     // Buscador y marca Natural
     await p.fill('#busca', 'kiosco'); await p.waitForFunction(() => document.querySelectorAll('#lista [data-com]').length === 1);
     ok(nombre + ': el buscador filtra y abre el grupo', (await p.locator('.grupo.abierto').count()) === 1 && p.url().includes('q=kiosco'));
-    ok(nombre + ': marca Natural y orden a la vista', (await p.locator('#lista .tagn').first().textContent()) === 'Natural' && /Orden \d+/.test(await p.textContent('#lista [data-com] small')));
+    ok(nombre + ': documento de persona natural y orden a la vista', /^V-/.test(await p.textContent('#lista [data-com] .cx-c small')) && !/Sin orden/.test(await p.textContent('#lista [data-com] .cx-o')));
     await p.fill('#busca', 'zzzz'); await p.waitForSelector('#lista .vacio');
     ok(nombre + ': sin resultados lo dice claro', (await p.textContent('#lista .vacio')).includes('Sin resultados'));
     await p.fill('#busca', 'kiosco'); await p.waitForSelector('#lista [data-com]');
@@ -75,7 +75,7 @@ const cerrarHojas = async (p) => { for(let i = 0; i < 4; i++){ if(await p.evalua
     await p.click('#excGuardar'); await p.waitForFunction(() => document.querySelector('#hojaComision').textContent.includes('Comisiona por excepción'));
     h = await p.textContent('#hojaComision');
     ok(nombre + ': con excepción comisiona y se ve el motivo', h.includes('Cliente antiguo, se aprobó por gerencia') && h.includes('Activa') && mundo.llamadas.some((l) => l[1] === 'instalacion_excepcion' && l[2].p_motivo && l[2].p_corte));
-    await cerrarHojas(p); await p.waitForFunction(() => document.querySelector('#lista [data-com] .m').textContent.includes('Excepción'));
+    await cerrarHojas(p); await p.waitForFunction(() => /por excepción/.test(document.querySelector('#lista [data-com] .cx-q').textContent));
     ok(nombre + ': la fila queda marcada con Excepción', true);
     await abrir(p, 'Kiosco La Parada'); await p.click('#excQuitar'); await p.waitForFunction(() => !document.querySelector('#hojaComision').textContent.includes('Comisiona por excepción') && !!document.querySelector('#excAbrir'));
     ok(nombre + ': la excepción se puede quitar', true);

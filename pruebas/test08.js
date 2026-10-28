@@ -22,11 +22,11 @@ const llamo = (m, n) => m.llamadas.filter((l) => l[1] === n);
     const p = await entrar(ctx, 'marcos', '482913'); p.on('pageerror', (e) => errores.push(e.message));
     await p.goto(H + 'clientes.html?f=todos'); await p.waitForSelector('.cli');
     await abrirCliente(p, 'Vidrios El Faro');
-    ok(nombre + ': cada servicio dice si ya se envió y ofrece Proforma y carta', (await p.locator('[data-enviar]').count()) === 2 && (await p.textContent('#tab-datos')).includes('Proforma y carta sin enviar') && (await p.locator('[data-gestion]').count()) === 0);
+    ok(nombre + ': cada servicio dice si ya se envió y ofrece Proforma y carta', (await p.locator('[data-enviar]').count()) === 2 && (await p.textContent('#tab-datos')).includes('Carta y proforma por enviar') && (await p.locator('[data-gestion]').count()) === 0);
     await p.locator('[data-enviar]').first().click(); await p.waitForSelector('#hojaEnviar.ver #envWa');
     let h = await p.textContent('#hojaEnviar');
     ok(nombre + ': avisa antes de generar que falta la IP', h.includes('no tiene IP') && h.includes('Pendiente por asignar') && (await p.locator('#envIp').count()) === 1);
-    ok(nombre + ': propone Las dos y los números del cliente', (await p.locator('[data-env-tipo="ambas"].on').count()) === 1 && (await p.locator('#envNum option').count()) >= 2 && (await p.textContent('#envNum')).includes('representante'));
+    ok(nombre + ': propone Las dos y los números del cliente', /Se envían juntas/.test(await p.textContent('#hojaEnviar')) && (await p.locator('#envNum option').count()) >= 2 && (await p.textContent('#envNum')).includes('representante'));
     ok(nombre + ': la hoja de envío no desborda', await sinDesborde(p));
     await p.screenshot({ path: 'capturas/08-' + nombre + '-enviar.png' });
 
@@ -59,9 +59,9 @@ const llamo = (m, n) => m.llamadas.filter((l) => l[1] === n);
       ok(nombre + ': descarga los dos PDF, copia el número y abre el chat', bajadas.sort().join() === 'Carta_Bienvenida_Vidrios_El_Faro_C_A.pdf,Proforma_Vidrios_El_Faro_C_A.pdf' && chat.url().includes('wa.me/584145550134') && decodeURIComponent(chat.url()).includes('carta de bienvenida') && (await p.evaluate(() => window.__copiado)) === '0414 555 0134');
       await chat.close();
     }
-    await p.waitForFunction(() => /Carta enviada el/.test(document.getElementById('tab-datos').textContent));
-    const reg = llamo(mundo, 'envio_registrar').pop();
-    ok(nombre + ': queda anotado quién, qué y por dónde', reg[2].p_tipos.join() === 'proforma,bienvenida' && reg[2].p_canal === 'whatsapp' && reg[2].p_destino === '0414 555 0134' && (await p.textContent('#tab-datos')).includes('Marcos'));
+    await p.waitForFunction(() => /Carta y proforma enviadas/.test(document.getElementById('tab-datos').textContent));
+    const reg = llamo(mundo, 'carta_enviar').pop();   // Lote 28/10: carta y proforma van juntas (carta_enviar)
+    ok(nombre + ': queda anotado quién, qué y por dónde', !!reg && reg[2].p_canal === 'whatsapp' && reg[2].p_destino === '0414 555 0134' && /Marcos/.test(await p.getAttribute('#tab-datos [data-enviar]', 'title')));
     await p.click('[data-tab="hilo"]');
     ok(nombre + ': el hilo lo cuenta', (await p.textContent('#tab-hilo')).includes('envió la proforma y la carta de bienvenida por WhatsApp'));
     await p.click('[data-tab="datos"]');
@@ -74,22 +74,22 @@ const llamo = (m, n) => m.llamadas.filter((l) => l[1] === n);
     if(tel) await p.evaluate(() => { window.__compartido = null; });
     await p.click('#envCorreo'); await p.waitForFunction((n) => true, antes);
     await p.waitForFunction(() => !document.querySelector('#hojaEnviar.ver'));
-    const co = llamo(mundo, 'envio_registrar').pop();
-    ok(nombre + ': el correo lleva las dos y queda anotado', llamo(mundo, 'envio_registrar').length === antes + 1 && co[2].p_canal === 'correo' && co[2].p_destino === 'gerente@vidrioselfaro.test' && co[2].p_tipos.length === 2);
+    const co = llamo(mundo, 'carta_enviar').pop();
+    ok(nombre + ': el correo lleva las dos y queda anotado', llamo(mundo, 'envio_registrar').length === antes && co[2].p_canal === 'correo' && co[2].p_destino === 'gerente@vidrioselfaro.test');
     if(tel){ const c = await p.evaluate(() => window.__compartido); ok(nombre + ': el correo formal va con asunto, texto y los dos PDF', c.nombres.length === 2 && c.titulo.includes('Bienvenido a Airtek Empresas') && c.texto.includes('Estimados señores de Vidrios El Faro, C.A.') && c.texto.includes('Atentamente')); }
     await cerrarTodo(p);
 
     // Sin dueño no sale la carta
     await abrirCliente(p, 'Comercial de Prueba 8,'); await p.locator('[data-enviar]').first().click(); await p.waitForSelector('#hojaEnviar.ver #envWa');
-    ok(nombre + ': sin dueño solo se puede la proforma', (await p.textContent('#hojaEnviar')).includes('cuando la instalación tenga dueño') && await p.locator('[data-env-tipo="bienvenida"]').isDisabled() && await p.locator('[data-env-tipo="ambas"]').isDisabled() && (await p.locator('[data-env-tipo="proforma"].on').count()) === 1 && (await p.locator('[data-env-ver="bienvenida"]').count()) === 0);
+    ok(nombre + ': sin dueño solo se puede la proforma', (await p.textContent('#hojaEnviar')).includes('cuando la instalación tenga dueño') && (await p.textContent('#hojaEnviar')).includes('Por ahora solo la proforma') && (await p.locator('[data-env-ver="bienvenida"]').count()) === 0);
     await p.click('#envCorreo');
     ok(nombre + ': sin correo del cliente se explica qué hacer', (await p.textContent('#eEnv')).includes('no tiene correo'));
     await cerrarTodo(p); await ctx.close();
 
     // Inicio de la analista: bienvenidas por enviar
     const s = await contexto(nav, dispositivo); const q = await entrar(s.ctx, 'elena', '315806'); q.on('pageerror', (e) => errores.push(e.message));
-    await q.waitForSelector('[data-pend="tr_comisiones"]');
-    ok(nombre + ': Inicio cuenta Comisiones desde Mi trabajo (por enviar incluido) sin repetir por asignar aparte', /Comisiones: \d+ pendientes?/.test(await q.textContent('[data-pend="tr_comisiones"]')) && (await q.locator('[data-pend="asignar"]').count()) === 0);
+    await q.waitForSelector('.bz-ini-card');
+    ok(nombre + ': Inicio agrupa los pendientes de Mi trabajo sin repetir por asignar aparte', /Por decidir/.test(await q.textContent('#zonaPendientes')) && (await q.locator('[data-pend="asignar"]').count()) === 0);
     await q.screenshot({ path: 'capturas/08-' + nombre + '-inicio.png', fullPage: true });
     await q.goto(H + 'clientes.html?bienvenidas=1'); await q.waitForSelector('#hojaBienv.ver [data-bienv]');
     const n = await q.locator('#hojaBienv [data-bienv]').count();

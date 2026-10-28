@@ -451,8 +451,8 @@ function gerFiltrar(m, yo, a){
 
 
 // ----- Lote 27/10: Resumen en pequeño (mismas formas que privado.res_*) -----
-const GRUPO_LEGAL = (e) => e === 'grandes_negocios' ? 'completo' : e === 'contrato_firmado' ? 'firmado' : ['por_firmar', 'contrato_en_curso'].includes(e) ? 'por_firmar' : ['documentos_recibidos', 'documentos_en_revision'].includes(e) ? 'revision' : 'faltan';
-const LEGAL_ORDEN = ['completo', 'firmado', 'por_firmar', 'revision', 'faltan'];
+const GRUPO_LEGAL = (e) => !e || e === 'grandes_negocios' ? 'sin_gestionar' : e === 'contrato_firmado' ? 'firmado' : ['por_firmar', 'contrato_en_curso'].includes(e) ? 'por_firmar' : ['documentos_recibidos', 'documentos_en_revision'].includes(e) ? 'revision' : 'faltan';
+const LEGAL_ORDEN = ['sin_gestionar', 'faltan', 'revision', 'por_firmar', 'firmado'];
 const vistosRes = (m, yo) => yo.rol === 'gerencia' ? m.datos.clientes.filter((c) => !c.unido_a) : visibles(m, yo);
 const segRes = (c) => { const t = tarjetaDe(c); return t.ded === 'isp' ? 'isp' : t.ded === 'corporativo' && !t.pyme ? 'corporativo' : 'pyme'; };
 const mesDe = (f) => String(f || '').slice(0, 7);
@@ -464,14 +464,14 @@ function resumenMundo(m, yo, mod, hasta){
   const del = srv.filter((y) => y.mes === mes);
   const leg = ['pyme', 'corporativo', 'isp'].map((sg) => ({ l: sg === 'pyme' ? 'PYME' : sg === 'corporativo' ? 'Dedicado corporativo' : 'Dedicado ISP', x: sg, v: LEGAL_ORDEN.map((g) => cs.filter((c) => segRes(c) === sg && GRUPO_LEGAL(c.estatus) === g).length) }));
   const lid = {}; del.forEach((y) => { const k = y.c.lider_id || 'sin'; lid[k] = lid[k] || { l: y.c.lider || 'Sin líder', a: 0, x: mes + '|' + k, c: k === 'sin' ? 'w' : null }; lid[k].a++; });
-  const comp = cs.filter((c) => GRUPO_LEGAL(c.estatus) === 'completo').length; const falt = cs.filter((c) => GRUPO_LEGAL(c.estatus) === 'faltan').length;
+  const comp = cs.filter((c) => GRUPO_LEGAL(c.estatus) === 'firmado').length; const falt = cs.filter((c) => GRUPO_LEGAL(c.estatus) === 'faltan').length;
   const ords = ordenesAbiertas(m, yo.rol === 'gerencia' ? { rol: 'admin' } : yo).map((o) => Object.assign({ dias: Math.max(0, dias(fechaClave(caracas(o.creada_en || hace(0))), hoy())) }, o));
   const ant = [['a', 'Menos de 15 días', null, (d) => d < 15], ['b', '15 a 60 días', 'w', (d) => d >= 15 && d < 60], ['c', '60 a 180 días', 'b', (d) => d >= 60 && d < 180], ['d', 'Más de 180 días', 'b', (d) => d >= 180]].map((b) => ({ l: b[1], x: b[0], c: b[2], a: ords.filter((o) => b[3](o.dias)).length }));
   const ins = []; cs.forEach((c) => (c.instalaciones || []).forEach((i) => ins.push({ c, i, mes: mesDe(fechaClave(caracas(i.instalada_en))) })));
   const cortes = [-2, -1, 0].map((k) => { const x = masMeses(mes + '-01', k).slice(0, 7); return { l: x, x, a: ins.filter((y) => y.mes === x && y.i.pago_ok_en).length, b: ins.filter((y) => y.mes === x && !y.i.pago_ok_en).length }; });
   const num = (id, v, l, sx, g, x, o) => Object.assign({ id, v, l, s: sx, g, x }, o || {});
   const R = {
-    clientes: { nums: [num('total', cs.length, 'Clientes', '', 'seg', 'todos'), num('completos', cs.length ? Math.round(comp * 100 / cs.length) : 0, 'Expedientes completos', comp + ' de ' + cs.length, 'legal', 'todos:completo', { fmt: 'pct' }),
+    clientes: { nums: [num('total', cs.length, 'Clientes', '', 'seg', 'todos'), num('completos', cs.length ? Math.round(comp * 100 / cs.length) : 0, 'Contratos firmados', comp + ' de ' + cs.length, 'legal', 'todos:firmado', { fmt: 'pct' }),
         num('faltan', falt, 'Faltan documentos', 'Hay que pedírselos al cliente', 'legal', 'todos:faltan', { tono: 'w' }), num('mes', del.length, 'Instalados en el mes', '', 'inst', mes, { cmp: 10 })],
       charts: [{ id: 'inst', tipo: 'mes', w: 2.2, t: 'Instalaciones PYME', s: del.length + ' en el mes', data: serie }, { id: 'lider', tipo: 'h', w: 1, t: 'Por líder', s: '', data: Object.values(lid) },
         { id: 'legal', tipo: 's', w: 1.5, t: 'Estatus legal por segmento', s: 'Dónde está cada expediente hoy', data: leg }, { id: 'cal', tipo: 'cal', w: 1, t: 'Siguen habilitadas', s: '', data: serie.slice(-12).map((y) => ({ m: y.m, x: y.x, a: y.a, b: y.a + y.b })) }] },
@@ -498,7 +498,7 @@ function resumenMundo(m, yo, mod, hasta){
 function filasResumen(m, yo, mod, g, x, hasta){
   const cs = vistosRes(m, yo); const p = x.split('|'); const fc = (c, e, t) => ({ c: c.id, n: c.nombre, s: (c.lider || 'Sin líder'), e, t });
   if(g === 'legal' || g === 'seg'){ const sg = g === 'seg' ? x : x.split(':')[0]; const gr = g === 'seg' ? null : x.split(':')[1];
-    return cs.filter((c) => (sg === 'todos' || segRes(c) === sg) && (!gr || GRUPO_LEGAL(c.estatus) === gr)).map((c) => fc(c, c.estatus, GRUPO_LEGAL(c.estatus) === 'completo' ? 'ok' : 'w')); }
+    return cs.filter((c) => (sg === 'todos' || segRes(c) === sg) && (!gr || GRUPO_LEGAL(c.estatus) === gr)).map((c) => fc(c, c.estatus, GRUPO_LEGAL(c.estatus) === 'firmado' ? 'ok' : 'w')); }
   if(['inst', 'cal', 'lider'].includes(g) && mod === 'clientes') return cs.filter((c) => !c.es_isp && (c.servicios || []).some((s) => mesDe(s.fecha_instalacion) === p[0]) && (g !== 'lider' || (c.lider_id || 'sin') === p[1])).map((c) => fc(c, 'Habilitado', 'ok'));
   if(g === 'sin_instalar') return ordenesAbiertas(m, yo.rol === 'gerencia' ? { rol: 'admin' } : yo).map((o) => ({ c: o.cliente_id, n: o.cliente || 'Sin cliente en la app', s: 'Orden ' + o.numero + ' · ' + o.lider, e: 'Abierta', t: 'w' }));
   if(mod === 'comisiones') return cs.filter((c) => (c.instalaciones || []).some((i) => mesDe(fechaClave(caracas(i.instalada_en))) === p[0])).map((c) => fc(c, 'Con pago', 'ok'));
@@ -525,6 +525,27 @@ function pendientesInstalar(m, yo){
     .map((c) => ({ cliente_id: c.id, nombre: c.nombre, doc: c.doc_tipo + '-' + c.doc_numero, dueno_id: c.lider_id, dueno: c.lider || 'Por asignar', equipo: equipoDe(m, c.lider), desde: c.pendiente_instalar_en,
       orden: null, docs: (c.documentos || []).filter((d) => (d.archivos || []).length).length, enviado: !!c.nuevo_enviado_en }));
 }
+// Lote 28/10: pendientes nuevos del buzón (carta y proforma para Canales; "Mis ventas" de quien vende)
+function buzonMundo(m){
+  const admin = { rol: 'admin', id: 'x', nombre: 'Sistema' }; const cl = RPC.comisiones_lista(m, admin, {}); if(!cl || cl.__error) return [];
+  const pid = (n) => (m.personas.find((p) => norm(p.nombre) === norm(n || '')) || {}).id || null; const out = [];
+  const mas = (t, d) => { const x = new Date(fechaClave(caracas(t)) + 'T12:00:00'); x.setDate(x.getDate() + d); return x.toISOString().slice(0, 10); };
+  cl.filas.forEach((f) => {
+    const k = f.carta || {};
+    if(f.origen === 'corte' && f.cliente_id && ['por_enviar', 'falta_ip', 'lider'].includes(k.k)) out.push({ tipo: 'carta_enviar', clave: String(f.instalacion_id), cliente_id: f.cliente_id, titulo: f.nombre,
+      detalle: (k.k === 'lider' ? 'Enviada por el líder · falta Canales' : k.k === 'falta_ip' ? 'Carta y proforma por enviar · falta la IP' : 'Carta y proforma por enviar'), lider_id: pid(f.lider), analista_id: null, para: 'analista',
+      desde: f.instalada_en, vence: mas(f.instalada_en, 2), ref: { instalacion: f.instalacion_id, servicio: k.servicio_id, carta: k.k } });
+    if(!f.cumple && f.cliente_id && ['corporativas', 'canales'].includes(f.equipo) && pid(f.lider)) out.push({ tipo: 'venta_falta', clave: String(f.instalacion_id), cliente_id: f.cliente_id, titulo: f.nombre,
+      detalle: !f.legal_ok && !f.pago_ok ? 'Falta legal y pago' : !f.legal_ok ? 'Falta legal' : !f.pago_ok ? 'Falta el pago' : 'Falta la orden', lider_id: pid(f.lider), analista_id: null, para: 'vende',
+      desde: f.instalada_en, vence: hoy(), ref: { instalacion: f.instalacion_id, legal: !!f.legal_ok, pago: !!f.pago_ok } });
+  });
+  pendientesInstalar(m, admin).filter((p) => p.dueno_id).forEach((p) => out.push({ tipo: 'cliente_nuevo', clave: String(p.cliente_id), cliente_id: p.cliente_id, titulo: p.nombre,
+    detalle: 'Pendiente por instalar · ' + p.docs + (p.docs === 1 ? ' documento subido' : ' documentos subidos'), lider_id: p.dueno_id, analista_id: null, para: 'vende', desde: p.desde, vence: null, ref: { cliente: p.cliente_id } }));
+  return out;
+}
+// Lote 28/10: estatus legal en 5 grupos ("Grandes negocios" es Sin gestionar, nunca completo)
+const GRUPO_I = { sin_gestionar: 0, faltan: 1, revision: 2, por_firmar: 3, firmado: 4 };
+function grupoLegal(e){ return !e || e === 'grandes_negocios' ? 'sin_gestionar' : e === 'contrato_firmado' ? 'firmado' : ['por_firmar', 'contrato_en_curso'].includes(e) ? 'por_firmar' : ['documentos_recibidos', 'documentos_en_revision'].includes(e) ? 'revision' : 'faltan'; }
 const RPC = {
   inicio_datos(m, yo){
     if(yo.rol === 'aliado') return { rol: yo.rol, hoy: hoy() };
@@ -979,19 +1000,22 @@ const RPC = {
     const h = hoy(); const jefe = esSenior(yo); const coord = !!yo.coordinador; let quien = yo;
     if(a.p_persona && a.p_persona !== yo.id){ quien = m.personas.find((p) => p.id === a.p_persona); if(!quien || !(jefe || (coord && quien.rol === 'analista'))) return error('No puedes ver el trabajo de esa persona'); }
     const vista = quien !== yo ? (quien.rol === 'analista' ? (quien.senior ? 'admin' : quien.coordinador ? 'coord' : 'analista') : quien.rol) : jefe ? 'admin' : coord ? 'coord' : yo.rol;
-    const base = pendientesBase(m).concat(m.datos.extra || []);
+    const base = pendientesBase(m).concat(m.datos.extra || []).concat(buzonMundo(m));
     const g = gestionesDe(m);
-    let items = base.filter((p) => vista === 'admin' ? ['admin', 'senior'].includes(p.para) : vista === 'coord' ? p.para === 'analista' : vista === 'analista' ? p.para === 'analista' && p.analista_id === quien.id
-      : vista === 'abogado' ? p.para === 'abogado' : p.para === 'lider' && p.lider_id === quien.id);
+    let items = base.filter((p) => (p.para === 'vende' && p.lider_id === quien.id) || (vista === 'admin' ? ['admin', 'senior'].includes(p.para) : vista === 'coord' ? p.para === 'analista' : vista === 'analista' ? p.para === 'analista' && (p.analista_id === quien.id || (!p.analista_id && p.tipo === 'carta_enviar'))
+      : vista === 'abogado' ? p.para === 'abogado' : p.para === 'lider' && p.lider_id === quien.id));
     if(vista === 'lider') g.filter((x) => x.estado === 'activa' && x.responsables.includes(quien.id)).forEach((x) => x.clientes.filter((c) => !['cumplido', 'resuelto'].includes(c.estado)).forEach((c) => {
       const cli = m.datos.clientes.find((k) => k.id === c.cliente_id) || {};
-      items.push({ tipo: 'gestion', clave: x.id + ':' + c.cliente_id, cliente_id: c.cliente_id, titulo: cli.nombre, detalle: x.nombre + ' · ' + c.estado, vence: c.promesa || x.plazo, desde: new Date().toISOString(), ref: { gestion: x.id } }); }));
+      items.push({ tipo: 'gestion', clave: x.id + ':' + c.cliente_id, cliente_id: c.cliente_id, titulo: cli.nombre, detalle: x.nombre + ' · ' + ({ contactado: 'Contactado', esperando: 'Esperando', sin_contacto: 'Sin contacto' }[c.estado] || c.estado), vence: c.promesa || x.plazo, desde: new Date().toISOString(), ref: { gestion: x.id, estado: c.estado } }); }));
     const nom = (id) => (m.personas.find((p) => p.id === id) || {}).nombre || null;
     items = items.map((p) => Object.assign({}, p, { lider: nom(p.lider_id), analista: nom(p.analista_id) }));
     const equipo = (jefe || coord) && quien === yo ? m.personas.filter((p) => p.activo && p.id !== yo.id && (p.rol === 'analista' || (jefe && ['lider', 'abogado'].includes(p.rol)))).map((p) => {
       const l = base.filter((x) => (p.rol === 'lider' && x.para === 'lider' && x.lider_id === p.id) || (p.rol === 'analista' && x.para === 'analista' && x.analista_id === p.id) || (p.rol === 'abogado' && x.para === 'abogado'));
       return { id: p.id, nombre: p.nombre, rol: p.rol === 'lider' ? 'Líder' : p.rol === 'abogado' ? 'Legal' : 'Analista', n: l.length, venc: l.filter((x) => x.vence < h).length, hoy: l.filter((x) => x.vence === h).length }; }).filter((e) => e.n) : [];
+    m.datos.notas = m.datos.notas || [];
     return { rol: yo.rol, vista, senior: jefe && yo.rol !== 'admin', coordinador: coord, hoy: h, nombre: quien.nombre, persona: quien !== yo ? { id: quien.id, nombre: quien.nombre } : null,
+      solo_consulta: quien !== yo, vende: ['lider', 'analista'].includes(quien.rol) && ['corporativas', 'canales'].includes(equipoDe(m, quien.nombre)), hoy_hechos: 0,
+      notas: quien === yo ? m.datos.notas.filter((n) => n.perfil === yo.id).map((n) => Object.assign({}, n, { cliente: n.cliente_id ? (m.datos.clientes.find((c) => c.id === n.cliente_id) || {}).nombre : null })) : [],
       corte: enCurso(), limite: hoy(), items, puedo_crear_gestion: jefe || coord,
       gestiones: g.filter((x) => x.estado === 'activa' && (vista === 'admin' || vista === 'coord' || x.responsables.includes(quien.id))).map((x) => gestionJson(m, x, false)),
       equipo, personas: jefe || coord ? m.personas.filter((p) => p.activo && p.id !== yo.id && (p.rol === 'analista' || (jefe && ['lider', 'abogado'].includes(p.rol)))).map((p) => ({ id: p.id, nombre: p.nombre, rol: p.rol })) : [],
@@ -1609,6 +1633,100 @@ const RPC = {
     const visible = yo.rol !== 'lider' ? f : f.filter((r) => norm(r.d) === norm(yo.nombre) || base.some((b) => b.cliente_id === r.c && b.equipo === 'aliados'));
     const gr = {}; f.forEach((r) => { gr[r.d] = (gr[r.d] || 0) + 1; });
     return { total: f.length, grupos: Object.keys(gr).map((k) => ({ d: k, n: gr[k] })).sort((p, q) => q.n - p.n), filas: Number(a.p_pagina) < 0 ? visible : visible.slice(0, 50), pagina: 0, por_pagina: 50, lista: 'comisiones.html' };
+  },
+  // ---------- Lote 28/10: Clientes (panel, resumen, detalle, otros líderes) ----------
+  clientes_panel(m, yo){
+    if(!['admin', 'analista', 'lider', 'abogado'].includes(yo.rol)) return error('No tienes permiso para hacer esto');
+    const segs = {}; visibles(m, yo).filter((c) => !c.provisional).forEach((c) => { const t = tarjetaDe(c); const k = t.ded || 'pyme';
+      const s = segs[k] = segs[k] || { total: 0, grupos: [0, 0, 0, 0, 0], sin_fecha: k === 'pyme' ? null : 0, polizas: k === 'isp' ? 0 : null, suspendidos: k === 'isp' ? 0 : null }; s.total++; s.grupos[GRUPO_I[grupoLegal(c.estatus)]]++; });
+    const pri = visibles(m, yo).filter((c) => !tarjetaDe(c).ded && grupoLegal(c.estatus) === 'sin_gestionar' && c.servicios.some((s) => s.estado === 'Habilitado'));
+    return { segmentos: segs, gestiones: gestionesDe(m).filter((g) => g.estado === 'activa').map((g) => Object.assign({ total: g.clientes.length, hechos: g.clientes.filter((x) => x.estado === 'cumplido').length,
+        estados: { contactado: g.clientes.filter((x) => x.estado === 'contactado').length, sin_contacto: g.clientes.filter((x) => !x.estado || x.estado === 'sin_contacto').length },
+        responsables: g.responsables.map((id) => ({ id, nombre: (m.personas.find((p) => p.id === id) || {}).nombre })) }, g, { clientes: null })),
+      prioridad: { n: pri.length, clientes: pri.map((c) => ({ id: c.id, nombre: c.nombre })) }, rol: yo.rol, puedo_crear_gestion: esSenior(yo) || !!yo.coordinador, puedo_gestion: yo.rol === 'admin' || esSenior(yo) };
+  },
+  cliente_gestiones(m, yo, a){ const id = Number(a.p_cliente);
+    return gestionesDe(m).filter((g) => g.estado === 'activa').map((g) => { const c = g.clientes.find((k) => k.cliente_id === id); return c ? { gestion: g.id, nombre: g.nombre, estado: c.estado, desde: (c.historial[0] || {}).en || null, plazo: g.plazo, nota: c.nota } : null; }).filter(Boolean); },
+  revision_lote_lista(m, yo, a){
+    if(!['admin', 'abogado'].includes(yo.rol)) return error('No tienes permiso para hacer esto');
+    const NOM = { cedula: 'Cédula', rif_personal: 'RIF personal', rif_empresa: 'RIF de la empresa', acta_constitutiva: 'Acta constitutiva', acta_asamblea: 'Acta de asamblea', conatel: 'Conatel', otro: 'Otro documento' };
+    const cl = RPC.comisiones_lista(m, { rol: 'admin', id: 'x', nombre: 'Sistema' }, {}); const enCorte = new Set((cl.filas || []).map((f) => f.cliente_id));
+    const docs = []; m.datos.clientes.filter((c) => !c.unido_a && !c.suspendido_en).forEach((c) => c.documentos.filter((d) => d.estado === 'por_revisar' && (d.archivos || []).length).forEach((d) => {
+      const mk = c.ia && ['lista', 'cerrada'].includes(c.ia.estado) ? (c.ia.marcas || []).find((x) => x.documento === d.id) : null;
+      const ia = !mk ? 'sin_leer' : mk.propuesta === 'bien' ? 'apto' : mk.propuesta === 'problema' ? 'no_apto' : 'mano';
+      docs.push({ c, d, ia, texto: mk ? mk.nota : null, motivo: mk && mk.motivo ? mk.motivo : 'otro', nota: mk ? mk.nota : null }); }));
+    const q = norm(a.p_busca || ''); const f = docs.filter((x) => (!a.p_ia || a.p_ia === 'todos' || x.ia === a.p_ia) && (!a.p_corte || enCorte.has(x.c.id)) && (!q || norm(x.c.nombre).indexOf(q) >= 0));
+    const cs = []; f.forEach((x) => { let g = cs.find((k) => k.id === x.c.id); if(!g){ g = { id: x.c.id, nombre: x.c.nombre, lider: x.c.lider || 'Sin líder', n: 0, espera: 3, en_corte: enCorte.has(x.c.id), docs: [] }; cs.push(g); }
+      g.n++; g.docs.push({ id: x.d.id, casilla: x.d.casilla, cas: NOM[x.d.casilla] || x.d.casilla, numero: x.d.numero, ia: x.ia, texto: x.texto, motivo: x.motivo, nota: x.nota, dias: 3 }); });
+    cs.sort((p, q2) => q2.en_corte - p.en_corte); const d0 = a.p_desde || 0;
+    const cnt = (k) => docs.filter((x) => x.ia === k).length;
+    return { conteos: { apto: cnt('apto'), no_apto: cnt('no_apto'), mano: cnt('mano'), sin_leer: cnt('sin_leer'), corte: new Set(docs.filter((x) => enCorte.has(x.c.id)).map((x) => x.c.id)).size, clientes: new Set(docs.map((x) => x.c.id)).size, docs: docs.length },
+      total: cs.length, clientes: cs.slice(d0, d0 + (a.p_limite || 30)), hoy_aprobados: m.hoyAprobados || 0, corte: 'octubre', puedo_cerrar: yo.rol === 'admin' };
+  },
+  revision_lote(m, yo, a){
+    if(yo.rol !== 'admin') return error('No tienes permiso para hacer esto');
+    const items = a.p_items || []; if(!items.length) return error('Elige al menos un documento');
+    let ap = 0, dv = 0, listos = 0; const om = []; const porCli = {};
+    items.forEach((it) => { for(const c of m.datos.clientes){ const d = c.documentos.find((x) => x.id === Number(it.doc) && x.estado === 'por_revisar'); if(!d) continue;
+      const mk = c.ia && ['lista', 'cerrada'].includes(c.ia.estado) ? (c.ia.marcas || []).find((x) => x.documento === d.id) : null;
+      if(it.accion === 'aprobar' && mk && mk.propuesta === 'problema' && (c.marcas || {})[d.id] && c.marcas[d.id].origen === 'ia'){ om.push(d.id); return; }
+      (porCli[c.id] = porCli[c.id] || { c, l: [] }).l.push({ d, it }); return; } });
+    Object.keys(porCli).forEach((k) => { const x = porCli[k]; const otras = x.c.marcas || {}; x.c.marcas = {};
+      x.l.forEach((y) => { x.c.marcas[y.d.id] = { documento: y.d.id, accion: y.it.accion, motivo: y.it.motivo || null, nota: y.it.nota || null, por: yo.nombre, origen: 'manual' }; });
+      const r = RPC.revision_cerrar(m, yo, { p_cliente: x.c.id }); if(r && r.__error) return;
+      ap += r.aprobados; dv += r.devueltos; if(['documentos_recibidos', 'documentos_en_revision', 'por_firmar', 'contrato_en_curso', 'contrato_firmado'].includes(r.estatus)) listos++;
+      Object.keys(otras).forEach((d) => { if(!x.l.some((y) => String(y.d.id) === d)) x.c.marcas[d] = otras[d]; }); });
+    m.hoyAprobados = (m.hoyAprobados || 0) + ap;
+    return { aprobados: ap, devueltos: dv, omitidos: om, listos };
+  },
+  actualizar_estado(m, yo){
+    if(yo.rol !== 'admin' && !esSenior(yo)) return error('No tienes permiso para hacer esto');
+    const cs = (m.cargas || []).filter((c) => c.estado !== 'procesando'); const ult = (f) => cs.filter((c) => c.fuente === f && ['lista', 'con_errores'].includes(c.estado)).map((c) => c.en).sort().slice(-1)[0] || null;
+    const F = [['tad', 'TAD', 'diaria'], ['odoo', 'Órdenes de Odoo', 'diaria'], ['instalaciones', 'Órdenes de instalación', 'diaria'], ['kmz', 'Mapa de red (KMZ)', 'mapa'], ['cambios', 'Cambios de categoría', 'cuando'], ['ip', 'IP de clientes empresariales', 'cuando'], ['dedicados', 'Dedicados', 'cuando']];
+    const porDia = {}; cs.slice().reverse().forEach((c) => { const d = fechaClave(caracas(c.en)); (porDia[d] = porDia[d] || []).push({ id: c.id, fuente: c.fuente, archivo: c.archivo, en: c.en, por: c.por, estado: c.estado, filas: c.filas, resumen: c.resumen }); });
+    return { fuentes: F.map((x) => { const u = ult(x[0]); return { k: x[0], nombre: x[1], frecuencia: x[2], ultima: u, al_dia: x[2] === 'diaria' ? !!u && fechaClave(caracas(u)) === hoy() : x[2] === 'mapa' ? !!m.mapa : true, tarde: false }; }),
+      historial: Object.keys(porDia).sort().reverse().map((d) => ({ fecha: d, cargas: porDia[d] })), cruce_pendiente: false, ult_cruce: (m.ultimoCruce || {}).en || null };
+  },
+  perfiles_equipos(m, yo){ if(yo.rol !== 'admin') return error('No tienes permiso para hacer esto'); const r = {};
+    m.personas.forEach((p) => { r[p.id] = { equipo: p.equipo_com || null, efectivo: equipoDe(m, p.nombre) }; }); return r; },
+  perfil_equipo_guardar(m, yo, a){ if(yo.rol !== 'admin') return error('No tienes permiso para hacer esto'); if(a.p_equipo && !['corporativas', 'canales', 'aliados'].includes(a.p_equipo)) return error('Equipo no reconocido');
+    const p = m.personas.find((x) => x.id === a.p_perfil); if(!p) return error('Ese usuario no existe'); p.equipo_com = a.p_equipo || null; return { equipo: p.equipo_com }; },
+  nota_guardar(m, yo, a){ const t = String(a.p_texto || '').trim(); if(!t) return error('Escribe la nota'); if(t.length > 500) return error('La nota es muy larga. Máximo 500 letras');
+    m.datos.notas = m.datos.notas || []; const n = { id: m.datos.notas.length + 1, perfil: yo.id, texto: t, recordar: a.p_recordar || null, cliente_id: a.p_cliente || null, en: new Date().toISOString(), hecha: false };
+    m.datos.notas.unshift(n); return n.id; },
+  nota_hecha(m, yo, a){ const n = (m.datos.notas || []).find((x) => x.id === Number(a.p_id) && x.perfil === yo.id); if(!n) return error('Esa nota ya no existe'); n.hecha = a.p_hecha !== false; return null; },
+  gestion_plazo(m, yo, a){ if(yo.rol !== 'admin' && !esSenior(yo)) return error('Solo quien la creó o el administrador cambia la fecha'); const g = gestionesDe(m).find((x) => x.id === Number(a.p_id)); if(!g) return error('Esa gestión ya no está activa');
+    if(!a.p_plazo || a.p_plazo < hoy()) return error('Elige una fecha de hoy en adelante'); g.plazo = a.p_plazo; return null; },
+  clientes_otros(m, yo, a){
+    if(yo.rol !== 'lider') return error('No tienes permiso para hacer esto');
+    const q = norm(a.p_busca || ''); const f = m.datos.clientes.filter((c) => !c.unido_a && !c.provisional && c.lider_id !== yo.id && (!q || norm(c.nombre).indexOf(q) >= 0));
+    return { total: f.length, filas: f.slice(a.p_desde || 0, (a.p_desde || 0) + 30).map((c) => ({ nombre: c.nombre, doc: c.doc_tipo + '-' + c.doc_numero, lider: c.lider || 'Sin líder', grupo: grupoLegal(c.estatus), n_serv: c.servicios.length })) };
+  },
+  clientes_resumen(m, yo, a){
+    if(!['admin', 'analista', 'lider', 'abogado'].includes(yo.rol)) return error('No tienes permiso para hacer esto');
+    const mes = String(a.p_mes || hoy()).slice(0, 7) + '-01'; const seg = a.p_seg || 'pyme';
+    const cs = visibles(m, yo).filter((c) => !c.provisional); const de = (c) => (seg === 'vgt' ? !!c.vgt : (tarjetaDe(c).ded || 'pyme') === seg);
+    const srv = [].concat.apply([], cs.filter(de).map((c) => c.servicios.map((s) => ({ c, s, mes: String(s.fecha_instalacion || '').slice(0, 7), activo: s.estado === 'Habilitado' }))));
+    const serie = []; for(let i = 11; i >= 0; i--){ const d = new Date(mes + 'T12:00:00'); d.setMonth(d.getMonth() - i); const k = d.toISOString().slice(0, 7); const x = srv.filter((v) => v.mes === k); serie.push({ m: k, a: x.filter((v) => v.activo).length, b: x.filter((v) => !v.activo).length }); }
+    const leg = ['pyme', 'corporativo', 'isp'].map((k) => { const v = [0, 0, 0, 0, 0]; cs.filter((c) => (tarjetaDe(c).ded || 'pyme') === k).forEach((c) => { v[GRUPO_I[grupoLegal(c.estatus)]]++; }); return { l: { pyme: 'PYME', corporativo: 'Dedicado corporativo', isp: 'Dedicado ISP' }[k], x: k, v }; });
+    const ultimo = serie[11];
+    return { mes, mes_nombre: '', seg, sin_fechas: true, rol: yo.rol, solo_lectura: yo.rol === 'abogado',
+      tarjetas: { pyme: cs.filter((c) => !tarjetaDe(c).ded).length, corporativo: cs.filter((c) => tarjetaDe(c).ded === 'corporativo').length, isp: cs.filter((c) => tarjetaDe(c).ded === 'isp').length, vgt: cs.filter((c) => c.vgt).length, vgt_contratos: 0, vgt_postes: 0 },
+      nums: { habilitados: srv.filter((v) => v.activo).length, suspendidos: srv.filter((v) => !v.activo).length, inst: ultimo.a + ultimo.b, inst_prev: serie[10].a + serie[10].b, inst_prom: Math.round(serie.reduce((t, x) => t + x.a + x.b, 0) / 12),
+        churn: 0, perdidos: 0, infancia: 0, inf_n: 0, sin_gestionar: cs.filter(de).filter((c) => grupoLegal(c.estatus) === 'sin_gestionar').length, recientes: 0 },
+      prom: { inst: Math.round(serie.reduce((t, x) => t + x.a + x.b, 0) / 12), perd: 0, churn: 0, infancia: 0, firmados: 0 }, serie,
+      churn: serie.slice(6).map((x) => ({ m: x.m, tot: 0, inf: 0 })),
+      calidad: Object.values(srv.reduce((o, v) => { const d = v.c.lider || 'Sin líder'; o[d] = o[d] || { d, inst: 0, siguen: 0, churn: 0, firm: 0, n: 0 }; o[d].inst++; if(v.activo) o[d].n++; o[d].siguen = Math.round(o[d].n * 100 / o[d].inst); return o; }, {})),
+      gestiones: RPC.clientes_panel(m, yo).gestiones, legal: leg };
+  },
+  clientes_detalle(m, yo, a){
+    const cs = visibles(m, yo).filter((c) => !c.provisional); const g = a.p_grafica; const x = String(a.p_valor || '');
+    let f = [];
+    if(g === 'legal' || g === 'singes') f = cs.filter((c) => g === 'singes' ? grupoLegal(c.estatus) === 'sin_gestionar' : (x.split(':')[0] === 'todos' || (tarjetaDe(c).ded || 'pyme') === x.split(':')[0]) && (!x.split(':')[1] || grupoLegal(c.estatus) === x.split(':')[1]))
+      .map((c) => ({ c: c.id, n: c.nombre, s: c.doc_tipo + '-' + c.doc_numero, e: c.estatus, t: '', d: c.lider || 'Sin líder' }));
+    else f = [].concat.apply([], cs.map((c) => c.servicios.filter((s) => g !== 'inst' || String(s.fecha_instalacion || '').slice(0, 7) === x.split('|')[0]).map((s) => ({ c: c.id, n: c.nombre, s: s.sucursal + '-' + s.codigo, e: s.estado === 'Habilitado' ? 'Habilitado' : 'Suspendido', t: s.estado === 'Habilitado' ? 'ok' : 'r', d: c.lider || 'Sin líder' }))));
+    const gr = {}; f.forEach((r) => { gr[r.d] = (gr[r.d] || 0) + 1; });
+    return { total: f.length, grupos: Object.keys(gr).map((k) => ({ d: k, n: gr[k] })), filas: Number(a.p_pagina) < 0 ? f : f.slice(0, 50), pagina: 0, por_pagina: 50, lista: 'clientes.html' };
   }
 };
 

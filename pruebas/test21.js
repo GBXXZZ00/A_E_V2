@@ -20,7 +20,7 @@ const PRIMER_CUADRO = () => {
     await p.waitForSelector('a.corte');
     mundo.lentoTodo = 1500;
     const sel = nombre === 'tel' ? '#navAbajo' : '.navpc';
-    const modulos = nombre === 'tel' ? ['comisiones', 'clientes', 'factibilidad', 'revision', 'inicio'] : ['comisiones', 'clientes', 'factibilidad', 'revision', 'aliados', 'inicio'];
+    const modulos = nombre === 'tel' ? ['comisiones', 'clientes', 'factibilidad', 'inicio'] : ['comisiones', 'clientes', 'factibilidad', 'trabajo', 'aliados', 'inicio'];
     for(const m of modulos){
       const t0 = Date.now();
       await p.click(sel + ' a[href="' + m + '.html"]'); await p.waitForURL('**/' + m + '.html');
@@ -38,7 +38,7 @@ const PRIMER_CUADRO = () => {
     ok(nombre + ': Comisiones abre con lo último visto mientras llega lo nuevo', (await p.locator('.grupo').count()) > 0);
     await p.screenshot({ path: 'capturas/21-' + nombre + '-comisiones-lenta.png' });
     await p.waitForLoadState('networkidle');
-    ok(nombre + ': y luego se actualiza con el servidor', mundo.llamadas.filter((l) => l[1] === 'comisiones_corte').length >= 2);
+    ok(nombre + ': y luego se actualiza con el servidor', mundo.llamadas.filter((l) => l[1] === 'comisiones_lista').length >= 2);
     // Usuarios y Actualizar (sin barra de abajo): la barra con Volver desde el primer cuadro
     if(nombre === 'pc'){
       for(const m of ['usuarios', 'actualizar']){

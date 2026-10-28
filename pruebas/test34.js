@@ -58,8 +58,8 @@ function preparar(m){
     ok(nombre + ': la hoja del combinado dice PYME + Dedicado', (await p.textContent('#cabFicha')).includes('PYME + Dedicado'));
     await p.click('#tabs [data-tab="contrato"]'); await p.waitForSelector('#tab-contrato.on');
     const ctr = await p.textContent('#tab-contrato');
-    await p.click('#tabs [data-tab="vgt"]'); await p.waitForSelector('#tab-vgt.on');
-    ok(nombre + ': la hoja del combinado tiene Comisión, en Contrato el dedicado y el PYME, y en VGT su proyecto', await p.evaluate(() => !document.querySelector('#tabs [data-tab="comision"]').classList.contains('hidden')) && ctr.includes('Contrato dedicado') && ctr.includes('Contrato PYME') && (await p.textContent('#tab-vgt')).includes('Proyecto de prueba'));
+    await p.click('#tabs [data-tab="contrato"]'); await p.waitForSelector('#tab-contrato.on');
+    ok(nombre + ': la hoja del combinado tiene Comisión, en Contrato el dedicado y el PYME, y en VGT su proyecto', await p.evaluate(() => !document.querySelector('#tabs [data-tab="comision"]').classList.contains('hidden')) && ctr.includes('Contrato dedicado') && ctr.includes('Contrato PYME') && (await p.textContent('#tab-contrato')).includes('Proyecto de prueba'));
     await cerrarHojas(p);
     // Enlace viejo con el segmento
     await p.goto(H + 'clientes.html?tipo=Dedicado%20ISP'); await p.waitForSelector('#tarjetas [data-tarjeta="isp"][aria-pressed="true"]');

@@ -55,7 +55,7 @@ function cargaTad(m, yo, cl, conDeuda){
       await p.keyboard.press('Escape'); await p.waitForTimeout(300);
       const g2 = p.locator('.grupo').filter({ has: p.locator('.grupo-cab', { hasText: multi.lider }) });
       if(!(await g2.evaluate((x) => x.classList.contains('abierto')))) await g2.locator('.grupo-cab').click();
-      await p.click('[data-com="' + multi.instalacion_id + '"]'); await p.waitForSelector('#hojaComision.ver .req');
+      await p.click('[data-com="' + multi.instalacion_id + '"]'); await p.waitForSelector('#hojaComision.ver [data-plg-btn="legal"]');
       ok(nombre + ': la cabecera del plegable Pago dice Revisar pago', (await p.textContent('[data-plg-btn="pago"]')).includes('Revisar pago'));
       ok(nombre + ': "Revisar pago" explica que el TAD no puede decidir', (await p.textContent('#hojaComision')).includes('El cliente tiene más de un servicio; el TAD no puede decidir. Marca el pago a mano.'));
     } else ok(nombre + ': hay un cliente con más de un servicio para probar Revisar pago', false);

@@ -1,64 +1,26 @@
-// Mi trabajo (lote 22/10, maqueta aprobada en claude/maquetas/mi-trabajo): por rol, sobre privado.pendientes (RPC mi_trabajo).
-// Arriba el saludo y las píldoras; tarjetas por grupo (tocar filtra la lista); "Para hoy" ordenado por urgencia con un botón que hace la acción;
-// a la derecha la cola, las gestiones, el equipo (o la cola) y los indicadores del rol. Cada tarea sale sola cuando se resuelve.
+// Mi trabajo (lote 28/10, maqueta claude/maquetas/mi-trabajo-28oct): buzón por rol sobre la RPC mi_trabajo.
+// A la izquierda el índice (tarjetas compactas por grupo, Mis notas y El equipo); a la derecha "Lo más urgente" y la checklist del grupo.
+// Cada ítem tiene su Ir, que abre la hoja encima en la pestaña o casilla exacta; al cerrar, lo resuelto queda tachado.
+// Los ítems se resuelven solos cuando se hace la acción; las notas personales se marcan a mano. Revisión en lote: revision-lote.js.
 (function(){
   'use strict';
-  const C = window.Comun;
-  const { $, esc, ic, rpc, toast, cache, vacio, fecha, plural } = C;
-  // Iconos de las tarjetas (trazos de la maqueta)
-  const I = {
-    doc: 'M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8zM14 3v5h5M9 13h6M9 17h4', firma: 'M3 17c3 0 4-6 7-6s2 6 5 6 4-3 6-3M3 21h18',
-    inst: 'M12 2v6M5 9h14l-1 11H6zM9 13v4M15 13v4', meta: 'M12 21a9 9 0 1 1 0-18 9 9 0 0 1 0 18zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zM12 12h.01',
-    emitir: 'M22 2L11 13M22 2l-7 20-4-9-9-4z', sobre: 'M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zM22 6l-10 7L2 6',
-    ip: 'M5 12h14M12 5v14M4 4h16v16H4z', pago: 'M2 7h20v12H2zM2 11h20M6 15h3', lupa: 'M11 19a8 8 0 1 1 0-16 8 8 0 0 1 0 16zM21 21l-4.3-4.3',
-    contrato: 'M6 2h9l5 5v15H6zM14 2v6h6M9 14l2 2 4-4', decidir: 'M12 3v18M3 7l9-4 9 4M5 7l-2 6a4 4 0 0 0 4 0zM19 7l-2 6a4 4 0 0 0 4 0z',
-    alerta: 'M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0zM12 9v4M12 17h.01', mas: 'M12 5v14M5 12h14'
-  };
-  // Grupos por rol: [id, título, línea, icono, tono, tipos]
-  const GRUPOS = {
-    lider: [['doc', 'Conseguir documentos', 'Faltan o Legal los devolvió', 'doc', 'b', ['docs_faltan', 'devuelto', 'sin_gestion', 'vgt', 'poliza', 'referido', 'rif_verificar']],
-      ['fir', 'Hacer firmar', 'Contratos y planillas', 'firma', 'm', ['por_firmar', 'planilla']],
-      ['ins', 'Por instalar', 'Ventas con orden en Odoo', 'inst', 'v', ['por_instalar']],
-      ['ges', 'Mis gestiones', 'Metas con plazo', 'meta', 'a', ['gestion']]],
-    analista: [['emi', 'Emitir cambios', 'Migraciones con documentos aprobados', 'emitir', 'b', ['cambio_emitir']],
-      ['bien', 'Bienvenidas y proformas', 'Instalados del corte', 'sobre', 'v', ['por_enviar', 'sin_ip']],
-      ['ip', 'IP por confirmar', 'El reporte no cuadró', 'ip', 'm', ['ip_confirmar']],
-      ['pago', 'Revisar pago', 'Más de un servicio o factura nueva', 'pago', 'a', ['revisar_pago']]],
-    abogado: [['con', 'Elaborar contrato', 'Clientes en Documentos recibidos', 'contrato', 'b', ['elaborar_contrato']],
-      ['fir', 'Por firmar', 'Contrato enviado al cliente', 'firma', 'm', ['seguir_firma']],
-      ['arch', 'Firmado sin archivo', 'Falta el escaneado o el vencimiento', 'doc', 'a', ['contrato_archivo']],
-      ['ven', 'Por vencer', 'Contratos en los próximos 60 días', 'alerta', 'g', ['contrato_vence']]],
-    admin: [['rev', 'Revisar documentos', 'Lo que suben líderes, aliados y el correo', 'lupa', 'b', ['revisar_docs', 'cambio_revisar']],
-      ['dec', 'Por decidir', 'Corte, comisiones y sin registro', 'decidir', 'r', ['cerrar_corte', 'certificar', 'por_asignar', 'sin_registro', 'sin_cliente', 'sin_servicio', 'rif_verificar']],
-      ['ali', 'Aliados', 'Permisos y bloqueos', 'inst', 'm', ['aliado_permisos', 'aliado_sin_permiso']],
-      ['ale', 'Alertas', 'Cargas raras', 'alerta', 'a', ['alerta_carga']]]
-  };
-  GRUPOS.coord = GRUPOS.analista;
-  // Qué se hace con cada tipo: [acción, botón]
-  const ACC = {
-    docs_faltan: ['Conseguir documentos', 'Pedir'], devuelto: ['Corregir documento devuelto', 'Pedir'], sin_gestion: ['Pedir documentos', 'Pedir'], vgt: ['Completar requisitos VGT', 'Subir'],
-    poliza: ['Renovar póliza', 'Pedir'], referido: ['Contactar referido', 'Contactar'], rif_verificar: ['Verificar RIF', 'Revisar'], por_firmar: ['Hacer firmar contrato', 'Enviar'],
-    planilla: ['Documentos del cambio', 'Subir'], por_instalar: ['Instalación pendiente', 'Ver orden'], gestion: ['Dar seguimiento', 'Registrar'],
-    cambio_emitir: ['Emitir en Proham', 'Marcar hecho'], por_enviar: ['Enviar bienvenida y proforma', 'Enviar'], sin_ip: ['Falta la IP', 'Escribir IP'], ip_confirmar: ['Confirmar IP', 'Confirmar'],
-    revisar_pago: ['Revisar pago', 'Revisar'], elaborar_contrato: ['Elaborar contrato', 'Elaborar'], seguir_firma: ['Seguir firma', 'Ver'], contrato_archivo: ['Subir contrato firmado', 'Subir'],
-    contrato_vence: ['Contrato por vencer', 'Ver'], revisar_docs: ['Revisar expediente', 'Revisar'], cambio_revisar: ['Revisar documentos del cambio', 'Revisar'],
-    cerrar_corte: ['Cerrar corte', 'Revisar y cerrar'], certificar: ['Para certificar', 'Ver'], por_asignar: ['Asignar orden', 'Asignar'], sin_registro: ['Cambio sin registro', 'Asignar líder'],
-    sin_cliente: ['Instalación sin cliente', 'Ver'], sin_servicio: ['Instalación sin servicio', 'Ver'], aliado_permisos: ['Permisos de aliados', 'Revisar'], aliado_sin_permiso: ['Instalado sin permiso', 'Revisar'],
-    alerta_carga: ['Carga rara', 'Revisar']
-  };
-  const RANGO = { admin: 'Administrador', coord: 'Coordinador', analista: 'Analista', abogado: 'Legal', lider: 'Líder' };
+  const C = window.Comun; const B = window.Buzon;
+  const { $, esc, rpc, toast, cache, vacio, fecha, plural } = C;
   const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
-  let yo = null; let D = null; let sel = ''; let persona = ''; let pedido = 0; let cuantos = 40; let cola = null;
+  let yo = null; let D = null; let sel = ''; let persona = ''; let pedido = 0; let cuantos = 40; let cola = null; let vista = 'buzon';
+  let abierto = null;        // el ítem que se abrió con Ir: al volver se mira si se resolvió
+  const tachados = {};       // resueltos en esta visita: se ven tachados hasta recargar la página
+  let avisoT = null;
 
-  function leerUrl(){ const u = new URLSearchParams(location.search); sel = (u.get('g') || '').slice(0, 10); persona = (u.get('p') || '').slice(0, 40); }
-  function guardarUrl(){ const u = new URLSearchParams(); if(sel) u.set('g', sel); if(persona) u.set('p', persona); const s = u.toString(); history.replaceState(history.state, '', location.pathname + (s ? '?' + s : '')); }
+  function leerUrl(){ const u = new URLSearchParams(location.search); sel = (u.get('g') || '').slice(0, 10); persona = (u.get('p') || '').slice(0, 40); vista = u.get('v') === 'lote' ? 'lote' : 'buzon'; }
+  function guardarUrl(){ const u = new URLSearchParams(); if(vista === 'lote') u.set('v', 'lote'); else { if(sel) u.set('g', sel); if(persona) u.set('p', persona); } const s = u.toString(); history.replaceState(history.state, '', location.pathname + (s ? '?' + s : '')); }
 
   async function cargar(){
     const mio = ++pedido; const clave = 'mitrabajo:' + (yo && yo.id) + ':' + persona;
     if(!D){ const g = cache.leer(clave); if(g){ D = g; pintar(); } else esqueleto(); }
     try {
       const r = await rpc('mi_trabajo', { p_persona: persona || null }); if(mio !== pedido) return;
-      D = r; cache.guardar(clave, r); pintar(); if(cola) seguirCola();
+      D = r; cache.guardar(clave, r); revisarAbierto(); pintar(); if(cola) seguirCola();
     } catch (e) {
       if(mio !== pedido) return;
       if(!D) $('cuerpo').innerHTML = '<div class="vacio" role="alert"><b>No se pudo cargar tu trabajo</b><p>' + esc(e.message) + '</p><button type="button" class="btn btn-chico" data-tr="reintentar">Reintentar</button></div>';
@@ -66,134 +28,218 @@
     }
   }
   function esqueleto(){
-    $('tarjetas').innerHTML = '<span class="sk mt-sk g2"></span><span class="sk mt-sk"></span><span class="sk mt-sk"></span><span class="sk mt-sk"></span>';
+    $('tarjetas').innerHTML = '<span class="sk bz-sk"></span><span class="sk bz-sk"></span><span class="sk bz-sk"></span><span class="sk bz-sk"></span>';
     $('cuerpo').innerHTML = '<div class="sk-bloque"><span class="sk" style="height:64px;border-radius:16px"></span><span class="sk" style="height:64px;border-radius:16px"></span><span class="sk" style="height:64px;border-radius:16px"></span></div>';
   }
-  const hoyD = () => D.hoy;
-  const color = (f) => f.vence < hoyD() ? 'venc' : f.vence === hoyD() ? 'hoy' : 'ok';
-  function gruposDe(){
-    const gs = (GRUPOS[D.vista] || GRUPOS.lider).map((g) => ({ id: g[0], titulo: g[1], sub: g[2], icono: g[3], tono: g[4], tipos: g[5] }));
-    const usados = [].concat.apply([], gs.map((g) => g.tipos));
-    const otros = (D.items || []).filter((f) => usados.indexOf(f.tipo) < 0);
-    if(otros.length) gs.push({ id: 'otros', titulo: 'Otras tareas', sub: 'Lo demás que te toca', icono: 'mas', tono: 'g', tipos: Array.from(new Set(otros.map((f) => f.tipo))) });
-    gs.forEach((g) => { g.items = (D.items || []).filter((f) => g.tipos.indexOf(f.tipo) >= 0); g.venc = g.items.filter((f) => color(f) === 'venc').length; g.hoy = g.items.filter((f) => color(f) === 'hoy').length; });
-    return gs;
+  const kDe = (f) => f.tipo + '|' + f.clave;
+  const color = (f) => B.color(f, D.hoy);
+  const solo = () => !!(D && D.solo_consulta);
+  // Al volver de la hoja: si el ítem ya no está, queda tachado y se avisa en la misma pantalla
+  function revisarAbierto(){
+    if(!abierto) return; const k = abierto.k; const f = abierto.f; abierto = null;
+    if((D.items || []).some((x) => kDe(x) === k)) return;
+    tachados[k] = f; aviso('Se quitó de tus pendientes · ' + (D.items.length === 1 ? 'queda 1' : 'quedan ' + D.items.length), null, true);
   }
-  const diasDesde = (t) => Math.max(0, C.diasEntre(String(t || '').slice(0, 10), hoyD()) || 0);
-  function pieDe(g){
-    if(g.id === 'ges'){ const x = (D.gestiones || [])[0]; return x ? [x.nombre, x.hechos + ' de ' + x.total] : ['Sin gestiones activas', '']; }
-    if(!g.items.length) return ['Nada pendiente', ''];
-    const viejo = g.items.reduce((a, f) => (String(f.desde) < String(a.desde) ? f : a), g.items[0]);
-    const nuevos = g.items.filter((f) => diasDesde(f.desde) === 0).length;
-    return ['Más viejo: ' + plural(diasDesde(viejo.desde), 'día', 'días'), nuevos ? plural(nuevos, 'nuevo hoy', 'nuevos hoy') : String(g.items.length)];
+  function aviso(texto, deshacer, bien){
+    const z = $('bzAviso'); clearTimeout(avisoT);
+    z.className = 'bz-aviso' + (bien ? ' ok' : ''); z.innerHTML = '<span>' + esc(texto) + '</span>' + (deshacer ? '<button type="button" class="enlace" data-tr="deshacer">Deshacer</button>' : '');
+    z._deshacer = deshacer || null; avisoT = setTimeout(() => z.classList.add('hidden'), 7000);
   }
+
   function saludo(){
     const h = Number(new Intl.DateTimeFormat('es-VE', { hour: 'numeric', hour12: false, timeZone: 'America/Caracas' }).format(new Date()));
     return (h < 12 ? 'Buenos días' : h < 19 ? 'Buenas tardes' : 'Buenas noches') + ', ' + C.primerNombre(D.nombre || (yo && yo.nombre) || '');
   }
-  // La frase del momento
-  function frase(){
-    if(D.persona) return 'Estás viendo el trabajo de ' + D.persona.nombre + '.';
+  function frase(gs){
+    if(D.persona) return 'Así ve su buzón ' + D.persona.nombre + '. Solo consulta.';
     const mes = MESES[Number(String(D.corte).slice(5, 7)) - 1] || ''; const lim = D.limite ? fecha(D.limite).replace(/ de \d{4}$/, '') : '';
-    const k = D.kpis || {};
-    if(D.vista === 'lider') return 'El corte de ' + mes + ' cierra el ' + lim + '.' + (k.falta ? ' Te ' + (k.falta === 1 ? 'falta 1 cliente' : 'faltan ' + k.falta + ' clientes') + ' para comisionar.' : '');
-    if(D.vista === 'abogado') return 'Entran aquí los clientes en Documentos recibidos: toca el contrato.';
-    if(D.vista === 'coord') return 'Ves el trabajo de todos los analistas y puedes hacerlo tú si hace falta.';
-    if(D.vista === 'analista') return 'Lo de los clientes de tus líderes. El corte de ' + mes + ' cierra el ' + lim + '.';
-    return 'Corte de ' + mes + ' abierto · día límite ' + lim + '.';
+    const n = (D.items || []).length; const g = (id) => (gs.find((x) => x.id === id) || { items: [] }).items.length;
+    if(D.vista === 'abogado') return saludo() + '. ' + plural(g('con'), 'contrato en curso', 'contratos en curso') + (g('ven') ? ' y ' + plural(g('ven'), 'vencimiento', 'vencimientos') : '') + '.';
+    if(D.vista === 'analista' || D.vista === 'coord') return saludo() + '. ' + (g('carta') ? 'Hay ' + plural(g('carta'), 'carta por enviar', 'cartas por enviar') + ' del corte de ' + mes + '.' : 'Corte de ' + mes + ', límite el ' + lim + '.');
+    if(D.vista === 'lider'){ const b = g('dev') + g('falta'); return saludo() + '. Tienes ' + plural(n, 'cosa por hacer', 'cosas por hacer') + (b ? '; ' + (b === 1 ? '1 bloquea' : b + ' bloquean') + ' tu comisión' : '') + '.'; }
+    return 'Corte de ' + mes + ' abierto · día límite ' + lim + '. Se van tachando solos cuando los haces.';
   }
+
   function pintar(){
     if(!D) return;
-    window.Gestiones.puedeCrear = !!D.puedo_crear_gestion;
-    const gs = gruposDe(); if(sel && !gs.some((g) => g.id === sel)) sel = '';
+    if(window.Gestiones) window.Gestiones.puedeCrear = !!D.puedo_crear_gestion;
+    const gs = B.grupos(D); const notas = (D.notas || []).filter((x) => !x.hecha);
+    const validos = gs.map((g) => g.id).concat(['notas', D.equipo && D.equipo.length && !D.persona ? 'equipo' : '']).filter(Boolean);
+    if(sel && validos.indexOf(sel) < 0) sel = '';
     const it = D.items || []; const venc = it.filter((f) => color(f) === 'venc').length; const hoy = it.filter((f) => color(f) === 'hoy').length;
-    $('saludo').textContent = saludo(); $('frase').textContent = frase();
+    $('saludo').textContent = 'Mi trabajo'; $('frase').textContent = frase(gs);
     $('pildoras').innerHTML = '<span class="mt-pill r">' + plural(venc, 'vencido', 'vencidos') + '</span><span class="mt-pill a">' + (hoy === 1 ? '1 vence hoy' : hoy + ' vencen hoy') + '</span><span class="mt-pill g">' + it.length + ' en total</span>';
-    const vp = $('volverPersona'); vp.classList.toggle('hidden', !D.persona);
-    // Coordinador y jefes: ver por persona
+    const bp = $('bandaPersona'); bp.classList.toggle('hidden', !D.persona);
+    if(D.persona) bp.innerHTML = '<b>Estás viendo el buzón de ' + esc(D.persona.nombre) + ' tal como lo ve</b><p>Solo consulta: no puedes hacer nada desde aquí. <button type="button" class="enlace" data-tr="volver">Volver a mi trabajo</button></p>';
     const zp = $('zonaPersona'); const ps = D.personas || []; zp.classList.toggle('hidden', !ps.length);
     if(ps.length) $('persona').innerHTML = '<option value="">' + (D.rol === 'admin' || D.senior ? 'Mi trabajo' : 'Todos los analistas') + '</option>' +
       ps.map((p) => '<option value="' + esc(p.id) + '"' + (p.id === persona ? ' selected' : '') + '>' + esc(p.nombre + ' (' + ({ lider: 'líder', abogado: 'Legal', analista: 'analista' }[p.rol] || p.rol) + ')') + '</option>').join('');
-    $('tarjetas').innerHTML = gs.map((g, i) => {
-      const p = pieDe(g); const on = sel === g.id;
-      return '<button type="button" class="mt-card' + (i === 0 ? ' g2' : '') + (on ? ' sel' : '') + '" data-grupo="' + g.id + '" aria-pressed="' + on + '">' +
-        '<span class="mt-top"><span class="mt-ico t-' + g.tono + '"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="' + I[g.icono] + '"/></svg></span><span><b>' + esc(g.titulo) + '</b><small>' + esc(g.sub) + '</small></span></span>' +
-        '<span class="mt-num"><span class="mt-big">' + g.items.length + '</span>' + (g.venc ? '<span class="mt-pill r">' + plural(g.venc, 'vencido', 'vencidos') + '</span>' : '') + (g.hoy ? '<span class="mt-pill a">' + g.hoy + ' hoy</span>' : '') + '</span>' +
-        '<span class="mt-pie"><span>' + esc(p[0]) + '</span><b>' + esc(p[1]) + '</b></span></button>';
-    }).join('');
-    pintarLista(gs); pintarLado();
+    $('btnLote').classList.toggle('hidden', !(D.rol === 'admin' || D.rol === 'abogado') || !!D.persona);
+    pintarNums(gs); pintarIndice(gs, notas); pintarCuerpo(gs, notas);
   }
-  function plazo(f){
-    const c = color(f); if(c === 'venc') return ['r', 'Vencido']; if(c === 'hoy') return ['a', 'Hoy'];
-    const d = C.diasEntre(hoyD(), f.vence); return ['g', d === 1 ? 'Mañana' : d <= 7 ? 'En ' + d + ' días' : fecha(f.vence).replace(/ de \d{4}$/, '')];
+  // Números de arriba (líder y Canales): cada uno abre su grupo
+  function pintarNums(gs){
+    const n = (id) => (gs.find((x) => x.id === id) || { items: [] }).items.length; const z = $('nums');
+    const dias = D.limite ? Math.max(0, C.diasEntre(D.hoy, D.limite)) : null;
+    let l = null;
+    if(D.vista === 'lider') l = [[(D.items || []).filter((f) => f.tipo === 'devuelto').length, 'Documentos devueltos', 'r', D.vende ? 'dev' : 'doc'], [(D.items || []).filter((f) => f.tipo === 'orden_atrasada').length, 'Órdenes de más de 24 horas', 'a', D.vende ? 'inst' : 'ins'],
+      [dias === null ? 'Sin fecha' : plural(dias, 'día', 'días'), 'Para el cierre del corte' + (D.limite ? ' (' + fecha(D.limite).replace(/ de \d{4}$/, '') + ')' : ''), '', ''], [n('falta'), 'Faltan para comisionar', 'b', D.vende ? 'falta' : '']];
+    else if(D.vista === 'analista' || D.vista === 'coord') l = [[n('carta'), 'Cartas y proformas por enviar', 'a', 'carta'], [n('ip'), 'IP por escribir', '', 'ip'], [n('pago'), 'Del corte sin pago', 'r', 'pago'], [n('emi'), 'Cambios por emitir', 'b', 'emi']];
+    z.classList.toggle('hidden', !l);
+    if(l) z.innerHTML = l.map((x) => (x[3] ? '<button type="button" class="bz-num ' + x[2] + '" data-grupo="' + x[3] + '">' : '<div class="bz-num ' + x[2] + '">') + '<b>' + esc(x[0]) + '</b><small>' + esc(x[1]) + '</small>' + (x[3] ? '</button>' : '</div>')).join('');
   }
-  function pintarLista(gs){
-    const g = gs.find((x) => x.id === sel); const l = g ? g.items : (D.items || []);
-    const orden = l.slice().sort((a, b) => (a.vence < b.vence ? -1 : a.vence > b.vence ? 1 : String(a.desde) < String(b.desde) ? -1 : 1));
-    let h = '<div class="mt-sec"><div><h2>' + esc(g ? g.titulo : 'Para hoy') + '</h2><small>Ordenado por urgencia. Cada tarea sale sola cuando se resuelve.</small></div>' +
-      (sel ? '<button type="button" class="enlace" data-tr="todo">Ver todo</button>' : '') + '</div>';
-    if(!orden.length) h += vacio(g ? 'Nada en ' + g.titulo : 'Todo al día', g ? 'Cuando haya algo aquí, aparece en esta lista.' : 'No tienes pendientes. Cuando algo necesite de ti, aparece aquí.');
-    else h += orden.slice(0, cuantos).map(filaHtml).join('') + (orden.length > cuantos ? '<button type="button" class="btn btn-chico btn-2 mt-mas" data-tr="mas">Ver ' + Math.min(40, orden.length - cuantos) + ' más de ' + (orden.length - cuantos) + '</button>' : '');
-    $('cuerpo').innerHTML = h;
-  }
-  function filaHtml(f){
-    const p = plazo(f); const a = ACC[f.tipo] || [f.tipo, 'Abrir']; const c = color(f);
-    const nuevo = c === 'ok' && diasDesde(f.desde) === 0;
-    const quien = [D.vista !== 'lider' && f.lider ? 'Líder ' + f.lider : '', (D.vista === 'coord' || D.vista === 'admin') && f.analista ? 'Analista ' + f.analista : ''].filter(Boolean).join(' · ');
-    const yoNo = D.vista === 'coord' && f.analista_id && yo && f.analista_id !== yo.id;
-    return '<div class="mt-it"><span class="mt-dot ' + (nuevo ? 'n' : c) + '" aria-hidden="true"></span><span class="mt-txt"><b>' + esc(a[0]) + ' <span>· ' + esc(f.titulo) + '</span></b><small>' + esc(f.detalle || '') + (quien ? ' · ' + esc(quien) : '') + '</small></span>' +
-      '<span class="mt-pill ' + p[0] + '">' + esc(p[1]) + '</span><button type="button" class="btn btn-chico ' + (c === 'venc' ? '' : 'btn-2') + '" data-hacer="' + esc(f.tipo + '|' + f.clave) + '">' + esc(yoNo ? 'Hacerlo yo' : a[1]) + '</button></div>';
-  }
-  function pintarLado(){
-    let h = '';
-    // Cola: el administrador revisa y Legal elabora, del más viejo al más nuevo
-    const enCola = D.vista === 'admin' ? (D.items || []).filter((f) => f.tipo === 'revisar_docs') : D.vista === 'abogado' ? (D.items || []).filter((f) => f.tipo === 'elaborar_contrato') : [];
-    if(enCola.length && !D.persona) h += '<div class="mt-cola"><b>' + (D.vista === 'admin' ? 'Revisión en cola' : 'Contratos en cola') + '</b><p>' + esc(plural(enCola.length, D.vista === 'admin' ? 'expediente' : 'cliente', D.vista === 'admin' ? 'expedientes' : 'clientes')) +
-      ', del más viejo al más nuevo. Al cerrar uno se abre el siguiente.</p><button type="button" class="btn btn-chico" data-tr="cola">' + (D.vista === 'admin' ? 'Empezar a revisar' : 'Empezar') + '</button></div>';
-    // Gestiones con su avance
-    const gs = D.gestiones || [];
-    if(gs.length || D.puedo_crear_gestion){
-      h += '<div class="mt-panel"><h3>' + (D.vista === 'lider' ? 'Mis gestiones' : 'Gestiones activas') + (D.puedo_crear_gestion ? '<button type="button" class="enlace" data-ges="nueva">Nueva gestión</button>' : '') + '</h3>' +
-        (gs.length ? gs.map((g) => { const pct = g.total ? Math.round(g.hechos * 100 / g.total) : 0; const d = C.diasEntre(hoyD(), g.plazo); const e = g.estados || {};
-          return '<button type="button" class="mt-ges" data-ges="' + esc(g.id) + '"><span class="mt-ges-t"><b>' + esc(g.nombre) + '</b><span class="mt-pill ' + (d <= 2 ? 'a' : 'g') + '">' + esc(d < 0 ? 'Venció' : d === 0 ? 'Vence hoy' : d === 1 ? 'Falta 1 día' : 'Faltan ' + d + ' días') + '</span></span>' +
-            '<small>' + esc(window.Gestiones.META[g.meta] || g.meta) + '</small><span class="mt-barra" aria-hidden="true"><i style="transform:scaleX(' + (pct / 100).toFixed(3) + ')"></i></span>' +
-            '<small><b>' + g.hechos + ' de ' + g.total + '</b>' + esc([e.esperando ? e.esperando + ' esperando' : '', e.sin_contacto ? e.sin_contacto + ' sin contacto' : ''].filter(Boolean).map((x) => ' · ' + x).join('')) + '</small></button>'; }).join('')
-          : '<p class="nota-chica">No hay gestiones activas. Crea una para seguir un grupo de clientes con meta y plazo.</p>') + '</div>';
+  function pintarIndice(gs, notas){
+    const partes = new Set(gs.map((g) => g.parte)); const dos = partes.size > 1; let ult = '';
+    let h = '<button type="button" class="bz-md' + (sel === '' ? ' on' : '') + '" data-grupo="" aria-pressed="' + (sel === '') + '">Todo<span>' + (D.items || []).length + '</span></button>';
+    gs.forEach((g) => {
+      if(dos && g.parte !== ult){ h += '<span class="bz-parte">' + (g.parte === 'ventas' ? 'Mis ventas' : 'Mi rol') + '</span>'; ult = g.parte; }
+      const viejo = g.items.length ? g.items.reduce((a, f) => (String(f.desde) < String(a.desde) ? f : a), g.items[0]) : null;
+      const nuevos = g.items.filter((f) => B.diasDesde(f.desde, D.hoy) === 0).length;
+      h += '<button type="button" class="bz-cd' + (sel === g.id ? ' on' : '') + '" data-grupo="' + g.id + '" aria-pressed="' + (sel === g.id) + '">' + B.icono(g.icono, g.tono) +
+        '<span class="bz-cd-t"><b>' + esc(g.titulo) + '</b><small>' + esc(g.sub) + '</small></span><span class="bz-cd-n">' + g.items.length + '</span>' +
+        '<span class="bz-cd-f">' + (g.venc ? '<span class="mt-pill r">' + plural(g.venc, 'vencido', 'vencidos') + '</span>' : '') + (g.hoy ? '<span class="mt-pill a">' + g.hoy + ' hoy</span>' : '') +
+          '<span>' + esc(viejo ? 'Más viejo: ' + plural(B.diasDesde(viejo.desde, D.hoy), 'día', 'días') : 'Nada pendiente') + '</span>' + (nuevos ? '<b>' + esc(plural(nuevos, 'nuevo hoy', 'nuevos hoy')) + '</b>' : '') + '</span></button>';
+    });
+    if(!D.persona){
+      const prox = notas.filter((x) => x.recordar).sort((a, b) => (a.recordar < b.recordar ? -1 : 1))[0];
+      h += '<button type="button" class="bz-cd' + (sel === 'notas' ? ' on' : '') + '" data-grupo="notas" aria-pressed="' + (sel === 'notas') + '">' + B.icono('nota', 'v') +
+        '<span class="bz-cd-t"><b>Mis notas</b><small>Lo que tú anotas</small></span><span class="bz-cd-n">' + notas.length + '</span>' +
+        '<span class="bz-cd-f"><span>' + esc(prox ? 'Recordar el ' + fecha(prox.recordar).replace(/ de \d{4}$/, '') : notas.length ? 'Sin recordatorio' : 'Sin notas') + '</span></span></button>';
     }
-    // Equipo: vencidos y de hoy por persona; al tocar se ve su lista
-    const eq = D.equipo || [];
-    if(eq.length) h += '<div class="mt-panel"><h3>Equipo <small>vencidos · hoy</small></h3>' + eq.slice(0, 12).map((e) => '<button type="button" class="mt-eq" data-persona="' + esc(e.id) + '"><span class="mt-av">' + esc(C.iniciales(e.nombre)) + '</span>' +
-      '<span class="mt-eq-n"><b>' + esc(e.nombre) + '</b><small>' + esc(e.rol + ' · ' + plural(e.n, 'pendiente', 'pendientes')) + '</small></span><span class="mt-pill ' + (e.venc ? 'r' : 'g') + '">' + e.venc + '</span><span class="mt-pill a">' + e.hoy + '</span></button>').join('') + '</div>';
-    // Indicadores del rol
-    const k = D.kpis || {}; const mes = MESES[Number(String(D.corte).slice(5, 7)) - 1] || '';
-    const KP = { lider: ['Mi corte de ' + mes, [[k.instalaciones, 'instalaciones'], [k.comisionan, 'comisionan'], [k.falta, 'les falta algo'], [k.migraciones, 'migraciones']]],
-      admin: ['Corte de ' + mes, [[k.instalaciones, 'instalaciones'], [k.comisionan, 'comisionan'], [k.migraciones, 'migraciones'], [k.negativos, 'cambios a residencial']]],
-      abogado: ['Contratos', [[k.recibidos, 'documentos recibidos'], [k.por_firmar, 'por firmar'], [k.firmados, 'firmados en 7 días'], [k.sin_archivo, 'sin archivo']]],
-      analista: ['Mi semana', [[k.emitidos, 'cambios emitidos'], [k.dias_emitir === null || k.dias_emitir === undefined ? 'Sin datos' : String(k.dias_emitir).replace('.', ',') + ' días', 'tiempo para emitir'], [k.bienvenidas, 'bienvenidas enviadas'], [(D.items || []).filter((f) => f.tipo === 'ip_confirmar').length, 'IP por confirmar']]],
-      coord: ['Equipo esta semana', [[k.emitidos, 'cambios emitidos'], [k.dias_emitir === null || k.dias_emitir === undefined ? 'Sin datos' : String(k.dias_emitir).replace('.', ',') + ' días', 'tiempo para emitir'], [k.bienvenidas, 'bienvenidas'], [k.yo, 'tareas que hice yo']]] };
-    const kp = KP[D.vista] || KP.lider;
-    h += '<div class="mt-panel"><h3>' + esc(kp[0]) + '</h3><div class="mt-kpi">' + kp[1].map((x) => '<div><b>' + esc(x[0] === undefined || x[0] === null ? 0 : x[0]) + '</b><small>' + esc(x[1]) + '</small></div>').join('') + '</div></div>';
-    $('lado').innerHTML = h;
+    if(D.equipo && D.equipo.length && !D.persona) h += '<button type="button" class="bz-md' + (sel === 'equipo' ? ' on' : '') + '" data-grupo="equipo" aria-pressed="' + (sel === 'equipo') + '">El equipo<span>' + plural(D.equipo.length, 'persona', 'personas') + '</span></button>';
+    $('tarjetas').innerHTML = h;
   }
 
-  // ---------- Hacer la acción ahí mismo ----------
-  const buscar = (k) => (D.items || []).find((f) => f.tipo + '|' + f.clave === k);
+  function plazo(f){
+    const c = color(f); if(c === 'venc') return ['r', 'Vencido']; if(c === 'hoy') return ['a', 'Hoy']; if(!f.vence) return null;
+    const d = C.diasEntre(D.hoy, f.vence); return ['g', d === 1 ? 'Mañana' : d <= 7 ? 'En ' + d + ' días' : fecha(f.vence).replace(/ de \d{4}$/, '')];
+  }
+  function itemHtml(f, hecho){
+    const a = B.ACC[f.tipo] || [f.tipo, 'Ir']; const p = hecho ? null : plazo(f); const k = kDe(f);
+    const quien = [D.vista !== 'lider' && f.lider && f.tipo !== 'carta_enviar' ? f.lider : '', (D.vista === 'coord' || D.vista === 'admin') && f.analista ? 'Analista ' + f.analista : ''].filter(Boolean).join(' · ');
+    const ges = f.tipo === 'gestion' && !hecho && !solo() ? '<span class="bz-est" role="group" aria-label="Estado de la gestión">' + [['contactado', 'Contactado'], ['sin_contacto', 'Sin contacto'], ['esperando', 'Esperando']].map((x) =>
+      '<button type="button" class="' + ((f.ref || {}).estado === x[0] ? 'on' : '') + '" aria-pressed="' + ((f.ref || {}).estado === x[0]) + '" data-gest-est="' + x[0] + '" data-k="' + esc(k) + '">' + x[1] + '</button>').join('') + '</span>' : '';
+    const yoNo = D.vista === 'coord' && f.analista_id && yo && f.analista_id !== yo.id;
+    return '<div class="bz-it' + (hecho ? ' hecho' : '') + '"><span class="bz-ck' + (hecho ? ' on' : '') + '" aria-hidden="true"></span><span class="bz-tx"><b>' + esc(a[0]) + ' <span>· ' + esc(f.titulo || '') + '</span>' +
+      (p ? '<span class="mt-pill ' + p[0] + '">' + esc(p[1]) + '</span>' : '') + '</b><small>' + esc(hecho ? 'Hecho. Se quitó de tus pendientes' : (f.detalle || '') + (quien ? ' · ' + quien : '')) + '</small>' + ges + '</span>' +
+      (hecho || solo() || f.tipo === 'gestion' ? '' : '<button type="button" class="btn btn-chico ' + (color(f) === 'venc' ? '' : 'btn-2') + '" data-hacer="' + esc(k) + '">' + esc(yoNo ? 'Hacerlo yo' : a[1]) + '</button>') + '</div>';
+  }
+  // Ítems de un grupo con los tachados de esta visita al final
+  function listaGrupo(g, max){
+    const orden = g.items.slice().sort((a, b) => (String(a.vence || '9') < String(b.vence || '9') ? -1 : String(a.vence || '9') > String(b.vence || '9') ? 1 : String(a.desde) < String(b.desde) ? -1 : 1));
+    const tach = Object.keys(tachados).map((k) => tachados[k]).filter((f) => g.tipos.indexOf(f.tipo) >= 0);
+    let h;
+    if(g.id === 'carta' && !max){   // Cartas: agrupadas por dueño, los cambios de categoría aparte
+      const por = {}; orden.forEach((f) => { const d = /cambio de categoría/.test(f.detalle || '') ? 'Cambios de categoría' : (f.lider || 'Sin dueño'); (por[d] = por[d] || []).push(f); });
+      h = Object.keys(por).sort((a, b) => (a === 'Cambios de categoría') - (b === 'Cambios de categoría') || a.localeCompare(b)).map((d) => '<div class="bz-grp">' + esc(d) + '</div>' + por[d].map((f) => itemHtml(f)).join('')).join('');
+    } else h = orden.slice(0, max || cuantos).map((f) => itemHtml(f)).join('');
+    if(!orden.length && !tach.length) h = '<p class="nota-chica bz-nada">Nada pendiente aquí. Cuando haya algo, aparece en esta lista.</p>';
+    h += tach.map((f) => itemHtml(f, true)).join('');
+    if(max && orden.length > max) h += '<button type="button" class="enlace bz-ver" data-grupo="' + g.id + '">Ver ' + (orden.length === max + 1 ? 'el otro' : 'los ' + orden.length) + '</button>';
+    else if(!max && orden.length > cuantos && g.id !== 'carta') h += '<button type="button" class="btn btn-chico btn-2 mt-mas" data-tr="mas">Ver ' + Math.min(40, orden.length - cuantos) + ' más de ' + (orden.length - cuantos) + '</button>';
+    return h;
+  }
+  function seccion(titulo, sub, cuerpo, extra){ return '<section class="bz-sec"><div class="bz-sh"><b>' + esc(titulo) + '</b>' + (sub ? '<span>' + esc(sub) + '</span>' : '') + (extra || '') + '</div>' + cuerpo + '</section>'; }
+  function accionesGrupo(g){
+    if(solo()) return '';
+    if(g.id === 'rev' && D.rol === 'admin') return '<span class="bz-sh-acc"><button type="button" class="btn btn-chico btn-2" data-tr="cola">Uno por uno</button><button type="button" class="btn btn-chico" data-tr="lote">Revisar en lote</button></span>';
+    if(g.id === 'ges' && D.puedo_crear_gestion) return '<span class="bz-sh-acc"><button type="button" class="enlace" data-ges="nueva">Nueva gestión</button></span>';
+    return '';
+  }
+  function subGrupo(g){
+    if(g.id === 'falta' || g.id === 'dev'){ const mes = MESES[Number(String(D.corte).slice(5, 7)) - 1] || ''; return 'Corte de ' + mes + (D.limite ? ', límite ' + fecha(D.limite).replace(/ de \d{4}$/, '') : ''); }
+    return g.sub;
+  }
+  function pintarCuerpo(gs, notas){
+    let h = '';
+    if(sel === 'notas') h = notasHtml();
+    else if(sel === 'equipo') h = seccion('El equipo', 'Toca para ver su buzón tal como lo ve (solo consulta)', equipoHtml());
+    else if(D.vista === 'abogado' && (sel === '' || sel === 'con')) h = tableroLegal(gs);
+    else if(sel){ const g = gs.find((x) => x.id === sel); h = seccion(g.titulo, subGrupo(g), listaGrupo(g), accionesGrupo(g)); }
+    else {
+      const urg = (D.items || []).slice().sort((a, b) => (String(a.vence || '9') < String(b.vence || '9') ? -1 : 1)).slice(0, 4);
+      if(urg.length) h += seccion('Lo más urgente', 'Los 4 primeros de todo, por fecha', urg.map((f) => itemHtml(f)).join(''));
+      else h += vacio('Todo al día', 'No tienes pendientes. Cuando algo necesite de ti, aparece aquí.');
+      gs.filter((g) => g.items.length).forEach((g) => { h += seccion(g.titulo, subGrupo(g), listaGrupo(g, 3), accionesGrupo(g)); });
+      if(notas.length && !D.persona) h += seccion('Mis notas', 'Estas sí se marcan a mano', notas.slice(0, 3).map(notaHtml).join(''));
+      if(D.equipo && D.equipo.length && !D.persona) h += seccion('El equipo', 'Toca para ver su buzón tal como lo ve (solo consulta)', equipoHtml(4));
+    }
+    $('cuerpo').innerHTML = h;
+  }
+  function equipoHtml(max){
+    const eq = (D.equipo || []).slice(0, max || 40);
+    return '<div class="bz-team">' + eq.map((e) => '<button type="button" class="bz-tm" data-persona="' + esc(e.id) + '"><b>' + esc(e.nombre) + ' · ' + esc(e.rol) + '</b><small' + (e.venc ? ' class="mal"' : '') + '>' +
+      esc(plural(e.n, 'pendiente', 'pendientes') + (e.venc ? ' · ' + plural(e.venc, 'vencido', 'vencidos') : '') + (e.hoy ? ' · ' + e.hoy + ' hoy' : '')) + '</small></button>').join('') + '</div>';
+  }
+  // Legal: tablero por etapa y, abajo, los vencimientos
+  function tableroLegal(gs){
+    const its = D.items || []; const k = D.kpis || {};
+    const col = (t, tipo) => { const l = its.filter((f) => f.tipo === tipo);
+      return '<div class="bz-col"><div class="bz-col-h"><b>' + t + '</b><span>' + l.length + '</span></div>' +
+        (tipo === 'elaborar_contrato' && l.length > 1 && !solo() ? '<button type="button" class="btn btn-chico" data-tr="cola">Uno tras otro, del más viejo</button>' : '') + (l.length ? l.slice(0, 30).map((f) => '<div class="bz-kd"><b>' + esc(f.titulo) + '</b><small>' + esc([f.lider, f.detalle].filter(Boolean).join(' · ')) + '</small>' +
+        (plazo(f) ? '<span class="mt-pill ' + plazo(f)[0] + '">' + esc(plazo(f)[1]) + '</span>' : '') + (solo() ? '' : '<button type="button" class="btn btn-chico btn-2" data-hacer="' + esc(kDe(f)) + '">' + esc((B.ACC[f.tipo] || [, 'Ir'])[1]) + '</button>') + '</div>').join('') +
+        (l.length > 30 ? '<p class="nota-chica">Y ' + (l.length - 30) + ' más.</p>' : '') : '<p class="nota-chica">Nada aquí.</p>') + '</div>'; };
+    const ven = gs.find((g) => g.id === 'ven') || { items: [], tipos: ['contrato_vence'] };
+    return '<div class="bz-board">' + col('Para elaborar', 'elaborar_contrato') + col('Enviado a firmar', 'seguir_firma') + col('Firmado, falta subir', 'contrato_archivo') +
+      '<div class="bz-col"><div class="bz-col-h"><b>Listo esta semana</b><span>' + (k.firmados || 0) + '</span></div><p class="nota-chica">' + esc(plural(k.firmados || 0, 'contrato firmado', 'contratos firmados')) + ' en los últimos 7 días.</p></div></div>' +
+      seccion('Vencimientos próximos', 'Se tachan solos cuando suben el documento nuevo', listaGrupo(ven));
+  }
+  // ---------- Notas personales ----------
+  function notaHtml(n){
+    return '<div class="bz-it' + (n.hecha ? ' hecho' : '') + '"><button type="button" class="bz-ck bz-ck-b' + (n.hecha ? ' on' : '') + '" data-nota-hecha="' + esc(n.id) + '" aria-pressed="' + !!n.hecha + '" aria-label="' + (n.hecha ? 'Desmarcar nota' : 'Marcar nota como hecha') + '"></button>' +
+      '<span class="bz-tx"><b>' + esc(n.texto) + '</b><small>' + esc([n.recordar ? 'Recordar el ' + fecha(n.recordar) : 'Sin recordatorio', n.cliente || ''].filter(Boolean).join(' · ')) + '</small></span>' +
+      (n.cliente_id ? '<button type="button" class="btn btn-chico btn-2" data-nota-cli="' + esc(n.cliente_id) + '">Ir</button>' : '') + '</div>';
+  }
+  function notasHtml(){
+    const ns = D.notas || [];
+    return seccion('Mis notas', 'Estas sí se marcan a mano', '<form class="bz-nota" id="formNotaP" novalidate><label class="rotulo" for="ntTexto">Escribir una nota</label><textarea class="area corta" id="ntTexto" maxlength="500"></textarea><div class="error" id="eNt" role="alert"></div>' +
+      '<div class="bz-nota-f"><span><label class="rotulo" for="ntFecha">Recordar el (opcional)</label><input class="campo" id="ntFecha" type="date" min="' + esc(D.hoy) + '"></span><button type="submit" class="btn btn-chico">Guardar nota</button></div></form>' +
+      (ns.length ? ns.map(notaHtml).join('') : '<p class="nota-chica bz-nada">Sin notas. Anota lo que no quieres olvidar; si le pones fecha, te lo recuerda.</p>'));
+  }
+  async function guardarNota(form){
+    const t = $('ntTexto').value.trim(); $('eNt').textContent = '';
+    if(!t){ $('eNt').textContent = 'Escribe la nota'; $('ntTexto').focus(); return; }
+    const b = form.querySelector('[type="submit"]'); b.disabled = true;
+    try { await rpc('nota_guardar', { p_id: null, p_texto: t, p_recordar: $('ntFecha').value || null, p_cliente: null }); aviso('Nota guardada', null, true); await cargar(); }
+    catch (e) { $('eNt').textContent = e.message; b.disabled = false; }
+  }
+  async function notaHecha(id, hecha){
+    try { await rpc('nota_hecha', { p_id: Number(id), p_hecha: hecha }); if(hecha) aviso('Nota marcada como hecha', () => notaHecha(id, false), true); await cargar(); }
+    catch (e) { toast(e.message, 'error'); }
+  }
+  async function gestionEstado(b){
+    const f = buscar(b.dataset.k); if(!f || solo()) return; b.disabled = true;
+    try { await rpc('gestion_cliente_estado', { p_id: (f.ref || {}).gestion, p_cliente: f.cliente_id, p_estado: b.dataset.gestEst, p_nota: null, p_promesa: null }); aviso('Guardado en el historial de la gestión', null, true); await cargar(); }
+    catch (e) { toast(e.message, 'error'); b.disabled = false; }
+  }
+
+  // ---------- Ir: la hoja encima, en la pestaña o casilla exacta ----------
+  const buscar = (k) => (D.items || []).find((f) => kDe(f) === k);
   function hacer(f){
+    if(solo()) return;
     const ref = f.ref || {};
+    abierto = { k: kDe(f), f };
     if(f.tipo === 'gestion'){ window.Gestiones.abrir(ref.gestion, { cliente: f.cliente_id, alCerrar: cargar }); return; }
     if(ref.cambio){ location.href = 'migraciones.html?f=' + ({ cambio_emitir: 'por_emitir', sin_registro: 'sin_registro', cambio_revisar: 'por_revisar', planilla: 'por_revisar' }[f.tipo] || '') + '&c=' + encodeURIComponent(ref.cambio); return; }
     if(f.tipo === 'cerrar_corte' || ((f.tipo === 'certificar' || f.tipo === 'sin_cliente' || f.tipo === 'sin_servicio' || f.tipo === 'por_asignar') && !f.cliente_id)){ location.href = 'comisiones.html'; return; }
     if(f.tipo === 'aliado_permisos'){ location.href = 'aliados.html'; return; }
     if(f.tipo === 'aliado_sin_permiso'){ location.href = 'aliados.html?t=sinp'; return; }
     if(f.tipo === 'alerta_carga'){ location.href = ref.no_aparece ? 'clientes.html' : 'actualizar.html'; return; }
+    if(f.tipo === 'ordenes_atrasadas' || ((f.tipo === 'orden_atrasada' || f.tipo === 'por_instalar') && !f.cliente_id)){ location.href = 'comisiones.html?t=por_instalar'; return; }
     if(f.tipo === 'referido' && !f.cliente_id){ location.href = 'aliados.html'; return; }
-    if(f.tipo === 'por_instalar' && !f.cliente_id){ location.href = 'comisiones.html?t=instalar'; return; }
     if(!f.cliente_id){ location.href = 'comisiones.html'; return; }
-    const tab = ['certificar', 'por_enviar', 'sin_ip', 'revisar_pago'].indexOf(f.tipo) >= 0 ? 'comision' : f.tipo === 'ip_confirmar' ? 'datos'
-      : ['elaborar_contrato', 'seguir_firma', 'contrato_archivo', 'contrato_vence', 'por_firmar'].indexOf(f.tipo) >= 0 ? 'contrato'
-      : ['docs_faltan', 'devuelto', 'vgt', 'poliza', 'revisar_docs', 'cambio_revisar'].indexOf(f.tipo) >= 0 ? 'documentos' : '';
-    const pedir = ['docs_faltan', 'devuelto', 'sin_gestion'].indexOf(f.tipo) >= 0 ? (f.tipo === 'sin_gestion' ? 'pedir' : 'recordar') : undefined;
-    window.Ficha.abrir(f.cliente_id, { yo, tab, revisar: f.tipo === 'revisar_docs' || f.tipo === 'cambio_revisar', pedir, alCerrar: alCerrarFicha });
+    const o = { yo, alCerrar: alCerrarFicha };
+    if(f.tipo === 'carta_enviar' && ref.servicio){ o.tab = 'datos'; o.enviar = ref.servicio; }
+    else if(f.tipo === 'venta_falta') o.tab = ref.legal === false ? 'documentos' : 'comision';
+    else if(['certificar', 'por_enviar', 'sin_ip', 'revisar_pago', 'carta_enviar'].indexOf(f.tipo) >= 0) o.tab = 'comision';
+    else if(f.tipo === 'ip_confirmar') o.tab = 'datos';
+    else if(['elaborar_contrato', 'seguir_firma', 'contrato_archivo', 'contrato_vence', 'por_firmar'].indexOf(f.tipo) >= 0) o.tab = 'contrato';
+    else if(['docs_faltan', 'devuelto', 'vgt', 'poliza', 'revisar_docs', 'cambio_revisar', 'cliente_nuevo', 'orden_atrasada'].indexOf(f.tipo) >= 0) o.tab = 'documentos';
+    if(f.tipo === 'devuelto') o.casilla = 'devuelto';
+    else if(f.tipo === 'docs_faltan' || f.tipo === 'cliente_nuevo') o.casilla = 'falta';
+    if(f.tipo === 'revisar_docs' || f.tipo === 'cambio_revisar') o.revisar = true;
+    if(f.tipo === 'sin_gestion') o.pedir = 'pedir';
+    window.Ficha.abrir(f.cliente_id, o);
   }
   // Cola de revisión (administrador) o de contratos (Legal): al cerrar uno se ofrece el siguiente
   function empezarCola(){
@@ -211,25 +257,44 @@
     z.classList.remove('hidden');
   }
 
+  // ---------- Revisión en lote (vive aquí; revision.html lleva a esta vista) ----------
+  function mostrarVista(){
+    const lote = vista === 'lote';
+    $('vistaBuzon').classList.toggle('hidden', lote); $('vistaLote').classList.toggle('hidden', !lote);
+    ['nums', 'bandaPersona', 'zonaPersona'].forEach((x) => { if(lote) $(x).classList.add('hidden'); });
+    document.querySelector('.mt-cab').classList.toggle('hidden', lote);
+    if(lote) window.RevisionLote.abrir($('vistaLote'), { yo, aviso, alSalir: () => { vista = 'buzon'; guardarUrl(); mostrarVista(); D = null; cargar(); } });
+    else if(D) pintar();
+  }
+
   document.addEventListener('click', (ev) => {
     const t = ev.target; let b;
-    if((b = t.closest('[data-grupo]')) && b.closest('#tarjetas')){ sel = sel === b.dataset.grupo ? '' : b.dataset.grupo; cuantos = 40; guardarUrl(); pintar(); return; }
+    if(t.closest('#vistaLote')) return;
+    if((b = t.closest('[data-grupo]')) && (b.closest('#tarjetas') || b.closest('#nums') || b.classList.contains('bz-ver'))){ sel = sel === b.dataset.grupo && b.closest('#tarjetas') ? '' : b.dataset.grupo; cuantos = 40; guardarUrl(); pintar(); if(b.classList.contains('bz-ver') || b.closest('#nums')) $('cuerpo').scrollIntoView({ block: 'start' }); return; }
     if((b = t.closest('[data-hacer]'))){ const f = buscar(b.dataset.hacer); if(f) hacer(f); return; }
+    if((b = t.closest('[data-gest-est]'))){ gestionEstado(b); return; }
+    if((b = t.closest('[data-nota-hecha]'))){ notaHecha(b.dataset.notaHecha, b.getAttribute('aria-pressed') !== 'true'); return; }
+    if((b = t.closest('[data-nota-cli]'))){ window.Ficha.abrir(Number(b.dataset.notaCli), { yo, alCerrar: alCerrarFicha }); return; }
     if((b = t.closest('[data-persona]'))){ persona = b.dataset.persona; sel = ''; guardarUrl(); D = null; cargar(); window.scrollTo(0, 0); return; }
     if((b = t.closest('[data-ges]'))){ const g = b.dataset.ges; if(g === 'nueva') window.Gestiones.nueva({ alCrear: cargar }); else window.Gestiones.abrir(Number(g), { alCerrar: cargar }); return; }
     if((b = t.closest('[data-tr]'))){
       const a = b.dataset.tr;
-      if(a === 'reintentar') cargar(); else if(a === 'todo'){ sel = ''; guardarUrl(); pintar(); } else if(a === 'mas'){ cuantos += 40; pintar(); }
+      if(a === 'reintentar') cargar(); else if(a === 'mas'){ cuantos += 40; pintar(); }
       else if(a === 'volver'){ persona = ''; guardarUrl(); D = null; cargar(); }
       else if(a === 'cola') empezarCola();
+      else if(a === 'lote'){ vista = 'lote'; guardarUrl(); mostrarVista(); }
+      else if(a === 'deshacer'){ const z = $('bzAviso'); const f = z._deshacer; z.classList.add('hidden'); if(f) f(); }
       else if(a === 'parar'){ cola = null; $('barraCola').classList.add('hidden'); }
       else if(a === 'seguir' && cola){ const f = (D.items || []).find((x) => x.tipo === cola.tipo && x.clave === b.dataset.clave); $('barraCola').classList.add('hidden'); if(f){ cola.hechos.push(f.clave); hacer(f); } }
     }
   });
+  document.addEventListener('submit', (e) => { if(e.target.id === 'formNotaP'){ e.preventDefault(); guardarNota(e.target); } });
   $('persona').addEventListener('change', () => { persona = $('persona').value; sel = ''; guardarUrl(); D = null; cargar(); });
-  document.addEventListener('visibilitychange', () => { if(!document.hidden && yo && !C.hojaAbierta()) cargar(); });
+  document.addEventListener('visibilitychange', () => { if(!document.hidden && yo && !C.hojaAbierta() && vista === 'buzon') cargar(); });
 
   window.Armazon.arrancar(['admin', 'analista', 'lider', 'abogado'], { activo: 'trabajo' }, (p) => {
-    yo = p; window.Ficha.montar(); leerUrl(); cargar();
+    yo = p; window.Ficha.montar(); leerUrl();
+    if(vista === 'lote' && !(p.rol === 'admin' || p.rol === 'abogado')) vista = 'buzon';
+    if(vista === 'lote') mostrarVista(); else cargar();
   }, (p) => { yo = p; });
 })();

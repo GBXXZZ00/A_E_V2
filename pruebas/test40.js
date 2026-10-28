@@ -17,7 +17,7 @@ const { RPC } = require('./mundo');
     await p.click('#agregarRep'); await p.waitForSelector('[data-grupo="rep2"]');
     const g2 = await p.textContent('[data-grupo="rep2"]');
     ok(nombre + ': el representante agregado sale como opcional, sin nada en Falta', g2.includes('Opcional') && (await p.locator('[data-grupo="rep2"] .chip.rojo').count()) === 0);
-    ok(nombre + ': agregarlo vacío no cambia los faltantes', fal().length === antes && (await p.textContent('#tab-documentos .res .r b')) === String(antes));
+    ok(nombre + ': agregarlo vacío no cambia los faltantes', fal().length === antes && (await p.getAttribute('#tab-documentos .fd-sum', 'data-faltan')) === String(antes));
     ok(nombre + ': trae el botón Quitar representante', (await p.locator('[data-quitar-rep="2"]').count()) === 1);
     await p.screenshot({ path: 'capturas/40-' + nombre + '-rep-vacio.png' });
     await p.click('[data-quitar-rep="2"]'); await p.waitForFunction(() => !document.querySelector('[data-grupo="rep2"]'));

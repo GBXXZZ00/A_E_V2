@@ -68,18 +68,18 @@ function xlsx(filas){
     ok(nombre + ': el resultado dice qué entró y qué no se leyó', fin.includes('900 clientes nuevos') && fin.includes('2 filas no se pudieron leer') && fin.includes('4 archivos cargados') && fin.includes('2 filas guardadas'));
     await p.waitForFunction(() => document.querySelectorAll('#cargas .fila').length === 4);
     ok(nombre + ': queda en el historial con quién la subió', (await p.textContent('#cargas')).includes('Marcos') && !(await p.textContent('#ultimoTad')).includes('ningún'));
-    ok(nombre + ': el historial dice si falta el cruce y el TAD ya quedó aplicado', (await p.textContent('#cargas')).includes('Falta el cruce') && (await p.textContent('#cargas')).includes('Aplicada al subir'));
+    await p.waitForSelector('#cruzarAhora');
+    ok(nombre + ': avisa las cargas sin cruzar con Cruzar ahora y el historial trae el TAD', /sin cruzar/.test(await p.textContent('#cruce')) && (await p.textContent('#cargas')).includes('TAD'));
     ok(nombre + ': al terminar dice qué falta, sin "Ver clientes"', fin.includes('Falta un paso') && !fin.includes('Ver clientes'));
     ok(nombre + ': sin desborde', await sinDesborde(p));
     await p.screenshot({ path: 'capturas/05-' + nombre + '-fin.png', fullPage: true });
-    await p.waitForSelector('#aplicarCruce');
+    await p.waitForSelector('#cruzarAhora'); await p.click('#cruzarAhora'); await p.waitForSelector('#aplicarCruce');   // Lote 28/10: el cruce se lanza con Cruzar ahora
     const cz = await p.textContent('#cruce');
     ok(nombre + ': el cruce primero muestra qué va a cambiar sin guardar', cz.includes('9 clientes reciben su líder') && cz.includes('Comisiones de octubre') && cz.includes('3 quedan pendientes por asignar') && cz.includes('no se ha guardado nada') && llamo(mundo, 'cruce_aplicar').length === 0 && (await p.locator('#cruce button').count()) === 1);
     await p.screenshot({ path: 'capturas/05-' + nombre + '-cruce.png', fullPage: true });
-    await p.click('#aplicarCruce'); await p.waitForSelector('#cruce a[href="comisiones.html"]');
-    ok(nombre + ': al guardar lo confirma y lleva a comisiones', mundo.cruceAplicado === true && (await p.textContent('#cruce')).includes('Cruce guardado'));
-    await p.waitForFunction(() => /Cruce aplicado/.test(document.querySelector('#cargas').textContent));
-    ok(nombre + ': el historial pasa a "Cruce aplicado"', !(await p.textContent('#cargas')).includes('Falta el cruce'));
+    await p.click('#aplicarCruce'); await p.waitForFunction(() => /Cruce guardado/.test(document.getElementById('cruce').textContent));
+    ok(nombre + ': al guardar lo confirma, sin botón para salir a Comisiones', mundo.cruceAplicado === true && (await p.locator('#cruce a[href="comisiones.html"]').count()) === 0);
+    ok(nombre + ': el historial queda agrupado por fecha', (await p.locator('#cargas details.act-dia').count()) >= 1);
     ok(nombre + ': sin desborde con el cruce', await sinDesborde(p));
     mundo.fallaRpc = 'tad_filas'; await p.click('#otro');
     await p.setInputFiles('#archivos', [{ name: 'tad2.csv', mimeType: 'text/csv', buffer: Buffer.from(csv(5)) }, { name: 'tad3.csv', mimeType: 'text/csv', buffer: Buffer.from(csv(3)) }]);

@@ -34,31 +34,29 @@ const cerrarHojas = async (p) => { for(let i = 0; i < 5 && await p.evaluate(() =
     ok(nombre + ': la segunda carga sube solo la fila que cambió', ult.length === 1 && ult[0][2].p_filas.length === 1);
     // ----- A5: Sin instalar con Subir documentos y RIF nuevo -----
     mundo.datos.sueltas = [{ id: 880001, numero: 'PRUEBA/9001', titulo: 'Solicitud de Instalación PROMO PYME', etapa: 'Planificada', creada_en: new Date(Date.now() - 40 * 864e5).toISOString(), nombre: 'Panadería Inventada', lider: 'Lucía Ferrer', parecido_id: null }];
-    await p.goto(H + 'comisiones.html?t=sin_instalar'); await p.waitForSelector('[data-si-subir]');
-    const zl = await p.textContent('#lista');
-    ok(nombre + ': Sin instalar con días, qué falta y "Sin cliente en la app"', /Sin cliente en la app/.test(zl) && /Falta el cliente en la app/.test(zl) && (await p.locator('#lista .si-f .m.ambar').count()) >= 1 && p.url().includes('t=sin_instalar'));
-    await p.locator('.si-f', { hasText: 'PRUEBA/9001' }).locator('[data-si-subir]').click(); await p.waitForSelector('#hojaOrden.ver #oRif');
-    ok(nombre + ': el panel abre con el RIF y su etiqueta arriba', (await p.textContent('label[for="oRif"]')) === 'RIF del cliente');
-    await p.fill('#oRif', '12'); await p.click('#formRif button[type="submit"]');
-    ok(nombre + ': RIF corto: error debajo del campo', /letra y los números/.test(await p.textContent('#eRif')));
-    await p.fill('#oRif', 'J-41888777-1'); await p.click('#formRif button[type="submit"]'); await p.waitForSelector('#oNom');
-    ok(nombre + ': RIF que no existe pide el nombre para crear el cliente', /no está en la app/.test(await p.textContent('#hojaOrden')));
-    await p.click('#formRif button[type="submit"]');
-    ok(nombre + ': sin nombre: error debajo', /nombre del cliente/.test(await p.textContent('#eNom')));
-    await p.fill('#oNom', 'Panadería Inventada, C.A.'); await p.click('#formRif button[type="submit"]'); await p.waitForSelector('#docsOrden [data-casilla]');
+    // Lote 28/10: Por instalar es una hoja; Subir documentos abre "cliente nuevo" con la orden ya elegida
+    await p.goto(H + 'comisiones.html?t=por_instalar'); await p.waitForSelector('#hojaPorInst.ver [data-pi-tab]');
+    await p.click('#hojaPorInst [data-pi-tab="viejas"]'); await p.waitForSelector('#hojaPorInst .pi-t');
+    const zl = await p.textContent('#hojaPorInst');
+    ok(nombre + ': la orden vieja sale en Viejas, sin cliente en la app', /Sin cliente en la app/.test(zl) && /Panadería Inventada/.test(zl));
+    await p.locator('#hojaPorInst .pi-t', { hasText: 'Panadería Inventada' }).locator('[data-pi-subir]').click(); await p.waitForSelector('#hojaNuevo.ver #nvRif');
+    ok(nombre + ': el panel abre con la orden, el RIF con su etiqueta arriba y el posible nombre', /9001/.test(await p.textContent('#hojaNuevo .nv-orden')) && (await p.textContent('label[for="nvRif"]')) === 'RIF' && (await p.inputValue('#nvNom')) === 'Panadería Inventada');
+    await p.fill('#nvRif', '12'); await p.click('[data-nv-seguir]');
+    ok(nombre + ': RIF corto: error debajo del campo', /letra y los números/.test(await p.textContent('#eNvRif')));
+    await p.fill('#nvRif', 'J-41888777-1'); await p.click('[data-nv-seguir]'); await p.waitForSelector('#docsNuevo [data-casilla]');
     const nuevo = mundo.datos.clientes.find((c) => c.doc_numero === '418887771');
     ok(nombre + ': se crea el cliente, la orden queda unida y salen sus casillas', !!nuevo && nuevo.orden && nuevo.orden.id === 880001 && (mundo.bitacora || []).some((b) => b.accion === 'cliente_creado_orden'));
-    // En el teléfono el teclado sigue abierto tras escribir el nombre: se cierra antes de tocar el pie
-    await p.evaluate(() => document.activeElement && document.activeElement.blur()); await p.waitForFunction(() => !document.querySelector('.toast'), null, { timeout: 8000 }); await p.click('#oEnviar'); await p.waitForFunction(() => /al menos un documento/.test((document.querySelector('.toast-zona') || {}).textContent || ''));
-    ok(nombre + ': Enviar a revisión sin documentos lo explica', true);
+    ok(nombre + ': Enviar a revisión espera a que esté todo', await p.locator('[data-nv-enviar]').isDisabled());
     await cerrarHojas(p);
-    await p.click('[data-si-dias]'); await p.waitForSelector('#hojaLiderLote.ver #siDias'); await p.fill('#siDias', '20'); await p.click('#siDiasGuardar');
-    await p.waitForFunction(() => /de 20 días/.test(document.getElementById('lista').textContent));
-    ok(nombre + ': el administrador cambia los días del aviso', mundo.diasAlerta === 20);
+    await p.goto(H + 'comisiones.html?t=por_instalar'); await p.waitForSelector('#hojaPorInst.ver [data-pi-horas]');
+    await p.click('#hojaPorInst [data-pi-horas]'); await p.waitForSelector('#piHoras'); await p.fill('#piHoras', '30'); await p.click('#piHorasGuardar');
+    await p.waitForFunction(() => /30 horas/.test(document.getElementById('hojaPorInst').textContent));
+    ok(nombre + ': el administrador cambia las horas del aviso', mundo.horasAlerta === 30);
+    await cerrarHojas(p);
     // ----- C1: Sin líder y asignar a varios -----
     const sin = mundo.datos.clientes.filter((c) => !c.lider_id && !c.unido_a).slice(0, 2);
     sin.forEach((c) => { c.servicios = c.servicios.length ? c.servicios : [{ id: 1, codigo: '9' + c.id, sucursal: '824', estado: 'Habilitado', categoria: 'pyme-1gb' }]; c.servicios[0].fecha_instalacion = new Date().toISOString().slice(0, 10); });
-    await p.click('#vistas [data-vista="sin_lider"]'); await p.waitForSelector('[data-sl-marca]');
+    await p.goto(H + 'comisiones.html?t=por_asignar'); await p.waitForSelector('[data-abrir="sin_lider"]'); await p.locator('#ayudaFiltro [data-abrir="sin_lider"], [data-abrir="sin_lider"]').first().click(); await p.waitForSelector('[data-sl-marca]');
     ok(nombre + ': Sin líder lista los instalados del mes sin líder', (await p.locator('[data-sl-marca]').count()) >= 2 && (await p.locator('[data-sl-asignar][disabled]').count()) === 1);
     await p.click('[data-sl-todos]'); await p.click('[data-sl-asignar]'); await p.waitForSelector('#hojaLiderLote.ver #slLider');
     await p.click('#slConfirmar');
@@ -73,8 +71,8 @@ const cerrarHojas = async (p) => { for(let i = 0; i < 5 && await p.evaluate(() =
     await ctx.close();
     // ----- El líder: Sin instalar solo lo suyo, sin Sin líder -----
     const c2 = await contexto(nav, dispositivo); const l = await entrar(c2.ctx, 'lucia', '739105'); l.on('pageerror', (e) => errores.push(e.message));
-    await l.goto(H + 'comisiones.html?t=sin_instalar'); await l.waitForSelector('#lista .si-cab');
-    ok(nombre + ': el líder ve Sin instalar pero no Sin líder', (await l.locator('#vistas [data-vista="sin_lider"]').count()) === 0 && (await l.locator('[data-si-dias]').count()) === 0);
+    await l.goto(H + 'comisiones.html?t=por_instalar'); await l.waitForSelector('#hojaPorInst.ver [data-pi-tab]');
+    ok(nombre + ': el líder ve Por instalar pero no cambia las horas ni ve Sin líder', (await l.locator('[data-pi-horas]').count()) === 0 && (await l.locator('[data-abrir="sin_lider"]').count()) === 0);
     await c2.ctx.close();
   }
   ok('sin errores de la página', errores.length === 0, errores);

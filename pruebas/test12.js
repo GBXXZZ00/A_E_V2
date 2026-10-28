@@ -11,8 +11,8 @@ const archivo = (nombre, buffer) => ({ name: nombre, mimeType: 'application/vnd.
     // El analista ve el mapa vigente pero no lo sube
     mundo.personas.find((x) => x.usuario === 'pedro').debe_cambiar_pin = false;
     { const o = await contexto(nav, dispositivo, mundo); const q = await entrar(o.ctx, 'pedro', '204871'); q.on('pageerror', (e) => errores.push(e.message));
-      await q.goto(H + 'actualizar.html'); await q.waitForFunction(() => /administrador sube/.test(document.getElementById('mapaRed').textContent));
-      ok(nombre + ': el analista no puede subir el mapa', (await q.locator('#mapaSoltar').count()) === 0 && (await q.textContent('#mapaRed')).includes('Todavía no hay mapa'));
+      await q.goto(H + 'actualizar.html'); await q.waitForFunction(() => /Analista Senior/.test(document.querySelector('main').textContent));
+      ok(nombre + ': el analista no puede subir el mapa (Actualizar es del administrador y la Senior)', (await q.locator('#mapaRed').count()) === 0 && (await q.locator('#archivos').count()) === 0);
       await o.ctx.close(); }
 
     const p = await entrar(ctx, 'marcos', '482913'); p.on('pageerror', (e) => errores.push(e.message));
@@ -49,7 +49,7 @@ const archivo = (nombre, buffer) => ({ name: nombre, mimeType: 'application/vnd.
     ok(nombre + ': el punto del MDT viaja con su zona', JSON.stringify(de('AAA001')[0].p) === JSON.stringify([-71.005, 10.005]) && de('DIS001')[0].p === null);
     ok(nombre + ': sin vértice repetido al cerrar', de('AAA001')[0].lng.length === 4);
     let r = await p.textContent('#mapaRed');
-    ok(nombre + ': el resumen del primer mapa', r.includes('8 zonas') && r.includes('Todavía no hay consultas guardadas') && (await p.locator('#mapaRed a[href="factibilidad.html"]').count()) === 1, r);
+    ok(nombre + ': el resumen del primer mapa', r.includes('8 zonas') && r.includes('Todavía no hay consultas guardadas') && (await p.locator('#mapaRed a[href="factibilidad.html"]').count()) === 0, r);
     ok(nombre + ': queda en la bitácora', (mundo.bitacora || []).some((b) => b.accion === 'mapa_red_subido'));
 
     // Una consulta en espera dentro del diseño; el mapa nuevo trae el diseño liberado

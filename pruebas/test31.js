@@ -17,7 +17,7 @@ const GINA = { id: '77777777-7777-4777-8777-777777777700', usuario: 'gina', pin:
     ok(nombre + ': Inicio tiene Gerencia y ya no tiene Panel', (await p.locator('#zonaModulos [data-modulo="gerencia"]').count()) === 1 && (await p.locator('#zonaModulos [data-modulo="panel"]').count()) === 0);
     await p.goto(H + 'gerencia.html'); await p.waitForSelector('#zonaG .gt-grid button.gtj');
     const z = await p.textContent('#zonaG');
-    ok(nombre + ': tarjetas de la maqueta y Demanda sin red', ['Instalaciones PYME', 'En el año', 'Órdenes sin instalar', 'Comisiones del corte', 'Expedientes completos', 'Migraciones a PYME', 'Dedicados', 'Calidad de la venta', 'Estatus legal', 'Demanda sin red', 'Ingresos de dedicados', 'Tus avisos'].every((t) => z.includes(t)));
+    ok(nombre + ': tarjetas de la maqueta y Demanda sin red', ['Instalaciones PYME', 'En el año', 'Órdenes sin instalar', 'Comisiones del corte', 'Contratos firmados', 'Migraciones a PYME', 'Dedicados', 'Calidad de la venta', 'Estatus legal', 'Demanda sin red', 'Ingresos de dedicados', 'Tus avisos'].every((t) => z.includes(t)));
     ok(nombre + ': pide el resumen de gerencia con el período y la comparación', llamo(mundo, 'modulo_resumen').some((l) => l[2].p_modulo === 'gerencia' && l[2].p_comparar === 'anio' && /^\d{4}-\d{2}-01$/.test(l[2].p_desde)));
     await p.selectOption('#cmpG', 'mes'); await p.waitForTimeout(300);
     ok(nombre + ': Comparar con cambia la llamada', llamo(mundo, 'modulo_resumen').some((l) => l[2].p_modulo === 'gerencia' && l[2].p_comparar === 'mes'));

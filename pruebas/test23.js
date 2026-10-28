@@ -30,17 +30,15 @@ function preparar(mundo){
   for(const [nombre, dispositivo] of [['tel', TEL], ['pc', PC]]){
     const { ctx, mundo } = await contexto(nav, dispositivo); preparar(mundo);
     const p = await entrar(ctx, 'elena', '315806'); p.on('pageerror', (e) => errores.push(e.message));
-    // Inicio: solo contadores que llevan a la pestaña
-    await p.waitForSelector('[data-k="instalar"], .pf');
-    const ini = await p.locator('[data-k="instalar"]').count() ? await p.textContent('[data-k="instalar"]') : await p.textContent('#zonaPendientes');
-    ok(nombre + ': Inicio dice cuántas órdenes están en rojo', /órdenes? en rojo/.test(ini));
-    await p.goto(H + 'comisiones.html?t=instalar'); await p.waitForSelector('#lista .ins');
-    ok(nombre + ': la pestaña Por instalar abre marcada', (await p.getAttribute('#vistas [data-vista="instalar"]', 'aria-selected')) === 'true' && (await p.locator('#rango').isHidden()));
-    ok(nombre + ': agrupada por líder, con el que tiene rojas arriba', (await p.locator('#lista .grupo-cab').count()) >= 2);
-    const prov = p.locator('#lista .ins').filter({ hasText: 'Panadería Provisional' });
+    // Lote 28/10: el aviso de Comisiones cuenta las que pasan de 24 horas y Por instalar sale como hoja
+    await p.goto(H + 'comisiones.html'); await p.waitForSelector('#alertas [data-abrir="por_instalar"]');
+    ok(nombre + ': Comisiones avisa cuántas órdenes pasan de 24 horas', /2 órdenes/.test(await p.textContent('#alertas [data-abrir="por_instalar"]')));
+    await p.goto(H + 'comisiones.html?t=instalar'); await p.waitForSelector('#hojaPorInst.ver .pi-t');
+    ok(nombre + ': la dirección vieja abre la hoja Por instalar en "Pasan de 24 horas"', (await p.locator('#hojaPorInst [data-pi-tab="mas"].on').count()) === 1);
+    const prov = p.locator('#hojaPorInst .pi-t').filter({ hasText: 'Panadería Provisional' });
     const tp = await prov.textContent();
-    ok(nombre + ': la reprogramada lleva su etiqueta con las veces y el reloj desde la primera orden', tp.includes('Reprogramada 2 veces') && (await prov.locator('.m.rojo').count()) === 1);
-    ok(nombre + ': el provisional se ve como tal y con el dueño por asignar', tp.includes('Provisional') && tp.includes('Dueño por asignar'));
+    ok(nombre + ': la reprogramada lleva las veces y el reloj desde la primera orden', tp.includes('reprogramada 2 veces') && /4 días/.test(tp));
+    ok(nombre + ': el provisional se ve sin cliente en la app y con el dueño por asignar', tp.includes('Sin cliente en la app') && tp.includes('Por asignar'));
     ok(nombre + ': Por instalar sin desborde', await sinDesborde(p));
     await p.screenshot({ path: 'capturas/23-' + nombre + '-por-instalar.png', fullPage: true });
     // El Analista Senior elige el dueño
@@ -49,19 +47,17 @@ function preparar(mundo){
     await p.selectOption('#duenoSel', 'Rosa Paredes'); await p.click('#guardarDueno');
     await p.waitForFunction(() => !document.querySelector('#hojaDueno.ver'));
     ok(nombre + ': el dueño queda guardado con bitácora', mundo.bitacora.some((b) => b.accion === 'provisional_dueno' && b.despues.lider === 'Rosa Paredes'));
-    // ¿Es este cliente?
-    await p.waitForSelector('#lista [data-es-cli]', { state: 'attached' });
-    await p.evaluate(() => { const g = document.querySelector('[data-es-cli]').closest('.grupo'); if(g && !g.classList.contains('abierto')) g.querySelector('.grupo-cab').click(); });
-    ok(nombre + ': una orden con nombre parecido pregunta "¿Es este cliente?"', (await p.textContent('#lista')).includes('¿Es este cliente?') && (await p.textContent('#lista')).includes('Kiosco La Parada'));
-    await p.click('[data-es-cli="no"]');
-    await p.waitForFunction(() => !document.querySelector('[data-es-cli]'));
+    // ¿Es este cliente? (la orden suelta tiene menos de 24 horas de reloj o más: se busca en las dos pestañas)
+    for(const t of ['mas', 'menos', 'viejas']){ if(await p.locator('#hojaPorInst [data-es-cli]').count()) break; await p.click('#hojaPorInst [data-pi-tab="' + t + '"]'); await p.waitForTimeout(200); }
+    ok(nombre + ': una orden con nombre parecido pregunta "¿Es este cliente?"', (await p.textContent('#hojaPorInst')).includes('¿Es este cliente?') && (await p.textContent('#hojaPorInst')).includes('Kiosco La Parada'));
+    await p.click('#hojaPorInst [data-es-cli="no"]');
+    await p.waitForFunction(() => !document.querySelector('#hojaPorInst [data-es-cli]'));
     ok(nombre + ': "No, es otro" crea el provisional', mundo.llamadas.some((l) => l[1] === 'orden_es_cliente' && l[2].p_cliente === null) && mundo.datos.clientes.some((c) => c.nombre === 'Kiosko La Parada' && c.provisional));
-    // Realizada en Odoo sin instalación (la lista se repinta después de "No, es otro")
-    await p.waitForFunction(() => /Ferreter/.test(document.querySelector('#lista').textContent), null, { timeout: 5000 }).catch(() => {});
-    ok(nombre + ': el Analista Senior ve las realizadas en Odoo sin instalación', /Realizadas? en Odoo sin instalación/.test(await p.textContent('#lista')) && (await p.textContent('#lista')).includes('Ferretería Hecha'));
+    ok(nombre + ': el Analista Senior ve las realizadas en Odoo sin instalación', /Realizadas? en Odoo sin instalación/.test(await p.textContent('#hojaPorInst')) && (await p.textContent('#hojaPorInst')).includes('Ferretería Hecha'));
+    await p.keyboard.press('Escape');
     // Abrir el provisional, escribir su RIF y que se una al cliente real
-    await p.evaluate(() => { document.querySelectorAll('#lista .grupo').forEach((g) => { if(!g.classList.contains('abierto')) g.querySelector('.grupo-cab').click(); }); });
-    await p.locator('#lista .ins').filter({ hasText: 'Panadería Provisional' }).locator('[data-exp]').click(); await p.waitForSelector('#hojaFicha.ver #paso');
+    const idProv = mundo.datos.clientes.find((c) => c.nombre === 'Panadería Provisional').id;
+    await p.goto(H + 'clientes.html?c=' + idProv); await p.waitForSelector('#hojaFicha.ver #paso');
     ok(nombre + ': el expediente dice que es provisional y sin RIF', (await p.textContent('#paso')).includes('Cliente provisional') && (await p.textContent('#cabFicha')).includes('Provisional, sin RIF'));
     await p.click('#paso [data-paso="rif"]'); await p.waitForSelector('#hojaCampo.ver #cRif');
     await p.fill('#cRif', 'J5910'); await p.click('#guardarCampo');
@@ -75,8 +71,8 @@ function preparar(mundo){
     // El líder ve solo las suyas, sin las realizadas ni elegir dueño
     const b = await contexto(nav, dispositivo); preparar(b.mundo);
     const q = await entrar(b.ctx, 'lucia', '739105'); q.on('pageerror', (e) => errores.push(e.message));
-    await q.goto(H + 'comisiones.html?t=instalar'); await q.waitForSelector('#lista .ins');
-    const tl = await q.textContent('#lista');
+    await q.goto(H + 'comisiones.html?t=instalar'); await q.waitForSelector('#hojaPorInst.ver .pi-t');
+    let tl = ''; for(const t of ['mas', 'menos', 'viejas']){ await q.click('#hojaPorInst [data-pi-tab="' + t + '"]'); await q.waitForTimeout(150); tl += await q.textContent('#hojaPorInst'); }
     ok(nombre + ': el líder ve solo sus órdenes', tl.includes('Autolavado El Chorro') && !tl.includes('Panadería Provisional') && !tl.includes('Realizada en Odoo'));
     ok(nombre + ': el líder no elige dueños', (await q.locator('[data-dueno-prov]').count()) === 0);
     await b.ctx.close();

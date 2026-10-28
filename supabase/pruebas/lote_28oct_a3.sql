@@ -439,3 +439,42 @@ grant execute on function public.perfiles_equipos(), public.perfil_equipo_guarda
   public.clientes_panel(), public.gestion_plazo(bigint, date), public.clientes_resumen(date, text), public.clientes_detalle(date, text, text, text, integer),
   public.nota_guardar(bigint, text, date, bigint), public.nota_hecha(bigint, boolean), public.revision_lote_lista(text, boolean, text, integer, integer), public.revision_lote(jsonb),
   public.actualizar_estado() to authenticated;
+
+-- Migración lote28_a3_clientes_otros: el líder ve los clientes de otros líderes solo para consultar
+create or replace function public.clientes_otros(p_busca text default null, p_desde integer default 0, p_limite integer default 30) returns jsonb
+language plpgsql stable security definer set search_path to '' as $$
+declare r text := privado.exigir('lider'); yo uuid := (select auth.uid()); q text := privado.norm(coalesce(p_busca, '')); dg text := regexp_replace(coalesce(p_busca, ''), '\D', '', 'g'); res jsonb;
+begin
+  with f as (select c.id, c.nombre, c.doc_tipo, c.doc_numero, c.estatus, coalesce(privado.nombre_de(c.lider_id), c.lider_nombre, 'Sin líder') lider,
+               (select count(*) from public.servicios s where s.cliente_id = c.id) n_serv
+             from public.clientes c left join public.dedicados d on d.cliente_id = c.id
+             where c.unido_a is null and c.suspendido_en is null and c.lider_id is distinct from yo and d.ejecutiva_id is distinct from yo and not c.provisional
+               and (q = '' or privado.norm(c.nombre) like '%' || q || '%' or (length(dg) >= 4 and c.doc_numero like '%' || dg || '%')))
+  select jsonb_build_object('total', (select count(*) from f),
+    'filas', coalesce((select jsonb_agg(jsonb_build_object('nombre', z.nombre, 'doc', z.doc_tipo || '-' || z.doc_numero, 'lider', z.lider, 'grupo', privado.grupo_legal(z.estatus), 'n_serv', z.n_serv) order by z.nombre)
+      from (select * from f order by f.nombre offset greatest(coalesce(p_desde, 0), 0) limit least(greatest(coalesce(p_limite, 30), 1), 60)) z), '[]'::jsonb))
+  into res;
+  return res;
+end $$;
+revoke execute on function public.clientes_otros(text, integer, integer) from public, anon;
+grant execute on function public.clientes_otros(text, integer, integer) to authenticated;
+
+-- lote28_a3_cliente_gestiones: gestiones activas de un cliente (franja de la ficha)
+create or replace function public.cliente_gestiones(p_cliente bigint) returns jsonb language plpgsql stable security definer set search_path to '' as $$
+declare r text := privado.exigir_cliente(p_cliente);
+begin
+  return coalesce((select jsonb_agg(jsonb_build_object('gestion', g.id, 'nombre', g.nombre, 'estado', gc.estado, 'desde', gc.actualizado_en, 'plazo', g.plazo, 'nota', gc.nota) order by g.plazo nulls last)
+    from public.gestion_clientes gc join public.gestiones g on g.id = gc.gestion_id where gc.cliente_id = p_cliente and g.estado = 'activa'), '[]'::jsonb);
+end $$;
+revoke execute on function public.cliente_gestiones(bigint) from public, anon;
+grant execute on function public.cliente_gestiones(bigint) to authenticated;
+
+-- lote28 (aplicado con privado.reemplazar_en_funcion): privado.res_clientes cuenta en 5 grupos
+--   nums 'completos' -> 'Contratos firmados' (grupo firmado, x 'todos:firmado')
+--   gráfica legal: v = [sin_gestionar, faltan, revision, por_firmar, firmado] (mismo orden que res_dedicados)
+
+-- lote28 revisión final (aplicado con privado.reemplazar_en_funcion):
+--   public.cliente_nuevo: unir a un provisional parecido ya no le pone dueño (lo elige la Senior en Por instalar); la bitácora guarda el líder.
+--   privado.com_filas_det: la gráfica 'serie' solo acepta un corte AAAA-MM-01 entre 2025-01-01 y el corte en curso + 1 mes.
+--   public.comisiones_detalle: el líder ve el detalle de sus filas y de las filas de aliados (v_ali = dueños de equipo aliados del corte),
+--     ya no el de cualquier cliente que alguna vez tuvo una instalación de aliado.

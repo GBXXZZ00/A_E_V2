@@ -22,8 +22,8 @@ const cerrarHojas = async (p) => { for(let i = 0; i < 5 && await p.evaluate(() =
     const fal = () => RPC.cliente_ficha(mundo, adm, { p_cliente: c.id }).faltantes;
     ok(nombre + ': sin presencial faltan correo, teléfono y correo de la empresa', ['correo', 'telefono', 'correo_empresa'].every((k) => fal().some((x) => x.k === k)));
     // Lote 21/10: la firma Digital o Física (Física = presencial) está en la tarjeta del contrato PYME, en la pestaña Contrato
-    await p.goto(H + 'clientes.html?c=' + c.id + '&t=documentos'); await p.waitForSelector('#hojaFicha.ver #tab-documentos .res');
-    ok(nombre + ': antes, el contador dice que faltan 3 (correos y teléfono)', (await p.textContent('#tab-documentos .res .r b')) === '3');
+    await p.goto(H + 'clientes.html?c=' + c.id + '&t=documentos'); await p.waitForSelector('#hojaFicha.ver #tab-documentos .fd-sum');
+    ok(nombre + ': antes, el contador dice que faltan 3 (correos y teléfono)', (await p.getAttribute('#tab-documentos .fd-sum', 'data-faltan')) === '3');
     await p.click('#tabs [data-tab="contrato"]'); await p.waitForSelector('#tab-contrato.on .ctr-pyme [data-firma-cli]');
     ok(nombre + ': la tarjeta del contrato PYME trae Firma Digital (marcada) y Física', (await p.getAttribute('#tab-contrato [data-firma-cli][data-valor="digital"]', 'aria-checked')) === 'true');
     await p.click('#tab-contrato [data-firma-cli][data-valor="fisica"]');
@@ -37,7 +37,7 @@ const cerrarHojas = async (p) => { for(let i = 0; i < 5 && await p.evaluate(() =
     ok(nombre + ': con presencial no se piden correos ni teléfono, sí los documentos', f1.length === 0 && llamo(mundo, 'cliente_marca').some((l) => l[2].p_marca === 'contrato_presencial' && l[2].p_valor === true));
     ok(nombre + ': el contacto y el correo de la empresa quedan opcionales', (await p.locator('#tab-documentos [data-campo="rep:1"] .chip.rojo, #tab-documentos [data-campo="correo_empresa"] .chip.rojo').count()) === 0 &&
       (await p.textContent('#tab-documentos [data-campo="rep:1"]')).includes('contrato presencial'));
-    ok(nombre + ': el contador queda en 0 y "Pedir lo que falta" no sale', (await p.textContent('#tab-documentos .res .r b')) === '0' && (await p.locator('#tab-documentos [data-paso^="pedir:"]').count()) === 0);
+    ok(nombre + ': el contador queda en 0 y "Pedir lo que falta" no sale', (await p.getAttribute('#tab-documentos .fd-sum', 'data-faltan')) === '0' && (await p.locator('#tab-documentos [data-paso^="pedir:"]').count()) === 0);
     ok(nombre + ': con los documentos subidos pasa a Documentos en revisión', c.estatus === 'documentos_en_revision');
     // Un documento legal sigue haciendo falta aunque sea presencial
     c.documentos = c.documentos.filter((x) => x.casilla !== 'acta_constitutiva');

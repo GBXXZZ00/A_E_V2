@@ -65,3 +65,10 @@
   .lado ul{list-style:none;margin:44px 0 0;padding:0;display:flex;flex-wrap:wrap;gap:12px 36px}
   .lado li{font-size:15px;font-weight:700}
 }
+/* Lote 28/10: al volver a abrir con la sesión abierta, logo y esqueleto mientras se confirma la sesión */
+.carga-ses{display:flex;flex-direction:column;gap:12px;margin-top:8px}
+.carga-ses.hidden{display:none}
+.carga-ses .sk{display:block;background:var(--surface-3,#ECEEF1);animation:cargaSes 1.1s var(--ease-out) infinite alternate}
+.carga-ses .sub{text-align:center;margin-top:6px}
+@keyframes cargaSes{from{opacity:1}to{opacity:.55}}
+@media (prefers-reduced-motion:reduce){.carga-ses .sk{animation:none}}

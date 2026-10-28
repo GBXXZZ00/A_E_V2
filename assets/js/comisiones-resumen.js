@@ -33,8 +33,8 @@
       const t = (g, x, tit, v, sub, tono) => '<button type="button" class="cr-num' + (tono ? ' ' + tono : '') + '"' + (g ? dato(g, x, tit) : ' disabled') + '><small>' + esc(tit) + '</small><b>' + v + '</b><span>' + esc(sub) + '</span></button>';
       return '<div class="cr-nums">' + t('inst', 'todas', 'Instaladas en el corte', num(n.inst), num(n.inst_prev) + ' en ' + d.mes_anterior + (d.misma_fecha ? ' a la misma fecha' : '')) +
         t('comisionan', 'x', 'Comisionan', num(n.comisionan), num(n.esperan) + ' esperan legal o pago') +
-        (n.por_instalar === null || n.por_instalar === undefined ? t('', '', 'Por instalar', '—', 'Solo en el corte en curso') : t('por_instalar', 'mas24', 'Por instalar', num(n.por_instalar), 'Pasan de ' + (d.horas_alerta || 24) + ' horas', n.por_instalar ? 'w' : '')) +
-        t('', '', 'De orden a instalación', n.mediana === null || n.mediana === undefined ? '—' : String(n.mediana).replace('.', ',') + (Number(n.mediana) === 1 ? ' día' : ' días'), 'Mediana del corte') + '</div>';
+        (n.por_instalar === null || n.por_instalar === undefined ? t('', '', 'Por instalar', 'Sin datos', 'Solo en el corte en curso') : t('por_instalar', 'mas24', 'Por instalar', num(n.por_instalar), 'Pasan de ' + (d.horas_alerta || 24) + ' horas', n.por_instalar ? 'w' : '')) +
+        t('', '', 'De orden a instalación', n.mediana === null || n.mediana === undefined ? 'Sin datos' : String(n.mediana).replace('.', ',') + (Number(n.mediana) === 1 ? ' día' : ' días'), 'Mediana del corte') + '</div>';
     }
     function ranking(d){
       const l = (d.ranking || {})[st.rk] || [];
@@ -55,7 +55,7 @@
           '<span class="bar"><i class="com" style="width:' + (e.com / mx * 100).toFixed(1) + '%"></i><i class="pen" style="width:' + ((e.ahora - e.com) / mx * 100).toFixed(1) + '%"></i><i class="ant" style="width:' + (Math.max(0, e.anterior - e.ahora) / mx * 100).toFixed(1) + '%"></i></span></button>').join('') +
         '<div class="ley"><span><i class="c-azul"></i>Comisiona</span><span><i class="c-azul2"></i>Pendiente</span></div>' +
         '<button type="button" class="cr-lin"' + dato('susp60', 'x', 'Suspendidos antes de 60 días') + '><span>Suspendidos antes de 60 días (este corte)</span><b>' + num(n.susp60) + '</b></button>' +
-        '<div class="cr-lin"><span>Siguen habilitadas de ' + esc(d.mes_anterior) + '</span><b>' + (n.siguen_prev === null || n.siguen_prev === undefined ? '—' : num(n.siguen_prev) + ' %') + '</b></div></section>';
+        '<div class="cr-lin"><span>Siguen habilitadas de ' + esc(d.mes_anterior) + '</span><b>' + (n.siguen_prev === null || n.siguen_prev === undefined ? 'Sin datos' : num(n.siguen_prev) + ' %') + '</b></div></section>';
     }
     function serie(d){
       const s = d.serie || []; const mx = Math.max(1, ...s.map((x) => x.total));

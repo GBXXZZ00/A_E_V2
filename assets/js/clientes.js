@@ -70,7 +70,7 @@
 
   function pintarTarjetas(){
     $('tarjetas').innerHTML = TARJETAS.map((t) => { const n = nTarjetas ? nTarjetas[t.id] : null; const on = t.id === tarjeta;
-      return '<button type="button" class="tcli' + (on ? ' on' : '') + '" data-tarjeta="' + t.id + '" aria-pressed="' + on + '"><b>' + (n === null || n === undefined ? '<span class="sk" style="display:inline-block;width:42px;height:26px"></span>' : esc(n)) + '</b><span>' + esc(t.t) + '</span></button>'; }).join('');
+      return '<button type="button" class="tcli' + (on ? ' on' : '') + '" data-tarjeta="' + t.id + '" aria-pressed="' + on + '"><b>' + (n === null || n === undefined ? '<span class="sk" style="display:inline-block;width:42px;height:26px"></span>' : esc(n)) + '</b><span>' + esc(t.t) + (window.ClientesPanel && window.ClientesPanel.sub(t.id) ? '<small>' + esc(window.ClientesPanel.sub(t.id)) + '</small>' : '') + '</span></button>'; }).join('');
   }
 
   function pintarAtajos(){
@@ -233,7 +233,7 @@
     if((b = t.closest('#tarjetas [data-tarjeta]'))){
       if(b.dataset.tarjeta === tarjeta && !q) return;
       tarjeta = b.dataset.tarjeta; guardarTarjeta(); soltarDed(); if(RES) RES.cambiarModulo();
-      q = ''; $('busca').value = ''; guardarUrl(); pintarTarjetas(); pintarAtajos(); pintarSels(); cargar(); return;
+      q = ''; $('busca').value = ''; guardarUrl(); pintarTarjetas(); pintarAtajos(); pintarSels(); cargar(); if(window.ClientesPanel) window.ClientesPanel.pintar(); return;
     }
     if(t.closest('#lista [data-tarjeta-todas]')){ tarjeta = 'todas'; soltarDed(); guardarUrl(); pintarTarjetas(); pintarSels(); cargar(); return; }
     if((b = t.closest('#filtros [data-filtro], #lista [data-filtro]'))){ filtro = b.dataset.filtro; q = ''; $('busca').value = ''; guardarUrl(); pintarAtajos(); cargar(); return; }
@@ -254,7 +254,15 @@
   });
   $('formBusca').addEventListener('submit', (e) => { e.preventDefault(); clearTimeout(reloj); buscar(); $('busca').blur(); });
   $('busca').addEventListener('input', () => { clearTimeout(reloj); reloj = setTimeout(buscar, 380); });
-  function buscar(){ const v = $('busca').value.trim(); if(v === q) return; q = v; guardarUrl(); pintarAtajos(); cargar(); }
+  function buscar(){ const v = $('busca').value.trim(); if(v === q) return; q = v; guardarUrl(); pintarAtajos(); cargar(); if(window.ClientesPanel) window.ClientesPanel.buscar(q); }
+  // Lote 28/10: el panel de arriba filtra la lista (estatus legal, atajos de dedicados, gestiones)
+  function aplicar(o){
+    if(o.tarjeta){ tarjeta = o.tarjeta; soltarDed(); }
+    if(o.sel){ sel = Object.assign({}, o.sel); }
+    filtro = o.filtro || DEF; q = ''; $('busca').value = '';
+    guardarUrl(); pintarTarjetas(); pintarAtajos(); pintarSels(); cargar();
+    const z = $('cuentaLista'); if(z && z.scrollIntoView) z.scrollIntoView({ block: 'start', behavior: 'auto' });
+  }
   $('hojaFiltros').addEventListener('hoja-cerrada', () => setTimeout(guardarUrl, 60));
   document.addEventListener('visibilitychange', () => { if(!document.hidden && yo && filas.length && !window.Comun.hojaAbierta()) refrescar(); });
 
@@ -263,7 +271,8 @@
     window.Ficha.montar(); window.Ficha.alContactarFuera(refrescar);
     // Lote 27/10: Lista | Resumen. Con las tarjetas de dedicados, el Resumen es el de Dedicados
     const u = leerUrl();
-    if(window.Resumen) RES = window.Resumen.enModulo({ modulo: () => esDed() ? 'dedicados' : 'clientes', yo: p }); $('busca').value = q; guardarTarjeta(); pintarTarjetas(); pintarAtajos(); pintarSels();
+    if(window.Resumen) RES = window.Resumen.enModulo({ modulo: () => esDed() ? 'dedicados' : 'clientes', yo: p, crear: window.CliResumen ? window.CliResumen.crear : undefined }); $('busca').value = q; guardarTarjeta(); pintarTarjetas(); pintarAtajos(); pintarSels();
+    if(window.ClientesPanel) window.ClientesPanel.montar({ yo: p, tarjeta: () => tarjeta, busca: () => q, aplicar, alCambiar: pintarTarjetas });
     cargar();
     // Enlace directo a un expediente (desde Inicio o un aviso)
     if(u.c){ guardarUrl(); abrirCliente(u.c, { tab: u.t, revisar: u.revisar, pedir: u.pedir }); }

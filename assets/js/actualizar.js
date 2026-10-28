@@ -1,7 +1,7 @@
 // Actualizar datos: recibe varios archivos, reconoce cada uno por sus columnas y los carga por lotes.
 (function(){
   'use strict';
-  const { $, esc, rpc, toast, normalizeStr, fecha, hora, plural, esqueleto, cache } = window.Comun;
+  const { $, esc, rpc, toast, normalizeStr, fecha, fechaDia, hora, plural, capital, esqueleto, cache } = window.Comun;
   const S = window.Sesion;
   const LOTE = 400;
   const COLUMNAS = { s: 'sucursal', c: 'cliente', t: 'tipo', d: 'documento', f: 'fecha_instalacion', n: 'nombre', e: 'equipo', p: 'plan', es: 'estado', ca: 'categoria', cx: 'cxcpendiente', te: 'telefono', di: 'direccion' };
@@ -202,7 +202,11 @@
     await leerFilas(file, (f) => {
       if(!cab){
         const c = f.map(clave); tipo = reconocer(c);
-        if(tipo){ cab = c; if(tipo === 'tad'){ idx = {}; Object.keys(COLUMNAS).forEach((k) => { idx[k] = cab.indexOf(COLUMNAS[k]); }); iPon = cab.indexOf('pon') >= 0 ? cab.indexOf('pon') : cab.findIndex((h) => /(^|_)pon(_|$)/.test(h)); } }
+        if(tipo){ cab = c; if(tipo === 'tad'){ idx = {}; Object.keys(COLUMNAS).forEach((k) => { idx[k] = cab.indexOf(COLUMNAS[k]); }); iPon = cab.indexOf('pon') >= 0 ? cab.indexOf('pon') : cab.findIndex((h) => /(^|_)pon(_|$)/.test(h));
+          // Lote 28/10: última suspensión, última habilitación y estatus actual, si el TAD los trae (los nombres cambian: se buscan por palabra)
+          idx.us = cab.findIndex((h) => /susp/.test(h) && /fec|ult|^suspension$/.test(h)); if(idx.us < 0) idx.us = cab.findIndex((h) => /susp/.test(h) && h !== COLUMNAS.es);
+          idx.uh = cab.findIndex((h) => /habilit|reactiv|reconex/.test(h) && h !== COLUMNAS.es);
+          idx.ea = cab.findIndex((h) => /(status|estatus|estado)_actual/.test(h)); if(idx.ea < 0) idx.ea = cab.findIndex((h) => h === 'status' || h === 'estatus'); } }
         else if(++vistas >= 6) return false;
         return true;
       }
@@ -211,6 +215,9 @@
         const o = {};
         Object.keys(COLUMNAS).forEach((k) => { o[k] = idx[k] >= 0 ? limpio(f[idx[k]]) : ''; });
         o.f = fechaIso(o.f);
+        if(idx.us >= 0){ const v = fechaIso(limpio(f[idx.us])); if(v) o.us = v; }
+        if(idx.uh >= 0){ const v = fechaIso(limpio(f[idx.uh])); if(v) o.uh = v; }
+        if(idx.ea >= 0){ const v = limpio(f[idx.ea]); if(v) o.ea = v.slice(0, 60); }
         const doc = soloDoc(o.d);
         if(/[1-9]/.test(o.s) && /[1-9]/.test(o.c)) indice.push({ s: o.s, c: o.c, e: o.e, t: o.t, d: o.d, n: o.n, p: o.p, ca: o.ca, es: o.es, di: o.di, pon: iPon >= 0 ? limpio(f[iPon]) : '' });
         if(!/^[1-9][0-9]{4,9}$/.test(doc) || !o.n || !/[1-9]/.test(o.s) || !/[1-9]/.test(o.c)){ malas++; return true; }
@@ -369,7 +376,7 @@
     ocupado = true; a.estado = 'subiendo'; a.fase = 'Índice'; pintar();
     try { const ri = await subirIndice(a); a.resultado = (a.resultadoBase || '') + textoIndice(ri); toast('Índice de residenciales al día'); }
     catch (e) { a.indiceFallo = e.message; a.fase = null; toast('El índice se detuvo otra vez. ' + e.message + '. Vuelve a tocar Seguir con el índice: retoma donde quedó', 'error'); }
-    a.estado = 'lista'; ocupado = false; pintar(); ultimas();
+    a.estado = 'lista'; ocupado = false; pintar(); cargas();
   }
   async function subirCambios(a){
     a.estado = 'subiendo'; a.hecho = 0; pintar();
@@ -435,10 +442,10 @@
     else {
       const crudos = cola.some((a) => a.tipo !== 'tad' && a.tipo !== 'dedicados' && a.tipo !== 'cambios' && a.tipo !== 'ip' && !a.soloAliados);
       fin = { titulo: plural(cola.length, 'archivo cargado', 'archivos cargados'), texto: (total !== null ? 'Ahora hay ' + num(total) + ' clientes en total. ' : '') +
-        (crudos ? 'Falta un paso: revisa abajo lo que cambia y toca Guardar cruce.' : 'Ya quedó aplicado. No hace falta cruce.') +
+        (crudos ? 'Falta un paso: toca Cruzar ahora, revisa lo que cambia y guárdalo.' : 'Ya quedó aplicado. No hace falta cruce.') +
         (cola.some((a) => a.indiceFallo && a.indice) ? ' El índice de residenciales quedó a medias: toca Seguir con el índice en el TAD de arriba.' : '') };
       cruce = null; pintar(); toast(cola.some((a) => a.indiceFallo && a.indice) ? 'TAD de empresas cargado. Falta terminar el índice' : 'Carga completa');
-      if(crudos) correrCruce(false); else estadoCruce();
+      estadoCruce();
     }
     cargas();
   }
@@ -454,24 +461,25 @@
   const FUENTES = { ip: 'IP (Clientes Empresariales)', tad: 'TAD', odoo: 'Órdenes de Odoo', instalaciones: 'Órdenes de instalación', dedicados: 'Dedicados', base_vieja: 'Base de la app anterior' };
   const marcaCruce = (c) => c.cruce === 'aliados' ? '<span class="m azul">Solo aliados</span>' : c.cruce === 'aplicado' ? '<span class="m verde">Cruce aplicado</span>' : c.cruce === 'pendiente' ? '<span class="m ambar">Falta el cruce</span>' : '<span class="m verde">Aplicada al subir</span>';
   // Última subida de cada archivo: se suben dos veces al día (mañana y tarde)
-  async function ultimas(){
-    try {
-      const u = await rpc('subidas_ultimas', {}); const z = $('ultimas'); if(!z) return;
-      const it = [['tad', 'TAD'], ['indice', 'TAD completo'], ['cambios', 'Cambios de categoría'], ['odoo', 'Odoo'], ['instalaciones', 'Órdenes de instalación'], ['ip', 'IP'], ['base_vieja', 'Base vieja'], ['dedicados', 'Dedicados']];
-      z.innerHTML = it.map((x) => '<span class="ult"><small>' + esc(x[1]) + '</small><b>' + (u[x[0]] ? esc(fecha(u[x[0]]).replace(/ de \d{4}$/, '') + ', ' + hora(u[x[0]])) : 'Nunca') + '</b></span>').join('');
-    } catch (e) {}
-  }
+  // Lote 28/10 (A11): qué toca actualizar (cada archivo, su última carga y si está al día) e historial agrupado por fecha
+  const FREC = { diaria: 'Cada mañana; a las 5 p. m. si quieres', mapa: 'Cuando cambie el mapa', cuando: 'Cuando haya archivo nuevo' };
   async function cargas(){
     try {
-      const l = await rpc('cargas_ultimas', {});
-      const t = l.find((x) => x.fuente === 'tad');
-      $('ultimoTad').textContent = t ? 'Último TAD: ' + fecha(t.en) + ' a las ' + hora(t.en) + (t.por ? ', por ' + t.por : '') + '.' : 'Todavía no se ha subido ningún TAD.';
-      ultimas();
-      $('cargas').innerHTML = l.length ? '<div class="grupo abierto">' + l.map((c, i) => '<div class="fila"' + (i === 0 ? ' style="border-top:0"' : '') + '><span class="tx"><b>' + esc(FUENTES[c.fuente] || c.fuente) + ' · ' + esc(c.archivo) + '</b><small>' + esc(fecha(c.en)) + ' a las ' + esc(hora(c.en)) + (c.por ? ' · ' + esc(c.por) : '') + ' · ' + esc(plural(c.filas, 'fila', 'filas')) +
-        (c.estado !== 'lista' ? ' · con filas sin leer' : '') + '</small></span>' + marcaCruce(c) + '</div>').join('') + '</div>'
+      const d = await rpc('actualizar_estado', {});
+      const t = (d.fuentes || []).find((x) => x.k === 'tad');
+      $('ultimoTad').textContent = t && t.ultima ? 'Último TAD: ' + fecha(t.ultima) + ' a las ' + hora(t.ultima) + '.' : 'Todavía no se ha subido ningún TAD.';
+      $('ultimas').innerHTML = '<div class="act-toca">' + (d.fuentes || []).map((x) => {
+        const est = !x.ultima && x.frecuencia !== 'cuando' ? ['rojo', 'Nunca se ha subido'] : x.al_dia ? (x.tarde ? ['azul', 'Falta la de la tarde (opcional)'] : ['verde', 'Al día']) : ['ambar', 'Toca hoy'];
+        return '<div class="act-f"><span class="tx"><b>' + esc(x.nombre) + '</b><small>' + esc(FREC[x.frecuencia] || '') + ' · ' + esc(x.ultima ? 'última: ' + fecha(x.ultima).replace(/ de \d{4}$/, '') + ', ' + hora(x.ultima) : 'sin cargas') + '</small></span>' +
+          (x.frecuencia === 'cuando' && x.al_dia && x.ultima ? '' : '<span class="chip ' + est[0] + '">' + esc(est[1]) + '</span>') + '</div>'; }).join('') + '</div>';
+      const H = d.historial || [];
+      $('cargas').innerHTML = H.length ? H.map((g, n) => '<details class="act-dia"' + (n === 0 ? ' open' : '') + '><summary><b>' + esc(capital(fechaDia(g.fecha + 'T12:00:00'))) + '</b><span>' + esc(plural(g.cargas.length, 'carga', 'cargas')) + '</span></summary>' +
+        g.cargas.map((c) => '<div class="fila"><span class="tx"><b>' + esc(FUENTES[c.fuente] || c.fuente) + ' · ' + esc(c.archivo || '') + '</b><small>' + esc(hora(c.en)) + (c.por ? ' · ' + esc(c.por) : '') + (c.filas !== null && c.filas !== undefined ? ' · ' + esc(plural(c.filas, 'fila', 'filas')) : '') +
+          (c.estado === 'con_errores' ? ' · con filas sin leer' : c.estado === 'fallo' ? ' · no terminó' : '') + '</small></span>' + (c.estado === 'fallo' ? '<span class="m rojo">No terminó</span>' : (c.resumen || {}).solo_aliados ? '<span class="m azul">Solo aliados</span>' : '') + '</div>').join('') + '</details>').join('')
         : '<div class="vacio"><b>Aún no hay cargas</b><p>Cuando subas el primer archivo aparecerá aquí con su fecha y quién lo subió.</p></div>';
     } catch (e) {
-      $('cargas').innerHTML = '<div class="vacio" role="alert"><b>No se pudo ver el historial</b><p>' + esc(e.message) + '</p></div>';
+      $('cargas').innerHTML = '<div class="vacio" role="alert"><b>No se pudo ver el historial</b><p>' + esc(e.message) + '</p><button type="button" class="btn btn-chico" id="reintentarCargas">Reintentar</button></div>';
+      toast(e.message, 'error');
     }
   }
 
@@ -493,20 +501,24 @@
   let estado = null;   // { ultimo_en, ultimo_por, pendientes }
   async function estadoCruce(){
     try { estado = await rpc('cruce_estado', {}); } catch (e) { estado = { error: e.message }; }
-    if(!cruce && estado && estado.pendientes > 0) return correrCruce(false);   // hay cargas sin cruzar: se prepara solo
-    pintarCruce();
+    pintarCruce();   // Lote 28/10: con cargas sin cruzar sale el botón "Cruzar ahora" (ya no se prepara solo)
   }
   function pintarCruce(){
     const z = $('cruce');
     if(cruzando){ z.innerHTML = esqueleto(2); return; }
     const ult = estado && estado.ultimo_en ? 'Último cruce guardado el ' + fecha(estado.ultimo_en) + ' a las ' + hora(estado.ultimo_en) + (estado.ultimo_por ? ', por ' + estado.ultimo_por : '') + '.' : 'Todavía no se ha guardado ningún cruce.';
+    if(!cruce && estado && !estado.error && estado.pendientes > 0){
+      z.innerHTML = '<div class="estado ambar"><b>' + esc(plural(estado.pendientes, 'carga sin cruzar', 'cargas sin cruzar')) + '</b><small>Cuando termines de subir todo, cruza: une líder, órdenes e instalaciones. Primero ves el resumen y después lo guardas.</small></div>' +
+        '<div class="acc" style="margin-top:12px"><button type="button" class="btn" id="cruzarAhora">Cruzar ahora</button></div><p class="nota-chica">' + esc(ult) + '</p>';
+      return;
+    }
     if(!cruce){
       z.innerHTML = estado && estado.error ? '<div class="vacio" role="alert"><b>No se pudo ver el cruce</b><p>' + esc(estado.error) + '</p><button type="button" class="btn btn-chico" id="reintentarCruce">Reintentar</button></div>'
         : '<p class="cruce-ok"><b>Todo cruzado.</b> ' + esc(ult) + ' Cuando subas órdenes de Odoo, instalaciones o la base anterior, el cruce se prepara solo.</p>';
       return;
     }
     z.innerHTML = '<b style="font-size:15.5px">' + (cruce.aplicado ? 'Cruce guardado' : 'Esto cambia al guardar el cruce') + '</b><div style="margin-top:10px">' + resumenCruce(cruce.r) + '</div>' +
-      (cruce.aplicado ? '<p class="nota-chica">Listo. Comisiones, Clientes y Por instalar ya tienen lo nuevo.</p><p style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap"><a class="btn btn-chico" href="comisiones.html">Ver comisiones</a></p>'
+      (cruce.aplicado ? '<p class="nota-chica">Listo. Comisiones, Clientes y Por instalar ya tienen lo nuevo.</p>'
         : '<div class="acc" style="margin-top:14px"><button type="button" class="btn" id="aplicarCruce">Guardar cruce</button></div><p class="nota-chica">Todavía no se ha guardado nada. ' + esc(ult) + '</p>');
   }
   async function correrCruce(aplicar){
@@ -529,6 +541,8 @@
       rpc('tad_permitir_corto', { p_tipo: k.tipo }).then(() => { corto = null; lista.forEach((x) => { if(x.estado === 'fallo') x.estado = null; }); cargarTodo(); })
         .catch((e) => { b.disabled = false; toast(e.message, 'error'); }); return; }
     if(t.closest('#aplicarCruce')){ correrCruce(true); return; }
+    if(t.closest('#cruzarAhora')){ correrCruce(false); return; }
+    if(t.closest('#reintentarCargas')){ cargas(); return; }
     const sg = t.closest('[data-seguir]'); if(sg){ const a = lista[Number(sg.dataset.seguir)]; if(a) seguirIndice(a); return; }
     const pq = t.closest('[data-para]'); if(pq){ const a = lista[Number(pq.dataset.para)]; if(a && !ocupado && !a.estado){ a.soloAliados = !a.soloAliados; pintar(); } return; }
     if(t.closest('#reintentarCruce')){ estadoCruce(); }
@@ -542,6 +556,8 @@
 
   window.Armazon.arrancar(['admin', 'analista'], { activo: null, volver: { enlace: 'inicio.html', texto: 'Inicio' } }, (p) => {
     yo = p;
+    // Lote 28/10: Actualizar es solo del administrador y la Analista Senior
+    if(p.rol !== 'admin' && !p.senior){ document.querySelector('main.pagina').innerHTML = '<div class="vacio" role="alert" style="margin-top:40px"><b>Actualizar es del administrador y la Analista Senior</b><p>Si hace falta subir un archivo, pídeselo a ellos.</p><a class="btn btn-chico" href="inicio.html">Volver al inicio</a></div>'; return; }
     pintar(); $('cruce').innerHTML = esqueleto(1); estadoCruce();
     if(window.MapaRed) window.MapaRed.montar(yo);
     $('cargas').innerHTML = esqueleto(2);

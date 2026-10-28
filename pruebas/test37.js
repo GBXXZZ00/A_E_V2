@@ -21,7 +21,7 @@ const cerrarHojas = async (p) => { for(let i = 0; i < 4 && await p.evaluate(() =
     const fila = d0.filas.find((f) => f.origen === 'corte' && f.orden_ok);
     const abrirGrupo = async (pg, lider) => { const g = pg.locator('.grupo').filter({ has: pg.locator('.grupo-cab', { hasText: lider }) }); if(!(await g.evaluate((x) => x.classList.contains('abierto')))) await g.locator('.grupo-cab').click(); };
     await abrirGrupo(p, fila.lider);
-    await p.click('[data-com="' + fila.instalacion_id + '"]'); await p.waitForSelector('#hojaComision.ver .req'); await plegables(p, 'ajustes');
+    await p.click('[data-com="' + fila.instalacion_id + '"]'); await p.waitForSelector('#hojaComision.ver [data-plg-btn="legal"]'); await plegables(p, 'ajustes');
     ok(nombre + ': la hoja de comisión ofrece "Cambiar de corte" al administrador', (await p.locator('#corteCambiar').count()) === 1 && /Cuenta en el corte de/.test(await p.textContent('#hojaComision')));
     await p.click('#corteCambiar'); await p.waitForSelector('#hojaCorteMov.ver #corteMovMotivo');
     ok(nombre + ': solo ofrece el otro corte abierto', (await p.locator('[data-corte-mov]').count()) === 1 && (await p.getAttribute('[data-corte-mov]', 'data-corte-mov')) === sig && /Pasa a /.test(await p.textContent('#hojaCorteMov')));
@@ -58,7 +58,7 @@ const cerrarHojas = async (p) => { for(let i = 0; i < 4 && await p.evaluate(() =
     const s = await contexto(nav, dispositivo); const q = await entrar(s.ctx, 'lucia', '739105'); q.on('pageerror', (e) => errores.push(e.message));
     await q.goto(H + 'comisiones.html'); await q.waitForSelector('.grupo');
     if(!(await q.locator('.grupo.abierto').count())) await q.locator('.grupo-cab').first().click();
-    await q.locator('[data-com]:visible').first().click(); await q.waitForSelector('#hojaComision.ver .req');
+    await q.locator('[data-com]:visible').first().click(); await q.waitForSelector('#hojaComision.ver [data-plg-btn="legal"]');
     ok(nombre + ': el líder no puede cambiar de corte', (await q.locator('#corteCambiar').count()) === 0);
     await s.ctx.close();
   }

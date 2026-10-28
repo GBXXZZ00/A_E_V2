@@ -3,7 +3,7 @@
   'use strict';
   const { $, toast, mensajeError } = window.Comun;
   const S = window.Sesion;
-  const pasos = ['pasoEquipo', 'pasoUsuario', 'pasoPin'];
+  const pasos = ['pasoEquipo', 'pasoUsuario', 'pasoPin', 'pasoCarga'];
   let equipo = null;       // 'ventas' | 'aliados'
   let usuario = '';        // el que se escribió o el recordado
   let modo = 'entrar';     // 'entrar' | 'actual' | 'nuevo1' | 'nuevo2'

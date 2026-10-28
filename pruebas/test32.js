@@ -18,10 +18,14 @@ function sembrar(m){
     const p = await entrar(ctx, 'marcos', '482913'); p.on('pageerror', (e) => errores.push(e.message));
     await p.waitForSelector('#zonaModulos a[data-modulo]');
     ok(nombre + ': Migraciones es un módulo en Inicio', (await p.locator('#zonaModulos a[data-modulo="migraciones"]').count()) === 1);
-    await p.goto(H + 'comisiones.html'); await p.waitForSelector('#lista .com-bloque');
+    // Lote 28/10: Instalaciones PYME y Cambios de categoría son dos tarjetas arriba; los cambios van en su propia vista
+    await p.goto(H + 'comisiones.html'); await p.waitForSelector('#segs');
+    ok(nombre + ': arriba las tarjetas Instalaciones PYME y Cambios de categoría', /Instalaciones PYME/.test(await p.textContent('#segs')) && /Cambios de categoría/.test(await p.textContent('#segs')));
+    const ti = await p.textContent('#lista');
+    ok(nombre + ': la migración no sale con las instalaciones', !ti.includes(cli.nombre) || (await p.locator('#lista [data-com]', { hasText: cli.nombre }).count()) === 0);
+    await p.goto(H + 'comisiones.html?t=cambios'); await p.waitForFunction(() => /Cambios a residencial/.test(document.getElementById('lista').textContent));
     const t = await p.textContent('#lista');
-    ok(nombre + ': el corte muestra los bloques Instalaciones y Migraciones', (await p.locator('#lista .com-bloque').count()) === 2 && /Instalaciones/.test(t) && /Migraciones/.test(t));
-    ok(nombre + ': la migración sale en su bloque y no en el de instalaciones', t.indexOf(cli.nombre) > t.indexOf('Migraciones') || (await p.locator('[data-lider^="m|"]').count()) >= 1);
+    ok(nombre + ': en Cambios de categoría sale la migración', t.includes(cli.nombre));
     ok(nombre + ': cambios a residencial e histórico pagado fuera van aparte', /Cambios a residencial/.test(t) && /Histórico pagado fuera de la app/.test(t));
     ok(nombre + ': ya no hay aviso de cambios por decidir', (await p.locator('#avisoCam .cam-dec').count()) === 0);
     ok(nombre + ': sin desborde', await sinDesborde(p));

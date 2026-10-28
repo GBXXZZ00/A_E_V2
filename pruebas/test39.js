@@ -18,8 +18,8 @@ const cerrarHojas = async (p) => { for(let i = 0; i < 5 && await p.evaluate(() =
     const abrirFila = async (f) => {
       const g = p.locator('.grupo').filter({ has: p.locator('.grupo-cab', { hasText: f.lider }) });
       if(!(await g.evaluate((x) => x.classList.contains('abierto')))) await g.locator('.grupo-cab').click();
-      await p.click('[data-com="' + f.instalacion_id + '"]'); await p.waitForSelector('#hojaComision.ver .datos-com');
-      await p.click('[data-docs-com]'); await p.waitForSelector('#docsCom:not([hidden]) [data-casilla]');
+      await p.click('[data-com="' + f.instalacion_id + '"]'); await p.waitForSelector('#hojaComision.ver [data-plg-btn="legal"]');
+      if(await p.evaluate(() => document.getElementById('docsCom').hidden)) await p.click('[data-docs-com]'); await p.waitForSelector('#docsCom:not([hidden]) [data-casilla]');
     };
     // ----- Persona natural -----
     const nat = d0.filas.find((f) => f.es_natural);

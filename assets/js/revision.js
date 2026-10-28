@@ -1,6 +1,9 @@
 // Revisión: bandejas del administrador y de la abogada, revisar varios clientes con IA y comparar lo que propuso con lo que decidió Legal.
 (function(){
   'use strict';
+  // Lote 28/10: la revisión vive en Mi trabajo (revisión en lote). Aquí solo queda Comparar con Legal.
+  { const u = new URLSearchParams(location.search); const c = u.get('c');
+    if(u.get('b') !== 'comparar'){ location.replace(/^\d+$/.test(c || '') ? 'clientes.html?c=' + c + '&t=documentos' : 'trabajo.html?v=lote'); return; } }
   const { $, esc, ic, rpc, toast, vacio, docFmt, chipEstatus, plural, iniciales, abrirHoja, cerrarHoja, hojaAbierta, fecha, casilla, cache, ESTATUS } = window.Comun;
   const S = window.Sesion;
   const POR_PAGINA = 30;

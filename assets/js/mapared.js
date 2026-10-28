@@ -34,7 +34,7 @@
       ((c.ejemplos || []).length ? lin('Cambios de estado', c.ejemplos.slice(0, 8).map((x) => x.mdt + ': ' + (NOMBRES[x.de] || x.de) + ' a ' + (NOMBRES[x.a] || x.a)).join(' · ') + (c.ejemplos.length > 8 ? ' y más' : '')) : '');
     h += lin('Consultas', k.revisadas ? plural(k.revisadas, 'consulta abierta revisada', 'consultas abiertas revisadas') + '. ' + (k.cambiaron ? plural(k.cambiaron, 'cambió', 'cambiaron') + (k.con_red ? ', ' + plural(k.con_red, 'ahora con red', 'ahora con red') : '') + ': salen marcadas como NUEVO.' : 'Ninguna cambió.') : 'Todavía no hay consultas guardadas.');
     return '<div class="aviso" style="margin-top:0"><b>Mapa cargado</b><div class="grupo abierto" style="margin-top:12px">' + h.replace('<div class="fila">', '<div class="fila" style="border-top:0">') + '</div>' +
-      '<p style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap"><a class="btn btn-chico" href="factibilidad.html">Ir a Factibilidad</a><button type="button" class="btn btn-chico btn-2" id="mapaOtro">Subir otro</button></p></div>';
+      '<p style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap"><button type="button" class="btn btn-chico btn-2" id="mapaOtro">Subir otro</button></p></div>';
   }
   function recibir(file){
     if(!yo || yo.rol !== 'admin'){ toast('Solo el administrador sube el mapa de red', 'error'); return; }

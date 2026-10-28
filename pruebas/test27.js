@@ -41,7 +41,7 @@ w.close(); sys.stdout.buffer.write(z.getvalue())`;
     const { ctx, mundo } = await contexto(nav, dispositivo);
     const p = await entrar(ctx, 'marcos', '482913'); p.on('pageerror', (e) => errores.push(e.message));
     await p.goto(H + 'actualizar.html'); await p.waitForSelector('#zona .soltar');
-    ok(nombre + ': un solo cuadro de archivos, sin panel aparte del mapa', (await p.locator('.panel').count()) === 2 && (await p.textContent('#zona').then(() => p.textContent('main'))).includes('archivo de dedicados'));
+    ok(nombre + ': un solo cuadro de archivos, sin panel aparte del mapa', (await p.locator('.panel').count()) === 3 && (await p.locator('.panel #zona ~ .sub-mapa').count()) === 1 && (await p.textContent('#zona').then(() => p.textContent('main'))).includes('archivo de dedicados'));
     ok(nombre + ': el mapa vigente se ve dentro del cuadro', (await p.textContent('.sub-mapa')).includes('Mapa de red'));
     await p.waitForFunction(() => /Todo cruzado/.test(document.querySelector('#cruce').textContent));
     ok(nombre + ': sin cargas pendientes, el cruce dice que todo está cruzado y no pide botones', (await p.locator('#cruce button').count()) === 0);
@@ -59,7 +59,7 @@ w.close(); sys.stdout.buffer.write(z.getvalue())`;
     ok(nombre + ': las columnas sin título quedan con su posición (el nombre del contacto)', cli.p_cols[5] === 'col5' && cli.p_filas[0][5] === 'PERSONA UNO');
     ok(nombre + ': cierra la carga y dice el resultado', mundo.llamadas.some((l) => l[1] === 'dedicados_cerrar') && (await p.textContent('#listaArch')).includes('1 dedicado') && (await p.textContent('#zona')).includes('No hace falta cruce'));
     await p.waitForFunction(() => /Dedicados/.test(document.querySelector('#cargas').textContent));
-    ok(nombre + ': el historial lo muestra aplicado al subir', (await p.textContent('#cargas')).includes('Aplicada al subir'));
+    ok(nombre + ': el historial lo muestra con su fecha', (await p.textContent('#cargas')).includes('Dedicados') && (await p.locator('#cargas details.act-dia').count()) >= 1);
     ok(nombre + ': sin desborde', await sinDesborde(p));
     await p.screenshot({ path: 'capturas/27-' + nombre + '-actualizar.png', fullPage: true });
     // F2: órdenes de instalación desde enero: van solo a Aliados y no entran al cruce

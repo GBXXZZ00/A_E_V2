@@ -13,7 +13,6 @@
     // En el teléfono entra solo si la barra de abajo no pasa de 5 botones (el administrador la abre desde Inicio)
     { id: 'migraciones', texto: 'Migraciones', icono: 'cambio', enlace: 'migraciones.html', roles: ['admin', 'analista', 'lider'], opcionalTel: true },
     { id: 'factibilidad', texto: 'Factibilidad', icono: 'wifi', enlace: 'factibilidad.html', roles: ['admin', 'analista', 'lider'] },
-    { id: 'revision', texto: 'Revisión', icono: 'doc', enlace: 'revision.html', roles: ['admin', 'abogado'] },
     { id: 'aliados', texto: 'Aliados', icono: 'usuarios', enlace: 'aliados.html', roles: ['admin', 'analista', 'lider', 'abogado'], soloPc: true },
     { id: 'gerencia', texto: 'Gerencia', icono: 'barras', enlace: 'gerencia.html', roles: ['admin', 'analista', 'lider', 'abogado', 'gerencia'], soloPc: true }
   ];
@@ -61,7 +60,7 @@
       document.body.appendChild(hoja);
     }
     const ini = cache.leer('inicio') || {};
-    const admin = p.rol === 'admin'; const sube = p.rol === 'admin' || p.rol === 'analista';
+    const admin = p.rol === 'admin'; const sube = p.rol === 'admin' || (p.rol === 'analista' && !!p.senior);   // Lote 28/10: Actualizar, solo administrador y Analista Senior
     hoja.innerHTML =
       '<div class="asa" aria-hidden="true"></div>' +
       '<div class="yo-cab"><span class="av" aria-hidden="true">' + esc(iniciales(p.nombre)) + '</span>' +

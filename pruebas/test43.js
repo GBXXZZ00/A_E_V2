@@ -23,10 +23,11 @@ function cargaTad(m, yo, cl, conDeuda){
     const d0 = RPC.comisiones_corte(mundo, adm, {});
     const abrirGrupo = async (pg, lider) => { const g = pg.locator('.grupo').filter({ has: pg.locator('.grupo-cab', { hasText: lider }) }); if(!(await g.evaluate((x) => x.classList.contains('abierto')))) await g.locator('.grupo-cab').click(); };
     const fila = d0.filas.find((f) => !f.pago_ok && f.orden_ok);
-    await abrirGrupo(p, fila.lider); await p.click('[data-com="' + fila.instalacion_id + '"]'); await p.waitForSelector('#hojaComision.ver .datos-com');
+    await abrirGrupo(p, fila.lider); await p.click('[data-com="' + fila.instalacion_id + '"]'); await p.waitForSelector('#hojaComision.ver [data-plg-btn="legal"]');
 
     // 1. Plegables cerrados que se abren y cierran con su estado en la cabecera
-    ok(nombre + ': los plegables empiezan cerrados', await p.evaluate(() => [...document.querySelectorAll('#hojaComision [data-plg-btn]')].every((b) => b.getAttribute('aria-expanded') === 'false' && document.getElementById(b.getAttribute('aria-controls')).hidden)));
+    ok(nombre + ': lo que falta empieza abierto y Más acciones e Hilo plegados', await p.evaluate(() => { const bs = [...document.querySelectorAll('#hojaComision [data-plg-btn]')]; const ab = (id) => (bs.find((b) => b.dataset.plgBtn === id) || {}).getAttribute('aria-expanded');
+      return bs.some((b) => b.getAttribute('aria-expanded') === 'true') && ab('ajustes') === 'false' && ab('hilo') === 'false'; }));
     ok(nombre + ': la cabecera de Pago dice que debe', /Debe|Revisar pago/.test(await p.textContent('[data-plg-btn="pago"]')));
     await plegables(p, 'pago');
     ok(nombre + ': al tocarlo se abre', (await p.getAttribute('[data-plg-btn="pago"]', 'aria-expanded')) === 'true' && await p.isVisible('#pagoNota'));
@@ -137,7 +138,7 @@ function cargaTad(m, yo, cl, conDeuda){
     const s = await contexto(nav, dispositivo); const w = await entrar(s.ctx, 'lucia', '739105'); w.on('pageerror', (e) => errores.push(e.message));
     await w.goto(H + 'comisiones.html'); await w.waitForSelector('.grupo');
     if(!(await w.locator('.grupo.abierto').count())) await w.locator('.grupo-cab').first().click();
-    await w.locator('[data-com]:visible').first().click(); await w.waitForSelector('#hojaComision.ver .datos-com');
+    await w.locator('[data-com]:visible').first().click(); await w.waitForSelector('#hojaComision.ver [data-plg-btn="legal"]');
     ok(nombre + ': el líder no ve Días para el pago, No comisiona ni Corregir', (await w.locator('#pagoDiasAbrir, #ncAbrir, [data-corregir]').count()) === 0);
     await s.ctx.close();
   }

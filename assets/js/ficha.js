@@ -14,7 +14,7 @@
 
   let yo = null; let id = 0; let F = null; let tab = 'datos'; let montada = false; let alCerrar = null; let llegada = null;
   const encima = () => { const h = hojaAbierta(); return !!h && h !== 'hojaFicha'; };
-  let hiloTodo = false; let soloNotas = false; let repExtra = 0; let actaExtra = 0;
+  let hiloTodo = false; let hiloF = 'todo'; let repExtra = 0; let actaExtra = 0;
   let fuera = null;               // { cliente, F, alTerminar }: se sube o se escribe desde otra hoja, sin abrir el expediente
   let ocupado = false;            // hay subidas en la cola
   if(window.AE_ocupado) window.AE_ocupado(() => ocupado); // Lote S: no cerrar la sesión por inactividad con subidas en curso
@@ -48,9 +48,9 @@
   async function cargar(primera){
     const mio = id; if(!mio) return;
     try {
-      const [r, rv] = await Promise.all([rpc('cliente_ficha', { p_cliente: mio }), leerRevision(mio)]);
+      const [r, rv, ga] = await Promise.all([rpc('cliente_ficha', { p_cliente: mio }), leerRevision(mio), rpc('cliente_gestiones', { p_cliente: mio }).catch(() => [])]);
       if(mio !== id) return;   // ya se abrió otro cliente: esta respuesta no es de él
-      F = r; rev = rv;
+      F = r; rev = rv; F.gesActivas = ga || [];
       // Un provisional que ya se unió: se abre el cliente real
       if(F.cliente.unido_a){ id = Number(F.cliente.unido_a); toast('Ese cliente provisional ya se unió a su cliente real'); cargar(primera); return; }
       pintarTodo(); vigilar();
@@ -103,7 +103,8 @@
     else if(o.pedir) pedir(o.pedir === '1' ? null : o.pedir);
     else if(o.campo) abrirCampo(o.campo);
     else if(o.enviar) abrirEnviar(o.enviar);
-    else if(o.casilla){ const el = document.querySelector('#tab-documentos [data-casilla="' + o.casilla + '"]'); if(el){ el.scrollIntoView({ block: 'center' }); el.classList.add('sobre'); setTimeout(() => el.classList.remove('sobre'), 1600); } }
+    // Lote 28/10: desde Mi trabajo, 'devuelto' o 'falta' llevan a la primera casilla en ese estado
+    else if(o.casilla){ const el = o.casilla === 'devuelto' || o.casilla === 'falta' ? document.querySelector('#tab-documentos .casilla.' + (o.casilla === 'devuelto' ? 'dev' : 'falta')) : document.querySelector('#tab-documentos [data-casilla="' + o.casilla + '"]'); if(el){ el.scrollIntoView({ block: 'center' }); el.classList.add('sobre'); setTimeout(() => el.classList.remove('sobre'), 1600); } }
   }
 
   // ---------- Encabezado y paso siguiente ----------
@@ -156,7 +157,8 @@
       (window.Contacto ? window.Contacto.boton('cliente', c.id, '', c.estatus + ':' + (F.documentos || []).filter((x) => x.estado === 'devuelto').length) : '');   // Lote A: contactar a quien tiene el paso
     if(window.Contacto) window.Contacto.llenar($('cabFicha'));
     const nr = F.puedo.revisar ? sinMarcar().length : porRevisar().length; const t = $('tabs').querySelector('[data-tab="documentos"]');
-    if(t) t.innerHTML = 'Documentos' + (nr ? '<em>' + nr + '</em>' : '');
+    const nb = F.puedo.revisar && nr ? nr : (F.faltantes || []).length;   // Lote 28/10: el resto ve cuántos faltan
+    if(t) t.innerHTML = 'Documentos' + (nb ? '<em>' + nb + '</em>' : '');
   }
 
   // Lote 21/10: última etiqueta de gestión; se cambia con un toque
@@ -221,15 +223,17 @@
     return '<div class="lin"><i class="' + tono + '"></i><span>' + t + glo + '</span><time>' + esc(hora(h.en)) + '</time></div>';
   }
   function pintarHilo(){
+    // Lote 28/10: filtros del hilo por tipo de movimiento
+    const TIPOS_H = { documentos: ['documento_subido', 'documento_aprobado', 'documento_devuelto'], mensajes: ['nota', 'contacto'], gestion: ['gestion'], estatus: ['estatus', 'dato', 'pago'] };
     let lista = F.hilo || [];
-    if(soloNotas) lista = lista.filter((h) => h.tipo === 'nota');
+    if(hiloF !== 'todo') lista = lista.filter((h) => (TIPOS_H[hiloF] || []).indexOf(h.tipo) >= 0);
     const LIM = 12; const visibles = hiloTodo ? lista : lista.slice(0, LIM);
     let h = ''; let ultimoDia = '';
     visibles.forEach((x) => { const d = dia(x.en); if(d !== ultimoDia){ h += '<span class="dia">' + esc(d) + '</span>'; ultimoDia = d; } h += lineaHilo(x); });
-    if(!visibles.length) h = '<p class="nota-chica">' + (soloNotas ? 'Todavía no hay notas.' : 'Todavía no hay movimientos. Lo que pase con este cliente queda anotado aquí.') + '</p>';
+    if(!visibles.length) h = '<p class="nota-chica">' + (hiloF !== 'todo' ? 'Nada de este tipo todavía. Toca Todo para ver el resto.' : 'Todavía no hay movimientos. Lo que pase con este cliente queda anotado aquí.') + '</p>';
     if(!hiloTodo && lista.length > LIM) h += '<button type="button" class="enlace" id="hiloMas" style="justify-self:start">Ver ' + plural(lista.length - LIM, 'movimiento anterior', 'movimientos anteriores') + '</button>';
     const previa = $('nota'); const texto = previa ? previa.value : ''; const conFoco = previa && document.activeElement === previa;
-    $('tab-hilo').innerHTML = '<div class="tit"><div class="filtros" style="margin-top:0"><button type="button" data-hilo="todo" class="' + (soloNotas ? '' : 'on') + '" data-chico>Todo</button><button type="button" data-hilo="notas" class="' + (soloNotas ? 'on' : '') + '" data-chico>Notas</button></div></div>' +
+    $('tab-hilo').innerHTML = '<div class="tit"><div class="filtros" style="margin-top:0" role="group" aria-label="Filtrar el hilo">' + [['todo', 'Todo'], ['documentos', 'Documentos'], ['mensajes', 'Mensajes'], ['gestion', 'Gestión'], ['estatus', 'Estatus']].map((x) => '<button type="button" data-hilo="' + x[0] + '" class="' + (hiloF === x[0] ? 'on' : '') + '" aria-pressed="' + (hiloF === x[0]) + '" data-chico>' + x[1] + '</button>').join('') + '</div></div>' +
       '<div class="hilo" id="hilo">' + h + '</div>' +
       '<form class="escribir" id="formNota" autocomplete="off"><label class="solo-lector" for="nota">Escribe una nota</label><input id="nota" maxlength="1000" placeholder="Escribe una nota" enterkeyhint="send">' +
       '<button type="submit" aria-label="Guardar nota">' + ic('enviar') + '</button></form>';
@@ -315,16 +319,19 @@
     const c = F.cliente; const fal = F.faltantes || []; const nr = F.puedo.revisar ? sinMarcar().length : porRevisar().length;
     const aprobados = (F.documentos || []).filter((d) => d.estado === 'aprobado').length;
     const pedirM = c.estatus === 'grandes_negocios' ? 'pedir' : 'recordar';
-    let h = presencialHtml() + suspHtml() + '<div class="res"><div class="r"><b>' + fal.length + '</b><small>' + (fal.length === 1 ? 'Falta' : 'Faltan') + '</small></div><div class="a"><b>' + nr + '</b><small>Por revisar</small></div><div class="v"><b>' + aprobados + '</b><small>' + (aprobados === 1 ? 'Aprobado' : 'Aprobados') + '</small></div></div>' +
-      '<div class="acc"><button type="button" class="btn btn-chico btn-2" id="subirVarios">' + ic('subir') + 'Subir varios</button>' +
-        (F.puedo.revisar && nr ? '<button type="button" class="btn btn-chico" id="revisarTodo">Revisar ' + nr + '</button>'
-          : fal.length ? '<button type="button" class="btn btn-chico" data-paso="pedir:' + pedirM + '">Pedir lo que falta</button>' : '') +
+    // Lote 28/10: arriba, qué falta en una línea y el botón para pedirlo; abajo, la zona para soltar varios archivos
+    const falN = fal.map((x) => x.t + (x.e === 'devuelto' ? ' (devuelta)' : ''));
+    let h = presencialHtml() + suspHtml() +
+      (fal.length ? '<div class="fd-sum" data-faltan="' + fal.length + '"><span><b>' + (fal.length === 1 ? 'Falta 1:' : 'Faltan ' + fal.length + ':') + '</b> ' + esc(C.lista(falN)) + '</span><button type="button" class="btn btn-chico" data-paso="pedir:' + pedirM + '">Pedir lo que falta</button></div>'
+        : '<div class="fd-sum ok" data-faltan="0"><span><b>No falta nada.</b> ' + esc(plural(aprobados, 'documento aprobado', 'documentos aprobados')) + (nr ? ', ' + esc(plural(nr, 'por revisar', 'por revisar')) : '') + '</span></div>') +
+      '<div class="acc">' +
+        (F.puedo.revisar && nr ? '<button type="button" class="btn btn-chico" id="revisarTodo">Revisar ' + nr + '</button>' : '') +
         (F.puedo.revisar && nr > 1 ? '<button type="button" class="btn btn-chico btn-2" id="elegirAprobar" aria-pressed="' + selMode + '">' + (selMode ? 'Cancelar' : 'Aprobar seleccionados') + '</button>' : '') + '</div>' +
       (selMode ? '<div class="al-banda azul sel-barra" role="status"><b>' + (selDocs.size ? plural(selDocs.size, 'documento elegido', 'documentos elegidos') : 'Toca los documentos que quieres aprobar') + '</b><p>Quedan marcados para aprobar; se aprueban al cerrar la revisión.</p>' +
         '<p style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap"><button type="button" class="btn btn-chico" id="aprobarSel"' + (selDocs.size ? '' : ' disabled') + '>Aprobar ' + (selDocs.size || '') + '</button><button type="button" class="btn btn-chico btn-2" id="selTodos">Elegir todos</button></p></div>' : '') +
       (c.aprobado_por_subir ? '<div class="al-banda ambar" role="note"><b>Aprobado, documentos por subir</b><p>Legal ya lo aprobó. Sube lo que falta: no cambia su aprobación ni su comisión.</p></div>' : '') +
       bloqueIA() + barraRevision() +
-      '<p class="nota-chica solo-pc" style="text-align:center">También puedes arrastrar un archivo desde tu computadora y soltarlo sobre una casilla.</p>' +
+      '<button type="button" class="fd-drop" id="subirVarios">' + ic('subir') + '<span><span class="solo-pc">Arrastra aquí varios archivos y marca qué trae cada uno</span><span class="solo-tel">Toca para subir varios archivos y marca qué trae cada uno</span></span></button>' +
       '<p class="nota-chica' + (colaDe(id) ? '' : ' hidden') + '" id="estadoSubida" role="status"><span class="cargando-linea"><i></i><span id="textoSubida">' + esc(textoCola()) + '</span></span></p>' + driveHtml();
     h += casillasHtml(false) + historialRevisiones();
     $('tab-documentos').innerHTML = h;
@@ -555,24 +562,30 @@
     const diasGestion = diasEntre(c.creado_en, new Date().toISOString());
     const r1 = (F.representantes || []).find((x) => x.orden === 1) || {};
     const tj = (titulo, fuerte, lineas, extra) => '<div class="tj"><span class="tj-t">' + titulo + '</span><b>' + fuerte + '</b>' + lineas.filter(Boolean).map((l) => '<small>' + l + '</small>').join('') + (extra || '') + '</div>';
-    let h = suspHtml() + '<div class="tarjs">' +
+    // Lote 28/10: franja con la gestión activa del cliente (si la hay)
+    const ESTG = {}; ((window.Gestiones || {}).ESTADOS || [['contactado', 'Contactado'], ['sin_contacto', 'Sin contacto'], ['esperando', 'Esperando'], ['cumplido', 'Cumplido'], ['resuelto', 'Resuelto']]).forEach((x) => { ESTG[x[0]] = x[1]; });
+    const TONOG = { contactado: 'azul', sin_contacto: 'rojo', esperando: 'ambar', cumplido: 'verde', resuelto: 'gris' };
+    let h = suspHtml() + (F.gesActivas || []).map((g) => '<div class="fg-ges"><span class="chip azul">Gestión activa</span><b>' + esc(g.nombre) + '</b><span class="chip ' + (TONOG[g.estado] || 'gris') + '">' + esc(ESTG[g.estado] || g.estado) + '</span>' +
+      (g.desde ? '<small>desde ' + esc(fecha(g.desde)) + '</small>' : '') + (window.Gestiones ? '<button type="button" class="enlace" data-ges-ficha="' + esc(g.gestion) + '">Cambiar estado · Marcar cumplida</button>' : '') + '</div>').join('') + '<div class="tarjs">' +
       tj(c.es_natural ? 'Titular' : 'Empresa', esc(c.nombre), [esc(rifDe(c)) + ' · ' + esc(c.seg), esc(c.direccion || s0.direccion || 'Sin dirección')]) +
       tj(c.es_natural ? 'Contacto' : 'Representante', esc(r1.nombre || (c.es_natural ? c.nombre : 'Sin nombre todavía')), [esc(r1.telefono || c.telefono || s0.telefono || 'Sin teléfono'), esc(r1.correo || c.correo_empresa || 'Sin correo')]) +
       tj('Líder', esc(c.lider || 'Sin asignar'), [c.estatus === 'contrato_firmado' ? 'Gestión cerrada' : 'En gestión hace ' + esc(plural(diasGestion, 'día', 'días'))], F.puedo.lider_cambiar ? '<button type="button" class="enlace" data-lider-cambiar="pyme" style="margin-top:8px">Cambiar líder</button>' : '') +
       tj('Estatus legal', chipEstatus(c.estatus), [], F.puedo.estatus ? '<button type="button" class="enlace" id="cambiarEstatus" style="margin-top:8px">Cambiar</button>' : '') + '</div>';
     const soloDed = !!c.dedicado && !s.length;   // dedicado sin servicios PYME: sus enlaces van abajo
-    h += soloDed ? '<div>' : '<div class="serv-n"><b>' + s.length + '</b><span>' + (s.length === 1 ? 'Servicio' : 'Servicios') + ' en este ' + (c.es_natural ? 'documento' : 'RIF') + '</span></div><div class="tarjs">';
+    h += soloDed ? '<div>' : '<div class="serv-n"><b>' + s.length + '</b><span>' + (s.length === 1 ? 'Servicio' : 'Servicios') + ' en este ' + (c.es_natural ? 'documento' : 'RIF') + '</span></div><div class="srv-lista">';
     if(!s.length && !soloDed) h += '<div class="tj"><span class="tj-t">Sin instalar<span class="chip azul">Por instalar</span></span><b>Todavía sin servicio</b><small>' +
       (F.orden ? 'Orden de Odoo ' + esc(F.orden.numero) + ' del ' + esc(fecha(F.orden.creada_en)) + ' · ' + esc(F.orden.etapa || '') : 'Puedes adelantar los documentos mientras se instala.') + '</small></div>';
+    // Lote 28/10: cada servicio en un rectángulo de ancho completo, con su IP y la carta y proforma
     s.forEach((x) => {
-      h += '<div class="tj"><span class="tj-t">' + esc(x.sucursal + '-' + x.codigo) + estadoServicio(x.estado) + '</span><b>' + esc(x.plan || x.categoria || 'Servicio') + '</b>' +
-        '<small>' + esc(sucursal(x.sucursal)) + ' · ' + (x.fecha_instalacion ? 'Instalado el ' + esc(fecha(x.fecha_instalacion, true)) : 'Sin fecha de instalación') + '</small>' +
-        (x.equipo ? '<small>Serial ' + esc(x.equipo) + '</small>' : '') +
-        (x.con_deuda ? '<small style="color:var(--rojo);font-weight:600">Con deuda en el TAD</small>' : '') +
-        '<div class="ip-l"><span>' + (x.ip || x.ip6 ? [x.ip ? 'IPv4 ' + esc(x.ip) : '', x.ip6 ? 'IPv6 ' + esc(x.ip6) : ''].filter(Boolean).join(' · ') : 'IP pendiente por asignar') + '</span>' +
+      const env = x.bienvenida_envio || x.proforma_envio;
+      h += '<div class="srv-r"><span class="srv-c">' + esc(x.sucursal + '-' + x.codigo) + '</span><span class="srv-p">' + esc(x.plan || x.categoria || 'Servicio') + '</span>' +
+        '<span class="srv-e">' + (x.con_deuda ? '<span class="chip rojo">Con deuda</span>' : estadoServicio(x.estado)) + '</span>' +
+        '<small class="srv-m">' + [esc(sucursal(x.sucursal)), x.fecha_instalacion ? 'instalado el ' + esc(fecha(x.fecha_instalacion, true)) : 'sin fecha de instalación', x.equipo ? 'serial ' + esc(x.equipo) : ''].filter(Boolean).join(' · ') + '</small>' +
+        '<div class="srv-ip"><span>' + (x.ip || x.ip6 ? [x.ip ? 'IPv4 ' + esc(x.ip) : '', x.ip6 ? 'IPv6 ' + esc(x.ip6) : ''].filter(Boolean).join(' · ') : 'IP pendiente por asignar') + '</span>' +
+          (esNuevo() ? (F.puedo.enviar ? '<button type="button" class="chip ' + (env ? 'verde' : 'ambar') + ' chip-btn" data-enviar="' + esc(x.id) + '" title="' + esc(estadoEnvio(x)) + '">' + (env ? 'Carta y proforma enviadas' : 'Carta y proforma por enviar') + '</button>'
+            : '<span class="chip ' + (env ? 'verde' : 'ambar') + '" title="' + esc(estadoEnvio(x)) + '">' + (env ? 'Carta y proforma enviadas' : 'Carta y proforma por enviar') + '</span>') : '') +
           (F.puedo.ip ? '<button type="button" class="enlace" data-ip="' + esc(x.id) + '">' + (x.ip || x.ip6 ? 'Cambiar IP' : 'Escribir IP') + '</button>' : '') + '</div>' +
-        ipConfHtml(x) +
-        (F.puedo.enviar && esNuevo() ? '<div class="ip-l env-l"><span>' + esc(estadoEnvio(x)) + '</span><button type="button" class="mini" data-enviar="' + esc(x.id) + '">Proforma y carta</button></div>' : '') + '</div>';
+        ipConfHtml(x) + '</div>';
     });
     h += '</div>';
     if(c.dedicado && window.FichaDedicado) h += window.FichaDedicado.datos(F, yo);
@@ -680,7 +693,7 @@
     const D = window.Documentos; const tipo = env.tipo; let files;
     try { files = archivosEnvio(tipo, num); } catch (e) { toast('No se pudo armar el PDF. Intenta de nuevo', 'error'); return; }
     const msj = mensajeWa(F, tipo);
-    copiar(D.telFmt(num));
+    try { copiar(D.telFmt(num)); } catch (e) {}   // si no deja copiar, igual se comparte
     if(puedeCompartir()){
       try { await navigator.share({ files, text: msj }); }
       catch (e) { if(e && e.name === 'AbortError') return; toast('No se pudo abrir Compartir. Intenta de nuevo', 'error'); return; }
@@ -734,11 +747,17 @@
       const corteTxt = i.estado === 'no_comisiona' ? 'Los dedicados no comisionan' : i.estado === 'cumple' ? 'Entra en el corte de ' + mes(i.corte_pago || i.corte)
         : i.estado === 'perdida' ? 'No cumplió en ' + mes(i.corte) + ' ni en el corte siguiente' : i.estado === 'ultimo_corte' ? 'Era de ' + mes(i.corte) + '. Límite el ' + fecha(F.corte.limite || F.corte.fin)
         : 'Corte de ' + mes(i.corte) + ', límite el ' + fecha(F.corte.limite || F.corte.fin).split(' de ')[0];
-      h += '<div class="secc">' + esc(i.sucursal + '-' + i.codigo) + '<span class="der">Instalado el ' + esc(fecha(i.instalada_en)) + '</span></div><div class="datos" data-instalacion="' + i.id + '">' +
-        fila('Estado', '<span class="chip ' + e[0] + '">' + e[1] + '</span>') + fila('Corte', esc(capital(corteTxt))) +
-        (i.comisiona ? fila('Legal', legalOk ? '<span class="chip verde">Cumple</span> ' + esc(fecha(c.legal_ok_en)) : chipEstatus(c.estatus)) +
-          fila('Instalación', (i.pago_ok_en ? '<span class="chip verde">Pagada</span> ' + esc(fecha(i.pago_ok_en)) + (i.pago_manual ? ' · a mano' : '') : '<span class="chip">Debe instalación</span>') +
-            (F.puedo.pago ? '<button type="button" class="enlace" data-pago="' + i.id + '" data-pagada="' + (i.pago_ok_en ? '0' : '1') + '" style="margin-left:auto">' + (i.pago_ok_en ? 'Quitar pago' : 'Marcar pagada') + '</button>' : '')) : '') + '</div>';
+      // Lote 28/10: una tarjeta por servicio con Legal, Pago y Orden en chips
+      const nf = (F.faltantes || []).length;
+      const chips = i.comisiona ? '<div class="fc-ck">' +
+        '<span class="chip ' + (legalOk ? 'verde">Legal: cumple' : nf ? 'ambar">Legal: ' + (nf === 1 ? 'falta 1' : 'faltan ' + nf) : 'ambar">Legal: ' + esc(((C.ESTATUS || {})[c.estatus] || {}).t || 'en curso')) + '</span>' +
+        '<span class="chip ' + (i.pago_ok_en ? 'verde">Pago: pagada' + (i.pago_manual ? ' a mano' : '') : 'rojo">Pago: debe instalación') + '</span>' +
+        (i.orden ? '<span class="chip ' + (i.orden_ok === false ? 'ambar' : 'verde') + '">Orden ' + esc(i.orden) + '</span>' : '<span class="chip ambar">Sin orden</span>') + '</div>'
+        : '<div class="fc-ck"><span class="chip ' + e[0] + '">' + e[1] + '</span></div>';
+      h += '<div class="secc">' + esc(i.sucursal + '-' + i.codigo) + '<span class="der">Instalado el ' + esc(fecha(i.instalada_en)) + '</span></div><div class="fc-card" data-instalacion="' + i.id + '">' + chips +
+        '<b>' + esc(capital(corteTxt)) + '</b>' + (i.comisiona && i.estado !== 'cumple' ? '<small>Si no cumple, pasa al corte siguiente' + (i.dueno ? '. Dueño: ' + esc(i.dueno) : '') + '.</small>' : i.dueno ? '<small>Dueño: ' + esc(i.dueno) + '.</small>' : '') +
+        '<div class="fc-acc">' + (F.puedo.pago && i.comisiona ? '<button type="button" class="enlace" data-pago="' + i.id + '" data-pagada="' + (i.pago_ok_en ? '0' : '1') + '">' + (i.pago_ok_en ? 'Quitar pago' : 'Marcar pagada') + '</button>' : '') +
+          (i.comisiona && yo && yo.rol !== 'gerencia' && !/comisiones\.html$/.test(location.pathname) ? '<a class="enlace" href="comisiones.html?q=' + encodeURIComponent(i.codigo) + '">Abrir en Comisiones</a>' : '') + '</div></div>';
     });
     $('tab-comision').innerHTML = h;
   }
@@ -750,17 +769,22 @@
     const hayCtr = !c.es_natural || !!D || (F.documentos || []).some((d) => d.casilla.indexOf('contrato_') === 0);
     const hayVgt = !!D && (!!D.vgt || (D.contratos || []).some((k) => k.tipo === 'vgt'));
     const hayCom = (F.comision || []).length > 0;
-    tb.querySelector('[data-tab="contrato"]').classList.toggle('hidden', !hayCtr);
-    tb.querySelector('[data-tab="vgt"]').classList.toggle('hidden', !hayVgt);
+    // Lote 28/10: en un dedicado, contratos y VGT van juntos en una pestaña (pantalla 9 de la maqueta)
+    const junto = !!D && hayVgt; const nPend = (c.contrato_pend ? 1 : 0) + (junto ? ((D.vgt && D.vgt.faltan) || 0) : 0);
+    tb.querySelector('[data-tab="contrato"]').classList.toggle('hidden', !hayCtr && !junto);
+    tb.querySelector('[data-tab="vgt"]').classList.toggle('hidden', !hayVgt || junto);
     tb.querySelector('[data-tab="comision"]').classList.toggle('hidden', !hayCom);
-    const bc = tb.querySelector('[data-tab="contrato"]'); bc.innerHTML = 'Contrato' + (c.contrato_pend ? '<em>!</em>' : '');
-    $('tab-contrato').innerHTML = hayCtr && window.FichaDedicado ? window.FichaDedicado.contratos(F, yo) : '';
-    $('tab-vgt').innerHTML = hayVgt && window.FichaDedicado ? window.FichaDedicado.vgt(F, yo) + grupoVgt() : '';
-    if((tab === 'contrato' && !hayCtr) || (tab === 'vgt' && !hayVgt) || (tab === 'comision' && !hayCom)) irTab('datos', true);
+    const bc = tb.querySelector('[data-tab="contrato"]'); bc.innerHTML = (junto ? 'Contratos y VGT' : 'Contrato') + (nPend ? '<em>' + (junto ? nPend : '!') + '</em>' : '');
+    $('tab-contrato').innerHTML = (hayCtr && window.FichaDedicado ? window.FichaDedicado.contratos(F, yo) : '') +
+      (junto && window.FichaDedicado ? '<div class="secc ctr-vgt-t">VGT</div>' + window.FichaDedicado.vgt(F, yo) + grupoVgt() : '');
+    $('tab-vgt').innerHTML = hayVgt && !junto && window.FichaDedicado ? window.FichaDedicado.vgt(F, yo) + grupoVgt() : '';
+    if(tab === 'vgt' && junto){ irTab('contrato', true); return; }
+    if((tab === 'contrato' && !hayCtr && !junto) || (tab === 'vgt' && !hayVgt) || (tab === 'comision' && !hayCom)) irTab('datos', true);
   }
   function tabVisible(t){ const b = $('tabs').querySelector('[data-tab="' + t + '"]'); return !!b && !b.classList.contains('hidden'); }
   function irTab(t, sinUrl){
     if(t === 'contratos') t = 'contrato';   // enlaces viejos
+    if(t === 'vgt' && F && F.cliente.dedicado && !tabVisible('vgt')) t = 'contrato';   // Lote 28/10: el VGT va dentro de Contratos y VGT
     if(TABS.indexOf(t) < 0 || (F && !tabVisible(t))) t = 'datos';
     tab = t;
     Array.prototype.forEach.call($('tabs').querySelectorAll('button'), (b) => { const on = b.dataset.tab === t; b.classList.toggle('on', on); b.setAttribute('aria-selected', String(on)); });
@@ -1121,10 +1145,11 @@
       const pdf = it.files[0].type === 'application/pdf' || /\.pdf$/i.test(it.files[0].name);
       const mini = pdf ? 'PDF' : it.minis[0] ? '<img src="' + esc(it.minis[0]) + '" alt="">' : 'Foto';
       const marcadas = Object.keys(it.marcas);
-      return '<div class="arch" data-item="' + n + '"><span class="mini">' + mini + '</span><div>' +
+      return '<div class="arch ' + (marcadas.length ? 'ok' : 'no') + '" data-item="' + n + '"><span class="mini">' + mini + '</span><div>' +
         '<div class="nom"><span>' + esc(it.files.length > 1 ? it.files.length + ' fotos: ' + it.files.map((f) => f.name).join(', ') : it.files[0].name) + '</span>' +
           '<button type="button" class="quitar" data-quitar="' + n + '" aria-label="Quitar este archivo">' + ic('x') + '</button></div>' +
-        '<div class="checks" role="group" aria-label="Qué trae">' + ops.map((o) => '<button type="button" class="ck' + (it.marcas[o.k] ? ' on' : '') + '" aria-pressed="' + !!it.marcas[o.k] + '" data-marca="' + o.k + '">' + ic('check') + esc(o.t) + '</button>').join('') + '</div>' +
+        '<div class="checks" role="group" aria-label="Qué trae">' + ops.map((o) => { const p = o.k.split(':'); const ap = !o.libre && !it.marcas[o.k] && (docDe(p[0], Number(p[1])) || {}).estado === 'aprobado';   // Lote 28/10: lo aprobado sale apagado
+          return '<button type="button" class="ck' + (it.marcas[o.k] ? ' on' : '') + '" aria-pressed="' + !!it.marcas[o.k] + '" data-marca="' + o.k + '"' + (ap ? ' disabled' : '') + '>' + ic('check') + esc(o.t + (ap ? ' · aprobado' : '')) + '</button>'; }).join('') + '</div>' +
         (it.marcas['otro:0'] ? '<label class="rotulo arriba" for="lt' + n + '">Nombre del documento</label><input class="campo" id="lt' + n + '" data-titulo="' + n + '" maxlength="80" autocomplete="off" value="' + esc(it.titulo || '') + '">' : '') +
         (it.files.length > 1 ? '<button type="button" class="enlace" data-separar="' + n + '">Son documentos distintos: separar las fotos</button>' : '') +
         (!marcadas.length ? '<div class="nota2" style="color:var(--rojo)">Marca qué trae para poder guardarlo.</div>'
@@ -1133,10 +1158,13 @@
         '</div></div>';
     }).join('');
     $('hojaVarios').innerHTML = '<div class="hoja-cab"><div class="tx"><b id="tVarios">Subir varios</b><small>' + esc((varF || F).cliente.nombre) + '</small></div><button type="button" class="cerrar" data-cierra="1" aria-label="Cerrar">' + ic('x') + '</button></div>' +
-      '<div class="hoja-cuerpo"><button type="button" class="soltar" id="soltar" data-foco>' + ic('subir', 'g') + '<b>' + (lote.length ? 'Agregar más archivos' : 'Elige todos los archivos juntos') + '</b>Después marca qué trae cada uno.</button>' +
+      '<div class="hoja-cuerpo"><div class="sv-pasos" aria-label="Pasos"><span class="' + (lote.length ? 'hecho' : 'on') + '"><i>' + (lote.length ? ic('check') : '1') + '</i>Elegir archivos</span>' +
+        '<span class="' + (lote.length && sinMarcar ? 'on' : lote.length ? 'hecho' : '') + '"><i>' + (lote.length && !sinMarcar ? ic('check') : '2') + '</i>Marcar qué trae cada uno</span><span class="' + (lote.length && !sinMarcar ? 'on' : '') + '"><i>3</i>Guardar</span></div>' +
+        (lote.length ? '<p class="nota-chica">Toca lo que trae cada archivo. Si trae dos cosas (por ejemplo cédula y RIF en la misma hoja), marca las dos. Lo ya aprobado sale apagado.</p>' : '') +
+        '<button type="button" class="soltar" id="soltar" data-foco>' + ic('subir', 'g') + '<b>' + (lote.length ? 'Agregar más archivos' : 'Elige todos los archivos juntos') + '</b>Después marca qué trae cada uno.</button>' +
         (lote.length ? '<div class="secc">' + plural(lote.length, 'archivo', 'archivos') + '. Marca qué trae cada uno</div>' + filas : '<p class="nota-chica" style="text-align:center;margin-top:14px">Fotos o PDF. Un escaneo con varios documentos se puede marcar en varias casillas.</p>') + '</div>' +
-      '<div class="hoja-pie col"><button type="button" class="btn" id="guardarLote"' + (!lote.length || sinMarcar ? ' disabled' : '') + '>Guardar' + (lote.length ? ' ' + lote.length : '') + '</button>' +
-        '<p id="progLote">' + (!lote.length ? 'Todavía no has elegido archivos.' : sinMarcar ? 'Falta marcar ' + plural(sinMarcar, 'archivo', 'archivos') + '.' : 'Todo marcado. Quedan por revisar al guardar.') + '</p></div>';
+      '<div class="hoja-pie col"><button type="button" class="btn" id="guardarLote"' + (!lote.length || sinMarcar ? ' disabled' : '') + '>Guardar en sus casillas</button>' +
+        '<p id="progLote">' + (!lote.length ? 'Todavía no has elegido archivos.' : (sinMarcar ? '<b>Falta marcar ' + plural(sinMarcar, 'archivo', 'archivos') + '.</b> ' : '<b>Todo marcado.</b> ') + 'Al guardar, cada uno va a su casilla, queda en el hilo y pasa a revisión.') + '</p></div>';
   }
   async function guardarLote(){
     const libres = ACTAS.filter((n) => !docDe('acta_asamblea', n)); const items = [];
@@ -1436,7 +1464,7 @@
       return;
     }
     if(t.closest('#hiloMas')){ hiloTodo = true; pintarHilo(); return; }
-    if((b = t.closest('[data-hilo]'))){ soloNotas = b.dataset.hilo === 'notas'; pintarHilo(); return; }
+    if((b = t.closest('[data-hilo]'))){ hiloF = b.dataset.hilo; pintarHilo(); return; }
     if((b = t.closest('#hojaFicha [data-subir]'))){ fuera = null; const p = b.dataset.subir.split(':'); elegirPara(p[0], Number(p[1])); return; }
     if((b = t.closest('#hojaFicha [data-ip]'))){ fuera = null; abrirCampo('ip:' + b.dataset.ip); return; }
     if((b = t.closest('#hojaFicha [data-enviar]'))){ abrirEnviar(b.dataset.enviar); return; }
@@ -1460,6 +1488,7 @@
     if(t.closest('#selTodos')){ sinMarcar().forEach((d) => selDocs.add(d.id)); pintarDocumentos(); return; }
     if((b = t.closest('#aprobarSel'))){ aprobarSel(b); return; }
     // Gestión, líder y suspensión (cliente-gestion.js)
+    if((b = t.closest('#hojaFicha [data-ges-ficha]')) && F && window.Gestiones){ window.Gestiones.abrir(Number(b.dataset.gesFicha), { cliente: F.cliente.id, alCerrar: () => cargar() }); return; }
     if(t.closest('#hojaFicha [data-etiquetar-ficha]') && F && window.Gestion){ window.Gestion.etiquetar(F.cliente.id, () => cargar(), (F.gestion || [])[0]); return; }
     if((b = t.closest('#hojaFicha [data-lider-cambiar]')) && F && window.Gestion){ window.Gestion.lider(F, b.dataset.liderCambiar, () => cargar()); return; }
     if((b = t.closest('#hojaFicha [data-suspender]')) && F && window.Gestion){ window.Gestion.suspender(F, b.dataset.suspender === '1', () => cargar()); return; }
@@ -1611,7 +1640,7 @@
     const o = opciones || {};
     montar();
     yo = o.yo || yo; id = Number(idCliente) || 0; drive = undefined; rev = null; clearTimeout(sondeo); sondeo = null; if(!id) return;
-    F = null; fuera = null; hiloTodo = false; soloNotas = false; repExtra = 0; actaExtra = 0; selMode = false; selDocs = new Set(); llegada = { revisar: o.revisar, pedir: o.pedir, casilla: o.casilla, campo: o.campo, enviar: o.enviar }; alCerrar = o.alCerrar || null;
+    F = null; fuera = null; hiloTodo = false; hiloF = 'todo'; repExtra = 0; actaExtra = 0; selMode = false; selDocs = new Set(); llegada = { revisar: o.revisar, pedir: o.pedir, casilla: o.casilla, campo: o.campo, enviar: o.enviar }; alCerrar = o.alCerrar || null;
     $('cabFicha').innerHTML = '<div class="f-cab"><span class="mono sk" aria-hidden="true"></span><div class="tx"><span class="sk" style="width:70%;height:22px"></span><span class="sk" style="width:50%;height:12px;margin-top:8px"></span></div>' +
       '<button type="button" class="cerrar" data-cierra="1" aria-label="Cerrar">' + ic('x') + '</button></div>';
     TABS.forEach((x) => { $('tab-' + x).innerHTML = '<div class="sk-bloque"><span class="sk" style="height:64px;border-radius:16px"></span><span class="sk" style="height:64px;border-radius:16px"></span><span class="sk" style="height:64px;border-radius:16px"></span></div>'; });
@@ -1664,13 +1693,13 @@
     const D = window.Documentos; const num = tels[0].n; let files;
     try { files = archivosEnvio(env.tipo, num); } catch (e) { toast('No se pudo armar el PDF. Intenta de nuevo', 'error'); return null; }
     const msj = mensajeWa(F, env.tipo); let paso2 = false;
-    copiar(D.telFmt(num));
+    try { copiar(D.telFmt(num)); } catch (e) {}   // si no deja copiar, igual se comparte
     if(puedeCompartir()){
       try { await navigator.share({ files, text: msj }); paso2 = true; }
       catch (e) { if(e && e.name === 'AbortError') return null; toast('No se pudo abrir Compartir. Intenta de nuevo', 'error'); return null; }
     } else {
-      files.forEach((f) => window.Archivos.descargar(f, f.name));
-      window.open('https://web.whatsapp.com/send?phone=' + D.waNumero(num) + '&text=' + encodeURIComponent(msj), '_blank', 'noopener');
+      try { files.forEach((f) => window.Archivos.descargar(f, f.name)); window.open('https://web.whatsapp.com/send?phone=' + D.waNumero(num) + '&text=' + encodeURIComponent(msj), '_blank', 'noopener'); }
+      catch (e) { toast('No se pudieron descargar los PDF. Intenta de nuevo', 'error'); return null; }
     }
     try {
       if(env.tipo === 'ambas') await rpc('carta_enviar', { p_servicio: sv.id, p_canal: 'whatsapp', p_destino: D.telFmt(num) });

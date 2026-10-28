@@ -128,8 +128,8 @@ function cargarTad(m, filas){
 
     // ----- Actualizar: fecha exacta del reporte de Proham y reporte de IP -----
     const b = await contexto(nav, dispositivo, mundo); const z = await entrar(b.ctx, 'marcos', '482913'); z.on('pageerror', (e) => errores.push(e.message));
-    await z.goto(H + 'actualizar.html'); await z.waitForSelector('#ultimas .ult');
-    ok(nombre + ': Actualizar dice la última subida de cada archivo, también IP', /TAD completo/.test(await z.textContent('#ultimas')) && /IP/.test(await z.textContent('#ultimas')));
+    await z.goto(H + 'actualizar.html'); await z.waitForSelector('#ultimas .act-f');
+    ok(nombre + ': Actualizar dice qué toca y la última subida de cada archivo, también IP', /TAD/.test(await z.textContent('#ultimas')) && /IP de clientes/.test(await z.textContent('#ultimas')));
     await z.setInputFiles('#archivos', [{ name: 'cambios_categoria.csv', mimeType: 'text/csv', buffer: Buffer.from('Código;Nombre;Fecha;Categoría anterior;Categoría actual;Operador;Comentario\n777002;PANADERIA;14-10-2026;RESIDENCIAL;PYME-1GB;Juan;\n777010;Y;14-10-2026;056;PYME-1GB;RADIUS;\n') },
       { name: 'clientes_empresariales.csv', mimeType: 'text/csv', buffer: Buffer.from('Clientes Empresariales;;;;;;;;\nSucursal;Cliente;Nombre;ONT;VLAN;Fecha Asignación;Estado;IPV4;IPV6\n824 - MARACAIBO;777001;PANADERIA;48575443AAAA0001;100;01/10/2026;ASIGNADA;190.1.1.1;2803::1\n824 - MARACAIBO;;;;100;;DISPONIBLE;190.1.1.9;\n') }]);
     await z.waitForSelector('#cargarTodo');

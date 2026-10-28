@@ -149,6 +149,7 @@
     if(f.equipo === 'aliados') return (f.legal_ok ? '<span class="chip verde">Legal listo</span>' : '<span class="chip ambar">Falta legal</span>') + (f.pago_ok ? '' : '<span class="chip rojo">Debe instalación</span>');
     let h = '';
     if(f.origen === 'anterior') h += '<span class="chip azul">Del corte anterior</span>';
+    if(f.por_subir && f.legal_ok) h += '<span class="chip ambar">Archivos por subir</span>';   // no cambia la comisión
     if(f.cumple) return h + '<span class="chip verde">' + (f.excepcion ? 'Comisiona por excepción' : 'Comisiona') + '</span>';
     if(!f.orden_ok) h += '<span class="chip ambar">Por asignar</span>';
     if(!f.legal_ok) h += '<span class="chip ambar">' + (f.por_subir ? 'Archivos por subir' : 'Falta legal') + '</span>';
@@ -170,7 +171,7 @@
     const c = cartaTexto(f); const att = f.pend ? 'data-exp="' + esc(f.cliente_id) + '"' : 'data-com="' + esc(f.instalacion_id) + '" data-cliente="' + esc(f.cliente_id) + '"';
     const inst = f.pend ? '<b>Sin instalar</b><small>' + esc(f.desde ? 'desde ' + hace(f.desde).replace('hace ', '') : '') + '</small>' : '<b>' + esc(diaMes(f.instalada_en)) + '</b><small>' + esc(hace(f.instalada_en)) + '</small>';
     return '<button type="button" class="cx-fila" ' + att + '><span class="cx-c"><b>' + esc(f.nombre || 'Sin nombre') + '</b><small>' + esc(f.doc || '') + (f.codigo ? ' · ' + esc(f.codigo) : '') + '</small></span>' +
-      '<span class="cx-i">' + inst + '</span><span class="cx-o">' + esc(f.orden ? ordenCorta(f.orden) : '—') + '</span>' +
+      '<span class="cx-i">' + inst + '</span><span class="cx-o">' + (f.orden ? esc(ordenCorta(f.orden)) + (f.orden_ok ? '' : '<small class="tx-ambar">por confirmar</small>') : '<span class="tx-rojo">Sin orden</span>') + (!f.orden_ok && f.motivo ? '<small class="cx-mot">' + esc(f.motivo) + '</small>' : '') + '</span>' +
       '<span class="cx-q">' + chipsFalta(f) + '</span><span class="cx-cp"><span class="chip ' + c[0] + '">' + esc(c[1]) + '</span>' + (c[2] ? '<small>' + esc(c[2]) + '</small>' : '') + '</span></button>';
   }
   // Fila corta para la vista de cartas (pantalla 3): nombre, cuándo se instaló y el estado de la carta
@@ -228,7 +229,7 @@
     const todo = completos[k] || filas.length <= TOPE; const ver = todo ? filas : filas.slice(0, TOPE);
     const cuerpo = (cartas ? '' : '<div class="cx-th" aria-hidden="true"><span>Cliente</span><span>Instalada</span><span>Orden de Odoo</span><span>Qué falta</span><span>Carta y proforma</span></div>') +
       ver.map(cartas ? filaCarta : fila).join('') + (todo ? '' : '<button type="button" class="fila mas" data-mas="' + esc(k) + '">Ver ' + (filas.length - TOPE) + ' más</button>');
-    return '<div class="grupo cx-grupo' + (ab ? ' abierto' : '') + '" data-lider="' + esc(k) + '"><button type="button" class="grupo-cab" data-grupo="' + esc(k) + '" aria-expanded="' + !!ab + '">' + ic('abajo') +
+    return '<div class="grupo cx-grupo' + (ab ? ' abierto' : '') + '" data-lider="' + esc(titulo) + '" data-k="' + esc(k) + '"><button type="button" class="grupo-cab" data-grupo="' + esc(k) + '" aria-expanded="' + !!ab + '">' + ic('abajo') +
       (cartas ? '' : '<span class="av" aria-hidden="true">' + esc(iniciales(titulo)) + '</span>') + '<span class="tx"><b>' + esc(titulo) + '</b></span><span class="stats">' + pills + '</span></button>' +
       '<div class="grupo-cuerpo">' + (cartas ? '' : barraPendientes({ lider: titulo })) + cuerpo + '</div></div>';
   }
@@ -803,7 +804,7 @@
     const g = e.target.closest('#lista [data-grupo]');
     if(g){ const l = g.dataset.grupo; abiertos[l] = !g.parentNode.classList.contains('abierto'); g.parentNode.classList.toggle('abierto', abiertos[l]); g.setAttribute('aria-expanded', String(abiertos[l])); return; }
     const m = e.target.closest('[data-mas]');
-    if(m){ completos[m.dataset.mas] = true; const l = m.closest('.grupo').dataset.lider; abiertos[l] = true; pintarLista(); return; }
+    if(m){ completos[m.dataset.mas] = true; const g = m.closest('.grupo'); abiertos[g.dataset.k || g.dataset.lider] = true; pintarLista(); return; }
     if(e.target.closest('#lista #reintentar')){ cargar(); return; }
     const sg = e.target.closest('[data-seg]'); if(sg && d){ seg = seg === sg.dataset.seg && seg !== 'inst' ? 'inst' : sg.dataset.seg; if(seg !== 'inst') filtro = 'todos'; guardarUrl(); pintar(); return; }
     const eq = e.target.closest('#equipos [data-equipo]'); if(eq && d){ equipo = eq.dataset.equipo; if(seg === 'cartas') seg = 'inst'; filtro = 'todos'; guardarUrl(); pintar(); return; }
@@ -813,7 +814,8 @@
     // Carta y proforma: un solo botón por WhatsApp, correo opcional y ver los PDF
     const iK = () => K && K.F && (K.F.comision || []).find((x) => Number(x.id) === K.inst);
     if((b = t.closest('#cartaWa')) && iK()){ const sid = iK().servicio_id; b.disabled = true;
-      window.Ficha.cartaWhatsapp(K.F, sid, tras).then((r) => { if(r && K){ K.paso2 = Object.assign({ servicio: sid }, r); pintarComision(); } else if(document.contains(b)) b.disabled = false; }); return; }
+      window.Ficha.cartaWhatsapp(K.F, sid, tras).then((r) => { if(r && K){ K.paso2 = Object.assign({ servicio: sid }, r); pintarComision(); } else if(document.contains(b)) b.disabled = false; })
+        .catch((e) => { toast('No se pudo abrir WhatsApp. Intenta de nuevo', 'error'); if(document.contains(b)) b.disabled = false; }); return; }
     if(t.closest('#cartaOtra') && iK()){ window.Ficha.cartaOtra(K.F, iK().servicio_id, tras); return; }
     if((b = t.closest('[data-cp-pdf]')) && iK()){ window.Ficha.cartaPdf(K.F, iK().servicio_id, b.dataset.cpPdf); return; }
     if(t.closest('#verHiloNota')){ alExpediente({ tab: 'hilo' }); return; }

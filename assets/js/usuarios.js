@@ -34,6 +34,11 @@
   // Lote 27/10: quién tiene los avisos activos en algún equipo (solo lo ve el administrador)
   let AV = null;
   const avisoChip = (u) => !AV ? '' : AV[u.id] ? '<span class="chip verde">Activos' + (AV[u.id].n > 1 ? ' (' + AV[u.id].n + ')' : '') + '</span>' : '<span class="chip gris">Sin activar</span>';
+  // Lote 28/10: equipo de comisiones (Ventas corporativas, Canales de atención o Aliado); por defecto sale del rol
+  const EQC = { corporativas: 'Ventas corporativas', canales: 'Canales de atención', aliados: 'Aliado' };
+  let EQP = null;
+  async function cargarEquipos(){ try { EQP = await rpc('perfiles_equipos', {}); pintar(); } catch (e) { EQP = null; toast('No se pudo ver el equipo de cada usuario. ' + e.message, 'error'); } }
+  const equipoCom = (u) => { const x = EQP && EQP[u.id]; return x ? (EQC[x.efectivo] || '') + (x.equipo ? '' : ' (por su rol)') : ''; };
   async function cargarAvisos(){ try { AV = await rpc('avisos_activos', {}); pintar(); } catch (e) { AV = null; toast('No se pudo ver quién tiene los avisos activos. ' + e.message, 'error'); } }
   function pintar(){
     const activos = usuarios.filter((u) => u.activo).length;
@@ -52,6 +57,7 @@
         '<span class="solo-tel">' + esc(rol) + ' · ' + esc(u.usuario) + (AV && u.activo ? ' · ' + (AV[u.id] ? 'avisos activos' : 'sin avisos') : '') + '</span></span></span>' +
         '<span class="solo-pc">' + esc(rol) + '</span>' +
         '<span class="solo-pc">' + esc(EQ[u.equipo] || '') + '</span>' +
+        '<span class="solo-pc">' + esc(['lider', 'analista'].indexOf(u.rol) >= 0 && !u.gerencia ? equipoCom(u) : '') + '</span>' +
         '<span class="solo-pc">' + esc(u.nombre_odoo || 'Sin asignar') + '</span>' +
         '<span class="solo-pc">' + (u.codigo_vendedor ? '#' + esc(u.codigo_vendedor) : '') + '</span>' +
         '<span class="solo-pc">' + avisoChip(u) + '</span>' +
@@ -70,7 +76,7 @@
       const r = await llamar({ accion: 'listar' });
       usuarios = r.usuarios || [];
       cache.guardar('usuarios', usuarios);
-      pintar(); cargarAvisos();
+      pintar(); cargarAvisos(); cargarEquipos();
     } catch (e) {
       if(guardado && guardado.length){ pintar(); }
       else { $('resumen').textContent = ''; $('lista').innerHTML = '<div class="vacio"><b>No se pudo cargar la lista</b><p>' + esc(e.message) + '</p><button type="button" class="btn btn-chico" id="reintentar">Reintentar</button></div>'; }
@@ -78,7 +84,7 @@
     }
   }
 
-  function limpiarErrores(){ ['eNombre','eUsuarioF','eCodigo','ePin','eWhatsapp','eCorreo'].forEach((id) => { $(id).textContent = ''; }); }
+  function limpiarErrores(){ ['eNombre','eUsuarioF','eCodigo','ePin','eWhatsapp','eCorreo','eEquipoCom'].forEach((id) => { $(id).textContent = ''; }); }
   function abrir(u){
     editando = u || null;
     limpiarErrores();
@@ -89,6 +95,7 @@
     $('fRol').value = u ? (u.gerencia ? 'gerencia' : u.rol === 'analista' && u.senior ? 'analista_senior' : u.rol === 'analista' && u.coordinador ? 'analista_coord' : u.rol) : 'lider';
     $('fWhatsapp').value = u ? (u.whatsapp || '') : ''; $('fCorreo').value = u ? (u.correo || '') : '';
     $('fEquipo').value = u ? u.equipo : 'ventas';
+    $('fEquipoCom').value = u && EQP && EQP[u.id] ? (EQP[u.id].equipo || '') : '';
     zonaAnalista(u);
     $('fCodigo').value = u && u.codigo_vendedor ? u.codigo_vendedor : '';
     $('fOdoo').value = u ? (u.nombre_odoo || '') : '';
@@ -147,6 +154,12 @@
         if(d.rol === 'lider' && LA && $('fAnalista').value !== (LA.lideres[editando.id] || '')){
           try { await window.Comun.rpc('lider_analista', { p_lider: editando.id, p_analista: $('fAnalista').value || null }); LA.lideres[editando.id] = $('fAnalista').value || null; }
           catch (x) { $('eAnalista').textContent = x.message; b.disabled = false; b.textContent = 'Guardar'; return; }
+        }
+        const eq = $('fEquipoCom').value || null;
+        const eqAntes = EQP ? ((EQP[editando.id] || {}).equipo || null) : undefined;   // sin la lista de equipos, se guarda si eligió uno
+        if(eqAntes !== eq && !(eqAntes === undefined && eq === null)){
+          try { await rpc('perfil_equipo_guardar', { p_perfil: editando.id, p_equipo: eq }); EQP = null; cargarEquipos(); }   // el equipo efectivo lo calcula el servidor
+          catch (x) { $('eEquipoCom').textContent = x.message; b.disabled = false; b.textContent = 'Guardar'; return; }
         }
       }
       else r = await llamar(Object.assign({ accion: 'crear' }, d));

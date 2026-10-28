@@ -90,7 +90,7 @@
 
   // ---------- Nueva gestión ----------
   async function nueva(o){
-    ops = o || {}; N = { nombre: '', meta: '', plazo: '', resp: {}, clientes: [], res: null, err: {}, personas: null };
+    ops = o || {}; N = { nombre: ops.nombre || '', meta: ops.meta || '', plazo: '', resp: {}, clientes: (ops.clientes || []).slice(0, 500), res: null, err: {}, personas: null };   // lote 28/10: desde Clientes llega con los clientes de la prioridad
     hoja('hojaGesN', 'tGesN').innerHTML = cab('tGesN', 'Nueva gestión', 'Un grupo de clientes con meta, plazo y responsables') + '<div class="hoja-cuerpo" id="cGesN"></div>' +
       '<div class="hoja-pie"><button type="button" class="btn btn-2" data-cierra="1">Cancelar</button><button type="button" class="btn" data-gs="crear">Crear gestión</button></div>';
     pintarNueva(); abrirHoja('hojaGesN');

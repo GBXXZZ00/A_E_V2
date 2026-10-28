@@ -182,3 +182,13 @@ Sin nombres reales: el repo es público. "Analista Senior" es el responsable de 
 - El correo de VGT es opcional. Habilitación, planilla de tendido, factibilidad técnica, actas de cambios sustanciales y poder ya no se piden ni salen en la ficha (confunden).
 - Las pólizas vencen: 30 días antes llega el aviso al líder y al administrador.
 - El modelo de póliza (RC general, sin datos del cliente) lo comparte el administrador con los líderes.
+
+## Lote 28/10 (decidido por el administrador, `claude/lote-28oct.md`)
+- Estatus legal en 5 grupos en todo lo que cuente estatus: Sin gestionar (grandes negocios) · Faltan documentos (solicitados y pendientes) · En revisión (recibidos y en revisión) · Por firmar (por firmar y contrato en curso) · Firmado. "Grandes negocios" nunca cuenta como completo. Gerencia muestra "Contratos firmados".
+- Equipo de cada usuario (`perfiles.equipo_com`): Ventas corporativas, Canales de atención o Aliado; lo asigna el administrador en Usuarios. Por defecto: líder → Ventas corporativas; analista → Canales. La instalación es del equipo de su dueño; si la instaló un aliado, de Aliados.
+- Comisiones por corte (no por mes). Monto: 30 $ por cliente que cumple (`comision_monto`); pasan al próximo corte si no cumplen el día límite del primer corte; se pierden si ya venían del anterior.
+- Órdenes por instalar: horas con el reloj de 8 a. m. a 10 p. m. todos los días; aviso al líder dueño al pasar 24 horas (`orden_horas_alerta`, reemplaza los 15 días). Las de meses anteriores van aparte como "Viejas".
+- Cliente nuevo sin orden: con RIF y posible nombre queda provisional "Pendiente por instalar"; si hay uno parecido pregunta "¿Es este cliente?". El cruce con Odoo o el TAD lo une solo.
+- Carta de bienvenida y proforma: un solo envío, las dos juntas. Cada envío queda con quién, cuándo, canal y si fue de Canales (obligatorio) o del líder (respaldo). Sigue "por enviar" hasta que lo envíe Canales. El líder no envía las de clientes de aliados.
+- Mi trabajo: los ítems se resuelven solos al hacer la acción (no hay botón Hecho); las notas personales se marcan a mano. El administrador ve el buzón de cualquiera en solo consulta. Revisión vive en Mi trabajo (revisión en lote); `revision.html` lleva ahí y solo queda "Comparar con Legal".
+- Actualizar es solo del administrador y la Analista Senior. El cruce se lanza con "Cruzar ahora".
