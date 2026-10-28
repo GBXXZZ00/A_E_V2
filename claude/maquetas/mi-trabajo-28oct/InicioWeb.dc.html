@@ -17,58 +17,55 @@ body{margin:0;background:#F5F6F7;font-family:Inter,system-ui,sans-serif;color:#1
 .logo{font-weight:700;font-size:18px;padding:0 10px 18px}.logo span{color:#5B636E;font-weight:500}
 .nav{padding:10px 12px;border-radius:12px;font-size:14px;color:#5B636E;font-weight:500;text-decoration:none;display:flex;justify-content:space-between;align-items:center}
 .nav.on{background:#E8EEFF;color:#1F45C4;font-weight:600}
-.nav.new{border:2px dashed #2B5CFF}
 .nav em{font-style:normal;background:#C0271B;color:#fff;border-radius:999px;font-size:11px;padding:1px 7px}
 .main{flex:999 1 700px;min-width:0;padding:26px 34px;display:flex;flex-direction:column;gap:16px}
-h1{margin:0;font-size:26px}.sub{font-size:14px;color:#5B636E;margin-top:4px}
-.g{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:16px;align-items:start}
-.big{background:#111315;color:#fff;border-radius:20px;padding:20px}
-.big b{font-size:40px;display:block}.big span{font-size:13px;color:#C9CDD3}
-.old{font-size:11px;font-weight:700;color:#5B636E;background:#ECEEF1;border-radius:999px;padding:3px 8px;align-self:flex-start}
-.newt{font-size:11px;font-weight:700;color:#fff;background:#2B5CFF;border-radius:999px;padding:3px 8px}
-.card{background:#fff;border:1px solid #E3E6EA;border-radius:18px;overflow:hidden}
-.ch{display:flex;align-items:center;gap:8px;padding:12px 16px;border-bottom:1px solid #F0F1F3}
-.ch b{font-size:15px}
-.cat{display:flex;align-items:center;gap:8px;padding:11px 16px;border-top:1px solid #F5F6F7;font-size:14px;font-weight:600}
-.cat span{margin-left:auto;font-size:12px;background:#FCEDEB;color:#A32117;border-radius:999px;padding:2px 8px}
-.av{padding:9px 16px 9px 30px;font-size:13px;border-top:1px solid #F5F6F7}.av small{display:block;color:#5B636E;font-size:12px}
-.mt{border:2px solid #2B5CFF}
-.it{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:10px;align-items:center;padding:11px 16px;border-top:1px solid #F5F6F7}
-.ck{width:20px;height:20px;border-radius:6px;border:2px solid #C9CDD3}
+h1{margin:0;font-size:28px}.sub{font-size:14px;color:#5B636E;margin-top:4px}
+.g{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.3fr);gap:18px;align-items:start}
+.lbl{font-size:12px;font-weight:700;color:#5B636E;margin-bottom:8px}
+.card{background:#fff;border:2px solid #2B5CFF;border-radius:18px;overflow:hidden}
+.it{display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:10px;align-items:center;padding:11px 14px;border-top:1px solid #F5F6F7;background:#fff;border-left:0;border-right:0;border-bottom:0;width:100%;font-family:inherit;text-align:left}
+.it:first-child{border-top:0}
+.ic{width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center}
 .tt{font-size:14px;font-weight:600}.m{font-size:12px;color:#5B636E}
-.ir{font-size:13px;font-weight:600;color:#1F45C4;border:1px solid #D5DEFF;border-radius:999px;padding:6px 12px;background:#fff;font-family:inherit}
-.all{display:block;margin:12px 16px 14px;border:0;border-radius:14px;background:#2B5CFF;color:#fff;padding:13px;font-size:15px;font-weight:700;font-family:inherit;width:calc(100% - 32px)}
+.n{font-size:20px;font-weight:700}
+.all{display:block;margin:10px 14px 14px;border:0;border-radius:14px;background:#2B5CFF;color:#fff;padding:13px;font-size:15px;font-weight:700;font-family:inherit;width:calc(100% - 28px)}
+.mods{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.mo{background:#fff;border:1px solid #E3E6EA;border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:4px;font-family:inherit;text-align:left}
+.mo b{font-size:16px}.mo span{font-size:13px;color:#5B636E}
+.mo .k{font-size:22px;font-weight:700;color:#111315;margin-top:6px}
+.tag{font-size:11px;font-weight:700;border-radius:999px;padding:3px 8px}
+.tag.n{background:#2B5CFF;color:#fff}.tag.o{background:#ECEEF1;color:#5B636E}
 </style>
 </helmet>
 <div class="app">
   <nav class="side" aria-label="Menú">
     <div class="logo">airtek <span>Empresas</span></div>
-    <a class="nav on" href="#">Inicio</a><a class="nav new" href="#">Mi trabajo <em>9</em></a><a class="nav" href="#">Clientes</a><a class="nav" href="#">Comisiones</a><a class="nav" href="#">Migraciones</a><a class="nav" href="#">Factibilidad</a>
+    <a class="nav on" href="#">Inicio</a><a class="nav" href="#">Mi trabajo <em>9</em></a><a class="nav" href="#">Clientes</a><a class="nav" href="#">Comisiones</a><a class="nav" href="#">Migraciones</a><a class="nav" href="#">Factibilidad</a>
   </nav>
   <main class="main">
-    <div><h1>Buenos días, Rosa</h1><div class="sub">Lo gris queda como hoy; lo azul es lo nuevo.</div></div>
+    <div><h1>Buenos días, Rosa</h1><div class="sub">Corte de noviembre abierto · día límite 18 de noviembre.</div></div>
     <div class="g">
-      <div style="display:flex;flex-direction:column;gap:12px">
-        <span class="old">COMO HOY</span>
-        <div class="big"><b>22 días</b><span>para el cierre del corte de noviembre</span></div>
-        <section class="card"><div class="ch"><b>Avisos</b></div>
-          <div class="cat">Expedientes<span>2</span></div>
-          <div class="av">Devolvieron la cédula de Panadería El Trigal<small>hace 1 hora</small></div>
-          <div class="av">Aprobaron el RIF de Inversiones Delta 21<small>hoy 9:30 a. m.</small></div>
-          <div class="cat">Comisiones<span>1</span></div>
-          <div class="cat">Gestiones<span>1</span></div>
-        </section>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:12px">
-        <span class="newt" style="align-self:flex-start">NUEVO</span>
-        <section class="card mt"><div class="ch"><b>Mis pendientes, agrupados</b><span style="font-size:12px;color:#5B636E">toca un grupo y se abre Mi trabajo en ese grupo</span></div>
-          <div class="it"><span class="ck" style="border-color:#A32117"></span><div><div class="tt">Devueltos</div><div class="m">1 en el corte</div></div><button class="ir">3</button></div>
-          <div class="it"><span class="ck" style="border-color:#C98A12"></span><div><div class="tt">Faltan para comisionar</div><div class="m">límite 18/11</div></div><button class="ir">2</button></div>
-          <div class="it"><span class="ck" style="border-color:#C98A12"></span><div><div class="tt">Por instalar</div><div class="m">órdenes de más de 24 horas</div></div><button class="ir">2</button></div>
-          <div class="it"><span class="ck"></span><div><div class="tt">Gestiones asignadas</div><div class="m">Recientes sin documentos</div></div><button class="ir">1</button></div>
-          <div class="it"><span class="ck"></span><div><div class="tt">Mis notas</div><div class="m">1 para hoy</div></div><button class="ir">1</button></div>
+      <div>
+        <div class="lbl">MIS PENDIENTES, AGRUPADOS <span class="tag n">nuevo</span></div>
+        <section class="card">
+          <button class="it"><span class="ic" style="background:#FCEDEB;color:#A32117">!</span><span><span class="tt">Devueltos</span><br><span class="m">1 en el corte</span></span><span class="n" style="color:#A32117">3</span></button>
+          <button class="it"><span class="ic" style="background:#FBF1DC;color:#754B00">$</span><span><span class="tt">Faltan para comisionar</span><br><span class="m">límite 18/11</span></span><span class="n" style="color:#754B00">2</span></button>
+          <button class="it"><span class="ic" style="background:#FBF1DC;color:#754B00">24h</span><span><span class="tt">Por instalar</span><br><span class="m">órdenes de más de 24 horas</span></span><span class="n" style="color:#754B00">2</span></button>
+          <button class="it"><span class="ic" style="background:#E8EEFF;color:#1F45C4">✓</span><span><span class="tt">Gestiones asignadas</span><br><span class="m">Recientes sin documentos</span></span><span class="n">1</span></button>
+          <button class="it"><span class="ic" style="background:#ECEEF1;color:#3B424B">✎</span><span><span class="tt">Mis notas</span><br><span class="m">1 para hoy</span></span><span class="n">1</span></button>
           <button class="all">Ver todo mi trabajo (9)</button>
         </section>
+      </div>
+      <div>
+        <div class="lbl">MÓDULOS <span class="tag o">como hoy</span></div>
+        <div class="mods">
+          <button class="mo"><b>Clientes</b><span>Expedientes y estatus legal</span><span class="k">412</span></button>
+          <button class="mo"><b>Comisiones</b><span>Corte de noviembre</span><span class="k">5 instaladas</span></button>
+          <button class="mo"><b>Migraciones</b><span>Cambios de categoría y titular</span><span class="k">1</span></button>
+          <button class="mo"><b>Factibilidad</b><span>Consultar cobertura</span><span class="k">Consultar</span></button>
+          <button class="mo"><b>Aliados</b><span>Solicitudes de aliados</span><span class="k">0</span></button>
+          <button class="mo"><b>Ranking</b><span>Tu puesto en el corte</span><span class="k">1.º</span></button>
+        </div>
       </div>
     </div>
   </main>
