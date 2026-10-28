@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Clientes, Dedicado ISP</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#F5F6F7;font-family:Inter,system-ui,sans-serif;color:#111315}
+*{box-sizing:border-box}
+.main{max-width:1366px;padding:26px 34px;display:flex;flex-direction:column;gap:16px}
+.segs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.seg{background:#fff;border:1px solid #E3E6EA;border-radius:18px;padding:14px 18px;display:flex;align-items:center;gap:14px;font-family:inherit;text-align:left}
+.seg.on{border:2px solid #2B5CFF}.seg .n{font-size:28px;font-weight:700}.seg .t{font-weight:600;font-size:15px}.seg .s{font-size:12px;color:#5B636E}
+.leg{background:#fff;border:1px solid #E3E6EA;border-radius:18px;padding:16px 18px;display:flex;flex-direction:column;gap:12px}
+.lh{display:flex;align-items:baseline;gap:10px}.lh b{font-size:15px}.lh span{font-size:12px;color:#5B636E}
+.track{display:flex;height:16px;border-radius:999px;overflow:hidden}
+.grps{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.g{border:1px solid #E3E6EA;border-radius:14px;padding:10px 12px;font-family:inherit;text-align:left;background:#fff}
+.g .k{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#3B424B}.g .k i{width:10px;height:10px;border-radius:3px;display:inline-block}
+.g .v{font-size:22px;font-weight:700;margin-top:2px}
+.ex{display:flex;gap:8px;flex-wrap:wrap}
+.chip{border:1px solid #E3E6EA;background:#fff;border-radius:999px;padding:7px 13px;font-size:13px;font-weight:500;font-family:inherit}
+.chip.w{border-color:#F0DDB0;background:#FBF1DC;color:#754B00}
+</style>
+</helmet>
+<div class="main">
+  <div class="segs">
+    <button class="seg"><span class="n">2.136</span><span><span class="t">PYME</span><br><span class="s">50 firmados · 1.517 sin gestionar</span></span></button>
+    <button class="seg"><span class="n">87</span><span><span class="t">Dedicado corporativo</span><br><span class="s">19 firmados</span></span></button>
+    <button class="seg on"><span class="n">30</span><span><span class="t">Dedicado ISP</span><br><span class="s">17 firmados · 5 con pólizas pendientes</span></span></button>
+  </div>
+  <section class="leg" aria-label="Estatus legal ISP">
+    <div class="lh"><b>Estatus legal · Dedicado ISP</b><span>La misma barra, con los números del segmento elegido</span></div>
+    <div class="track" aria-hidden="true"><span style="width:23%;background:#C9CDD3"></span><span style="width:4%;background:#C98A12"></span><span style="width:10%;background:#6E8BFF"></span><span style="width:7%;background:#1F45C4"></span><span style="width:56%;background:#0F6642"></span></div>
+    <div class="grps">
+      <button class="g"><span class="k"><i style="background:#C9CDD3"></i>Sin gestionar</span><div class="v">7</div></button>
+      <button class="g"><span class="k"><i style="background:#C98A12"></i>Faltan documentos</span><div class="v">1</div></button>
+      <button class="g"><span class="k"><i style="background:#6E8BFF"></i>En revisión</span><div class="v">3</div></button>
+      <button class="g"><span class="k"><i style="background:#1F45C4"></i>Por firmar</span><div class="v">2</div></button>
+      <button class="g"><span class="k"><i style="background:#0F6642"></i>Firmado</span><div class="v">17</div></button>
+    </div>
+  </section>
+  <div class="ex"><span class="chip w">Pólizas VGT pendientes 5</span><span class="chip">Sin habilitación 6</span><span class="chip">Contratos sin fecha</span><span class="chip">Suspendidos 6</span></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1366,"height":470}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

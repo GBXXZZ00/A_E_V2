@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Subir varios documentos</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#F5F6F7;font-family:Inter,system-ui,sans-serif;color:#111315}
+*{box-sizing:border-box}
+.dr{width:600px;min-height:1100px;background:#fff;border-radius:22px;box-shadow:0 18px 44px rgba(17,19,21,.14);padding:22px 24px;display:flex;flex-direction:column;gap:14px}
+.dh{display:flex;align-items:flex-start;gap:10px}.dh h2{margin:0;font-size:20px}.dh .s{font-size:12px;color:#5B636E;margin-top:3px}
+.x{margin-left:auto;width:40px;height:40px;border-radius:999px;border:1px solid #E3E6EA;background:#fff;font-size:18px;font-family:inherit}
+.steps{display:flex;gap:6px}
+.st{flex:1;display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:#69717C;border-bottom:3px solid #ECEEF1;padding-bottom:8px}
+.st.done{color:#0F6642;border-color:#8CCBAE}.st.on{color:#111315;border-color:#2B5CFF}
+.st i{font-style:normal;width:22px;height:22px;border-radius:999px;background:#ECEEF1;display:flex;align-items:center;justify-content:center;font-size:12px}
+.st.done i{background:#E7F5EE}.st.on i{background:#2B5CFF;color:#fff}
+.nt{font-size:13px;color:#5B636E}
+.fi{border:1px solid #E3E6EA;border-radius:16px;padding:12px;display:grid;grid-template-columns:64px minmax(0,1fr);gap:12px}
+.fi.ok{border-color:#8CCBAE;background:#F5FBF8}.fi.no{border:2px solid #C98A12;background:#FFFBF2}
+.th{width:64px;height:80px;border-radius:10px;background:#ECEEF1;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#5B636E}
+.fn{font-weight:600;font-size:14px}.fm{font-size:12px;color:#5B636E;margin-bottom:6px}
+.q{font-size:12px;font-weight:700;color:#3B424B;margin-bottom:6px}
+.opts{display:flex;gap:6px;flex-wrap:wrap}
+.o{border:1px solid #E3E6EA;background:#fff;border-radius:999px;padding:6px 11px;font-size:12px;font-weight:600;font-family:inherit;color:#3B424B}
+.o.on{background:#2B5CFF;border-color:#2B5CFF;color:#fff}
+.o.dis{opacity:.45}
+.pie{border-top:1px solid #F0F1F3;padding-top:14px;display:flex;flex-direction:column;gap:8px;margin-top:auto}
+.bt{border-radius:14px;padding:13px;font-size:15px;font-weight:600;font-family:inherit;border:0;background:#2B5CFF;color:#fff}
+.add{border:2px dashed #9FB3FF;background:#F7F9FF;border-radius:14px;padding:12px;text-align:center;font-size:13px;color:#1F45C4;font-weight:600}
+</style>
+</helmet>
+<aside class="dr" aria-label="Subir varios documentos">
+  <div class="dh"><div><h2>Subir documentos</h2><div class="s">Inversiones Delta 21 · J-41122334-5</div></div><button class="x" aria-label="Cerrar">×</button></div>
+  <div class="steps"><span class="st done"><i>✓</i>Elegir archivos</span><span class="st on"><i>2</i>Marcar qué trae cada uno</span><span class="st"><i>3</i>Guardar</span></div>
+  <div class="nt">Toca lo que trae cada archivo. Si un archivo trae dos cosas (por ejemplo cédula y RIF en la misma hoja), marca las dos. Lo ya aprobado sale apagado.</div>
+  <div class="fi ok">
+    <span class="th">JPG</span>
+    <div><div class="fn">IMG-20261026-WA0012.jpg</div><div class="fm">Desde WhatsApp · 1 página</div>
+      <div class="q">¿Qué trae?</div>
+      <div class="opts"><button class="o on">Cédula</button><button class="o on">RIF personal</button><button class="o">RIF de la empresa</button><button class="o">Acta constitutiva</button><button class="o">Acta de asamblea</button><button class="o">Otro</button></div></div>
+  </div>
+  <div class="fi no">
+    <span class="th">PDF</span>
+    <div><div class="fn">documentos_delta.pdf</div><div class="fm">12 páginas · falta marcar</div>
+      <div class="q">¿Qué trae?</div>
+      <div class="opts"><button class="o">Cédula</button><button class="o">RIF personal</button><button class="o dis">RIF de la empresa · aprobado</button><button class="o">Acta constitutiva</button><button class="o">Acta de asamblea</button><button class="o">Otro</button></div></div>
+  </div>
+  <div class="fi ok">
+    <span class="th">PDF</span>
+    <div><div class="fn">acta_2024.pdf</div><div class="fm">5 páginas</div>
+      <div class="q">¿Qué trae?</div>
+      <div class="opts"><button class="o">Cédula</button><button class="o">RIF personal</button><button class="o dis">RIF de la empresa · aprobado</button><button class="o">Acta constitutiva</button><button class="o on">Acta de asamblea</button><button class="o">Otro</button></div></div>
+  </div>
+  <div class="add">+ Agregar más archivos (o arrastrarlos aquí)</div>
+  <div class="pie">
+    <div class="nt"><b style="color:#111315">Falta marcar 1 archivo.</b> Al guardar, cada uno va a su casilla, queda en el hilo y pasa a revisión (IA y luego Legal).</div>
+    <button class="bt" style="opacity:.45">Guardar en sus casillas</button>
+  </div>
+</aside>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":600,"height":1100}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+{"v":3,"createdOnFiles":{"v":1,"at":"2026-10-28T03:20:00Z"},"title":"Clientes · Maqueta 28/10","launch":{"view":"canvas"},"pages":[],
+"boards":{
+"Main.dc.html":{"x":0,"y":0,"w":1366,"h":1300,"title":"1 · Lista: arriba lo nuevo (estatus, gestiones activas, prioridad); abajo la lista como hoy","expand":"fill"},
+"Lider.dc.html":{"x":1446,"y":0,"w":1366,"h":760,"title":"2 · Vista del líder: lo suyo primero, otros líderes en un desplegable, búsqueda con etiqueta","expand":"fill"},
+"ISP.dc.html":{"x":1446,"y":880,"w":1366,"h":470,"title":"3 · Al tocar Dedicado ISP: la barra cambia a sus números","expand":"fill"},
+"Resumen.dc.html":{"x":2892,"y":0,"w":1366,"h":1560,"title":"4 · Resumen: tipo de cliente (con VGT), promedios, churn total y de infancia, calidad, gestiones y estatus legal","expand":"fill"},
+"Detalle.dc.html":{"x":4338,"y":0,"w":1366,"h":1200,"title":"4b · Detalle al tocar un mes: por dueño y desplegable","expand":"fill"},
+"Subir.dc.html":{"x":2680,"y":1700,"w":600,"h":1100,"title":"8 · Subir varios documentos: marcar qué trae cada archivo"},
+"FichaDatos.dc.html":{"x":0,"y":1700,"w":600,"h":1000,"title":"5 · Hoja: Datos (servicios en rectángulo, gestión activa)"},
+"FichaDocs.dc.html":{"x":680,"y":1700,"w":600,"h":1000,"title":"6 · Hoja: Documentos"},
+"FichaHilo.dc.html":{"x":1360,"y":1700,"w":1240,"h":1000,"title":"7 · Hoja: Hilo y Comisión"}
+},
+"order":["Main.dc.html","Lider.dc.html","ISP.dc.html","Resumen.dc.html","FichaDatos.dc.html","FichaDocs.dc.html","FichaHilo.dc.html","Detalle.dc.html","Subir.dc.html"],
+"notes":{
+"t1":{"x":0,"y":-300,"text":"Clientes: cambios propuestos","kind":"title1","maxW":5704},
+"t2":{"x":0,"y":1420,"text":"Hoja del cliente, pestaña por pestaña, y subir documentos","kind":"title1","maxW":3280},
+"n1":{"x":5784,"y":0,"text":"Números reales al 27/10; nombres y avances de gestión de ejemplo.\n\nPor qué había tantos \"Completos\": 1.517 clientes PYME están en Grandes negocios (estatus de arranque) y 1.442 no tienen ni un documento. Firmados: 50.\n\nEstatus legal en 5 grupos: Sin gestionar · Faltan documentos · En revisión · Por firmar · Firmado.\n\nQuién ve qué: administrador y analistas, todo. Líder: lo suyo primero y los demás en un desplegable de solo consulta; al buscar, el cliente ajeno sale con \"Es de...\".\n\nLa pestaña Contrato (y VGT en dedicados) queda como hoy.","w":420,"fill":"blue"}
+},
+"designSystems":[]}

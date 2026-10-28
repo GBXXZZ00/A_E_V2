@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Hoja del cliente</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#F5F6F7;font-family:Inter,system-ui,sans-serif;color:#111315}
+*{box-sizing:border-box}
+.dr{width:560px;min-height:1180px;background:#fff;border-radius:22px;box-shadow:0 18px 44px rgba(17,19,21,.14);padding:22px 24px;display:flex;flex-direction:column;gap:14px}
+.dh{display:flex;align-items:flex-start;gap:10px}
+.dh h2{margin:0;font-size:20px}.dh .s{font-size:12px;color:#5B636E;margin-top:3px}
+.x{margin-left:auto;width:40px;height:40px;border-radius:999px;border:1px solid #E3E6EA;background:#fff;font-size:18px;font-family:inherit}
+.p{font-size:12px;font-weight:600;border-radius:999px;padding:4px 9px}.p.ok{background:#E7F5EE;color:#0F6642}.p.w{background:#FBF1DC;color:#754B00}.p.g{background:#ECEEF1;color:#3B424B}.p.b{background:#E8EEFF;color:#1F45C4}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.tabs{display:flex;gap:4px;border-bottom:1px solid #E3E6EA}
+.tabs b{padding:10px 14px;font-size:14px;color:#5B636E;border-bottom:3px solid transparent}.tabs b.on{color:#111315;border-color:#2B5CFF}
+.next{border:2px solid #C98A12;background:#FFFBF2;border-radius:18px;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.next .t{font-size:12px;font-weight:700;color:#754B00}.next b{font-size:16px}.next .s{font-size:13px;color:#5B4A1E}
+.bt{border-radius:14px;padding:12px;font-size:14px;font-weight:600;font-family:inherit;border:1px solid #E3E6EA;background:#fff;min-height:44px}
+.bt.pr{background:#2B5CFF;color:#fff;border-color:#2B5CFF}
+.card{border-radius:18px;padding:14px 16px;display:flex;flex-direction:column;gap:9px;border:1px solid #E3E6EA}
+.ct{display:flex;align-items:center;gap:8px}.ct b{font-size:15px}.ct .p{margin-left:auto}
+.dot{width:10px;height:10px;border-radius:999px}
+.li{display:flex;align-items:center;gap:10px;border:1px solid #E3E6EA;border-radius:12px;padding:9px 12px;font-size:14px}
+.ic{width:22px;height:22px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex:0 0 22px}
+.li.ok .ic{background:#E7F5EE;color:#0F6642}.li.no .ic{background:#ECEEF1;color:#5B636E}
+.act{margin-left:auto;font-size:13px;font-weight:600;color:#1F45C4;border:1px dashed #9FB3FF;border-radius:999px;padding:5px 11px;background:#fff;font-family:inherit}
+.f{margin-left:auto;font-size:12px;color:#5B636E}
+.grp{font-size:12px;font-weight:700;color:#5B636E}
+.fold{display:flex;align-items:center;gap:10px;border:1px solid #E3E6EA;border-radius:14px;padding:12px 14px;font-size:14px;font-weight:600;background:#fff;font-family:inherit;width:100%;text-align:left}
+.fold .p{margin-left:auto}
+.row2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+</style>
+</helmet>
+<aside class="dr" aria-label="Hoja del cliente">
+  <div class="dh"><div><h2>Repuestos El Zuliano</h2><div class="s">J-29988776-1 · Líder Rosa Paredes · 1 servicio · instalado 08/2026</div></div><button class="x" aria-label="Cerrar">×</button></div>
+  <div class="chips"><span class="p b">PYME</span><span class="p g">Sin gestionar</span><span class="p ok">Habilitado</span><span class="p b">Gestión: Recientes sin documentos</span></div>
+  <div class="tabs"><b class="on">Resumen</b><b>Datos</b><b>Documentos</b><b>Hilo</b></div>
+  <section class="next" aria-label="Siguiente paso">
+    <span class="t">SIGUIENTE PASO</span>
+    <b>Pedirle los documentos al cliente</b>
+    <span class="s">Nunca se le han pedido. Al enviar el mensaje pasa a "Faltan documentos" y queda en el hilo.</span>
+    <div class="row2"><button class="bt pr">Pedir por WhatsApp</button><button class="bt">Pedir por correo</button></div>
+  </section>
+  <section class="card" aria-label="Documentos">
+    <div class="ct"><span class="dot" style="background:#C98A12"></span><b>Documentos</b><span class="p w">0 de 6</span></div>
+    <div class="grp">Representante legal</div>
+    <div class="li no"><span class="ic">+</span>Teléfono y correo<button class="act">+ Escribir</button></div>
+    <div class="li no"><span class="ic">+</span>Cédula<button class="act">+ Subir</button></div>
+    <div class="li no"><span class="ic">+</span>RIF personal<button class="act">+ Subir</button></div>
+    <div class="grp">Empresa</div>
+    <div class="li no"><span class="ic">+</span>RIF de la empresa<button class="act">+ Subir</button></div>
+    <div class="li no"><span class="ic">+</span>Acta constitutiva<button class="act">+ Subir</button></div>
+    <div class="li no"><span class="ic">+</span>Acta de asamblea<button class="act">+ Subir</button></div>
+  </section>
+  <button class="fold"><span class="dot" style="background:#0F6642"></span>Servicios<span class="p ok">1 habilitado</span></button>
+  <button class="fold"><span class="dot" style="background:#C9CDD3"></span>Contrato<span class="p g">Se sube cuando esté Por firmar</span></button>
+  <button class="fold"><span class="dot" style="background:#0F6642"></span>Comisión<span class="p ok">Pagada en agosto</span></button>
+  <div class="row2"><button class="bt">Contactar a la líder</button><button class="bt">Más acciones ▾</button></div>
+  <span style="font-size:12px;color:#5B636E">Más acciones: cambiar líder, cambiar estatus, cambiar tipo de cliente, etiqueta de gestión, contrato presencial.</span>
+</aside>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":560,"height":1180}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

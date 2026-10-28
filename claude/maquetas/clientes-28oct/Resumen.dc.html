@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Clientes, resumen</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#F5F6F7;font-family:Inter,system-ui,sans-serif;color:#111315}
+*{box-sizing:border-box}
+.main{max-width:1366px;padding:26px 34px 40px;display:flex;flex-direction:column;gap:16px}
+.top{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+h1{margin:0;font-size:26px}
+.sw{display:flex;background:#ECEEF1;border-radius:999px;padding:3px}
+.sw b{padding:7px 16px;border-radius:999px;font-size:13px;font-weight:600;color:#5B636E}.sw b.on{background:#fff;color:#111315}
+.sel{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+.dd{display:flex;gap:8px;align-items:center;background:#fff;border:1px solid #E3E6EA;border-radius:14px;padding:8px 14px;font-size:13px;font-family:inherit}
+.dd span{color:#5B636E}
+.segs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.seg{background:#fff;border:1px solid #E3E6EA;border-radius:16px;padding:12px 16px;display:flex;align-items:center;gap:12px;font-family:inherit;text-align:left}
+.seg.on{border:2px solid #2B5CFF;background:#F7F9FF}.seg .n{font-size:24px;font-weight:700}.seg .t{font-weight:600;font-size:14px}.seg .s{font-size:12px;color:#5B636E}
+.prom{background:#111315;color:#fff;border-radius:18px;padding:14px 18px;display:grid;grid-template-columns:auto repeat(5,minmax(0,1fr));gap:18px;align-items:center}
+.prom .h{font-size:13px;font-weight:700;color:#C9CDD3}
+.prom div b{display:block;font-size:22px}.prom div span{font-size:12px;color:#C9CDD3}
+.ej{font-size:10px;font-weight:700;color:#5B3AA6;background:#F0EBFA;border-radius:999px;padding:2px 6px;margin-left:4px}
+.nums{display:grid;grid-template-columns:1.3fr 1fr 1fr 1fr 1fr;gap:12px}
+.num{background:#fff;border:1px solid #E3E6EA;border-radius:18px;padding:16px 18px;font-family:inherit;text-align:left}
+.num .l{font-size:13px;color:#5B636E}.num .v{font-size:32px;font-weight:700;margin-top:4px}.num .c{font-size:12px;color:#5B636E}
+.num.big .v{font-size:40px}.num.r .v{color:#A32117}.num.w .v{color:#754B00}
+.g2{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:14px}
+.card{background:#fff;border:1px solid #E3E6EA;border-radius:20px;padding:18px 20px;display:flex;flex-direction:column;gap:12px}
+.ch{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}.ch h3{margin:0;font-size:16px}.ch .s{font-size:12px;color:#5B636E}
+.vb{display:flex;gap:8px;align-items:flex-end;height:200px;padding-top:22px;border-bottom:1px solid #E3E6EA;background:repeating-linear-gradient(to top,transparent 0,transparent 49px,#F0F1F3 49px,#F0F1F3 50px)}
+.col{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:3px;background:none;border:0;font-family:inherit;padding:0}
+.col .v{font-size:11px;font-weight:700}
+.stk{width:100%;max-width:34px;display:flex;flex-direction:column-reverse;border-radius:6px 6px 0 0;overflow:hidden}
+.col.cur .stk{outline:2px dashed #2B5CFF;outline-offset:2px}
+.col.sel .stk{outline:3px solid #111315;outline-offset:2px}
+.xl{display:flex;gap:8px}.xl span{flex:1;text-align:center;font-size:11px;color:#5B636E}
+.leg{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:#3B424B}.leg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.mv{display:grid;grid-template-columns:150px minmax(0,1fr) 46px;gap:10px;align-items:center;font-size:13px;padding:5px 0;background:none;border:0;font-family:inherit;text-align:left;width:100%}
+.bar{height:18px;background:#F0F1F3;border-radius:6px;overflow:hidden;display:flex}
+.cr{display:grid;grid-template-columns:44px minmax(0,1fr) minmax(0,1fr);gap:10px;align-items:center;font-size:12px;padding:4px 0}
+.cr .bar{height:14px}
+.tr{display:grid;grid-template-columns:minmax(0,1.3fr) repeat(4,minmax(0,.8fr));gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid #F0F1F3;font-size:13px}
+.tr.h{font-size:12px;color:#69717C;font-weight:600}
+.p{font-size:12px;font-weight:600;border-radius:999px;padding:3px 8px}.p.ok{background:#E7F5EE;color:#0F6642}.p.w{background:#FBF1DC;color:#754B00}.p.r{background:#FCEDEB;color:#A32117}.p.g{background:#ECEEF1;color:#3B424B}
+.ge{display:grid;grid-template-columns:minmax(0,1fr) 120px 90px;gap:10px;align-items:center;font-size:13px;padding:8px 0;border-bottom:1px solid #F0F1F3;background:none;border-left:0;border-right:0;border-top:0;font-family:inherit;text-align:left;width:100%}
+.pb{height:8px;background:#ECEEF1;border-radius:999px;overflow:hidden}.pb span{display:block;height:100%;background:#0F6642}
+.seg2{display:grid;grid-template-columns:150px minmax(0,1fr) 50px;gap:10px;align-items:center;background:none;border:0;font-family:inherit;text-align:left;width:100%;padding:3px 0}
+.seg2 .n{font-weight:600;font-size:13px}.seg2 .t{font-size:12px;color:#5B636E;text-align:right}
+.track{display:flex;height:24px;border-radius:8px;overflow:hidden}
+.track span{display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff}
+.nota{font-size:12px;color:#5B636E}
+</style>
+</helmet>
+<div class="main">
+  <div class="top"><h1>Clientes</h1><div class="sw"><b>Lista</b><b class="on">Resumen</b></div>
+    <div class="sel"><button class="dd"><span>Período</span><strong>Octubre 2026</strong></button><button class="dd"><span>Comparar con</span><strong>Septiembre</strong></button></div></div>
+
+  <div class="segs">
+    <button class="seg on"><span class="n">2.136</span><span><span class="t">PYME</span><br><span class="s">Gráficas de instalaciones y churn</span></span></button>
+    <button class="seg"><span class="n">87</span><span><span class="t">Dedicado corporativo</span><br><span class="s">Contratos y estatus legal</span></span></button>
+    <button class="seg"><span class="n">30</span><span><span class="t">Dedicado ISP</span><br><span class="s">Habilitación y contratos</span></span></button>
+    <button class="seg"><span class="n">7</span><span><span class="t">VGT</span><br><span class="s">17 contratos · 571 postes · pólizas</span></span></button>
+  </div>
+
+  <div class="prom">
+    <span class="h">Promedios<br>12 meses</span>
+    <div><b>80</b><span>instalaciones al mes</span></div>
+    <div><b>34<span class="ej">ejemplo</span></b><span>pérdidas al mes (suspendidos y retirados)</span></div>
+    <div><b>1,2 %<span class="ej">ejemplo</span></b><span>churn mensual</span></div>
+    <div><b>4,1 %<span class="ej">ejemplo</span></b><span>churn de infancia (60 días)</span></div>
+    <div><b>5<span class="ej">ejemplo</span></b><span>expedientes firmados al mes</span></div>
+  </div>
+
+  <div class="nums">
+    <button class="num big"><div class="l">Servicios habilitados</div><div class="v">2.855</div><div class="c">346 suspendidos</div></button>
+    <button class="num"><div class="l">Instalados en octubre</div><div class="v">89</div><div class="c">94 en septiembre · promedio 80</div></button>
+    <button class="num r"><div class="l">Churn del mes<span class="ej">ejemplo</span></div><div class="v">1,4 %</div><div class="c">51 perdidos sobre la base</div></button>
+    <button class="num r"><div class="l">Churn de infancia<span class="ej">ejemplo</span></div><div class="v">4,8 %</div><div class="c">Suspendidos antes de 60 días</div></button>
+    <button class="num w"><div class="l">Sin gestionar legal</div><div class="v">1.517</div><div class="c">312 recientes</div></button>
+  </div>
+
+  <div class="g2">
+    <section class="card">
+      <div class="ch"><h3>Instalados por mes y si siguen habilitados</h3><span class="s">Últimos 12 meses · toca un mes</span></div>
+      <div class="vb">
+        <sc-for list="{{meses}}" as="m" hint-placeholder-count="12">
+          <button class="col {{m.k}}"><span class="v">{{m.t}}</span><span class="stk" style="height: {{m.h}}px"><span style="height: {{m.a}}%;background:#1F45C4"></span><span style="height: {{m.b}}%;background:#E3A93B"></span></span></button>
+        </sc-for>
+      </div>
+      <div class="xl"><span>Nov</span><span>Dic</span><span>Ene</span><span>Feb</span><span>Mar</span><span>Abr</span><span>May</span><span>Jun</span><span>Jul</span><span>Ago</span><span>Sep</span><span>Oct</span></div>
+      <div class="leg"><span><i style="background:#1F45C4"></i>Siguen habilitados</span><span><i style="background:#E3A93B"></i>Ya no</span><span>Febrero y abril: solo 75 % siguen</span></div>
+    </section>
+    <section class="card">
+      <div class="ch"><h3>Churn por mes</h3><span class="s">Total y de infancia</span><span class="ej">ejemplo</span></div>
+      <div class="cr" style="font-weight:600;color:#5B636E"><span></span><span>Churn del mes</span><span>De infancia (60 días)</span></div>
+      <sc-for list="{{churn}}" as="c" hint-placeholder-count="6">
+        <div class="cr"><span>{{c.m}}</span><span style="display:flex;gap:6px;align-items:center"><span class="bar" style="flex:1"><span style="width: {{c.tw}}%;background:#6E8BFF"></span></span><b>{{c.t}}</b></span><span style="display:flex;gap:6px;align-items:center"><span class="bar" style="flex:1"><span style="width: {{c.iw}}%;background: {{c.ic}}"></span></span><b>{{c.i}}</b></span></div>
+      </sc-for>
+      <span class="nota">Sale de la última suspensión y la última habilitación del TAD. Meta de infancia: menos de 5 %.</span>
+    </section>
+  </div>
+
+  <div class="g2">
+    <section class="card">
+      <div class="ch"><h3>Calidad de la venta por dueño</h3><span class="s">Lo instalado en los últimos 6 meses</span><span class="ej">ejemplo</span></div>
+      <div class="tr h"><span>Dueño</span><span>Instalados</span><span>Siguen</span><span>Churn 60 días</span><span>Expediente firmado</span></div>
+      <sc-for list="{{lid}}" as="l" hint-placeholder-count="5">
+        <div class="tr"><b>{{l.n}}</b><span>{{l.i}}</span><span><span class="p {{l.sk}}">{{l.s}}</span></span><span><span class="p {{l.ck}}">{{l.c}}</span></span><span>{{l.f}}</span></div>
+      </sc-for>
+    </section>
+    <section class="card">
+      <div class="ch"><h3>Gestiones activas</h3><span class="s">Toca una para ver sus clientes</span></div>
+      <button class="ge"><span><b>ISP: expediente completo</b><br><span class="nota">Meta 23/10 · venció hace 4 días</span></span><span class="pb"><span style="width:73%"></span></span><span class="p r">22 de 30</span></button>
+      <button class="ge"><span><b>Pólizas VGT</b><br><span class="nota">Sin fecha</span></span><span class="pb"><span style="width:0%"></span></span><span class="p w">0 de 5</span></button>
+      <button class="ge"><span><b>Recientes sin documentos</b><br><span class="nota">Meta 18/11</span></span><span class="pb"><span style="width:13%"></span></span><span class="p g">40 de 312</span></button>
+      <div class="mv" style="cursor:default"><span>Contactados esta semana</span><span class="bar"><span style="width:58%;background:#1F45C4"></span></span><b>58</b></div>
+      <div class="mv" style="cursor:default"><span>Sin contacto</span><span class="bar"><span style="width:21%;background:#E3A93B"></span></span><b>21</b></div>
+    </section>
+  </div>
+
+  <section class="card">
+    <div class="ch"><h3>Estatus legal por segmento</h3><span class="s">Toca un tramo para ver sus clientes</span></div>
+    <button class="seg2"><span class="n">PYME</span><span class="track"><span style="width:71%;background:#C9CDD3;color:#3B424B">1.517</span><span style="width:12.7%;background:#C98A12">271</span><span style="width:6.2%;background:#6E8BFF">133</span><span style="width:7.7%;background:#1F45C4">165</span><span style="width:2.4%;background:#0F6642"></span></span><span class="t">2.136</span></button>
+    <button class="seg2"><span class="n">Dedicado corporativo</span><span class="track"><span style="width:45%;background:#C9CDD3;color:#3B424B">39</span><span style="width:18%;background:#C98A12">16</span><span style="width:6%;background:#6E8BFF">5</span><span style="width:9%;background:#1F45C4">8</span><span style="width:22%;background:#0F6642">19</span></span><span class="t">87</span></button>
+    <button class="seg2"><span class="n">Dedicado ISP</span><span class="track"><span style="width:23%;background:#C9CDD3;color:#3B424B">7</span><span style="width:4%;background:#C98A12"></span><span style="width:10%;background:#6E8BFF">3</span><span style="width:7%;background:#1F45C4">2</span><span style="width:56%;background:#0F6642">17</span></span><span class="t">30</span></button>
+    <div class="leg"><span><i style="background:#C9CDD3"></i>Sin gestionar</span><span><i style="background:#C98A12"></i>Faltan documentos</span><span><i style="background:#6E8BFF"></i>En revisión</span><span><i style="background:#1F45C4"></i>Por firmar</span><span><i style="background:#0F6642"></i>Firmado</span></div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1366,"height":1560}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const d = [[63, 60], [62, 52], [73, 65], [60, 45], [88, 79], [60, 45], [101, 93], [116, 109], [76, 68], [78, 70], [94, 89], [89, 87]];
+    const meses = d.map(([t, h], i) => ({ t, k: i === 11 ? 'cur' : '', h: Math.round((t / 116) * 160), a: (h / t) * 100, b: ((t - h) / t) * 100 }));
+    const lid = [['Rosa Paredes', 74, '93 %', 'ok', '3,1 %', 'ok', '12'], ['Ana Ferrer', 61, '90 %', 'ok', '4,9 %', 'ok', '9'], ['Luisa Mora', 52, '84 %', 'w', '7,7 %', 'r', '4'], ['Carla Rivas', 40, '88 %', 'ok', '5,0 %', 'w', '6'], ['Canales de atención', 38, '92 %', 'ok', '2,6 %', 'ok', '8'], ['Aliados comerciales', 45, '81 %', 'w', '8,9 %', 'r', '3']].map(([n, i, s, sk, c, ck, f]) => ({ n, i, s, sk, c, ck, f }));
+    const churn = [['May', 1.1, 3.0], ['Jun', 1.0, 4.3], ['Jul', 1.5, 6.6], ['Ago', 1.3, 5.1], ['Sep', 1.2, 3.2], ['Oct', 1.4, 2.2]].map(([m, t, i]) => ({ m, t: String(t).replace('.', ',') + ' %', i: String(i).replace('.', ',') + ' %', tw: (t / 2) * 100, iw: (i / 8) * 100, ic: i >= 5 ? '#C0271B' : '#E3A93B' }));
+    return { meses, lid, churn };
+  }
+}
+</script>
+</body>
+</html>

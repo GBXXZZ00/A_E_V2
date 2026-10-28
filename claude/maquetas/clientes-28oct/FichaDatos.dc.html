@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Hoja del cliente, Datos</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#F5F6F7;font-family:Inter,system-ui,sans-serif;color:#111315}
+*{box-sizing:border-box}
+.dr{width:600px;min-height:1000px;background:#fff;border-radius:22px;box-shadow:0 18px 44px rgba(17,19,21,.14);padding:22px 24px;display:flex;flex-direction:column;gap:14px}
+.dh{display:flex;align-items:flex-start;gap:10px}.dh h2{margin:0;font-size:20px}.dh .s{font-size:12px;color:#5B636E;margin-top:3px}
+.x{margin-left:auto;width:40px;height:40px;border-radius:999px;border:1px solid #E3E6EA;background:#fff;font-size:18px;font-family:inherit}
+.tabs{display:flex;gap:2px;border-bottom:1px solid #E3E6EA}
+.tabs b{padding:10px 12px;font-size:14px;color:#5B636E;border-bottom:3px solid transparent;font-weight:600}.tabs b.on{color:#111315;border-color:#2B5CFF}
+.tabs em{font-style:normal;background:#C98A12;color:#fff;border-radius:999px;font-size:11px;padding:1px 6px;margin-left:4px}
+.p{font-size:12px;font-weight:600;border-radius:999px;padding:4px 9px}.p.ok{background:#E7F5EE;color:#0F6642}.p.w{background:#FBF1DC;color:#754B00}.p.g{background:#ECEEF1;color:#3B424B}.p.b{background:#E8EEFF;color:#1F45C4}.p.r{background:#FCEDEB;color:#A32117}
+.gs{display:flex;align-items:center;gap:10px;border:1px solid #D5DEFF;background:#F7F9FF;border-radius:14px;padding:10px 12px;flex-wrap:wrap}
+.gs b{font-size:13px}.gs .s{font-size:12px;color:#5B636E}
+.lk{font-size:13px;font-weight:600;color:#1F45C4}
+.tarjs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.tj{border:1px solid #E3E6EA;border-radius:16px;padding:12px 14px;display:flex;flex-direction:column;gap:2px}
+.tj .t{font-size:12px;color:#5B636E;font-weight:600}.tj b{font-size:14px}.tj small{font-size:12px;color:#5B636E}
+.sn{display:flex;align-items:baseline;gap:10px}.sn b{font-size:30px}.sn span{font-size:14px;color:#5B636E}
+.srv{border:1px solid #E3E6EA;border-radius:14px;padding:11px 14px;display:grid;grid-template-columns:110px minmax(0,1fr) auto;gap:4px 12px;align-items:center}
+.srv .c{font-weight:700;font-size:14px}.srv .pl{font-size:14px;font-weight:600}.srv .m{font-size:12px;color:#5B636E;grid-column:2 / 4}
+.srv .ip{grid-column:1 / -1;display:flex;gap:10px;align-items:center;border-top:1px solid #F0F1F3;padding-top:7px;font-size:12px;color:#3B424B}
+.srv .ip .lk{margin-left:auto;font-size:12px}
+</style>
+</helmet>
+<aside class="dr" aria-label="Hoja del cliente">
+  <div class="dh"><div><h2>Inversiones Delta 21</h2><div class="s">J-41122334-5 · PYME</div></div><button class="x" aria-label="Cerrar">×</button></div>
+  <div class="tabs" role="tablist"><b class="on">Datos</b><b>Documentos<em>3</em></b><b>Contrato</b><b>Hilo</b><b>Comisión</b></div>
+  <div class="gs"><span class="p b">Gestión activa</span><b>Recientes sin documentos</b><span class="p g">Contactado</span><span class="s">desde 25/10</span><span class="lk" style="margin-left:auto">Cambiar estado · Marcar cumplida</span></div>
+  <div class="tarjs">
+    <div class="tj"><span class="t">Empresa</span><b>Inversiones Delta 21, C.A.</b><small>J-41122334-5 · PYME</small><small>Av. 5 de Julio, Maracaibo</small></div>
+    <div class="tj"><span class="t">Representante</span><b>Sin nombre todavía</b><small>0414 555 2233</small><small>delta21@correo.com</small></div>
+    <div class="tj"><span class="t">Líder</span><b>Rosa Paredes</b><small>En gestión hace 34 días</small><span class="lk">Cambiar</span></div>
+    <div class="tj"><span class="t">Estatus legal</span><b><span class="p w">Faltan documentos</span></b><span class="lk" style="margin-top:6px">Cambiar</span></div>
+  </div>
+  <div class="sn"><b>2</b><span>Servicios en este RIF</span></div>
+  <div class="srv">
+    <span class="c">MBO-88231</span><span class="pl">PYME 50 Mbps</span><span class="p ok">Habilitado</span>
+    <span class="m">Maracaibo Norte · instalado el 14/08/2026 · serial ZTE-55A1</span>
+    <div class="ip"><span>IPv4 10.20.3.44</span><span class="p ok">Carta y proforma enviadas</span><span class="lk">Cambiar IP</span></div>
+  </div>
+  <div class="srv">
+    <span class="c">MBO-88310</span><span class="pl">PYME 30 Mbps</span><span class="p r">Con deuda</span>
+    <span class="m">Maracaibo Norte · instalado el 02/10/2026 · serial ZTE-61B9</span>
+    <div class="ip"><span>IP pendiente por asignar</span><span class="p w">Carta y proforma por enviar</span><span class="lk">Escribir IP</span></div>
+  </div>
+</aside>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":600,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

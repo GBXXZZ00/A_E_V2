@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Hoja del cliente, Documentos</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#F5F6F7;font-family:Inter,system-ui,sans-serif;color:#111315}
+*{box-sizing:border-box}
+.dr{width:600px;min-height:1000px;background:#fff;border-radius:22px;box-shadow:0 18px 44px rgba(17,19,21,.14);padding:22px 24px;display:flex;flex-direction:column;gap:12px}
+.dh{display:flex;align-items:flex-start;gap:10px}.dh h2{margin:0;font-size:20px}.dh .s{font-size:12px;color:#5B636E;margin-top:3px}
+.x{margin-left:auto;width:40px;height:40px;border-radius:999px;border:1px solid #E3E6EA;background:#fff;font-size:18px;font-family:inherit}
+.tabs{display:flex;gap:2px;border-bottom:1px solid #E3E6EA}
+.tabs b{padding:10px 12px;font-size:14px;color:#5B636E;border-bottom:3px solid transparent;font-weight:600}.tabs b.on{color:#111315;border-color:#2B5CFF}
+.tabs em{font-style:normal;background:#C98A12;color:#fff;border-radius:999px;font-size:11px;padding:1px 6px;margin-left:4px}
+.p{font-size:12px;font-weight:600;border-radius:999px;padding:4px 9px}.p.ok{background:#E7F5EE;color:#0F6642}.p.w{background:#FBF1DC;color:#754B00}.p.g{background:#ECEEF1;color:#3B424B}.p.b{background:#E8EEFF;color:#1F45C4}.p.r{background:#FCEDEB;color:#A32117}
+.sum{display:flex;align-items:center;gap:10px;background:#FBF1DC;border-radius:14px;padding:10px 14px;font-size:13px;color:#5B4A1E}
+.sum b{color:#111315}
+.btn{margin-left:auto;border-radius:999px;padding:8px 13px;font-size:13px;font-weight:600;font-family:inherit;border:0;background:#2B5CFF;color:#fff}
+.grp{font-size:12px;font-weight:700;color:#5B636E;margin-top:4px}
+.li{display:flex;align-items:center;gap:10px;border:1px solid #E3E6EA;border-radius:12px;padding:10px 12px;font-size:14px}
+.ic{width:22px;height:22px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex:0 0 22px}
+.li.ok .ic{background:#E7F5EE;color:#0F6642}.li.no .ic{background:#ECEEF1;color:#5B636E}.li.rv .ic{background:#E8EEFF;color:#1F45C4}.li.dv .ic{background:#FCEDEB;color:#A32117}
+.li .r{margin-left:auto;display:flex;gap:6px;align-items:center}
+.f{font-size:12px;color:#5B636E}
+.act{font-size:13px;font-weight:600;color:#1F45C4;border:1px dashed #9FB3FF;border-radius:999px;padding:5px 11px;background:#fff;font-family:inherit}
+.lk{font-size:13px;font-weight:600;color:#1F45C4}
+.drop{border:2px dashed #C9CDD3;border-radius:14px;padding:12px;text-align:center;font-size:13px;color:#5B636E}
+</style>
+</helmet>
+<aside class="dr" aria-label="Hoja del cliente">
+  <div class="dh"><div><h2>Inversiones Delta 21</h2><div class="s">J-41122334-5 · PYME</div></div><button class="x" aria-label="Cerrar">×</button></div>
+  <div class="tabs" role="tablist"><b>Datos</b><b class="on">Documentos<em>3</em></b><b>Contrato</b><b>Hilo</b><b>Comisión</b></div>
+  <div class="sum"><span><b>Faltan 3:</b> cédula (devuelta), acta constitutiva y correo de la empresa</span><button class="btn">Pedir lo que falta</button></div>
+  <div class="drop">Arrastra aquí varios archivos y marca qué trae cada uno</div>
+  <div class="grp">Representante legal 1</div>
+  <div class="li ok"><span class="ic">✓</span>Teléfono y correo<span class="r"><span class="f">0414 555 2233 · delta21@correo.com</span></span></div>
+  <div class="li dv"><span class="ic">!</span>Cédula<span class="r"><span class="p r">Devuelta: ilegible</span><button class="act">+ Subir otra</button></span></div>
+  <div class="li rv"><span class="ic">·</span>RIF personal<span class="r"><span class="p b">En revisión</span><span class="f">rif.pdf</span></span></div>
+  <span class="lk">+ Agregar otro representante</span>
+  <div class="grp">Empresa</div>
+  <div class="li no"><span class="ic">+</span>Correo de la empresa<span class="r"><span class="p w">Falta</span><button class="act">+ Escribir</button></span></div>
+  <div class="li ok"><span class="ic">✓</span>RIF de la empresa<span class="r"><span class="p ok">Aprobado</span><span class="f">vence 03/2027</span></span></div>
+  <div class="li no"><span class="ic">+</span>Acta constitutiva<span class="r"><button class="act">+ Subir</button></span></div>
+  <div class="li ok"><span class="ic">✓</span>Acta de asamblea 1<span class="r"><span class="p ok">Aprobada</span><span class="f">junta hasta 2028</span></span></div>
+  <span class="lk">+ Agregar otra acta de asamblea</span>
+  <div class="grp">Otros</div>
+  <div class="li no"><span class="ic">+</span>Otro documento<span class="r"><button class="act">+ Subir</button></span></div>
+</aside>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":600,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Clientes, detalle de una gráfica</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#F5F6F7;font-family:Inter,system-ui,sans-serif;color:#111315}
+*{box-sizing:border-box}
+.wrap{display:flex;flex-wrap:wrap;min-height:1200px;background:rgba(17,19,21,.28)}
+.fondo{flex:999 1 560px;min-width:0;padding:30px;display:flex;flex-direction:column;gap:14px;opacity:.55}
+.ph{background:#fff;border-radius:18px;height:90px}.ph.t{height:420px}
+.dr{flex:0 1 620px;background:#fff;box-shadow:0 18px 44px rgba(17,19,21,.14);border-radius:22px 0 0 22px;padding:26px 28px;display:flex;flex-direction:column;gap:16px}
+.hd{display:flex;align-items:flex-start;gap:12px}.ey{font-size:12px;font-weight:600;color:#5B636E}
+h2{margin:2px 0 0;font-size:22px}
+.x{margin-left:auto;width:40px;height:40px;border-radius:999px;border:1px solid #E3E6EA;background:#fff;font-size:18px;font-family:inherit}
+.tot{display:flex;gap:22px;align-items:flex-end}
+.tot div b{display:block;font-size:40px;line-height:1}.tot div span{font-size:12px;color:#5B636E}
+.tot .ok b{color:#1F45C4}.tot .no b{color:#754B00}
+.tabs{display:flex;background:#ECEEF1;border-radius:999px;padding:3px}
+.tabs b{flex:1;text-align:center;padding:8px;border-radius:999px;font-size:13px;color:#5B636E}.tabs b.on{background:#fff;color:#111315}
+.sec{font-size:13px;font-weight:700;color:#3B424B}
+.pl{display:grid;grid-template-columns:150px minmax(0,1fr) 28px;gap:10px;align-items:center;font-size:13px;padding:3px 0;background:none;border:0;font-family:inherit;text-align:left;width:100%}
+.bar{height:16px;background:#F0F1F3;border-radius:6px;overflow:hidden;display:flex}
+.grp{border:1px solid #E3E6EA;border-radius:16px;overflow:hidden}
+.gh{width:100%;display:flex;align-items:center;gap:10px;padding:12px 14px;background:#FAFAFB;border:0;font-family:inherit;text-align:left}
+.gh .nm{font-weight:700;font-size:14px}.gh .ct{margin-left:auto;font-size:12px;font-weight:600;background:#FBF1DC;color:#754B00;border-radius:999px;padding:3px 9px}
+.it{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;align-items:center;padding:11px 14px;border-top:1px solid #F0F1F3}
+.cn{font-weight:600;font-size:14px}.cm{font-size:12px;color:#5B636E}
+.p{font-size:12px;font-weight:600;border-radius:999px;padding:4px 9px}.p.w{background:#FBF1DC;color:#754B00}.p.r{background:#FCEDEB;color:#A32117}
+.pie{display:flex;gap:10px;border-top:1px solid #F0F1F3;padding-top:16px;margin-top:auto}
+.bt{flex:1;border-radius:14px;padding:13px;font-size:14px;font-weight:600;font-family:inherit}
+.bt.a{background:#fff;border:1px solid #E3E6EA}.bt.b{background:#2B5CFF;color:#fff;border:0}
+</style>
+</helmet>
+<div class="wrap">
+  <div class="fondo" aria-hidden="true"><div class="ph"></div><div class="ph"></div><div class="ph t"></div><div class="ph t"></div></div>
+  <aside class="dr" aria-label="Detalle">
+    <div class="hd"><div><div class="ey">Clientes · PYME · gráfica "Instalados por mes"</div><h2>Instalados en febrero 2026</h2></div><button class="x" aria-label="Cerrar">×</button></div>
+    <div class="tot"><div><b>60</b><span>instalados</span></div><div class="ok"><b>45</b><span>siguen habilitados</span></div><div class="no"><b>15</b><span>ya no (25 %)</span></div></div>
+    <div class="tabs"><b>Todos 60</b><b>Siguen 45</b><b class="on">Ya no 15</b></div>
+    <div>
+      <div class="sec" style="margin-bottom:8px">Ya no, por dueño</div>
+      <button class="pl"><span>Luisa Mora</span><span class="bar"><span style="width:100%;background:#E3A93B"></span></span><b>6</b></button>
+      <button class="pl"><span>Aliados comerciales</span><span class="bar"><span style="width:67%;background:#E3A93B"></span></span><b>4</b></button>
+      <button class="pl"><span>Rosa Paredes</span><span class="bar"><span style="width:33%;background:#E3A93B"></span></span><b>2</b></button>
+      <button class="pl"><span>Ana Ferrer</span><span class="bar"><span style="width:33%;background:#E3A93B"></span></span><b>2</b></button>
+      <button class="pl"><span>Canales de atención</span><span class="bar"><span style="width:17%;background:#E3A93B"></span></span><b>1</b></button>
+    </div>
+    <div class="grp">
+      <button class="gh"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5B636E" stroke-width="2.5" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg><span class="nm">Luisa Mora</span><span class="ct">6 ya no</span></button>
+      <div class="it"><div><div class="cn">Lavandería Burbujas</div><div class="cm">Instalado 04/02 · suspendido el 20/03 (a los 44 días)</div></div><span class="p r">Churn de infancia</span></div>
+      <div class="it"><div><div class="cn">Comercial Los Pinos</div><div class="cm">Instalado 11/02 · suspendido el 02/07</div></div><span class="p w">Suspendido</span></div>
+      <div class="it"><div><div class="cn">Pastelería Dulce Hogar</div><div class="cm">Instalado 18/02 · retirado el 15/05</div></div><span class="p r">Retirado</span></div>
+    </div>
+    <div class="grp"><button class="gh"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5B636E" stroke-width="2.5" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg><span class="nm">Aliados comerciales</span><span class="ct">4 ya no</span></button></div>
+    <div class="grp"><button class="gh"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5B636E" stroke-width="2.5" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg><span class="nm">Rosa Paredes</span><span class="ct">2 ya no</span></button></div>
+    <div class="pie"><button class="bt a">Exportar a Excel</button><button class="bt b">Ver en la lista</button></div>
+  </aside>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1366,"height":1200}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

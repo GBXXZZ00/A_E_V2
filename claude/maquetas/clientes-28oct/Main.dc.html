@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Clientes, lista</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#F5F6F7;font-family:Inter,system-ui,sans-serif;color:#111315}
+*{box-sizing:border-box}
+.app{display:flex;flex-wrap:wrap;min-height:1300px}
+.side{flex:0 0 220px;background:#fff;border-right:1px solid #E3E6EA;padding:22px 14px;display:flex;flex-direction:column;gap:4px}
+.logo{font-weight:700;font-size:18px;padding:0 10px 18px}.logo span{color:#5B636E;font-weight:500}
+.nav{padding:10px 12px;border-radius:12px;font-size:14px;color:#5B636E;font-weight:500;text-decoration:none}
+.nav.on{background:#E8EEFF;color:#1F45C4;font-weight:600}
+.main{flex:999 1 700px;min-width:0;padding:26px 34px;display:flex;flex-direction:column;gap:16px}
+.top{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+h1{margin:0;font-size:26px}
+.sw{display:flex;background:#ECEEF1;border-radius:999px;padding:3px}
+.sw b{padding:7px 16px;border-radius:999px;font-size:13px;font-weight:600;color:#5B636E}.sw b.on{background:#fff;color:#111315;box-shadow:0 1px 3px rgba(17,19,21,.12)}
+.srch{margin-left:auto;display:flex;flex-direction:column;gap:3px;min-width:280px}
+.srch label{font-size:12px;font-weight:600;color:#5B636E}.srch input{border:1px solid #E3E6EA;border-radius:12px;padding:9px 12px;font-family:inherit;font-size:14px}
+.segs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.seg{background:#fff;border:1px solid #E3E6EA;border-radius:18px;padding:14px 18px;display:flex;align-items:center;gap:14px;font-family:inherit;text-align:left}
+.seg.on{border:2px solid #2B5CFF}.seg .n{font-size:28px;font-weight:700}.seg .t{font-weight:600;font-size:15px}.seg .s{font-size:12px;color:#5B636E}
+.leg{background:#fff;border:1px solid #E3E6EA;border-radius:18px;padding:16px 18px;display:flex;flex-direction:column;gap:12px}
+.lh{display:flex;align-items:baseline;gap:10px}.lh b{font-size:15px}.lh span{font-size:12px;color:#5B636E}
+.track{display:flex;height:16px;border-radius:999px;overflow:hidden}
+.grps{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+.g{border:1px solid #E3E6EA;border-radius:14px;padding:10px 12px;font-family:inherit;text-align:left;background:#fff}
+.g .k{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#3B424B}.g .k i{width:10px;height:10px;border-radius:3px;display:inline-block}
+.g .v{font-size:22px;font-weight:700;margin-top:2px}
+.prio{display:flex;align-items:center;gap:14px;background:#FBF1DC;border:1px solid #F0DDB0;border-radius:16px;padding:12px 16px}
+.prio b{font-size:15px}.prio span{font-size:13px;color:#5B4A1E}
+.btn{border-radius:999px;padding:9px 14px;font-size:13px;font-weight:600;font-family:inherit;border:1px solid #D5DEFF;background:#fff;color:#1F45C4}
+.btn.pr{background:#2B5CFF;color:#fff;border-color:#2B5CFF}
+.gest{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.ge{background:#fff;border:1px solid #E3E6EA;border-radius:18px;padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.ge .t1{display:flex;align-items:center;gap:8px}.ge .t1 b{font-size:15px}
+.ge .s{font-size:12px;color:#5B636E}
+.pb{height:8px;background:#ECEEF1;border-radius:999px;overflow:hidden}.pb span{display:block;height:100%}
+.ge .bts{display:flex;gap:8px}
+.p{font-size:12px;font-weight:600;border-radius:999px;padding:4px 9px}
+.p.ok{background:#E7F5EE;color:#0F6642}.p.w{background:#FBF1DC;color:#754B00}.p.r{background:#FCEDEB;color:#A32117}.p.g{background:#ECEEF1;color:#3B424B}.p.b{background:#E8EEFF;color:#1F45C4}
+.sec{font-size:13px;font-weight:700;color:#3B424B;display:flex;align-items:center;gap:8px}
+.bar2{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.chip{border:1px solid #E3E6EA;background:#fff;border-radius:999px;padding:7px 13px;font-size:13px;font-weight:500;font-family:inherit}
+.cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.cd{border:1px solid #E3E6EA;border-radius:18px;padding:14px 16px;display:flex;flex-direction:column;gap:8px;background:#fff;font-family:inherit;text-align:left}
+.cn{font-weight:700;font-size:15px}.cm{font-size:12px;color:#5B636E}
+.ps{display:flex;gap:6px;flex-wrap:wrap}
+.ctc{display:flex;gap:6px;margin-top:2px}
+.ctc span{font-size:12px;font-weight:600;color:#1F45C4;border:1px solid #D5DEFF;border-radius:999px;padding:5px 10px}
+</style>
+</helmet>
+<div class="app">
+  <nav class="side" aria-label="Menú">
+    <div class="logo">airtek <span>Empresas</span></div>
+    <a class="nav" href="#">Inicio</a><a class="nav on" href="#">Clientes</a><a class="nav" href="#">Comisiones</a><a class="nav" href="#">Revisión</a><a class="nav" href="#">Migraciones</a><a class="nav" href="#">Factibilidad</a>
+  </nav>
+  <main class="main">
+    <div class="top">
+      <h1>Clientes</h1>
+      <div class="sw"><b class="on">Lista</b><b>Resumen</b></div>
+      <div class="srch"><label for="q">Buscar por nombre, RIF o código</label><input id="q"></div>
+    </div>
+    <div class="segs">
+      <button class="seg on"><span class="n">2.136</span><span><span class="t">PYME</span><br><span class="s">50 firmados · 1.517 sin gestionar</span></span></button>
+      <button class="seg"><span class="n">87</span><span><span class="t">Dedicado corporativo</span><br><span class="s">19 firmados · contratos sin fecha por revisar</span></span></button>
+      <button class="seg"><span class="n">30</span><span><span class="t">Dedicado ISP</span><br><span class="s">17 firmados · 5 con pólizas pendientes</span></span></button>
+    </div>
+    <section class="leg" aria-label="Estatus legal">
+      <div class="lh"><b>Estatus legal · PYME</b><span>Cambia con la tarjeta de arriba. Toca un grupo para filtrar la lista.</span></div>
+      <div class="track" aria-hidden="true"><span style="width:71%;background:#C9CDD3"></span><span style="width:12.7%;background:#C98A12"></span><span style="width:6.2%;background:#6E8BFF"></span><span style="width:7.7%;background:#1F45C4"></span><span style="width:2.4%;background:#0F6642"></span></div>
+      <div class="grps">
+        <button class="g"><span class="k"><i style="background:#C9CDD3"></i>Sin gestionar</span><div class="v">1.517</div></button>
+        <button class="g"><span class="k"><i style="background:#C98A12"></i>Faltan documentos</span><div class="v">271</div></button>
+        <button class="g"><span class="k"><i style="background:#6E8BFF"></i>En revisión</span><div class="v">133</div></button>
+        <button class="g"><span class="k"><i style="background:#1F45C4"></i>Por firmar</span><div class="v">165</div></button>
+        <button class="g"><span class="k"><i style="background:#0F6642"></i>Firmado</span><div class="v">50</div></button>
+      </div>
+    </section>
+    <div class="sec">Gestiones activas <span class="p g">2</span></div>
+    <div class="gest">
+      <div class="ge">
+        <div class="t1"><b>ISP: expediente completo</b><span class="p r" style="margin-left:auto">Venció hace 4 días</span></div>
+        <span class="s">Meta: viernes 23/10 · Responsables: los líderes de cada ISP</span>
+        <div class="pb"><span style="width:73%;background:#0F6642"></span></div>
+        <span class="s"><b style="color:#111315">22 de 30 cumplidos</b> · 6 contactados · 2 sin contacto</span>
+        <div class="bts"><button class="btn pr">Ver sus clientes</button><button class="btn">Cambiar fecha</button><button class="btn">Dar por terminada</button></div>
+      </div>
+      <div class="ge">
+        <div class="t1"><b>Pólizas VGT</b><span class="p w" style="margin-left:auto">Sin fecha</span></div>
+        <span class="s">Meta: las dos pólizas subidas · Responsable: administrador</span>
+        <div class="pb"><span style="width:0%;background:#0F6642"></span></div>
+        <span class="s"><b style="color:#111315">0 de 5 cumplidos</b> · 3 con correo enviado</span>
+        <div class="bts"><button class="btn pr">Ver sus clientes</button><button class="btn">Poner fecha</button><button class="btn">Dar por terminada</button></div>
+      </div>
+    </div>
+    <div class="prio"><div><b>Empieza por aquí: 312 sin gestionar, instalados en los últimos 6 meses y habilitados</b><br><span>Son los que más pesan. Puedes crear una gestión con ellos o pedirle a cada líder lo suyo.</span></div><button class="btn pr" style="margin-left:auto">Crear gestión</button></div>
+    <div class="bar2"><button class="chip">Estatus legal ▾</button><button class="chip">Tipo de servicio ▾</button><button class="chip">Líder ▾</button><button class="chip">Gestión ▾</button><button class="chip">Etiquetas ▾</button></div>
+    <div class="sec" style="font-weight:500;color:#5B636E">Lista como hoy: tarjetas con los datos de Proham, la gestión y los botones de contacto</div>
+    <div class="cards">
+      <sc-for list="{{cs}}" as="c" hint-placeholder-count="6">
+        <button class="cd"><span class="cn">{{c.n}}</span><span class="cm">{{c.r}} · {{c.l}} · {{c.s}}</span><span class="ps"><span class="p {{c.k}}">{{c.e}}</span><span class="p g">{{c.g}}</span></span><span class="ctc"><span>WhatsApp</span><span>Llamar</span><span>Correo</span></span></button>
+      </sc-for>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1366,"height":1300}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {
+      cs: [
+        { n: 'Inversiones Delta 21', r: 'J-41122334-5', l: 'Rosa Paredes', s: '2 servicios', k: 'w', e: 'Faltan documentos', g: 'Contactado' },
+        { n: 'Repuestos El Zuliano', r: 'J-29988776-1', l: 'Rosa Paredes', s: '1 servicio', k: 'g', e: 'Sin gestionar', g: 'Recientes' },
+        { n: 'Consultorio Dra. Pérez', r: 'V-11223344', l: 'Ana Ferrer', s: '1 servicio', k: 'b', e: 'En revisión', g: 'Sin etiqueta' },
+        { n: 'Tienda La Económica', r: 'J-40011223-0', l: 'Luisa Mora', s: '3 servicios', k: 'ok', e: 'Firmado', g: 'Sin etiqueta' },
+        { n: 'Gimnasio Fuerza Total', r: 'J-50122334-6', l: 'Carla Rivas', s: '1 servicio', k: 'b', e: 'Por firmar', g: 'Esperando' },
+        { n: 'Cerrajería 24 Horas', r: 'V-15998877', l: 'Ana Ferrer', s: '1 servicio', k: 'g', e: 'Sin gestionar', g: 'Sin contacto' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Hoja del cliente, Hilo y Comisión</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#F5F6F7;font-family:Inter,system-ui,sans-serif;color:#111315}
+*{box-sizing:border-box}
+.wrap{display:flex;gap:40px;padding:0}
+.dr{width:600px;min-height:1000px;background:#fff;border-radius:22px;box-shadow:0 18px 44px rgba(17,19,21,.14);padding:22px 24px;display:flex;flex-direction:column;gap:12px}
+.dh{display:flex;align-items:flex-start;gap:10px}.dh h2{margin:0;font-size:20px}.dh .s{font-size:12px;color:#5B636E;margin-top:3px}
+.x{margin-left:auto;width:40px;height:40px;border-radius:999px;border:1px solid #E3E6EA;background:#fff;font-size:18px;font-family:inherit}
+.tabs{display:flex;gap:2px;border-bottom:1px solid #E3E6EA}
+.tabs b{padding:10px 12px;font-size:14px;color:#5B636E;border-bottom:3px solid transparent;font-weight:600}.tabs b.on{color:#111315;border-color:#2B5CFF}
+.tabs em{font-style:normal;background:#C98A12;color:#fff;border-radius:999px;font-size:11px;padding:1px 6px;margin-left:4px}
+.p{font-size:12px;font-weight:600;border-radius:999px;padding:4px 9px}.p.ok{background:#E7F5EE;color:#0F6642}.p.w{background:#FBF1DC;color:#754B00}.p.g{background:#ECEEF1;color:#3B424B}.p.b{background:#E8EEFF;color:#1F45C4}.p.r{background:#FCEDEB;color:#A32117}
+.flt{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border:1px solid #E3E6EA;background:#fff;border-radius:999px;padding:6px 11px;font-size:12px;font-weight:600;font-family:inherit}.chip.on{background:#111315;color:#fff;border-color:#111315}
+.ev{display:grid;grid-template-columns:86px minmax(0,1fr);gap:10px;padding:10px 0;border-bottom:1px solid #F0F1F3}
+.ev .d{font-size:12px;color:#5B636E}.ev b{font-size:14px;font-weight:600}.ev .s{font-size:12px;color:#5B636E;margin-top:2px}
+.nota{display:flex;flex-direction:column;gap:4px}.nota label{font-size:12px;font-weight:600;color:#5B636E}
+.nota textarea{border:1px solid #E3E6EA;border-radius:12px;padding:10px;font-family:inherit;font-size:14px;height:64px}
+.secc{display:flex;align-items:center;justify-content:space-between;font-weight:700;font-size:14px;margin-top:4px}
+.secc span{font-size:12px;color:#5B636E;font-weight:500}
+.cm{border:1px solid #E3E6EA;border-radius:16px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.ck{display:flex;gap:6px;flex-wrap:wrap}
+.lk{font-size:13px;font-weight:600;color:#1F45C4}
+</style>
+</helmet>
+<div class="wrap">
+  <aside class="dr" aria-label="Pestaña Hilo">
+    <div class="dh"><div><h2>Inversiones Delta 21</h2><div class="s">J-41122334-5 · PYME</div></div><button class="x" aria-label="Cerrar">×</button></div>
+    <div class="tabs" role="tablist"><b>Datos</b><b>Documentos<em>3</em></b><b>Contrato</b><b class="on">Hilo</b><b>Comisión</b></div>
+    <div class="flt"><button class="chip on">Todo</button><button class="chip">Documentos</button><button class="chip">Mensajes</button><button class="chip">Gestión</button><button class="chip">Estatus</button></div>
+    <div class="nota"><label for="n">Escribir una nota</label><textarea id="n"></textarea></div>
+    <div class="ev"><span class="d">27/10 10:15</span><span><b>Reina devolvió la cédula</b><div class="s">Motivo: ilegible. Se le avisó a la líder.</div></span></div>
+    <div class="ev"><span class="d">26/10 16:02</span><span><b>Rosa Paredes subió RIF personal y cédula</b><div class="s">Desde el teléfono</div></span></div>
+    <div class="ev"><span class="d">25/10 09:40</span><span><b>Gestión: pasó a Contactado</b><div class="s">Recientes sin documentos · por Rosa Paredes</div></span></div>
+    <div class="ev"><span class="d">25/10 09:38</span><span><b>Se pidieron los documentos por WhatsApp</b><div class="s">Estatus: Sin gestionar → Faltan documentos</div></span></div>
+    <div class="ev"><span class="d">03/10 18:05</span><span><b>Servicio MBO-88310 cargado desde el TAD</b><div class="s">Instalado el 02/10</div></span></div>
+  </aside>
+  <aside class="dr" aria-label="Pestaña Comisión">
+    <div class="dh"><div><h2>Inversiones Delta 21</h2><div class="s">J-41122334-5 · PYME</div></div><button class="x" aria-label="Cerrar">×</button></div>
+    <div class="tabs" role="tablist"><b>Datos</b><b>Documentos<em>3</em></b><b>Contrato</b><b>Hilo</b><b class="on">Comisión</b></div>
+    <div class="secc">MBO-88310 <span>Instalado el 02/10/2026</span></div>
+    <div class="cm">
+      <div class="ck"><span class="p w">Legal: faltan 3</span><span class="p r">Pago: debe instalación</span><span class="p ok">Orden ODO-3260</span></div>
+      <b style="font-size:14px">Corte de noviembre · límite 18/11</b>
+      <span style="font-size:12px;color:#5B636E">Si no cumple, pasa a diciembre. Dueño: Rosa Paredes.</span>
+      <span class="lk">Abrir en Comisiones</span>
+    </div>
+    <div class="secc">MBO-88231 <span>Instalado el 14/08/2026</span></div>
+    <div class="cm">
+      <div class="ck"><span class="p ok">Comisionó en septiembre</span></div>
+      <span style="font-size:12px;color:#5B636E">Pagada en el corte de septiembre.</span>
+    </div>
+  </aside>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1240,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

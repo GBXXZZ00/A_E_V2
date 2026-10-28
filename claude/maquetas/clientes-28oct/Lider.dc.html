@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Clientes, vista del líder</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#F5F6F7;font-family:Inter,system-ui,sans-serif;color:#111315}
+*{box-sizing:border-box}
+.main{max-width:1366px;padding:26px 34px;display:flex;flex-direction:column;gap:16px}
+.top{display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+h1{margin:0;font-size:26px}
+.rol{font-size:12px;font-weight:600;background:#E7F5EE;color:#0F6642;border-radius:999px;padding:5px 11px}
+.srch{margin-left:auto;display:flex;flex-direction:column;gap:3px;min-width:320px}
+.srch label{font-size:12px;font-weight:600;color:#5B636E}.srch input{border:2px solid #2B5CFF;border-radius:12px;padding:9px 12px;font-family:inherit;font-size:14px}
+.sec{font-size:15px;font-weight:700;display:flex;align-items:center;gap:8px}
+.s{font-size:12px;color:#5B636E;font-weight:500}
+.cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.cd{border:1px solid #E3E6EA;border-radius:18px;padding:14px 16px;display:flex;flex-direction:column;gap:8px;background:#fff;font-family:inherit;text-align:left}
+.cd.ajeno{background:#FAFAFB;border-style:dashed}
+.cn{font-weight:700;font-size:15px}.cm{font-size:12px;color:#5B636E}
+.ps{display:flex;gap:6px;flex-wrap:wrap}
+.p{font-size:12px;font-weight:600;border-radius:999px;padding:4px 9px}
+.p.ok{background:#E7F5EE;color:#0F6642}.p.w{background:#FBF1DC;color:#754B00}.p.g{background:#ECEEF1;color:#3B424B}.p.b{background:#E8EEFF;color:#1F45C4}.p.v{background:#F0EBFA;color:#5B3AA6}
+.res{background:#fff;border:1px solid #E3E6EA;border-radius:18px;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.otros{width:100%;display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #E3E6EA;border-radius:18px;padding:16px 18px;font-family:inherit;text-align:left}
+.otros b{font-size:15px}
+</style>
+</helmet>
+<div class="main">
+  <div class="top"><h1>Clientes</h1><span class="rol">Vista de la líder Rosa Paredes</span>
+    <div class="srch"><label for="q">Buscar por nombre, RIF o código</label><input id="q" value="farmacia"></div></div>
+  <div class="res">
+    <div class="sec">Resultados de "farmacia" <span class="s">2 tuyos · 1 de otra líder</span></div>
+    <div class="cards">
+      <button class="cd"><span class="cn">Farmacia Los Olivos</span><span class="cm">J-40555666-1 · tuyo · 1 servicio</span><span class="ps"><span class="p w">Faltan documentos</span></span></button>
+      <button class="cd"><span class="cn">Farmacia Popular Sur</span><span class="cm">J-29444333-2 · tuyo · 2 servicios</span><span class="ps"><span class="p ok">Firmado</span></span></button>
+      <button class="cd ajeno"><span class="cn">Farmacia San Rafael</span><span class="cm">J-50333222-7 · 1 servicio</span><span class="ps"><span class="p v">Es de Ana Ferrer</span><span class="p g">Solo consulta</span></span></button>
+    </div>
+  </div>
+  <div class="sec">Mis clientes <span class="s">412 · primero los que tienen algo por hacer</span></div>
+  <div class="cards">
+    <button class="cd"><span class="cn">Repuestos El Zuliano</span><span class="cm">J-29988776-1 · 1 servicio · instalado 08/2026</span><span class="ps"><span class="p g">Sin gestionar</span><span class="p b">Reciente</span></span></button>
+    <button class="cd"><span class="cn">Inversiones Delta 21</span><span class="cm">J-41122334-5 · 2 servicios</span><span class="ps"><span class="p w">Faltan documentos</span><span class="p g">Contactado</span></span></button>
+    <button class="cd"><span class="cn">Panadería El Trigal</span><span class="cm">J-50234567-1 · 1 servicio</span><span class="ps"><span class="p w">Falta cédula</span><span class="p b">En el corte</span></span></button>
+  </div>
+  <button class="otros"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5B636E" stroke-width="2.5" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg><b>Clientes de otros líderes</b><span class="s">1.841 · solo para consultar, se abre al tocar</span></button>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1366,"height":760}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

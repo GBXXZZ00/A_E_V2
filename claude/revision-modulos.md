@@ -67,3 +67,14 @@ Maqueta en `claude/maquetas/comisiones-28oct/` (abrir los `.dc.html`; manda sobr
 - Detalle nuevo para TODOS los módulos: total con comparación, reparto por dueño con barras, desplegables por dueño, filtros, búsqueda, Excel y atajo a la gestión.
 - Pendiente: monto del corte (30 $ por cliente): mostrarlo o quitarlo.
 - Recordatorio para los demás módulos: revisar sus gráficas; ya queda pendiente cambiar el detalle y agrupar por dueño.
+
+## Módulo 3 · Clientes · MAQUETA APROBADA (27/10, 23:33)
+Maqueta en `claude/maquetas/clientes-28oct/`. La lista y la hoja quedan como hoy salvo lo que muestra la maqueta. IA y subida actual siguen igual.
+- falla · alta: "Grandes negocios" contaba como "Completo" (1.517 PYME, 1.442 sin un documento; firmados reales 50). Estatus legal en 5 grupos: Sin gestionar · Faltan documentos · En revisión · Por firmar · Firmado.
+- Lista: arriba tarjetas por segmento, barra de estatus legal que cambia con el segmento (ISP con sus atajos: pólizas VGT, sin habilitación, contratos sin fecha, suspendidos), Gestiones activas (meta, fecha, avance, Ver sus clientes, Cambiar fecha, Dar por terminada), prioridad "312 sin gestionar instalados en 6 meses y habilitados" con Crear gestión. Abajo la lista de tarjetas como hoy, sin agrupar por líder.
+- Líder: ve todo, pero primero lo suyo; los clientes de otros líderes en un desplegable de solo consulta; al buscar, el ajeno sale con "Es de ...".
+- Hoja del cliente: mismas pestañas; Datos con franja de gestión activa y servicios en rectángulo (código, plan, estado, sucursal, fecha, serial, IP y etiqueta de carta y proforma); Documentos con "Faltan ..." y Pedir lo que falta; Hilo con filtros y nota; Comisión por servicio.
+- Subir varios documentos: marcar qué trae cada archivo (puede ser más de una casilla), lo aprobado apagado, guardar cuando todos estén marcados.
+- Resumen: tarjetas por tipo de cliente (PYME, Dedicado corporativo, Dedicado ISP, VGT) que cambian las gráficas; promedios de 12 meses (instalaciones, pérdidas, churn mensual, churn de infancia, firmados); números (habilitados, instalados del mes, churn del mes, churn de infancia, sin gestionar); instalados por mes y si siguen habilitados; churn por mes total y de infancia (meta menos de 5 %); calidad de la venta por dueño (incluye Canales y Aliados); gestiones activas; estatus legal por segmento. SIN deuda (va con cobranza, a futuro).
+- Detalle de cada gráfica: el patrón nuevo (total y comparación, reparto por dueño, desplegables por dueño, Excel, Ver en la lista). Todas las gráficas siguen ese patrón.
+- nuevo · alta (base de datos): guardar del TAD la última suspensión y la última habilitación de cada servicio; de ahí salen churn, churn de infancia, movimiento del mes y calidad por dueño.
