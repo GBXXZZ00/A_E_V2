@@ -505,6 +505,26 @@ function filasResumen(m, yo, mod, g, x, hasta){
   if(mod === 'dedicados' && g === 'activos') return cs.filter((c) => segRes(c) !== 'pyme').map((c) => fc(c, segRes(c) === 'isp' ? 'ISP' : 'Corporativo', ''));
   return [];
 }
+// Lote 28/10: equipo de cada dueño, estado de la carta y proforma y clientes nuevos que esperan instalación
+function equipoDe(m, nombre){
+  if(!nombre || nombre === 'Por asignar') return 'sin_dueno';
+  const p = m.personas.find((x) => norm(x.nombre) === norm(nombre)); if(!p) return 'corporativas';
+  return p.equipo_com || (p.rol === 'analista' ? 'canales' : 'corporativas');
+}
+function cartaEstado(m, cid, iid){
+  const c = m.datos.clientes.find((x) => x.id === cid); if(!c) return { k: 'sin_registro', dias: 0 };
+  const i = c.instalaciones.find((x) => x.id === iid); const sv = i && c.servicios.find((x) => x.codigo === i.codigo);
+  const env = (sv && sv.envios || []).filter((e) => e.tipo === 'bienvenida');
+  const can = env.filter((e) => (e.origen || 'canales') === 'canales').slice(-1)[0]; const lid = env.filter((e) => e.origen === 'lider').slice(-1)[0];
+  const dias = i ? Math.max(0, Math.floor((Date.now() - new Date(i.instalada_en).getTime()) / DIA)) : 0;
+  const k = can ? 'enviada' : lid ? 'lider' : i && new Date(i.instalada_en).getTime() < cierre(masMeses(enCurso(), -1)) ? 'sin_registro' : sv && !sv.ip && !sv.ip6 ? 'falta_ip' : 'por_enviar';
+  return { k, dias, servicio_id: sv ? sv.id : null, aliado: !!(i && i.es_aliado), canales: can ? { por: can.por, en: can.en, canal: can.canal } : null, lider: lid ? { por: lid.por, en: lid.en, canal: lid.canal } : null };
+}
+function pendientesInstalar(m, yo){
+  return m.datos.clientes.filter((c) => c.pendiente_instalar_en && !c.servicios.length && !c.instalaciones.length && (yo.rol !== 'lider' || c.lider_id === yo.id))
+    .map((c) => ({ cliente_id: c.id, nombre: c.nombre, doc: c.doc_tipo + '-' + c.doc_numero, dueno_id: c.lider_id, dueno: c.lider || 'Por asignar', equipo: equipoDe(m, c.lider), desde: c.pendiente_instalar_en,
+      orden: null, docs: (c.documentos || []).filter((d) => (d.archivos || []).length).length, enviado: !!c.nuevo_enviado_en }));
+}
 const RPC = {
   inicio_datos(m, yo){
     if(yo.rol === 'aliado') return { rol: yo.rol, hoy: hoy() };
@@ -523,8 +543,12 @@ const RPC = {
   por_instalar(m, yo){
     if(!['admin', 'analista', 'lider'].includes(yo.rol)) return error('No tienes permiso para hacer esto');
     const sen = esSenior(yo);
-    return { rol: yo.rol, ahora: new Date().toISOString(), filas: ordenesAbiertas(m, yo).map((o) => Object.assign({ anterior: o.creada_en < '2026-10-01' }, o)), realizadas: yo.rol === 'admin' || sen ? (m.datos.realizadas || []) : null, duenos: sen ? DUENOS : [],
-      puedo: { asignar: sen, realizadas: yo.rol === 'admin' || sen } };
+    const abre = cierre(masMeses(enCurso(), -1));
+    return { rol: yo.rol, ahora: new Date().toISOString(), horas_alerta: m.horasAlerta || 24, pendientes: pendientesInstalar(m, yo),
+      filas: ordenesAbiertas(m, yo).map((o) => { const c = m.datos.clientes.find((x) => x.id === o.cliente_id); const vieja = new Date(o.creada_en).getTime() < abre;
+        return Object.assign({ anterior: vieja, vieja, en_app: !!c && !c.provisional, docs: c ? (c.documentos || []).filter((d) => (d.archivos || []).length).length : 0, rif: c && !c.provisional ? c.doc_tipo + '-' + c.doc_numero : null }, o); }),
+      realizadas: yo.rol === 'admin' || sen ? (m.datos.realizadas || []) : null, duenos: sen ? DUENOS : [],
+      puedo: { asignar: sen, realizadas: yo.rol === 'admin' || sen, horas: yo.rol === 'admin' } };
   },
   orden_es_cliente(m, yo, a){
     if(!['admin', 'analista', 'lider'].includes(yo.rol)) return error('No tienes permiso para hacer esto');
@@ -1073,7 +1097,8 @@ const RPC = {
       if(a.p_canal === 'manual' && !['admin', 'analista'].includes(yo.rol)) return error('No tienes permiso para hacer esto');
       if(!(a.p_tipos || []).length) return error('Elige qué se envió');
       if(a.p_tipos.includes('bienvenida') && !cartaDe(m, c, sv).puede) return error('La carta de bienvenida sale cuando la instalación tenga dueño');
-      sv.envios = sv.envios || []; a.p_tipos.forEach((t) => sv.envios.push({ tipo: t, en: hace(0), por: yo.nombre, canal: a.p_canal }));
+      if(yo.rol === 'lider' && cartaDe(m, c, sv).aliado && c.instalaciones.some((i) => i.codigo === sv.codigo && i.es_aliado)) return error('La carta y proforma de los clientes de aliados la envía Canales de atención');
+      sv.envios = sv.envios || []; a.p_tipos.forEach((t) => sv.envios.push({ tipo: t, en: hace(0), por: yo.nombre, canal: a.p_canal, origen: ['admin', 'analista'].includes(yo.rol) ? 'canales' : 'lider' }));
       c.hilo.push(linea('gestion', a.p_tipos.length > 1 ? 'ambas' : a.p_tipos[0], { hecho: true, canal: a.p_canal, codigo: sv.sucursal + '-' + sv.codigo }, yo.nombre)); gestion(c, yo); return null; }
     return error('Ese servicio no existe');
   },
@@ -1498,6 +1523,92 @@ const RPC = {
         .map((i) => ({ instalacion_id: i.id, cliente_id: x.id, nombre: x.nombre, codigo: i.codigo, instalada_en: i.instalada_en, motivo: motivoDe(x, i), evento: !!i.es_evento, lider: duenoDe(x, i) || 'Por asignar' })))) : null,
       puedo: { no_comisiona: sen, reactivar: yo.rol === 'admin', corregir: yo.rol === 'admin' && !!cert, pago_dias: yo.rol === 'admin', asignar: sen && !cert, pago: sen, excepcion: yo.rol === 'admin' && !cert, certificar: sen && !cert && c === actual && (manual ? hoy() > corteFin(c) : hoy() >= corteCertifica(c)),
         quitar_certificado: yo.rol === 'admin' && !!cert && !cerrado(masMeses(c, 1)) } };
+  },
+  // ---------- Lote 28/10: Comisiones por equipos, carta y proforma, por instalar con horas y cliente nuevo sin orden ----------
+  comisiones_lista(m, yo, a){
+    const r = RPC.comisiones_corte(m, yo, a); if(r && r.__error) return r;
+    const actual = enCurso(); const abre = cierre(masMeses(actual, -1));
+    r.filas = r.filas.map((f) => Object.assign({}, f, { equipo: equipoDe(m, f.lider), carta: cartaEstado(m, f.cliente_id, f.instalacion_id) }));
+    const ini = cierre(masMeses(r.corte, -1)), fin = cierre(r.corte); r.aliados = [];
+    m.datos.clientes.forEach((c) => c.instalaciones.forEach((i) => { const t = new Date(i.instalada_en).getTime();
+      if(!i.es_aliado || i.anulada_en || t < ini || t >= fin) return;
+      r.aliados.push({ instalacion_id: i.id, cliente_id: c.id, nombre: c.nombre, doc: c.doc_tipo + '-' + c.doc_numero, instalada_en: i.instalada_en, lider: i.instalador || 'Aliado', equipo: 'aliados', origen: 'corte',
+        legal_ok: !!c.legal_ok_en, pago_ok: !!i.pago_ok_en, cumple: false, orden: i.orden ? i.orden.numero : null, estatus: c.estatus, servicio_id: (c.servicios.find((sv) => sv.codigo === i.codigo) || {}).id || null, carta: cartaEstado(m, c.id, i.id) }); }));
+    r.pendientes = pendientesInstalar(m, yo);
+    const ab = ordenesAbiertas(m, yo); const lim = m.horasAlerta || 24;
+    r.pi = { mas24: ab.filter((o) => o.horas >= lim && new Date(o.creada_en).getTime() >= abre).length, menos24: ab.filter((o) => o.horas < lim && new Date(o.creada_en).getTime() >= abre).length, viejas: ab.filter((o) => new Date(o.creada_en).getTime() < abre).length };
+    r.horas_alerta = lim; r.monto = 30; r.yo = { id: yo.id, equipo: equipoDe(m, yo.nombre) };
+    r.puedo = Object.assign({}, r.puedo, { enviar: ['admin', 'analista', 'lider'].includes(yo.rol), enviar_aliados: ['admin', 'analista'].includes(yo.rol), subir_nuevo: ['admin', 'analista', 'lider'].includes(yo.rol), horas: yo.rol === 'admin' });
+    return r;
+  },
+  carta_enviar(m, yo, a){
+    for(const c of visibles(m, yo)){ const sv = c.servicios.find((x) => x.id === Number(a.p_servicio)); if(!sv) continue;
+      const k = cartaDe(m, c, sv); const r = RPC.envio_registrar(m, yo, { p_servicio: sv.id, p_tipos: k.puede ? ['proforma', 'bienvenida'] : ['proforma'], p_canal: a.p_canal, p_destino: a.p_destino });
+      if(r && r.__error) return r; return k.instalacion ? cartaEstado(m, c.id, k.instalacion) : {}; }
+    return error('Ese servicio no existe');
+  },
+  orden_horas_guardar(m, yo, a){ if(yo.rol !== 'admin') return error('No tienes permiso para hacer esto'); const n = Number(a.p_horas); if(!Number.isInteger(n) || n < 1 || n > 720) return error('Escribe entre 1 y 720 horas'); m.horasAlerta = n; return n; },
+  cliente_nuevo(m, yo, a){
+    if(!['admin', 'analista', 'lider'].includes(yo.rol)) return error('No tienes permiso para hacer esto');
+    const num = String(a.p_rif || '').replace(/\D/g, '').replace(/^0+/, ''); const nom = String(a.p_nombre || '').trim().replace(/\s+/g, ' ');
+    if(!/^[1-9]\d{4,9}$/.test(num)) return error('Escribe un RIF o cédula válido');
+    if(!nom) return error('Escribe el posible nombre del cliente');
+    const tipo = (/^[VEJGPC]/i.exec(String(a.p_rif || '').trim()) || ['J'])[0].toUpperCase();
+    const ya = m.datos.clientes.find((c) => c.doc_numero === num);
+    if(ya){ if(yo.rol === 'lider' && ya.lider_id !== yo.id) return error('Ese RIF ya es un cliente de ' + (ya.lider || 'otro líder') + '. Pídele al administrador que lo revise'); return { cliente_id: ya.id, nombre: ya.nombre, existe: true }; }
+    const clave = norm(nom.split(' ').slice(0, 2).join(' '));
+    if(a.p_parecido === null || a.p_parecido === undefined){
+      const par = m.datos.clientes.filter((c) => c.provisional && !c.unido_a && clave.length >= 4 && norm(c.nombre).indexOf(clave) >= 0).slice(0, 3);
+      if(par.length) return { parecidos: par.map((c) => ({ id: c.id, nombre: c.nombre, lider: c.lider || 'Por asignar' })) };
+    } else if(Number(a.p_parecido) > 0){
+      const p = m.datos.clientes.find((c) => c.id === Number(a.p_parecido) && c.provisional); if(!p) return error('Ese cliente ya no está disponible');
+      p.provisional = false; p.doc_tipo = tipo; p.doc_numero = num; p.pendiente_instalar_en = p.pendiente_instalar_en || hace(0); return { cliente_id: p.id, nombre: p.nombre, unido: true };
+    }
+    const c = { id: 90000 + m.datos.clientes.length, doc_tipo: tipo, doc_numero: num, nombre: nom, es_natural: ['V', 'E'].includes(tipo), lider: yo.rol === 'lider' || yo.rol === 'analista' ? yo.nombre : null, lider_id: yo.rol === 'lider' || yo.rol === 'analista' ? yo.id : null,
+      estatus: 'documentos_pendientes', estatus_desde: hace(0), creado_en: hace(0), documentos: [], servicios: [], instalaciones: [], representantes: [], hilo: [], pendiente_instalar_en: hace(0) };
+    m.datos.clientes.push(c); c.hilo.push(linea('dato', 'cliente_nuevo', { rif: tipo + '-' + num, nombre: nom }, yo.nombre));
+    (m.bitacora = m.bitacora || []).push({ accion: 'cliente_nuevo_sin_orden', cliente: c.id, por: yo.nombre });
+    return { cliente_id: c.id, nombre: nom, creado: true };
+  },
+  cliente_nuevo_enviar(m, yo, a){ const c = m.datos.clientes.find((x) => x.id === Number(a.p_cliente)); if(!c) return error('No tienes acceso a este cliente');
+    if(yo.rol === 'lider' && c.lider_id !== yo.id) return error('No tienes acceso a este cliente'); c.nuevo_enviado_en = hace(0); (m.bitacora = m.bitacora || []).push({ accion: 'cliente_nuevo_enviado', cliente: c.id, por: yo.nombre }); return null; },
+  comisiones_resumen(m, yo, a){
+    if(!['admin', 'analista', 'lider', 'abogado'].includes(yo.rol)) return error('No tienes permiso para hacer esto');
+    if(yo.rol === 'abogado' && !yo.gerencia) return error('No tienes permiso para ver este resumen');
+    const todos = Object.assign({}, yo, { rol: 'admin' });   // el ranking y los números los ven todos
+    const actual = enCurso(); let c = a.p_corte ? String(a.p_corte).slice(0, 8) + '01' : actual; if(c > actual) c = actual; const p = masMeses(c, -1);
+    const fc = RPC.comisiones_lista(m, todos, { p_corte: c }); const fp = filasComision(m, todos, p);
+    const base = fc.filas.filter((f) => !f.migracion).concat(fc.aliados); const corteF = base.filter((f) => f.origen === 'corte');
+    const rk = {}; ['corporativas', 'canales', 'aliados'].forEach((e) => { const g = {}; corteF.filter((f) => f.equipo === e).forEach((f) => { g[f.lider] = g[f.lider] || { nombre: f.lider, inst: 0, com: 0 }; g[f.lider].inst++; if(f.cumple) g[f.lider].com++; });
+      m.personas.filter((x) => x.activo && ['lider', 'analista'].includes(x.rol) && equipoDe(m, x.nombre) === e && !g[x.nombre]).forEach((x) => { g[x.nombre] = { nombre: x.nombre, inst: 0, com: 0 }; });
+      rk[e] = Object.values(g).sort((x, y) => y.inst - x.inst || y.com - x.com || x.nombre.localeCompare(y.nombre)).map((x, i) => Object.assign(x, { pos: i + 1, yo: x.nombre === yo.nombre })); });
+    const ab = ordenesAbiertas(m, todos); const abre = cierre(masMeses(actual, -1)); const lim = m.horasAlerta || 24;
+    const del = ab.filter((o) => new Date(o.creada_en).getTime() >= abre);
+    const cartas = corteF.map((f) => (f.carta || {}).k);
+    const nm = (k) => ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'][Number(String(k).slice(5, 7)) - 1];
+    return { corte: c, mes: nm(c), anterior: p, mes_anterior: nm(p), en_curso: c === actual, cerrado: cerrado(c), misma_fecha: c === actual, limite: corteLimite(c), horas_alerta: lim, rol: yo.rol, solo_lectura: yo.rol === 'abogado',
+      nums: { inst: corteF.length, inst_prev: fp.filter((f) => f.origen === 'corte').length, comisionan: base.filter((f) => f.cumple).length, esperan: base.filter((f) => !f.cumple && f.equipo !== 'aliados').length,
+        por_instalar: c === actual ? del.filter((o) => o.horas >= lim).length : null, mediana: 2.5, susp60: 0, siguen_prev: 96 },
+      ranking: rk, lider_mes: { corte: p, mes: nm(p), cerrado: cerrado(p), lider: rk.corporativas[0] && rk.corporativas[0].inst ? { nombre: rk.corporativas[0].nombre, inst: rk.corporativas[0].inst, com: rk.corporativas[0].com } : null, canales: null, aliados: null },
+      equipos: [['corporativas', 'Ventas corporativas'], ['canales', 'Canales de atención'], ['aliados', 'Aliados comerciales']].map((e) => ({ equipo: e[0], nombre: e[1], ahora: corteF.filter((f) => f.equipo === e[0]).length, com: corteF.filter((f) => f.equipo === e[0] && f.cumple).length, anterior: fp.filter((f) => f.origen === 'corte').length })),
+      serie: [5, 4, 3, 2, 1, 0].map((n) => { const k = masMeses(c, -n); const f = filasComision(m, todos, k); return { corte: k, mes: nm(k), total: f.filter((x) => x.origen === 'corte').length, cumplen: f.filter((x) => x.cumple).length, actual: k === c }; }),
+      por_instalar: c === actual ? { a: del.filter((o) => o.horas < 24).length, b: del.filter((o) => o.horas >= 24 && o.horas < 72).length, c: del.filter((o) => o.horas >= 72 && o.horas < 168).length, d: del.filter((o) => o.horas >= 168).length, viejas: ab.length - del.length } : null,
+      monto: { monto: 30, cumplen: base.filter((f) => f.cumple).length, pasan: base.filter((f) => f.origen === 'corte' && !f.cumple && f.equipo !== 'aliados').length, pierden: base.filter((f) => f.origen === 'anterior' && !f.cumple).length, limite: corteLimite(c), cerrado: cerrado(c) },
+      cartas: { canales: cartas.filter((k) => k === 'enviada').length, lider: cartas.filter((k) => k === 'lider').length, por_enviar: cartas.filter((k) => k === 'por_enviar' || k === 'falta_ip').length, falta_ip: cartas.filter((k) => k === 'falta_ip').length, esperan: 0 },
+      cortes: [0, 1, 2].map((n) => { const k = masMeses(actual, -n); return { corte: k, mes: nm(k), cerrado: cerrado(k), en_curso: n === 0 }; }) };
+  },
+  comisiones_detalle(m, yo, a){
+    if(!['admin', 'analista', 'lider', 'abogado'].includes(yo.rol)) return error('No tienes permiso para hacer esto');
+    const todos = Object.assign({}, yo, { rol: 'admin' }); const fc = RPC.comisiones_lista(m, todos, { p_corte: a.p_corte });
+    const base = fc.filas.concat(fc.aliados); const g = a.p_grafica; const x = String(a.p_valor || '');
+    let f = [];
+    if(g === 'por_instalar') f = ordenesAbiertas(m, todos).map((o) => ({ c: o.cliente_id, n: o.cliente || 'Sin cliente en la app', s: 'Orden ' + o.numero, e: Math.floor(o.horas) + ' horas', t: o.horas >= 24 ? 'w' : '', d: o.lider || 'Por asignar' }));
+    else f = base.filter((r) => r.origen === 'corte' || g === 'monto' || g === 'comisionan').filter((r) => g === 'cartas' ? (x === 'por_enviar' ? ['por_enviar', 'falta_ip'].includes((r.carta || {}).k) : x === 'canales' ? (r.carta || {}).k === 'enviada' : x === 'lider' ? (r.carta || {}).k === 'lider' : x === 'ip' ? (r.carta || {}).k === 'falta_ip' : ['enviada', 'lider'].includes((r.carta || {}).k))
+      : g === 'comisionan' ? r.cumple : g === 'equipo' ? r.equipo === x : g === 'ranking' ? r.equipo === x.split('|')[0] && (!x.split('|')[1] || norm(r.lider) === x.split('|')[1]) : g === 'monto' ? (x === 'cumplen' ? r.cumple : x === 'pasan' ? r.origen === 'corte' && !r.cumple : r.origen === 'anterior' && !r.cumple) : g === 'susp60' ? false : true)
+      .map((r) => ({ c: r.cliente_id, n: r.nombre, s: 'Instalada ' + String(r.instalada_en).slice(8, 10) + '/' + String(r.instalada_en).slice(5, 7), e: g === 'cartas' ? ({ enviada: 'Enviada por Canales', lider: 'Enviada por el líder · falta Canales', falta_ip: 'Esperando la IP' }[(r.carta || {}).k] || 'Esperando ' + ((r.carta || {}).dias || 0) + ' días') : r.cumple ? 'Comisiona' : 'Falta legal', t: r.cumple ? 'ok' : 'w', d: r.lider }));
+    const visible = yo.rol !== 'lider' ? f : f.filter((r) => norm(r.d) === norm(yo.nombre) || base.some((b) => b.cliente_id === r.c && b.equipo === 'aliados'));
+    const gr = {}; f.forEach((r) => { gr[r.d] = (gr[r.d] || 0) + 1; });
+    return { total: f.length, grupos: Object.keys(gr).map((k) => ({ d: k, n: gr[k] })).sort((p, q) => q.n - p.n), filas: Number(a.p_pagina) < 0 ? visible : visible.slice(0, 50), pagina: 0, por_pagina: 50, lista: 'comisiones.html' };
   }
 };
 

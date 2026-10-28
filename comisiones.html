@@ -16,15 +16,15 @@
 </head>
 <body>
 <header class="barra" id="barra"><a class="marca" href="inicio.html" aria-label="Inicio"><img class="logo" src="assets/img/logo.svg?v=66" alt="Airtek" width="96" height="12"><span>Empresas</span></a></header>
-<main class="pagina">
+<main class="pagina cx">
   <div class="cabeza">
     <h1 class="titulo">Comisiones</h1>
     <div class="selector-corte"><label class="solo-lector" for="corte">Corte</label><select id="corte" aria-label="Corte"></select></div>
   </div>
-  <div class="vistas" id="vistas" role="tablist" aria-label="Vista"></div>
-  <div id="avisoCam"></div>
   <p class="sub" id="rango"></p>
-  <div class="mets" id="mets"></div>
+  <div class="cx-segs" id="segs" aria-live="polite"></div>
+  <div class="cx-equipos" id="equipos" role="tablist" aria-label="Equipos"></div>
+  <div class="cx-alertas" id="alertas"></div>
   <div id="avisos" aria-live="polite"></div>
   <div class="cabeza busca linea-corte">
     <div class="buscar"><label class="solo-lector" for="busca">Buscar cliente, código u orden</label><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM20 20l-3.5-3.5"/></svg><input class="campo" id="busca" type="search" maxlength="60" autocomplete="off" enterkeyhint="search" placeholder="Cliente, código u orden"></div>
@@ -32,10 +32,7 @@
   </div>
   <div class="filtros" id="filtros" role="tablist" aria-label="Filtros"></div>
   <div id="ayudaFiltro" aria-live="polite"></div>
-  <div class="cols comisiones">
-    <div id="lista" aria-live="polite"></div>
-    <aside id="lado"></aside>
-  </div>
+  <div id="lista" aria-live="polite"></div>
 </main>
 <script src="assets/vendor/supabase.js?v=1"></script>
 <script src="assets/js/practica.js?v=66"></script>
@@ -54,6 +51,8 @@
 <script src="assets/js/cliente-gestion.js?v=66"></script>
 <script src="assets/js/resumen.js?v=66"></script>
 <script src="assets/js/sin-instalar.js?v=66"></script>
+<script src="assets/js/por-instalar.js?v=66"></script>
+<script src="assets/js/comisiones-resumen.js?v=66"></script>
 <script src="assets/js/comisiones.js?v=66"></script>
 </body>
 </html>

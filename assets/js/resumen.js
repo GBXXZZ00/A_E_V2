@@ -9,9 +9,10 @@
   const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
   const MESES_L = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
   const NOMBRES = { clientes: 'Clientes', comisiones: 'Comisiones', revision: 'Revisión', migraciones: 'Migraciones', factibilidad: 'Factibilidad', dedicados: 'Dedicados', aliados: 'Aliados' };
-  const LEGAL = ['Completo', 'Firmado', 'Por firmar', 'En revisión', 'Faltan documentos'];
-  const LEGAL_X = ['completo', 'firmado', 'por_firmar', 'revision', 'faltan'];
-  const LEGAL_C = ['ok', 'verde2', 'azul', 'azul2', 'w'];
+  // Lote 28/10: estatus legal en 5 grupos ("Grandes negocios" es Sin gestionar, nunca completo)
+  const LEGAL = ['Sin gestionar', 'Faltan documentos', 'En revisión', 'Por firmar', 'Firmado'];
+  const LEGAL_X = ['sin_gestionar', 'faltan', 'revision', 'por_firmar', 'firmado'];
+  const LEGAL_C = ['gris', 'w', 'azul2', 'azul', 'ok'];
   const COLORES = ['ok', 'verde2', 'azul', 'azul2', 'w', 'b', 'gris'];
   const POR_PAGINA = 50;
   const num = (n) => Number(n || 0).toLocaleString('es-VE');
@@ -180,7 +181,10 @@
     return { recargar: cargar, modulo: (m) => { if(m && m !== st.modulo){ st.modulo = m; st.vista = {}; cargar(); } }, estado: st };
   }
 
-  // ---------- Panel de detalle: a la derecha en escritorio, hoja desde abajo en teléfono ----------
+  // ---------- Panel de detalle (lote 28/10, un solo componente para todos los módulos) ----------
+  // Arriba el total con su comparación, el reparto por dueño con barras, filtros, búsqueda y los desplegables por dueño
+  // con tarjetas de clientes y sus chips. Abajo Exportar a Excel y Ver en la lista (o la acción que pida el módulo).
+  // o.fuente(pagina) devuelve { total, grupos, filas, lista } (por defecto modulo_detalle); pagina -1 = todo.
   let D = null;
   function hoja(){
     let h = $('hojaRes');
@@ -189,35 +193,64 @@
       h.setAttribute('role', 'dialog'); h.setAttribute('aria-modal', 'true'); h.setAttribute('aria-labelledby', 'tRes'); h.setAttribute('aria-hidden', 'true');
       document.body.appendChild(h); prepararHojas();
       h.addEventListener('click', clicDetalle);
+      h.addEventListener('input', (ev) => { if(ev.target.id === 'rsBusca'){ clearTimeout(D && D.tb); const v = ev.target.value; if(D) D.tb = setTimeout(() => buscarDet(v), 160); } });
     }
     return h;
   }
+  const tonoDe = (t) => (t === 'ok' ? 'verde' : t === 'w' ? 'ambar' : t === 'b' ? 'azul' : t === 'r' ? 'rojo' : 'gris');
   function filaDet(f, i){
     const abre = f.c && !D.soloLectura && window.Ficha;
-    const tono = f.t === 'ok' ? 'verde' : f.t === 'w' ? 'ambar' : f.t === 'b' ? 'rojo' : 'gris';
-    return '<' + (abre ? 'button type="button" data-rs-cli="' + i + '"' : 'div') + ' class="rs-df"><span class="tx"><b>' + esc(f.n) + '</b><small>' + esc(f.s || '') + '</small></span>' + (f.e ? '<span class="chip ' + tono + '">' + esc(f.e) + '</span>' : '') + '</' + (abre ? 'button' : 'div') + '>';
+    return '<' + (abre ? 'button type="button" data-rs-cli="' + i + '"' : 'div') + ' class="rs-df"><span class="tx"><b>' + esc(f.n) + '</b><small>' + esc(f.s || '') + '</small></span>' +
+      (f.e ? '<span class="chip ' + tonoDe(f.t) + '">' + esc(f.e) + '</span>' : '') + '</' + (abre ? 'button' : 'div') + '>';
+  }
+  const visibles = () => { if(!D.q) return D.filas; const q = C.normalizeStr(D.q); return (D.todas || D.filas).filter((f) => C.normalizeStr([f.n, f.s, f.d, f.e].join(' ')).indexOf(q) >= 0); };
+  function gruposDet(filas){
+    const g = []; const idx = {};
+    filas.forEach((f, i) => { const k = f.d || 'Sin dueño'; if(idx[k] === undefined){ idx[k] = g.length; g.push({ d: k, filas: [] }); } g[idx[k]].filas.push([f, i]); });
+    const tot = {}; (D.grupos || []).forEach((x) => { tot[x.d] = x.n; });
+    g.sort((a, b) => (tot[b.d] || b.filas.length) - (tot[a.d] || a.filas.length) || a.d.localeCompare(b.d));
+    const solo = g.length === 1 || !!D.q;
+    return g.map((x, n) => { const ab = solo || D.abiertos[x.d] !== undefined ? (solo || D.abiertos[x.d]) : n === 0;
+      return '<div class="rs-dg' + (ab ? ' abierto' : '') + '"><button type="button" class="rs-dgc" data-rs-dg="' + esc(x.d) + '" aria-expanded="' + ab + '">' + ic('abajo') + '<b>' + esc(x.d) + '</b>' +
+        '<span class="chip ' + tonoDe(D.tono || '') + '">' + num(tot[x.d] !== undefined && !D.q ? tot[x.d] : x.filas.length) + '</span></button>' +
+        '<div class="rs-dgb">' + x.filas.map((p) => filaDet(p[0], p[1])).join('') + '</div></div>'; }).join('');
   }
   function pintarDetalle(){
     const h = hoja(); const d = D;
-    const cab = '<div class="hoja-cab"><div class="tx"><small>' + esc(NOMBRES[d.modulo] || d.modulo) + '</small><b id="tRes">' + esc(d.t) + '</b><small id="nRes">' + (d.total === null ? 'Cargando…' : d.error ? '' : num(d.total) + (d.total === 1 ? ' registro' : ' registros')) + '</small></div>' +
+    const cab = '<div class="hoja-cab"><div class="tx"><small>' + esc(d.pre || NOMBRES[d.modulo] || d.modulo || '') + '</small><b id="tRes">' + esc(d.t) + '</b></div>' +
       '<button type="button" class="cerrar" data-cierra="1" aria-label="Cerrar">' + ic('x') + '</button></div>';
     let cuerpo;
     if(d.error) cuerpo = '<div class="vacio" role="alert"><b>No se pudo cargar la lista</b><p>' + esc(d.error) + '</p><button type="button" class="btn btn-chico" data-rs-det-reintentar>Reintentar</button></div>';
-    else if(d.total === null) cuerpo = C.esqueleto(6);
-    else if(!d.filas.length) cuerpo = C.vacio('Nada que mostrar', 'No hay registros en esta parte del resumen.');
-    else cuerpo = d.filas.map(filaDet).join('') + (d.filas.length < d.total ? '<button type="button" class="btn btn-2 btn-chico rs-mas" data-rs-mas' + (d.cargando ? ' disabled' : '') + '>' + (d.cargando ? 'Cargando…' : 'Ver ' + Math.min(POR_PAGINA, d.total - d.filas.length) + ' más') + '</button>' : '');
-    const pie = d.error || d.total === null || !d.total ? '' : '<div class="hoja-pie"><button type="button" class="btn btn-2" data-rs-excel>Exportar a Excel</button>' +
-      (d.lista && !d.soloLectura ? '<a class="btn" href="' + esc(d.lista) + '">Ver todos en la lista</a>' : '') + '</div>';
+    else if(d.total === null) cuerpo = '<div class="rs-dt"><span class="sk" style="width:90px;height:44px;border-radius:12px"></span></div>' + C.esqueleto(6);
+    else {
+      const gs = (d.grupos || []).slice(0, 8); const mx = Math.max(1, ...gs.map((x) => x.n));
+      cuerpo = '<div class="rs-dt"><b class="' + (d.tono ? 'tx-' + tonoDe(d.tono) : '') + '">' + num(d.total) + '</b><span>' + esc(d.comp || (d.total === 1 ? 'registro' : 'registros')) + '</span></div>' +
+        (gs.length > 1 ? '<div class="rs-dp"><span class="rotulo">Por ' + esc(d.porQuien || 'dueño') + '</span>' + gs.map((x) => '<div class="rs-db"><span>' + esc(x.d) + '</span><span class="bar"><i class="c-' + (d.tono === 'w' ? 'w' : d.tono === 'r' ? 'b' : d.tono === 'ok' ? 'ok' : 'azul') + '" style="transform:scaleX(' + (x.n / mx).toFixed(3) + ')"></i></span><b>' + num(x.n) + '</b></div>').join('') + '</div>' : '') +
+        ((d.filtros || []).length ? '<div class="filtros rs-df-f" role="tablist">' + d.filtros.map((x) => '<button type="button" role="tab" data-rs-fx="' + esc(x.x) + '" class="' + (x.x === d.x ? 'on' : '') + '" aria-selected="' + (x.x === d.x) + '">' + esc(x.t) + (x.n !== undefined ? ' <em>' + num(x.n) + '</em>' : '') + '</button>').join('') + '</div>' : '') +
+        (d.total > 0 ? '<label class="rotulo arriba" for="rsBusca">Buscar cliente</label><input class="campo" id="rsBusca" type="search" maxlength="60" autocomplete="off" enterkeyhint="search" value="' + esc(d.q || '') + '">' : '');
+      const fs = visibles();
+      if(!d.total) cuerpo += C.vacio('Nada que mostrar', 'No hay registros en esta parte del resumen.');
+      else if(!fs.length) cuerpo += C.vacio('Sin resultados', 'Nadie coincide con "' + d.q + '".');
+      else cuerpo += '<div class="rs-dgs">' + gruposDet(fs) + '</div>' + (!d.q && d.filas.length < d.total ? '<button type="button" class="btn btn-2 btn-chico rs-mas" data-rs-mas' + (d.cargando ? ' disabled' : '') + '>' + (d.cargando ? 'Cargando…' : 'Ver ' + Math.min(POR_PAGINA, d.total - d.filas.length) + ' más') + '</button>' : '');
+      if(d.total) cuerpo += '<p class="nota-chica">Cada grupo se abre y se cierra. Toca un cliente para ver su expediente.</p>';
+    }
+    const acc = d.accion ? (d.accion.href ? '<a class="btn" href="' + esc(d.accion.href) + '">' + esc(d.accion.t) + '</a>' : '<button type="button" class="btn" data-rs-accion>' + esc(d.accion.t) + '</button>')
+      : d.lista && !d.soloLectura ? '<a class="btn" href="' + esc(d.lista) + '">Ver en la lista</a>' : '';
+    const pie = d.error || d.total === null || !d.total ? '' : '<div class="hoja-pie"><button type="button" class="btn btn-2" data-rs-excel>Exportar a Excel</button>' + acc + '</div>';
     h.innerHTML = cab + '<div class="hoja-cuerpo">' + cuerpo + '</div>' + pie;
   }
+  function fuenteDe(o){
+    if(o.fuente) return (pagina) => o.fuente(pagina, o);
+    return (pagina) => { const r = rango(o.periodo); return rpc('modulo_detalle', { p_modulo: o.modulo, p_grafica: o.g, p_valor: o.x, p_pagina: pagina, p_desde: r.desde, p_hasta: r.hasta }); };
+  }
   async function pedir(pagina){
-    const r = rango(D.periodo); const yo = D; const n = ++D.pedido;
-    return rpc('modulo_detalle', { p_modulo: yo.modulo, p_grafica: yo.g, p_valor: yo.x, p_pagina: pagina, p_desde: r.desde, p_hasta: r.hasta }).then((x) => (n === D.pedido && yo === D) ? x : null);
+    const yo = D; const n = ++D.pedido;
+    return fuenteDe(D)(pagina).then((x) => (n === D.pedido && yo === D) ? x : null);
   }
   async function detalle(o){
-    D = Object.assign({}, o, { total: null, filas: [], pagina: 0, pedido: 0, lista: null, error: null });
-    pintarDetalle(); abrirHoja('hojaRes');
-    try { const x = await pedir(0); if(!x) return; D.total = x.total; D.filas = x.filas || []; D.lista = x.lista; }
+    D = Object.assign({}, o, { total: null, filas: [], todas: null, grupos: [], pagina: 0, pedido: 0, lista: null, error: null, q: '', abiertos: {} });
+    pintarDetalle(); if(C.hojaAbierta && C.hojaAbierta() !== 'hojaRes') abrirHoja('hojaRes');
+    try { const x = await pedir(0); if(!x) return; D.total = x.total; D.filas = x.filas || []; D.grupos = x.grupos || []; D.lista = x.lista; if(x.solo_lectura) D.soloLectura = true; }
     catch (e) { D.error = e.message; }
     pintarDetalle();
   }
@@ -227,19 +260,26 @@
     catch (e) { toast('No se pudo traer más. ' + e.message, 'error'); }
     D.cargando = false; pintarDetalle();
   }
+  // La búsqueda mira todo: la primera vez trae la lista completa
+  async function buscarDet(v){
+    if(!D) return; D.q = String(v || '').trim();
+    if(D.q && !D.todas && D.filas.length < D.total){ try { const x = await pedir(-1); if(x) D.todas = x.filas || []; } catch (e) { toast('No se pudo buscar. ' + e.message, 'error'); } }
+    if(!D.todas) D.todas = D.filas;
+    pintarDetalle(); const c = $('rsBusca'); if(c){ c.focus(); const n = c.value.length; c.setSelectionRange(n, n); }
+  }
   // CSV con ; y BOM: Excel lo abre con acentos y columnas
   const celda = (v) => { let s = String(v === null || v === undefined ? '' : v); if(/^[=+\-@]/.test(s)) s = "'" + s; return '"' + s.replace(/"/g, '""') + '"'; };
   async function excel(){
     const b = $('hojaRes').querySelector('[data-rs-excel]'); if(b){ b.disabled = true; b.textContent = 'Preparando…'; }
     try {
-      const r = rango(D.periodo); const yo = D;
-      const x = await rpc('modulo_detalle', { p_modulo: yo.modulo, p_grafica: yo.g, p_valor: yo.x, p_pagina: -1, p_desde: r.desde, p_hasta: r.hasta }); if(yo !== D) return;
-      const lineas = [['Nombre', 'Detalle', 'Estado'].map(celda).join(';')].concat((x.filas || []).map((f) => [f.n, f.s, f.e].map(celda).join(';')));
+      const yo = D;
+      const x = await fuenteDe(yo)(-1); if(yo !== D) return;
+      const lineas = [['Dueño', 'Nombre', 'Detalle', 'Estado'].map(celda).join(';')].concat((x.filas || []).map((f) => [f.d, f.n, f.s, f.e].map(celda).join(';')));
       const blob = new Blob(['﻿' + lineas.join('\r\n')], { type: 'text/csv;charset=utf-8' });
-      const nombre = (NOMBRES[D.modulo] + ' ' + D.t).replace(/[^\wáéíóúñÁÉÍÓÚÑ ]+/g, ' ').trim().replace(/\s+/g, '_').slice(0, 80) + '.csv';
+      const nombre = ((D.pre || NOMBRES[D.modulo] || '') + ' ' + D.t).replace(/[^\wáéíóúñÁÉÍÓÚÑ ]+/g, ' ').trim().replace(/\s+/g, '_').slice(0, 80) + '.csv';
       if(window.Archivos) window.Archivos.descargar(blob, nombre);
       const n = (x.filas || []).length;
-      toast(n < (x.total || 0) ? 'El Excel trae las primeras ' + num(n) + ' de ' + num(x.total) + ' filas. Para el resto, usa Ver todos en la lista' : 'Listo: ' + num(n) + ' filas en el Excel', n < (x.total || 0) ? 'error' : undefined);
+      toast(n < (x.total || 0) ? 'El Excel trae las primeras ' + num(n) + ' de ' + num(x.total) + ' filas. Para el resto, usa Ver en la lista' : 'Listo: ' + num(n) + ' filas en el Excel', n < (x.total || 0) ? 'error' : undefined);
     } catch (e) { toast('No se pudo exportar. ' + e.message, 'error'); }
     finally { const b2 = $('hojaRes') && $('hojaRes').querySelector('[data-rs-excel]'); if(b2){ b2.disabled = false; b2.textContent = 'Exportar a Excel'; } }
   }
@@ -248,7 +288,10 @@
     if(t.closest('[data-rs-mas]')){ mas(); return; }
     if(t.closest('[data-rs-excel]')){ excel(); return; }
     if(t.closest('[data-rs-det-reintentar]')){ detalle(D); return; }
-    if((b = t.closest('[data-rs-cli]'))){ const f = D && D.filas[Number(b.dataset.rsCli)]; if(f && f.c && window.Ficha) window.Ficha.abrir(f.c, { yo: D.yo }); }
+    if(t.closest('[data-rs-accion]') && D && D.accion && D.accion.fn){ D.accion.fn(); return; }
+    if((b = t.closest('[data-rs-fx]')) && D && b.dataset.rsFx !== D.x){ detalle(Object.assign({}, D, { x: b.dataset.rsFx, t: (D.titulos && D.titulos[b.dataset.rsFx]) || D.t })); return; }
+    if((b = t.closest('[data-rs-dg]')) && D){ const k = b.dataset.rsDg; const ab = !b.parentNode.classList.contains('abierto'); D.abiertos[k] = ab; b.parentNode.classList.toggle('abierto', ab); b.setAttribute('aria-expanded', String(ab)); return; }
+    if((b = t.closest('[data-rs-cli]'))){ const f = D && visibles()[Number(b.dataset.rsCli)]; if(f && f.c && window.Ficha) window.Ficha.abrir(f.c, { yo: D.yo }); }
   }
 
   // ---------- Etiqueta flotante al pasar el ratón (solo escritorio) ----------
@@ -279,15 +322,15 @@
       actual = v === 'resumen' ? 'resumen' : 'lista';
       main.classList.toggle('ver-res', actual === 'resumen'); zona.hidden = actual !== 'resumen';
       nav.querySelectorAll('[data-rs-ver]').forEach((b) => { const on = b.dataset.rsVer === actual; b.classList.toggle('on', on); b.setAttribute('aria-pressed', on ? 'true' : 'false'); });
-      if(actual === 'resumen'){ if(!R) R = crear(zona, { modulo: modulo(), yo: o.yo, soloLectura: o.soloLectura }); else R.modulo(modulo()); }
+      if(actual === 'resumen'){ if(!R) R = (o.crear || crear)(zona, { modulo: modulo(), yo: o.yo, soloLectura: o.soloLectura }); else if(R.modulo) R.modulo(modulo()); }
       if(!sinUrl){ try { const u = new URL(location.href); if(actual === 'resumen') u.searchParams.set('v', 'resumen'); else u.searchParams.delete('v'); history.replaceState(history.state, '', u.pathname + u.search); } catch (e) {} }
       if(o.alCambiar) o.alCambiar(actual);
     }
     nav.addEventListener('click', (ev) => { const b = ev.target.closest('[data-rs-ver]'); if(b) ver(b.dataset.rsVer); });
     let pedida = ''; try { pedida = new URLSearchParams(location.search).get('v') || ''; } catch (e) {}
     if(pedida === 'resumen') ver('resumen', true);
-    return { ver, actual: () => actual, cambiarModulo: () => { if(R) R.modulo(modulo()); } };
+    return { ver, actual: () => actual, cambiarModulo: () => { if(R && R.modulo) R.modulo(modulo()); }, recargar: () => { if(R && R.recargar) R.recargar(); } };
   }
 
-  window.Resumen = { enModulo, crear, detalle, mesLargo, num };
+  window.Resumen = { enModulo, crear, detalle, mesLargo, num, tope, lineas, mesCorto };
 })();

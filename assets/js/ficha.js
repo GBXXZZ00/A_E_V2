@@ -631,8 +631,8 @@
       if(sinIp) h += aviso('Este servicio no tiene IP: la carta dirá "Pendiente por asignar".', F.puedo.ip ? '<button type="button" class="mini" id="envIp">Escribir IP</button>' : '');
       if(k.lider && !k.whatsapp) h += aviso('A ' + esc(k.lider) + ' le falta el WhatsApp en Usuarios: la carta saldrá sin ese dato.');
     }
-    h += '<span class="rotulo arriba" id="rEnvTipo">Qué envías</span><div class="tres" role="radiogroup" aria-labelledby="rEnvTipo">' +
-      [['proforma', 'Proforma'], ['bienvenida', 'Carta'], ['ambas', 'Las dos']].map((x) => '<button type="button" role="radio" data-env-tipo="' + x[0] + '" aria-checked="' + (env.tipo === x[0]) + '" class="' + (env.tipo === x[0] ? 'on' : '') + '"' + (x[0] !== 'proforma' && !k.puede ? ' disabled' : '') + '>' + x[1] + '</button>').join('') + '</div>' +
+    // Lote 28/10: carta y proforma salen juntas en un solo envío
+    h += '<p class="nota-chica env-juntas">' + (k.puede ? 'Se envían juntas: la carta de bienvenida y la proforma.' : 'Por ahora solo la proforma: la carta sale cuando la instalación tenga dueño.') + '</p>' +
       '<div class="ver-l"><button type="button" class="enlace" data-env-ver="proforma">Ver la proforma</button>' + (k.puede ? '<button type="button" class="enlace" data-env-ver="bienvenida">Ver la carta</button>' : '') + '</div>' +
       '<label class="rotulo arriba" for="envNum">WhatsApp del cliente</label><select class="campo" id="envNum">' + tels.map((x) => '<option value="' + esc(x.n) + '">' + esc(x.t) + '</option>').join('') + '<option value="">Otro número</option></select>' +
       '<div id="envOtroZ"' + (tels.length ? ' class="hidden"' : '') + '><label class="rotulo arriba" for="envOtro">Otro número</label><input class="campo" id="envOtro" type="tel" inputmode="tel" autocomplete="off" maxlength="20"></div>' +
@@ -658,7 +658,11 @@
   const tiposDe = (tipo) => (tipo === 'ambas' ? ['proforma', 'bienvenida'] : [tipo]);
   async function anotarEnvio(tipo, canal, destino){
     const mio = id;
-    try { await rpc('envio_registrar', { p_servicio: env.servicio, p_tipos: tiposDe(tipo), p_canal: canal, p_destino: destino || null }); toast(canal === 'manual' ? 'Marcado como enviado' : 'Quedó anotado en el hilo'); }
+    try {
+      if(tipo === 'ambas') await rpc('carta_enviar', { p_servicio: env.servicio, p_canal: canal, p_destino: destino || null });
+      else await rpc('envio_registrar', { p_servicio: env.servicio, p_tipos: tiposDe(tipo), p_canal: canal, p_destino: destino || null });
+      toast(canal === 'manual' ? 'Marcado como enviado' : 'Quedó anotado en el hilo');
+    }
     catch (e) { toast(e.message, 'error'); return; }
     const fin = envFin;
     if(hojaAbierta() === 'hojaEnviar') cerrarHoja();
@@ -675,9 +679,7 @@
     $('eEnv').textContent = ''; const num = numeroEnvio(); if(!num) return;
     const D = window.Documentos; const tipo = env.tipo; let files;
     try { files = archivosEnvio(tipo, num); } catch (e) { toast('No se pudo armar el PDF. Intenta de nuevo', 'error'); return; }
-    const quien = saludoHora() + '. Le escribe ' + (F.yo.nombre || 'el equipo') + ', de Airtek. ';
-    const msj = quien + (tipo === 'proforma' ? 'Le envío la proforma de instalación de su servicio de internet, con las opciones de pago.'
-      : 'Le damos la bienvenida a Airtek Empresas. Le envío su carta de bienvenida con los datos de su servicio' + (tipo === 'ambas' ? ' y la proforma de instalación.' : '.')) + ' Quedo a su orden. Gracias.';
+    const msj = mensajeWa(F, tipo);
     copiar(D.telFmt(num));
     if(puedeCompartir()){
       try { await navigator.share({ files, text: msj }); }
@@ -1646,8 +1648,42 @@
     guardarItems([{ files, casillas: [{ casilla: cas, numero: num }] }]);
   }
   // Proforma y carta desde otra hoja: siempre con los datos del momento (la ficha recién leída)
+  function mensajeWa(F, tipo){
+    const quien = saludoHora() + '. Le escribe ' + ((F.yo && F.yo.nombre) || 'el equipo') + ', de Airtek. ';
+    return quien + (tipo === 'proforma' ? 'Le envío la proforma de instalación de su servicio de internet, con las opciones de pago.'
+      : 'Le damos la bienvenida a Airtek Empresas. Le envío su carta de bienvenida con los datos de su servicio' + (tipo === 'ambas' ? ' y la proforma de instalación.' : '.')) + ' Quedo a su orden. Gracias.';
+  }
+  // Lote 28/10: carta y proforma en un solo toque (como la nota de entrega de Artesanos). Copia el número del cliente y comparte los dos PDF
+  // con el mensaje; en Android queda el paso 2 para abrir el chat; en la laptop descarga los PDF y abre WhatsApp Web en su chat.
+  async function cartaWhatsapp(ficha, servicioId, alTerminar){
+    montar(); envF = ficha; envFin = null;
+    const F = EF(); const sv = (F.servicios || []).find((x) => String(x.id) === String(servicioId)); if(!sv) return null;
+    const tels = telefonosDe(sv);
+    if(!tels.length){ envFin = alTerminar || null; abrirEnviar(servicioId); return null; }   // sin número guardado: se escribe en la hoja de envío
+    const k = sv.carta || {}; env = { servicio: sv.id, tipo: k.puede ? 'ambas' : 'proforma' };
+    const D = window.Documentos; const num = tels[0].n; let files;
+    try { files = archivosEnvio(env.tipo, num); } catch (e) { toast('No se pudo armar el PDF. Intenta de nuevo', 'error'); return null; }
+    const msj = mensajeWa(F, env.tipo); let paso2 = false;
+    copiar(D.telFmt(num));
+    if(puedeCompartir()){
+      try { await navigator.share({ files, text: msj }); paso2 = true; }
+      catch (e) { if(e && e.name === 'AbortError') return null; toast('No se pudo abrir Compartir. Intenta de nuevo', 'error'); return null; }
+    } else {
+      files.forEach((f) => window.Archivos.descargar(f, f.name));
+      window.open('https://web.whatsapp.com/send?phone=' + D.waNumero(num) + '&text=' + encodeURIComponent(msj), '_blank', 'noopener');
+    }
+    try {
+      if(env.tipo === 'ambas') await rpc('carta_enviar', { p_servicio: sv.id, p_canal: 'whatsapp', p_destino: D.telFmt(num) });
+      else await rpc('envio_registrar', { p_servicio: sv.id, p_tipos: ['proforma'], p_canal: 'whatsapp', p_destino: D.telFmt(num) });
+    } catch (e) { toast('Se abrió WhatsApp, pero no quedó anotado el envío: ' + e.message, 'error'); return null; }
+    toast(paso2 ? 'Quedó anotado. Paso 2: abre el chat del cliente' : 'PDF descargados y número copiado (' + D.telFmt(num) + '). Arrástralos al chat de WhatsApp Web');
+    if(alTerminar) alTerminar();
+    return { telefono: D.telFmt(num), paso2, enlace: C.enlaceWa(num) };
+  }
+  function cartaPdf(ficha, servicioId, tipo){ montar(); envF = ficha; env = { servicio: Number(servicioId), tipo }; verPdf(tipo); }
+  function cartaOtra(ficha, servicioId, alTerminar){ enviarDesde(ficha, servicioId, alTerminar); }
   function enviarDesde(ficha, servicioId, alTerminar){ montar(); envF = ficha; envFin = alTerminar || null; abrirEnviar(servicioId); }
   function editarCampo(ficha, clave, alTerminar){ montar(); fuera = { cliente: ficha.cliente.id, F: ficha, alTerminar }; abrirCampo(clave); }
-  window.Ficha = { subirA, subirArchivoA, documentosPara, variosA, soltarA, ocupado: () => ocupado, editarCampo, enviarDesde, lineaHilo, abrir, montar, abierta: () => id, alContactarFuera: (f) => { externo = f; }, recargar: () => { if(id) cargar(); },
+  window.Ficha = { cartaWhatsapp, cartaPdf, cartaOtra, subirA, subirArchivoA, documentosPara, variosA, soltarA, ocupado: () => ocupado, editarCampo, enviarDesde, lineaHilo, abrir, montar, abierta: () => id, alContactarFuera: (f) => { externo = f; }, recargar: () => { if(id) cargar(); },
     etiquetar: (cli, alTerminar) => { if(window.Gestion) window.Gestion.etiquetar(cli, alTerminar); } };
 })();
