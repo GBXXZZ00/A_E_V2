@@ -51,3 +51,11 @@ Construido en v26 y conectado con clientes e instalaciones, pero nunca usado: ha
 - Repetir la revisión con IA sola cuando una lectura termina después de lanzada la corrida (hoy hay que relanzarla).
 - Modo práctica entre varios teléfonos (hoy cada dispositivo tiene su propio mundo; los avisos de práctica no salen como push).
 - Quedan para después, como se acordó: ficha VGT reorganizada (Documentos + VGT), tabla "Copiar datos" de Legal, filtro VGT en Clientes, Parte F puntos 2 a 5, auditoría masiva de la IA y G3.
+
+## Pendiente para Code (30/10, del administrador)
+- **IA, junta sin período:** si el acta no dice cuánto dura la junta, NO asumir 10 años. Marcar "Junta sin período" como bloquea y pedir "Acta de asamblea de ratificación o cambio de junta directiva" (hoy `reglas.mjs` usa 10 años por defecto).
+- **IA, nombres de actas:** usar siempre el nombre completo al pedir: "Acta de asamblea de cambio de razón social", "…de cambio de domicilio fiscal", "…de prórroga de la duración", "…de ratificación o cambio de junta directiva".
+- **IA, contacto:** el correo personal del representante debe parecerse a su nombre o apellido; si no, marcar "revisar a mano" (se acepta por excepción). Correo y teléfono son obligatorios.
+- **IA, firma conjunta:** exigir cédula y RIF vigentes de ambos firmantes (confirmar que ya lo hace).
+- **Ficha VGT:** la casilla de póliza dice "Mínimo US$ 20.000"; el requisito es US$ 100.000 para responsabilidad civil general (la patronal no tiene mínimo).
+- **Dedicados TV Cable:** el contrato VGT vale por el Addendum N.º 1 (01/10/2026): 105 postes, ruta Taratara – Puerto Cumarebo, USD 1 por poste al mes. La app tiene 270 postes de Sabaneta El Recreo: corregir.
