@@ -11,6 +11,12 @@ Referencia de comisiones (`privado.comision_filas3`) al empezar: septiembre 46/4
   - Pantalla: el TAD de empresas sube primero; el índice sigue solo con su barra ("Índice de residenciales: N %"), sin bloquear subir otros archivos ni Cruzar ahora. La sesión no se cierra por falta de uso mientras corre; al cerrar la pestaña avisa y se pausa; "Seguir solo con el índice" retoma con el mismo archivo (12 h). Casilla "Actualizar también el índice de residenciales": marcada sola si el último índice tiene 7 días o más o hay migraciones esperando el TAD. "Qué toca actualizar" muestra la fila del índice con su fecha.
   - Tiempo después con el archivo real: lo mide la propia fila al terminar ("tardó N"); anotarlo con la próxima carga. Estimado por las mediciones del servidor: menos de 1 minuto más lo que cambió.
   - Pruebas: test49 ampliada (casilla, segundo plano, bloque igual sin comparar, sin índice); test29, 12, 27, 05, 50 y 48 pasan.
+- **Parte A EN CURSO** (solo servidor por ahora, sin versión nueva). Evidencia en `supabase/pruebas/lote_05nov_a.sql`.
+  - A1 hecho: firma separada pide un solo representante; 118 clientes dejaron de pedir cédula y RIF de representantes extra (0 quedan). Sin recalcular en masa (ver SQL).
+  - A2 hecho: `poner_estatus` no deja que aprobar, recalcular ni el cruce bajen contrato en curso, por firmar o firmado (0 de 262 cambian en la prueba). Comisiones iguales después.
+  - Falta de la Parte A: A3 (Senior no aprueba ni devuelve; cambio de PIN sin cerrar sesión; Inicio y Mi trabajo con la misma función; archivo repetido no se lee ni se paga dos veces), A4 (pendientes del 30/10) y la prueba de pantalla de A2.
+- **Siguen**: resto de A, luego B, C, D, E, F. El inventario `claude/inventario-05nov.md` se hace antes de tocar la primera pantalla (C).
+
 
 
 ## LOTE 28/10: HECHO (v67). Pedido en `claude/lote-28oct.md`, maquetas en `claude/maquetas/comisiones-28oct`, `clientes-28oct` y `mi-trabajo-28oct`
