@@ -132,14 +132,19 @@ function baseDatos(){
 }
 
 // ----- Reglas (igual que en el servidor) -----
+// Lote 05/11 A1/C4: con firma separada cuenta solo el que firma (o el 1); conjunta: los dos primeros que cuentan y los demás con algo
+const firmanteDe = (c) => { const r = (c.representantes || []).find((x) => x.firma && (x.marca || 'cuenta') === 'cuenta'); return r ? r.orden : 1; };
 function requeridos(c){
-  const r = []; const n = !c.es_natural && c.regimen_firma === 'conjunta' ? 2 : 1;
-  for(let i = 1; i <= n; i++){ const suf = n > 1 ? ' del representante ' + i : ''; r.push({ casilla: 'cedula', numero: i, texto: 'cédula' + suf }, { casilla: 'rif_personal', numero: i, texto: 'RIF personal' + suf }); }
-  // Lote urgente 20/10: un representante agregado solo se pide si tiene algún dato o archivo (sin Legal aprobado)
-  if(!c.es_natural && !c.legal_ok_en) for(let i = n + 1; i <= 4; i++){
-    const rp = c.representantes.find((x) => x.orden === i) || {};
-    const algo = String(rp.nombre || '').trim() || String(rp.correo || '').trim() || String(rp.telefono || '').trim() || c.documentos.some((d) => ['cedula', 'rif_personal'].includes(d.casilla) && d.numero === i && (d.archivos || []).length);
-    if(algo) r.push({ casilla: 'cedula', numero: i, texto: 'cédula del representante ' + i }, { casilla: 'rif_personal', numero: i, texto: 'RIF personal del representante ' + i });
+  const r = [];
+  if(c.es_natural || c.regimen_firma !== 'conjunta'){ const f = firmanteDe(c); r.push({ casilla: 'cedula', numero: f, texto: 'cédula' }, { casilla: 'rif_personal', numero: f, texto: 'RIF personal' }); }
+  else {
+    const ords = []; for(let i = 1; i <= 10; i++){ const rp = (c.representantes || []).find((x) => x.orden === i); if(!rp || (rp.marca || 'cuenta') === 'cuenta') ords.push(i); }
+    ords.forEach((i, k) => {
+      const rp = (c.representantes || []).find((x) => x.orden === i) || {};
+      const algo = String(rp.nombre || '').trim() || String(rp.correo || '').trim() || String(rp.telefono || '').trim() || c.documentos.some((d) => ['cedula', 'rif_personal'].includes(d.casilla) && d.numero === i && (d.archivos || []).length);
+      if(k > 1 && (c.legal_ok_en || !algo)) return;
+      r.push({ casilla: 'cedula', numero: i, texto: 'cédula del representante ' + i }, { casilla: 'rif_personal', numero: i, texto: 'RIF personal del representante ' + i });
+    });
   }
   if(!c.es_natural){ r.push({ casilla: 'rif_empresa', numero: 0, texto: 'RIF de la empresa' }, { casilla: 'acta_constitutiva', numero: 0, texto: 'acta constitutiva' }); if(c.es_isp) r.push({ casilla: 'conatel', numero: 0, texto: 'permiso de Conatel' }); }
   return r;
@@ -149,7 +154,10 @@ function faltantes(c){
   const r = [];
   requeridos(c).forEach((q) => { const d = busca(c, q.casilla, q.numero);
     if(!d) r.push({ k: q.casilla, n: q.numero, t: q.texto, e: 'falta' }); else if(d.estado === 'devuelto') r.push({ k: q.casilla, n: q.numero, t: q.texto, e: 'devuelto', m: d.motivo }); });
-  const rp = c.representantes.find((x) => x.orden === 1) || {};
+  // Como el disparador del servidor: con algo subido en la casilla pasa a por revisar; aprobado se cumple; devuelto vuelve a abierto
+  (c.requerimientos || []).filter((z) => z.estado === 'abierto' || z.estado === 'por_revisar').forEach((z) => { const d = busca(c, z.casilla, z.numero); z.estado = !d || d.estado === 'devuelto' ? 'abierto' : d.estado === 'aprobado' ? 'cumplido' : 'por_revisar'; });
+  (c.requerimientos || []).filter((z) => z.estado === 'abierto').forEach((z) => r.push({ k: z.casilla, n: z.numero, t: z.texto, e: 'falta', req: z.id, m: z.motivo, por: z.por, en: z.en, origen: z.origen, ia: false }));
+  const rp = c.representantes.find((x) => x.orden === firmanteDe(c)) || {};
   if(c.es_natural || c.contrato_presencial) return r;   // naturales: solo cédula y RIF personal; presencial: sin correos ni teléfono
   if(!String(rp.correo || '').trim()) r.push({ k: 'correo', n: 1, t: 'correo', e: 'falta', dato: true });
   if(!String(rp.telefono || '').trim()) r.push({ k: 'telefono', n: 1, t: 'número de contacto', e: 'falta', dato: true });
@@ -158,6 +166,9 @@ function faltantes(c){
 }
 function ponerEstatus(c, nuevo, autor, como){
   if(c.estatus === nuevo) return false;
+  // Lote 05/11 A2: ningún camino automático baja un estatus de contrato
+  const CONTR = ['contrato_en_curso', 'por_firmar', 'contrato_firmado'];
+  if(como !== 'manual' && CONTR.includes(c.estatus) && !(CONTR.indexOf(nuevo) > CONTR.indexOf(c.estatus))) return false;
   // A recibidos solo con todos los archivos (como el servidor)
   if(nuevo === 'documentos_recibidos' && faltanArchivos(c)){ if(como === 'auto' || como === 'migracion') return false; throw new Error('Para pasar a Documentos recibidos deben estar subidos todos los documentos en la app'); }
   const ant = c.estatus; c.estatus = nuevo; c.estatus_desde = hace(0);
@@ -553,6 +564,20 @@ function buzonMundo(m){
 // Lote 28/10: estatus legal en 5 grupos ("Grandes negocios" es Sin gestionar, nunca completo)
 const GRUPO_I = { sin_gestionar: 0, faltan: 1, revision: 2, por_firmar: 3, firmado: 4 };
 function grupoLegal(e){ return !e || e === 'grandes_negocios' ? 'sin_gestionar' : e === 'contrato_firmado' ? 'firmado' : ['por_firmar', 'contrato_en_curso'].includes(e) ? 'por_firmar' : ['documentos_recibidos', 'documentos_en_revision'].includes(e) ? 'revision' : 'faltan'; }
+// Lote 05/11 C2: pedir un documento (requerimiento) con su casilla destino
+const REQ_TXT = { junta: 'Acta de asamblea de ratificación o cambio de junta directiva', razon: 'Acta de asamblea de cambio de razón social', domicilio: 'Acta de asamblea de cambio de domicilio fiscal', prorroga: 'Acta de asamblea de prórroga de la duración', nombra: 'Acta que nombra al representante' };
+function reqPoner(m, c, tipo, texto, motivo, origen, numero, yo){
+  c.requerimientos = c.requerimientos || [];
+  const t = REQ_TXT[tipo] || (tipo === 'cedula' ? 'Cédula' + (texto ? ' de ' + texto : '') : tipo === 'rif_personal' ? 'RIF personal' + (texto ? ' de ' + texto : '') : String(texto || '').trim());
+  const ya = c.requerimientos.find((z) => ['abierto', 'por_revisar'].includes(z.estado) && z.texto === t); if(ya) return ya.id;
+  let cas, n;
+  if(tipo === 'cedula' || tipo === 'rif_personal'){ cas = tipo; n = Number(numero); }
+  else { cas = tipo === 'otro' ? 'otro' : 'acta_asamblea'; n = 1; while(c.documentos.some((d) => d.casilla === cas && d.numero === n) || c.requerimientos.some((z) => z.casilla === cas && z.numero === n && ['abierto', 'por_revisar'].includes(z.estado))) n++; }
+  m.reqSec = (m.reqSec || 900) + 1;
+  c.requerimientos.push({ id: m.reqSec, casilla: cas, numero: n, tipo, texto: t, motivo: motivo || null, origen: origen || null, estado: 'abierto', por: yo.nombre, en: new Date().toISOString() });
+  (m.bitacora = m.bitacora || []).push({ accion: 'requerimiento_creado', registro: m.reqSec, documento: t });
+  return m.reqSec;
+}
 const RPC = {
   inicio_datos(m, yo){
     if(yo.rol === 'aliado') return { rol: yo.rol, hoy: hoy() };
@@ -1328,6 +1353,39 @@ const RPC = {
       return null; }
     return error('Ese documento ya no existe');
   },
+  // ----- Lote 05/11 parte C -----
+  revision_puntos_de(m, yo, a){ if(!['admin', 'abogado'].includes(yo.rol)) return error('No tienes permiso para hacer esto'); const c = m.datos.clientes.find((x) => x.id === Number(a.p_cliente)); return Object.assign({}, (c && c.puntos) || {}); },
+  revision_punto(m, yo, a){ if(!['admin', 'abogado'].includes(yo.rol)) return error('No tienes permiso para hacer esto'); const c = m.datos.clientes.find((x) => x.id === Number(a.p_cliente)); if(!c) return error('No encontré ese cliente');
+    c.puntos = c.puntos || {}; if(!a.p_decision){ delete c.puntos[a.p_punto]; return null; } if(a.p_decision === 'pedir' && !a.p_documento) return error('Elige qué documento pedir');
+    c.puntos[a.p_punto] = { decision: a.p_decision, documento: a.p_decision === 'pedir' ? a.p_documento : null, nota: a.p_nota || null, por: yo.nombre }; return null; },
+  revision_puntos_aplicar(m, yo, a){ if(!['admin', 'abogado'].includes(yo.rol)) return error('No tienes permiso para hacer esto'); const c = m.datos.clientes.find((x) => x.id === Number(a.p_cliente)); let ped = 0, man = 0, ok = 0;
+    Object.keys(c.puntos || {}).forEach((k) => { const p = c.puntos[k]; if(p.decision === 'pedir'){ const tp = ['junta', 'razon', 'domicilio', 'prorroga', 'nombra'].includes(p.documento) ? p.documento : 'otro'; reqPoner(m, c, tp, tp === 'otro' ? p.documento : null, p.nota, null, null, yo); ped++; } else if(p.decision === 'revisar') man++; else ok++; });
+    (m.bitacora = m.bitacora || []).push({ accion: 'revision_puntos', registro: c.id, puntos: c.puntos }); c.puntos = {}; return { pedidos: ped, a_mano: man, bien: ok }; },
+  requerimiento_crear(m, yo, a){ if(!['admin', 'abogado'].includes(yo.rol)) return error('No tienes permiso para hacer esto'); const c = m.datos.clientes.find((x) => x.id === Number(a.p_cliente)); if(!c) return error('No encontré ese cliente');
+    if(a.p_tipo === 'otro' && String(a.p_texto || '').trim().length < 3) return error('Escribe qué documento falta'); return reqPoner(m, c, a.p_tipo, a.p_texto, a.p_motivo, a.p_origen, a.p_numero, yo); },
+  requerimiento_anular(m, yo, a){ if(!['admin', 'abogado'].includes(yo.rol)) return error('No tienes permiso para hacer esto'); for(const c of m.datos.clientes){ const z = (c.requerimientos || []).find((x) => x.id === Number(a.p_id)); if(z){ z.estado = 'anulado'; (m.bitacora = m.bitacora || []).push({ accion: 'requerimiento_anulado', registro: z.id }); return null; } } return error('No encontré ese pedido'); },
+  representante_marcar(m, yo, a){ const c = m.datos.clientes.find((x) => x.id === Number(a.p_cliente)); if(!c) return error('No encontré ese cliente'); if(!['firma', 'no_junta', 'ya_no_aplica', 'cuenta'].includes(a.p_marca)) return error('Marca no válida');
+    let r = c.representantes.find((x) => x.orden === Number(a.p_orden)); if(!r){ r = { orden: Number(a.p_orden), nombre: null, correo: null, telefono: null }; c.representantes.push(r); }
+    if(a.p_marca === 'firma'){ c.representantes.forEach((x) => { x.firma = x.orden === r.orden; }); r.marca = 'cuenta'; } else { r.marca = a.p_marca; if(a.p_marca !== 'cuenta') r.firma = false; r.marca_motivo = a.p_marca === 'cuenta' ? null : a.p_motivo || null; }
+    (m.bitacora = m.bitacora || []).push({ accion: 'representante_' + a.p_marca, registro: c.id + ':' + r.orden }); recalcular(c, yo); return null; },
+  documento_titulo(m, yo, a){ for(const c of m.datos.clientes){ const d = c.documentos.find((x) => x.id === Number(a.p_documento)); if(d){ if(d.casilla !== 'otro') return error('Solo los documentos extra llevan título'); if(String(a.p_titulo || '').trim().length < 3) return error('Escribe el título (al menos 3 letras)'); d.titulo = String(a.p_titulo).trim(); return null; } } return error('No encontré ese documento'); },
+  documento_a_acta(m, yo, a){ if(!['admin', 'abogado'].includes(yo.rol)) return error('No tienes permiso para hacer esto'); for(const c of m.datos.clientes){ const d = c.documentos.find((x) => x.id === Number(a.p_documento)); if(d){
+    if(!a.p_fecha) return error('Escribe la fecha de inscripción en el Registro'); let n = 1; while(c.documentos.some((x) => x.casilla === 'acta_asamblea' && x.numero === n)) n++; d.casilla = 'acta_asamblea'; d.numero = n; d.firmado_en = a.p_fecha; if(d.estado === 'aprobado') d.estado = 'por_revisar'; return n; } } return error('No encontré ese documento'); },
+  acta_junta_de(m, yo, a){ for(const c of m.datos.clientes){ const d = c.documentos.find((x) => x.id === Number(a.p_documento)); if(d) return d.actaJunta || null; } return null; },
+  acta_junta_guardar(m, yo, a){ if(!['admin', 'abogado'].includes(yo.rol)) return error('No tienes permiso para hacer esto'); for(const c of m.datos.clientes){ const d = c.documentos.find((x) => x.id === Number(a.p_documento)); if(!d) continue;
+    const norm = (t) => String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').split(/\s+/).filter((w) => w.length > 2);
+    const parecido = (x, y) => { const A = norm(x), B = norm(y); if(!A.length || !B.length) return false; return A.filter((w) => B.includes(w)).length / Math.min(A.length, B.length) >= 0.6; };
+    if(!a.p_cambia){ if(d.actaJunta && d.actaJunta.antes){ d.actaJunta.antes.reps.forEach((x) => { const r = c.representantes.find((y) => y.orden === x.orden); if(r) Object.assign(r, { marca: x.marca, firma: x.firma, marca_motivo: x.motivo }); });
+        (c.requerimientos || []).filter((z) => d.actaJunta.antes.reqs.includes(z.id)).forEach((z) => { z.estado = 'anulado'; }); } d.actaJunta = { cambia: false, fecha: a.p_fecha, directores: [] }; return { cambia: false }; }
+    if(!a.p_fecha) return error('Escribe la fecha de inscripción'); if(!(a.p_directores || []).length) return error('Agrega al menos un director');
+    const antes = { reps: c.representantes.map((r) => ({ orden: r.orden, marca: r.marca || 'cuenta', firma: !!r.firma, motivo: r.marca_motivo || null })), reqs: [] }; const fuera = [], nuevos = [];
+    c.representantes.filter((r) => (r.marca || 'cuenta') === 'cuenta' && String(r.nombre || '').trim()).forEach((r) => { if(!a.p_directores.some((x) => parecido(x.nombre, r.nombre))){ r.marca = 'ya_no_aplica'; r.firma = false; r.marca_motivo = 'Salió de la junta por el acta del ' + a.p_fecha.split('-').reverse().join('/'); fuera.push(r.nombre); } });
+    a.p_directores.filter((x) => x.firma && !c.representantes.some((r) => (r.marca || 'cuenta') === 'cuenta' && parecido(r.nombre, x.nombre))).forEach((x) => { let n = 1; while(c.representantes.some((r) => r.orden === n && (String(r.nombre || '').trim() || (r.marca || 'cuenta') !== 'cuenta'))) n++;
+      const r0 = c.representantes.find((r) => r.orden === n); if(r0) Object.assign(r0, { nombre: x.nombre, marca: 'cuenta' }); else c.representantes.push({ orden: n, nombre: x.nombre, correo: null, telefono: null, marca: 'cuenta' });
+      antes.reqs.push(reqPoner(m, c, 'cedula', x.nombre, 'Firma según el acta', d.id, n, yo), reqPoner(m, c, 'rif_personal', x.nombre, 'Firma según el acta', d.id, n, yo)); nuevos.push(x.nombre); });
+    if(!c.representantes.some((r) => r.firma && (r.marca || 'cuenta') === 'cuenta')){ const r = c.representantes.find((y) => (y.marca || 'cuenta') === 'cuenta' && String(y.nombre || '').trim()); if(r) r.firma = true; }
+    d.firmado_en = a.p_fecha; d.actaJunta = { cambia: true, fecha: a.p_fecha, directores: a.p_directores, antes, por: yo.nombre, en: new Date().toISOString() };
+    (m.bitacora = m.bitacora || []).push({ accion: 'acta_junta', registro: d.id }); recalcular(c, yo); return { cambia: true, ya_no_aplica: fuera, nuevos, pedidos: antes.reqs.length }; } return error('Esto es solo para actas de asamblea'); },
   revision_estado(m, yo, a){
     if(!['admin', 'abogado'].includes(yo.rol)) return error('No tienes permiso para hacer esto');
     const c = visibles(m, yo).find((x) => x.id === Number(a.p_cliente)); if(!c) return error('No tienes acceso a este cliente');

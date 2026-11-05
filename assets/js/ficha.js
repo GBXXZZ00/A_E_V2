@@ -51,6 +51,7 @@
       const [r, rv, ga] = await Promise.all([rpc('cliente_ficha', { p_cliente: mio }), leerRevision(mio), rpc('cliente_gestiones', { p_cliente: mio }).catch(() => [])]);
       if(mio !== id) return;   // ya se abrió otro cliente: esta respuesta no es de él
       F = r; rev = rv; F.gesActivas = ga || [];
+      F.puedo = Object.assign({ marcar_rep: !!(F.puedo || {}).revisar }, F.puedo || {});   // Lote 05/11 C4: Firma este / Ya no aplica
       // Un provisional que ya se unió: se abre el cliente real
       if(F.cliente.unido_a){ id = Number(F.cliente.unido_a); toast('Ese cliente provisional ya se unió a su cliente real'); cargar(primera); return; }
       pintarTodo(); vigilar();
@@ -69,8 +70,12 @@
   // Marcas sin cerrar e historial de revisiones; si falla, la ficha abre igual y avisa en Documentos
   async function leerRevision(mio){
     if(!revisa()) return null;
-    try { return await rpc('revision_estado', { p_cliente: mio }); }
-    catch (e) { return { error: e.message, marcas: [], historial: [] }; }
+    try {
+      const [r, pts] = await Promise.all([rpc('revision_estado', { p_cliente: mio }), rpc('revision_puntos_de', { p_cliente: mio }).catch(() => ({}))]);
+      if(r) r.puntos = pts || {};   // Lote 05/11 C1: puntos del panel "Revisión del expediente"
+      return r;
+    }
+    catch (e) { return { error: e.message, marcas: [], historial: [], puntos: {} }; }
   }
   // Fila "Carpeta en Drive" (solo el administrador): soporte para ver dónde quedó cada archivo
   async function cargarDrive(mio){
@@ -263,6 +268,13 @@
       const on = selDocs.has(d.id);
       return '<button type="button" class="casilla doc rev elegible' + (on ? ' on' : '') + '" data-casilla="' + k + '" data-sel-doc="' + d.id + '" aria-pressed="' + on + '"><span class="ico caja" aria-hidden="true">' + (on ? ic('check') : '') + '</span><span class="tx"><b>' + esc(nombre) + '</b><small>' + esc(subCasilla(d)) + '</small></span><span class="chip ' + (on ? 'azul">Para aprobar' : 'ambar">Por revisar') + '</span></button>';
     }
+    const rq = !d ? reqDe(cas, num) : null;
+    if(rq){
+      // Lote 05/11 C2: lo que se PIDIÓ queda en rojo con el nombre completo hasta que lo suban
+      return '<div class="casilla doc falta pedida" data-casilla="' + k + '"' + (puedeSubir ? ' data-suelta="1"' : '') + '><button type="button" class="cuerpo" data-subir="' + k + '"><span class="ico" aria-hidden="true">!</span><span class="tx"><b>Falta: ' + esc(rq.t) + '</b><small>' +
+        esc((rq.m ? 'Por qué: ' + rq.m + '. ' : '') + 'Pedido' + (rq.ia ? ' (propuesta de la IA)' : '') + (rq.por ? ' por ' + primerNombre(rq.por) : '') + (rq.en ? ' el ' + fecha(rq.en, true) : '') + '.') + '</small></span></button>' +
+        (F.puedo.revisar ? '<button type="button" class="mini" data-req-quitar="' + esc(rq.req) + '">Quitar pedido</button>' : puedeSubir ? '<button type="button" class="mini pri" data-subir="' + k + '">Subir</button>' : '') + '</div>';
+    }
     if(!d){
       const req = o.req !== undefined ? o.req : esRequerido(cas, num);
       if(!puedeSubir) return '<div class="casilla doc" data-casilla="' + k + '"><span class="ico">' + ic('doc') + '</span><span class="tx"><b>' + esc(nombre) + '</b><small>' + esc(o.sub || 'Lo sube Legal') + '</small></span></div>';
@@ -307,10 +319,24 @@
   // Lote urgente 20/10: un representante agregado sin ningún dato ni archivo no se pide y se puede quitar
   const repConAlgo = (n) => { const r = (F.representantes || []).find((x) => x.orden === n) || {};
     return !!(String(r.nombre || '').trim() || String(r.correo || '').trim() || String(r.telefono || '').trim() || docDe('cedula', n) || docDe('rif_personal', n)); };
+  // Lote 05/11 C4: con firma separada cuenta el representante que firma ("Firma este"); "Ya no aplica" queda en gris en el historial
+  const firmanteN = () => { const r = (F.requeridos || []).find((x) => x.casilla === 'cedula'); return r ? Number(r.numero) : 1; };
+  function marcasRep(r, n){
+    if(F.cliente.es_natural || !F.puedo.marcar_rep) return '';
+    const sep = F.cliente.regimen_firma !== 'conjunta'; const b = (m, t) => '<button type="button" class="enlace chico" data-rep-marca="' + n + ':' + m + '">' + t + '</button>';
+    return '<div class="rep-marcas">' + (sep && firmanteN() !== n ? b('firma', 'Firma este') : '') + b('no_junta', 'No está en la junta') + b('ya_no_aplica', 'Ya no aplica') + '</div>';
+  }
   function grupoRep(n, requeridoN, quitable){
     const r = (F.representantes || []).find((x) => x.orden === n) || {};
-    const vacio = !requeridoN && !repConAlgo(n);
-    return '<section class="bloque" data-grupo="rep' + n + '"><div class="sec">' + (F.cliente.es_natural ? 'Titular' : 'Representante ' + n) + (r.nombre ? '<span>' + esc(r.nombre) + '</span>' : vacio ? '<span>Opcional</span>' : '') + '</div>' +
+    if(!F.cliente.es_natural && r.marca && r.marca !== 'cuenta'){
+      const docs = ['cedula', 'rif_personal'].map((k) => docDe(k, n)).filter(Boolean);
+      return '<section class="bloque rep-fuera" data-grupo="rep' + n + '"><div class="sec">Representante ' + n + (r.nombre ? '<span>' + esc(r.nombre) + '</span>' : '') + '<span class="chip gris">' + (r.marca === 'no_junta' ? 'No está en la junta' : 'Ya no aplica') + '</span></div>' +
+        '<p class="nota-chica">' + esc((r.marca_motivo ? r.marca_motivo + '. ' : '') + (F.cliente.regimen_firma === 'conjunta' ? 'No cuenta para la firma.' : 'Con firma separada no se le pide nada.')) + '</p>' +
+        (docs.length ? '<p class="nota-chica">' + docs.map((d) => '<button type="button" class="enlace chico" data-ver="' + d.id + '">' + esc(casilla(d.casilla, d.numero)) + '</button>').join(' · ') + ' · se guardan en el historial, no cuentan</p>' : '') +
+        (F.puedo.marcar_rep ? '<button type="button" class="btn btn-chico btn-2" data-rep-marca="' + n + ':cuenta">Volver a contar</button>' : '') + '</section>';
+    }
+    const vacio = !requeridoN && !repConAlgo(n); const firma = !F.cliente.es_natural && F.cliente.regimen_firma !== 'conjunta' && firmanteN() === n && repConAlgo(n);
+    return '<section class="bloque" data-grupo="rep' + n + '"><div class="sec">' + (F.cliente.es_natural ? 'Titular' : 'Representante ' + n) + (r.nombre ? '<span>' + esc(r.nombre) + '</span>' : vacio ? '<span>Opcional</span>' : '') + (firma ? '<span class="chip azul">Firma este</span>' : '') + '</div>' + marcasRep(r, n) +
       contactoHtml(r, n, requeridoN && !F.cliente.es_natural && !F.cliente.presencial) +
       casillaHtml('cedula', n, { nombre: 'Cédula' }) + casillaHtml('rif_personal', n, { nombre: 'RIF personal' }) +
       (vacio && quitable ? '<button type="button" class="enlace" data-quitar-rep="' + n + '">Quitar representante</button>' : '') + '</section>';
@@ -330,7 +356,7 @@
       (selMode ? '<div class="al-banda azul sel-barra" role="status"><b>' + (selDocs.size ? plural(selDocs.size, 'documento elegido', 'documentos elegidos') : 'Toca los documentos que quieres aprobar') + '</b><p>Quedan marcados para aprobar; se aprueban al cerrar la revisión.</p>' +
         '<p style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap"><button type="button" class="btn btn-chico" id="aprobarSel"' + (selDocs.size ? '' : ' disabled') + '>Aprobar ' + (selDocs.size || '') + '</button><button type="button" class="btn btn-chico btn-2" id="selTodos">Elegir todos</button></p></div>' : '') +
       (c.aprobado_por_subir ? '<div class="al-banda ambar" role="note"><b>Aprobado, documentos por subir</b><p>Legal ya lo aprobó. Sube lo que falta: no cambia su aprobación ni su comisión.</p></div>' : '') +
-      bloqueIA() + barraRevision() +
+      quePedir() + bloqueIA() + panelRevision() + barraRevision() +
       '<button type="button" class="fd-drop" id="subirVarios">' + ic('subir') + '<span><span class="solo-pc">Arrastra aquí varios archivos y marca qué trae cada uno</span><span class="solo-tel">Toca para subir varios archivos y marca qué trae cada uno</span></span></button>' +
       '<p class="nota-chica' + (colaDe(id) ? '' : ' hidden') + '" id="estadoSubida" role="status"><span class="cargando-linea"><i></i><span id="textoSubida">' + esc(textoCola()) + '</span></span></p>' + driveHtml();
     h += casillasHtml(false) + historialRevisiones();
@@ -354,14 +380,16 @@
     const nReq = !c.es_natural && c.regimen_firma === 'conjunta' ? 2 : 1;
     // Los representantes que se ven: los que pide el régimen, los que tienen algo y el que se acaba de agregar
     const conAlgo = REPS.slice(1).filter((n) => repConAlgo(n));
-    const nReps = Math.max(nReq, conAlgo.length ? Math.max.apply(null, conAlgo) : 1, emb ? 0 : repExtra);
-    for(let n = 1; n <= nReps; n++) h += grupoRep(n, n <= nReq, !emb && n === nReps);
+    const pedidosRep = reqs().filter((x) => x.k === 'cedula' || x.k === 'rif_personal').map((x) => Number(x.n));
+    const nReps = Math.max(nReq, firmanteN(), conAlgo.length ? Math.max.apply(null, conAlgo) : 1, pedidosRep.length ? Math.max.apply(null, pedidosRep) : 1, emb ? 0 : repExtra);
+    for(let n = 1; n <= nReps; n++) h += grupoRep(n, esRequerido('cedula', n) || (c.regimen_firma === 'conjunta' && n <= nReq), !emb && n === nReps);
     if(!emb && !c.es_natural && nReps < REPS.length) h += '<button type="button" class="btn btn-chico btn-2 btn-ancho" id="agregarRep" style="margin-top:12px">Agregar representante</button>';
     if(!c.es_natural){
       // Las actas de asamblea se agregan con su botón, hasta 15; las que tienen fecha van en orden de fecha
       const actas = ACTAS.filter((n) => docDe('acta_asamblea', n)).sort((a, b) => (docDe('acta_asamblea', a).firmado_en || '9999').localeCompare(docDe('acta_asamblea', b).firmado_en || '9999') || a - b);
       const libres = ACTAS.filter((n) => !docDe('acta_asamblea', n));
-      const mostrar = actas.concat(libres.slice(0, Math.min(emb ? (actas.length ? 0 : 1) : actaExtra, libres.length)));
+      const pedidas = libres.filter((n) => reqDe('acta_asamblea', n)); const libres2 = libres.filter((n) => !reqDe('acta_asamblea', n));
+      const mostrar = actas.concat(pedidas).concat(libres2.slice(0, Math.min(emb ? (actas.length || pedidas.length ? 0 : 1) : actaExtra, libres2.length)));
       h += '<section class="bloque" data-grupo="empresa"><div class="sec">Empresa</div>' + datoHtml('Correo de la empresa', c.correo_empresa, 'correo_empresa', !c.presencial) +
         casillaHtml('rif_empresa', 0, { nombre: 'RIF de la empresa' }) + casillaHtml('acta_constitutiva', 0) + (c.es_isp ? casillaHtml('conatel', 0, { sub: docDe('conatel', 0) ? undefined : 'Habilitación vigente con atributos de Internet y Transporte' }) : '') +
         mostrar.map((n) => casillaHtml('acta_asamblea', n, { sub: 'Toca o suelta el archivo aquí' })).join('') +
@@ -377,7 +405,8 @@
     }
     if(emb) h += grupoVgt();
     const otros = (F.documentos || []).filter((d) => d.casilla === 'otro' && d.numero < 60);
-    h += '<section class="bloque" data-grupo="otros"><div class="sec">Otros documentos</div>' + otros.map((d) => casillaHtml('otro', d.numero, { nombre: d.titulo || undefined })).join('') +
+    const otrosPed = reqs().filter((x) => x.k === 'otro' && Number(x.n) < 60 && !docDe('otro', Number(x.n)));
+    h += '<section class="bloque" data-grupo="otros"><div class="sec">Otros documentos</div>' + otros.map((d) => casillaHtml('otro', d.numero, { nombre: d.titulo || undefined })).join('') + otrosPed.map((x) => casillaHtml('otro', Number(x.n))).join('') +
       '<button type="button" class="casilla doc" data-subir="otro:0" data-casilla="otro:0" data-suelta="1"><span class="ico mas" aria-hidden="true">+</span><span class="tx"><b>Otro documento</b><small>Lo que no entra en las casillas de arriba</small></span></button></section>';
     return h;
   }
@@ -552,6 +581,159 @@
       return '<div class="casilla doc ' + (dv ? 'dev' : 'ok') + '"><span class="ico" aria-hidden="true">' + (dv ? '!' : ic('check')) + '</span><span class="tx"><b>' + esc(e.t) + (r.con_ia ? ' · con IA' : '') + '</b><small>' +
         esc(dia(r.en) + ' ' + hora(r.en) + (r.por ? ' · ' + primerNombre(r.por) : '') + ' · ' + plural(r.aprobados || 0, 'aprobado', 'aprobados') + (dv ? ', ' + plural(r.devueltos, 'devuelto', 'devueltos') : '') + (r.enviado ? ' · se avisó al líder' : '')) + '</small></span></div>';
     }).join('') + '</section>';
+  }
+
+  // ---------- Lote 05/11 parte C ----------
+  const REQ_TIPOS = [['junta', 'Acta de asamblea de ratificación o cambio de junta directiva'], ['razon', 'Acta de asamblea de cambio de razón social'], ['domicilio', 'Acta de asamblea de cambio de domicilio fiscal'],
+    ['prorroga', 'Acta de asamblea de prórroga de la duración'], ['nombra', 'Acta que nombra al representante'], ['otro', 'Otro documento (escribe cuál)']];
+  const reqTexto = (k) => { const x = REQ_TIPOS.find((t) => t[0] === k); return x && k !== 'otro' ? x[1] : String(k || ''); };
+  const reqs = () => (F.faltantes || []).filter((x) => x.req);
+  const reqDe = (cas, num) => reqs().find((x) => x.k === cas && Number(x.n) === Number(num)) || null;
+  // Puntos del panel en el orden de la oficina: [id, título, punto de la IA, documento que se pide por defecto]
+  const PUNTOS_REV = [['razon_social', 'Razón social', 'razon_social', 'razon'], ['domicilio', 'Domicilio fiscal', 'domicilio', 'domicilio'], ['vigencia', 'Vigencia de la empresa', 'duracion', 'prorroga'],
+    ['junta', 'Junta directiva', 'junta', 'junta'], ['firmantes', 'Firmantes', 'firmantes', 'nombra'], ['contacto', 'Contacto', 'contacto', 'otro']];
+  const tipoDeFalta = (t) => { const n = normalizeStr(t || ''); return /junta/.test(n) ? 'junta' : /razon social|nombre/.test(n) ? 'razon' : /domicilio/.test(n) ? 'domicilio' : /prorroga|duracion/.test(n) ? 'prorroga' : /representante/.test(n) ? 'nombra' : null; };
+  // C1: panel "Revisión del expediente". La IA solo propone (borde punteado, "Propuesta, falta confirmar"); nunca sale como Bien ya marcado.
+  function panelRevision(){
+    if(!F.puedo.revisar || !rev || rev.error || F.cliente.es_natural) return '';
+    const k = rev.ia && rev.ia.estado === 'lista' ? rev.ia : null;
+    const noLeyo = !!(rev.ia && rev.ia.estado === 'error') || !!(k && (k.puntos || []).some((p) => p.id === 'actas' && p.estado === 'mano'));
+    const pts = rev.puntos || {}; let pend = 0, ped = 0, man = 0;
+    const filas = PUNTOS_REV.map(([pid, t, iaId]) => {
+      const s = pts[pid] || null; const p = k && !noLeyo ? (k.puntos || []).find((x) => x.id === iaId || (iaId === 'junta' && x.id === 'junta')) : null;
+      const prop = p ? (p.estado === 'ok' || p.excepcion ? 'bien' : p.estado === 'bloquea' ? 'pedir' : 'revisar') : null;
+      if(!s) pend++; else if(s.decision === 'pedir') ped++; else if(s.decision === 'revisar') man++;
+      const chip = s ? (s.decision === 'bien' ? ['verde', 'Bien'] : s.decision === 'pedir' ? ['rojo', 'Por pedir'] : ['ambar', 'Revisar a mano']) : prop ? ['azul', 'Propuesta, falta confirmar'] : ['gris', 'Sin marcar'];
+      const cls = (d) => 'rp-op' + (s && s.decision === d ? ' on' : (!s && prop === d ? ' prop' : ''));
+      const extra = s && s.decision === 'pedir' ? 'Se pedirá: ' + reqTexto(s.documento) + (s.nota ? '. ' + s.nota : '') : !s && prop === 'pedir' && p.falta ? 'Propuesta de la IA: pedir ' + p.falta : '';
+      return '<div class="rp-f" data-rp="' + pid + '"><div class="rp-t"><b>' + esc(t) + '</b><span class="chip ' + chip[0] + '">' + chip[1] + '</span></div><small>' + esc(p ? p.detalle : 'Mira el documento y marca') + '</small>' + (extra ? '<small class="rp-x">' + esc(extra) + '</small>' : '') +
+        '<div class="rp-ops" role="group" aria-label="' + esc(t) + '"><button type="button" class="' + cls('bien') + '" data-pt="' + pid + ':bien" aria-pressed="' + !!(s && s.decision === 'bien') + '">Bien</button><button type="button" class="' + cls('pedir') + '" data-pt="' + pid + ':pedir" aria-pressed="' + !!(s && s.decision === 'pedir') + '">Pedir</button><button type="button" class="' + cls('revisar') + '" data-pt="' + pid + ':revisar" aria-pressed="' + !!(s && s.decision === 'revisar') + '">Revisar</button></div></div>';
+    }).join('');
+    const hay = Object.keys(pts).length;
+    return '<section class="rp" aria-labelledby="rpT"><div class="rp-cab"><b id="rpT">Revisión del expediente</b><small>' + esc(noLeyo ? 'La IA no pudo leer los documentos. Revisa tú y marca cada punto.' : k ? 'La IA leyó los documentos. Sus propuestas salen con borde punteado: confirma con un toque o cambia.' : 'Sin lectura de la IA. Revisas tú y marcas cada punto; funciona igual.') + '</small></div>' + filas +
+      '<div class="rp-pie"><span>' + esc(pend ? (pend === 1 ? 'Falta 1 punto por confirmar' : 'Faltan ' + pend + ' puntos por confirmar') : plural(ped, 'por pedir', 'por pedir') + ' · ' + plural(man, 'a mano', 'a mano')) + '</span>' +
+      '<button type="button" class="btn btn-chico" data-pt-cerrar' + (hay ? '' : ' disabled') + '>Cerrar revisión</button></div></section>';
+  }
+  async function marcarPunto(b){
+    const [pid, dec] = b.dataset.pt.split(':'); const actual = ((rev && rev.puntos) || {})[pid];
+    if(dec === 'pedir' && !(actual && actual.decision === 'pedir')){
+      const iaP = rev.ia && rev.ia.estado === 'lista' ? (rev.ia.puntos || []).find((x) => x.id === (PUNTOS_REV.find((q) => q[0] === pid) || [])[2]) : null;
+      abrirPedir({ punto: pid, tipo: (iaP && tipoDeFalta(iaP.falta)) || (PUNTOS_REV.find((q) => q[0] === pid) || [])[3] || 'junta', texto: pid === 'contacto' ? 'Correo del representante' : '' });
+      return;
+    }
+    const nueva = actual && actual.decision === dec ? null : dec;   // tocar lo mismo otra vez lo desmarca
+    b.disabled = true;
+    try { await rpc('revision_punto', { p_cliente: id, p_punto: pid, p_decision: nueva }); rev.puntos = Object.assign({}, rev.puntos); if(nueva) rev.puntos[pid] = { decision: nueva }; else delete rev.puntos[pid]; pintarDocumentos(); }
+    catch (e) { toast(e.message, 'error'); b.disabled = false; }
+  }
+  async function cerrarPuntos(b){
+    b.disabled = true;
+    try {
+      const r = await rpc('revision_puntos_aplicar', { p_cliente: id });
+      toast(r.pedidos ? plural(r.pedidos, 'documento pedido', 'documentos pedidos') + '. ' + capital(liderCorto()) + ' ya tiene el mensaje para el cliente' : 'Revisión del expediente cerrada');
+      await cargar();
+      if(marcas().length && rev && rev.puede_cerrar) abrirCerrar();   // los documentos marcados se aprueban o devuelven en el mismo cierre
+    } catch (e) { toast(e.message, 'error'); b.disabled = false; }
+  }
+  // C2: Pedir un documento que no está (requerimiento). Desde el panel queda como punto; desde un documento se crea al momento.
+  let pedirO = null;
+  function abrirPedir(o){ pedirO = Object.assign({ tipo: 'junta', texto: '', nota: '' }, o); pintarPedir(); abrirHoja('hojaCampo'); }
+  function pintarPedir(){
+    const o = pedirO;
+    $('hojaCampo').innerHTML = cabHoja('tPedir', 'Pedir otro documento', F.cliente.nombre) +
+      '<p class="nota" style="margin-top:0">Este documento está bien, pero falta otro. La casilla queda en rojo con este nombre hasta que lo suban y lo apruebes.</p>' +
+      '<div class="motivos" role="radiogroup" aria-label="Qué documento falta">' + REQ_TIPOS.map(([k, t]) => '<button type="button" role="radio" aria-checked="' + (o.tipo === k) + '" class="mot' + (o.tipo === k ? ' on' : '') + '" data-req-tipo="' + k + '"><i></i>' + esc(t) + '</button>').join('') + '</div>' +
+      (o.tipo === 'otro' ? '<label class="rotulo arriba" for="reqTexto">Cuál documento</label><input class="campo" id="reqTexto" maxlength="120" autocomplete="off" value="' + esc(o.texto) + '">' : '') +
+      (o.origenT ? '<p class="nota">Origen: ' + esc(o.origenT) + ' (se guarda en la bitácora)</p>' : '') +
+      '<label class="rotulo arriba" for="reqNota">Nota para ' + esc(liderCorto()) + ' (opcional)</label><textarea class="area corta" id="reqNota" maxlength="300">' + esc(o.nota) + '</textarea><div class="error" id="eReq" role="alert"></div>' +
+      '<div class="acciones"><button type="button" class="btn btn-ancho" id="reqGuardar">' + (o.punto ? 'Marcar para pedir' : 'Pedir documento') + '</button></div>';
+  }
+  function leerPedir(){ if(!pedirO) return; const t = $('reqTexto'); const n = $('reqNota'); if(t) pedirO.texto = t.value; if(n) pedirO.nota = n.value; }
+  async function guardarPedir(b){
+    leerPedir(); const o = pedirO; $('eReq').textContent = '';
+    if(o.tipo === 'otro' && String(o.texto).trim().length < 3){ $('eReq').textContent = 'Escribe qué documento falta'; if($('reqTexto')) $('reqTexto').focus(); return; }
+    b.disabled = true;
+    try {
+      if(o.punto){ await rpc('revision_punto', { p_cliente: id, p_punto: o.punto, p_decision: 'pedir', p_documento: o.tipo === 'otro' ? String(o.texto).trim() : o.tipo, p_nota: String(o.nota).trim() || null });
+        rev.puntos = Object.assign({}, rev.puntos, { [o.punto]: { decision: 'pedir', documento: o.tipo === 'otro' ? String(o.texto).trim() : o.tipo, nota: String(o.nota).trim() } }); cerrarHoja(); pintarDocumentos(); toast('Marcado para pedir al cerrar la revisión'); return; }
+      await rpc('requerimiento_crear', { p_cliente: id, p_tipo: o.tipo, p_texto: o.tipo === 'otro' ? String(o.texto).trim() : null, p_motivo: String(o.nota).trim() || null, p_origen: o.origen || null });
+      cerrarHoja(); toast('Pedido. ' + capital(liderCorto()) + ' lo ve en rojo con el mensaje para el cliente'); await cargar();
+    } catch (e) { $('eReq').textContent = e.message; b.disabled = false; }
+  }
+  // C8: "Qué pedirle al cliente": el mensaje listo con lo pedido y lo devuelto, y cada línea con su botón para subir
+  function quePedir(){
+    const L = (F.faltantes || []).filter((x) => !x.dato && (x.req || x.e === 'devuelto')); if(!L.length) return '';
+    const nombres = L.map((x) => (x.req ? x.t : capital(x.t) + (x.e === 'devuelto' ? ' (la que enviaron no sirve: ' + (C.MOTIVOS[x.m] || 'revisar').toLowerCase() + ')' : '')));
+    const msj = 'Buenos días. Para completar su expediente necesitamos ' + (nombres.length === 1 ? 'el siguiente documento' : 'los siguientes documentos') + ': ' + C.lista(nombres) + '. ' + (L.some((x) => /acta/i.test(x.t)) ? 'Las actas deben estar inscritas en el Registro. ' : '') + 'Puede enviarlos por aquí. Gracias.';
+    quePedirMsj = msj;
+    return '<section class="qp" aria-labelledby="qpT"><div class="qp-cab"><b id="qpT">Qué pedirle al cliente</b><small>' + esc(F.puedo.revisar ? 'Esto le llega a ' + liderCorto() + ' con el mensaje listo.' : 'Mándale este mensaje y sube lo que te envíe en su casilla.') + '</small></div>' +
+      '<p class="qp-msj">' + esc(msj) + '</p><div class="acc"><button type="button" class="btn btn-chico" data-qp="wa">' + ic('enviar') + 'Enviar por WhatsApp</button><button type="button" class="btn btn-chico btn-2" data-qp="copiar">Copiar mensaje</button></div>' +
+      L.map((x) => '<div class="qp-l"><span class="ico" aria-hidden="true">!</span><span class="tx"><b>' + esc(x.req ? x.t : capital(x.t)) + '</b>' + (x.m && x.req ? '<small>' + esc(x.m) + '</small>' : x.e === 'devuelto' ? '<small>Devuelta: ' + esc((C.MOTIVOS[x.m] || '').toLowerCase()) + '</small>' : '') + '</span>' +
+        '<button type="button" class="mini pri" data-subir="' + esc(x.k + ':' + x.n) + '">' + esc('Subir ' + (/^acta|^cédula|^c[eé]dula/i.test(x.t) ? 'esta' : 'este') + ' ' + (x.req ? (x.k === 'acta_asamblea' ? 'acta' : 'documento') : 'documento')) + '</button></div>').join('') + '</section>';
+  }
+  let quePedirMsj = '';
+  async function accionQuePedir(b){
+    if(b.dataset.qp === 'copiar'){ try { await navigator.clipboard.writeText(quePedirMsj); toast('Mensaje copiado. Pégalo en el chat del cliente'); } catch (e) { toast('No se pudo copiar. Mantén presionado el mensaje y cópialo', 'error'); } return; }
+    const tel = String((F.cliente.tel || '')).replace(/\D/g, '').replace(/^0/, '58');
+    window.open('https://wa.me/' + (tel.length >= 11 ? tel : '') + '?text=' + encodeURIComponent(quePedirMsj), '_blank', 'noopener');
+  }
+  async function marcarRep(b){
+    const [n, m] = b.dataset.repMarca.split(':'); b.disabled = true;
+    await accion('representante_marcar', { p_cliente: id, p_orden: Number(n), p_marca: m, p_motivo: m === 'ya_no_aplica' ? 'Marcado a mano' : null },
+      m === 'firma' ? 'Listo: firma este representante' : m === 'cuenta' ? 'Vuelve a contar' : 'Listo: ya no cuenta. Sus documentos quedan en el historial', b);
+  }
+  // C6: documentos extra: cambiar título y convertir en acta (sin volver a subir)
+  function abrirTitulo(d){
+    $('hojaCampo').innerHTML = cabHoja('tTitulo', 'Cambiar título', F.cliente.nombre) + '<label class="rotulo" for="nuevoTitulo">Título del documento</label><input class="campo" id="nuevoTitulo" maxlength="80" autocomplete="off" value="' + esc(d.titulo || '') + '" data-foco>' +
+      '<div class="error" id="eTitulo" role="alert"></div><div class="acciones"><button type="button" class="btn btn-ancho" data-titulo-guardar="' + d.id + '">Guardar título</button></div>';
+    abrirHoja('hojaCampo');
+  }
+  function abrirAActa(d){
+    $('hojaCampo').innerHTML = cabHoja('tAActa', 'Convertir en acta', d.titulo || F.cliente.nombre) + '<p class="nota" style="margin-top:0">Pasa a las actas de asamblea sin volver a subirlo y queda por revisar.</p>' +
+      '<label class="rotulo" for="aActaFecha">Fecha de inscripción en el Registro</label><input class="campo" id="aActaFecha" type="date" max="' + esc(F.hoy) + '"><div class="error" id="eAActa" role="alert"></div>' +
+      '<div class="acciones"><button type="button" class="btn btn-ancho" data-a-acta="' + d.id + '">Convertir en acta</button></div>';
+    abrirHoja('hojaCampo');
+  }
+  async function guardarTitulo(b){ const t = $('nuevoTitulo').value.trim(); if(t.length < 3){ $('eTitulo').textContent = 'Escribe el título (al menos 3 letras)'; $('nuevoTitulo').focus(); return; }
+    b.disabled = true; try { await rpc('documento_titulo', { p_documento: Number(b.dataset.tituloGuardar), p_titulo: t }); cerrarHoja(); toast('Título guardado'); await cargar(); } catch (e) { $('eTitulo').textContent = e.message; b.disabled = false; } }
+  async function guardarAActa(b){ const f = $('aActaFecha').value; if(!f){ $('eAActa').textContent = 'Escribe la fecha de inscripción'; $('aActaFecha').focus(); return; } if(f > F.hoy){ $('eAActa').textContent = 'La fecha no puede ser futura'; return; }
+    b.disabled = true; try { await rpc('documento_a_acta', { p_documento: Number(b.dataset.aActa), p_fecha: f }); cerrarHoja(); toast('Ahora es un acta de asamblea'); await cargar(); } catch (e) { $('eAActa').textContent = e.message; b.disabled = false; } }
+  // C5: acta que cambia la junta o el representante
+  function actaJuntaHtml(d){
+    if(d.casilla !== 'acta_asamblea' || !F.puedo.revisar) return '';
+    const a = ver.acta; if(a === undefined) return '<div class="aj"><span class="cargando-linea"><i></i>Leyendo si esta acta cambia la junta</span></div>';
+    const dirs = ver.dirs || [];
+    return '<div class="aj"><label class="aj-chk"><input type="checkbox" id="ajCambia"' + (ver.ajCambia ? ' checked' : '') + '><span><b>Esta acta cambia la junta o el representante</b><small>Márcala solo si nombra, ratifica o saca directores. Una venta de acciones sola no cambia la junta.</small></span></label>' +
+      (ver.ajCambia ? '<div class="aj-dirs"><span class="rotulo">Junta que queda vigente</span>' + dirs.map((x, i) => '<div class="aj-d"><label class="solo-lector" for="ajN' + i + '">Nombre</label><input class="campo" id="ajN' + i + '" data-aj="' + i + ':nombre" maxlength="120" placeholder="Nombre y apellido" value="' + esc(x.nombre || '') + '">' +
+          '<label class="solo-lector" for="ajC' + i + '">Cédula</label><input class="campo" id="ajC' + i + '" data-aj="' + i + ':cedula" maxlength="15" inputmode="numeric" placeholder="Cédula" value="' + esc(x.cedula || '') + '">' +
+          '<label class="solo-lector" for="ajG' + i + '">Cargo</label><input class="campo" id="ajG' + i + '" data-aj="' + i + ':cargo" maxlength="60" placeholder="Cargo" value="' + esc(x.cargo || '') + '">' +
+          '<label class="aj-f"><input type="checkbox" data-aj="' + i + ':firma"' + (x.firma ? ' checked' : '') + '> Firma</label></div>').join('') +
+        '<button type="button" class="btn btn-chico btn-2" id="ajAgregar">' + ic('mas') + 'Agregar director</button>' +
+        '<p class="nota">' + esc(F.cliente.regimen_firma === 'conjunta' ? 'Firma conjunta: se piden la cédula y el RIF de cada uno que firma.' : 'Con firma separada basta un director completo.') + ' Al guardar, los que salieron pasan a Ya no aplica y, si alguien nuevo firma, se piden su cédula y su RIF.</p></div>' : '') +
+      '<div class="error" id="eAj" role="alert"></div><button type="button" class="btn btn-chico" id="ajGuardar">' + (a && a.cambia && !ver.ajCambia ? 'Desmarcar y revertir' : 'Guardar') + '</button>' +
+      (a && a.cambia ? '<p class="nota">Marcada por ' + esc(primerNombre(a.por) || 'alguien') + ' el ' + esc(fecha(a.en, true)) + '.</p>' : '') + '</div>';
+  }
+  async function cargarActa(d){
+    if(d.casilla !== 'acta_asamblea' || !F.puedo.revisar) return;
+    let a = null; try { a = await rpc('acta_junta_de', { p_documento: d.id }); } catch (e) { a = null; }
+    if(!ver || ver.docId !== d.id) return;
+    ver.acta = a; ver.ajCambia = !!(a && a.cambia);
+    ver.dirs = a && a.directores && a.directores.length ? a.directores.map((x) => Object.assign({}, x)) : (F.representantes || []).filter((r) => r.nombre && (!r.marca || r.marca === 'cuenta')).map((r) => ({ nombre: r.nombre, cedula: '', cargo: '', firma: !!r.firma }));
+    if(!ver.dirs.length) ver.dirs = [{ nombre: '', cedula: '', cargo: '', firma: true }];
+    if(hojaAbierta() === 'hojaVer') pintarVer();
+  }
+  function leerActa(){ Array.prototype.forEach.call(document.querySelectorAll('#hojaVer [data-aj]'), (x) => { const [i, k] = x.dataset.aj.split(':'); const o = ver.dirs[Number(i)]; if(o) o[k] = x.type === 'checkbox' ? x.checked : x.value; }); }
+  async function guardarActa(b){
+    leerActa(); const d = docVer(); const f = ($('fechaActa') || {}).value || d.firmado_en; const er = $('eAj'); er.textContent = '';
+    const dirs = (ver.dirs || []).filter((x) => String(x.nombre || '').trim().length >= 3).map((x) => ({ nombre: String(x.nombre).trim(), cedula: String(x.cedula || '').replace(/\D/g, ''), cargo: String(x.cargo || '').trim(), firma: !!x.firma }));
+    if(ver.ajCambia && !f){ er.textContent = 'Escribe la fecha del acta arriba'; return; }
+    if(ver.ajCambia && !dirs.length){ er.textContent = 'Agrega al menos un director con su nombre'; return; }
+    b.disabled = true;
+    try {
+      const r = await rpc('acta_junta_guardar', { p_documento: d.id, p_cambia: !!ver.ajCambia, p_fecha: f || null, p_directores: dirs });
+      toast(!r.cambia ? 'Acta desmarcada: todo vuelve a como estaba' : [(r.ya_no_aplica || []).length ? plural(r.ya_no_aplica.length, 'representante pasa', 'representantes pasan') + ' a Ya no aplica' : '', r.pedidos ? plural(r.pedidos, 'documento pedido', 'documentos pedidos') : ''].filter(Boolean).join('. ') || 'Guardado');
+      ver.acta = undefined; await cargar(); if(docVer()) cargarActa(docVer());
+    } catch (e) { er.textContent = e.message; b.disabled = false; }
   }
 
   // ---------- Datos ----------
@@ -974,6 +1156,7 @@
       if(!trabajando) trabajar();
     });
   }
+  const yaSubidos = {};
   async function subirTrabajo(t){
     const total = t.items.reduce((a, it) => a + it.files.length, 0); let hecho = 0;
     const envio = [];
@@ -982,7 +1165,10 @@
       const archivos = new Array(it.files.length); let sig = 0;
       const nombreCas = it.casillas.map((c) => casilla(c.casilla, c.numero === 'auto' ? 1 : Number(c.numero || 0))).join(' + ');
       const uno = async () => { while(sig < it.files.length){ const n = sig++; const file = it.files[n];
-        const pr = await preparar(file); const r = await subirADrive(t.cli, pr, file.name, nombreCas); archivos[n] = { drive_id: r.drive_id };
+        // Lote 05/11 C7: el mismo archivo ya subido para este cliente (en esta sesión) se enlaza, no se sube otra vez
+        const kf = t.cli + '|' + file.name + '|' + file.size + '|' + (file.lastModified || 0);
+        if(yaSubidos[kf]){ archivos[n] = { drive_id: yaSubidos[kf] }; hecho++; continue; }
+        const pr = await preparar(file); const r = await subirADrive(t.cli, pr, file.name, nombreCas); archivos[n] = { drive_id: r.drive_id }; yaSubidos[kf] = r.drive_id;
         hecho++; avance(t, total > 1 ? 'Subiendo a Drive ' + hecho + ' de ' + total + '…' : 'Subiendo a Drive…'); } };
       avance(t, total > 1 ? 'Subiendo a Drive ' + (hecho + 1) + ' de ' + total + '…' : 'Subiendo a Drive…');
       await Promise.all(Array.from({ length: Math.min(3, it.files.length) }, uno));
@@ -1188,7 +1374,9 @@
 
   // ---------- Ver y revisar un documento ----------
   function abrirRevision(){ const cola = sinMarcar().map((d) => d.id); if(!cola.length) return; irTab('documentos'); soltarBlobs(); ver = { docId: cola[0], cola, paso: 'ver', motivo: null, archivo: 0, url: {} }; pintarVer(); abrirHoja('hojaVer'); cargarArchivo(); }
-  function abrirVer(docId){ soltarBlobs(); ver = { docId, cola: null, paso: 'ver', motivo: null, archivo: 0, url: {} }; pintarVer(); abrirHoja('hojaVer'); cargarArchivo(); }
+  function abrirVer(docId){ soltarBlobs(); ver = { docId, cola: null, paso: 'ver', motivo: null, archivo: 0, url: {} }; pintarVer(); abrirHoja('hojaVer'); cargarArchivo(); const d = docVer(); if(d) cargarActa(d); }
+  // Motivos de devolución: "Sin los datos del Registro" se guarda como otro motivo con esa nota (la base solo tiene los 5 de siempre)
+  const MOTIVOS_DEV = Object.assign({}, C.MOTIVOS, { no_corresponde: 'No es de esta empresa', sin_registro: 'Sin los datos del Registro' });
   function docVer(){ return (F.documentos || []).find((d) => d.id === ver.docId); }
   function pintarVer(){
     const d = docVer(); const h = $('hojaVer');
@@ -1198,8 +1386,14 @@
     const cab = '<div class="hoja-cab"><div class="tx"><b id="tVer">' + esc(titulo) + '</b><small>' + esc(F.cliente.nombre) + (ver.cola ? ' · Documento ' + pos + ' de ' + ver.cola.length : '') + '</small></div><button type="button" class="cerrar" data-cierra="1" aria-label="Cerrar">' + ic('x') + '</button></div>';
     if(ver.paso === 'devolver'){
       h.classList.add('angosta');
-      h.innerHTML = cab + '<div class="hoja-cuerpo"><h2 style="font-size:20px;font-weight:800;margin-bottom:14px">¿Por qué lo devuelves?</h2><div class="motivos" role="radiogroup" aria-label="Motivo">' +
-        Object.keys(C.MOTIVOS).map((k) => '<button type="button" role="radio" aria-checked="' + (ver.motivo === k) + '" class="mot' + (ver.motivo === k ? ' on' : '') + '" data-motivo="' + k + '"><i></i>' + esc(C.MOTIVOS[k]) + '</button>').join('') + '</div>' +
+      // Lote 05/11 C2/C3: Devolver (el subido está malo) y Pedir (falta otro) son dos acciones distintas.
+      // La constitutiva solo se devuelve si no es de la empresa, está ilegible o no trae los datos del Registro.
+      const consti = d.casilla === 'acta_constitutiva';
+      const mots = Object.keys(MOTIVOS_DEV).filter((k) => !consti || ['ilegible', 'no_corresponde', 'sin_registro'].includes(k));
+      h.innerHTML = cab + '<div class="hoja-cuerpo"><div class="dp-modos" role="group" aria-label="Qué hacer"><button type="button" class="dp-modo on" aria-pressed="true"><b>Devolver este documento</b><small>El que subieron está malo</small></button>' +
+        '<button type="button" class="dp-modo" id="verPedir"><b>Pedir otro documento</b><small>Este está bien, pero falta algo</small></button></div>' +
+        '<h2 style="font-size:20px;font-weight:800;margin:14px 0">¿Por qué lo devuelves?</h2>' + (consti ? '<p class="nota" style="margin-top:0">La constitutiva solo se devuelve si no es de la empresa, está ilegible o no trae los datos del Registro. Para pedir un acta usa Pedir otro documento.</p>' : '') + '<div class="motivos" role="radiogroup" aria-label="Motivo">' +
+        mots.map((k) => '<button type="button" role="radio" aria-checked="' + (ver.motivo === k) + '" class="mot' + (ver.motivo === k ? ' on' : '') + '" data-motivo="' + k + '"><i></i>' + esc(MOTIVOS_DEV[k]) + '</button>').join('') + '</div>' +
         '<label class="rotulo arriba" for="notaDev">Nota para ' + esc(liderCorto()) + (ver.motivo === 'otro' ? '' : ' (opcional)') + '</label><textarea class="area corta" id="notaDev" maxlength="500">' + esc(ver.nota || '') + '</textarea><div class="error" id="eDev" role="alert"></div><p class="nota">' + esc(capital(liderCorto())) + ' se entera cuando se cierre la revisión.</p></div>' +
         '<div class="hoja-pie"><button type="button" class="btn btn-2" id="devVolver">Volver</button><button type="button" class="btn btn-peligro" id="devConfirmar"' + (ver.motivo ? '' : ' disabled') + '>Marcar para devolver</button></div>';
       return;
@@ -1223,8 +1417,9 @@
       (F.puedo.revisar && !(d.casilla.indexOf('contrato_') === 0 && !F.puedo.contrato) ? '<button type="button" class="btn btn-chico btn-2" id="verReemplazar" style="margin-top:12px">' + ic('subir') + 'Reemplazar archivo</button>' : '') +
       (mk && mk.origen === 'ia' && mk.accion === 'devolver' && rev && rev.puede_cerrar ? '<label class="rotulo arriba" for="excDoc">Si lo apruebas igual, escribe el motivo</label><textarea class="area corta" id="excDoc" maxlength="300"></textarea>' +
         '<p class="nota">Aprobar lo que la IA devolvió es una excepción: queda en la bitácora con tu nombre.</p>' : '') +
+      (d.casilla === 'otro' && d.numero < 60 && !F.cliente.es_natural ? '<div class="acc" style="margin-top:12px"><button type="button" class="btn btn-chico btn-2" data-doc-titulo="' + d.id + '">Cambiar título</button>' + (F.puedo.revisar ? '<button type="button" class="btn btn-chico btn-2" data-doc-acta="' + d.id + '">Convertir en acta</button>' : '') + '</div>' : '') +
       (d.casilla === 'acta_asamblea' ? '<label class="rotulo arriba" for="fechaActa">Fecha del acta</label><div style="display:flex;gap:10px;align-items:center"><input class="campo" id="fechaActa" style="flex:1;min-width:0" type="date" max="' + esc(F.hoy) + '" value="' + esc(d.firmado_en || '') + '"><button type="button" class="btn btn-chico btn-2" id="guardarFechaActa">Guardar fecha</button></div>' +
-        '<p class="nota">Las actas se ordenan por esta fecha en el expediente.</p><div class="error" id="errFechaActa" role="alert"></div>' : '') +
+        '<p class="nota">Las actas se ordenan por esta fecha en el expediente.</p><div class="error" id="errFechaActa" role="alert"></div>' + actaJuntaHtml(d) : '') +
       (F.puedo.revisar ? '<label class="rotulo arriba" for="venceDoc">Fecha de vencimiento (opcional)</label><input class="campo" id="venceDoc" type="date" value="' + esc(d.vence_en || '') + '">' +
         '<p class="nota">Sirve para avisar antes de que se venza.</p>' : '');
     const puedeSubir = !(d.casilla.indexOf('contrato_') === 0 && !F.puedo.contrato);
@@ -1318,7 +1513,7 @@
       ver.nota = $('notaDev').value.trim();
       if(!ver.motivo){ $('eDev').textContent = 'Elige un motivo'; return; }
       if(ver.motivo === 'otro' && !ver.nota){ $('eDev').textContent = 'Escribe el motivo en la nota'; $('notaDev').focus(); return; }
-      args.p_motivo = ver.motivo; args.p_nota = ver.nota || null;
+      args.p_motivo = ver.motivo === 'sin_registro' ? 'otro' : ver.motivo; args.p_nota = ver.motivo === 'sin_registro' ? 'Sin los datos del Registro' + (ver.nota ? '. ' + ver.nota : '') : ver.nota || null;
     }
     // Lote 21/10: la marca se ve al instante y se guarda por detrás; nunca espera la vista previa ni el recálculo.
     // Si el servidor la rechaza, se quita y se avisa.
@@ -1497,6 +1692,23 @@
     if((b = t.closest('#hojaFicha [data-firma-cli]')) && F){ if(b.classList.contains('on')) return; const fis = b.dataset.valor === 'fisica';
       accion('cliente_marca', { p_cliente: id, p_marca: 'contrato_presencial', p_valor: fis }, fis ? 'Firma física: no se piden correos ni teléfono' : 'Firma digital', b); return; }
     if(t.closest('#revisarTodo')){ abrirRevision(); return; }
+    // Lote 05/11 parte C
+    if((b = t.closest('#hojaFicha [data-pt]'))){ marcarPunto(b); return; }
+    if((b = t.closest('#hojaFicha [data-pt-cerrar]'))){ cerrarPuntos(b); return; }
+    if((b = t.closest('[data-req-quitar]'))){ if(b.dataset.armado !== '1'){ b.dataset.armado = '1'; b.textContent = '¿Quitar? Toca otra vez'; setTimeout(() => { if(document.contains(b)){ b.dataset.armado = ''; b.textContent = 'Quitar pedido'; } }, 4000); return; }
+      accion('requerimiento_anular', { p_id: Number(b.dataset.reqQuitar) }, 'Pedido quitado', b); return; }
+    if((b = t.closest('#hojaCampo [data-req-tipo]')) && pedirO){ leerPedir(); pedirO.tipo = b.dataset.reqTipo; pintarPedir(); if(pedirO.tipo === 'otro' && $('reqTexto')) $('reqTexto').focus(); return; }
+    if((b = t.closest('#reqGuardar'))){ guardarPedir(b); return; }
+    if((b = t.closest('[data-qp]'))){ accionQuePedir(b); return; }
+    if((b = t.closest('[data-rep-marca]'))){ marcarRep(b); return; }
+    if((b = t.closest('[data-doc-titulo]'))){ const d = (F.documentos || []).find((x) => x.id === Number(b.dataset.docTitulo)); if(d){ cerrarHoja(); abrirTitulo(d); } return; }
+    if((b = t.closest('[data-doc-acta]'))){ const d = (F.documentos || []).find((x) => x.id === Number(b.dataset.docActa)); if(d){ cerrarHoja(); abrirAActa(d); } return; }
+    if((b = t.closest('[data-titulo-guardar]'))){ guardarTitulo(b); return; }
+    if((b = t.closest('[data-a-acta]'))){ guardarAActa(b); return; }
+    if(t.closest('#verPedir')){ const d = docVer(); if(d){ const o = { origen: d.id, origenT: d.titulo || casilla(d.casilla, d.numero), tipo: d.casilla === 'acta_constitutiva' ? 'junta' : 'otro' }; cerrarHoja(); abrirPedir(o); } return; }
+    if(t.closest('#ajCambia')){ leerActa(); ver.ajCambia = t.checked; pintarVer(); return; }
+    if(t.closest('#ajAgregar')){ leerActa(); ver.dirs.push({ nombre: '', cedula: '', cargo: '', firma: false }); pintarVer(); return; }
+    if((b = t.closest('#ajGuardar'))){ guardarActa(b); return; }
     if(t.closest('#abrirCerrarRev')){ abrirCerrar(); return; }
     if(t.closest('#cerrarRevSolo')){ cerrarRevision(false); return; }
     if(t.closest('#cerrarRevEnviar')){ cerrarRevision(true); return; }

@@ -22,14 +22,14 @@ const { RPC } = require('./mundo');
     await p.screenshot({ path: 'capturas/40-' + nombre + '-rep-vacio.png' });
     await p.click('[data-quitar-rep="2"]'); await p.waitForFunction(() => !document.querySelector('[data-grupo="rep2"]'));
     ok(nombre + ': Quitar representante lo saca', (await p.locator('[data-grupo="rep2"]').count()) === 0 && (await p.locator('#agregarRep').count()) === 1);
-    // Con un dato, se piden su cédula y su RIF
+    // Lote 05/11 A1: con firma separada basta UN representante; el segundo con datos ya no genera faltantes
     await p.click('#agregarRep'); await p.waitForSelector('[data-grupo="rep2"] [data-campo="rep:2"]');
     await p.click('[data-grupo="rep2"] [data-campo="rep:2"]'); await p.waitForSelector('#hojaCampo.ver #cTel');
     await p.fill('#cTel', '0414-555 22 33'); await p.click('#guardarCampo');
-    await p.waitForFunction(() => !document.querySelector('#hojaCampo.ver') && document.querySelectorAll('[data-grupo="rep2"] .chip.rojo').length === 2);
+    await p.waitForFunction(() => !document.querySelector('#hojaCampo.ver') && !!document.querySelector('[data-grupo="rep2"]'));
     const f2 = fal();
-    ok(nombre + ': con un dato, su cédula y su RIF cuentan como faltantes', f2.length === antes + 2 && f2.some((x) => x.k === 'cedula' && x.n === 2) && f2.some((x) => x.k === 'rif_personal' && x.n === 2));
-    ok(nombre + ': con datos ya no se puede quitar como vacío', (await p.locator('[data-quitar-rep="2"]').count()) === 0 && !(await p.textContent('[data-grupo="rep2"]')).includes('Opcional'));
+    ok(nombre + ': con firma separada, el segundo representante con datos no suma faltantes', f2.length === antes && (await p.locator('[data-grupo="rep2"] .chip.rojo').count()) === 0);
+    ok(nombre + ': con datos ya no se puede quitar como vacío', (await p.locator('[data-quitar-rep="2"]').count()) === 0 && !(await p.textContent('[data-grupo="rep2"] .sec')).includes('Opcional'));
     ok(nombre + ': documentos sin desborde', await sinDesborde(p));
     // Un expediente con Legal aprobado no se reabre por un representante agregado
     const ap = mundo.datos.clientes.find((x) => !x.es_natural && x.legal_ok_en && x.regimen_firma !== 'conjunta');

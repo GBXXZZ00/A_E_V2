@@ -225,7 +225,7 @@ export function evaluar(e){
       if(rsActa && rsRif){
         const p = parecido(rsActa, rsRif);
         if(p !== null && p >= 0.6) punto('razon_social', 'Razón social igual a la del RIF', 'ok', rsActa + '.');
-        else punto('razon_social', 'Razón social distinta a la del RIF', 'bloquea', 'El acta dice ' + rsActa + ' y el RIF dice ' + rsRif + '.', { pagina: pg(cambioNombre || actaC), falta: ACTAS.razon });
+        else punto('razon_social', 'Razón social distinta a la del RIF', 'bloquea', 'El acta dice ' + rsActa + ' y el RIF dice ' + rsRif + '.', { pagina: pg(cambioNombre || actaC), falta: ACTAS.razon, pedir: true });
       }
 
       // Duración de la empresa (regla 10)
@@ -236,7 +236,7 @@ export function evaluar(e){
         const base = (Number(acta.duracion_anos) > 0 ? anos + ' años' : 'No dice la duración en ninguna página: se toman 30 años') + ' desde el ' + fechaTexto(inscActa);
         if(vence >= hoy) punto('duracion', 'Duración de la empresa', 'ok', base + '. Vigente hasta el ' + fechaTexto(vence) + '.', { pagina: pg(actaC) });
         else if(ult && masAnios(ult._insc, 10) >= hoy) punto('duracion', 'Duración de la empresa', 'ok', base + ' venció el ' + fechaTexto(vence) + ', pero la asamblea inscrita el ' + fechaTexto(ult._insc) + ' la renueva hasta el ' + fechaTexto(masAnios(ult._insc, 10)) + '.', { pagina: pg(ult) });
-        else punto('duracion', 'Empresa vencida', 'bloquea', base + ': venció el ' + fechaTexto(vence) + '.', { pagina: pg(actaC), falta: ACTAS.duracion });
+        else punto('duracion', 'Empresa vencida', 'bloquea', base + ': venció el ' + fechaTexto(vence) + '.', { pagina: pg(actaC), falta: ACTAS.duracion, pedir: true });
       }
 
       // Junta vigente (reglas 12, 13 y 14)
@@ -314,7 +314,7 @@ export function evaluar(e){
       else {
         const p = parecido(dirActa, dirRif);
         if(p !== null && p >= 0.65) punto('domicilio', 'Domicilio igual al del RIF', 'ok', 'Se parece en un ' + pct(p) + '.', { pagina: pg(cambioDom || actaC) });
-        else punto('domicilio', 'Domicilio distinto al del RIF', 'bloquea', 'La dirección ' + (cambioDom ? 'de la última asamblea' : 'del acta') + ' se parece en un ' + pct(p || 0) + ' a la del RIF.', { pagina: pg(cambioDom || actaC), falta: ACTAS.domicilio });
+        else punto('domicilio', 'Domicilio distinto al del RIF', 'bloquea', 'La dirección ' + (cambioDom ? 'de la última asamblea' : 'del acta') + ' se parece en un ' + pct(p || 0) + ' a la del RIF.', { pagina: pg(cambioDom || actaC), falta: ACTAS.domicilio, pedir: true });
       }
     }
     const fu = (a) => (a ? { casilla: a._doc.casilla, numero: a._doc.numero, inscripcion: a._insc } : null);
@@ -334,15 +334,8 @@ export function evaluar(e){
     });
   }));
 
-  // Lo que falta en las actas (duración, domicilio, razón social) se pide devolviendo el acta constitutiva:
-  // así el estatus se sigue calculando por documentos, como siempre.
-  // Lote 3: la junta vencida NO devuelve el acta constitutiva; el acta se aprueba y se pide el acta de asamblea (punto con "pedir").
-  const dActa2 = docs.find((d) => d.casilla === 'acta_constitutiva');
-  const deActas = puntos.filter((p) => p.estado === 'bloquea' && p.falta && ['duracion', 'domicilio', 'razon_social'].includes(p.id));
-  if(dActa2 && deActas.length && marcas[dActa2.id] && marcas[dActa2.id].propuesta === 'bien'){
-    const m = marcas[dActa2.id];
-    marca(dActa2, 'problema', 'otro', 'Falta: ' + deActas.map((p) => p.falta.charAt(0).toLowerCase() + p.falta.slice(1)).join('; ') + '. ' + m.nota, H[dActa2.id], m.datos);
-  }
+  // Lote 05/11 C3: la constitutiva solo se devuelve si no es de la empresa, está ilegible o no trae los datos del Registro.
+  // Lo que falta en las actas (duración, domicilio, razón social, junta) se PIDE (punto con "pedir"): la IA solo lo propone, lo confirma una persona.
 
   const ms = Object.values(marcas);
   const veredicto = ms.some((m) => m.propuesta === 'problema') || puntos.some((p) => p.estado === 'bloquea') ? 'no_apto'

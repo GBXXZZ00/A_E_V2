@@ -1,6 +1,6 @@
 # Traspaso (se actualiza al cerrar cada sesión)
 
-Actualizado: 05/11/2026, LOTE 05/11 en curso (una versión por parte). Publicado: `?v=70` (partes G, A y B).
+Actualizado: 05/11/2026, LOTE 05/11 en curso (una versión por parte). Publicado: `?v=71` (partes G, A, B y C).
 
 ## LOTE 05/11 (`claude/lote-05nov.md`): EN CURSO
 Referencia de comisiones (`privado.comision_filas3`) al empezar: septiembre 46/41, octubre 83/75, noviembre 34/4.
@@ -25,7 +25,17 @@ Referencia de comisiones (`privado.comision_filas3`) al empezar: septiembre 46/4
   - B5: prueba automática contra la base: todas las gráficas de los 8 módulos abren su detalle sin error (ninguna "Gráfica no reconocida"); equipo Canales: detalle 1 en noviembre y 12 en octubre, igual que el número del equipo.
   - B6: churn, infancia y calidad por dueño escondidos (`privado.churn_listo()`: fechas de un mes completo + ajuste `churn_visible` = si; hoy `no`). Clientes muestra "Todavía no se muestran" con el porqué.
   - Pruebas: test51 (TAD sin fechas en rojo; columnas "Fecha Ultima Suspension"/"Fecha Reconexion" leídas), test31 y test47 ajustadas (sin "Por armar"; churn escondido).
-- **Siguen**: C, D, E, F. El inventario `claude/inventario-05nov.md` se hace antes de tocar la primera pantalla (C).
+- **Parte C HECHA (v71)**. SQL y evidencia en `supabase/pruebas/lote_05nov_c.sql`. Inventario de funciones en `claude/inventario-05nov.md`.
+  - C1 panel "Revisión del expediente" (razón social, domicilio, vigencia, junta, firmantes, contacto) con Bien / Pedir / Revisar; la IA solo propone (borde punteado, "Propuesta, falta confirmar"); sin IA funciona igual; "La IA no pudo leer". "Cerrar revisión" (`revision_puntos_aplicar`) crea los pedidos, avisa al líder y, si hay documentos marcados, abre el cierre de siempre.
+  - C2 Devolver y Pedir separados. Pedir crea un **requerimiento** (`public.requerimientos`, lista cerrada de actas u Otro con texto) con casilla destino en rojo y el nombre completo, motivo, origen, quién y cuándo; estado abierto, por revisar, cumplido, anulado (disparador en documentos); "Quitar pedido"; bitácora en todo.
+  - C3 la constitutiva solo se devuelve por no ser de la empresa, ilegible o sin datos del Registro (pantalla y servidor: `documento_revisar` y `documento_marcar`). La IA ya no la devuelve para pedir actas: propone pedir (reglas v5, función `ia_revisar` v13).
+  - C4 representantes: Firma este, No está en la junta, Ya no aplica (gris, documentos en el historial), Volver a contar (`representante_marcar`). `privado.requeridos` usa el que firma.
+  - C5 acta que cambia la junta (`acta_junta_guardar`): los que salen pasan a Ya no aplica; el nuevo que firma se agrega y se piden su cédula y RIF; desmarcar revierte.
+  - C6 documentos extra: Cambiar título y Convertir en acta (`documento_titulo`, `documento_a_acta`). El título ya era obligatorio al subir.
+  - C7 archivo combinado: un archivo marcado en varias casillas ya se subía una vez; ahora el mismo archivo subido después en otra casilla (misma sesión) se enlaza al que ya está en Drive y la casilla dice "Mismo archivo que …".
+  - C8 "Qué pedirle al cliente" (ficha del líder y del administrador): mensaje listo con lo pedido y lo devuelto, WhatsApp y Copiar, y "Subir esta acta" en cada línea.
+  - Pruebas: test52 nueva (panel, pedir, quitar, devolver de la constitutiva, Ya no aplica, vista del líder), test16 (C3), test40 ajustada a A1 (el segundo representante con datos ya no genera faltantes). Pruebas del expediente: 17 de 17.
+- **Siguen**: D (Mi trabajo), E (Comisiones), F (Dedicados y VGT).
 
 
 

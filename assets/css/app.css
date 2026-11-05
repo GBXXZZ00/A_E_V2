@@ -2195,3 +2195,50 @@ button.bz-ck.on::after{left:17px;top:13px}
 /* Lote 05/11 B6: sin churn quedan 3 números en Clientes */
 .clr-nums.sin-churn{grid-template-columns:1.4fr 1.1fr 1fr}
 @media (max-width:899px){ .clr-nums.sin-churn{grid-template-columns:1fr 1fr} }
+/* Lote 05/11 C: Revisión del expediente, Qué pedirle al cliente, representantes, Devolver o Pedir, acta que cambia la junta */
+.rp{margin-top:14px;border:1px solid var(--line);border-radius:var(--radius-sm);padding:14px 16px;background:var(--bg)}
+.rp-cab b{display:block;font-size:15.5px;font-weight:800}
+.rp-cab small{display:block;margin-top:3px;font-size:12.5px;color:var(--text2)}
+.rp-f{padding:12px 0;border-top:1px solid var(--line);margin-top:12px}
+.rp-f + .rp-f{margin-top:0}
+.rp-t{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.rp-t b{font-size:14.5px}
+.rp-f > small{display:block;margin-top:4px;font-size:12.5px;color:var(--text2)}
+.rp-f > small.rp-x{color:var(--text);font-weight:600}
+.rp-ops{display:flex;gap:8px;margin-top:10px}
+.rp-op{flex:1 1 0;min-height:44px;border-radius:12px;border:1.5px solid var(--line);background:var(--bg);font-size:13.5px;font-weight:700;color:var(--text);white-space:nowrap;transition:transform 160ms var(--ease-out)}
+.rp-op.prop{border-style:dashed;border-color:var(--azul);color:var(--azul)}
+.rp-op.on{background:var(--azul);border-color:var(--azul);color:#fff}
+.rp-op:active{transform:scale(0.97)}
+.rp-pie{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding-top:12px;border-top:1px solid var(--line);font-size:13px;color:var(--text2)}
+.qp{margin-top:14px;border:1px solid var(--rojo-bg);border-radius:var(--radius-sm);padding:14px 16px;background:var(--bg)}
+.qp-cab b{display:block;font-size:15.5px;font-weight:800}
+.qp-cab small{display:block;margin-top:3px;font-size:12.5px;color:var(--text2)}
+.qp-msj{margin-top:10px;padding:12px 14px;border-radius:12px;background:var(--surface-2);font-size:14px;line-height:1.45}
+.qp .acc{display:flex;gap:10px;flex-wrap:wrap;margin-top:10px}
+.qp-l{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line);margin-top:10px}
+.qp-l + .qp-l{margin-top:0}
+.qp-l .ico{display:grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--rojo-bg);color:var(--rojo);font-weight:800;flex:none}
+.qp-l .tx{flex:1;min-width:0}
+.qp-l .tx b{display:block;font-size:14px;color:var(--rojo)}
+.qp-l .tx small{display:block;font-size:12.5px;color:var(--text2)}
+.casilla.pedida b{color:var(--rojo)}
+.rep-marcas{display:flex;gap:14px;flex-wrap:wrap;margin:2px 0 4px}
+.rep-fuera{opacity:.75}
+.rep-fuera .sec{color:var(--text2)}
+.dp-modos{display:flex;gap:10px}
+.dp-modo{flex:1 1 0;text-align:left;min-height:56px;padding:10px 14px;border-radius:14px;border:1.5px solid var(--line);background:var(--bg)}
+.dp-modo b{display:block;font-size:14px}
+.dp-modo small{display:block;font-size:12px;color:var(--text2)}
+.dp-modo.on{border-color:var(--azul);background:var(--azul-bg)}
+.aj{margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+.aj-chk{display:flex;gap:10px;align-items:flex-start;min-height:44px;cursor:pointer}
+.aj-chk input,.aj-f input{width:20px;height:20px;margin-top:2px;accent-color:var(--azul);flex:none}
+.aj-chk b{display:block;font-size:14px}
+.aj-chk small{display:block;font-size:12.5px;color:var(--text2)}
+.aj-dirs{margin-top:10px}
+.aj-d{display:grid;grid-template-columns:2fr 1fr 1.2fr auto;gap:8px;align-items:center;margin-top:8px}
+.aj-f{display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;min-height:44px}
+.aj .btn{margin-top:10px}
+@media (max-width:560px){ .aj-d{grid-template-columns:1fr 1fr} .aj-d input:first-of-type{grid-column:1 / -1} .rp-op{font-size:13px} }
+@media (prefers-reduced-motion:reduce){ .rp-op{transition:none} }

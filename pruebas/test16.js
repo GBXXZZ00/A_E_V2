@@ -97,6 +97,8 @@ const M = (r, doc) => r.marcas.find((m) => m.documento === doc) || {};
   // 9. RIF con dirección completa y acta con otra, sin cláusula de sucursales
   r = evaluar(base((e) => { acta(e).direccion = 'Calle 72 con avenida 3E, Centro Comercial Las Lomas, local 12, Valencia, Carabobo'; }));
   ok('caso 9: domicilio distinto bloquea y pide acta de cambio de domicilio', P(r, 'domicilio').estado === 'bloquea' && /cambio de domicilio/.test(P(r, 'domicilio').falta) && r.veredicto === 'no_apto', P(r, 'domicilio'));
+  // Lote 05/11 C3: la constitutiva ya no se devuelve para pedir actas: queda bien y el acta se PIDE
+  ok('C3: con domicilio distinto la constitutiva queda bien y el punto propone pedir el acta de cambio de domicilio fiscal', M(r, 14).propuesta === 'bien' && P(r, 'domicilio').pedir === true && P(r, 'domicilio').falta === 'Acta de asamblea de cambio de domicilio fiscal', M(r, 14));
   r = evaluar(base((e) => { acta(e).direccion = 'Calle 72, Valencia, Carabobo'; acta(e).clausula_sucursales = true; }));
   ok('caso 9: con cláusula de sucursales no hace falta que coincida', P(r, 'domicilio').estado === 'ok');
   r = evaluar(base((e) => { acta(e).direccion = 'Maracaibo'; }));
