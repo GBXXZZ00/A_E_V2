@@ -29,9 +29,27 @@ const cerrarHojas = async (p) => { for(let i = 0; i < 5 && await p.evaluate(() =
     await p.click('#otro').catch(() => {});
     await p.setInputFiles('#archivos', { name: 'tad2.csv', mimeType: 'text/csv', buffer: Buffer.from(csv(30, true)) });
     await p.waitForSelector('#cargarTodo'); const partes = llamo(mundo, 'tad_indice_parte').length;
-    await p.click('#cargarTodo'); await p.waitForFunction(() => /índice de \d+ servicios \(1 cambió\)/.test(document.getElementById('listaArch').textContent));
+    // Lote 05/11 G: el índice es opcional; recién cargado no toca y la casilla sale desmarcada
+    ok(nombre + ': con el índice al día la casilla del índice sale desmarcada y dice la fecha', !(await p.isChecked('[data-con-indice]')) && /Último índice/.test(await p.textContent('#listaArch')));
+    await p.check('[data-con-indice]');
+    mundo.lentoRpc = { tad_indice_cerrar: 2500 };
+    await p.click('#cargarTodo'); await p.waitForFunction(() => /Índice de residenciales: \d+ %/.test(document.getElementById('listaArch').textContent));
+    ok(nombre + ': el índice sigue en segundo plano y la pantalla deja subir otros archivos', (await p.locator('#soltar, #otro').count()) >= 1 && await p.evaluate(() => window.AE_ocupado()) && !(await p.locator('#cargarTodo').count()));
+    await p.waitForFunction(() => /índice de \d+ servicios \(1 cambió\)/.test(document.getElementById('listaArch').textContent)); mundo.lentoRpc = null;
     const ult = llamo(mundo, 'tad_indice_parte').slice(partes);
     ok(nombre + ': la segunda carga sube solo la fila que cambió', ult.length === 1 && ult[0][2].p_filas.length === 1);
+    // Tercera carga igual: el bloque cuadra y solo se marca, sin comparar fila por fila
+    await p.click('#otro').catch(() => {});
+    await p.setInputFiles('#archivos', { name: 'tad3.csv', mimeType: 'text/csv', buffer: Buffer.from(csv(30, true)) });
+    await p.waitForSelector('#cargarTodo'); await p.check('[data-con-indice]'); const cmp = llamo(mundo, 'tad_indice_comparar').length; const mar = llamo(mundo, 'tad_indice_marcar').length;
+    await p.click('#cargarTodo'); await p.waitForFunction(() => /índice de \d+ servicios \(0 cambiaron\)/.test(document.getElementById('listaArch').textContent));
+    ok(nombre + ': con el archivo igual se manda una huella por bloque y no se compara fila por fila', llamo(mundo, 'tad_indice_comparar').length === cmp && llamo(mundo, 'tad_indice_marcar').length === mar + 1);
+    // Sin marcar la casilla, solo empresas
+    await p.click('#otro').catch(() => {});
+    await p.setInputFiles('#archivos', { name: 'tad4.csv', mimeType: 'text/csv', buffer: Buffer.from(csv(30)) });
+    await p.waitForSelector('#cargarTodo'); const ini = llamo(mundo, 'tad_indice_iniciar').length;
+    await p.click('#cargarTodo'); await p.waitForSelector('#otro');
+    ok(nombre + ': con la casilla desmarcada no se toca el índice', llamo(mundo, 'tad_indice_iniciar').length === ini && /sin índice de residenciales/.test(await p.textContent('#listaArch')));
     // ----- A5: Sin instalar con Subir documentos y RIF nuevo -----
     mundo.datos.sueltas = [{ id: 880001, numero: 'PRUEBA/9001', titulo: 'Solicitud de Instalación PROMO PYME', etapa: 'Planificada', creada_en: new Date(Date.now() - 40 * 864e5).toISOString(), nombre: 'Panadería Inventada', lider: 'Lucía Ferrer', parecido_id: null }];
     // Lote 28/10: Por instalar es una hoja; Subir documentos abre "cliente nuevo" con la orden ya elegida

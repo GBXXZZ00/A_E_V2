@@ -10,7 +10,10 @@
   const OBLIGATORIAS = ['s', 'c', 'd', 'n'];
   const BASURA = ['nan', '#n/a', '#ref!', '#value!', 'null', 'undefined'];
   let yo = null; let lista = []; let ocupado = false; let fin = null; let corto = null;
-  if(window.AE_ocupado) window.AE_ocupado(() => ocupado); // Lote S: no cerrar la sesión con una carga en curso
+  // Lote 05/11 G: el índice de residenciales corre aparte (fondo) y no bloquea la pantalla
+  let fondo = null; let idxEstado = null;
+  if(window.AE_ocupado) window.AE_ocupado(() => ocupado || !!fondo); // Lote S: no cerrar la sesión con una carga (o el índice) en curso
+  const LOTE_BLOQUE = 1000; const LOTE_MARCAR = 100;
   const TOPE_TAD = 60000; const LOTE_CRUDO = 200;
 
   // ---------- Leer el archivo ----------
@@ -260,13 +263,21 @@
   function detalle(a){
     if(a.error) return '<small style="color:var(--rojo)">' + esc(a.error) + '</small>';
     if(a.leyendo) return '<small>' + (a.espera ? 'En espera' : 'Leyendo' + (a.avance ? ' ' + a.avance + ' %' : '...')) + '</small>';
-    if(a.resultado && a.indiceFallo && a.indice) return '<small>' + esc(a.resultado) + '</small><small class="para-que"><b>Empresas cargadas. El índice de residenciales quedó a medias</b> (' + Math.round((a.hecho || 0) * 100 / Math.max(1, a.indice.length)) + ' %). Comisiones y clientes ya usan este TAD; falta el índice para Migraciones y la búsqueda de servicios. ' +
+    if(a === (fondo && fondo.a)) return (a.resultado ? '<small>' + esc(a.resultado) + '</small>' : '') + '<small class="para-que"><b>Índice de residenciales: ' + pctIdx(a) + ' %</b> Sigue solo: puedes subir otros archivos y tocar Cruzar ahora. Si cierras esta pestaña se pausa y luego se retoma.</small>' +
+      '<span class="idx-pista" aria-hidden="true"><i style="transform:scaleX(' + (pctIdx(a) / 100) + ')"></i></span>';
+    if(a.resultado && a.indiceFallo && a.indice) return '<small>' + esc(a.resultado) + '</small><small class="para-que"><b>Empresas cargadas. El índice de residenciales quedó a medias</b> (' + pctIdx(a) + ' %). Comisiones y clientes ya usan este TAD; falta el índice para Migraciones y la búsqueda de servicios. ' +
       '<button type="button" class="enlace" data-seguir="' + lista.indexOf(a) + '">Seguir con el índice</button></small>';
     if(a.resultado) return '<small>' + esc(a.resultado) + '</small>';
     if(a.tipo === 'dedicados') return '<small>' + plural(a.clientes, 'cliente', 'clientes') + ' y ' + plural(a.enlaces, 'enlace', 'enlaces') + '. Se aplica al subirlo; no toca comisiones</small>';
     if(a.tipo === 'ip') return '<small>' + plural(a.datos.length, 'IP asignada', 'IP asignadas') + (a.fuera ? ' · ' + num(a.fuera) + ' disponibles quedan fuera' : '') + '. Llena la IP de los servicios PYME que cuadran</small>';
     if(a.tipo === 'cambios') return '<small>' + plural(a.datos.length, 'cambio', 'cambios') + '. Pone la fecha exacta de los cambios de Migraciones</small>';
-    if(a.tipo === 'tad') return '<small>' + num(a.datos.length) + ' servicios de ' + num(a.clientes) + ' clientes' + (a.indice ? ' · índice de ' + num(a.indice.length) + ' filas para buscar servicios' : '') + (a.fuera ? ' · ' + num(a.fuera) + ' residenciales quedan fuera' : '') + (a.malas ? ' · ' + plural(a.malas, 'fila', 'filas') + ' sin RIF, nombre o código' : '') + '</small>';
+    if(a.tipo === 'tad'){
+      const ab = idxEstado && idxEstado.abierta; const i = lista.indexOf(a);
+      const retomar = a.indice && ab && ab.archivo === a.nombre.slice(0, 200) && ab.total === a.indice.length && !a.estado && !fondo;
+      return '<small>' + num(a.datos.length) + ' servicios de ' + num(a.clientes) + ' clientes' + (a.fuera ? ' · ' + num(a.fuera) + ' residenciales quedan fuera' : '') + (a.malas ? ' · ' + plural(a.malas, 'fila', 'filas') + ' sin RIF, nombre o código' : '') + '</small>' +
+        (a.indice && !a.estado ? '<label class="idx-op"><input type="checkbox" data-con-indice="' + i + '"' + (a.conIndice ? ' checked' : '') + '><span>Actualizar también el índice de residenciales<small>' + esc(textoToca()) + '</small></span></label>' : '') +
+        (retomar ? '<small class="para-que"><b>Este índice quedó a medias</b> (' + Math.round(ab.filas * 100 / Math.max(1, ab.total)) + ' %). <button type="button" class="enlace" data-solo-indice="' + i + '">Seguir solo con el índice</button></small>' : '');
+    }
     if(a.tipo === 'instalaciones' && !a.estado) return '<small>' + plural(a.datos.length, 'fila', 'filas') + (a.fuera ? ' de empresas' : '') + (a.desde ? ' · desde el ' + esc(fecha(a.desde)) : '') + '</small>' +
       '<small class="para-que">' + (a.soloAliados ? '<b>Va solo a Aliados</b> (instalaciones por mes). No entra al cruce ni toca comisiones.' : '<b>Va a comisiones</b> y entra al cruce.') +
       ' <button type="button" class="enlace" data-para="' + lista.indexOf(a) + '">' + (a.soloAliados ? 'Usarlo para comisiones' : 'Solo para aliados') + '</button></small>';
@@ -278,7 +289,8 @@
     if(a.estado === 'lista' && a.indiceFallo && a.indice) return '<span class="m ambar">Índice a medias</span>';
     if(a.estado === 'lista') return '<span class="m verde">Cargado</span>';
     if(a.estado === 'fallo') return '<span class="m rojo">Se detuvo</span>';
-    if(a.estado === 'subiendo') return '<span class="m ambar">' + (a.fase ? a.fase + ' ' : '') + Math.round((a.hecho || 0) * 100 / Math.max(1, a.fase ? (a.indice || []).length : (a.datos || []).length)) + ' %</span>';
+    if(a === (fondo && fondo.a)) return '<span class="m ambar">Índice ' + pctIdx(a) + ' %</span>';
+    if(a.estado === 'subiendo') return '<span class="m ambar">' + (a.fase ? a.fase + ' ' : '') + Math.round((a.hecho || 0) * 100 / Math.max(1, a.fase ? (a.totalIdx || (a.indice || []).length) : (a.datos || []).length)) + ' %</span>';
     return '<span class="m">Listo para cargar</span>';
   }
   function pintar(){
@@ -296,6 +308,12 @@
     else pie = '<div class="acc" style="margin-top:14px"><button type="button" class="btn btn-2" id="limpiar">Quitar todos</button>' + (buenos.length ? '<button type="button" class="btn" id="cargarTodo">Cargar ' + plural(buenos.length, 'archivo', 'archivos') + '</button>' : '') + '</div><p class="nota-chica">No borra nada. Agrega lo nuevo y actualiza lo que ya está.</p>';
     z.innerHTML = filas + (ocupado || fin ? '' : '<div style="margin-top:12px">' + soltar + '</div>') + pie;
   }
+  const pctIdx = (a) => Math.min(100, Math.round((a.hecho || 0) * 100 / Math.max(1, a.totalIdx || (a.indice || []).length)));
+  function textoToca(){
+    const x = idxEstado; if(!x) return 'Una vez por semana o cuando haya migraciones esperando el TAD.';
+    const ult = x.ultima ? 'Último índice: ' + fecha(x.ultima) + '. ' : 'Nunca se ha cargado. ';
+    return ult + (x.esperan ? plural(x.esperan, 'migración espera', 'migraciones esperan') + ' la confirmación del TAD.' : x.toca ? 'Ya pasó una semana.' : 'Hoy no hace falta: toca una vez por semana.');
+  }
   let conocidos = null;
   async function elegir(files){
     if(!files || !files.length) return;
@@ -303,7 +321,7 @@
     const todos = Array.prototype.slice.call(files); const M = window.MapaRed;
     if(M){ const mapas = todos.filter(M.esMapa); if(mapas.length){ M.recibir(mapas[0]); files = todos.filter((f) => !M.esMapa(f)); if(!files.length) return; } }
     if(ocupado) return;
-    if(fin){ lista = []; fin = null; }
+    if(fin){ lista = lista.filter((x) => fondo && x === fondo.a); fin = null; }
     // Los livianos primero: la base anterior le dice al TAD cuáles RIF son de empresas
     const nuevos = Array.prototype.slice.call(files, 0, 12).sort((x, y) => x.size - y.size).map((f) => ({ nombre: f.name, file: f, leyendo: true, espera: true }));
     lista = lista.concat(nuevos); ocupado = true; pintar();
@@ -318,6 +336,7 @@
         const rep = lista.find((x) => x !== a && x.tipo === p.tipo && !!x.soloAliados === !!p.soloAliados && x.datos && x.estado !== 'lista');
         if(rep){ a.tipo = p.tipo; throw new Error('Ya hay otro archivo de ' + TIPOS[p.tipo].nombre + ' en la lista'); }
         Object.assign(a, p);
+        if(a.tipo === 'tad') a.conIndice = !idxEstado || !!idxEstado.toca;
       } catch (e) { a.error = e.message || 'No se pudo leer'; }
       a.leyendo = false; a.file = null; pintar();
     }
@@ -348,14 +367,39 @@
     for(let i = 0; i < t.length; i++){ const c = t.charCodeAt(i); h1 = Math.imul(h1 ^ c, 0x01000193); h2 = (Math.imul(h2, 33) + c) | 0; }
     return (h1 >>> 0).toString(36) + (h2 >>> 0).toString(36) + t.length.toString(36);
   }
+  // Lote 05/11 G: la misma clave que arma el servidor (privado.tad_claves_u + equipo_norm)
+  const bt = (v) => String(v == null ? '' : v).replace(/^ +| +$/g, '');
+  const claveIdx = (o) => bt(o.s) + '-' + bt(o.c).replace(/^0+/, '') + '-' + bt(o.e).toUpperCase().replace(/[^A-Z0-9]/g, '').replace(/^HWTC/, '48575443');
+  async function sha256(t){ const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t)); return Array.from(new Uint8Array(b), (x) => x.toString(16).padStart(2, '0')).join(''); }
+  // Comparación por bloques: se ordena por clave y se manda la huella de cada bloque de 1.000 filas en UNA llamada.
+  // Los bloques iguales solo se marcan como vistos; los distintos se comparan fila por fila como antes.
   async function subirIndice(a){
     if(!a.indice || !a.indice.length) return null;
-    a.fase = 'Índice'; a.hecho = 0; a.indiceFallo = null; pintar();
+    a.fase = 'Índice'; a.hecho = 0; a.indiceFallo = null; const t0 = Date.now(); pintar();
     const k = await rpc('tad_indice_iniciar', { p_archivo: a.nombre, p_total: a.indice.length });
+    const primera = new Map();
+    a.indice.forEach((o, i) => { if(!o.h) o.h = huella(o); const c = claveIdx(o); if(!primera.has(c)) primera.set(c, i); });
+    const claves = Array.from(primera.keys()).sort((x, y) => x < y ? -1 : x > y ? 1 : 0);
+    a.totalIdx = claves.length;
+    let distintas = []; let bloques = null;
+    if(window.crypto && crypto.subtle){
+      bloques = [];
+      for(let i = 0; i < claves.length; i += LOTE_BLOQUE){
+        const parte = claves.slice(i, i + LOTE_BLOQUE);
+        bloques.push({ a: parte[0], z: parte[parte.length - 1], h: await sha256(parte.map((c) => c + ':' + a.indice[primera.get(c)].h).join('\n')), filas: parte.map((c) => primera.get(c)) });
+      }
+      const dif = new Set(await conReintento(() => rpc('tad_indice_bloques', { p_carga: k, p_bloques: bloques.map((b) => ({ a: b.a, z: b.z, h: b.h })) })) || []);
+      const iguales = bloques.filter((b, i) => !dif.has(i));
+      for(let i = 0; i < iguales.length; i += LOTE_MARCAR){
+        const tr = iguales.slice(i, i + LOTE_MARCAR);
+        await conReintento(() => rpc('tad_indice_marcar', { p_carga: k, p_bloques: tr.map((b) => ({ a: b.a, z: b.z })) }));
+        a.hecho += tr.reduce((s, b) => s + b.filas.length, 0); pintar();
+      }
+      bloques.forEach((b, i) => { if(dif.has(i)) distintas = distintas.concat(b.filas); });
+    } else distintas = claves.map((c) => primera.get(c));
     let subidas = 0;
-    for(let i = 0; i < a.indice.length; i += LOTE_COMPARAR){
-      const trozo = a.indice.slice(i, i + LOTE_COMPARAR);
-      trozo.forEach((o) => { if(!o.h) o.h = huella(o); });
+    for(let i = 0; i < distintas.length; i += LOTE_COMPARAR){
+      const trozo = distintas.slice(i, i + LOTE_COMPARAR).map((j) => a.indice[j]);
       const faltan = await conReintento(() => rpc('tad_indice_comparar', { p_carga: k, p_filas: trozo.map((o) => ({ s: o.s, c: o.c, e: o.e, h: o.h })) }));
       const cambiaron = (faltan || []).map((j) => trozo[j]).filter(Boolean);
       for(let j = 0; j < cambiaron.length; j += LOTE_INDICE){
@@ -363,21 +407,28 @@
         await new Promise((ok) => setTimeout(ok, 0));   // no bloquea la pantalla
       }
       subidas += cambiaron.length;
-      a.hecho = Math.min(i + LOTE_COMPARAR, a.indice.length); pintar();
+      a.hecho += trozo.length; pintar();
     }
-    const r = await rpc('tad_indice_cerrar', { p_carga: k }); a.fase = null; a.indice = null; r.subidas = subidas; return r;
+    const r = await rpc('tad_indice_cerrar', { p_carga: k }); a.fase = null; a.indice = null; r.subidas = subidas;
+    r.bloques = bloques ? bloques.length : 0; r.segundos = Math.round((Date.now() - t0) / 1000); return r;
   }
   function textoIndice(ri){
-    return ' · índice de ' + num(ri.filas) + ' servicios (' + plural(ri.subidas || 0, 'cambió', 'cambiaron') + ')' + (ri.confirmados ? ' · ' + plural(ri.confirmados, 'cambio confirmado', 'cambios confirmados') : '') + (ri.sin_registro ? ' · ' + plural(ri.sin_registro, 'cambio sin registro', 'cambios sin registro') : '') + (ri.avisos ? ' · ' + plural(ri.avisos, 'cambio a medias', 'cambios a medias') : '');
+    return ' · índice de ' + num(ri.filas) + ' servicios (' + plural(ri.subidas || 0, 'cambió', 'cambiaron') + ')' + (ri.confirmados ? ' · ' + plural(ri.confirmados, 'cambio confirmado', 'cambios confirmados') : '') + (ri.sin_registro ? ' · ' + plural(ri.sin_registro, 'cambio sin registro', 'cambios sin registro') : '') + (ri.avisos ? ' · ' + plural(ri.avisos, 'cambio a medias', 'cambios a medias') : '') +
+      (ri.segundos != null ? ' · tardó ' + (ri.segundos < 60 ? ri.segundos + ' s' : Math.round(ri.segundos / 60) + ' min') : '');
   }
-  // Lote 27/10: si el índice falla, las empresas ya quedaron cargadas; se sigue luego con el mismo archivo
-  async function seguirIndice(a){
-    if(ocupado || !a.indice) return;
-    ocupado = true; a.estado = 'subiendo'; a.fase = 'Índice'; pintar();
-    try { const ri = await subirIndice(a); a.resultado = (a.resultadoBase || '') + textoIndice(ri); toast('Índice de residenciales al día'); }
-    catch (e) { a.indiceFallo = e.message; a.fase = null; toast('El índice se detuvo otra vez. ' + e.message + '. Vuelve a tocar Seguir con el índice: retoma donde quedó', 'error'); }
-    a.estado = 'lista'; ocupado = false; pintar(); cargas();
+  // Lote 05/11 G: el índice corre en segundo plano, separado de "ocupado"; si falla, las empresas ya quedaron
+  async function indiceFondo(a){
+    if(fondo || !a.indice) return;
+    fondo = { a }; a.estado = 'lista'; a.indiceFallo = null; a.hecho = 0; pintar();
+    try { const ri = await subirIndice(a); a.resultado = (a.resultadoBase || '') + textoIndice(ri); fondo = null; toast('Índice de residenciales al día'); }
+    catch (e) {
+      fondo = null; a.fase = null;
+      if(/TAD_CORTO/.test(e.message)){ a.indiceFallo = 'corto'; corto = { tipo: 'indice', texto: e.message.replace(/^.*TAD_CORTO:\s*/, ''), a }; }
+      else { a.indiceFallo = e.message; toast('El índice de residenciales se detuvo. ' + e.message + '. Toca Seguir con el índice: retoma donde quedó', 'error'); }
+    }
+    pintar(); cargas();
   }
+  function seguirIndice(a){ if(ocupado || fondo || !a.indice) return; indiceFondo(a); }
   async function subirCambios(a){
     a.estado = 'subiendo'; a.hecho = 0; pintar();
     const filas = a.datos.map((o) => ({ codigo: o.codigo, nombre: o.nombre, fecha: o.fecha, anterior: o.categoria_anterior, actual: o.categoria_actual, operador: o.operador, comentario: o.comentario }));
@@ -416,19 +467,20 @@
       a.hecho = Math.min(i + paso, a.datos.length); pintar();
     }
     const r = await rpc(tad ? 'tad_cerrar' : 'crudo_cerrar', { p_carga: carga });
-    let ri = null;
-    if(tad){ try { ri = await subirIndice(a); } catch (e) { a.indiceFallo = e.message; a.fase = null; } }
     a.estado = 'lista';
     a.resultado = tad ? plural(r.clientes_nuevos, 'cliente nuevo', 'clientes nuevos') + ', ' + plural(r.servicios_nuevos, 'servicio nuevo', 'servicios nuevos') + ' y ' + plural(r.servicios_actualizados, 'actualizado', 'actualizados') +
         (r.pagos_marcados ? ' · ' + plural(r.pagos_marcados, 'instalación pagada', 'instalaciones pagadas') : '') + ((r.invalidas || 0) + a.malas ? ' · ' + plural((r.invalidas || 0) + a.malas, 'fila no se pudo leer', 'filas no se pudieron leer') : '')
       : plural(r.guardadas, 'fila guardada', 'filas guardadas') + (a.soloAliados ? ' · solo para aliados, no toca comisiones' : '');
     a.resultadoBase = a.resultado;
-    if(ri) a.resultado += textoIndice(ri);
-    a.datos = null; return r;
+    a.datos = null;
+    if(tad && a.indice && !a.conIndice){ a.indice = null; a.resultado += ' · sin índice de residenciales (hoy no tocaba)'; }
+    if(tad && a.indice) setTimeout(() => indiceFondo(a), 0);   // sigue solo; la cola no lo espera
+    return r;
   }
   async function cargarTodo(){
     if(ocupado) return;
-    const cola = [].concat.apply([], ORDEN.map((t) => lista.filter((a) => a.tipo === t && a.datos && a.estado !== 'lista')));
+    let cola = [].concat.apply([], ORDEN.map((t) => lista.filter((a) => a.tipo === t && a.datos && a.estado !== 'lista')));
+    if(fondo && cola.some((a) => a.tipo === 'tad')){ cola = cola.filter((a) => a.tipo !== 'tad'); toast('Otro TAD tiene que esperar a que termine el índice de residenciales', 'error'); }
     if(!cola.length) return;
     ocupado = true; fin = null; let total = null; let fallo = null;
     for(const a of cola){
@@ -443,8 +495,8 @@
       const crudos = cola.some((a) => a.tipo !== 'tad' && a.tipo !== 'dedicados' && a.tipo !== 'cambios' && a.tipo !== 'ip' && !a.soloAliados);
       fin = { titulo: plural(cola.length, 'archivo cargado', 'archivos cargados'), texto: (total !== null ? 'Ahora hay ' + num(total) + ' clientes en total. ' : '') +
         (crudos ? 'Falta un paso: toca Cruzar ahora, revisa lo que cambia y guárdalo.' : 'Ya quedó aplicado. No hace falta cruce.') +
-        (cola.some((a) => a.indiceFallo && a.indice) ? ' El índice de residenciales quedó a medias: toca Seguir con el índice en el TAD de arriba.' : '') };
-      cruce = null; pintar(); toast(cola.some((a) => a.indiceFallo && a.indice) ? 'TAD de empresas cargado. Falta terminar el índice' : 'Carga completa');
+        (fondo ? ' El índice de residenciales sigue solo arriba; no hace falta esperarlo para cruzar.' : '') };
+      cruce = null; pintar(); toast(fondo ? 'Archivos cargados. El índice de residenciales sigue en segundo plano' : 'Carga completa');
       estadoCruce();
     }
     cargas();
@@ -463,15 +515,23 @@
   // Última subida de cada archivo: se suben dos veces al día (mañana y tarde)
   // Lote 28/10 (A11): qué toca actualizar (cada archivo, su última carga y si está al día) e historial agrupado por fecha
   const FREC = { diaria: 'Cada mañana; a las 5 p. m. si quieres', mapa: 'Cuando cambie el mapa', cuando: 'Cuando haya archivo nuevo' };
+  function filaIndice(x){
+    if(!x) return '';
+    const ab = x.abierta && !fondo; const est = fondo ? ['ambar', 'Cargando ' + pctIdx(fondo.a) + ' %'] : ab ? ['ambar', 'A medias'] : x.toca ? ['ambar', 'Toca hoy'] : ['verde', 'Al día'];
+    return '<div class="act-f"><span class="tx"><b>Índice de residenciales</b><small>' + esc('Una vez por semana o con migraciones esperando · ' + (x.ultima ? 'último: ' + fecha(x.ultima).replace(/ de \d{4}$/, '') + ', ' + hora(x.ultima) : 'sin cargas')) +
+      (ab ? esc(' · quedó en ' + Math.round(x.abierta.filas * 100 / Math.max(1, x.abierta.total)) + ' %: suelta el mismo TAD y toca Seguir solo con el índice') : '') + '</small></span><span class="chip ' + est[0] + '">' + esc(est[1]) + '</span></div>';
+  }
   async function cargas(){
     try {
       const d = await rpc('actualizar_estado', {});
+      idxEstado = d.indice || null;
       const t = (d.fuentes || []).find((x) => x.k === 'tad');
       $('ultimoTad').textContent = t && t.ultima ? 'Último TAD: ' + fecha(t.ultima) + ' a las ' + hora(t.ultima) + '.' : 'Todavía no se ha subido ningún TAD.';
       $('ultimas').innerHTML = '<div class="act-toca">' + (d.fuentes || []).map((x) => {
         const est = !x.ultima && x.frecuencia !== 'cuando' ? ['rojo', 'Nunca se ha subido'] : x.al_dia ? (x.tarde ? ['azul', 'Falta la de la tarde (opcional)'] : ['verde', 'Al día']) : ['ambar', 'Toca hoy'];
         return '<div class="act-f"><span class="tx"><b>' + esc(x.nombre) + '</b><small>' + esc(FREC[x.frecuencia] || '') + ' · ' + esc(x.ultima ? 'última: ' + fecha(x.ultima).replace(/ de \d{4}$/, '') + ', ' + hora(x.ultima) : 'sin cargas') + '</small></span>' +
-          (x.frecuencia === 'cuando' && x.al_dia && x.ultima ? '' : '<span class="chip ' + est[0] + '">' + esc(est[1]) + '</span>') + '</div>'; }).join('') + '</div>';
+          (x.frecuencia === 'cuando' && x.al_dia && x.ultima ? '' : '<span class="chip ' + est[0] + '">' + esc(est[1]) + '</span>') + '</div>'; }).join('') + filaIndice(idxEstado) + '</div>';
+      pintar();
       const H = d.historial || [];
       $('cargas').innerHTML = H.length ? H.map((g, n) => '<details class="act-dia"' + (n === 0 ? ' open' : '') + '><summary><b>' + esc(capital(fechaDia(g.fecha + 'T12:00:00'))) + '</b><span>' + esc(plural(g.cargas.length, 'carga', 'cargas')) + '</span></summary>' +
         g.cargas.map((c) => '<div class="fila"><span class="tx"><b>' + esc(FUENTES[c.fuente] || c.fuente) + ' · ' + esc(c.archivo || '') + '</b><small>' + esc(hora(c.en)) + (c.por ? ' · ' + esc(c.por) : '') + (c.filas !== null && c.filas !== undefined ? ' · ' + esc(plural(c.filas, 'fila', 'filas')) : '') +
@@ -535,24 +595,27 @@
   document.addEventListener('click', (e) => {
     const t = e.target;
     if(t.closest('#soltar')){ if(ocupado) return; const i = $('archivos'); i.value = ''; i.click(); return; }
-    if(t.closest('#limpiar') || t.closest('#otro')){ if(ocupado) return; lista = []; fin = null; corto = null; pintar(); return; }
+    if(t.closest('#limpiar') || t.closest('#otro')){ if(ocupado) return; lista = lista.filter((x) => fondo && x === fondo.a); fin = null; corto = null; pintar(); return; }
     if(t.closest('#cargarTodo')){ corto = null; cargarTodo(); return; }
     if(t.closest('#cargarCorto') && corto){ const k = corto; const b = t.closest('#cargarCorto'); b.disabled = true;
-      rpc('tad_permitir_corto', { p_tipo: k.tipo }).then(() => { corto = null; lista.forEach((x) => { if(x.estado === 'fallo') x.estado = null; }); cargarTodo(); })
+      rpc('tad_permitir_corto', { p_tipo: k.tipo }).then(() => { corto = null; if(k.a){ indiceFondo(k.a); return; } lista.forEach((x) => { if(x.estado === 'fallo') x.estado = null; }); cargarTodo(); })
         .catch((e) => { b.disabled = false; toast(e.message, 'error'); }); return; }
     if(t.closest('#aplicarCruce')){ correrCruce(true); return; }
     if(t.closest('#cruzarAhora')){ correrCruce(false); return; }
     if(t.closest('#reintentarCargas')){ cargas(); return; }
     const sg = t.closest('[data-seguir]'); if(sg){ const a = lista[Number(sg.dataset.seguir)]; if(a) seguirIndice(a); return; }
+    const si = t.closest('[data-solo-indice]'); if(si){ const a = lista[Number(si.dataset.soloIndice)]; if(a && !ocupado && !fondo){ a.datos = null; a.resultadoBase = 'Solo el índice (las empresas ya estaban cargadas)'; a.resultado = a.resultadoBase; indiceFondo(a); } return; }
     const pq = t.closest('[data-para]'); if(pq){ const a = lista[Number(pq.dataset.para)]; if(a && !ocupado && !a.estado){ a.soloAliados = !a.soloAliados; pintar(); } return; }
     if(t.closest('#reintentarCruce')){ estadoCruce(); }
   });
+  document.addEventListener('change', (e) => { const c = e.target.closest && e.target.closest('[data-con-indice]'); if(c){ const a = lista[Number(c.dataset.conIndice)]; if(a) a.conIndice = c.checked; } });
   $('archivos').addEventListener('change', () => elegir($('archivos').files));
   const zona = $('zona');
   zona.addEventListener('dragover', (e) => { e.preventDefault(); const s = $('soltar'); if(s) s.classList.add('sobre'); });
   zona.addEventListener('dragleave', () => { const s = $('soltar'); if(s) s.classList.remove('sobre'); });
   zona.addEventListener('drop', (e) => { e.preventDefault(); const s = $('soltar'); if(s) s.classList.remove('sobre'); if(e.dataTransfer && e.dataTransfer.files) elegir(e.dataTransfer.files); });
-  window.addEventListener('beforeunload', (e) => { if(ocupado){ e.preventDefault(); e.returnValue = ''; } });
+  // Con el índice corriendo, cerrar la pestaña lo pausa (el aviso lo dice en la fila); se retoma con el mismo archivo
+  window.addEventListener('beforeunload', (e) => { if(ocupado || fondo){ e.preventDefault(); e.returnValue = ''; } });
 
   window.Armazon.arrancar(['admin', 'analista'], { activo: null, volver: { enlace: 'inicio.html', texto: 'Inicio' } }, (p) => {
     yo = p;

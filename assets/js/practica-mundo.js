@@ -878,7 +878,7 @@ const RPC = {
   // ----- Lote 22/10: índice del TAD (sucursal + código + equipo) y Migraciones -----
   tad_indice_iniciar(m, yo, a){ if(yo.rol !== 'admin') return error('No tienes permiso para hacer esto'); const k = m.datos.cambiosK || (m.datos.cambiosK = { idx: {}, cargas: [], filas: [], sec: 0, archivo: null });
     const abierta = k.cargas.find((c) => !c.en && c.archivo === a.p_archivo); if(abierta) return abierta.id;
-    k.cargas.push({ id: k.cargas.length + 1, archivo: a.p_archivo, filas: 0 }); return k.cargas.length; },
+    k.cargas.push({ id: k.cargas.length + 1, archivo: a.p_archivo, total: a.p_total, filas: 0 }); return k.cargas.length; },
   tad_indice_parte(m, yo, a){ const k = m.datos.cambiosK; (a.p_filas || []).forEach((f) => { const c = String(f.c).replace(/^0+/, ''); const e = f.e ? String(f.e).toUpperCase() : ''; const cl = f.s + '-' + c + '-' + e;
       k.idx[cl] = { clave: cl, sucursal: f.s, codigo: c, equipo: e || null, doc_tipo: f.t, doc_numero: String(f.d || '').replace(/\D/g, '').replace(/^0+/, ''), nombre: f.n, plan: f.p, categoria: f.ca, estado: f.es, direccion: f.di, pon: f.pon || null, carga: a.p_carga, huella: f.h || null }; });
     k.cargas[a.p_carga - 1].filas += (a.p_filas || []).length; return (a.p_filas || []).length; },
@@ -887,7 +887,15 @@ const RPC = {
     (a.p_filas || []).forEach((f, i) => { const cl = f.s + '-' + String(f.c).replace(/^0+/, '') + '-' + (f.e ? String(f.e).toUpperCase() : ''); const x = k.idx[cl];
       if(x && f.h && x.huella === f.h){ if(x.carga !== a.p_carga){ x.carga = a.p_carga; k.cargas[a.p_carga - 1].filas++; } } else faltan.push(i); });
     m.comparadas = (m.comparadas || 0) + (a.p_filas || []).length; return faltan; },
-  tad_indice_cerrar(m, yo, a){ const k = m.datos.cambiosK; k.vigente = a.p_carga; k.cargas[a.p_carga - 1].en = new Date().toISOString(); let conf = 0; let avisos = 0;
+  // Lote 05/11 G: bloques de 1.000 claves ordenadas; un bloque igual a uno ya cerrado solo se marca como visto
+  tad_indice_bloques(m, yo, a){ if(yo.rol !== 'admin') return error('No tienes permiso para hacer esto'); const k = m.datos.cambiosK; k.pendBloques = k.pendBloques || {};
+    const vistos = k.bloquesCerrados || {}; const dif = [];
+    (a.p_bloques || []).forEach((b, i) => { const s = b.a + '|' + b.z + '|' + b.h; (k.pendBloques[a.p_carga] = k.pendBloques[a.p_carga] || []).push(s); if(!vistos[s]) dif.push(i); });
+    m.bloquesPedidos = (m.bloquesPedidos || 0) + 1; return dif; },
+  tad_indice_marcar(m, yo, a){ if(yo.rol !== 'admin') return error('No tienes permiso para hacer esto'); const k = m.datos.cambiosK; let n = 0;
+    (a.p_bloques || []).forEach((b) => Object.values(k.idx).forEach((x) => { if(x.clave >= b.a && x.clave <= b.z && x.carga !== a.p_carga){ x.carga = a.p_carga; n++; } }));
+    k.cargas[a.p_carga - 1].filas += n; m.marcadas = (m.marcadas || 0) + n; return n; },
+  tad_indice_cerrar(m, yo, a){ const k = m.datos.cambiosK; k.bloquesCerrados = {}; ((k.pendBloques || {})[a.p_carga] || []).forEach((s) => { k.bloquesCerrados[s] = true; }); k.vigente = a.p_carga; k.cargas[a.p_carga - 1].en = new Date().toISOString(); let conf = 0; let avisos = 0;
     k.filas.filter((c) => ['por_emitir', 'por_confirmar'].includes(c.estado)).forEach((c) => { const ev = evaluarCambio(k, c); if(ev === 'ok'){ confirmarCambio(m, c); conf++; } else if(ev){ c.aviso = ev; avisos++; } });
     return { filas: k.cargas[a.p_carga - 1].filas, confirmados: conf, sin_registro: 0, avisos }; },
   tad_permitir_corto(m, yo){ if(!['admin', 'analista'].includes(yo.rol)) return error('No tienes permiso para hacer esto'); m.datos.tadCorto = true; return null; },
@@ -1692,7 +1700,10 @@ const RPC = {
     const F = [['tad', 'TAD', 'diaria'], ['odoo', 'Órdenes de Odoo', 'diaria'], ['instalaciones', 'Órdenes de instalación', 'diaria'], ['kmz', 'Mapa de red (KMZ)', 'mapa'], ['cambios', 'Cambios de categoría', 'cuando'], ['ip', 'IP de clientes empresariales', 'cuando'], ['dedicados', 'Dedicados', 'cuando']];
     const porDia = {}; cs.slice().reverse().forEach((c) => { const d = fechaClave(caracas(c.en)); (porDia[d] = porDia[d] || []).push({ id: c.id, fuente: c.fuente, archivo: c.archivo, en: c.en, por: c.por, estado: c.estado, filas: c.filas, resumen: c.resumen }); });
     return { fuentes: F.map((x) => { const u = ult(x[0]); return { k: x[0], nombre: x[1], frecuencia: x[2], ultima: u, al_dia: x[2] === 'diaria' ? !!u && fechaClave(caracas(u)) === hoy() : x[2] === 'mapa' ? !!m.mapa : true, tarde: false }; }),
-      historial: Object.keys(porDia).sort().reverse().map((d) => ({ fecha: d, cargas: porDia[d] })), cruce_pendiente: false, ult_cruce: (m.ultimoCruce || {}).en || null };
+      historial: Object.keys(porDia).sort().reverse().map((d) => ({ fecha: d, cargas: porDia[d] })), cruce_pendiente: false, ult_cruce: (m.ultimoCruce || {}).en || null,
+      indice: (() => { const k = m.datos.cambiosK || { cargas: [], filas: [] }; const ce = k.cargas.filter((c) => c.en).map((c) => c.en).sort().slice(-1)[0] || null; const esperan = (k.filas || []).filter((c) => ['por_emitir', 'por_confirmar'].includes(c.estado)).length;
+        const ab = k.cargas.filter((c) => !c.en).slice(-1)[0];
+        return { ultima: ce, esperan, toca: m.indiceToca != null ? !!m.indiceToca : (!ce || Date.now() - new Date(ce) >= 7 * 864e5 || esperan > 0), abierta: ab ? { archivo: ab.archivo, filas: ab.filas, total: ab.total || 0, desde: null } : null }; })() };
   },
   perfiles_equipos(m, yo){ if(yo.rol !== 'admin') return error('No tienes permiso para hacer esto'); const r = {};
     m.personas.forEach((p) => { r[p.id] = { equipo: p.equipo_com || null, efectivo: equipoDe(m, p.nombre) }; }); return r; },

@@ -1,6 +1,17 @@
 # Traspaso (se actualiza al cerrar cada sesión)
 
-Actualizado: 28/10/2026, LOTE 28/10 (rediseño, corrida única). Publicado: `?v=67`.
+Actualizado: 05/11/2026, LOTE 05/11 en curso (una versión por parte). Publicado: `?v=68` (parte G).
+
+## LOTE 05/11 (`claude/lote-05nov.md`): EN CURSO
+Referencia de comisiones (`privado.comision_filas3`) al empezar: septiembre 46/41, octubre 83/75, noviembre 34/4.
+- **Parte G HECHA (v68)**: índice del TAD en segundo plano. SQL y comprobación en `supabase/pruebas/lote_05nov_g.sql`.
+  - Diagnóstico con la base real: lo lento no era comparar sino MARCAR las filas sin cambios en la tabla ancha (20.000 filas = 25 s; `explain analyze`). Antes: cargas del índice 13, 14 y 15 tardaron 34, 36 y 25 minutos; la de hoy (16) quedó a medias en 399.986 de 416.901.
+  - Ahora la marca vive en `privado.tad_indice_visto` (100.000 filas en ~1,5 s) y `public.tad_indice` es una vista con las mismas columnas (las 6 funciones que leen no cambiaron). Comparación por bloques: `tad_indice_bloques` (420 huellas en una llamada, ~0,6 s en el servidor) y `tad_indice_marcar` (de 100 en 100 bloques). Solo los bloques distintos se comparan fila por fila.
+  - Datos iguales antes y después (por carga, md5 de lo vigente y md5 de `categorias_tad`; cifras en el SQL). Pruebas de Migraciones (test29) iguales.
+  - Pantalla: el TAD de empresas sube primero; el índice sigue solo con su barra ("Índice de residenciales: N %"), sin bloquear subir otros archivos ni Cruzar ahora. La sesión no se cierra por falta de uso mientras corre; al cerrar la pestaña avisa y se pausa; "Seguir solo con el índice" retoma con el mismo archivo (12 h). Casilla "Actualizar también el índice de residenciales": marcada sola si el último índice tiene 7 días o más o hay migraciones esperando el TAD. "Qué toca actualizar" muestra la fila del índice con su fecha.
+  - Tiempo después con el archivo real: lo mide la propia fila al terminar ("tardó N"); anotarlo con la próxima carga. Estimado por las mediciones del servidor: menos de 1 minuto más lo que cambió.
+  - Pruebas: test49 ampliada (casilla, segundo plano, bloque igual sin comparar, sin índice); test29, 12, 27, 05, 50 y 48 pasan.
+
 
 ## LOTE 28/10: HECHO (v67). Pedido en `claude/lote-28oct.md`, maquetas en `claude/maquetas/comisiones-28oct`, `clientes-28oct` y `mi-trabajo-28oct`
 Referencia de comisiones (`privado.comision_filas3`): septiembre 46/41, octubre 83/75, noviembre 25/4, igual al empezar y al terminar (el cálculo no se tocó).
