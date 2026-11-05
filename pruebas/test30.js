@@ -52,7 +52,8 @@ const dia = (n) => { const d = new Date(Date.now() - 4 * 3600e3); d.setUTCDate(d
     const c2 = await contexto(nav, dispositivo, mundo); const q = await entrar(c2.ctx, 'elena', '315806'); q.on('pageerror', (e) => errores.push(e.message));
     await q.goto(H + 'trabajo.html'); await q.waitForSelector('#tarjetas .bz-cd');
     const c2t = await q.$$eval('#tarjetas .bz-cd b', (xs) => xs.map((x) => x.textContent));
-    ok(nombre + ': el Senior ve Revisar documentos, Por decidir, Aliados y Alertas', ['Revisar documentos', 'Por decidir', 'Aliados', 'Alertas'].every((t) => c2t.includes(t)));
+    // Lote 05/11 D5: la Senior ve sin dueño, provisionales y cargas; ya no ve la revisión de documentos
+    ok(nombre + ': la Senior ve Sin dueño, Provisionales y Cargas del día, sin Revisar documentos', ['Sin dueño', 'Provisionales', 'Cargas del día'].every((t) => c2t.some((x) => x.indexOf(t) === 0)) && !c2t.includes('Revisar documentos'));
     ok(nombre + ': El equipo en el índice y en Todo', (await q.locator('#tarjetas [data-grupo="equipo"]').count()) === 1 && (await q.locator('#cuerpo [data-persona]').count()) >= 1);
     await q.screenshot({ path: 'capturas/30-' + nombre + '-senior.png', fullPage: true });
     await q.locator('#cuerpo [data-persona]').first().click(); await q.waitForSelector('#bandaPersona:not(.hidden)');
@@ -78,7 +79,7 @@ const dia = (n) => { const d = new Date(Date.now() - 4 * 3600e3); d.setUTCDate(d
     Object.assign(mundo.personas.find((x) => x.usuario === 'pedro'), { coordinador: true, debe_cambiar_pin: false, canales: false });
     const c3 = await contexto(nav, dispositivo, mundo); const r = await entrar(c3.ctx, 'pedro', '204871'); r.on('pageerror', (e) => errores.push(e.message));
     await r.goto(H + 'trabajo.html'); await r.waitForSelector('#tarjetas .bz-cd');
-    ok(nombre + ': el coordinador ve Cartas y proformas, IP, Apoyo con pago y Emitir en Proham, con filtro por analista', (await r.textContent('#tarjetas')).includes('Cartas y proformas') && (await r.textContent('#tarjetas')).includes('Emitir en Proham') && !(await r.locator('#zonaPersona').evaluate((x) => x.classList.contains('hidden'))));
+    ok(nombre + ': el coordinador ve Cartas y proformas, IP, Apoyo con pago y Emitir en Proham, con filtro por analista', (await r.textContent('#tarjetas')).includes('Cartas y proformas') && (await r.textContent('#tarjetas')).includes('Cambios por emitir') && !(await r.locator('#zonaPersona').evaluate((x) => x.classList.contains('hidden'))));
     ok(nombre + ': números arriba para Canales', (await r.locator('#nums .bz-num').count()) === 4);
     await r.screenshot({ path: 'capturas/30-' + nombre + '-coord.png', fullPage: true });
     await c3.ctx.close();
@@ -86,7 +87,8 @@ const dia = (n) => { const d = new Date(Date.now() - 4 * 3600e3); d.setUTCDate(d
     // ----- Legal: elaborar contrato en cola -----
     const c4 = await contexto(nav, dispositivo, mundo); const s = await entrar(c4.ctx, 'paula', '615243'); s.on('pageerror', (e) => errores.push(e.message));
     await s.goto(H + 'trabajo.html'); await s.waitForSelector('#tarjetas .bz-cd');
-    ok(nombre + ': Legal ve el tablero por etapa (Para elaborar, Enviado a firmar, Firmado falta subir) y Vencimientos', /Para elaborar/.test(await s.textContent('#cuerpo')) && /Enviado a firmar/.test(await s.textContent('#cuerpo')) && /Vencimientos/.test(await s.textContent('#cuerpo')));
+    // Lote 05/11 D4: Legal ve "Por elaborar" por tipo de cliente con filtros, y luego enviados, firmados y vencimientos
+    ok(nombre + ': Legal ve Por elaborar por tipo de cliente con filtros y los vencimientos', /Por elaborar · /.test(await s.textContent('#cuerpo')) && (await s.locator('#cuerpo [data-filtro-c]').count()) === 5 && /Vencen pronto/.test(await s.textContent('#cuerpo')));
     ok(nombre + ': Legal tiene la cola de contratos', (await s.locator('[data-tr="cola"]').count()) === 1);
     await s.click('[data-tr="cola"]'); await s.waitForSelector('#hojaFicha.ver #tFicha');
     ok(nombre + ': Empezar abre el más viejo', (await s.textContent('#tFicha')).includes(cli[0].nombre.split(',')[0]));

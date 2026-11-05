@@ -10,7 +10,7 @@
   let yo = null; let D = null; let sel = ''; let persona = ''; let pedido = 0; let cuantos = 40; let cola = null; let vista = 'buzon';
   let abierto = null;        // el ítem que se abrió con Ir: al volver se mira si se resolvió
   const tachados = {};       // resueltos en esta visita: se ven tachados hasta recargar la página
-  let avisoT = null;
+  let avisoT = null; let filtroC = '';
 
   function leerUrl(){ const u = new URLSearchParams(location.search); sel = (u.get('g') || '').slice(0, 10); persona = (u.get('p') || '').slice(0, 40); vista = u.get('v') === 'lote' ? 'lote' : 'buzon'; }
   function guardarUrl(){ const u = new URLSearchParams(); if(vista === 'lote') u.set('v', 'lote'); else { if(sel) u.set('g', sel); if(persona) u.set('p', persona); } const s = u.toString(); history.replaceState(history.state, '', location.pathname + (s ? '?' + s : '')); }
@@ -60,9 +60,31 @@
     return 'Corte de ' + mes + ' abierto · día límite ' + lim + '. Se van tachando solos cuando los haces.';
   }
 
+  // Lote 05/11 D7: buscador por RIF o nombre (sobre lo que ya llegó, sin ir al servidor)
+  let busca = '';
+  const conBusca = () => { if(!busca) return D; const q = C.normalizeStr(busca); const qd = busca.replace(/\D/g, '');
+    return Object.assign({}, D, { items: (D.items || []).filter((f) => C.normalizeStr((f.titulo || '') + ' ' + (f.detalle || '')).indexOf(q) >= 0 || (qd.length >= 4 && String(f.doc || '').replace(/\D/g, '').indexOf(qd) >= 0)) }); };
+  // D7: "Qué cambió" por rol, una vez por persona
+  const CAMBIO = { admin: 'la revisión de documentos se hace aquí mismo con "Revisar aquí"; lo demás te lleva a su módulo y vuelves a la misma línea.',
+    senior: 'ya no ves la revisión de documentos; lo tuyo es asignar dueños, unir provisionales y las cargas.',
+    abogado: 'tus contratos por elaborar salen por tipo de cliente (ISP, corporativo, VGT, PYME); cada uno abre el expediente.',
+    lider: 'cada tarea abre el cliente o la comisión; lo devuelto o pedido va primero.', analista: 'cartas, IP y cambios te llevan a su módulo; las tareas sueltas son tus notas y se marcan hechas aquí.' };
+  function queCambio(){
+    const z = $('queCambio'); if(!z || !yo || D.persona) { if(z) z.classList.add('hidden'); return; }
+    const r = D.senior && D.rol !== 'admin' ? 'senior' : D.vista === 'coord' ? 'analista' : D.vista; const k = 'ae_quecambio_0511:' + yo.id;
+    let visto = false; try { visto = localStorage.getItem(k) === '1'; } catch (e) {}
+    if(visto || !CAMBIO[r]){ z.classList.add('hidden'); return; }
+    z.innerHTML = '<b>Qué cambió</b><p>' + esc(capitalizar(CAMBIO[r])) + ' <button type="button" class="enlace" data-tr="entendido">Entendido</button></p>'; z.classList.remove('hidden');
+  }
+  const capitalizar = (t) => t.charAt(0).toUpperCase() + t.slice(1);
   function pintar(){
     if(!D) return;
     if(window.Gestiones) window.Gestiones.puedeCrear = !!D.puedo_crear_gestion;
+    queCambio();
+    const D0 = D; D = conBusca();
+    try { pintarConDatos(D0); } finally { D = D0; }
+  }
+  function pintarConDatos(D0){
     const gs = B.grupos(D); const notas = (D.notas || []).filter((x) => !x.hecha);
     const validos = gs.map((g) => g.id).concat(['notas', D.equipo && D.equipo.length && !D.persona ? 'equipo' : '']).filter(Boolean);
     if(sel && validos.indexOf(sel) < 0) sel = '';
@@ -75,7 +97,8 @@
     if(ps.length) $('persona').innerHTML = '<option value="">' + (D.rol === 'admin' || D.senior ? 'Mi trabajo' : 'Todos los analistas') + '</option>' +
       ps.map((p) => '<option value="' + esc(p.id) + '"' + (p.id === persona ? ' selected' : '') + '>' + esc(p.nombre + ' (' + ({ lider: 'líder', abogado: 'Legal', analista: 'analista' }[p.rol] || p.rol) + ')') + '</option>').join('');
     $('btnLote').classList.toggle('hidden', !(D.rol === 'admin' || D.rol === 'abogado') || !!D.persona);
-    pintarNums(gs); pintarIndice(gs, notas); pintarCuerpo(gs, notas);
+    pintarNums(B.grupos(D0)); pintarIndice(gs, notas); pintarCuerpo(gs, notas);
+    if(busca && !(D.items || []).length) $('cuerpo').innerHTML = vacio('Nada con "' + busca + '"', 'Prueba con otra parte del nombre o con el RIF sin letras.');
   }
   // Números de arriba (líder y Canales): cada uno abre su grupo
   function pintarNums(gs){
@@ -85,6 +108,10 @@
     if(D.vista === 'lider') l = [[(D.items || []).filter((f) => f.tipo === 'devuelto').length, 'Documentos devueltos', 'r', D.vende ? 'dev' : 'doc'], [(D.items || []).filter((f) => f.tipo === 'orden_atrasada').length, 'Órdenes de más de 24 horas', 'a', D.vende ? 'inst' : 'ins'],
       [dias === null ? 'Sin fecha' : plural(dias, 'día', 'días'), 'Para el cierre del corte' + (D.limite ? ' (' + fecha(D.limite).replace(/ de \d{4}$/, '') + ')' : ''), '', ''], [n('falta'), 'Faltan para comisionar', 'b', D.vende ? 'falta' : '']];
     else if(D.vista === 'analista' || D.vista === 'coord') l = [[n('carta'), 'Cartas y proformas por enviar', 'a', 'carta'], [n('ip'), 'IP por escribir', '', 'ip'], [n('pago'), 'Del corte sin pago', 'r', 'pago'], [n('emi'), 'Cambios por emitir', 'b', 'emi']];
+    // Lote 05/11 D8: los mismos números que Inicio (salen de la misma lista)
+    else if(D.vista === 'abogado'){ const t = (x) => (D.items || []).filter((f) => f.tipo === x).length; l = [[t('elaborar_contrato'), 'Por elaborar contrato', 'r', ''], [t('seguir_firma'), 'Enviados a firmar', '', ''], [t('contrato_archivo'), 'Firmados, falta subir', 'a', ''], [t('contrato_vence'), 'Vencen pronto', 'a', 'ven']]; }
+    else if(D.senior && D.rol !== 'admin') l = [[n('sin'), 'Sin dueño', 'r', 'sin'], [n('prov'), 'Provisionales y verificar', 'a', 'prov'], [n('car'), 'Cargas del día', 'a', 'car'], [(D.items || []).length, 'En total', '', '']];
+    else if(D.vista === 'admin') l = [[n('rev'), 'Documentos por revisar', 'b', 'rev'], [n('dec'), 'Por decidir', 'r', 'dec'], [n('ale'), 'Alertas y cargas', 'a', 'ale'], [n('ali'), 'De aliados', '', 'ali']];
     z.classList.toggle('hidden', !l);
     if(l) z.innerHTML = l.map((x) => (x[3] ? '<button type="button" class="bz-num ' + x[2] + '" data-grupo="' + x[3] + '">' : '<div class="bz-num ' + x[2] + '">') + '<b>' + esc(x[0]) + '</b><small>' + esc(x[1]) + '</small>' + (x[3] ? '</button>' : '</div>')).join('');
   }
@@ -110,6 +137,20 @@
     $('tarjetas').innerHTML = h;
   }
 
+  // Lote 05/11 D1: el botón dice adónde lleva (la revisión de documentos se hace aquí mismo)
+  function destino(f){
+    const ref = f.ref || {};
+    if(f.tipo === 'revisar_docs') return 'Revisar aquí';
+    if(f.tipo === 'gestion') return 'Registrar';
+    if(ref.cambio) return 'Ir a Migraciones';
+    if(['aliado_permisos', 'aliado_sin_permiso'].indexOf(f.tipo) >= 0 || (f.tipo === 'referido' && !f.cliente_id)) return 'Ir a Aliados';
+    if(f.tipo === 'alerta_carga') return ref.no_aparece ? 'Ir a Clientes' : 'Ir a Actualizar';
+    if(f.tipo === 'ordenes_atrasadas' || ((f.tipo === 'orden_atrasada' || f.tipo === 'por_instalar') && !f.cliente_id)) return 'Ir a Por instalar';
+    if(!f.cliente_id || f.tipo === 'cerrar_corte') return 'Ir a Comisiones';
+    if(f.tipo === 'venta_falta' || ['certificar', 'por_enviar', 'sin_ip', 'revisar_pago', 'carta_enviar'].indexOf(f.tipo) >= 0) return 'Ir a la comisión';
+    if(['elaborar_contrato', 'seguir_firma', 'contrato_archivo', 'contrato_vence', 'por_firmar'].indexOf(f.tipo) >= 0) return 'Abrir contrato';
+    return 'Abrir expediente';
+  }
   function plazo(f){
     const c = color(f); if(c === 'venc') return ['r', 'Vencido']; if(c === 'hoy') return ['a', 'Hoy']; if(!f.vence) return null;
     const d = C.diasEntre(D.hoy, f.vence); return ['g', d === 1 ? 'Mañana' : d <= 7 ? 'En ' + d + ' días' : fecha(f.vence).replace(/ de \d{4}$/, '')];
@@ -122,7 +163,7 @@
     const yoNo = D.vista === 'coord' && f.analista_id && yo && f.analista_id !== yo.id;
     return '<div class="bz-it' + (hecho ? ' hecho' : '') + '"><span class="bz-ck' + (hecho ? ' on' : '') + '" aria-hidden="true"></span><span class="bz-tx"><b>' + esc(a[0]) + ' <span>· ' + esc(f.titulo || '') + '</span>' +
       (p ? '<span class="mt-pill ' + p[0] + '">' + esc(p[1]) + '</span>' : '') + '</b><small>' + esc(hecho ? 'Hecho. Se quitó de tus pendientes' : (f.detalle || '') + (quien ? ' · ' + quien : '')) + '</small>' + ges + '</span>' +
-      (hecho || solo() || f.tipo === 'gestion' ? '' : '<button type="button" class="btn btn-chico ' + (color(f) === 'venc' ? '' : 'btn-2') + '" data-hacer="' + esc(k) + '">' + esc(yoNo ? 'Hacerlo yo' : a[1]) + '</button>') + '</div>';
+      (hecho || solo() || f.tipo === 'gestion' ? '' : '<button type="button" class="btn btn-chico ' + (color(f) === 'venc' || f.tipo === 'revisar_docs' ? '' : 'btn-2') + '" data-hacer="' + esc(k) + '">' + esc(yoNo ? 'Hacerlo yo' : destino(f)) + '</button>') + '</div>';
   }
   // Ítems de un grupo con los tachados de esta visita al final
   function listaGrupo(g, max){
@@ -160,7 +201,9 @@
       const urg = (D.items || []).slice().sort((a, b) => (String(a.vence || '9') < String(b.vence || '9') ? -1 : 1)).slice(0, 4);
       if(urg.length) h += seccion('Lo más urgente', 'Los 4 primeros de todo, por fecha', urg.map((f) => itemHtml(f)).join(''));
       else h += vacio('Todo al día', 'No tienes pendientes. Cuando algo necesite de ti, aparece aquí.');
-      gs.filter((g) => g.items.length).forEach((g) => { h += seccion(g.titulo, subGrupo(g), listaGrupo(g, 3), accionesGrupo(g)); });
+      // Lote 05/11 D3: grupos plegables con su número; los que tienen algo vencido o de hoy salen abiertos
+      gs.filter((g) => g.items.length).forEach((g) => { h += '<details class="bz-pl"' + (g.venc || g.hoy ? ' open' : '') + ' data-pl="' + g.id + '"><summary><b>' + esc(g.titulo) + '</b><span class="bz-pl-n">' + g.items.length + '</span>' +
+        (g.venc ? '<span class="mt-pill r">' + plural(g.venc, 'vencido', 'vencidos') + '</span>' : '') + '</summary>' + seccion(g.titulo, subGrupo(g), listaGrupo(g, 3), accionesGrupo(g)) + '</details>'; });
       if(notas.length && !D.persona) h += seccion('Mis notas', 'Estas sí se marcan a mano', notas.slice(0, 3).map(notaHtml).join(''));
       if(D.equipo && D.equipo.length && !D.persona) h += seccion('El equipo', 'Toca para ver su buzón tal como lo ve (solo consulta)', equipoHtml(4));
     }
@@ -171,18 +214,22 @@
     return '<div class="bz-team">' + eq.map((e) => '<button type="button" class="bz-tm" data-persona="' + esc(e.id) + '"><b>' + esc(e.nombre) + ' · ' + esc(e.rol) + '</b><small' + (e.venc ? ' class="mal"' : '') + '>' +
       esc(plural(e.n, 'pendiente', 'pendientes') + (e.venc ? ' · ' + plural(e.venc, 'vencido', 'vencidos') : '') + (e.hoy ? ' · ' + e.hoy + ' hoy' : '')) + '</small></button>').join('') + '</div>';
   }
-  // Legal: tablero por etapa y, abajo, los vencimientos
+  // Legal: por elaborar por tipo de cliente, luego enviado a firmar, firmado sin subir y vencimientos
   function tableroLegal(gs){
     const its = D.items || []; const k = D.kpis || {};
-    const col = (t, tipo) => { const l = its.filter((f) => f.tipo === tipo);
-      return '<div class="bz-col"><div class="bz-col-h"><b>' + t + '</b><span>' + l.length + '</span></div>' +
-        (tipo === 'elaborar_contrato' && l.length > 1 && !solo() ? '<button type="button" class="btn btn-chico" data-tr="cola">Uno tras otro, del más viejo</button>' : '') + (l.length ? l.slice(0, 30).map((f) => '<div class="bz-kd"><b>' + esc(f.titulo) + '</b><small>' + esc([f.lider, f.detalle].filter(Boolean).join(' · ')) + '</small>' +
-        (plazo(f) ? '<span class="mt-pill ' + plazo(f)[0] + '">' + esc(plazo(f)[1]) + '</span>' : '') + (solo() ? '' : '<button type="button" class="btn btn-chico btn-2" data-hacer="' + esc(kDe(f)) + '">' + esc((B.ACC[f.tipo] || [, 'Ir'])[1]) + '</button>') + '</div>').join('') +
-        (l.length > 30 ? '<p class="nota-chica">Y ' + (l.length - 30) + ' más.</p>' : '') : '<p class="nota-chica">Nada aquí.</p>') + '</div>'; };
     const ven = gs.find((g) => g.id === 'ven') || { items: [], tipos: ['contrato_vence'] };
-    return '<div class="bz-board">' + col('Para elaborar', 'elaborar_contrato') + col('Enviado a firmar', 'seguir_firma') + col('Firmado, falta subir', 'contrato_archivo') +
-      '<div class="bz-col"><div class="bz-col-h"><b>Listo esta semana</b><span>' + (k.firmados || 0) + '</span></div><p class="nota-chica">' + esc(plural(k.firmados || 0, 'contrato firmado', 'contratos firmados')) + ' en los últimos 7 días.</p></div></div>' +
-      seccion('Vencimientos próximos', 'Se tachan solos cuando suben el documento nuevo', listaGrupo(ven));
+    // Lote 05/11 D4: "Por elaborar contrato" por tipo de cliente, prioridad ISP, corporativo, VGT, PYME, con filtros arriba
+    const TIPOS_C = [['isp', 'Dedicado ISP', 'Prioridad 1'], ['corp', 'Dedicado corporativo', 'Prioridad 2'], ['vgt', 'VGT', 'Prioridad 3 · por solicitud'], ['pyme', 'PYME', 'Prioridad 4']];
+    const tipoDe = (f) => { const s = String(f.seg || ''); return /ISP/.test(s) ? 'isp' : /corporativo/i.test(s) ? 'corp' : /VGT/.test(s) ? 'vgt' : 'pyme'; };
+    const elab = its.filter((f) => f.tipo === 'elaborar_contrato').sort((a, b) => (String(a.desde) < String(b.desde) ? -1 : 1));
+    const filtros = '<div class="bz-fl" role="group" aria-label="Filtrar por tipo de cliente"><button type="button" class="' + (!filtroC ? 'on' : '') + '" data-filtro-c="" aria-pressed="' + !filtroC + '">Todos <b>' + elab.length + '</b></button>' +
+      TIPOS_C.map((t) => '<button type="button" class="' + (filtroC === t[0] ? 'on' : '') + '" data-filtro-c="' + t[0] + '" aria-pressed="' + (filtroC === t[0]) + '">' + esc(t[1]) + ' <b>' + elab.filter((f) => tipoDe(f) === t[0]).length + '</b></button>').join('') + '</div>';
+    const porTipo = TIPOS_C.filter((t) => !filtroC || filtroC === t[0]).map((t) => { const l = elab.filter((f) => tipoDe(f) === t[0]); if(!l.length && filtroC !== t[0]) return '';
+      return seccion('Por elaborar · ' + t[1], t[2] + ' · ' + plural(l.length, 'cliente', 'clientes'), l.length ? l.slice(0, 40).map((f) => itemHtml(f)).join('') : '<p class="nota-chica bz-nada">Nada por elaborar de este tipo.</p>'); }).join('');
+    const etapa = (t, tipo) => { const l = its.filter((f) => f.tipo === tipo); return l.length ? seccion(t, plural(l.length, 'cliente', 'clientes'), l.slice(0, 40).map((f) => itemHtml(f)).join('')) : ''; };
+    return filtros + (elab.length > 1 && !solo() ? '<p style="margin:10px 0"><button type="button" class="btn btn-chico" data-tr="cola">Uno tras otro, del más viejo</button></p>' : '') + porTipo +
+      etapa('Enviado a firmar', 'seguir_firma') + etapa('Firmado, falta subir', 'contrato_archivo') + seccion('Vencen pronto', 'Se tachan solos cuando suben el documento nuevo', listaGrupo(ven)) +
+      '<p class="nota-chica">' + esc(plural(k.firmados || 0, 'contrato firmado', 'contratos firmados')) + ' en los últimos 7 días.</p>';
   }
   // ---------- Notas personales ----------
   function notaHtml(n){
@@ -273,7 +320,11 @@
     if((b = t.closest('[data-grupo]')) && (b.closest('#tarjetas') || b.closest('#nums') || b.classList.contains('bz-ver'))){ sel = sel === b.dataset.grupo && b.closest('#tarjetas') ? '' : b.dataset.grupo; cuantos = 40; guardarUrl(); pintar(); if(b.classList.contains('bz-ver') || b.closest('#nums')) $('cuerpo').scrollIntoView({ block: 'start' }); return; }
     if((b = t.closest('[data-hacer]'))){ const f = buscar(b.dataset.hacer); if(f) hacer(f); return; }
     if((b = t.closest('[data-gest-est]'))){ gestionEstado(b); return; }
-    if((b = t.closest('[data-nota-hecha]'))){ notaHecha(b.dataset.notaHecha, b.getAttribute('aria-pressed') !== 'true'); return; }
+    if((b = t.closest('[data-filtro-c]'))){ filtroC = b.dataset.filtroC; pintar(); return; }
+    // Lote 05/11 D6: Marcar hecho pide confirmar (segundo toque) y queda en la bitácora
+    if((b = t.closest('[data-nota-hecha]'))){ const marcar = b.getAttribute('aria-pressed') !== 'true';
+      if(marcar && b.dataset.armado !== '1'){ b.dataset.armado = '1'; b.classList.add('armado'); aviso('Toca otra vez para marcarla como hecha'); setTimeout(() => { if(document.contains(b)){ b.dataset.armado = ''; b.classList.remove('armado'); } }, 4000); return; }
+      notaHecha(b.dataset.notaHecha, marcar); return; }
     if((b = t.closest('[data-nota-cli]'))){ window.Ficha.abrir(Number(b.dataset.notaCli), { yo, alCerrar: alCerrarFicha }); return; }
     if((b = t.closest('[data-persona]'))){ persona = b.dataset.persona; sel = ''; guardarUrl(); D = null; cargar(); window.scrollTo(0, 0); return; }
     if((b = t.closest('[data-ges]'))){ const g = b.dataset.ges; if(g === 'nueva') window.Gestiones.nueva({ alCrear: cargar }); else window.Gestiones.abrir(Number(g), { alCerrar: cargar }); return; }
@@ -285,10 +336,13 @@
       else if(a === 'lote'){ vista = 'lote'; guardarUrl(); mostrarVista(); }
       else if(a === 'deshacer'){ const z = $('bzAviso'); const f = z._deshacer; z.classList.add('hidden'); if(f) f(); }
       else if(a === 'parar'){ cola = null; $('barraCola').classList.add('hidden'); }
+      else if(a === 'entendido'){ try { localStorage.setItem('ae_quecambio_0511:' + yo.id, '1'); } catch (e) {} $('queCambio').classList.add('hidden'); }
       else if(a === 'seguir' && cola){ const f = (D.items || []).find((x) => x.tipo === cola.tipo && x.clave === b.dataset.clave); $('barraCola').classList.add('hidden'); if(f){ cola.hechos.push(f.clave); hacer(f); } }
     }
   });
   document.addEventListener('submit', (e) => { if(e.target.id === 'formNotaP'){ e.preventDefault(); guardarNota(e.target); } });
+  let buscaT = null;
+  $('bzBuscar').addEventListener('input', () => { clearTimeout(buscaT); buscaT = setTimeout(() => { busca = $('bzBuscar').value.trim(); if(D) pintar(); }, 200); });
   $('persona').addEventListener('change', () => { persona = $('persona').value; sel = ''; guardarUrl(); D = null; cargar(); });
   document.addEventListener('visibilitychange', () => { if(!document.hidden && yo && !C.hojaAbierta() && vista === 'buzon') cargar(); });
 

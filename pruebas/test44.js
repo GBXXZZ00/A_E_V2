@@ -172,7 +172,7 @@ const archivo = (n, mime) => ({ name: n, mimeType: mime || 'application/pdf', bu
     const cl = await contexto(nav, dispositivo, mundo); const lg = await entrar(cl.ctx, 'paula', '615243'); lg.on('pageerror', (e) => errores.push(e.message));
     await lg.goto(H + 'trabajo.html'); await lg.waitForFunction(() => /Relleno Inventado 01/.test((document.getElementById('cuerpo') || {}).textContent || ''));
     ok(nombre + ': en Mi trabajo de Legal, "Firmado, falta subir" trae el firmado sin archivo', /Firmado, falta subir/.test(await lg.textContent('#cuerpo')));
-    await lg.locator('.bz-kd', { hasText: 'Relleno Inventado 01' }).locator('[data-hacer]').click(); await lg.waitForSelector('#hojaFicha.ver #tab-contrato.on');
+    await lg.locator('#cuerpo .bz-it', { hasText: 'Relleno Inventado 01' }).locator('[data-hacer]').first().click(); await lg.waitForSelector('#hojaFicha.ver #tab-contrato.on');
     ok(nombre + ': abre la hoja en Contrato con el aviso', (await lg.textContent('#tab-contrato')).includes('Firmado: falta subir contrato'));
     await cl.ctx.close();
 

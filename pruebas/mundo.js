@@ -1033,7 +1033,9 @@ const RPC = {
     const h = hoy(); const jefe = esSenior(yo); const coord = !!yo.coordinador; let quien = yo;
     if(a.p_persona && a.p_persona !== yo.id){ quien = m.personas.find((p) => p.id === a.p_persona); if(!quien || !(jefe || (coord && quien.rol === 'analista'))) return error('No puedes ver el trabajo de esa persona'); }
     const vista = quien !== yo ? (quien.rol === 'analista' ? (quien.senior ? 'admin' : quien.coordinador ? 'coord' : 'analista') : quien.rol) : jefe ? 'admin' : coord ? 'coord' : yo.rol;
-    const base = pendientesBase(m).concat(m.datos.extra || []).concat(buzonMundo(m));
+    // Lote 05/11 D5: lo pedido (requerimientos abiertos) le sale al líder en "Devueltos o pedidos"
+    const pedidos = []; m.datos.clientes.forEach((c) => { faltantes(c); (c.requerimientos || []).filter((z) => z.estado === 'abierto').forEach((z) => pedidos.push({ tipo: 'pedido', clave: String(z.id), cliente_id: c.id, titulo: c.nombre, detalle: 'Falta: ' + z.texto, lider_id: c.lider_id, analista_id: null, para: 'lider', desde: z.en, vence: null, ref: { casilla: z.casilla, numero: z.numero } })); });
+    const base = pendientesBase(m).concat(m.datos.extra || []).concat(buzonMundo(m)).concat(pedidos);
     const g = gestionesDe(m);
     let items = base.filter((p) => (p.para === 'vende' && p.lider_id === quien.id) || (vista === 'admin' ? ['admin', 'senior'].includes(p.para) : vista === 'coord' ? p.para === 'analista' : vista === 'analista' ? p.para === 'analista' && (p.analista_id === quien.id || (!p.analista_id && p.tipo === 'carta_enviar'))
       : vista === 'abogado' ? p.para === 'abogado' : p.para === 'lider' && p.lider_id === quien.id));
@@ -1043,7 +1045,9 @@ const RPC = {
     // Lote 05/11 A3/D5: la Analista Senior no ve la revisión de documentos
     if(quien.rol === 'analista' && quien.senior) items = items.filter((p) => !['revisar_docs', 'cambio_revisar'].includes(p.tipo));
     const nom = (id) => (m.personas.find((p) => p.id === id) || {}).nombre || null;
-    items = items.map((p) => Object.assign({}, p, { lider: nom(p.lider_id), analista: nom(p.analista_id) }));
+    items = items.map((p) => { const cl = m.datos.clientes.find((c) => c.id === p.cliente_id) || {};
+      return Object.assign({}, p, { lider: nom(p.lider_id), analista: nom(p.analista_id), doc: cl.doc_numero ? (cl.doc_tipo || 'J') + '-' + cl.doc_numero : null,
+        seg: p.tipo === 'elaborar_contrato' ? (cl.es_isp ? 'Dedicado ISP' : cl.dedicado ? 'Dedicado corporativo' : 'PYME') : null }); });
     const equipo = (jefe || coord) && quien === yo ? m.personas.filter((p) => p.activo && p.id !== yo.id && (p.rol === 'analista' || (jefe && ['lider', 'abogado'].includes(p.rol)))).map((p) => {
       const l = base.filter((x) => (p.rol === 'lider' && x.para === 'lider' && x.lider_id === p.id) || (p.rol === 'analista' && x.para === 'analista' && x.analista_id === p.id) || (p.rol === 'abogado' && x.para === 'abogado'));
       return { id: p.id, nombre: p.nombre, rol: p.rol === 'lider' ? 'Líder' : p.rol === 'abogado' ? 'Legal' : 'Analista', n: l.length, venc: l.filter((x) => x.vence < h).length, hoy: l.filter((x) => x.vence === h).length }; }).filter((e) => e.n) : [];

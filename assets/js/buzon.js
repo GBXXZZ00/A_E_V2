@@ -13,18 +13,24 @@
     nota: 'M6 3h9l4 4v14H6zM9 12h7M9 16h5', dev: 'M9 14L4 9l5-5M4 9h11a5 5 0 0 1 0 10h-3'
   };
   // [id, título, línea, icono, tono, tipos]
-  const VENDE = [['dev', 'Devueltos', 'Sube otra vez lo que se devolvió', 'dev', 'r', ['devuelto']],
+  // Lote 05/11 D5: el líder ve primero lo devuelto o pedido, luego lo que le falta para comisionar, por instalar y gestiones
+  const VENDE = [['dev', 'Devueltos o pedidos', 'Hay que pedírselos al cliente', 'dev', 'r', ['devuelto', 'pedido']],
     ['falta', 'Faltan para comisionar', 'Ventas del corte que no cumplen', 'meta', 'a', ['venta_falta']],
     ['inst', 'Por instalar', 'Órdenes de más de 24 horas y clientes nuevos', 'inst', 'v', ['orden_atrasada', 'cliente_nuevo']]];
   const ROL = {
-    lider: [['doc', 'Conseguir documentos', 'Faltan o sin gestionar', 'doc', 'b', ['devuelto', 'docs_faltan', 'sin_gestion', 'vgt', 'poliza', 'referido', 'rif_verificar']],
+    lider: [['pdev', 'Devueltos o pedidos', 'Hay que pedírselos al cliente', 'dev', 'r', ['devuelto', 'pedido']],
+      ['doc', 'Conseguir documentos', 'Faltan o sin gestionar', 'doc', 'b', ['docs_faltan', 'sin_gestion', 'vgt', 'poliza', 'referido', 'rif_verificar']],
       ['fir', 'Hacer firmar', 'Contratos y planillas', 'firma', 'm', ['por_firmar', 'planilla']],
       ['ins', 'Por instalar', 'Órdenes de más de 24 horas', 'inst', 'v', ['orden_atrasada', 'por_instalar']],
       ['ges', 'Gestiones asignadas', 'Metas con plazo', 'meta', 'a', ['gestion']]],
     analista: [['carta', 'Cartas y proformas', 'De todos los equipos · obligatorio para Canales', 'sobre', 'a', ['carta_enviar', 'por_enviar']],
+      ['emi', 'Cambios por emitir', 'Migraciones con documentos aprobados', 'emitir', 'b', ['cambio_emitir']],
       ['ip', 'IP por escribir', 'Sin IP no sale la carta', 'ip', 'm', ['sin_ip', 'ip_confirmar']],
-      ['pago', 'Apoyo con pago', 'Del corte, por dueño', 'pago', 'r', ['revisar_pago']],
-      ['emi', 'Emitir en Proham', 'Cambios con documentos aprobados', 'emitir', 'b', ['cambio_emitir']]],
+      ['pago', 'Apoyo con pago', 'Del corte, por dueño', 'pago', 'r', ['revisar_pago']]],
+    // Lote 05/11 D5: la Analista Senior asigna dueños, une provisionales y hace las cargas; no revisa documentos
+    senior: [['sin', 'Sin dueño', 'No comisionan hasta asignarlos', 'decidir', 'r', ['por_asignar', 'sin_cliente', 'sin_servicio', 'sin_registro']],
+      ['prov', 'Provisionales y verificar', 'Unir o confirmar el cliente', 'doc', 'a', ['rif_verificar', 'cliente_nuevo', 'certificar']],
+      ['car', 'Cargas del día', 'Actualizar', 'alerta', 'a', ['alerta_carga', 'ordenes_atrasadas', 'cerrar_corte']]],
     abogado: [['con', 'Contratos', 'Por elaborar, por firmar y por subir', 'contrato', 'b', ['elaborar_contrato', 'seguir_firma', 'contrato_archivo']],
       ['ven', 'Vencimientos', 'Contratos, juntas y pólizas', 'alerta', 'a', ['contrato_vence']]],
     admin: [['rev', 'Revisar documentos', 'Líderes, aliados y correo', 'lupa', 'b', ['revisar_docs', 'cambio_revisar']],
@@ -41,13 +47,14 @@
     cambio_emitir: ['Emitir en Proham', 'Ir al cambio'], por_enviar: ['Enviar carta y proforma', 'Enviar'], carta_enviar: ['Enviar carta y proforma', 'Enviar'], sin_ip: ['Falta la IP', 'Escribir IP'], ip_confirmar: ['Confirmar IP', 'Confirmar'],
     revisar_pago: ['Revisar pago', 'Ir'], elaborar_contrato: ['Elaborar contrato', 'Subir contrato'], seguir_firma: ['Seguir firma', 'Subir firmado'], contrato_archivo: ['Subir contrato firmado', 'Subir'],
     contrato_vence: ['Contrato por vencer', 'Ir'], revisar_docs: ['Revisar expediente', 'Revisar'], cambio_revisar: ['Aprobar documentos del cambio', 'Ir al cambio'],
+    pedido: ['Conseguir lo pedido', 'Abrir expediente'],
     cerrar_corte: ['Cerrar corte', 'Revisar y cerrar'], certificar: ['Para certificar', 'Ir'], por_asignar: ['Asignar orden', 'Asignar'], sin_registro: ['Cambio sin registro', 'Asignar líder'],
     sin_cliente: ['Instalación sin cliente', 'Ir'], sin_servicio: ['Instalación sin servicio', 'Ir'], aliado_permisos: ['Permisos de aliados', 'Revisar'], aliado_sin_permiso: ['Instalado sin permiso', 'Revisar'],
     alerta_carga: ['Carga rara', 'Revisar'], ordenes_atrasadas: ['Órdenes atrasadas', 'Ir'], venta_falta: ['Falta para comisionar', 'Ir'], cliente_nuevo: ['Cliente nuevo por instalar', 'Ir']
   };
   const color = (f, hoy) => (!f.vence ? 'ok' : f.vence < hoy ? 'venc' : f.vence === hoy ? 'hoy' : 'ok');
   function grupos(D){
-    const vista = D.vista || 'lider'; const def = (D.vende ? VENDE.map((g) => g.concat(['ventas'])) : []).concat((ROL[vista] || ROL.lider).filter((g) => !(D.vende && g[0] === 'ins')).map((g) => g.concat(['rol'])));   // quien vende ya tiene Por instalar en Mis ventas
+    const vista = D.senior && D.rol !== 'admin' && !D.persona ? 'senior' : (D.vista || 'lider'); const def = (D.vende ? VENDE.map((g) => g.concat(['ventas'])) : []).concat((ROL[vista] || ROL.lider).filter((g) => !(D.vende && g[0] === 'ins')).map((g) => g.concat(['rol'])));   // quien vende ya tiene Por instalar en Mis ventas
     const gs = def.map((g) => ({ id: g[0], titulo: g[1], sub: g[2], icono: g[3], tono: g[4], tipos: g[5], parte: g[6], items: [] }));
     const resto = [];
     (D.items || []).forEach((f) => { const g = gs.find((x) => x.tipos.indexOf(f.tipo) >= 0); if(g) g.items.push(f); else resto.push(f); });

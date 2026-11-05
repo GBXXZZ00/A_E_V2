@@ -86,6 +86,8 @@ async function cerrarHojas(p){ for(let i = 0; i < 5 && await p.evaluate(() => !!
     ok(nombre + ': la nota vacía avisa debajo del campo', /Escribe la nota/.test(await p.textContent('#eNt')));
     await p.fill('#ntTexto', 'Llamar a la clínica por el acta'); await p.click('#formNotaP [type="submit"]'); await p.waitForSelector('#cuerpo [data-nota-hecha]');
     ok(nombre + ': la nota se guarda y sale en Mis notas', /Llamar a la clínica/.test(await p.textContent('#cuerpo')) && llamo(mundo, 'nota_guardar').length === 1);
+    // Lote 05/11 D6: Marcar hecho pide confirmar (segundo toque)
+    await p.click('#cuerpo [data-nota-hecha]'); ok(nombre + ': el primer toque pide confirmar', /Toca otra vez/.test(await p.textContent('#bzAviso')) && llamo(mundo, 'nota_hecha').length === 0);
     await p.click('#cuerpo [data-nota-hecha]'); await p.waitForSelector('#bzAviso [data-tr="deshacer"]');
     ok(nombre + ': marcar la nota como hecha ofrece Deshacer', /hecha/.test(await p.textContent('#bzAviso')));
     await p.click('#bzAviso [data-tr="deshacer"]'); await p.waitForTimeout(400);

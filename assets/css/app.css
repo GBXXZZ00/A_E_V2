@@ -2242,3 +2242,19 @@ button.bz-ck.on::after{left:17px;top:13px}
 .aj .btn{margin-top:10px}
 @media (max-width:560px){ .aj-d{grid-template-columns:1fr 1fr} .aj-d input:first-of-type{grid-column:1 / -1} .rp-op{font-size:13px} }
 @media (prefers-reduced-motion:reduce){ .rp-op{transition:none} }
+/* Lote 05/11 D: Mi trabajo con grupos plegables, filtros del abogado, buscador y "Qué cambió" */
+.bz-busca{margin-top:12px;max-width:420px}
+.bz-busca .campo{margin-top:4px}
+.bz-cambio{margin-top:12px}
+.bz-pl{margin-top:12px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--bg)}
+.bz-pl > summary{display:flex;align-items:center;gap:10px;min-height:52px;padding:0 16px;cursor:pointer;list-style:none;font-size:15px}
+.bz-pl > summary::-webkit-details-marker{display:none}
+.bz-pl > summary b{flex:1;min-width:0}
+.bz-pl-n{display:grid;place-items:center;min-width:28px;height:28px;padding:0 8px;border-radius:14px;background:var(--surface-2);font-weight:800;font-size:13px}
+.bz-pl > .bz-sec{margin:0;padding:0 16px 12px;border:0}
+.bz-pl > .bz-sec > .bz-sh > b{display:none}
+.bz-fl{display:flex;gap:8px;flex-wrap:wrap}
+.bz-fl button{min-height:44px;padding:0 14px;border-radius:var(--pill);border:1.5px solid var(--line);background:var(--bg);font-size:13.5px;font-weight:600;white-space:nowrap}
+.bz-fl button b{margin-left:4px}
+.bz-fl button.on{background:var(--azul);border-color:var(--azul);color:#fff}
+.bz-ck.armado{outline:2px solid var(--azul);outline-offset:2px}

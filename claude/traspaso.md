@@ -1,6 +1,6 @@
 # Traspaso (se actualiza al cerrar cada sesión)
 
-Actualizado: 05/11/2026, LOTE 05/11 en curso (una versión por parte). Publicado: `?v=71` (partes G, A, B y C).
+Actualizado: 05/11/2026, LOTE 05/11 en curso (una versión por parte). Publicado: `?v=72` (partes G, A, B, C y D).
 
 ## LOTE 05/11 (`claude/lote-05nov.md`): EN CURSO
 Referencia de comisiones (`privado.comision_filas3`) al empezar: septiembre 46/41, octubre 83/75, noviembre 34/4.
@@ -35,7 +35,14 @@ Referencia de comisiones (`privado.comision_filas3`) al empezar: septiembre 46/4
   - C7 archivo combinado: un archivo marcado en varias casillas ya se subía una vez; ahora el mismo archivo subido después en otra casilla (misma sesión) se enlaza al que ya está en Drive y la casilla dice "Mismo archivo que …".
   - C8 "Qué pedirle al cliente" (ficha del líder y del administrador): mensaje listo con lo pedido y lo devuelto, WhatsApp y Copiar, y "Subir esta acta" en cada línea.
   - Pruebas: test52 nueva (panel, pedir, quitar, devolver de la constitutiva, Ya no aplica, vista del líder), test16 (C3), test40 ajustada a A1 (el segundo representante con datos ya no genera faltantes). Pruebas del expediente: 17 de 17.
-- **Siguen**: D (Mi trabajo), E (Comisiones), F (Dedicados y VGT).
+- **Parte D HECHA (v72)**. Migración `lote05_d1_mi_trabajo` y cambios en `mi_trabajo` y `trabajo_resumen`.
+  - D1/D2 cada botón dice adónde lleva (Abrir expediente, Abrir contrato, Ir a la comisión, Ir a Por instalar, Ir a Migraciones, Ir a Actualizar, Ir a Aliados) y al cerrar vuelve a la misma lista; la revisión de documentos dice "Revisar aquí" (azul) y abre el mismo expediente con el panel de la parte C.
+  - D3 grupos plegables con su número; abiertos los que tienen algo vencido o de hoy. "Lo más urgente" se mantiene.
+  - D4 abogado: "Por elaborar" por tipo de cliente (Dedicado ISP, Dedicado corporativo, VGT, PYME, en ese orden) con filtros y su número; luego Enviado a firmar, Firmado falta subir y Vencen pronto. "Uno tras otro, del más viejo" se mantiene. `mi_trabajo` trae `seg` y `doc` en cada tarea.
+  - D5 líder: Devueltos o pedidos (los requerimientos abiertos salen como tipo `pedido`), faltan para comisionar, por instalar, gestiones. Analista: cartas y proformas, cambios por emitir (antes "Emitir en Proham"), IP, pago y notas. Senior: Sin dueño, Provisionales y verificar, Cargas del día; sin revisión de documentos. Administrador: revisar documentos, por decidir, aliados, alertas.
+  - D6 "Marcar hecho" (notas) pide un segundo toque y queda en la bitácora (`tarea_hecha`). D7 buscador por RIF o nombre; aviso "Qué cambió" por rol con Entendido (una vez por persona en el equipo). D8 números de arriba para todos los roles; Inicio y Mi trabajo siguen dando lo mismo (también Legal: `trabajo_resumen` ya lo incluye).
+  - Pruebas: test53 nueva; test30, test44 y test50 ajustadas a lo decidido el 05/11 (Senior, Legal por tipo, "Cambios por emitir", confirmar Hecho).
+- **Siguen**: E (Comisiones), F (Dedicados y VGT).
 
 
 
