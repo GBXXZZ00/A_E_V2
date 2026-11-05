@@ -9,7 +9,8 @@ Datos de las maquetas inventados. Este repo es público: nada de datos reales en
 3. **Pruebas contra datos reales.** Además de `pruebas/`, compara los números de Inicio, Mi trabajo, Clientes, Comisiones y Gerencia contra la base real (solo lectura) y que den lo mismo. Comisiones: referencia `privado.comision_filas3` igual al empezar y al terminar.
 4. **Una sola fuente por número.** Si dos pantallas muestran el mismo número, lo calcula una sola función del servidor.
 5. Publica por partes (una versión `?v=` por parte), en el orden de abajo, y corre la batería entera al final.
-6. Prohibido el guion largo en textos. Maqueta = referencia de diseño; el estilo final usa `base.css` y `app.css`.
+6. **Pendientes viejos:** todo lo anotado antes (28/10-B, 30/10, `revision-modulos.md`, `por-definir.md`) va en este lote de una vez. Si algún pendiente viejo choca con lo decidido el 05/11 (este documento y sus maquetas), manda el 05/11: ese pendiente NO se hace y se anota en el traspaso por qué.
+7. Prohibido el guion largo en textos. Maqueta = referencia de diseño; el estilo final usa `base.css` y `app.css`.
 
 ## Parte A · Arreglos directos (sin maqueta)
 1. **Firma separada** (`privado.requeridos`): con firma separada basta UN representante completo (cédula, RIF, contacto y en la junta). Los demás representantes no generan faltantes aunque tengan datos o archivos. Con conjunta, todos los que exige la cláusula. Revisar también `reglas.mjs`.
@@ -62,6 +63,13 @@ Diagnóstico del 05/11 (en el servidor): 0 de 3.738 servicios tienen `ult_suspen
 1. **Clientes queda igual.** Solo se agrega "+ Registrar dedicado nuevo" junto al buscador cuando la tarjeta seleccionada es Dedicado corporativo o Dedicado ISP; y en la búsqueda sin resultados por RIF ("No encontramos …" con el mismo botón).
 2. Registrar: RIF (avisa si ya existe y enlaza), razón social, tipo ISP o corporativo, líder, servicio a contratar (opcional). Crea el cliente provisional dedicado y abre su expediente en Documentos. Etiqueta azul "Aún no está en el TAD"; cuando el TAD (o la base de la analista) trae ese RIF, se une solo (o "¿Es este cliente?" si hay duda) y la etiqueta desaparece. El abogado lo ve en "Por elaborar" cuando los documentos están aprobados.
 3. **VGT por solicitud** (pestaña Contratos y VGT): las 2 pólizas por cliente (sirven para todas sus solicitudes); por cada solicitud (fila de `dedicado_contratos` tipo vgt): propuesta comercial firmada (1) y planillas de tendido aprobadas por infraestructura (1 o más, "+ Otra planilla"). Estado por solicitud ("Lista para contrato", "Faltan N"). La propuesta comercial ya no es requisito a nivel de cliente. Solicitudes negadas no piden nada. "+ Nueva solicitud".
+
+## Parte G · Actualizar: el índice del TAD en segundo plano (va PRIMERO, antes de la Parte A)
+Hoy `tad_indice` tiene 419.138 filas (298 MB). La pantalla compara en tandas de 10.000 (unas 42 vueltas) y mientras tanto `ocupado` bloquea toda la pantalla: no se puede subir Odoo ni órdenes ni tocar "Cruzar ahora".
+1. **El TAD de empresas se sube siempre y primero**, como hoy. Apenas termina, el índice sigue en segundo plano con su propia barra ("Índice de residenciales: 45 %") y su propio estado, separado de `ocupado`. Mientras corre se pueden soltar y subir los demás archivos (Odoo, órdenes, IP, KMZ) y tocar "Cruzar ahora": el cruce no espera al índice. Si se cierra la pestaña se pausa y "Seguir con el índice" retoma (ya existe, 12 h). Al cerrar la pestaña con el índice corriendo, avisar que se pausará. El cierre por falta de uso no corta mientras corre.
+2. **Índice opcional:** casilla "Actualizar también el índice de residenciales", marcada sola una vez por semana (si la última carga del índice tiene 7 días o más) o cuando haya migraciones esperando confirmación del TAD; los demás días desmarcada (solo empresas). "Qué toca actualizar" muestra la fecha del último índice.
+3. **Comparación por bloques:** ordenar por clave y mandar la huella de cada bloque de 1.000 filas (unas 420 huellas, una sola llamada); el servidor calcula las mismas huellas sobre lo guardado y devuelve los bloques distintos; solo esos se comparan fila por fila como hoy. Medir y anotar en el traspaso el tiempo antes y después con el archivo real.
+4. Nada de esto cambia qué datos quedan: las pruebas de Migraciones (confirmación por el TAD) deben dar igual antes y después.
 
 ## Al terminar
 - Capturas 1366x768 e iPhone de cada parte en `pruebas/capturas/lote05nov-*`.
