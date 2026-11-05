@@ -126,7 +126,11 @@
   async function cambiarPin(pin){
     let error = null;
     if(ENTRADA_SEGURA){
-      try { await porEntrada({ accion: 'cambiar', pin_nuevo: pin }); }
+      try {
+        const d = await porEntrada({ accion: 'cambiar', pin_nuevo: pin });
+        // Lote 05/11 A3: el servidor ya quitó la marca y manda una sesión nueva (la vieja se cierra al cambiar la clave)
+        if(d && d.session){ const r = await db.auth.setSession(d.session); if(r.error) throw r.error; if(perfilActual) perfilActual.debe_cambiar_pin = false; marcarActividad(true); return; }
+      }
       catch (e) { if(!e.caida) throw e; error = (await db.auth.updateUser({ password: pin })).error; }
     } else error = (await db.auth.updateUser({ password: pin })).error;
     // Si el PIN ya quedó guardado en un intento anterior que se cortó, solo falta avisar al servidor

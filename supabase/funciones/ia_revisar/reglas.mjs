@@ -1,7 +1,9 @@
 // Reglas de la revisión con IA (claude/ia-reglas.md). La IA solo lee; aquí se decide, siempre igual con los mismos datos.
 // Corre en la función de borde ia_revisar y en las pruebas (pruebas/test16.js). Sin dependencias.
 
-export const VERSION_REGLAS = '4';
+export const VERSION_REGLAS = '5';
+// Lote 05/11 A4: nombres completos de las actas que se piden (mandan en toda la app)
+export const ACTAS = { junta: 'Acta de asamblea de ratificación o cambio de junta directiva', razon: 'Acta de asamblea de cambio de razón social', domicilio: 'Acta de asamblea de cambio de domicilio fiscal', duracion: 'Acta de asamblea de prórroga de la duración' };
 
 // ---------- Texto y fechas ----------
 export function norm(s){
@@ -15,6 +17,11 @@ export function parecido(a, b){
   if(!A.size || !B.size) return null;
   let n = 0; A.forEach((w) => { if(B.has(w)) n++; });
   return n / Math.min(A.size, B.size);
+}
+// Lote 05/11 A4: la parte antes de la @ contiene un nombre o apellido (o sus 4 primeras letras)
+export function correoParecido(correo, nombre){
+  const u = norm(String(correo).split('@')[0]).replace(/ /g, '');
+  return norm(nombre).split(' ').filter((w) => w.length >= 3 && !VACIAS.has(w)).some((w) => u.indexOf(w) >= 0 || (w.length >= 4 && u.indexOf(w.slice(0, 4)) >= 0));
 }
 const soloDigitos = (s) => String(s == null ? '' : s).replace(/\D/g, '').replace(/^0+/, '');
 const pad = (n) => String(n).padStart(2, '0');
@@ -181,7 +188,14 @@ export function evaluar(e){
   (e.faltantes || []).filter((f) => f.e === 'falta').forEach((f) => {
     punto('falta_' + f.k + '_' + f.n, 'Falta ' + f.t, 'bloquea', f.dato ? 'Hay que escribirlo en el expediente.' : 'No está en el expediente.', { falta: f.t });
   });
-  if(!c.es_natural && !(e.faltantes || []).some((f) => f.dato)) punto('contacto', 'Teléfono y correo del representante', 'ok', 'Están en el expediente.');
+  if(!c.es_natural && !(e.faltantes || []).some((f) => f.dato)){
+    // Lote 05/11 A4: el correo personal del representante se parece a su nombre o apellido; si no, revisar a mano (se acepta por excepción)
+    const raros = (e.representantes || []).map((r) => Object.assign({}, r, { nombre: r.nombre || nombresRep[r.orden] || null })).filter((r) => r.correo && r.nombre && !correoParecido(r.correo, r.nombre));
+    const x = excPunto('contacto');
+    if(!raros.length) punto('contacto', 'Teléfono y correo del representante', 'ok', 'Están en el expediente.');
+    else if(x) punto('contacto', 'Correo del representante', 'ok', 'Excepción: ' + x.motivo, { excepcion: x.motivo });
+    else punto('contacto', 'Correo del representante', 'mano', raros.map((r) => 'El correo ' + r.correo + ' no se parece a ' + r.nombre).join('. ') + '. Confirma que es suyo.', { excepcionable: true });
+  }
 
   // ---------- Empresa: actas, junta, firmantes, domicilio ----------
   let fuentesOut = null;
@@ -211,7 +225,7 @@ export function evaluar(e){
       if(rsActa && rsRif){
         const p = parecido(rsActa, rsRif);
         if(p !== null && p >= 0.6) punto('razon_social', 'Razón social igual a la del RIF', 'ok', rsActa + '.');
-        else punto('razon_social', 'Razón social distinta a la del RIF', 'bloquea', 'El acta dice ' + rsActa + ' y el RIF dice ' + rsRif + '.', { pagina: pg(cambioNombre || actaC), falta: 'Acta de asamblea de cambio de nombre' });
+        else punto('razon_social', 'Razón social distinta a la del RIF', 'bloquea', 'El acta dice ' + rsActa + ' y el RIF dice ' + rsRif + '.', { pagina: pg(cambioNombre || actaC), falta: ACTAS.razon });
       }
 
       // Duración de la empresa (regla 10)
@@ -222,21 +236,27 @@ export function evaluar(e){
         const base = (Number(acta.duracion_anos) > 0 ? anos + ' años' : 'No dice la duración en ninguna página: se toman 30 años') + ' desde el ' + fechaTexto(inscActa);
         if(vence >= hoy) punto('duracion', 'Duración de la empresa', 'ok', base + '. Vigente hasta el ' + fechaTexto(vence) + '.', { pagina: pg(actaC) });
         else if(ult && masAnios(ult._insc, 10) >= hoy) punto('duracion', 'Duración de la empresa', 'ok', base + ' venció el ' + fechaTexto(vence) + ', pero la asamblea inscrita el ' + fechaTexto(ult._insc) + ' la renueva hasta el ' + fechaTexto(masAnios(ult._insc, 10)) + '.', { pagina: pg(ult) });
-        else punto('duracion', 'Empresa vencida', 'bloquea', base + ': venció el ' + fechaTexto(vence) + '.', { pagina: pg(actaC), falta: 'Acta de asamblea de prórroga de la empresa' });
+        else punto('duracion', 'Empresa vencida', 'bloquea', base + ': venció el ' + fechaTexto(vence) + '.', { pagina: pg(actaC), falta: ACTAS.duracion });
       }
 
       // Junta vigente (reglas 12, 13 y 14)
       // Parte E (caso Totalcom): designa la junta el acta más reciente que la nombra (con al menos una persona) o que dice cambiarla o ratificarla,
       // aunque el lector haya marcado el tema como "otro" (por ejemplo una "aclaratoria" que trae la junta completa)
       const designa = ultimaCon((a) => a === actaC || (a.junta || []).length > 0 || temas(a).some((t) => t === 'cambio_junta' || t === 'ratificacion_junta')); fuentes.junta = designa;
-      if(designa){
-        const anosJ = Number(designa.junta_anos) > 0 ? Number(designa.junta_anos) : Number(acta.junta_anos) > 0 ? Number(acta.junta_anos) : 10;
+      // Lote 05/11 A4: si ningún acta dice cuánto dura la junta, NO se asumen 10 años: bloquea y pide el acta
+      const sinPeriodo = designa && !(Number(designa.junta_anos) > 0) && !(Number(acta.junta_anos) > 0);
+      if(sinPeriodo){
+        const x = excPunto('junta');
+        if(x) punto('junta', 'Junta sin período', 'ok', 'El acta no dice cuánto dura la junta. Excepción: ' + x.motivo, { pagina: pg(designa), excepcion: x.motivo });
+        else punto('junta', 'Junta sin período', 'bloquea', 'El acta inscrita el ' + fechaTexto(designa._insc) + ' no dice cuánto dura la junta. Hay que pedir el acta que la ratifica o la cambia.', { pagina: pg(designa), falta: ACTAS.junta, pedir: true, excepcionable: true });
+      } else if(designa){
+        const anosJ = Number(designa.junta_anos) > 0 ? Number(designa.junta_anos) : Number(acta.junta_anos);
         const venceJ = masAnios(designa._insc, anosJ); const perm = !!(designa.clausula_permanencia || acta.clausula_permanencia);
         const tope = masAnios(designa._insc, 10); const x = excPunto('junta');
         if(venceJ >= hoy) punto('junta', 'Junta vigente', 'ok', 'Designada en el acta inscrita el ' + fechaTexto(designa._insc) + ' por ' + anosJ + ' años. Vigente hasta el ' + fechaTexto(venceJ) + '.', { pagina: pg(designa) });
         else if(perm && tope >= hoy) punto('junta', 'Junta vigente por cláusula de permanencia', 'ok', 'Su período venció el ' + fechaTexto(venceJ) + ', pero la cláusula de permanencia la mantiene hasta el ' + fechaTexto(tope) + '.', { pagina: pg(designa) });
         else if(x) punto('junta', 'Junta vencida', 'ok', 'Venció el ' + fechaTexto(venceJ) + '. Excepción: ' + x.motivo, { pagina: pg(designa), excepcion: x.motivo });
-        else punto('junta', 'Junta vencida', 'bloquea', 'Designada en el acta inscrita el ' + fechaTexto(designa._insc) + ' por ' + anosJ + ' años: venció el ' + fechaTexto(venceJ) + '.' + (perm ? ' Tenía cláusula de permanencia, pero ya pasaron 10 años.' : ''), { pagina: pg(designa), falta: 'Acta de asamblea: ratificación o cambio de junta', pedir: true, excepcionable: true });
+        else punto('junta', 'Junta vencida', 'bloquea', 'Designada en el acta inscrita el ' + fechaTexto(designa._insc) + ' por ' + anosJ + ' años: venció el ' + fechaTexto(venceJ) + '.' + (perm ? ' Tenía cláusula de permanencia, pero ya pasaron 10 años.' : ''), { pagina: pg(designa), falta: ACTAS.junta, pedir: true, excepcionable: true });
       }
 
       // Régimen de firma y firmantes (reglas 15, 16 y 17)
@@ -294,7 +314,7 @@ export function evaluar(e){
       else {
         const p = parecido(dirActa, dirRif);
         if(p !== null && p >= 0.65) punto('domicilio', 'Domicilio igual al del RIF', 'ok', 'Se parece en un ' + pct(p) + '.', { pagina: pg(cambioDom || actaC) });
-        else punto('domicilio', 'Domicilio distinto al del RIF', 'bloquea', 'La dirección ' + (cambioDom ? 'de la última asamblea' : 'del acta') + ' se parece en un ' + pct(p || 0) + ' a la del RIF.', { pagina: pg(cambioDom || actaC), falta: 'Acta de asamblea de cambio de domicilio' });
+        else punto('domicilio', 'Domicilio distinto al del RIF', 'bloquea', 'La dirección ' + (cambioDom ? 'de la última asamblea' : 'del acta') + ' se parece en un ' + pct(p || 0) + ' a la del RIF.', { pagina: pg(cambioDom || actaC), falta: ACTAS.domicilio });
       }
     }
     const fu = (a) => (a ? { casilla: a._doc.casilla, numero: a._doc.numero, inscripcion: a._insc } : null);

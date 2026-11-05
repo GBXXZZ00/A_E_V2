@@ -1015,6 +1015,8 @@ const RPC = {
     if(vista === 'lider') g.filter((x) => x.estado === 'activa' && x.responsables.includes(quien.id)).forEach((x) => x.clientes.filter((c) => !['cumplido', 'resuelto'].includes(c.estado)).forEach((c) => {
       const cli = m.datos.clientes.find((k) => k.id === c.cliente_id) || {};
       items.push({ tipo: 'gestion', clave: x.id + ':' + c.cliente_id, cliente_id: c.cliente_id, titulo: cli.nombre, detalle: x.nombre + ' · ' + ({ contactado: 'Contactado', esperando: 'Esperando', sin_contacto: 'Sin contacto' }[c.estado] || c.estado), vence: c.promesa || x.plazo, desde: new Date().toISOString(), ref: { gestion: x.id, estado: c.estado } }); }));
+    // Lote 05/11 A3/D5: la Analista Senior no ve la revisión de documentos
+    if(quien.rol === 'analista' && quien.senior) items = items.filter((p) => !['revisar_docs', 'cambio_revisar'].includes(p.tipo));
     const nom = (id) => (m.personas.find((p) => p.id === id) || {}).nombre || null;
     items = items.map((p) => Object.assign({}, p, { lider: nom(p.lider_id), analista: nom(p.analista_id) }));
     const equipo = (jefe || coord) && quien === yo ? m.personas.filter((p) => p.activo && p.id !== yo.id && (p.rol === 'analista' || (jefe && ['lider', 'abogado'].includes(p.rol)))).map((p) => {
@@ -1043,7 +1045,8 @@ const RPC = {
     Object.assign(c, { estado: a.p_estado, nota: a.p_nota, promesa: a.p_promesa }); c.historial.unshift({ accion: 'estado', estado: a.p_estado, nota: a.p_nota, promesa: a.p_promesa, en: new Date().toISOString(), por: yo.nombre }); return null; },
   gestion_cumplir(m, yo, a){ const x = gestionesDe(m).find((g) => g.id === Number(a.p_id)); if(!x) return error('No encontré esa gestión'); if(!a.p_nota) return error('Escribe la nota');
     x.estado = 'cumplida'; x.cumplida_mano = true; x.nota_cumplida = a.p_nota; return null; },
-  trabajo_resumen(m, yo){ if(!['admin', 'analista', 'lider'].includes(yo.rol)) return null; const h = hoy(); const l = misPendientes(m, yo, null); const tipos = {};
+  // Lote 05/11 A3: Inicio cuenta con los MISMOS ítems que Mi trabajo
+  trabajo_resumen(m, yo){ if(!['admin', 'analista', 'lider'].includes(yo.rol)) return null; const h = hoy(); const l = (RPC.mi_trabajo(m, yo, {}).items || []); const tipos = {};
     l.forEach((p) => { const t = tipos[p.tipo] || (tipos[p.tipo] = { n: 0, rojo: 0 }); t.n++; if(p.vence < h) t.rojo++; });
     const al = yo.rol === 'admin' || !!yo.canales ? { solicitudes: 2, referidos: 1, pagos: 1, sin_permiso: 3 } : null; const modulos = {};
     ['expedientes', 'comisiones', 'migraciones', 'dedicados', 'aliados'].forEach((k) => { const x = l.filter((p) => moduloDe(p.tipo) === k);

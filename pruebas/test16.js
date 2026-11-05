@@ -55,7 +55,7 @@ const M = (r, doc) => r.marcas.find((m) => m.documento === doc) || {};
   // 1. Empresa de 2008, junta de 5 años, sin asambleas, con cláusula de permanencia: más de 10 años
   r = evaluar(base((e) => Object.assign(acta(e), { fecha_inscripcion: '2008-06-10', junta_anos: 5, clausula_permanencia: true })));
   ok('caso 1: junta de 2008 con cláusula, pasados 10 años, bloquea', r.veredicto === 'no_apto' && P(r, 'junta').estado === 'bloquea' && P(r, 'junta').excepcionable === true, P(r, 'junta'));
-  ok('caso 1 (lote 3): pide el acta de asamblea sin devolver el acta constitutiva', P(r, 'junta').falta === 'Acta de asamblea: ratificación o cambio de junta' && P(r, 'junta').pedir === true && M(r, 14).propuesta === 'bien', M(r, 14));
+  ok('caso 1 (lote 3): pide el acta de asamblea sin devolver el acta constitutiva', P(r, 'junta').falta === 'Acta de asamblea de ratificación o cambio de junta directiva' && P(r, 'junta').pedir === true && M(r, 14).propuesta === 'bien', M(r, 14));
   r = evaluar(base((e) => { Object.assign(acta(e), { fecha_inscripcion: '2008-06-10', junta_anos: 5, clausula_permanencia: true }); e.excepciones = [{ punto: 'junta', motivo: 'Acta en el Registro' }]; }));
   ok('caso 1: con excepción del administrador queda Apto y el acta se aprueba', r.veredicto === 'apto' && /Excepción/.test(P(r, 'junta').detalle) && M(r, 14).propuesta === 'bien');
 
@@ -70,7 +70,8 @@ const M = (r, doc) => r.marcas.find((m) => m.documento === doc) || {};
   // 4. Acta sin duración, de 1990, sin asambleas: 30 años, vence 2020; y la junta (10 años) desde 2000
   r = evaluar(base((e) => Object.assign(acta(e), { fecha_inscripcion: '1990-02-01', duracion_anos: null, junta_anos: null })));
   ok('caso 4: sin duración se toman 30 años y está vencida', P(r, 'duracion').estado === 'bloquea' && /30 años/.test(P(r, 'duracion').detalle) && /prórroga/.test(P(r, 'duracion').falta || ''), P(r, 'duracion'));
-  ok('caso 4: la junta también está vencida desde el 2000', P(r, 'junta').estado === 'bloquea' && /01\/02\/2000/.test(P(r, 'junta').detalle) && r.veredicto === 'no_apto');
+  // Lote 05/11 A4: sin período de la junta ya no se asumen 10 años: bloquea y pide el acta con su nombre completo
+  ok('caso 4: junta sin período bloquea y pide el acta de ratificación o cambio de junta directiva', P(r, 'junta').estado === 'bloquea' && P(r, 'junta').titulo === 'Junta sin período' && P(r, 'junta').falta === 'Acta de asamblea de ratificación o cambio de junta directiva' && r.veredicto === 'no_apto', P(r, 'junta'));
 
   // 5. Igual con asamblea de 2019 que ratifica la junta: renovada hasta 2029; si solo aumenta capital, la junta sigue vencida
   r = evaluar(base((e) => { Object.assign(acta(e), { fecha_inscripcion: '1990-02-01', duracion_anos: null, junta_anos: null }); asamblea(e, { fecha_inscripcion: '2019-07-01', asamblea_temas: ['ratificacion_junta'], junta: acta(e).junta, junta_anos: 10 }); }));
@@ -186,5 +187,12 @@ const M = (r, doc) => r.marcas.find((m) => m.documento === doc) || {};
   r = evaluar(base((e) => { Object.assign(acta(e), { fecha_inscripcion: null, pagina_inicio: 1, pagina_fin: 12 }); }));
   ok('E6: acta completa sin fecha leída sigue a mano', M(r, 14).propuesta === 'revisar_a_mano');
   ok('sin guion largo en los textos', !JSON.stringify(evaluar(base((e) => { Object.assign(acta(e), { fecha_inscripcion: '1990-02-01', duracion_anos: null }); }))).includes('—'));
+  // Lote 05/11 A4: el correo del representante debe parecerse a su nombre o apellido
+  r = evaluar(base(() => {}));
+  ok('A4: correo parecido al nombre leído de la cédula: contacto bien', P(r, 'contacto') && P(r, 'contacto').estado === 'ok', P(r, 'contacto'));
+  r = evaluar(base((e) => { e.representantes[0].correo = 'ventas.tienda@ejemplo.test'; }));
+  ok('A4: correo que no se parece al nombre queda para revisar a mano', P(r, 'contacto').estado === 'mano' && P(r, 'contacto').excepcionable === true, P(r, 'contacto'));
+  r = evaluar(base((e) => { e.representantes[0].correo = 'ventas.tienda@ejemplo.test'; e.excepciones = [{ punto: 'contacto', motivo: 'Correo de la empresa autorizado' }]; }));
+  ok('A4: con excepción el correo distinto se acepta', P(r, 'contacto').estado === 'ok');
   cerrar();
 })();

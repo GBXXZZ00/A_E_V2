@@ -390,7 +390,8 @@
     const asam = R.filter((r) => r.clave === 'asamblea'); const conAsam = asam.filter((r) => docDe('otro', r.numero));
     const libres = asam.filter((r) => !docDe('otro', r.numero));
     const verAsam = conAsam.concat(libres.slice(0, (conAsam.length ? 0 : 1) + vgtExtra));
-    const sub = (r) => (r.vence ? 'Con vencimiento. Mínimo US$ 20.000, aseguradora del top 10 de SUDEASEG y mención al contrato' : r.requerido ? 'Toca o suelta el archivo aquí' : 'Opcional');
+    // Lote 05/11 A4: responsabilidad civil general mínimo US$ 100.000; la patronal no tiene mínimo
+    const sub = (r) => (r.vence ? 'Con vencimiento. ' + (/patronal/i.test(r.texto || '') ? 'Sin monto mínimo' : 'Mínimo US$ 100.000') + ', aseguradora del top 10 de SUDEASEG y mención al contrato' : r.requerido ? 'Toca o suelta el archivo aquí' : 'Opcional');
     const aviso = (V.polizas || []).filter((p) => p.vence_en && C.diasEntre(hoy, p.vence_en) <= 30).map((p) => {
       const r = R.find((x) => x.numero === p.numero) || {}; const d = C.diasEntre(hoy, p.vence_en);
       return '<div class="al-banda ' + (d < 0 ? 'rojo' : 'ambar') + '" role="note"><b>' + esc(r.texto || 'Póliza') + '</b><p>' + esc(d < 0 ? 'Venció el ' + fecha(p.vence_en) + '. Pide la renovación.' : 'Vence el ' + fecha(p.vence_en) + '. Pide la renovación antes.') + '</p></div>';

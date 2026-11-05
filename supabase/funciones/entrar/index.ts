@@ -68,9 +68,15 @@ async function atender(req: Request): Promise<Response> {
       const pin = typeof b.pin_nuevo === "string" ? b.pin_nuevo : "";
       if (!/^\d{6}$/.test(pin) || pinFacil(pin)) return fallo("El PIN debe tener 6 números y no ser uno fácil de adivinar");
       const usuario = q.user.email.slice(0, -DOMINIO.length);
-      const { error } = await admin.auth.admin.updateUserById(q.user.id, { password: await clave(await leerPimienta(admin), usuario, pin) });
+      const nueva = await clave(await leerPimienta(admin), usuario, pin);
+      const { error } = await admin.auth.admin.updateUserById(q.user.id, { password: nueva });
       if (error) return fallo("No se pudo cambiar el PIN. Intenta de nuevo", 500);
-      return resp({ ok: true });
+      // Lote 05/11 A3: cambiar la clave cierra la sesión vieja; la marca se quita aquí mismo y se entrega una sesión nueva
+      await admin.from("perfiles").update({ debe_cambiar_pin: false }).eq("id", q.user.id);
+      await admin.from("bitacora").insert({ usuario_id: q.user.id, accion: "cambio_pin", tabla: "perfiles", registro_id: q.user.id });
+      const nv = await publico().auth.signInWithPassword({ email: q.user.email, password: nueva });
+      if (nv.error || !nv.data.session) return resp({ ok: true });
+      return resp({ ok: true, session: { access_token: nv.data.session.access_token, refresh_token: nv.data.session.refresh_token } });
     }
 
     const usuario = typeof b.usuario === "string" ? b.usuario.trim().toLowerCase() : "";
