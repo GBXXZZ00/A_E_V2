@@ -1,0 +1,16 @@
+{"v":3,"createdOnFiles":{"v":1,"at":"2026-11-05T15:00:00Z"},"title":"Airtek Empresas · Maquetas lote 05/11","launch":{"view":"canvas","page":"doc"},
+"pages":[{"id":"doc","name":"1 · Documentos"},{"id":"mt","name":"2 · Mi trabajo"},{"id":"com","name":"3 · Comisiones"},{"id":"ded","name":"4 · Dedicados y VGT"}],
+"boards":{
+"Main.dc.html":{"x":0,"y":0,"w":1366,"h":1500,"title":"1a · Expediente, pestaña Documentos (escritorio). Toca Con IA / Sin IA y los botones de cada punto","expand":"fill","is_interactive":true,"page":"doc"},
+"DocPedir.dc.html":{"x":1446,"y":0,"w":560,"h":980,"title":"1b · Devolver o Pedir: dos acciones distintas","is_interactive":true,"page":"doc"},
+"DocActa.dc.html":{"x":2086,"y":0,"w":560,"h":900,"title":"1c · Acta que cambia la junta o el representante","page":"doc"},
+"DocLider.dc.html":{"x":2726,"y":0,"w":390,"h":1180,"title":"1d · Lo que ve el líder en el teléfono","page":"doc"},
+"Trabajo.dc.html":{"x":0,"y":0,"w":1366,"h":1300,"title":"2a · Mi trabajo por rol (toca cada rol arriba)","expand":"fill","is_interactive":true,"page":"mt"},
+"TrabajoTel.dc.html":{"x":1446,"y":0,"w":390,"h":1100,"title":"2b · Mi trabajo del líder en el teléfono","page":"mt"},
+"Comisiones.dc.html":{"x":0,"y":0,"w":1366,"h":1400,"title":"3a · Comisiones: solo etiquetas en la lista; toca la fila para abrir la hoja","expand":"fill","page":"com"},
+"ComHoja.dc.html":{"x":1446,"y":0,"w":560,"h":1400,"title":"3b · Hoja de comisión como la de antes + plegables (toca los títulos)","is_interactive":true,"page":"com"},
+"Dedicados.dc.html":{"x":0,"y":0,"w":1366,"h":1000,"title":"4a · Clientes (igual que hoy) con Registrar dedicado nuevo","expand":"fill","page":"ded"},
+"Vgt.dc.html":{"x":1446,"y":0,"w":560,"h":1300,"title":"4b · Hoja del cliente: Contratos y VGT por solicitud","page":"ded"}
+},
+"order":["Main.dc.html","DocPedir.dc.html","DocActa.dc.html","DocLider.dc.html","Trabajo.dc.html","TrabajoTel.dc.html","Comisiones.dc.html","ComHoja.dc.html","Dedicados.dc.html","Vgt.dc.html"],
+"notes":{},"designSystems":[]}

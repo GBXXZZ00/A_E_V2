@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Mi trabajo del líder en el teléfono</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#F5F6F7;font-family:Inter,system-ui,sans-serif;color:#111315;font-size:14px}
+*{box-sizing:border-box}
+.mut{color:#5B636E;font-size:12px}
+.chip{display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:999px;font-size:12px;font-weight:600;background:#ECEEF1;color:#5B636E;white-space:nowrap}
+.r{background:#FCEDEB;color:#A32117}.w{background:#FBF1DC;color:#754B00}
+.g{background:#fff;border:1px solid #E3E6EA;border-radius:18px;padding:12px;display:flex;flex-direction:column;gap:10px}
+.t{display:flex;flex-direction:column;gap:8px;padding-top:10px;border-top:1px solid #F0F2F4}
+.btn{display:inline-flex;align-items:center;justify-content:center;height:46px;padding:0 16px;border-radius:999px;border:1px solid #E3E6EA;background:#fff;font:700 14px Inter,sans-serif;color:#111315;white-space:nowrap;cursor:pointer}
+</style>
+</helmet>
+<div style="width: 390px; min-height: 1100px; display: flex; flex-direction: column; font-family: Inter, sans-serif">
+  <header style="background: #fff; padding: 14px 16px; border-bottom: 1px solid #E3E6EA; display: flex; flex-direction: column; gap: 4px">
+    <b style="font-size: 20px">Mi trabajo</b>
+    <span class="mut">Corte de noviembre · cierra el 17/11 · 6 instaladas, 2 cumplen</span>
+  </header>
+  <main style="padding: 14px 16px; display: flex; flex-direction: column; gap: 12px">
+    <div class="g">
+      <div style="display: flex; align-items: center; gap: 8px"><b>Devueltos o pedidos</b><span class="chip r">2</span></div>
+      <div class="t"><b>Inversiones Los Olivos, C.A.</b><span class="mut">Falta: Acta de asamblea de ratificación o cambio de junta · hace 1 día</span><button class="btn">Abrir expediente</button></div>
+      <div class="t"><b>Bodegón La Esquina</b><span class="mut">Cédula vencida · hace 3 días</span><button class="btn">Abrir expediente</button></div>
+    </div>
+    <div class="g">
+      <div style="display: flex; align-items: center; gap: 8px"><b>Te faltan para comisionar</b><span class="chip w">4</span></div>
+      <div class="t"><b>Panadería El Trigal</b><span class="mut">Falta Legal y pago · instalada hace 12 días</span><button class="btn">Ir a la comisión</button></div>
+      <div class="t"><b>Óptica Visión Clara</b><span class="mut">Falta el pago · hace 9 días</span><button class="btn">Ir a la comisión</button></div>
+    </div>
+    <div class="g">
+      <div style="display: flex; align-items: center; gap: 8px"><b>Por instalar</b><span class="chip w">1</span></div>
+      <div class="t"><b>Taller Hermanos Ruiz</b><span class="mut">Orden abierta hace 30 horas</span><button class="btn">Ir a Por instalar</button></div>
+    </div>
+    <div class="g" style="align-items: center; text-align: center; padding: 20px">
+      <b>Gestiones</b><span class="mut">No tienes gestiones activas. Cuando el administrador te asigne una, sale aquí.</span>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1100}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

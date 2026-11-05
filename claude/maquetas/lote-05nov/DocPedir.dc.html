@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Devolver o pedir</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#F5F6F7;font-family:Inter,system-ui,sans-serif;color:#111315;font-size:14px}
+*{box-sizing:border-box}
+.mut{color:#5B636E;font-size:12px}
+.modo{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.mo{border:1.5px solid #E3E6EA;border-radius:14px;padding:12px;text-align:left;background:#fff;font:inherit;color:#111315;cursor:pointer;display:flex;flex-direction:column;gap:3px;min-height:72px}
+.mo b{font-size:14px}
+.mo.on{border-color:#111315;box-shadow:0 0 0 3px rgba(43,92,255,.16)}
+.op{display:flex;align-items:center;gap:10px;border:1px solid #E3E6EA;border-radius:12px;padding:11px 12px;background:#fff;font:inherit;color:#111315;text-align:left;cursor:pointer;min-height:44px}
+.op i{width:18px;height:18px;border-radius:999px;border:2px solid #B9C0C9;flex:0 0 18px}
+.op.on{border-color:#A32117;background:#FFF8F7}.op.on i{border:6px solid #A32117}
+.btn{display:inline-flex;align-items:center;justify-content:center;height:48px;padding:0 18px;border-radius:999px;border:1px solid #E3E6EA;background:#fff;font:700 14px Inter,sans-serif;color:#111315;white-space:nowrap;cursor:pointer}
+.btn.pr{background:#111315;color:#fff;border-color:#111315}
+label.rot{font-size:13px;font-weight:600;display:block;margin-bottom:6px}
+textarea{width:100%;min-height:70px;border:1.5px solid #CCD2DA;border-radius:14px;padding:10px 12px;font:14px Inter,sans-serif;resize:vertical}
+</style>
+</helmet>
+<aside style="width: 560px; min-height: 980px; background: #fff; padding: 22px 24px; display: flex; flex-direction: column; gap: 14px; font-family: Inter, sans-serif" aria-label="Devolver o pedir">
+  <div style="display: flex; align-items: flex-start; gap: 10px">
+    <div style="display: flex; flex-direction: column; gap: 3px"><h2 style="margin: 0; font-size: 20px">Acta constitutiva</h2><span class="mut">Inversiones Los Olivos, C.A. · Registro completo.pdf</span></div>
+    <span style="flex: 1"></span>
+    <button class="btn" style="width: 44px; height: 44px; padding: 0" aria-label="Cerrar">×</button>
+  </div>
+
+  <div class="modo" role="radiogroup" aria-label="Qué quieres hacer">
+    <button class="{{cDev}}" role="radio" aria-checked="{{onDev}}" onClick="{{aDev}}"><b>Devolver este documento</b><span class="mut">El que subieron está malo</span></button>
+    <button class="{{cPed}}" role="radio" aria-checked="{{onPed}}" onClick="{{aPed}}"><b>Pedir otro documento</b><span class="mut">Este está bien, pero falta algo</span></button>
+  </div>
+
+  <sc-if value="{{onDev}}" hint-placeholder-val="{{ true }}">
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <b>Por qué se devuelve</b>
+      <span class="mut">La constitutiva solo se devuelve si no es de la empresa, está ilegible o no trae los datos del Registro.</span>
+      <sc-for list="{{motivos}}" as="m" hint-placeholder-count="5"><button class="{{m.c}}" onClick="{{m.pick}}"><i></i>{{m.t}}</button></sc-for>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{onPed}}" hint-placeholder-val="{{ false }}">
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <b>Qué documento falta</b>
+      <span class="mut">La casilla queda en rojo con este nombre hasta que lo suban y lo apruebes.</span>
+      <sc-for list="{{actas}}" as="m" hint-placeholder-count="6"><button class="{{m.c}}" onClick="{{m.pick}}"><i></i>{{m.t}}</button></sc-for>
+      <div style="background: #F5F6F7; border-radius: 12px; padding: 10px 12px" class="mut">Origen: Acta constitutiva (se guarda en la bitácora)</div>
+    </div>
+  </sc-if>
+
+  <div>
+    <label class="rot" for="nota">Nota para Rosa Paredes (opcional)</label>
+    <textarea id="nota">La constitutiva no dice cuánto dura la junta.</textarea>
+  </div>
+  <div style="display: flex; gap: 8px; margin-top: auto">
+    <button class="btn" style="flex: 1">Cancelar</button>
+    <button class="btn pr" style="flex: 2">{{boton}}</button>
+  </div>
+</aside>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":560,"height":980}}'>
+class Component extends DCLogic {
+  constructor(p){ super(p); this.state = { modo: 'pedir', m: 'vencido', a: 'junta' }; }
+  renderVals() {
+    const s = this.state;
+    const mot = [['vencido','Está vencido'],['ilegible','Ilegible o incompleto'],['no_corresponde','No es de esta empresa'],['sin_registro','Sin los datos del Registro'],['otro','Otro motivo']];
+    const act = [['junta','Acta de asamblea de ratificación o cambio de junta directiva'],['razon','Acta de asamblea de cambio de razón social'],['domicilio','Acta de asamblea de cambio de domicilio fiscal'],['prorroga','Acta de asamblea de prórroga de la duración'],['nombra','Acta que nombra al representante'],['otro','Otro documento (escribe cuál)']];
+    return {
+      onDev: s.modo === 'dev', onPed: s.modo === 'pedir',
+      cDev: 'mo' + (s.modo === 'dev' ? ' on' : ''), cPed: 'mo' + (s.modo === 'pedir' ? ' on' : ''),
+      aDev: () => this.setState({ modo: 'dev' }), aPed: () => this.setState({ modo: 'pedir' }),
+      motivos: mot.map(([k,t]) => ({ t, c: 'op' + (s.m === k ? ' on' : ''), pick: () => this.setState({ m: k }) })),
+      actas: act.map(([k,t]) => ({ t, c: 'op' + (s.a === k ? ' on' : ''), pick: () => this.setState({ a: k }) })),
+      boton: s.modo === 'dev' ? 'Devolver documento' : 'Pedir documento'
+    };
+  }
+}
+</script>
+</body>
+</html>

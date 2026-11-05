@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Mi trabajo por rol</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#F5F6F7;font-family:Inter,system-ui,sans-serif;color:#111315;font-size:14px}
+*{box-sizing:border-box}
+.mut{color:#5B636E;font-size:12px}
+.chip{display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:999px;font-size:12px;font-weight:600;background:#ECEEF1;color:#5B636E;white-space:nowrap}
+.r{background:#FCEDEB;color:#A32117}.w{background:#FBF1DC;color:#754B00}.ok{background:#E7F5EE;color:#0F6642}.b{background:#EAF0FF;color:#1F45C4}
+.rol{height:40px;padding:0 16px;border-radius:999px;border:1px solid #E3E6EA;background:#fff;font:600 13px Inter,sans-serif;color:#5B636E;cursor:pointer}
+.rol.on{background:#111315;color:#fff;border-color:#111315}
+.grupo{background:#fff;border:1px solid #E3E6EA;border-radius:18px;padding:6px 6px 8px;display:flex;flex-direction:column}
+.gh{display:flex;align-items:center;gap:10px;padding:10px 12px 6px}
+.gh b{font-size:15px}
+.t{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:12px;flex-wrap:wrap}
+.t + .t{border-top:1px solid #F0F2F4}
+.tx{display:flex;flex-direction:column;gap:2px;flex:1 1 260px;min-width:0}
+.tx b{font-size:14px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:38px;padding:0 14px;border-radius:999px;border:1px solid #E3E6EA;background:#fff;font:600 13px Inter,sans-serif;color:#111315;white-space:nowrap;cursor:pointer;text-decoration:none}
+.btn.aqui{background:#2B5CFF;color:#fff;border-color:#2B5CFF}
+.btn.hecho{background:#F5F6F7}
+.dias{font-size:12px;font-weight:700;min-width:58px;text-align:right}
+.num{background:#fff;border:1px solid #E3E6EA;border-radius:16px;padding:12px 14px;display:flex;flex-direction:column;gap:2px;min-width:150px;flex:1 1 150px}
+.num b{font-size:24px}
+.gh{width:100%;border:0;background:transparent;font:inherit;color:inherit;text-align:left;cursor:pointer;min-height:44px}
+.car{margin-left:auto;color:#69717C}
+.seg{height:36px;padding:0 14px;border-radius:999px;border:1px solid #E3E6EA;background:#fff;font:600 13px Inter,sans-serif;color:#5B636E;cursor:pointer}
+.seg.on{background:#111315;color:#fff;border-color:#111315}
+.buscar{height:44px;border:1.5px solid #CCD2DA;border-radius:999px;padding:0 16px;font:14px Inter,sans-serif;width:100%;max-width:360px}
+</style>
+</helmet>
+<div style="min-height: 1300px; display: flex; flex-direction: column">
+  <header style="background: #fff; border-bottom: 1px solid #E3E6EA; padding: 12px 24px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap">
+    <b style="font-size: 16px">Airtek Empresas</b><span class="mut">Mi trabajo</span><span style="flex: 1"></span>
+    <span class="mut">Ver como:</span>
+    <sc-for list="{{roles}}" as="r" hint-placeholder-count="5"><button class="{{r.c}}" onClick="{{r.pick}}">{{r.t}}</button></sc-for>
+  </header>
+
+  <main style="max-width: 1320px; width: 100%; margin: 0 auto; padding: 20px 24px; display: flex; flex-direction: column; gap: 16px">
+    <div style="display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap">
+      <div style="display: flex; flex-direction: column; gap: 4px; flex: 1 1 380px"><h1 style="margin: 0; font-size: 24px">{{saludo}}</h1><span class="mut">{{bajada}}</span></div>
+      <label class="mut" for="bq" style="position: absolute; left: -9999px">Buscar</label>
+      <input class="buscar" id="bq" placeholder="Buscar por RIF o nombre">
+    </div>
+
+    <div style="background: #EAF0FF; color: #1F45C4; border-radius: 14px; padding: 10px 14px; font-size: 13px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center">
+      <b>Qué cambió:</b><span>{{cambio}}</span><span style="flex: 1"></span><button class="btn" style="height: 32px">Entendido</button>
+    </div>
+
+    <div style="display: flex; gap: 10px; flex-wrap: wrap">
+      <sc-for list="{{nums}}" as="n" hint-placeholder-count="4"><div class="num"><b>{{n.v}}</b><span class="mut">{{n.t}}</span></div></sc-for>
+    </div>
+    <span class="mut">Los mismos números que en Inicio. Cada tarea abre el lugar donde se hace; {{excepcion}}</span>
+
+    <div style="display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-start">
+      <section style="flex: 999 1 640px; min-width: 0; display: flex; flex-direction: column; gap: 12px">
+        <sc-if value="{{verSegs}}" hint-placeholder-val="{{ false }}">
+          <div style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center"><span class="mut">Por tipo de cliente:</span>
+            <sc-for list="{{segs}}" as="g" hint-placeholder-count="5"><button class="{{g.c}}" onClick="{{g.pick}}">{{g.t}}</button></sc-for>
+            <span class="mut">Orden de prioridad: ISP, corporativo, VGT, PYME</span></div>
+        </sc-if>
+        <sc-for list="{{grupos}}" as="g" hint-placeholder-count="3">
+          <div class="grupo">
+            <button class="gh" onClick="{{g.tog}}" aria-expanded="{{g.ab}}"><b>{{g.t}}</b><span class="{{g.cc}}">{{g.n}}</span><span class="mut">{{g.s}}</span><span class="car">{{g.ic}}</span></button>
+            <sc-if value="{{g.ab}}" hint-placeholder-val="{{ true }}"><div>
+            <sc-for list="{{g.items}}" as="i" hint-placeholder-count="3">
+              <div class="t">
+                <div class="tx"><b>{{i.c}}</b><span class="mut">{{i.q}}</span></div>
+                <span class="dias" style="color: {{i.dc}}">{{i.d}}</span>
+                <button class="{{i.bc}}">{{i.b}}</button>
+              </div>
+            </sc-for>
+            </div></sc-if>
+          </div>
+        </sc-for>
+      </section>
+      <aside style="flex: 1 1 300px; min-width: 0; display: flex; flex-direction: column; gap: 12px">
+        <div class="grupo" style="padding: 14px; gap: 8px">
+          <b>Mis notas</b>
+          <div class="t" style="padding: 8px 0"><div class="tx"><b>Llamar a Reina por fechas de contratos</b><span class="mut">Nota propia · se marca a mano</span></div><button class="btn hecho">Hecho</button></div>
+          <button class="btn" style="align-self: flex-start">+ Nota</button>
+        </div>
+        <div class="grupo" style="padding: 14px; gap: 6px">
+          <b>Botones</b>
+          <span class="mut"><span class="btn aqui" style="height: 26px; padding: 0 10px; font-size: 12px">Revisar aquí</span> se hace en esta misma pantalla</span>
+          <span class="mut"><span class="btn" style="height: 26px; padding: 0 10px; font-size: 12px">Abrir expediente</span> te lleva al lugar exacto y vuelves aquí al cerrar</span>
+          <span class="mut"><span class="btn hecho" style="height: 26px; padding: 0 10px; font-size: 12px">Marcar hecho</span> pide confirmar y queda en la bitácora</span>
+        </div>
+      </aside>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1366,"height":1300}}'>
+class Component extends DCLogic {
+  constructor(p){ super(p); this.state = { rol: 'admin', cerr: {}, seg: 'todos' }; }
+  renderVals() {
+    const R = {
+      admin: { t: 'Administrador', saludo: 'Buenos días, Gualfredo', bajada: 'Corte de noviembre · cierra el 17/11', cambio: 'la revisión de documentos se hace aquí mismo; lo demás te lleva a su módulo.', exc: 'la revisión de documentos se hace aquí mismo.',
+        nums: [['42','documentos por revisar'],['3','por decidir'],['2','cargas por hacer hoy'],['5','avisos de comisiones']],
+        grupos: [
+          ['Revisar documentos', '42', 'r', 'Del más viejo al más nuevo', [['Inversiones Los Olivos, C.A.','Acta constitutiva y acta de asamblea · IA: pedir acta de junta','6 días','Revisar aquí','aqui'],['Panadería El Trigal','Cédula y RIF personal · IA: apto','4 días','Revisar aquí','aqui'],['Ferretería Centro 21','RIF de la empresa · IA: no pudo leer','2 días','Revisar aquí','aqui']]],
+          ['Por decidir', '3', 'w', 'Excepciones y dudas', [['Comercial Tres Hermanos','Junta vencida · el líder pide excepción','3 días','Abrir expediente','ir'],['Servicios Delta','Orden de Odoo con dos clientes parecidos','1 día','Ir a Comisiones','ir']]],
+          ['Cargas del día', '2', 'w', 'Actualizar', [['TAD','Última carga ayer 9:10','hoy','Ir a Actualizar','ir'],['Órdenes de instalación','Última carga ayer 9:12','hoy','Ir a Actualizar','ir']]]
+        ] },
+      abogado: { t: 'Abogado', saludo: 'Buenos días', bajada: 'Contratos: primero lo que más espera', cambio: 'tus contratos salen por tipo de cliente; cada uno abre el expediente.', exc: 'aquí no se revisan documentos.',
+        nums: [['9','por elaborar contrato'],['4','enviados a firmar'],['2','firmados, falta subir'],['3','vencen en 60 días']],
+        grupos: [
+          ['Por elaborar · Dedicado ISP', '1', 'r', 'Prioridad 1', [['Red Lagunillas Net','Contrato ISP + Conatel aprobado','4 días','Abrir expediente','ir']], 'isp'],
+          ['Por elaborar · Dedicado corporativo', '2', 'r', 'Prioridad 2', [['Clínica Santa Elena','Contrato de 100 Mbps','6 días','Abrir expediente','ir'],['Transporte Zulia Express','Aún no está en el TAD · registrado a mano','3 días','Abrir expediente','ir']], 'corp'],
+          ['Por elaborar · VGT', '1', 'r', 'Prioridad 3 · por solicitud', [['Red Lagunillas Net','Solicitud Troncal Norte · propuesta y planilla listas','2 días','Abrir solicitud','ir']], 'vgt'],
+          ['Por elaborar · PYME', '5', 'r', 'Prioridad 4', [['Panadería El Trigal','Documentos aprobados el 28/10','8 días','Abrir expediente','ir'],['Óptica Visión Clara','Aprobados el 31/10','5 días','Abrir expediente','ir'],['Taller Hermanos Ruiz','Aprobados el 02/11','3 días','Abrir expediente','ir']], 'pyme'],
+          ['Enviado a firmar', '4', '', 'Esperando la firma del cliente', [['Distribuidora Andina','Enviado el 25/10','11 días','Abrir expediente','ir']], 'otro'],
+          ['Firmado, falta subir', '2', 'w', '', [['Óptica Visión Clara','Firmado el 01/11, sin archivo','4 días','Abrir expediente','ir']], 'otro'],
+          ['Vencen en 60 días', '3', 'w', '', [['Clínica Santa Elena','Contrato dedicado vence el 20/12','45 días','Abrir expediente','ir']], 'otro']
+        ] },
+      lider: { t: 'Líder', saludo: 'Buenos días, Rosa', bajada: 'Tu corte de noviembre: 6 instaladas, 2 cumplen', cambio: 'cada tarea abre el cliente o la comisión; tus devueltos van primero.', exc: 'aquí no se revisan documentos.',
+        nums: [['2','devueltos'],['4','te faltan para comisionar'],['1','por instalar más de 24 h'],['1','gestión activa']],
+        grupos: [
+          ['Devueltos o pedidos', '2', 'r', 'Hay que pedírselos al cliente', [['Inversiones Los Olivos, C.A.','Falta: Acta de asamblea de ratificación o cambio de junta','1 día','Abrir expediente','ir'],['Bodegón La Esquina','Cédula vencida','3 días','Abrir expediente','ir']]],
+          ['Te faltan para comisionar', '4', 'w', 'El corte cierra el 17/11', [['Panadería El Trigal','Falta Legal y pago','12 días','Ir a la comisión','ir'],['Óptica Visión Clara','Falta el pago','9 días','Ir a la comisión','ir']]],
+          ['Por instalar', '1', 'w', 'Orden de Odoo abierta', [['Taller Hermanos Ruiz','Orden creada el 03/11','30 h','Ir a Por instalar','ir']]]
+        ] },
+      analista: { t: 'Analista', saludo: 'Buenos días, Ender', bajada: 'Canales de atención', cambio: 'cartas, IP y cambios te llevan a su módulo; las tareas sueltas se marcan hechas aquí.', exc: 'aquí no se revisan documentos.',
+        nums: [['16','cartas y proformas por enviar'],['15','esperan la IP'],['3','cambios por emitir'],['2','tareas sueltas']],
+        grupos: [
+          ['Cartas y proformas por enviar', '16', 'w', '', [['Panadería El Trigal','Instalada el 23/10 · nadie la ha enviado','13 días','Ir a la comisión','ir'],['Óptica Visión Clara','Enviada por el líder · falta Canales','5 días','Ir a la comisión','ir']]],
+          ['Cambios por emitir', '3', 'w', 'Migraciones', [['Distribuidora Andina','Migración a PYME · documentos aprobados','2 días','Ir a Migraciones','ir']]],
+          ['Tareas sueltas', '2', '', 'Sin pantalla propia', [['Llamar a Servicios Delta','Confirmar dirección de la proforma','hoy','Marcar hecho','hecho']]]
+        ] },
+      senior: { t: 'Senior', saludo: 'Buenos días', bajada: 'Asignaciones y cargas', cambio: 'ya no ves revisión de documentos; lo tuyo es asignar dueños y cargas.', exc: 'no revisas documentos.',
+        nums: [['4','sin dueño en el corte'],['2','provisionales por unir'],['2','cargas por hacer hoy'],['0','documentos por revisar']],
+        grupos: [
+          ['Sin dueño', '4', 'r', 'No comisionan hasta asignarlos', [['Multiservicios Amparo','Instalada por un aliado el 29/10','7 días','Ir a Comisiones','ir']]],
+          ['Provisionales por unir', '2', 'w', '', [['Farmacia Nueva Era (provisional)','¿Es este cliente? Hay uno parecido en el TAD','2 días','Ir a Comisiones','ir']]],
+          ['Cargas del día', '2', 'w', '', [['TAD','Última carga ayer','hoy','Ir a Actualizar','ir']]]
+        ] }
+    };
+    const k = this.state.rol; const d = R[k]; const st = this.state;
+    const ab = k === 'abogado';
+    const SG = [['todos','Todos · 9'],['isp','ISP · 1'],['corp','Corporativo · 2'],['vgt','VGT · 1'],['pyme','PYME · 5']];
+    const gs = d.grupos.filter((g) => !ab || st.seg === 'todos' || g[5] === st.seg || g[5] === 'otro');
+    return {
+      roles: Object.keys(R).map((x) => ({ t: R[x].t, c: 'rol' + (x === k ? ' on' : ''), pick: () => this.setState({ rol: x, seg: 'todos' }) })),
+      saludo: d.saludo, bajada: d.bajada, cambio: d.cambio, excepcion: d.exc,
+      verSegs: ab,
+      segs: SG.map(([x,t]) => ({ t, c: 'seg' + (st.seg === x ? ' on' : ''), pick: () => this.setState({ seg: x }) })),
+      nums: d.nums.map(([v,t]) => ({ v, t })),
+      grupos: gs.map(([t,n,c,s2,its], gi) => { const key = k + '|' + t; const abierto = st.cerr[key] === undefined ? !(c === '' && gi > 1) : !st.cerr[key];
+        return { t, n, s: s2, cc: 'chip' + (c ? ' ' + c : ''), ab: abierto, ic: abierto ? '▴' : '▾',
+          tog: () => this.setState({ cerr: Object.assign({}, this.state.cerr, { [key]: abierto }) }),
+          items: its.map(([cl,q,dd,b,tp]) => ({ c: cl, q, d: dd, b, bc: 'btn' + (tp === 'aqui' ? ' aqui' : tp === 'hecho' ? ' hecho' : ''), dc: /h$|hoy/.test(dd) ? '#A32117' : '#5B636E' })) }; })
+    };
+  }
+}
+</script>
+</body>
+</html>

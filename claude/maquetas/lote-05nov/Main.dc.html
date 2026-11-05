@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Expediente: pestaña Documentos</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#F5F6F7;font-family:Inter,system-ui,sans-serif;color:#111315;font-size:14px}
+*{box-sizing:border-box}
+.chip{display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:999px;font-size:12px;font-weight:600;background:#F5F6F7;color:#5B636E;white-space:nowrap}
+.ok{background:#E7F5EE;color:#0F6642}.w{background:#FBF1DC;color:#754B00}.r{background:#FCEDEB;color:#A32117}.b{background:#EAF0FF;color:#1F45C4}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:40px;padding:0 16px;border-radius:999px;border:1px solid #E3E6EA;background:#fff;font:600 13px Inter,sans-serif;color:#111315;white-space:nowrap;cursor:pointer;text-decoration:none}
+.btn.pr{background:#111315;color:#fff;border-color:#111315}
+.btn.chico{height:34px;padding:0 12px;font-size:12px}
+.btn.rj{background:#FCEDEB;color:#A32117;border-color:#F3C9C4}
+.mut{color:#5B636E;font-size:12px}
+.sec{font-size:12px;font-weight:700;color:#5B636E;text-transform:uppercase;letter-spacing:.04em;margin:6px 0 2px}
+.fila{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:14px;background:#fff;border:1px solid #E3E6EA;flex-wrap:wrap}
+.fila.roja{border:2px solid #E3A49C;background:#FFF8F7}
+.fila.gris{background:#F5F6F7;color:#69717C}
+.ic{width:24px;height:24px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex:0 0 24px}
+.ic.ok{background:#E7F5EE;color:#0F6642}.ic.r{background:#FCEDEB;color:#A32117}.ic.g{background:#ECEEF1;color:#69717C}.ic.w{background:#FBF1DC;color:#754B00}
+.tx{display:flex;flex-direction:column;gap:2px;flex:1 1 220px;min-width:0}
+.tx b{font-size:14px}
+.acc{display:flex;gap:6px;flex-wrap:wrap}
+.rep{background:#fff;border:1px solid #E3E6EA;border-radius:18px;padding:14px;display:flex;flex-direction:column;gap:8px}
+.rep.gris{background:#F5F6F7}
+.pt{border:1px solid #E3E6EA;border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:8px;background:#fff}
+.pt-h{display:flex;align-items:center;gap:8px}
+.pt-h b{font-size:14px}
+.ia{font-size:12px;color:#1F45C4;background:#F4F7FF;border:1px dashed #9FB3FF;border-radius:10px;padding:8px 10px}
+.seg{display:inline-flex;background:#ECEEF1;border-radius:999px;padding:3px;gap:2px}
+.seg button{height:34px;padding:0 14px;border-radius:999px;border:0;background:transparent;font:600 13px Inter,sans-serif;color:#5B636E;cursor:pointer}
+.seg button.on{background:#fff;color:#111315;box-shadow:0 1px 3px rgba(17,19,21,.12)}
+.tres{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.op{height:36px;border-radius:10px;border:1px solid #E3E6EA;background:#fff;font:600 12px Inter,sans-serif;color:#111315;cursor:pointer}
+.op.s-ok{background:#E7F5EE;border-color:#9ED3B8;color:#0F6642}
+.op.s-pe{background:#FCEDEB;border-color:#E3A49C;color:#A32117}
+.op.s-re{background:#FBF1DC;border-color:#E5C580;color:#754B00}
+.op.p-ok{border:2px dashed #9ED3B8}.op.p-pe{border:2px dashed #E3A49C}.op.p-re{border:2px dashed #E5C580}
+.tab{height:40px;padding:0 14px;border:0;background:none;font:600 14px Inter,sans-serif;color:#5B636E;border-bottom:2px solid transparent;cursor:pointer}
+.tab.on{color:#111315;border-bottom-color:#111315}
+.caja{background:#fff;border:1px solid #E3E6EA;border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:10px}
+</style>
+</helmet>
+<div style="min-height: 1500px; display: flex; flex-direction: column">
+  <header style="background: #fff; border-bottom: 1px solid #E3E6EA; padding: 12px 24px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap">
+    <b style="font-size: 16px">Airtek Empresas</b>
+    <span class="mut">Clientes / Inversiones Los Olivos, C.A.</span>
+    <span style="flex: 1"></span>
+    <span class="mut">Maqueta · datos inventados</span>
+  </header>
+
+  <main style="max-width: 1320px; width: 100%; margin: 0 auto; padding: 20px 24px; display: flex; flex-direction: column; gap: 16px">
+    <section style="display: flex; align-items: flex-start; gap: 12px; flex-wrap: wrap">
+      <div style="display: flex; flex-direction: column; gap: 4px; flex: 1 1 400px">
+        <h1 style="margin: 0; font-size: 24px">Inversiones Los Olivos, C.A.</h1>
+        <span class="mut">J-41234567-8 · PYME · Líder Rosa Paredes · firma separada · 1 servicio</span>
+      </div>
+      <span class="chip w">Documentos en revisión</span>
+    </section>
+
+    <nav style="display: flex; gap: 4px; border-bottom: 1px solid #E3E6EA; flex-wrap: wrap" aria-label="Pestañas del cliente">
+      <button class="tab">Datos</button>
+      <button class="tab on">Documentos · faltan 1</button>
+      <button class="tab">Hilo</button>
+      <button class="tab">Comisión</button>
+    </nav>
+
+    <div style="display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start">
+      <!-- Casillas -->
+      <section style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 10px" aria-label="Casillas del expediente">
+        <div class="sec">Representantes</div>
+        <div class="rep">
+          <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap"><b style="font-size: 15px">1 · María Fernández</b><span class="chip ok">Firma este</span><span class="mut">Presidenta en la junta vigente</span></div>
+          <div class="fila"><span class="ic ok">✓</span><div class="tx"><b>Cédula</b><span class="mut">Vence 11/2031 · aprobada</span></div><div class="acc"><button class="btn chico">Ver</button></div></div>
+          <div class="fila"><span class="ic ok">✓</span><div class="tx"><b>RIF personal</b><span class="mut">RIF digital · aprobado</span></div><div class="acc"><button class="btn chico">Ver</button></div></div>
+          <div class="fila"><span class="ic ok">✓</span><div class="tx"><b>Teléfono y correo</b><span class="mut">0414-555 01 20 · mfernandez@correo.com</span></div></div>
+        </div>
+        <div class="rep gris">
+          <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap"><b style="font-size: 15px; color: #5B636E">2 · Luis Prieto</b><span class="chip">Ya no aplica</span><span class="mut">Salió de la junta por el acta del 12/03/2024. Con firma separada no se le pide nada.</span></div>
+          <div class="fila gris"><span class="ic g">·</span><div class="tx"><b>Cédula y RIF personal</b><span class="mut">Se guardan en el historial, no cuentan</span></div><div class="acc"><button class="btn chico">Volver a contar</button></div></div>
+        </div>
+
+        <div class="sec">Empresa</div>
+        <div class="fila"><span class="ic ok">✓</span><div class="tx"><b>RIF de la empresa</b><span class="mut">Razón social y domicilio coinciden · aprobado</span></div><div class="acc"><button class="btn chico">Ver</button></div></div>
+        <div class="fila"><span class="ic w">!</span><div class="tx"><b>Acta constitutiva</b><span class="mut">Inscrita 08/05/2009 · por revisar</span><span class="chip b" style="align-self: flex-start">Mismo archivo que Acta de asamblea 1 · "Registro completo.pdf"</span></div><div class="acc"><button class="btn chico">Ver</button><button class="btn chico">Aprobar</button><a class="btn chico rj" href="DocPedir.dc.html">Devolver</a></div></div>
+
+        <div class="sec">Actas de asamblea</div>
+        <div class="fila"><span class="ic w">!</span><div class="tx"><b>Acta de asamblea 1</b><span class="mut">Inscrita 12/03/2024 · cambia la junta · por revisar</span><span class="chip b" style="align-self: flex-start">Mismo archivo que Acta constitutiva</span></div><div class="acc"><button class="btn chico">Ver</button><button class="btn chico">Aprobar</button><button class="btn chico rj">Devolver</button></div></div>
+        <div class="fila roja"><span class="ic r">!</span><div class="tx"><b>Falta: Acta de asamblea de ratificación o cambio de junta directiva</b><span class="mut">Por qué: la constitutiva no dice cuánto dura la junta. Pedido por Gualfredo el 05/11.</span></div><div class="acc"><button class="btn chico">Quitar pedido</button></div></div>
+        <button class="btn" style="align-self: flex-start">+ Pedir otra acta</button>
+
+        <div class="sec">Documentos extra</div>
+        <div class="fila"><span class="ic g">·</span><div class="tx"><b>Acta extraordinaria: venta de acciones</b><span class="mut">Título escrito al subir · no cuenta para Legal</span></div><div class="acc"><button class="btn chico">Ver</button><button class="btn chico">Cambiar título</button><button class="btn chico">Convertir en acta</button></div></div>
+
+        <div class="caja" style="margin-top: 6px">
+          <b>Subir documentos</b>
+          <span class="mut">Arrastra uno o varios archivos. Si un archivo trae varios documentos, márcalos todos: se guarda una sola vez en Drive con el nombre combinado.</span>
+          <div style="border: 2px dashed #CCD2DA; border-radius: 14px; padding: 18px; text-align: center; color: #5B636E">Suelta aquí o toca para elegir</div>
+        </div>
+      </section>
+
+      <!-- Panel de revisión -->
+      <aside style="flex: 1 1 400px; min-width: 0; display: flex; flex-direction: column; gap: 10px" aria-label="Revisión del expediente">
+        <div class="caja">
+          <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap">
+            <b style="font-size: 16px">Revisión del expediente</b>
+            <span style="flex: 1"></span>
+            <div class="seg" role="group" aria-label="Con o sin lectura de la IA">
+              <button class="{{segIa}}" onClick="{{conIa}}">Con IA</button>
+              <button class="{{segSin}}" onClick="{{sinIa}}">Sin IA</button>
+            </div>
+          </div>
+          <span class="mut">{{ayuda}}</span>
+          <sc-for list="{{puntos}}" as="p" hint-placeholder-count="6">
+            <div class="pt">
+              <div class="pt-h"><b>{{p.t}}</b><span style="flex: 1"></span><span class="{{p.chipCls}}">{{p.chip}}</span></div>
+              <span class="mut">{{p.dato}}</span>
+              <sc-if value="{{p.verIa}}" hint-placeholder-val="{{ true }}"><div class="ia">Propuesta de la IA: {{p.prop}}</div></sc-if>
+              <div class="tres">
+                <button class="{{p.cBien}}" onClick="{{p.bien}}">Bien</button>
+                <button class="{{p.cPedir}}" onClick="{{p.pedir}}">Pedir</button>
+                <button class="{{p.cRev}}" onClick="{{p.rev}}">Revisar</button>
+              </div>
+            </div>
+          </sc-for>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center; border-top: 1px solid #E3E6EA; padding-top: 12px">
+            <span class="mut" style="flex: 1 1 160px">{{resumen}}</span>
+            <button class="btn pr">Cerrar revisión</button>
+          </div>
+        </div>
+        <div class="caja">
+          <b>Qué pedirle al cliente</b>
+          <span class="mut">Esto le llega al líder con el mensaje listo.</span>
+          <div style="background: #F5F6F7; border-radius: 12px; padding: 12px; font-size: 13px; line-height: 1.5">Buenos días. Para completar su expediente necesitamos el Acta de asamblea de ratificación o cambio de junta directiva, inscrita en el Registro. Puede enviarla por aquí. Gracias.</div>
+        </div>
+      </aside>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1366,"height":1500}}'>
+class Component extends DCLogic {
+  constructor(p){ super(p); this.state = { ia: true, sel: {} }; }
+  renderVals() {
+    const base = [
+      { id: 'rs', t: 'Razón social', dato: 'RIF: Inversiones Los Olivos, C.A. · Acta: igual', prop: 'Bien', pk: 'ok' },
+      { id: 'dom', t: 'Domicilio fiscal', dato: 'RIF: Av. 5 de Julio, Maracaibo · Acta: igual (82 %)', prop: 'Bien', pk: 'ok' },
+      { id: 'vig', t: 'Vigencia de la empresa', dato: '50 años desde 2009 · vence en 2059', prop: 'Bien', pk: 'ok' },
+      { id: 'jun', t: 'Junta directiva', dato: 'Junta nombrada en el acta del 12/03/2024. El acta no dice cuánto dura.', prop: 'Pedir el Acta de asamblea de ratificación o cambio de junta directiva', pk: 'pe' },
+      { id: 'fir', t: 'Firmantes', dato: 'Firma separada · María Fernández está en la junta y tiene cédula y RIF vigentes', prop: 'Bien. Luis Prieto ya no está en la junta: queda como Ya no aplica', pk: 'ok' },
+      { id: 'con', t: 'Contacto', dato: 'Teléfono y correo de María Fernández', prop: 'Revisar: el correo no se parece al nombre', pk: 're' }
+    ];
+    const ia = this.state.ia; const sel = this.state.sel;
+    let pend = 0, ped = 0, rev = 0;
+    const puntos = base.map((b) => {
+      const s = sel[b.id] || null;
+      const prop = ia ? b.pk : null;
+      const cls = (k) => 'op' + (s === k ? ' s-' + k : (!s && prop === k ? ' p-' + k : ''));
+      if(!s) pend++; if(s === 'pe') ped++; if(s === 're') rev++;
+      const chip = s ? (s === 'ok' ? 'Bien' : s === 'pe' ? 'Por pedir' : 'Revisar a mano') : (ia ? 'Propuesta, falta confirmar' : 'Sin marcar');
+      const chipCls = 'chip' + (s === 'ok' ? ' ok' : s === 'pe' ? ' r' : s === 're' ? ' w' : ia ? ' b' : '');
+      const set = (k) => () => this.setState({ sel: Object.assign({}, this.state.sel, { [b.id]: k }) });
+      return { t: b.t, dato: ia ? b.dato : 'Mira el documento y marca', prop: b.prop, verIa: ia, chip, chipCls,
+        cBien: cls('ok'), cPedir: cls('pe'), cRev: cls('re'), bien: set('ok'), pedir: set('pe'), rev: set('re') };
+    });
+    return {
+      puntos,
+      segIa: ia ? 'on' : '', segSin: ia ? '' : 'on',
+      conIa: () => this.setState({ ia: true }), sinIa: () => this.setState({ ia: false }),
+      ayuda: ia ? 'La IA leyó los documentos. Sus propuestas salen con borde punteado: confirma con un toque o cambia.' : 'Sin lectura de la IA. Revisas tú y marcas cada punto; funciona igual.',
+      resumen: pend ? 'Faltan ' + pend + ' puntos por confirmar' : (ped + ' por pedir · ' + rev + ' a mano'),
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Hoja de comisión</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#F5F6F7;font-family:Inter,system-ui,sans-serif;color:#111315}
+*{box-sizing:border-box}
+.dr{width:560px;min-height:1400px;background:#fff;padding:22px 24px;display:flex;flex-direction:column;gap:12px;font-family:Inter,sans-serif}
+.dh{display:flex;align-items:flex-start;gap:10px}
+.dh h2{margin:0;font-size:20px}.dh .s{font-size:12px;color:#5B636E;margin-top:3px}
+.x{margin-left:auto;width:40px;height:40px;border-radius:999px;border:1px solid #E3E6EA;background:#fff;font-size:18px;font-family:inherit;flex:0 0 40px}
+.p{font-size:12px;font-weight:600;border-radius:999px;padding:4px 9px;white-space:nowrap}.p.ok{background:#E7F5EE;color:#0F6642}.p.w{background:#FBF1DC;color:#754B00}.p.r{background:#FCEDEB;color:#A32117}.p.b{background:#EAF0FF;color:#1F45C4}
+.sum{display:flex;align-items:center;gap:10px;background:#F5F6F7;border-radius:14px;padding:12px 14px;flex-wrap:wrap}
+.sum b{font-size:14px}.sum .s{font-size:12px;color:#5B636E;width:100%}
+.ck{display:flex;gap:6px;margin-left:auto}
+.card{border-radius:18px;border:1px solid #E3E6EA;overflow:hidden}
+.card.w{border:2px solid #C98A12;background:#FFFBF2}
+.hd{display:flex;align-items:center;gap:8px;width:100%;padding:13px 16px;border:0;background:transparent;font:inherit;color:inherit;text-align:left;cursor:pointer;min-height:48px}
+.hd b{font-size:15px}.hd .p{margin-left:auto}
+.car{color:#69717C;font-size:13px;width:16px;text-align:center}
+.bd{padding:0 16px 14px;display:flex;flex-direction:column;gap:9px}
+.dot{width:10px;height:10px;border-radius:999px;flex:0 0 10px}.dot.w{background:#C98A12}.dot.ok{background:#0F6642}
+.grp{font-size:12px;font-weight:700;color:#5B636E;margin-top:2px}
+.li{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #EDE3CC;border-radius:12px;padding:9px 12px;font-size:14px;flex-wrap:wrap}
+.li.ok{border-color:#E3E6EA}
+.li .ic{width:22px;height:22px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex:0 0 22px}
+.li.ok .ic{background:#E7F5EE;color:#0F6642}.li.no .ic{background:#FBF1DC;color:#754B00}
+.act{margin-left:auto;font:600 13px Inter,sans-serif;color:#1F45C4;border:1px dashed #9FB3FF;border-radius:999px;padding:6px 12px;background:#fff;cursor:pointer}
+.li .f{margin-left:auto;font-size:12px;color:#5B636E}
+.lk{font:600 13px Inter,sans-serif;color:#1F45C4;background:none;border:0;padding:4px 0;text-align:left;cursor:pointer}
+.bt{border-radius:14px;padding:0 14px;font:600 14px Inter,sans-serif;border:1px solid #E3E6EA;background:#fff;min-height:44px;cursor:pointer;color:#111315}
+.bt.pr{background:#2B5CFF;color:#fff;border-color:#2B5CFF}
+.bt.ng{background:#111315;color:#fff;border-color:#111315}
+.nt{font-size:12px;color:#5B636E}
+.row2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.seg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));background:#F0E6CF;border-radius:12px;padding:3px;gap:2px}
+.seg button{height:34px;border:0;border-radius:10px;background:transparent;font:600 13px Inter,sans-serif;color:#754B00;cursor:pointer}
+.seg button.on{background:#fff;color:#111315;box-shadow:0 1px 3px rgba(17,19,21,.12)}
+.sug{background:#F4F7FF;border:1px solid #D5E0FF;border-radius:12px;padding:11px 12px;display:flex;flex-direction:column;gap:8px;font-size:14px}
+.menu{display:flex;flex-direction:column}
+.menu button{padding:11px 4px;border:0;border-top:1px solid #F0F2F4;background:none;font:500 14px Inter,sans-serif;color:#111315;text-align:left;cursor:pointer}
+</style>
+</helmet>
+<aside class="dr" aria-label="Hoja de comisión">
+  <div class="dh"><div><h2>Farmacia Nueva Era</h2><div class="s">Provisional · instalada 30/10 · Líder Rosa Paredes · corte de noviembre</div></div><button class="x" aria-label="Cerrar">×</button></div>
+  <div class="row2"><button class="bt ng">Ver expediente completo</button><button class="bt">Contactar a la líder</button></div>
+  <div class="sum"><b>Aún no comisiona</b><span class="ck"><span class="p w">Legal</span><span class="p w">Pago</span><span class="p w">Orden</span></span><span class="s">Faltan 3 de 3. Día límite: 18/11 (faltan 13 días).</span></div>
+
+  <section class="{{cOrd}}" aria-label="Cliente y orden">
+    <button class="hd" onClick="{{tOrd}}" aria-expanded="{{aOrd}}"><span class="dot w"></span><b>Cliente y orden de Odoo</b><span class="p w">Por confirmar</span><span class="car">{{iOrd}}</span></button>
+    <sc-if value="{{aOrd}}" hint-placeholder-val="{{ true }}"><div class="bd">
+      <div class="sug"><span>¿Es <b>Farmacia Nueva Era 24, C.A.</b> (J-50112233)? Mismo teléfono y una orden de Rosa.</span><div class="row2"><button class="bt ng">Sí, es este</button><button class="bt">No es</button></div></div>
+      <div class="li no"><span class="ic">!</span>Orden 503120 · creada 27/10<button class="act">Confirmar</button></div>
+      <button class="bt">Elegir otra orden</button>
+      <div class="li ok"><span class="ic">✓</span>Dueño: Rosa Paredes<button class="act">Cambiar</button></div>
+    </div></sc-if>
+  </section>
+
+  <section class="{{cLeg}}" aria-label="Legal">
+    <button class="hd" onClick="{{tLeg}}" aria-expanded="{{aLeg}}"><span class="dot w"></span><b>Legal</b><span class="p w">Faltan 2 documentos</span><span class="car">{{iLeg}}</span></button>
+    <sc-if value="{{aLeg}}" hint-placeholder-val="{{ true }}"><div class="bd">
+      <div class="grp">Representante legal</div>
+      <div class="li ok"><span class="ic">✓</span>Teléfono y correo<span class="f">0414 555 2190</span></div>
+      <div class="li no"><span class="ic">!</span>Cédula<button class="act">+ Subir o arrastrar</button></div>
+      <div class="li no"><span class="ic">!</span>RIF personal<button class="act">+ Subir o arrastrar</button></div>
+      <div class="grp">Empresa</div>
+      <div class="li ok"><span class="ic">✓</span>RIF de la empresa<span class="f">En revisión</span></div>
+      <div class="li ok"><span class="ic">✓</span>Acta constitutiva<span class="f">En revisión</span></div>
+      <div class="row2"><button class="bt">+ Agregar acta de asamblea</button><button class="bt">+ Otro documento</button></div>
+      <div class="grp">Aprobar Legal a mano</div>
+      <div class="row2"><button class="bt">Firma digital</button><button class="bt">Firma física</button></div>
+    </div></sc-if>
+  </section>
+
+  <section class="{{cPag}}" aria-label="Pago">
+    <button class="hd" onClick="{{tPag}}" aria-expanded="{{aPag}}"><span class="dot w"></span><b>Pago</b><span class="p r">Debe la instalación</span><span class="car">{{iPag}}</span></button>
+    <sc-if value="{{aPag}}" hint-placeholder-val="{{ true }}"><div class="bd">
+      <div class="nt">El TAD lo revisa en cada carga. Último dato: hoy, 8:10 a. m.</div>
+      <div class="row2"><button class="bt">Se pagó allá</button><button class="bt">Ver en el TAD</button></div>
+    </div></sc-if>
+  </section>
+
+  <section class="{{cCar}}" aria-label="Carta y proforma">
+    <button class="hd" onClick="{{tCar}}" aria-expanded="{{aCar}}"><span class="dot w"></span><b>Carta de bienvenida y proforma</b><span class="p w">Por enviar · 6 días</span><span class="car">{{iCar}}</span></button>
+    <sc-if value="{{aCar}}" hint-placeholder-val="{{ true }}"><div class="bd">
+      <div class="grp">IP del servicio</div>
+      <div class="li no"><span class="ic">!</span><span style="flex: 1 1 200px">No cuadró en el reporte de IP por sucursal, código y ONT</span></div>
+      <div class="sug"><span>Lo más parecido por nombre: <b>FARMACIA NUEVA ERA 24</b> · sucursal Norte · IP 10.20.31.41 · ONT HWTC8A21</span><div class="row2"><button class="bt ng">Usar esta IP</button><button class="bt">Ver otros parecidos</button></div><button class="bt">Escribir la IP a mano</button></div>
+      <div class="grp">Qué enviar</div>
+      <div class="seg" role="radiogroup" aria-label="Qué enviar"><button class="on" role="radio" aria-checked="true">Las dos</button><button role="radio" aria-checked="false">Solo carta</button><button role="radio" aria-checked="false">Solo proforma</button></div>
+      <button class="bt pr">Enviar por WhatsApp</button>
+      <div class="row2"><button class="bt">Descargar los PDF</button><button class="bt">Enviar por correo</button></div>
+      <button class="bt ng">Ya enviada (marcar)</button>
+      <span class="nt">Para cuando se envió por fuera: eliges qué se envió, cuándo y por dónde. Queda quién lo marcó.</span>
+    </div></sc-if>
+  </section>
+
+  <section class="{{cMas}}" aria-label="Más acciones">
+    <button class="hd" onClick="{{tMas}}" aria-expanded="{{aMas}}"><b>Más acciones</b><span class="p" style="background: #ECEEF1; color: #3B424B">5</span><span class="car">{{iMas}}</span></button>
+    <sc-if value="{{aMas}}" hint-placeholder-val="{{ false }}"><div class="bd" style="padding-top: 0"><div class="menu"><button>Cambiar de corte</button><button>Dar excepción</button><button>Marcar como evento</button><button>No comisiona</button><button>Escribir una nota</button></div></div></sc-if>
+  </section>
+
+  <section class="{{cHil}}" aria-label="Hilo">
+    <button class="hd" onClick="{{tHil}}" aria-expanded="{{aHil}}"><b>Hilo</b><span class="p" style="background: #ECEEF1; color: #3B424B">7 registros</span><span class="car">{{iHil}}</span></button>
+    <sc-if value="{{aHil}}" hint-placeholder-val="{{ false }}"><div class="bd"><span class="nt">31/10 · El cruce encontró un cliente parecido</span><span class="nt">30/10 · Instalada</span><span class="nt">27/10 · Rosa subió documentos de un cliente nuevo</span></div></sc-if>
+  </section>
+  <span class="nt">Lo que falta sale abierto en ámbar; lo que está listo sale plegado en verde. Toca un título para abrir o cerrar.</span>
+</aside>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":560,"height":1400}}'>
+class Component extends DCLogic {
+  constructor(p){ super(p); this.state = { ord: true, leg: true, pag: true, car: true, mas: false, hil: false }; }
+  renderVals() {
+    const s = this.state; const o = {};
+    const pend = { ord: 1, leg: 1, pag: 1, car: 1 };
+    ['ord','leg','pag','car','mas','hil'].forEach((k) => {
+      const K = k.charAt(0).toUpperCase() + k.slice(1);
+      o['a' + K] = !!s[k];
+      o['i' + K] = s[k] ? '▴' : '▾';
+      o['c' + K] = 'card' + (pend[k] ? ' w' : '');
+      o['t' + K] = () => this.setState({ [k]: !this.state[k] });
+    });
+    return o;
+  }
+}
+</script>
+</body>
+</html>

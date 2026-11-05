@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Clientes: registrar un dedicado nuevo</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#F5F6F7;font-family:Inter,system-ui,sans-serif;color:#111315;font-size:14px}
+*{box-sizing:border-box}
+.mut{color:#5B636E;font-size:12px}
+.tag{display:inline-flex;align-items:center;height:24px;padding:0 9px;border-radius:999px;font-size:12px;font-weight:600;background:#ECEEF1;color:#5B636E;white-space:nowrap}
+.tag.w{background:#FBF1DC;color:#754B00}.tag.ok{background:#E7F5EE;color:#0F6642}.tag.b{background:#EAF0FF;color:#1F45C4}.tag.r{background:#FCEDEB;color:#A32117}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:44px;padding:0 18px;border-radius:999px;border:1px solid #E3E6EA;background:#fff;font:600 14px Inter,sans-serif;color:#111315;white-space:nowrap;cursor:pointer}
+.btn.az{background:#2B5CFF;color:#fff;border-color:#2B5CFF}
+.btn.pr{background:#111315;color:#fff;border-color:#111315;height:48px}
+.seg{background:#fff;border:1px solid #E3E6EA;border-radius:18px;padding:14px 16px;display:flex;flex-direction:column;gap:4px;text-align:left;font:inherit;color:inherit}
+.seg.on{border:2px solid #111315}
+.seg b{font-size:26px}
+.buscar{height:44px;border:1.5px solid #CCD2DA;border-radius:999px;padding:0 16px;font:14px Inter,sans-serif;flex:1 1 300px;min-width:0;background:#fff}
+.barra{display:flex;height:12px;border-radius:999px;overflow:hidden;gap:2px}
+.card{background:#fff;border:1px solid #E3E6EA;border-radius:16px;padding:14px 16px;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.tx{display:flex;flex-direction:column;gap:4px;flex:1 1 240px;min-width:0}
+.tx b{font-size:14px}
+label.rot{font-size:13px;font-weight:600;display:block;margin-bottom:6px}
+.campo{width:100%;height:46px;border:1.5px solid #CCD2DA;border-radius:999px;padding:0 16px;font:14px Inter,sans-serif;background:#fff}
+.radio{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.radio button{height:46px;border-radius:12px;border:1.5px solid #E3E6EA;background:#fff;font:600 13px Inter,sans-serif;cursor:pointer}
+.radio button.on{border-color:#111315}
+</style>
+</helmet>
+<div style="min-height: 1000px; display: flex; flex-direction: column">
+  <header style="background: #fff; border-bottom: 1px solid #E3E6EA; padding: 12px 24px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap">
+    <b style="font-size: 16px">Airtek Empresas</b><span class="mut">Clientes · igual que hoy, solo se agrega un botón</span>
+  </header>
+  <main style="max-width: 1320px; width: 100%; margin: 0 auto; padding: 20px 24px; display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start">
+    <section style="flex: 999 1 600px; min-width: 0; display: flex; flex-direction: column; gap: 14px">
+      <h1 style="margin: 0; font-size: 24px">Clientes</h1>
+      <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px">
+        <div class="seg"><span class="mut">PYME</span><b>2.171</b><span class="mut">50 firmados</span></div>
+        <div class="seg"><span class="mut">Dedicado corporativo</span><b>86</b><span class="mut">19 firmados</span></div>
+        <div class="seg on"><span class="mut">Dedicado ISP</span><b>31</b><span class="mut">17 firmados · 1 registrado a mano</span></div>
+      </div>
+      <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center">
+        <label for="bq" style="position: absolute; left: -9999px">Buscar</label>
+        <input class="buscar" id="bq" placeholder="Buscar por nombre, RIF o código">
+        <button class="btn az">+ Registrar dedicado nuevo</button>
+      </div>
+      <span class="mut" style="margin-top: -6px">El botón sale solo en las tarjetas de dedicados. Para un PYME nuevo sigue siendo "Subir documentos de un cliente nuevo" en Comisiones.</span>
+
+      <div style="background: #fff; border: 1px solid #E3E6EA; border-radius: 18px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px">
+        <b style="font-size: 13px">Estatus legal · Dedicado ISP</b>
+        <div class="barra"><i style="flex: 5; background: #CCD2DA"></i><i style="flex: 2; background: #C98A12"></i><i style="flex: 4; background: #2B5CFF"></i><i style="flex: 3; background: #7E93C9"></i><i style="flex: 17; background: #11734B"></i></div>
+        <span class="mut">Sin gestionar 5 · Faltan documentos 2 · En revisión 4 · Por firmar 3 · Firmado 17</span>
+      </div>
+
+      <div class="card" style="border: 2px solid #9FB3FF">
+        <div class="tx"><b>Red Lagunillas Net, C.A.</b><span class="mut">J-41887766-0 · Rosa Paredes · registrado a mano el 04/11</span>
+          <div style="display: flex; gap: 6px; flex-wrap: wrap"><span class="tag b">Aún no está en el TAD</span><span class="tag w">Faltan documentos</span></div></div>
+      </div>
+      <div class="card"><div class="tx"><b>Conexiones del Lago, C.A.</b><span class="mut">J-40556611-3 · Luis Ortega · 2 servicios</span><div style="display: flex; gap: 6px"><span class="tag ok">Firmado</span></div></div></div>
+      <div class="card"><div class="tx"><b>Fibra Sur Net</b><span class="mut">J-41003322-8 · Ana Ferrer · 1 servicio</span><div style="display: flex; gap: 6px"><span class="tag b">En revisión</span></div></div></div>
+
+      <div style="background: #F4F7FF; border: 1px solid #D5E0FF; border-radius: 16px; padding: 14px 16px; display: flex; flex-direction: column; gap: 4px">
+        <b>Qué es "Aún no está en el TAD"</b>
+        <span class="mut">Es un cliente que registraste tú antes de que exista en el sistema de facturación. Puedes subir sus documentos y hacer el contrato. Cuando el TAD traiga ese RIF, la app lo reconoce sola, le pone sus servicios y la etiqueta desaparece. No tienes que hacer nada.</span>
+      </div>
+    </section>
+
+    <aside style="flex: 1 1 420px; min-width: 0; background: #fff; border-radius: 22px; box-shadow: 0 18px 44px rgba(17,19,21,.12); padding: 22px; display: flex; flex-direction: column; gap: 14px" aria-label="Registrar dedicado nuevo">
+      <div style="display: flex; flex-direction: column; gap: 3px"><h2 style="margin: 0; font-size: 20px">Registrar dedicado nuevo</h2><span class="mut">Para adelantar documentos y contrato.</span></div>
+      <div><label class="rot" for="rif">RIF</label><input class="campo" id="rif" value="J-41887766-0"><div class="mut" style="margin: 6px 4px 0; color: #0F6642">No existe en la app. Puedes seguir.</div></div>
+      <div><label class="rot" for="nom">Razón social</label><input class="campo" id="nom" value="Red Lagunillas Net, C.A."></div>
+      <div><span class="rot">Tipo</span><div class="radio" role="radiogroup" aria-label="Tipo"><button class="on" role="radio" aria-checked="true">ISP</button><button role="radio" aria-checked="false">Corporativo</button></div><div class="mut" style="margin: 6px 4px 0">ISP pide además el permiso de Conatel.</div></div>
+      <div><label class="rot" for="lid">Líder</label><select class="campo" id="lid"><option>Rosa Paredes</option></select></div>
+      <div><label class="rot" for="srv">Servicio a contratar (opcional)</label><input class="campo" id="srv" value="Internet dedicado 200 Mbps"></div>
+      <button class="btn pr">Registrar y subir documentos</button>
+      <span class="mut">Se abre su expediente en la pestaña Documentos, igual que cualquier cliente.</span>
+    </aside>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1366,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Contratos y VGT por solicitud</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#F5F6F7;font-family:Inter,system-ui,sans-serif;color:#111315;font-size:14px}
+*{box-sizing:border-box}
+.mut{color:#5B636E;font-size:12px}
+.chip{display:inline-flex;align-items:center;height:24px;padding:0 9px;border-radius:999px;font-size:12px;font-weight:600;background:#ECEEF1;color:#5B636E;white-space:nowrap}
+.ok{background:#E7F5EE;color:#0F6642}.w{background:#FBF1DC;color:#754B00}.r{background:#FCEDEB;color:#A32117}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:38px;padding:0 13px;border-radius:999px;border:1px solid #E3E6EA;background:#fff;font:600 12px Inter,sans-serif;color:#111315;white-space:nowrap;cursor:pointer}
+.tab{height:40px;padding:0 12px;border:0;background:none;font:600 14px Inter,sans-serif;color:#5B636E;border-bottom:2px solid transparent}
+.tab.on{color:#111315;border-bottom-color:#111315}
+.bloque{border:1px solid #E3E6EA;border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:8px}
+.sol{border:1px solid #E3E6EA;border-radius:16px;overflow:hidden}
+.sh{display:flex;align-items:center;gap:8px;padding:12px 14px;background:#F8F9FA;flex-wrap:wrap}
+.f{display:flex;align-items:center;gap:10px;padding:10px 14px;border-top:1px solid #F0F2F4;flex-wrap:wrap}
+.f.roja{background:#FFF8F7}
+.ic{width:22px;height:22px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex:0 0 22px}
+.ic.ok{background:#E7F5EE;color:#0F6642}.ic.r{background:#FCEDEB;color:#A32117}
+.tx{display:flex;flex-direction:column;gap:2px;flex:1 1 200px;min-width:0}
+</style>
+</helmet>
+<aside style="width: 560px; min-height: 1300px; background: #fff; padding: 22px 24px; display: flex; flex-direction: column; gap: 14px; font-family: Inter, sans-serif" aria-label="Hoja del cliente">
+  <div style="display: flex; flex-direction: column; gap: 3px"><h2 style="margin: 0; font-size: 20px">Red Lagunillas Net, C.A.</h2><span class="mut">J-41887766-0 · Dedicado ISP · Rosa Paredes</span></div>
+  <nav style="display: flex; gap: 2px; border-bottom: 1px solid #E3E6EA; flex-wrap: wrap"><button class="tab">Datos</button><button class="tab">Documentos</button><button class="tab on">Contratos y VGT</button><button class="tab">Hilo</button></nav>
+
+  <div class="bloque">
+    <div style="display: flex; align-items: center; gap: 8px"><b>Contrato de servicio ISP</b><span class="chip w" style="margin-left: auto">Por elaborar</span></div>
+    <span class="mut">Documentos del expediente aprobados el 03/11</span>
+  </div>
+
+  <div class="bloque">
+    <div style="display: flex; align-items: center; gap: 8px"><b>Pólizas VGT del cliente</b><span class="chip ok" style="margin-left: auto">2 de 2</span></div>
+    <span class="mut">Sirven para todas sus solicitudes</span>
+    <div class="f" style="border-top: 0; padding: 6px 0"><span class="ic ok">✓</span><div class="tx"><b>Responsabilidad civil general</b><span class="mut">US$ 100.000 · vence 15/08/2027</span></div></div>
+    <div class="f" style="padding: 6px 0"><span class="ic ok">✓</span><div class="tx"><b>Responsabilidad patronal</b><span class="mut">Vence 15/08/2027</span></div></div>
+  </div>
+
+  <div style="display: flex; align-items: center; gap: 8px"><b style="font-size: 16px">Solicitudes de VGT</b><span class="mut">2</span><span style="flex: 1"></span><button class="btn">+ Nueva solicitud</button></div>
+
+  <div class="sol">
+    <div class="sh"><b>Troncal Norte</b><span class="mut">10 postes · solicitada 22/09</span><span class="chip ok" style="margin-left: auto">Lista para contrato</span></div>
+    <div class="f"><span class="ic ok">✓</span><div class="tx"><b>Propuesta comercial firmada</b><span class="mut">Firmada 01/10</span></div><button class="btn">Ver</button></div>
+    <div class="f"><span class="ic ok">✓</span><div class="tx"><b>Planilla de tendido aprobada por infraestructura</b><span class="mut">1 planilla · ODT 393378</span></div><button class="btn">+ Otra planilla</button></div>
+  </div>
+
+  <div class="sol">
+    <div class="sh"><b>Sector La Ensenada</b><span class="mut">8 postes · solicitada 11/05</span><span class="chip r" style="margin-left: auto">Faltan 2</span></div>
+    <div class="f roja"><span class="ic r">!</span><div class="tx"><b>Propuesta comercial firmada</b><span class="mut">La genera el administrador; falta la firma del cliente</span></div><button class="btn">Subir</button></div>
+    <div class="f roja"><span class="ic r">!</span><div class="tx"><b>Planillas de tendido aprobadas por infraestructura</b><span class="mut">Puede llevar varias si los postes están en zonas distintas</span></div><button class="btn">Subir</button></div>
+  </div>
+
+  <div class="bloque" style="background: #F5F6F7; border-color: #F5F6F7">
+    <span class="mut">El abogado ve cada solicitud en Mi trabajo, "Por elaborar · VGT", cuando tiene las pólizas del cliente y su propuesta y planilla.</span>
+  </div>
+</aside>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":560,"height":1300}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Documentos en el teléfono del líder</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#F5F6F7;font-family:Inter,system-ui,sans-serif;color:#111315;font-size:14px}
+*{box-sizing:border-box}
+.mut{color:#5B636E;font-size:12px}
+.chip{display:inline-flex;align-items:center;height:24px;padding:0 10px;border-radius:999px;font-size:12px;font-weight:600;background:#F5F6F7;color:#5B636E;white-space:nowrap}
+.ok{background:#E7F5EE;color:#0F6642}.r{background:#FCEDEB;color:#A32117}.w{background:#FBF1DC;color:#754B00}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:48px;padding:0 18px;border-radius:999px;border:1px solid #E3E6EA;background:#fff;font:700 14px Inter,sans-serif;color:#111315;white-space:nowrap;cursor:pointer}
+.btn.pr{background:#111315;color:#fff;border-color:#111315}
+.btn.wa{background:#11734B;color:#fff;border-color:#11734B}
+.f{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #E3E6EA;border-radius:14px;padding:12px}
+.f.roja{border:2px solid #E3A49C;background:#FFF8F7;flex-direction:column;align-items:stretch}
+.ic{width:24px;height:24px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex:0 0 24px}
+.ic.ok{background:#E7F5EE;color:#0F6642}.ic.r{background:#FCEDEB;color:#A32117}.ic.w{background:#FBF1DC;color:#754B00}.ic.g{background:#ECEEF1;color:#69717C}
+</style>
+</helmet>
+<div style="width: 390px; min-height: 1180px; background: #F5F6F7; display: flex; flex-direction: column; font-family: Inter, sans-serif">
+  <header style="background: #fff; padding: 14px 16px; display: flex; flex-direction: column; gap: 4px; border-bottom: 1px solid #E3E6EA">
+    <span class="mut">Clientes</span>
+    <b style="font-size: 18px">Inversiones Los Olivos, C.A.</b>
+    <span class="chip r" style="align-self: flex-start">Falta 1 documento</span>
+  </header>
+  <main style="padding: 14px 16px; display: flex; flex-direction: column; gap: 12px">
+    <section style="background: #fff; border-radius: 18px; border: 1px solid #E3E6EA; padding: 14px; display: flex; flex-direction: column; gap: 10px">
+      <b style="font-size: 15px">Qué pedirle al cliente</b>
+      <div style="background: #F5F6F7; border-radius: 12px; padding: 12px; font-size: 13px; line-height: 1.5">Buenos días. Para completar su expediente necesitamos el Acta de asamblea de ratificación o cambio de junta directiva, inscrita en el Registro. Puede enviarla por aquí. Gracias.</div>
+      <button class="btn wa">Enviar por WhatsApp</button>
+      <button class="btn">Copiar mensaje</button>
+    </section>
+
+    <b style="font-size: 13px; color: #5B636E">Lo que falta</b>
+    <div class="f roja">
+      <div style="display: flex; gap: 10px; align-items: flex-start"><span class="ic r">!</span><div style="display: flex; flex-direction: column; gap: 2px"><b>Acta de asamblea de ratificación o cambio de junta directiva</b><span class="mut">La constitutiva no dice cuánto dura la junta</span></div></div>
+      <button class="btn pr">Subir esta acta</button>
+    </div>
+
+    <b style="font-size: 13px; color: #5B636E">En revisión</b>
+    <div class="f"><span class="ic w">!</span><div style="display: flex; flex-direction: column; gap: 2px; flex: 1"><b>Acta constitutiva</b><span class="mut">Mismo archivo que Acta de asamblea 1</span></div></div>
+
+    <b style="font-size: 13px; color: #5B636E">Listo</b>
+    <div class="f"><span class="ic ok">✓</span><div style="display: flex; flex-direction: column; gap: 2px; flex: 1"><b>María Fernández</b><span class="mut">Cédula, RIF y contacto · firma ella</span></div></div>
+    <div class="f"><span class="ic ok">✓</span><div style="display: flex; flex-direction: column; gap: 2px; flex: 1"><b>RIF de la empresa</b></div></div>
+    <div class="f" style="background: #F5F6F7"><span class="ic g">·</span><div style="display: flex; flex-direction: column; gap: 2px; flex: 1"><b style="color: #5B636E">Luis Prieto</b><span class="mut">Ya no está en la junta. No hace falta nada de él.</span></div></div>
+
+    <button class="btn" style="margin-top: 8px">Subir otros documentos</button>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1180}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

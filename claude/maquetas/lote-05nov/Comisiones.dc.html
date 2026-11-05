@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Comisiones: mezcla</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#F5F6F7;font-family:Inter,system-ui,sans-serif;color:#111315;font-size:14px}
+*{box-sizing:border-box}
+.mut{color:#5B636E;font-size:12px}
+.tag{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:999px;font-size:12px;font-weight:600;background:#ECEEF1;color:#5B636E;white-space:nowrap}
+.tag.w{background:#FBF1DC;color:#754B00}.tag.r{background:#FCEDEB;color:#A32117}.tag.b{background:#EAF0FF;color:#1F45C4}.tag.ok{background:#E7F5EE;color:#0F6642}
+.tri{display:inline-flex;align-items:center;gap:10px;font-size:12px;font-weight:600;color:#5B636E}
+.tri span{display:inline-flex;align-items:center;gap:5px}
+.d{width:9px;height:9px;border-radius:999px;display:inline-block}
+.d.ok{background:#11734B}.d.w{background:#C98A12}.d.r{background:#C0271B}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:44px;padding:0 18px;border-radius:999px;border:1px solid #E3E6EA;background:#fff;font:600 14px Inter,sans-serif;color:#111315;white-space:nowrap;cursor:pointer}
+.btn.az{background:#2B5CFF;color:#fff;border-color:#2B5CFF}
+.tarj{background:#fff;border:1px solid #E3E6EA;border-radius:18px;padding:14px 16px;display:flex;flex-direction:column;gap:4px}
+.tarj.on{border:2px solid #111315}
+.tarj b{font-size:26px}
+.tab{height:42px;padding:0 16px;border:0;background:none;font:600 14px Inter,sans-serif;color:#5B636E;border-bottom:2px solid transparent;cursor:pointer}
+.tab.on{color:#111315;border-bottom-color:#111315}
+.dueno{background:#fff;border:1px solid #E3E6EA;border-radius:18px;overflow:hidden}
+.dh{display:flex;align-items:center;gap:10px;padding:14px 16px;flex-wrap:wrap}
+.sec{padding:8px 16px;font-size:12px;font-weight:700;color:#5B636E;background:#F8F9FA;border-top:1px solid #EEF0F2}
+.sec.roja{color:#A32117;background:#FFF6F5}
+.sec.verde{color:#0F6642;background:#F3FAF6}
+.fila{display:flex;align-items:center;gap:14px;padding:12px 16px;border:0;border-top:1px solid #F2F3F5;background:#fff;width:100%;text-align:left;font:inherit;color:inherit;cursor:pointer;flex-wrap:wrap}
+.tx{display:flex;flex-direction:column;gap:4px;flex:1 1 260px;min-width:0}
+.tx b{font-size:14px}
+.tags{display:flex;gap:6px;flex-wrap:wrap}
+.chev{color:#9AA1AB;font-size:18px;margin-left:auto}
+.av{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #E3E6EA;border-radius:14px;padding:10px 14px;flex:1 1 300px;font:inherit;color:inherit;text-align:left;cursor:pointer}
+</style>
+</helmet>
+<div style="min-height: 1400px; display: flex; flex-direction: column">
+  <header style="background: #fff; border-bottom: 1px solid #E3E6EA; padding: 12px 24px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap">
+    <b style="font-size: 16px">Airtek Empresas</b><span class="mut">Comisiones</span>
+  </header>
+  <main style="max-width: 1320px; width: 100%; margin: 0 auto; padding: 20px 24px; display: flex; flex-direction: column; gap: 14px">
+    <div style="display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap">
+      <div style="display: flex; flex-direction: column; gap: 4px; flex: 1 1 360px"><h1 style="margin: 0; font-size: 24px">Corte de noviembre</h1><span class="mut">Del 18/10 al 17/11 · se cierra el 18/11</span></div>
+      <button class="btn az">Subir documentos de un cliente nuevo</button>
+    </div>
+    <span class="mut" style="margin-top: -6px">Solo para un cliente que todavía no está en la app. Los documentos de un cliente que ya existe se suben en su expediente, en Clientes.</span>
+
+    <div style="display: grid; grid-template-columns: 2fr 1.3fr 1fr; gap: 12px">
+      <div class="tarj on"><span class="mut">Instalaciones PYME</span><b>29</b><span class="mut">4 comisionan · 22 pasan al próximo corte · 6 se pierden</span></div>
+      <div class="tarj"><span class="mut">Cambios de categoría</span><b>5</b><span class="mut">3 confirmados por el TAD</span></div>
+      <div class="tarj" style="background: #FFFBF2; border-color: #EBD5A8"><span class="mut">Cartas y proformas</span><b>16</b><span class="mut">por enviar</span></div>
+    </div>
+
+    <nav style="display: flex; gap: 4px; border-bottom: 1px solid #E3E6EA; flex-wrap: wrap" aria-label="Equipos">
+      <button class="tab on">Ventas corporativas · 20</button><button class="tab">Canales de atención · 1</button><button class="tab">Aliados comerciales · 5</button>
+    </nav>
+
+    <div style="display: flex; gap: 10px; flex-wrap: wrap">
+      <button class="av"><span class="tag r">9</span><div class="tx"><b>Por instalar hace más de 24 horas</b><span class="mut">Órdenes de Odoo abiertas</span></div><span class="chev">›</span></button>
+      <button class="av"><span class="tag w">4</span><div class="tx"><b>Por asignar</b><span class="mut">Sin dueño o provisional por confirmar: no comisionan</span></div><span class="chev">›</span></button>
+    </div>
+
+    <div class="dueno">
+      <div class="dh"><b style="font-size: 16px">Rosa Paredes</b><span class="mut">6 instalaciones</span><span style="flex: 1"></span><span class="tag ok">2 cumplen</span><span class="tag r">1 del corte anterior</span></div>
+
+      <div class="sec roja">Corte de octubre: si no cumplen al 18/11 se pierden · 1</div>
+      <button class="fila"><div class="tx"><b>Bodegón La Esquina</b><span class="mut">Código 87112 · instalada 02/10</span><div class="tags"><span class="tag ok">Carta enviada por Canales · 05/10</span></div></div><span class="tri"><span><i class="d r"></i>Legal</span><span><i class="d ok"></i>Pago</span><span><i class="d ok"></i>Orden</span></span><span class="chev">›</span></button>
+
+      <div class="sec">Instaladas en este corte · 3</div>
+      <button class="fila"><div class="tx"><b>Panadería El Trigal</b><span class="mut">Código 88420 · instalada 23/10</span><div class="tags"><span class="tag w">Carta y proforma por enviar · 13 días</span></div></div><span class="tri"><span><i class="d w"></i>Legal</span><span><i class="d w"></i>Pago</span><span><i class="d ok"></i>Orden</span></span><span class="chev">›</span></button>
+      <button class="fila"><div class="tx"><b>Farmacia Nueva Era</b><span class="mut">Provisional · instalada 30/10 · orden 503120</span><div class="tags"><span class="tag b">Parece ser Farmacia Nueva Era 24, C.A.</span><span class="tag w">Orden sin confirmar</span></div></div><span class="tri"><span><i class="d w"></i>Legal</span><span><i class="d w"></i>Pago</span><span><i class="d w"></i>Orden</span></span><span class="chev">›</span></button>
+      <button class="fila"><div class="tx"><b>Taller Hermanos Ruiz</b><span class="mut">Código 88601 · instalada 03/11</span><div class="tags"><span class="tag w">Orden sin confirmar</span><span class="tag">Carta: espera la IP</span></div></div><span class="tri"><span><i class="d w"></i>Legal</span><span><i class="d w"></i>Pago</span><span><i class="d w"></i>Orden</span></span><span class="chev">›</span></button>
+
+      <div class="sec verde">Cumplieron · 2</div>
+      <button class="fila"><div class="tx"><b>Óptica Visión Clara</b><span class="mut">Código 88310 · comisiona en noviembre</span><div class="tags"><span class="tag ok">Carta enviada por Canales · 29/10 · WhatsApp</span></div></div><span class="tri"><span><i class="d ok"></i>Legal</span><span><i class="d ok"></i>Pago</span><span><i class="d ok"></i>Orden</span></span><span class="chev">›</span></button>
+      <button class="fila"><div class="tx"><b>Distribuidora Andina</b><span class="mut">Código 88122 · comisiona en noviembre</span><div class="tags"><span class="tag ok">Carta marcada como enviada · líder · 28/10</span></div></div><span class="tri"><span><i class="d ok"></i>Legal</span><span><i class="d ok"></i>Pago</span><span><i class="d ok"></i>Orden</span></span><span class="chev">›</span></button>
+    </div>
+
+    <div class="dueno">
+      <div class="dh"><b style="font-size: 16px">Sin dueño</b><span class="mut">No comisionan hasta asignarlas</span></div>
+      <button class="fila"><div class="tx"><b>Multiservicios Amparo</b><span class="mut">Instalada el 29/10</span><div class="tags"><span class="tag b">Instaló Conexsoft (aliado)</span><span class="tag r">Falta elegir dueño</span></div></div><span class="chev">›</span></button>
+    </div>
+
+    <h2 style="margin: 10px 0 0; font-size: 18px">Migraciones del corte</h2>
+    <div class="dueno">
+      <div class="sec">Confirmadas por el TAD · 3</div>
+      <button class="fila"><div class="tx"><b>Comercial Tres Hermanos</b><span class="mut">Migración a PYME · confirmada 01/11 · Rosa Paredes</span></div><span class="tri"><span><i class="d ok"></i>Legal</span><span><i class="d ok"></i>Pago</span></span><span class="chev">›</span></button>
+      <div class="sec">Por confirmar · 2</div>
+      <button class="fila"><div class="tx"><b>Servicios Delta</b><span class="mut">Cambio de titular · emitido 30/10</span><div class="tags"><span class="tag w">Falta cambiar el plan</span></div></div><span class="chev">›</span></button>
+    </div>
+    <span class="mut">Toca cualquier fila para abrir su hoja: ahí están todas las acciones.</span>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1366,"height":1400}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
