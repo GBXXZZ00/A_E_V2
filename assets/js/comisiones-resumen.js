@@ -58,7 +58,8 @@
         '<div class="cr-lin"><span>Siguen habilitadas de ' + esc(d.mes_anterior) + '</span><b>' + (n.siguen_prev === null || n.siguen_prev === undefined ? 'Sin datos' : num(n.siguen_prev) + ' %') + '</b></div></section>';
     }
     function serie(d){
-      const s = d.serie || []; const mx = Math.max(1, ...s.map((x) => x.total));
+      // Lote 05/11 B3: la serie empieza donde hay datos (antes del primer corte con instalaciones no hay datos, no es cero)
+      const s0 = d.serie || []; const pri = s0.findIndex((x) => x.total > 0 || x.actual); const s = pri > 0 ? s0.slice(pri) : s0; const mx = Math.max(1, ...s.map((x) => x.total));
       return '<section class="rs-card"><div class="cr-h"><h3>Instaladas por corte</h3><small>Últimos ' + s.length + ' cortes</small></div><div class="cr-cols">' +
         s.map((x) => '<button type="button" class="cr-col' + (x.actual ? ' hoy' : '') + '"' + dato('serie', x.corte, 'Instaladas en ' + x.mes) + ' aria-label="' + esc(x.mes + ': ' + x.total + ' instaladas, ' + x.cumplen + ' comisionan') + '"><em>' + num(x.total) + '</em>' +
           '<span class="pila" style="height:' + (x.total / mx * 100).toFixed(1) + '%"><i class="no" style="flex:' + (x.total - x.cumplen) + ' 1 0"></i><i class="si" style="flex:' + x.cumplen + ' 1 0"></i></span><small>' + esc(mesCorto(x.mes)) + '</small></button>').join('') +

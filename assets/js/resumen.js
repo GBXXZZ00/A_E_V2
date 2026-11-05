@@ -100,6 +100,7 @@
   }
   function tarjeta(g, st, mod){
     let cuerpo;
+    if(g.tipo === 'hueco') return '';   // Lote 05/11 B3: lo que no funciona no se publica
     if(g.tipo === 'hueco') cuerpo = '<div class="rs-hueco"><b>Por armar</b><span>' + esc(g.h || '') + '</span></div>';
     else if(g.tipo === 'mes') cuerpo = graficaMes(g, st, mod);
     else if(g.tipo === 'v') cuerpo = (g.data || []).length ? graficaV(g) : '<div class="rs-vacio">' + esc(g.vacio || 'Sin datos en este período.') + '</div>';

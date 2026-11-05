@@ -489,7 +489,7 @@ function resumenMundo(m, yo, mod, hasta){
     revision: { nums: [num('cola', 0, 'Por revisar', '', 'ant', 'todos'), num('m90', 0, 'Esperan más de 90 días', '', 'ant', 'd'), num('sem', 0, 'Llegaron esta semana', '', 'ant', 'a'), num('cerradas', 0, 'Revisiones cerradas', '', 'cerradas', '30')],
       charts: [{ id: 'legal', tipo: 's', w: 1, t: 'Estatus legal por segmento', s: '', data: leg }] },
     migraciones: { nums: [num('conf', 0, 'Confirmadas', '', 'lider', 'todos'), num('mes', 0, 'En el mes', '', 'mes', mes), num('rev', 0, 'Por revisar', '', 'estado', 'por_revisar'), num('emi', 0, 'Por emitir', '', 'estado', 'por_emitir')],
-      charts: [{ id: 'residencial', tipo: 'hueco', w: 1, t: 'Cambios a residencial', s: '', h: 'Se llena con cada carga del TAD.' }] },
+      charts: [{ id: 'mes', tipo: 'v', w: 1.4, t: 'Confirmadas por mes', s: 'Sin datos', data: [], vacio: 'Sin datos en este período.' }, { id: 'residencial', tipo: 'hueco', w: 1, t: 'Cambios a residencial', s: '', h: 'Se llena con cada carga del TAD.' }] },
     factibilidad: { nums: [num('n', 0, 'Consultas', '', 'res', 'todas'), num('red', 0, 'Con red', '', 'res', 'hay_red'), num('sin', 0, 'Sin red', '0 zonas con demanda', 'res', 'sin_red'), num('exc', 0, 'Excepción', '', 'res', 'excepcion')],
       charts: [{ id: 'zonas', tipo: 'h', w: 1.4, t: 'Demanda sin red por zona', s: '', data: [], vacio: 'Ninguna consulta sin red en este período.' }] },
     dedicados: { nums: [num('act', cs.filter((c) => segRes(c) !== 'pyme').length, 'Dedicados', '', 'activos', 'todos'), num('postes', 0, 'Postes VGT', '', 'tipo', 'vgt'), num('pol', 0, 'Deben pólizas VGT', '', 'polizas', 'todos'), num('sinv', 0, 'Contratos sin vencimiento', '', 'sin_vence', 'todos')],
@@ -1436,7 +1436,8 @@ const RPC = {
       if(!cl){ cl = cliente({ nombre: f.n, doc_tipo: f.t || 'J', doc_numero: doc, lider: null, es_natural: ['V', 'E'].includes(f.t) }); m.datos.clientes.push(cl); c.resumen.clientes_nuevos++; }
       const cod = String(f.c).replace(/\D/g, '').padStart(8, '0'); const suc = String(f.s).replace(/\D/g, '').padStart(3, '0');
       const sv = cl.servicios.find((x) => x.codigo === cod || x.codigo === String(Number(cod)));
-      if(sv){ sv.estado = f.es; sv.con_deuda = f.cx === 'SI'; c.resumen.servicios_actualizados++; }
+      if(f.us || f.uh) c.resumen.con_fechas = (c.resumen.con_fechas || 0) + 1;
+      if(sv){ sv.estado = f.es; sv.con_deuda = f.cx === 'SI'; if(f.us) sv.ult_suspension = f.us; if(f.uh) sv.ult_habilitacion = f.uh; c.resumen.servicios_actualizados++; }
       else { cl.servicios.push(servicio(cod, { sucursal: suc, plan: f.p, categoria: f.ca, estado: f.es, equipo: f.e, con_deuda: f.cx === 'SI' })); c.resumen.servicios_nuevos++; }
       c.vistas.push(cl.id);
     });
@@ -1451,8 +1452,10 @@ const RPC = {
     let pagos = 0; const lim = masDias(hoy(), -(m.pagoDias == null ? 3 : m.pagoDias));
     m.datos.clientes.filter((cl) => (c.vistas || []).includes(cl.id) && cl.servicios.some((sv) => sv.con_deuda === false)).forEach((cl) => cl.instalaciones.forEach((i) => {
       if(!i.pago_ok_en && !i.pago_quitado && fechaClave(caracas(i.instalada_en)) <= lim){ i.pago_ok_en = new Date().toISOString(); pagos++; } }));
+    c.resumen.con_fechas = c.resumen.con_fechas || 0;
     return Object.assign({}, c.resumen, { pagos_marcados: pagos, clientes_total: m.datos.clientes.length, filas: c.filas });
   },
+  tad_columnas(m, yo, a){ const c = (m.cargas || []).find((x) => x.id === a.p_carga); if(c) c.resumen.columnas_fechas = a.p_cols; return null; },
   crudo_iniciar(m, yo, a){
     if(!['admin', 'analista'].includes(yo.rol)) return error('No tienes permiso para hacer esto');
     if(!['odoo', 'instalaciones', 'base_vieja'].includes(a.p_fuente)) return error('Tipo de archivo no reconocido');
@@ -1731,7 +1734,7 @@ const RPC = {
     const serie = []; for(let i = 11; i >= 0; i--){ const d = new Date(mes + 'T12:00:00'); d.setMonth(d.getMonth() - i); const k = d.toISOString().slice(0, 7); const x = srv.filter((v) => v.mes === k); serie.push({ m: k, a: x.filter((v) => v.activo).length, b: x.filter((v) => !v.activo).length }); }
     const leg = ['pyme', 'corporativo', 'isp'].map((k) => { const v = [0, 0, 0, 0, 0]; cs.filter((c) => (tarjetaDe(c).ded || 'pyme') === k).forEach((c) => { v[GRUPO_I[grupoLegal(c.estatus)]]++; }); return { l: { pyme: 'PYME', corporativo: 'Dedicado corporativo', isp: 'Dedicado ISP' }[k], x: k, v }; });
     const ultimo = serie[11];
-    return { mes, mes_nombre: '', seg, sin_fechas: true, rol: yo.rol, solo_lectura: yo.rol === 'abogado',
+    return { mes, mes_nombre: '', seg, sin_fechas: true, churn_listo: !!m.churnListo, rol: yo.rol, solo_lectura: yo.rol === 'abogado',
       tarjetas: { pyme: cs.filter((c) => !tarjetaDe(c).ded).length, corporativo: cs.filter((c) => tarjetaDe(c).ded === 'corporativo').length, isp: cs.filter((c) => tarjetaDe(c).ded === 'isp').length, vgt: cs.filter((c) => c.vgt).length, vgt_contratos: 0, vgt_postes: 0 },
       nums: { habilitados: srv.filter((v) => v.activo).length, suspendidos: srv.filter((v) => !v.activo).length, inst: ultimo.a + ultimo.b, inst_prev: serie[10].a + serie[10].b, inst_prom: Math.round(serie.reduce((t, x) => t + x.a + x.b, 0) / 12),
         churn: 0, perdidos: 0, infancia: 0, inf_n: 0, sin_gestionar: cs.filter(de).filter((c) => grupoLegal(c.estatus) === 'sin_gestionar').length, recientes: 0 },

@@ -1,6 +1,6 @@
 # Traspaso (se actualiza al cerrar cada sesión)
 
-Actualizado: 05/11/2026, LOTE 05/11 en curso (una versión por parte). Publicado: `?v=68` (parte G).
+Actualizado: 05/11/2026, LOTE 05/11 en curso (una versión por parte). Publicado: `?v=70` (partes G, A y B).
 
 ## LOTE 05/11 (`claude/lote-05nov.md`): EN CURSO
 Referencia de comisiones (`privado.comision_filas3`) al empezar: septiembre 46/41, octubre 83/75, noviembre 34/4.
@@ -11,11 +11,21 @@ Referencia de comisiones (`privado.comision_filas3`) al empezar: septiembre 46/4
   - Pantalla: el TAD de empresas sube primero; el índice sigue solo con su barra ("Índice de residenciales: N %"), sin bloquear subir otros archivos ni Cruzar ahora. La sesión no se cierra por falta de uso mientras corre; al cerrar la pestaña avisa y se pausa; "Seguir solo con el índice" retoma con el mismo archivo (12 h). Casilla "Actualizar también el índice de residenciales": marcada sola si el último índice tiene 7 días o más o hay migraciones esperando el TAD. "Qué toca actualizar" muestra la fila del índice con su fecha.
   - Tiempo después con el archivo real: lo mide la propia fila al terminar ("tardó N"); anotarlo con la próxima carga. Estimado por las mediciones del servidor: menos de 1 minuto más lo que cambió.
   - Pruebas: test49 ampliada (casilla, segundo plano, bloque igual sin comparar, sin índice); test29, 12, 27, 05, 50 y 48 pasan.
-- **Parte A EN CURSO** (solo servidor por ahora, sin versión nueva). Evidencia en `supabase/pruebas/lote_05nov_a.sql`.
-  - A1 hecho: firma separada pide un solo representante; 118 clientes dejaron de pedir cédula y RIF de representantes extra (0 quedan). Sin recalcular en masa (ver SQL).
-  - A2 hecho: `poner_estatus` no deja que aprobar, recalcular ni el cruce bajen contrato en curso, por firmar o firmado (0 de 262 cambian en la prueba). Comisiones iguales después.
-  - Falta de la Parte A: A3 (Senior no aprueba ni devuelve; cambio de PIN sin cerrar sesión; Inicio y Mi trabajo con la misma función; archivo repetido no se lee ni se paga dos veces), A4 (pendientes del 30/10) y la prueba de pantalla de A2.
-- **Siguen**: resto de A, luego B, C, D, E, F. El inventario `claude/inventario-05nov.md` se hace antes de tocar la primera pantalla (C).
+- **Parte A HECHA (v69)**. Evidencia en `supabase/pruebas/lote_05nov_a.sql` y aquí.
+  - A1: firma separada pide un solo representante; 118 clientes dejaron de pedir cédula y RIF de representantes extra (0 quedan). Sin recalcular en masa: en prueba deshecha, recalcular a esos 118 bajaba 13 a "pendientes" por OTROS faltantes; se recalculan solos con su próximo documento. reglas.mjs ya pedía 1 completo con firma separada.
+  - A2: `poner_estatus` no deja que aprobar, recalcular ni el cruce bajen contrato en curso, por firmar o firmado (0 de 262 cambian en la prueba). Las 3 bajas que hubo en la bitácora fueron manuales (15/10 y 16/10).
+  - A3: la Senior ya estaba bloqueada en el servidor (bitácora de 20 días: solo el administrador aprobó o devolvió); ahora tampoco recibe revisar_docs ni cambio_revisar. Inicio y Mi trabajo usan `privado.trabajo_items`: mismo total para las 11 personas activas (admin 419/419; líderes 69, 73, 111, 54, 1, 58; analista 94; Senior 93 y 92). PIN: función `entrar` v7 quita la marca, anota `cambio_pin` y entrega sesión nueva. Archivo repetido: `ia_trabajo` e `ia_archivo_datos` usan la lectura de un archivo idéntico del mismo cliente (mismo tamaño exacto y tipo); 7 archivos repetidos ya no se pagan (antes 20 grupos repetidos, 6 lecturas pagadas, US$ 0,19).
+  - A4: reglas.mjs VERSION 5 (junta sin período bloquea, nombres completos de actas, correo parecido al nombre) **en el repo; se publica en la función `ia_revisar` con la parte C**. Firma conjunta: ya exigía cédula y RIF bien de ambos. Póliza VGT "Mínimo US$ 100.000" / "Sin monto mínimo". TV Cable: contrato 900 a 105 postes, Taratara - Puerto Cumarebo (bitácora `dedicado_contrato_corregido`).
+  - Pruebas: test16 (casos 1 y 4 al nombre y la regla nuevos, 3 casos de correo), test51 nueva. Comisiones después: septiembre 46/41 y octubre 83/75 iguales; noviembre 47/4 (13 filas nuevas por el cruce que hizo el administrador hoy a las 13:08).
+- **Parte B HECHA (v70)**.
+  - B1: la pantalla y el servidor ya leían suspensión, habilitación y estatus actual; la carga del 05/11 trajo 0 fechas porque la columna no se reconoció. Ahora también busca "corte", "reconexión" y "activación", lee 2026/10/01 y 01-oct-2026, guarda qué columnas usó (`tad_columnas` → `cargas.resumen.columnas_fechas`) y una carga con 0 fechas sale en rojo "Sin fechas" en la fila, el historial y "Qué toca actualizar". **Falta confirmarlo con el próximo TAD real** (mirar `columnas_fechas` de esa carga).
+  - B2: `privado.res_srv` sale de `privado.srv_base` (pyme). Octubre: Gerencia y resumen por módulo 125 → 95, igual que Clientes (95). Septiembre 89 y 89. Definición en `reglas-negocio.md`.
+  - B3: los recuadros "Por armar" ya no se publican (Comisiones monto, Factibilidad venta, Aliados activos, Dedicados ingresos, Gerencia ingresos). La serie de Comisiones empieza en el primer corte con datos (antes junio con ceros).
+  - B4: el mes en curso compara el mismo tramo: "6 en noviembre (mes en curso, al día 5) · -45 % vs noviembre 2025"; en Clientes "12 en octubre del 1 al 5".
+  - B5: prueba automática contra la base: todas las gráficas de los 8 módulos abren su detalle sin error (ninguna "Gráfica no reconocida"); equipo Canales: detalle 1 en noviembre y 12 en octubre, igual que el número del equipo.
+  - B6: churn, infancia y calidad por dueño escondidos (`privado.churn_listo()`: fechas de un mes completo + ajuste `churn_visible` = si; hoy `no`). Clientes muestra "Todavía no se muestran" con el porqué.
+  - Pruebas: test51 (TAD sin fechas en rojo; columnas "Fecha Ultima Suspension"/"Fecha Reconexion" leídas), test31 y test47 ajustadas (sin "Por armar"; churn escondido).
+- **Siguen**: C, D, E, F. El inventario `claude/inventario-05nov.md` se hace antes de tocar la primera pantalla (C).
 
 
 

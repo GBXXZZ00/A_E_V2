@@ -55,7 +55,7 @@
       '<p>' + esc(bajos.length ? bajos.slice(0, 3).map((x) => x.charAt(0).toUpperCase() + x.slice(1)).join(' y ') + ' por debajo de 80 %.' : 'Todos los meses sobre 80 %.') + ' Las bajas y reactivaciones salen del historial del TAD.</p>', 'Ver resumen de Clientes', 'Calidad de la venta: ' + q.v + ' %');
     h += tarjeta('clientes', '', '<h2>Estatus legal</h2><b class="gt-n">' + num((leg[0] || {}).p) + ' %</b><p>' + esc(leg.length ? leg[0].l + ' con contrato firmado. ' + leg.slice(1).map((x) => x.l.replace('Dedicado ', '').replace(/^./, (c) => c.toUpperCase()) + ' ' + x.p + ' %').join(', ') : '') + '</p>', 'Ver por segmento', 'Estatus legal');
     h += tarjeta('factibilidad', '', '<h2>Demanda sin red</h2><b class="gt-n">' + num(sr.zonas) + '</b><p>' + (sr.zonas ? (sr.zonas === 1 ? 'zona' : 'zonas') + ' con consultas sin red este mes (' + num(sr.consultas) + (sr.consultas === 1 ? ' consulta' : ' consultas') + ')' + (sr.top ? '. Más pedida: ' + esc(sr.top.l) : '') : 'Ninguna consulta sin red este mes') + '</p>', 'Dónde crecer la red', 'Demanda sin red: ' + sr.zonas);
-    h += '<div class="gtj hueco"><h2>Ingresos de dedicados</h2><b>Por armar</b><p>Espacio reservado para facturación, cobranza y por cliente.</p></div>';
+    // Lote 05/11 B3: "Ingresos de dedicados" no se muestra hasta que exista (antes decía "Por armar")
     h += '<div class="gtj blanca"><h2>Tus avisos</h2><ul class="gt-avisos"><li><span>Resumen semanal</span><small>Lunes 8:00</small></li><li><span>Cierre de corte certificado</span><small>Al cerrar</small></li><li><span>Un aliado pide un cliente</span><small>Al momento</small></li></ul></div>';
     $('zonaG').innerHTML = h + '</div>';
   }

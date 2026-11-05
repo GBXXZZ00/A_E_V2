@@ -192,3 +192,17 @@ Sin nombres reales: el repo es público. "Analista Senior" es el responsable de 
 - Carta de bienvenida y proforma: un solo envío, las dos juntas. Cada envío queda con quién, cuándo, canal y si fue de Canales (obligatorio) o del líder (respaldo). Sigue "por enviar" hasta que lo envíe Canales. El líder no envía las de clientes de aliados.
 - Mi trabajo: los ítems se resuelven solos al hacer la acción (no hay botón Hecho); las notas personales se marcan a mano. El administrador ve el buzón de cualquiera en solo consulta. Revisión vive en Mi trabajo (revisión en lote); `revision.html` lleva ahí y solo queda "Comparar con Legal".
 - Actualizar es solo del administrador y la Analista Senior. El cruce se lanza con "Cruzar ahora".
+
+## Lote 05/11 (decidido por el administrador el 05/11)
+- Firma separada: basta UN representante completo (cédula, RIF, contacto y en la junta). Los demás representantes no generan faltantes aunque tengan datos o archivos. Firma conjunta: todos los que exige la cláusula, con cédula y RIF vigentes de ambos.
+- Ningún camino automático (aprobar, recalcular, cruce) baja un estatus de contrato en curso, por firmar o contrato firmado. Solo el cambio manual del administrador.
+- La Analista Senior no aprueba ni devuelve documentos y no ve la revisión de documentos en Mi trabajo.
+- Inicio y Mi trabajo cuentan los pendientes con la misma función del servidor (`privado.trabajo_items`).
+- Un archivo idéntico del mismo cliente (mismo tamaño exacto y tipo) no se vuelve a leer ni a pagar: usa la lectura que ya existe.
+- IA: si ningún acta dice cuánto dura la junta, NO se asumen 10 años: "Junta sin período" bloquea y pide el acta. Nombres completos de lo que se pide: "Acta de asamblea de ratificación o cambio de junta directiva", "…de cambio de razón social", "…de cambio de domicilio fiscal", "…de prórroga de la duración". El correo personal del representante se parece a su nombre o apellido; si no, "revisar a mano" (se acepta por excepción).
+- Póliza VGT: responsabilidad civil general mínimo US$ 100.000; la patronal no tiene mínimo.
+- TV Cable: el contrato VGT vale por el Addendum N.º 1 (01/10/2026): 105 postes, Taratara a Puerto Cumarebo, USD 1 por poste al mes.
+- **Instalaciones PYME por mes** (una sola definición para Clientes, Gerencia y el resumen por módulo, `privado.srv_base` segmento pyme): servicios del TAD con fecha de instalación en el mes, de clientes no unidos a otro, que no son ISP ni dedicado corporativo vigente, y cuya categoría no es dedicada ni de conectividad. Octubre 2026: 95; septiembre: 89. (Comisiones cuenta aparte las órdenes de instalación del corte, que es otra cosa: 94 en octubre.)
+- Mes en curso: se compara contra el mismo tramo (del 1 al día de hoy) del período con que se compara y se rotula "mes en curso".
+- Sin datos no es cero: las series empiezan donde hay datos (Comisiones desde septiembre). Lo que no funciona no se publica (sin recuadros "Por armar").
+- Churn, churn de infancia y calidad por dueño se esconden hasta que el TAD traiga fechas de suspensión y habilitación de al menos un mes completo y el administrador confirme que cuadran con un caso conocido (ajuste `churn_visible` = si en `privado.ia_ajustes`). Un TAD que llega con 0 fechas sale en rojo en Actualizar ("Sin fechas").

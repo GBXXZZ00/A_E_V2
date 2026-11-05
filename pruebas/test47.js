@@ -18,7 +18,8 @@ const llamo = (m, f) => m.llamadas.filter((l) => l[1] === f);
     // Lote 28/10: tarjetas por tipo de cliente, promedios de 12 meses, churn, instalados por mes y estatus legal; sin deuda
     const zr = await p.textContent('#zonaRes');
     ok(nombre + ': tarjetas PYME, Dedicado corporativo, Dedicado ISP y VGT', ['PYME', 'Dedicado corporativo', 'Dedicado ISP', 'VGT'].every((t) => zr.includes(t)) && (await p.locator('#zonaRes [data-cl-seg]').count()) === 4);
-    ok(nombre + ': promedios de 12 meses, churn del mes y de infancia, instalados por mes', /Promedios/.test(zr) && /Churn del mes/.test(zr) && /Churn de infancia/.test(zr) && /Instalados por mes/.test(zr));
+    // Lote 05/11 B6: sin fechas del TAD de un mes completo, churn y calidad por dueño no se muestran (lo dice un recuadro)
+    ok(nombre + ': promedios de 12 meses e instalados por mes; churn escondido hasta tener fechas', /Promedios/.test(zr) && !/Churn del mes/.test(zr) && /Todavía no se muestran/.test(zr) && /Instalados por mes/.test(zr));
     ok(nombre + ': sin deuda en el Resumen de Clientes', !/deuda/i.test(zr));
     ok(nombre + ': pide el resumen de clientes del mes', llamo(mundo, 'clientes_resumen').length >= 1);
     // Un número abre el detalle nuevo (total, reparto por dueño, desplegables, Excel)

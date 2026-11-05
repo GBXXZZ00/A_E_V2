@@ -22,7 +22,24 @@ const { ok, cerrar } = marcador();
     await p.goto(H + 'cliente.html?id=1001&t=documentos&revisar=1'); await p.waitForSelector('[data-casilla], .vacio', { timeout: 15000 }).catch(() => {});
     await p.waitForTimeout(800);
     ok(nombre + ': la Senior no ve Aprobar ni Devolver', !(await p.locator('#verAprobar, #verDevolver').count()));
+    // Parte B1: el TAD lee las fechas por palabra en el encabezado; sin fechas, la carga sale en rojo
     await ctx.close();
+    const { ctx: ctx2, mundo: mundo2 } = await contexto(nav, dispositivo);
+    const a = await entrar(ctx2, 'marcos', '482913'); a.on('pageerror', (e) => errores.push(e.message));
+    const cab = 'Sucursal,Cliente,Tipo,Documento,Fecha_Instalacion,Nombre,Equipo,Plan,Estado,CATEGORIA,CXCPENDIENTE,INSTALADOR,Telefono,Direccion';
+    const fila = (i, extra) => '824,' + String(710000 + i).padStart(8, '0') + ',J,0' + (598000000 + i) + ',15-03-2025,"Comercio Prueba ' + i + '",SERIEB' + i + ',ORO-EMP,Habilitado,PYME-1GB,NO,INVENTADO,,Calle ' + i + (extra || '');
+    let t = cab + '\n'; for(let i = 1; i <= 5; i++) t += fila(i) + '\n';
+    await a.goto(H + 'actualizar.html'); await a.waitForSelector('#zona');
+    await a.setInputFiles('#archivos', { name: 'tad.csv', mimeType: 'text/csv', buffer: Buffer.from(t) });
+    await a.waitForSelector('#cargarTodo'); await a.uncheck('[data-con-indice]').catch(() => {}); await a.click('#cargarTodo'); await a.waitForSelector('#otro', { timeout: 20000 });
+    ok(nombre + ': un TAD sin fechas de suspensión ni habilitación sale en rojo y lo explica', /Sin fechas/.test(await a.textContent('#listaArch')) && /no trajo fechas/.test(await a.textContent('#listaArch')));
+    await a.click('#otro');
+    t = cab + ',Fecha Ultima Suspension,Fecha Reconexion\n'; for(let i = 1; i <= 5; i++) t += fila(i, ',2026/10/0' + i + ',05-oct-2026') + '\n';
+    await a.setInputFiles('#archivos', { name: 'tad2.csv', mimeType: 'text/csv', buffer: Buffer.from(t) });
+    await a.waitForSelector('#cargarTodo'); await a.uncheck('[data-con-indice]').catch(() => {}); await a.click('#cargarTodo'); await a.waitForSelector('#otro', { timeout: 20000 });
+    const ult = mundo2.cargas.filter((c) => c.fuente === 'tad').slice(-1)[0];
+    ok(nombre + ': con columnas "Fecha Ultima Suspension" y "Fecha Reconexion" lee las fechas y guarda qué columnas usó', ult.resumen.con_fechas === 5 && ult.resumen.columnas_fechas && /suspension/.test(ult.resumen.columnas_fechas.suspension) && /reconexion/.test(ult.resumen.columnas_fechas.habilitacion) && !/Sin fechas/.test(await a.textContent('#listaArch')));
+    await ctx2.close();
   }
   ok('sin errores de JavaScript', !errores.length, errores.slice(0, 3));
   await nav.close(); cerrar();

@@ -47,10 +47,13 @@
   const limpio = (v) => { const t = String(v === undefined || v === null ? '' : v).trim(); return BASURA.indexOf(t.toLowerCase()) >= 0 ? '' : t; };
   function fechaIso(v){
     if(/^\d{5}(\.\d+)?$/.test(v)){ const x = new Date(Date.UTC(1899, 11, 30) + Math.floor(+v) * 86400000); return x.toISOString().slice(0, 10); }   // fecha de Excel
-    const m = /^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})/.exec(v) || null;
+    const m = /^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{4})/.exec(v) || null;
     let a, me, d;
+    // Lote 05/11 B1: también 2026/10/01, 2026.10.01 y 01-oct-2026 (así vienen algunas columnas de fechas del TAD)
+    const n = /^(\d{1,2})[-\/. ]([a-záéíóú]{3,})[-\/. ,]+(\d{4})/i.exec(v);
     if(m){ d = +m[1]; me = +m[2]; a = +m[3]; }
-    else { const k = /^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(v); if(!k) return ''; a = +k[1]; me = +k[2]; d = +k[3]; }
+    else if(n){ d = +n[1]; me = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'].indexOf(normalizeStr(n[2]).slice(0, 3)) + 1; if(!me) me = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'].indexOf(normalizeStr(n[2]).slice(0, 3)) + 1; if(!me) return ''; a = +n[3]; }
+    else { const k = /^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})/.exec(v); if(!k) return ''; a = +k[1]; me = +k[2]; d = +k[3]; }
     const f = new Date(Date.UTC(a, me - 1, d));
     if(a < 1990 || a > 2100 || f.getUTCMonth() !== me - 1 || f.getUTCDate() !== d) return '';
     return a + '-' + String(me).padStart(2, '0') + '-' + String(d).padStart(2, '0');
@@ -201,15 +204,20 @@
       if(hojas.some((h) => /enlace/.test(normalizeStr(h.nombre))) && hojas.some((h) => /client/.test(normalizeStr(h.nombre)))) return prepararDedicados(file, hojas, alAvance);
     }
     let cab = null; let tipo = null; let vistas = 0; let total = 0; let malas = 0; let fuera = 0; let idx = null;
-    let datos = []; let dudosas = []; const clientes = new Set(); let filtrando = false; const rifs = []; let desde = ''; const indice = []; let iPon = -1;
+    let datos = []; let dudosas = []; const clientes = new Set(); let filtrando = false; const rifs = []; let desde = ''; const indice = []; let iPon = -1; let colsFechas = null;
     await leerFilas(file, (f) => {
       if(!cab){
         const c = f.map(clave); tipo = reconocer(c);
         if(tipo){ cab = c; if(tipo === 'tad'){ idx = {}; Object.keys(COLUMNAS).forEach((k) => { idx[k] = cab.indexOf(COLUMNAS[k]); }); iPon = cab.indexOf('pon') >= 0 ? cab.indexOf('pon') : cab.findIndex((h) => /(^|_)pon(_|$)/.test(h));
           // Lote 28/10: última suspensión, última habilitación y estatus actual, si el TAD los trae (los nombres cambian: se buscan por palabra)
-          idx.us = cab.findIndex((h) => /susp/.test(h) && /fec|ult|^suspension$/.test(h)); if(idx.us < 0) idx.us = cab.findIndex((h) => /susp/.test(h) && h !== COLUMNAS.es);
-          idx.uh = cab.findIndex((h) => /habilit|reactiv|reconex/.test(h) && h !== COLUMNAS.es);
-          idx.ea = cab.findIndex((h) => /(status|estatus|estado)_actual/.test(h)); if(idx.ea < 0) idx.ea = cab.findIndex((h) => h === 'status' || h === 'estatus'); } }
+          // Lote 05/11 B1: más nombres posibles (suspensión también se llama "corte"; habilitación, "reconexión" o "activación")
+          const libre = (h) => h !== COLUMNAS.es && h !== COLUMNAS.f;
+          idx.us = cab.findIndex((h) => /susp/.test(h) && /fec|ult|^suspension$/.test(h)); if(idx.us < 0) idx.us = cab.findIndex((h) => /susp/.test(h) && libre(h));
+          if(idx.us < 0) idx.us = cab.findIndex((h) => /(^|_)(fec\w*|ult\w*)_corte|corte_(fec|ult)/.test(h) && libre(h));
+          idx.uh = cab.findIndex((h) => /habilit|reactiv|reconex/.test(h) && libre(h));
+          if(idx.uh < 0) idx.uh = cab.findIndex((h) => /(fec\w*|ult\w*)_activ/.test(h) && libre(h));
+          idx.ea = cab.findIndex((h) => /(status|estatus|estado)_actual/.test(h)); if(idx.ea < 0) idx.ea = cab.findIndex((h) => h === 'status' || h === 'estatus');
+          colsFechas = { suspension: idx.us >= 0 ? cab[idx.us] : null, habilitacion: idx.uh >= 0 ? cab[idx.uh] : null, estatus_actual: idx.ea >= 0 ? cab[idx.ea] : null }; } }
         else if(++vistas >= 6) return false;
         return true;
       }
@@ -253,7 +261,7 @@
     rifs.forEach((r) => conocidos.add(r));
     // Órdenes de instalación con fechas de antes del período de comisiones: es el histórico para aliados (no entra al cruce)
     const soloAliados = tipo === 'instalaciones' && !!desde && desde < INICIO_COMISIONES;
-    return { tipo, datos, malas, fuera, clientes: clientes.size, total, desde, soloAliados, indice: tipo === 'tad' ? indice : null };
+    return { tipo, datos, malas, fuera, clientes: clientes.size, total, desde, soloAliados, indice: tipo === 'tad' ? indice : null, colsFechas };
   }
   const INICIO_COMISIONES = '2026-08-21';
 
@@ -267,6 +275,7 @@
       '<span class="idx-pista" aria-hidden="true"><i style="transform:scaleX(' + (pctIdx(a) / 100) + ')"></i></span>';
     if(a.resultado && a.indiceFallo && a.indice) return '<small>' + esc(a.resultado) + '</small><small class="para-que"><b>Empresas cargadas. El índice de residenciales quedó a medias</b> (' + pctIdx(a) + ' %). Comisiones y clientes ya usan este TAD; falta el índice para Migraciones y la búsqueda de servicios. ' +
       '<button type="button" class="enlace" data-seguir="' + lista.indexOf(a) + '">Seguir con el índice</button></small>';
+    if(a.resultado && a.sinFechas) return '<small>' + esc(a.resultado) + '</small>' + avisoSinFechas(a.colsFechas);
     if(a.resultado) return '<small>' + esc(a.resultado) + '</small>';
     if(a.tipo === 'dedicados') return '<small>' + plural(a.clientes, 'cliente', 'clientes') + ' y ' + plural(a.enlaces, 'enlace', 'enlaces') + '. Se aplica al subirlo; no toca comisiones</small>';
     if(a.tipo === 'ip') return '<small>' + plural(a.datos.length, 'IP asignada', 'IP asignadas') + (a.fuera ? ' · ' + num(a.fuera) + ' disponibles quedan fuera' : '') + '. Llena la IP de los servicios PYME que cuadran</small>';
@@ -287,6 +296,7 @@
     if(a.error) return '<span class="m rojo">No sirve</span>';
     if(a.leyendo) return '<span class="m">' + (a.espera ? 'En espera' : 'Leyendo') + '</span>';
     if(a.estado === 'lista' && a.indiceFallo && a.indice) return '<span class="m ambar">Índice a medias</span>';
+    if(a.estado === 'lista' && a.sinFechas) return '<span class="m rojo">Sin fechas</span>';
     if(a.estado === 'lista') return '<span class="m verde">Cargado</span>';
     if(a.estado === 'fallo') return '<span class="m rojo">Se detuvo</span>';
     if(a === (fondo && fondo.a)) return '<span class="m ambar">Índice ' + pctIdx(a) + ' %</span>';
@@ -307,6 +317,11 @@
     else if(fin) pie = '<div class="aviso" style="margin-top:14px"><b>' + esc(fin.titulo) + '</b><p>' + esc(fin.texto) + '</p><p style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap"><button type="button" class="btn btn-chico btn-2" id="otro">Subir otros</button></p></div>';
     else pie = '<div class="acc" style="margin-top:14px"><button type="button" class="btn btn-2" id="limpiar">Quitar todos</button>' + (buenos.length ? '<button type="button" class="btn" id="cargarTodo">Cargar ' + plural(buenos.length, 'archivo', 'archivos') + '</button>' : '') + '</div><p class="nota-chica">No borra nada. Agrega lo nuevo y actualiza lo que ya está.</p>';
     z.innerHTML = filas + (ocupado || fin ? '' : '<div style="margin-top:12px">' + soltar + '</div>') + pie;
+  }
+  // Lote 05/11 B1: un TAD sin fechas de suspensión ni habilitación no se da por bueno (churn y calidad dependen de ellas)
+  function avisoSinFechas(cf){
+    const c = cf || {}; const vistas = [c.suspension, c.habilitacion].filter(Boolean);
+    return '<small class="para-que" style="color:var(--rojo)"><b>Este TAD no trajo fechas de suspensión ni de habilitación.</b> ' + esc(vistas.length ? 'Se leyeron las columnas ' + vistas.join(' y ') + ', pero vinieron vacías o con un formato que no se entiende.' : 'No se encontró ninguna columna con esos nombres.') + ' Pide el TAD con esas columnas; mientras tanto churn y calidad siguen escondidos.</small>';
   }
   const pctIdx = (a) => Math.min(100, Math.round((a.hecho || 0) * 100 / Math.max(1, a.totalIdx || (a.indice || []).length)));
   function textoToca(){
@@ -468,6 +483,7 @@
     }
     const r = await rpc(tad ? 'tad_cerrar' : 'crudo_cerrar', { p_carga: carga });
     a.estado = 'lista';
+    if(tad){ rpc('tad_columnas', { p_carga: carga, p_cols: a.colsFechas || {} }).catch(() => {}); a.sinFechas = !Number(r.con_fechas); }
     a.resultado = tad ? plural(r.clientes_nuevos, 'cliente nuevo', 'clientes nuevos') + ', ' + plural(r.servicios_nuevos, 'servicio nuevo', 'servicios nuevos') + ' y ' + plural(r.servicios_actualizados, 'actualizado', 'actualizados') +
         (r.pagos_marcados ? ' · ' + plural(r.pagos_marcados, 'instalación pagada', 'instalaciones pagadas') : '') + ((r.invalidas || 0) + a.malas ? ' · ' + plural((r.invalidas || 0) + a.malas, 'fila no se pudo leer', 'filas no se pudieron leer') : '')
       : plural(r.guardadas, 'fila guardada', 'filas guardadas') + (a.soloAliados ? ' · solo para aliados, no toca comisiones' : '');
@@ -525,17 +541,19 @@
     try {
       const d = await rpc('actualizar_estado', {});
       idxEstado = d.indice || null;
+      const ultTad = [].concat.apply([], (d.historial || []).map((g) => g.cargas)).filter((c) => c.fuente === 'tad' && c.estado !== 'fallo')[0];
+      const tadSinFechas = !!(ultTad && ultTad.resumen && ultTad.resumen.con_fechas === 0);
       const t = (d.fuentes || []).find((x) => x.k === 'tad');
       $('ultimoTad').textContent = t && t.ultima ? 'Último TAD: ' + fecha(t.ultima) + ' a las ' + hora(t.ultima) + '.' : 'Todavía no se ha subido ningún TAD.';
       $('ultimas').innerHTML = '<div class="act-toca">' + (d.fuentes || []).map((x) => {
-        const est = !x.ultima && x.frecuencia !== 'cuando' ? ['rojo', 'Nunca se ha subido'] : x.al_dia ? (x.tarde ? ['azul', 'Falta la de la tarde (opcional)'] : ['verde', 'Al día']) : ['ambar', 'Toca hoy'];
+        const est = x.k === 'tad' && tadSinFechas ? ['rojo', 'Sin fechas'] : !x.ultima && x.frecuencia !== 'cuando' ? ['rojo', 'Nunca se ha subido'] : x.al_dia ? (x.tarde ? ['azul', 'Falta la de la tarde (opcional)'] : ['verde', 'Al día']) : ['ambar', 'Toca hoy'];
         return '<div class="act-f"><span class="tx"><b>' + esc(x.nombre) + '</b><small>' + esc(FREC[x.frecuencia] || '') + ' · ' + esc(x.ultima ? 'última: ' + fecha(x.ultima).replace(/ de \d{4}$/, '') + ', ' + hora(x.ultima) : 'sin cargas') + '</small></span>' +
           (x.frecuencia === 'cuando' && x.al_dia && x.ultima ? '' : '<span class="chip ' + est[0] + '">' + esc(est[1]) + '</span>') + '</div>'; }).join('') + filaIndice(idxEstado) + '</div>';
       pintar();
       const H = d.historial || [];
       $('cargas').innerHTML = H.length ? H.map((g, n) => '<details class="act-dia"' + (n === 0 ? ' open' : '') + '><summary><b>' + esc(capital(fechaDia(g.fecha + 'T12:00:00'))) + '</b><span>' + esc(plural(g.cargas.length, 'carga', 'cargas')) + '</span></summary>' +
         g.cargas.map((c) => '<div class="fila"><span class="tx"><b>' + esc(FUENTES[c.fuente] || c.fuente) + ' · ' + esc(c.archivo || '') + '</b><small>' + esc(hora(c.en)) + (c.por ? ' · ' + esc(c.por) : '') + (c.filas !== null && c.filas !== undefined ? ' · ' + esc(plural(c.filas, 'fila', 'filas')) : '') +
-          (c.estado === 'con_errores' ? ' · con filas sin leer' : c.estado === 'fallo' ? ' · no terminó' : '') + '</small></span>' + (c.estado === 'fallo' ? '<span class="m rojo">No terminó</span>' : (c.resumen || {}).solo_aliados ? '<span class="m azul">Solo aliados</span>' : '') + '</div>').join('') + '</details>').join('')
+          (c.estado === 'con_errores' ? ' · con filas sin leer' : c.estado === 'fallo' ? ' · no terminó' : '') + '</small></span>' + (c.estado === 'fallo' ? '<span class="m rojo">No terminó</span>' : c.fuente === 'tad' && c.resumen && c.resumen.con_fechas === 0 ? '<span class="m rojo">Sin fechas</span>' : (c.resumen || {}).solo_aliados ? '<span class="m azul">Solo aliados</span>' : '') + '</div>').join('') + '</details>').join('')
         : '<div class="vacio"><b>Aún no hay cargas</b><p>Cuando subas el primer archivo aparecerá aquí con su fecha y quién lo subió.</p></div>';
     } catch (e) {
       $('cargas').innerHTML = '<div class="vacio" role="alert"><b>No se pudo ver el historial</b><p>' + esc(e.message) + '</p><button type="button" class="btn btn-chico" id="reintentarCargas">Reintentar</button></div>';

@@ -31,16 +31,18 @@
     }
     function promedios(d){
       const p = d.prom || {};
-      return '<div class="clr-prom"><span class="t">Promedios<br>12 meses</span>' + [[num(p.inst), 'instalaciones al mes'], [num(p.perd), 'pérdidas al mes (suspendidos y retirados)'], [pct(p.churn), 'churn mensual'], [pct(p.infancia), 'churn de infancia (60 días)'], [num(p.firmados), 'expedientes firmados al mes']]
+      // Lote 05/11 B6: sin fechas del TAD de un mes completo, churn no se muestra
+      return '<div class="clr-prom"><span class="t">Promedios<br>12 meses</span>' + [[num(p.inst), 'instalaciones al mes']].concat(d.churn_listo ? [[num(p.perd), 'pérdidas al mes (suspendidos y retirados)'], [pct(p.churn), 'churn mensual'], [pct(p.infancia), 'churn de infancia (60 días)']] : []).concat([[num(p.firmados), 'expedientes firmados al mes']])
         .map((x) => '<span class="p"><b>' + x[0] + '</b><small>' + x[1] + '</small></span>').join('') + '</div>';
     }
     function numeros(d){
       const n = d.nums || {}; const m = mesDe(d.mes);
       const t = (g, x, tit, v, sub, tono) => '<button type="button" class="cr-num' + (tono ? ' ' + tono : '') + '"' + dato(g, x, tit) + '><small>' + esc(tit) + '</small><b>' + v + '</b><span>' + esc(sub) + '</span></button>';
-      return '<div class="clr-nums">' + t('hab', 'a', 'Servicios habilitados', num(n.habilitados), num(n.suspendidos) + ' suspendidos') +
-        t('inst', d.mes.slice(0, 7), 'Instalados en ' + m, num(n.inst), num(n.inst_prev) + ' en ' + mesDe(periodos()[periodos().indexOf(d.mes) + 1] || d.mes) + ' · promedio ' + num(n.inst_prom)) +
-        t('churn', d.mes.slice(0, 7) + '|tot', 'Churn del mes', pct(n.churn), num(n.perdidos) + ' perdidos sobre la base', 'r') +
-        t('churn', d.mes.slice(0, 7) + '|inf', 'Churn de infancia', pct(n.infancia), 'Suspendidos antes de 60 días', 'r') +
+      return '<div class="clr-nums' + (d.churn_listo ? '' : ' sin-churn') + '">' + t('hab', 'a', 'Servicios habilitados', num(n.habilitados), num(n.suspendidos) + ' suspendidos') +
+        // Lote 05/11 B4: el mes en curso se compara con el mismo tramo del mes anterior (del 1 al día de hoy)
+        t('inst', d.mes.slice(0, 7), 'Instalados en ' + m + (n.en_curso ? ' (mes en curso)' : ''), num(n.inst), num(n.inst_prev) + ' en ' + mesDe(periodos()[periodos().indexOf(d.mes) + 1] || d.mes) + (n.en_curso ? ' del 1 al ' + n.dia : '') + ' · promedio ' + num(n.inst_prom)) +
+        (d.churn_listo ? t('churn', d.mes.slice(0, 7) + '|tot', 'Churn del mes', pct(n.churn), num(n.perdidos) + ' perdidos sobre la base', 'r') +
+        t('churn', d.mes.slice(0, 7) + '|inf', 'Churn de infancia', pct(n.infancia), 'Suspendidos antes de 60 días', 'r') : '') +
         t('singes', 'todos', 'Sin gestionar legal', num(n.sin_gestionar), num(n.recientes) + ' recientes', 'w') + '</div>';
     }
     function instalados(d){
@@ -86,7 +88,9 @@
       const d = st.datos;
       if(!d){ cont.innerHTML = cab(null) + '<div class="rs-sk"><div class="clr-segs">' + '<span class="sk" style="height:66px;border-radius:18px"></span>'.repeat(4) + '</div><span class="sk" style="height:80px;border-radius:20px;display:block;margin-top:14px"></span><span class="sk" style="height:300px;border-radius:20px;display:block;margin-top:14px"></span></div>'; return; }
       if(d.error){ cont.innerHTML = cab(null) + '<div class="vacio" role="alert"><b>No se pudo cargar el resumen</b><p>' + esc(d.error) + '</p><button type="button" class="btn btn-chico" data-cl-reintentar>Reintentar</button></div>'; return; }
-      cont.innerHTML = cab(d) + tarjetas(d) + promedios(d) + numeros(d) + '<div class="cr-g2">' + instalados(d) + churn(d) + '</div><div class="cr-g2">' + calidad(d) + gestiones(d) + '</div>' + legal(d);
+      // Lote 05/11 B6: churn y calidad por dueño se esconden hasta que el TAD traiga fechas de un mes completo y cuadren con un caso conocido
+      const espera = '<section class="rs-card"><div class="cr-h"><h3>Churn y calidad por dueño</h3><small>Todavía no se muestran</small></div><p class="nota-chica">Salen de la última suspensión y la última habilitación del TAD. Se muestran cuando el TAD traiga esas fechas de un mes completo y el administrador confirme que cuadran con un caso conocido.</p></section>';
+      cont.innerHTML = cab(d) + tarjetas(d) + promedios(d) + numeros(d) + '<div class="cr-g2">' + instalados(d) + (d.churn_listo ? churn(d) : espera) + '</div><div class="cr-g2">' + (d.churn_listo ? calidad(d) : '') + gestiones(d) + '</div>' + legal(d);
     }
     async function cargar(){
       const n = ++st.pedido; const k = 'clres:' + st.mes + ':' + st.seg;

@@ -2192,3 +2192,6 @@ button.bz-ck.on::after{left:17px;top:13px}
 .idx-op input{width:20px;height:20px;margin:2px 0 0;flex:none;accent-color:var(--azul)}
 .idx-op small{display:block;font-weight:500;font-size:12.5px;color:var(--text2)}
 @media (prefers-reduced-motion:reduce){ .idx-pista i{transition:none} }
+/* Lote 05/11 B6: sin churn quedan 3 números en Clientes */
+.clr-nums.sin-churn{grid-template-columns:1.4fr 1.1fr 1fr}
+@media (max-width:899px){ .clr-nums.sin-churn{grid-template-columns:1fr 1fr} }

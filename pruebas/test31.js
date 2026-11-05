@@ -17,11 +17,12 @@ const GINA = { id: '77777777-7777-4777-8777-777777777700', usuario: 'gina', pin:
     ok(nombre + ': Inicio tiene Gerencia y ya no tiene Panel', (await p.locator('#zonaModulos [data-modulo="gerencia"]').count()) === 1 && (await p.locator('#zonaModulos [data-modulo="panel"]').count()) === 0);
     await p.goto(H + 'gerencia.html'); await p.waitForSelector('#zonaG .gt-grid button.gtj');
     const z = await p.textContent('#zonaG');
-    ok(nombre + ': tarjetas de la maqueta y Demanda sin red', ['Instalaciones PYME', 'En el año', 'Órdenes sin instalar', 'Comisiones del corte', 'Contratos firmados', 'Migraciones a PYME', 'Dedicados', 'Calidad de la venta', 'Estatus legal', 'Demanda sin red', 'Ingresos de dedicados', 'Tus avisos'].every((t) => z.includes(t)));
+    ok(nombre + ': tarjetas de la maqueta y Demanda sin red', ['Instalaciones PYME', 'En el año', 'Órdenes sin instalar', 'Comisiones del corte', 'Contratos firmados', 'Migraciones a PYME', 'Dedicados', 'Calidad de la venta', 'Estatus legal', 'Demanda sin red', 'Tus avisos'].every((t) => z.includes(t)));
     ok(nombre + ': pide el resumen de gerencia con el período y la comparación', llamo(mundo, 'modulo_resumen').some((l) => l[2].p_modulo === 'gerencia' && l[2].p_comparar === 'anio' && /^\d{4}-\d{2}-01$/.test(l[2].p_desde)));
     await p.selectOption('#cmpG', 'mes'); await p.waitForTimeout(300);
     ok(nombre + ': Comparar con cambia la llamada', llamo(mundo, 'modulo_resumen').some((l) => l[2].p_modulo === 'gerencia' && l[2].p_comparar === 'mes'));
-    ok(nombre + ': Ingresos de dedicados es un hueco por armar y no se toca', (await p.locator('.gtj.hueco').count()) === 1 && /Por armar/.test(await p.textContent('.gtj.hueco')));
+    // Lote 05/11 B3: lo que no funciona no se publica (antes "Ingresos de dedicados" decía "Por armar")
+    ok(nombre + ': Gerencia no muestra recuadros "Por armar"', (await p.locator('.gtj.hueco').count()) === 0 && !/Por armar/.test(await p.textContent('body')));
     await p.locator('.gtj[data-gt="comisiones"]').first().click(); await p.waitForSelector('#hojaGMod.ver .rs-n');
     ok(nombre + ': la tarjeta abre el Resumen de su módulo encima, en solo lectura', /Comisiones/.test(await p.textContent('#tGMod')) && /solo lectura/i.test(await p.textContent('#hojaGMod')));
     await p.locator('#hojaGMod .rs-n').first().click(); await p.waitForSelector('#hojaRes.ver .hoja-cuerpo');
