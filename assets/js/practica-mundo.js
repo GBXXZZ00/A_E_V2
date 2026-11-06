@@ -1654,6 +1654,13 @@ const RPC = {
       if(r && r.__error) return r; return k.instalacion ? cartaEstado(m, c.id, k.instalacion) : {}; }
     return error('Ese servicio no existe');
   },
+  // Lote 05/11 E3/E4
+  carta_marcar_enviada(m, yo, a){ if(!['ambas', 'carta', 'proforma'].includes(a.p_que)) return error('Elige qué se envió'); if(!a.p_fecha) return error('Escribe cuándo se envió');
+    const r = RPC.carta_enviar(m, yo, { p_servicio: a.p_servicio, p_canal: ['whatsapp', 'correo'].includes(a.p_canal) ? a.p_canal : 'manual', p_destino: null }); if(r && r.__error) return r;
+    (m.bitacora = m.bitacora || []).push({ accion: 'carta_marcada', registro: a.p_servicio, que: a.p_que, canal: a.p_canal, fecha: a.p_fecha }); return r; },
+  ip_parecidos(m, yo, a){ const l = (m.datos.ipReporte || []).filter((x) => !x.cuadro); return l.length ? { carga: 1, filas: l } : { sin_reporte: !m.datos.ipReporte, filas: [] }; },
+  ip_usar(m, yo, a){ if(!['admin', 'analista'].includes(yo.rol)) return error('No tienes permiso para hacer esto'); const f = (m.datos.ipReporte || []).find((x) => x.id === Number(a.p_fila)); if(!f) return error('Esa fila del reporte ya no está');
+    for(const c of m.datos.clientes){ const sv = c.servicios.find((x) => x.id === Number(a.p_servicio)); if(sv){ sv.ip = f.ip; sv.ip_mano = true; f.cuadro = true; (m.bitacora = m.bitacora || []).push({ accion: 'servicio_ip', registro: sv.id }); return null; } } return error('Ese servicio no existe'); },
   orden_horas_guardar(m, yo, a){ if(yo.rol !== 'admin') return error('No tienes permiso para hacer esto'); const n = Number(a.p_horas); if(!Number.isInteger(n) || n < 1 || n > 720) return error('Escribe entre 1 y 720 horas'); m.horasAlerta = n; return n; },
   cliente_nuevo(m, yo, a){
     if(!['admin', 'analista', 'lider'].includes(yo.rol)) return error('No tienes permiso para hacer esto');

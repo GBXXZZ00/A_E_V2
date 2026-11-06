@@ -455,7 +455,8 @@
   // Lote 22/10: reporte "Clientes Empresariales" de Proham (sucursal + código + ONT)
   async function subirIp(a){
     a.estado = 'subiendo'; a.hecho = 0; pintar();
-    const filas = a.datos.map((o) => ({ s: o.sucursal, c: o.cliente, e: o.ont, ip: o.ipv4, ip6: o.ipv6, est: o.estado }));
+    // Lote 05/11 E4: también el nombre (para proponer "Lo más parecido" cuando no cuadra por sucursal, código y ONT)
+    const filas = a.datos.map((o) => ({ s: o.sucursal, c: o.cliente, e: o.ont, ip: o.ipv4, ip6: o.ipv6, est: o.estado, n: o.nombre || o.razon_social || o.nombre_cliente || o.cliente_nombre || o.descripcion || '' }));
     const r = await rpc('ip_reporte_cargar', { p_archivo: a.nombre, p_filas: filas });
     a.estado = 'lista'; a.datos = null;
     a.resultado = plural(r.cuadran, 'servicio cuadra', 'servicios cuadran') + (r.llenadas ? ' · ' + plural(r.llenadas, 'IP llenada', 'IP llenadas') : '') +

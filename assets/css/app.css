@@ -2258,3 +2258,25 @@ button.bz-ck.on::after{left:17px;top:13px}
 .bz-fl button b{margin-left:4px}
 .bz-fl button.on{background:var(--azul);border-color:var(--azul);color:#fff}
 .bz-ck.armado{outline:2px solid var(--azul);outline-offset:2px}
+/* Lote 05/11 E: fila de Comisiones solo con etiquetas, secciones por dueño, hoja con acciones arriba y "Ya enviada" */
+.cx-fila.cx-fila2{display:flex;align-items:center;gap:12px;grid-template-columns:none}
+.cx-fila2 .cx-c{flex:1;min-width:0}
+.cx-fila2 > .i{flex:none;width:18px;height:18px;color:var(--text3)}
+.cx-et{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.cx-pts{display:flex;gap:10px;flex:none}
+.cx-pt{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:var(--text2)}
+.cx-pt i{width:10px;height:10px;border-radius:50%;background:var(--rojo)}
+.cx-pt.ok i{background:var(--verde)}
+.cx-sec{padding:10px 14px 6px;font-size:12.5px;font-weight:800;color:var(--text2);border-top:1px solid var(--line)}
+.cx-sec.rojo{color:var(--rojo)}
+.cx-sec.verde{color:var(--verde)}
+.hc-top{display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:0 0 10px}
+.mc{border:0;padding:0;margin:14px 0 0}
+.mc-op{display:inline-flex;align-items:center;gap:8px;min-height:44px;margin-right:16px;font-size:14px}
+.mc-op input{width:18px;height:18px;accent-color:var(--azul)}
+@media (max-width:560px){ .cx-fila.cx-fila2{flex-wrap:wrap} .cx-pts{width:100%;order:3} .cx-fila2 > .i{display:none} }
+.ip-par{margin-top:8px}
+.ip-op{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
+.ip-op span{flex:1;min-width:0}
+.ip-op b{display:block;font-size:13.5px;overflow-wrap:anywhere}
+.ip-op small{display:block;font-size:12px;color:var(--text2)}

@@ -52,10 +52,10 @@ async function cerrarHojas(p){ for(let i = 0; i < 4 && await p.evaluate(() => !!
     // Archivos por subir: filtro con contador y etiqueta
     await p.click('[data-filtro="subir"]'); await p.waitForFunction(() => /Tornillos El Yunque/.test(document.getElementById('lista').textContent));
     ok(nombre + ': filtro Archivos por subir con contador', /Archivos por subir\s*\d+/.test(await p.textContent('[data-filtro="subir"]')) && (await p.textContent('#lista')).includes('Tornillos El Yunque'));
-    ok(nombre + ': la fila lleva la etiqueta Archivos por subir sin cambiar la comisión', (await p.locator('#lista [data-com] .cx-q', { hasText: /Archivos por subir/ }).count()) === (await p.locator('#lista [data-com]').count()) && (await p.locator('#lista [data-com]', { hasText: 'Tornillos El Yunque' }).locator('.chip.verde').count()) >= 1);
+    ok(nombre + ': la fila lleva la etiqueta Archivos por subir sin cambiar la comisión', (await p.locator('#lista [data-com] .cx-et', { hasText: /Archivos por subir/ }).count()) === (await p.locator('#lista [data-com]').count()) && (await p.locator('#lista [data-com]', { hasText: 'Tornillos El Yunque' }).locator('.chip.verde').count()) >= 1);
     await p.click('[data-filtro="todos"]'); await p.waitForSelector('.grupo');
     await p.locator('.grupo-cab').filter({ hasText: 'Lucía Ferrer' }).click();
-    ok(nombre + ': la fila dice Carta y proforma por enviar', (await p.locator('.grupo.abierto .cx-cp', { hasText: 'Por enviar' }).count()) >= 1);
+    ok(nombre + ': la fila dice Carta y proforma por enviar', (await p.locator('.grupo.abierto .cx-et', { hasText: /por enviar|espera la IP/ }).count()) >= 1);
     ok(nombre + ': Comisiones sin desborde', await sinDesborde(p));
     await p.screenshot({ path: 'capturas/22-' + nombre + '-comisiones.png', fullPage: true });
 
@@ -78,7 +78,7 @@ async function cerrarHojas(p){ for(let i = 0; i < 4 && await p.evaluate(() => !!
     const prof2 = await p.textContent('#plg-carta');
     ok(nombre + ': queda anotado quién la envió y cuándo, y se puede volver a enviar', /Elena/.test(prof2) && (await p.textContent('#cartaWa')).includes('Volver a enviar') && mundo.llamadas.some((l) => l[1] === 'carta_enviar'));
     await cerrarHojas(p);
-    await p.waitForFunction(() => [...document.querySelectorAll('.grupo.abierto .cx-cp')].some((t) => /Enviada \d\d\/\d\d/.test(t.textContent)));
+    await p.waitForFunction(() => [...document.querySelectorAll('.grupo.abierto .cx-et')].some((t) => /enviada por Canales · \d\d\/\d\d/.test(t.textContent)));
     ok(nombre + ': en la fila queda Enviada con la fecha', true);
 
     // Evento a mano: el Analista Senior lo ve aparte y decide si comisiona

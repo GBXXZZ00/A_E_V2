@@ -17,7 +17,8 @@ const cerrarHojas = async (p) => { for(let i = 0; i < 4; i++){ if(await p.evalua
     await p.click('#alertas [data-filtro="asignar"]');
     ok(nombre + ': la bandeja trae solo las pendientes, ya abiertas', (await p.locator('[data-com]').count()) === 2 && p.url().includes('f=asignar'));
     const t = await p.textContent('#lista');
-    ok(nombre + ': Sin orden en rojo y orden por confirmar', (await p.locator('#lista .tx-rojo').textContent()) === 'Sin orden' && /por confirmar/.test(await p.locator('#lista .tx-ambar').first().textContent()) && t.includes('Por asignar'));
+    // Lote 05/11 E2: la fila solo trae etiquetas: "Sin orden" en rojo y "Orden sin confirmar" en ámbar; el grupo se llama "Sin dueño"
+    ok(nombre + ': Sin orden en rojo y orden sin confirmar', /Sin orden/.test(await p.locator('#lista .chip.rojo', { hasText: 'Sin orden' }).first().textContent()) && (await p.locator('#lista .chip.ambar', { hasText: 'Orden sin confirmar' }).count()) >= 1 && (t.includes('Sin dueño') || t.includes('Por asignar')));
     ok(nombre + ': bandeja sin desborde', await sinDesborde(p));
     await p.screenshot({ path: 'capturas/06-' + nombre + '-bandeja.png', fullPage: true });
 
@@ -35,7 +36,7 @@ const cerrarHojas = async (p) => { for(let i = 0; i < 4; i++){ if(await p.evalua
 
     // Sin orden: asignar a mano
     await abrir(p, 'Comercial de Prueba 10,');
-    ok(nombre + ': sin orden ofrece Asignar', (await p.textContent('#asigCambiar')) === 'Asignar' && (await p.locator('#asigConfirmar').count()) === 0 && (await p.textContent('#hojaComision')).includes('Sin orden'));
+    ok(nombre + ': sin orden ofrece Asignar', (await p.textContent('#asigCambiar')) === 'Elegir orden y dueño' && (await p.locator('#asigConfirmar').count()) === 0 && (await p.textContent('#hojaComision')).includes('Sin orden'));
     await p.click('#asigCambiar'); await p.waitForSelector('#hojaAsignar.ver .opr');
     ok(nombre + ': la hoja de asignar se abre encima', (await p.evaluate(() => window.Comun.hojasAbiertas().join())) === 'hojaComision,hojaAsignar');
     await p.click('#asigGuardar');
@@ -59,7 +60,7 @@ const cerrarHojas = async (p) => { for(let i = 0; i < 4; i++){ if(await p.evalua
     // Buscador y marca Natural
     await p.fill('#busca', 'kiosco'); await p.waitForFunction(() => document.querySelectorAll('#lista [data-com]').length === 1);
     ok(nombre + ': el buscador filtra y abre el grupo', (await p.locator('.grupo.abierto').count()) === 1 && p.url().includes('q=kiosco'));
-    ok(nombre + ': documento de persona natural y orden a la vista', /^V-/.test(await p.textContent('#lista [data-com] .cx-c small')) && !/Sin orden/.test(await p.textContent('#lista [data-com] .cx-o')));
+    ok(nombre + ': documento de persona natural y orden a la vista', /^V-/.test(await p.textContent('#lista [data-com] .cx-c small')) && !/Sin orden/.test(await p.textContent('#lista [data-com]')));
     await p.fill('#busca', 'zzzz'); await p.waitForSelector('#lista .vacio');
     ok(nombre + ': sin resultados lo dice claro', (await p.textContent('#lista .vacio')).includes('Sin resultados'));
     await p.fill('#busca', 'kiosco'); await p.waitForSelector('#lista [data-com]');
@@ -75,7 +76,7 @@ const cerrarHojas = async (p) => { for(let i = 0; i < 4; i++){ if(await p.evalua
     await p.click('#excGuardar'); await p.waitForFunction(() => document.querySelector('#hojaComision').textContent.includes('Comisiona por excepción'));
     h = await p.textContent('#hojaComision');
     ok(nombre + ': con excepción comisiona y se ve el motivo', h.includes('Cliente antiguo, se aprobó por gerencia') && h.includes('Activa') && mundo.llamadas.some((l) => l[1] === 'instalacion_excepcion' && l[2].p_motivo && l[2].p_corte));
-    await cerrarHojas(p); await p.waitForFunction(() => /por excepción/.test(document.querySelector('#lista [data-com] .cx-q').textContent));
+    await cerrarHojas(p); await p.waitForFunction(() => /por excepción/.test(document.querySelector('#lista [data-com] .cx-et').textContent));
     ok(nombre + ': la fila queda marcada con Excepción', true);
     await abrir(p, 'Kiosco La Parada'); await p.click('#excQuitar'); await p.waitForFunction(() => !document.querySelector('#hojaComision').textContent.includes('Comisiona por excepción') && !!document.querySelector('#excAbrir'));
     ok(nombre + ': la excepción se puede quitar', true);

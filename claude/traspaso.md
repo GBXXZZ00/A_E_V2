@@ -1,6 +1,6 @@
 # Traspaso (se actualiza al cerrar cada sesión)
 
-Actualizado: 05/11/2026, LOTE 05/11 en curso (una versión por parte). Publicado: `?v=72` (partes G, A, B, C y D).
+Actualizado: 05/11/2026, LOTE 05/11 en curso (una versión por parte). Publicado: `?v=73` (partes G, A, B, C, D y E).
 
 ## LOTE 05/11 (`claude/lote-05nov.md`): EN CURSO
 Referencia de comisiones (`privado.comision_filas3`) al empezar: septiembre 46/41, octubre 83/75, noviembre 34/4.
@@ -42,7 +42,13 @@ Referencia de comisiones (`privado.comision_filas3`) al empezar: septiembre 46/4
   - D5 líder: Devueltos o pedidos (los requerimientos abiertos salen como tipo `pedido`), faltan para comisionar, por instalar, gestiones. Analista: cartas y proformas, cambios por emitir (antes "Emitir en Proham"), IP, pago y notas. Senior: Sin dueño, Provisionales y verificar, Cargas del día; sin revisión de documentos. Administrador: revisar documentos, por decidir, aliados, alertas.
   - D6 "Marcar hecho" (notas) pide un segundo toque y queda en la bitácora (`tarea_hecha`). D7 buscador por RIF o nombre; aviso "Qué cambió" por rol con Entendido (una vez por persona en el equipo). D8 números de arriba para todos los roles; Inicio y Mi trabajo siguen dando lo mismo (también Legal: `trabajo_resumen` ya lo incluye).
   - Pruebas: test53 nueva; test30, test44 y test50 ajustadas a lo decidido el 05/11 (Senior, Legal por tipo, "Cambios por emitir", confirmar Hecho).
-- **Siguen**: E (Comisiones), F (Dedicados y VGT).
+- **Parte E HECHA (v73)**. Migraciones `lote05_e1_carta_marcar` y `lote05_e4_ip_cruce`.
+  - E1 dentro de cada dueño: "Corte de X: si no cumplen al dd/mm se pierden" (rojo), "Instaladas en este corte", "Cumplieron" (verde), "Por instalar"; el grupo "Por asignar" se llama "Sin dueño" ("No comisionan hasta asignarlas"); bloque "Migraciones del corte" (confirmadas; las por confirmar enlazan a Migraciones). Tarjetas, pestañas por equipo y avisos quedan igual.
+  - E2 la fila solo trae etiquetas (sin botones): Legal, Pago y Orden como puntos de color; carta ("Carta enviada por Canales · fecha · medio", "por enviar · N días", "espera la IP"); "Sin orden" / "Orden sin confirmar" y su motivo ("Parece ser…"); "Instaló … (aliado)"; "Falta elegir dueño". Toda la fila abre la hoja.
+  - E3 hoja: arriba "Ver expediente completo" y "Contactar" (el de siempre, a quien tiene el paso). "Cliente y orden de Odoo" con "¿Es este cliente?" (Sí, es este / No es) en provisionales, Confirmar orden, Elegir otra orden, Cambiar dueño. Carta: Enviar por WhatsApp, Descargar los PDF, Enviar por correo y **"Ya enviada (marcar)"** (qué, cuándo, por dónde; `carta_marcar_enviada`, bitácora `carta_marcada`). Las secciones siguen plegables (lo que falta abierto, lo listo plegado).
+  - E4 diagnóstico de IP con la base real: el cruce exigía categoría "PYME…" y dejaba fuera 453 servicios de empresas con plan "1 GB" (151), "PROMO-1GB" (123), "EXONERADO" (122), "USO INTERNO" (53) y otros; 451 de ellos sin IP. De la última carga: 2.539 cuadraron, 104 filas sin sucursal/código o IP válida, 107 sin servicio, 253 repetidas. Ahora: cuadra por sucursal + código con cualquier categoría (prefiere PYME y el mismo equipo); las filas que no cuadran se guardan (`privado.ip_reporte_filas`) y la hoja propone "Lo más parecido" (misma ONT, mismo código en otra sucursal, nombre parecido) con "Usar esta IP", "Ver otros parecidos" y "Escribir la IP a mano"; nunca se pone sola. El reporte ahora manda también el nombre. **Hay que volver a subir el reporte de IP** para que llene las que faltan.
+  - Pruebas: test54 nueva; test06 y test22 ajustadas a la fila nueva. Comisiones iguales: 46/41, 83/75, 47/4.
+- **Siguen**: F (Dedicados y VGT).
 
 
 

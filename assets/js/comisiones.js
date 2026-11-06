@@ -167,6 +167,35 @@
     if(k.k === 'por_enviar') return [dias > 2 ? 'rojo' : 'ambar', 'Por enviar · ' + plural(dias, 'día', 'días'), f.equipo === 'aliados' && esLider() ? 'La envía Canales' : 'Le toca a Canales de atención'];
     return ['gris', 'Sin registro', ''];
   }
+  // Lote 05/11 E2: en la fila solo etiquetas (sin botones): Legal, Pago y Orden como puntos de color, la carta, la orden y el dueño
+  const MEDIO = { whatsapp: 'WhatsApp', correo: 'correo', manual: 'por fuera' };
+  function etiquetaCarta(f){
+    const k = f.carta || {}; const dias = Number(k.dias) || 0;
+    if(f.pend) return ['gris', 'Carta: se envía al instalar'];
+    if(k.k === 'enviada') return ['verde', 'Carta enviada por Canales · ' + diaMes(k.canales.en) + (k.canales.canal ? ' · ' + (MEDIO[k.canales.canal] || k.canales.canal) : '')];
+    if(k.k === 'lider') return ['azul', 'Carta enviada por el líder · falta Canales'];
+    if(k.k === 'falta_ip') return ['ambar', 'Carta: espera la IP'];
+    if(k.k === 'por_enviar') return [dias > 2 ? 'rojo' : 'ambar', 'Carta y proforma por enviar · ' + plural(dias, 'día', 'días')];
+    return null;
+  }
+  function filaNueva(f){
+    const att = f.pend ? 'data-exp="' + esc(f.cliente_id) + '"' : 'data-com="' + esc(f.instalacion_id) + '" data-cliente="' + esc(f.cliente_id) + '"';
+    const sub = [f.doc || '', f.codigo ? 'Código ' + String(f.codigo).replace(/^0+/, '') : '', f.pend ? 'sin instalar' : 'instalada ' + diaMes(f.instalada_en), f.orden ? 'orden ' + ordenCorta(f.orden) : ''].filter(Boolean).join(' · ');
+    const et = []; const c = etiquetaCarta(f); if(c) et.push(c);
+    if(!f.pend){
+      if(!f.orden) et.push(['rojo', 'Sin orden']); else if(!f.orden_ok) et.push(['ambar', 'Orden sin confirmar']);
+      if(!f.orden_ok && f.motivo) et.push([/parec/i.test(f.motivo) ? 'azul' : 'gris', f.motivo]);
+      if(f.equipo === 'aliados' && f.instalador) et.push(['gris', 'Instaló ' + capital(f.instalador) + ' (aliado)']);
+      if(!f.lider && !f.dueno) et.push(['ambar', 'Falta elegir dueño']);
+      if(f.movida) et.push(['ambar', 'Movida a mano']);
+      if(f.por_subir && f.legal_ok) et.push(['ambar', 'Archivos por subir']);
+      if(f.cumple) et.push(['verde', f.excepcion ? 'Comisiona por excepción' : 'Comisiona']);
+    } else et.push(['gris', f.docs ? (f.enviado ? 'Enviado a revisión' : 'Documentos subidos') : 'Sin documentos']);
+    const punto = (t, ok) => '<span class="cx-pt ' + (ok ? 'ok' : 'no') + '" title="' + t + (ok ? ' listo' : ' falta') + '"><i aria-hidden="true"></i>' + t + '</span>';
+    return '<button type="button" class="cx-fila cx-fila2" ' + att + ' aria-label="' + esc((f.nombre || 'Sin nombre') + '. Toca para abrir su hoja') + '"><span class="cx-c"><b>' + esc(f.nombre || 'Sin nombre') + '</b><small>' + esc(sub) + '</small>' +
+      (et.length ? '<span class="cx-et">' + et.map((x) => '<span class="chip ' + x[0] + '">' + esc(x[1]) + '</span>').join('') + '</span>' : '') + '</span>' +
+      (f.pend ? '' : '<span class="cx-pts">' + punto('Legal', f.legal_ok) + punto('Pago', f.pago_ok) + punto('Orden', f.orden_ok) + '</span>') + ic('derecha') + '</button>';
+  }
   function fila(f){
     const c = cartaTexto(f); const att = f.pend ? 'data-exp="' + esc(f.cliente_id) + '"' : 'data-com="' + esc(f.instalacion_id) + '" data-cliente="' + esc(f.cliente_id) + '"';
     const inst = f.pend ? '<b>Sin instalar</b><small>' + esc(f.desde ? 'desde ' + hace(f.desde).replace('hace ', '') : '') + '</small>' : '<b>' + esc(diaMes(f.instalada_en)) + '</b><small>' + esc(hace(f.instalada_en)) + '</small>';
@@ -214,7 +243,7 @@
       gs.sort((a, b) => (a.l === 'Por asignar') - (b.l === 'Por asignar') || b.filas.filter((f) => !f.pend).length - a.filas.filter((f) => !f.pend).length || a.l.localeCompare(b.l));
       h = gs.map((g, n) => grupoHtml(seg + '|' + equipo + '|' + g.l, g.l, g.filas, false, solo || gs.length === 1 || (abiertos[seg + '|' + equipo + '|' + g.l] === undefined && n === 0))).join('');
       if(seg === 'cambios') h += migExtras();
-      else h += bandejasExtra();
+      else h += migCorte() + bandejasExtra();
     }
     $('lista').innerHTML = h;
   }
@@ -227,10 +256,19 @@
         (inst.some(cartaPend) ? '<span class="p w">' + inst.filter(cartaPend).length + ' por enviar</span>' : '') +
         (filas.length > inst.length ? '<span class="p g">' + (filas.length - inst.length) + ' por instalar</span>' : '');
     const todo = completos[k] || filas.length <= TOPE; const ver = todo ? filas : filas.slice(0, TOPE);
-    const cuerpo = (cartas ? '' : '<div class="cx-th" aria-hidden="true"><span>Cliente</span><span>Instalada</span><span>Orden de Odoo</span><span>Qué falta</span><span>Carta y proforma</span></div>') +
-      ver.map(cartas ? filaCarta : fila).join('') + (todo ? '' : '<button type="button" class="fila mas" data-mas="' + esc(k) + '">Ver ' + (filas.length - TOPE) + ' más</button>');
+    // Lote 05/11 E1: dentro de cada dueño, lo del corte anterior que se pierde (rojo), lo de este corte y lo que ya cumplió (verde)
+    let cuerpo;
+    if(cartas) cuerpo = ver.map(filaCarta).join('');
+    else {
+      const lim = d && d.limite ? diaMes(d.limite + 'T12:00:00') : '';
+      const sec = (cls, t, l) => l.length ? '<div class="cx-sec ' + cls + '">' + esc(t) + ' · ' + l.length + '</div>' + l.map(filaNueva).join('') : '';
+      const ant = ver.filter((f) => !f.pend && f.origen === 'anterior' && !f.cumple); const est = ver.filter((f) => !f.pend && f.origen !== 'anterior' && !f.cumple);
+      cuerpo = sec('rojo', (d && d.corte ? 'Corte de ' + mes(menosMeses(d.corte, 1) + 'T12:00:00Z') : 'Corte anterior') + ': si no cumplen al ' + lim + ' se pierden', ant) + sec('', 'Instaladas en este corte', est) +
+        sec('verde', 'Cumplieron', ver.filter((f) => f.cumple)) + sec('gris', 'Por instalar', ver.filter((f) => f.pend));
+    }
+    cuerpo += todo ? '' : '<button type="button" class="fila mas" data-mas="' + esc(k) + '">Ver ' + (filas.length - TOPE) + ' más</button>';
     return '<div class="grupo cx-grupo' + (ab ? ' abierto' : '') + '" data-lider="' + esc(titulo) + '" data-k="' + esc(k) + '"><button type="button" class="grupo-cab" data-grupo="' + esc(k) + '" aria-expanded="' + !!ab + '">' + ic('abajo') +
-      (cartas ? '' : '<span class="av" aria-hidden="true">' + esc(iniciales(titulo)) + '</span>') + '<span class="tx"><b>' + esc(titulo) + '</b></span><span class="stats">' + pills + '</span></button>' +
+      (cartas ? '' : '<span class="av" aria-hidden="true">' + esc(iniciales(titulo)) + '</span>') + '<span class="tx"><b>' + esc(titulo === 'Por asignar' && !cartas ? 'Sin dueño' : titulo) + '</b>' + (titulo === 'Por asignar' && !cartas ? '<small>No comisionan hasta asignarlas</small>' : '') + '</span><span class="stats">' + pills + '</span></button>' +
       '<div class="grupo-cuerpo">' + (cartas ? '' : barraPendientes({ lider: titulo })) + cuerpo + '</div></div>';
   }
   // Qué quiere decir cada filtro que confunde (lote 2, C)
@@ -250,6 +288,15 @@
   async function cargarMig(mio){
     try { const r = await rpc('migraciones_corte', { p_corte: d.corte }); if(mio !== pedido) return; MIG = r; if(seg === 'cambios') pintarLista(); }
     catch (e) { MIG = null; }
+  }
+  // Lote 05/11 E1: bloque "Migraciones del corte" en la lista (las confirmadas por el TAD; las por confirmar están en Migraciones)
+  function migCorte(){
+    if(!d || busca || filtro) return '';
+    const m = (d.filas || []).filter((f) => f.migracion && (equipo === 'todos' || !equipo || f.equipo === equipo)); const k = 'mig|' + equipo; const ab = !!abiertos[k];
+    return '<div class="grupo cx-grupo bandeja-extra' + (ab ? ' abierto' : '') + '" data-lider="' + k + '" data-k="' + k + '"><button type="button" class="grupo-cab" data-grupo="' + k + '" aria-expanded="' + ab + '">' + ic('abajo') +
+      '<span class="tx"><b>Migraciones del corte</b><small>Confirmadas por el TAD · ' + m.length + '</small></span><span class="stats"><span class="p ok">' + m.filter((f) => f.cumple).length + ' cumplen</span></span></button>' +
+      '<div class="grupo-cuerpo">' + (m.length ? m.map(filaNueva).join('') : '<p class="nota-chica" style="padding:10px 14px">Ninguna confirmada en este corte todavía.</p>') +
+      '<a class="fila" href="migraciones.html?f=por_confirmar"><span class="tx"><b>Por confirmar</b><small>Las que esperan el TAD están en Migraciones</small></span>' + ic('derecha') + '</a></div></div>';
   }
   function migExtras(){
     if(!MIG || !d || MIG.corte !== d.corte || busca) return '';
@@ -462,7 +509,9 @@
     $('cabCom').innerHTML = '<div class="f-cab"><div class="tx"><h2 class="nom" id="tCom">' + esc(f.nombre || 'Cliente') + '</h2><p class="dat">' + esc([f.sucursal && f.codigo ? f.sucursal + '-' + f.codigo : f.codigo, f.instalada_en ? 'Instalado el ' + fecha(f.instalada_en) : ''].filter(Boolean).join(' · ')) + '</p></div>' +
       '<button type="button" class="cerrar" data-cierra="1" aria-label="Cerrar">' + ic('x') + '</button></div>' +
       // Lote A: contactar a quien tiene lo que falta para comisionar
-      (window.Contacto && f.instalacion_id && 'orden_ok' in f ? window.Contacto.boton('comision', f.instalacion_id, !f.orden_ok ? 'orden' : !f.legal_ok ? 'legal' : !f.pago_ok ? 'pago' : '') : '');
+      // Lote 05/11 E3: arriba a la vista "Ver expediente completo" y "Contactar a la líder"
+      '<div class="hc-top"><button type="button" class="btn btn-chico btn-2" id="abrirExp">Ver expediente completo</button>' +
+      (window.Contacto && f.instalacion_id && 'orden_ok' in f ? window.Contacto.boton('comision', f.instalacion_id, !f.orden_ok ? 'orden' : !f.legal_ok ? 'legal' : !f.pago_ok ? 'pago' : '') : '') + '</div>';
     if(window.Contacto) window.Contacto.llenar($('cabCom'));
     $('cuerpoCom').innerHTML = '<div class="sk-bloque"><span class="sk" style="height:64px;border-radius:16px"></span><span class="sk" style="height:150px;border-radius:16px"></span><span class="sk" style="height:90px;border-radius:16px"></span></div>';
     if(hojaAbierta() !== 'hojaComision') abrirHoja('hojaComision'); else $('cuerpoCom').scrollTop = 0;
@@ -549,14 +598,17 @@
       '<div class="cp-doc"><span><b>Proforma de instalación</b><small>' + esc(sv.plan || 'Servicio de internet') + ' · contrato ' + esc(String(sv.codigo || '').replace(/^0+/, '')) + '</small></span><button type="button" class="enlace" data-cp-pdf="proforma">Ver PDF</button></div>' +
       ((sv.carta || {}).puede ? '<div class="cp-doc"><span><b>Carta de bienvenida</b><small>Con los datos del líder y la IP</small></span><button type="button" class="enlace" data-cp-pdf="bienvenida">Ver PDF</button></div>'
         : '<p class="nota-chica">La carta sale cuando la instalación tenga dueño. Por ahora va solo la proforma.</p>') +
-      '<div class="chk"><span>IP del servicio<small>' + esc(sinIp ? 'Falta: la carta dirá "Pendiente por asignar"' : [sv.ip, sv.ip6].filter(Boolean).join(' · ')) + '</small></span>' + (F.puedo.ip ? '<button type="button" class="mini" id="profIp">' + (sinIp ? 'Escribir' : 'Cambiar') + '</button>' : '') + '</div>';
+      '<div class="chk"><span>IP del servicio<small>' + esc(sinIp ? 'Falta: la carta dirá "Pendiente por asignar"' : [sv.ip, sv.ip6].filter(Boolean).join(' · ')) + '</small></span>' + (F.puedo.ip ? '<button type="button" class="mini" id="profIp">' + (sinIp ? 'Escribir la IP a mano' : 'Cambiar') + '</button>' : '') + '</div>' +
+      (sinIp && F.puedo.ip ? '<div class="ip-par" id="ipPar" data-servicio="' + esc(sv.id) + '"><span class="cargando-linea"><i></i>Buscando lo más parecido en el reporte de IP</span></div>' : '');
     if(soloVe) h += '<p class="nota-chica">Es un cliente de aliado: la carta y proforma la envía Canales de atención.</p>';
     else {
       const p2 = K.paso2 && Number(K.paso2.servicio) === Number(sv.id) ? K.paso2 : null;
       h += (p2 && p2.paso2 ? '<a class="btn btn-ancho cp-paso2" href="' + esc(p2.enlace) + '" target="_blank" rel="noopener">' + ic('wa') + 'Paso 2: abrir el chat de ' + esc(p2.telefono) + '</a>' : '') +
         '<button type="button" class="btn btn-ancho cp-wa" id="cartaWa">' + ic('wa') + (k.k === 'enviada' ? 'Volver a enviar por WhatsApp' : 'Enviar carta y proforma por WhatsApp') + '</button>' +
         '<p class="nota-chica">Un solo toque: copia el número del cliente y abre WhatsApp con los dos PDF y el mensaje. En la laptop los descarga y abre WhatsApp Web en su chat.</p>' +
-        '<button type="button" class="enlace" id="cartaOtra">O enviar por correo (opcional)</button>';
+        '<div class="acc" style="margin-top:8px"><button type="button" class="btn btn-chico btn-2" id="cartaPdfs">Descargar los PDF</button><button type="button" class="btn btn-chico btn-2" id="cartaOtra">Enviar por correo</button>' +
+        (k.k === 'enviada' ? '' : '<button type="button" class="btn btn-chico btn-2" id="cartaMarcar">Ya enviada (marcar)</button>') + '</div>' +
+        '<p class="nota-chica">"Ya enviada" es para cuando se envió por fuera: eliges qué se envió, cuándo y por dónde. Queda quién lo marcó.</p>';
     }
     return plegable('carta', 'Carta de bienvenida y proforma', chip, cls, h).replace('class="req plg-com', 'class="req plg-com cp');
   }
@@ -564,13 +616,15 @@
   function bloqueOrden(F, i, f, P){
     if(!i || !i.comisiona) return '';
     const asigna = !!(F.puedo.asignar && P.asignar);
-    const h = '<p>' + (i.orden ? esc(i.orden) + (f.orden_titulo ? '. ' + esc(f.orden_titulo) : '') : i.orden_ok ? 'No tiene orden de Odoo: se asignó a mano.' : 'No hay una orden de Odoo reciente con el nombre de este cliente.') + '</p>' +
+    const prov = F.cliente.provisional ? '<div class="al-banda azul" role="note"><b>¿Es este cliente?</b><p>' + esc(F.cliente.nombre) + ' es provisional, sin RIF.' + (f.motivo && /parec/i.test(f.motivo) ? ' ' + f.motivo + '.' : '') + '</p>' +
+        '<p style="margin-top:8px;display:flex;gap:10px;flex-wrap:wrap">' + (asigna && !i.orden_ok && i.orden && i.dueno && f.orden_id ? '<button type="button" class="btn btn-chico" id="asigConfirmar">Sí, es este</button>' : '') + '<button type="button" class="btn btn-chico btn-2" id="provNo">No es</button></p></div>' : '';
+    const h = prov + '<p>' + (i.orden ? esc(i.orden) + (f.orden_titulo ? '. ' + esc(f.orden_titulo) : '') : i.orden_ok ? 'No tiene orden de Odoo: se asignó a mano.' : 'No hay una orden de Odoo reciente con el nombre de este cliente.') + '</p>' +
       (!i.orden_ok && i.motivo ? '<p class="tx-ambar">' + esc(i.motivo) + '</p>' : '') +
       '<div class="chk"><span>Pertenece a<small>' + esc(i.dueno || 'Por asignar') + (!i.orden_ok && i.dueno ? ' (propuesto)' : '') + '</small></span>' +
-      (!asigna ? '' : !i.orden_ok && i.orden && i.dueno && f.orden_id ? '<button type="button" class="mini" id="asigCambiar">Cambiar</button><button type="button" class="mini pri" id="asigConfirmar">Confirmar</button>'
-        : !i.orden_ok ? '<button type="button" class="mini pri" id="asigCambiar">Asignar</button>' : '<button type="button" class="mini" id="asigCambiar">Cambiar</button>') + '</div>' +
+      (!asigna ? '' : !i.orden_ok && i.orden && i.dueno && f.orden_id ? (F.cliente.provisional ? '' : '<button type="button" class="btn btn-chico" id="asigConfirmar">Confirmar orden</button>') + '<button type="button" class="btn btn-chico btn-2" id="asigCambiar">Elegir otra orden</button>'
+        : !i.orden_ok ? '<button type="button" class="btn btn-chico" id="asigCambiar">Elegir orden y dueño</button>' : '<button type="button" class="btn btn-chico btn-2" id="asigCambiar">Cambiar dueño</button>') + '</div>' +
       (!asigna && !i.orden_ok ? '<p class="nota-chica">La asigna el Analista Senior.</p>' : '');
-    return plegable('orden', 'Orden de Odoo', i.orden_ok ? (i.orden ? ordenCorta(i.orden) : 'A mano') : i.orden ? 'Por confirmar' : 'Sin orden', i.orden_ok ? 'verde' : 'ambar', h);
+    return plegable('orden', 'Cliente y orden de Odoo', i.orden_ok ? (i.orden ? ordenCorta(i.orden) : 'A mano') : i.orden ? 'Por confirmar' : 'Sin orden', i.orden_ok ? 'verde' : 'ambar', h);
   }
   // Abajo: a quién pertenece, evento, corte, excepción, No comisiona y corregir un corte certificado
   function bloqueAjustes(F, i, f, P){
@@ -630,11 +684,12 @@
     // Siguiente por enviar (cuando se viene de la lista de cartas)
     const sig = K.carta && d ? todasCorte().filter((x) => x.origen === 'corte' && cartaPend(x) && Number(x.instalacion_id) !== K.inst) : [];
     if(sig.length) h += '<button type="button" class="btn btn-ancho hc-sig" data-com="' + esc(sig[0].instalacion_id) + '" data-cliente="' + esc(sig[0].cliente_id) + '" data-carta="1">Siguiente por enviar (' + sig.length + ') ' + ic('derecha') + '</button>';
-    h += '<div class="hc-acc"><button type="button" class="btn btn-2" id="abrirExp">Ver expediente completo</button></div>' + bloqueAjustes(F, i, f, P);
+    h += bloqueAjustes(F, i, f, P);
     const mov = (F.hilo || []).slice(0, 6);
     h += plegable('hilo', 'Hilo', plural((F.hilo || []).length, 'registro', 'registros'), 'gris', (mov.length ? '<div class="hilo" style="padding:4px 0 0">' + mov.map(window.Ficha.lineaHilo).join('') + '</div>' : '<p>Todavía no hay movimientos.</p>') +
       ((F.hilo || []).length > 6 ? '<button type="button" class="enlace" id="verHilo">Ver todo el hilo</button>' : ''));
     $('cuerpoCom').innerHTML = h;
+    if($('ipPar')) cargarParecidos($('ipPar'));
     // La línea de datos de arriba: RIF · Código · Líder · instalada · corte
     const dt = $('cabCom') && $('cabCom').querySelector('.dat');
     if(dt && i) dt.textContent = [docFmt(c.doc_tipo, c.doc_numero), i.codigo ? 'Código ' + String(i.codigo).replace(/^0+/, '') : '', (i.es_aliado ? 'Aliado ' : 'Líder ') + (i.dueno || capital(i.instalador || '') || 'por asignar'), i.instalada_en ? 'instalada ' + diaMes(i.instalada_en) : '', i.corte ? 'corte de ' + mes(i.corte) : ''].filter(Boolean).join(' · ');
@@ -759,6 +814,43 @@
       toast('Asignada a ' + dueno); if(hojaAbierta() === 'hojaAsignar') cerrarHoja(); tras();
     } catch (e) { if(alError) alError(e.message); else toast(e.message, 'error'); if(document.contains(boton)){ boton.disabled = false; boton.textContent = texto; } }
   }
+  // Lote 05/11 E4: la IP que no cuadró: la app propone lo más parecido (misma ONT, mismo código en otra sucursal, nombre); nunca la pone sola
+  let parecidos = null;
+  async function cargarParecidos(z, todos){
+    const sid = Number(z.dataset.servicio);
+    try { if(!parecidos || parecidos.sid !== sid) parecidos = Object.assign({ sid }, await rpc('ip_parecidos', { p_servicio: sid })); }
+    catch (e) { z.innerHTML = '<p class="nota-chica">No se pudo buscar en el reporte de IP: ' + esc(e.message) + '</p>'; return; }
+    const l = parecidos.filas || [];
+    if(parecidos.sin_reporte || !l.length){ z.innerHTML = '<p class="nota-chica">' + (parecidos.sin_reporte ? 'Todavía no se ha subido el reporte de IP.' : 'No cuadró en el reporte de IP y no hay nada parecido. Escríbela a mano.') + '</p>'; return; }
+    const fila = (x) => '<div class="ip-op"><span><b>' + esc([x.nombre || 'Sin nombre', x.sucursal ? 'sucursal ' + x.sucursal : '', x.ip || x.ip6].filter(Boolean).join(' · ')) + '</b><small>' + esc(x.por + (x.ont ? ' · ONT ' + x.ont : '') + (x.codigo ? ' · código ' + x.codigo : '')) + '</small></span>' +
+      '<button type="button" class="btn btn-chico" data-ip-fila="' + esc(x.id) + '">Usar esta IP</button></div>';
+    z.innerHTML = '<div class="estado ambar chico"><small>No cuadró en el reporte de IP por sucursal, código y ONT. Lo más parecido:</small></div>' + (todos ? l : l.slice(0, 1)).map(fila).join('') +
+      (!todos && l.length > 1 ? '<button type="button" class="enlace" id="ipOtros">Ver otros parecidos (' + (l.length - 1) + ')</button>' : '');
+  }
+  async function usarIp(b){
+    b.disabled = true;
+    try { await rpc('ip_usar', { p_servicio: parecidos.sid, p_fila: Number(b.dataset.ipFila) }); parecidos = null; toast('IP guardada. Queda en la bitácora'); tras(); }
+    catch (e) { toast(e.message, 'error'); b.disabled = false; }
+  }
+  // Lote 05/11 E3: "Ya enviada (marcar)": qué, cuándo y por dónde; queda quién lo marcó
+  const instK = () => K && K.F && (K.F.comision || []).find((x) => Number(x.id) === K.inst);
+  function abrirMarcarCarta(){
+    if(!K || !K.F || !instK()) return; const hoyS = new Date().toISOString().slice(0, 10);
+    const radio = (n, v, t, on) => '<label class="mc-op"><input type="radio" name="' + n + '" value="' + v + '"' + (on ? ' checked' : '') + '> ' + t + '</label>';
+    hojaChica('hojaMarcarCarta', 'tMarcar').innerHTML = cabHoja('tMarcar', 'Ya enviada (marcar)', K.F.cliente.nombre) + '<form id="formMarcar" novalidate>' +
+      '<fieldset class="mc"><legend class="rotulo">Qué se envió</legend>' + radio('mcQue', 'ambas', 'Las dos', true) + radio('mcQue', 'carta', 'Solo carta') + radio('mcQue', 'proforma', 'Solo proforma') + '</fieldset>' +
+      '<label class="rotulo arriba" for="mcFecha">Cuándo se envió</label><input class="campo" id="mcFecha" type="date" max="' + hoyS + '" value="' + hoyS + '">' +
+      '<fieldset class="mc"><legend class="rotulo">Por dónde</legend>' + radio('mcCanal', 'whatsapp', 'WhatsApp', true) + radio('mcCanal', 'correo', 'Correo') + radio('mcCanal', 'persona', 'En persona') + radio('mcCanal', 'otro', 'Otro') + '</fieldset>' +
+      '<div class="error" id="eMarcar" role="alert"></div><div class="acciones"><button type="submit" class="btn btn-ancho">Marcar como enviada</button></div></form>';
+    abrirHoja('hojaMarcarCarta');
+  }
+  async function guardarMarcarCarta(form){
+    const v = (n) => (form.querySelector('input[name="' + n + '"]:checked') || {}).value; const f = $('mcFecha').value; $('eMarcar').textContent = '';
+    if(!f){ $('eMarcar').textContent = 'Escribe cuándo se envió'; $('mcFecha').focus(); return; }
+    const b = form.querySelector('[type="submit"]'); b.disabled = true;
+    try { await rpc('carta_marcar_enviada', { p_servicio: instK().servicio_id, p_que: v('mcQue'), p_canal: v('mcCanal'), p_fecha: f }); cerrarHoja(); toast('Marcada como enviada. Queda tu nombre en el hilo'); tras(); }
+    catch (e) { $('eMarcar').textContent = e.message; b.disabled = false; }
+  }
   function abrirExcepcion(){
     if(!K || !K.F) return;
     hojaChica('hojaExc', 'tExc').innerHTML = cabHoja('tExc', 'Excepción de comisión', K.F.cliente.nombre) + '<form id="formExc" novalidate>' +
@@ -816,6 +908,11 @@
     if((b = t.closest('#cartaWa')) && iK()){ const sid = iK().servicio_id; b.disabled = true;
       window.Ficha.cartaWhatsapp(K.F, sid, tras).then((r) => { if(r && K){ K.paso2 = Object.assign({ servicio: sid }, r); pintarComision(); } else if(document.contains(b)) b.disabled = false; })
         .catch((e) => { toast('No se pudo abrir WhatsApp. Intenta de nuevo', 'error'); if(document.contains(b)) b.disabled = false; }); return; }
+    if(t.closest('#cartaMarcar') && iK()){ abrirMarcarCarta(); return; }
+    if((b = t.closest('[data-ip-fila]'))){ usarIp(b); return; }
+    if(t.closest('#ipOtros') && $('ipPar')){ cargarParecidos($('ipPar'), true); return; }
+    if(t.closest('#cartaPdfs') && iK()){ window.Ficha.cartaPdf(K.F, iK().servicio_id, 'proforma'); if(((K.F.servicios || []).find((x) => Number(x.id) === Number(iK().servicio_id)) || {}).carta) setTimeout(() => window.Ficha.cartaPdf(K.F, iK().servicio_id, 'bienvenida'), 600); return; }
+    if(t.closest('#provNo') && K){ alExpediente({ tab: 'datos' }); toast('Escribe el RIF correcto en Datos: si ya existe, se une a ese cliente'); return; }
     if(t.closest('#cartaOtra') && iK()){ window.Ficha.cartaOtra(K.F, iK().servicio_id, tras); return; }
     if((b = t.closest('[data-cp-pdf]')) && iK()){ window.Ficha.cartaPdf(K.F, iK().servicio_id, b.dataset.cpPdf); return; }
     if(t.closest('#verHiloNota')){ alExpediente({ tab: 'hilo' }); return; }
@@ -909,6 +1006,7 @@
   // Mientras se sube desde aquí, la casilla dice "Subiendo"
   document.addEventListener('ficha-subida', () => { if(K && K.F && document.querySelector('#hojaComision.ver')) pintarComision(); });
   document.addEventListener('submit', (e) => {
+    if(e.target.id === 'formMarcar'){ e.preventDefault(); guardarMarcarCarta(e.target); return; }
     if(e.target.id === 'formAsig' && A && K){ e.preventDefault(); const er = $('eAsig'); er.textContent = '';
       const m = document.querySelector('#asigOrdenes input:checked'); const dueno = $('asigDueno').value;
       if(!m){ er.textContent = 'Elige la orden o marca Sin orden de Odoo'; return; }
