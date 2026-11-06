@@ -1,6 +1,6 @@
 # Traspaso (se actualiza al cerrar cada sesión)
 
-Actualizado: 05/11/2026, LOTE 05/11 en curso (una versión por parte). Publicado: `?v=73` (partes G, A, B, C, D y E).
+Actualizado: 05/11/2026, LOTE 05/11 en curso (una versión por parte). Publicado: `?v=74` (partes G, A, B, C, D, E y F).
 
 ## LOTE 05/11 (`claude/lote-05nov.md`): EN CURSO
 Referencia de comisiones (`privado.comision_filas3`) al empezar: septiembre 46/41, octubre 83/75, noviembre 34/4.
@@ -48,7 +48,13 @@ Referencia de comisiones (`privado.comision_filas3`) al empezar: septiembre 46/4
   - E3 hoja: arriba "Ver expediente completo" y "Contactar" (el de siempre, a quien tiene el paso). "Cliente y orden de Odoo" con "¿Es este cliente?" (Sí, es este / No es) en provisionales, Confirmar orden, Elegir otra orden, Cambiar dueño. Carta: Enviar por WhatsApp, Descargar los PDF, Enviar por correo y **"Ya enviada (marcar)"** (qué, cuándo, por dónde; `carta_marcar_enviada`, bitácora `carta_marcada`). Las secciones siguen plegables (lo que falta abierto, lo listo plegado).
   - E4 diagnóstico de IP con la base real: el cruce exigía categoría "PYME…" y dejaba fuera 453 servicios de empresas con plan "1 GB" (151), "PROMO-1GB" (123), "EXONERADO" (122), "USO INTERNO" (53) y otros; 451 de ellos sin IP. De la última carga: 2.539 cuadraron, 104 filas sin sucursal/código o IP válida, 107 sin servicio, 253 repetidas. Ahora: cuadra por sucursal + código con cualquier categoría (prefiere PYME y el mismo equipo); las filas que no cuadran se guardan (`privado.ip_reporte_filas`) y la hoja propone "Lo más parecido" (misma ONT, mismo código en otra sucursal, nombre parecido) con "Usar esta IP", "Ver otros parecidos" y "Escribir la IP a mano"; nunca se pone sola. El reporte ahora manda también el nombre. **Hay que volver a subir el reporte de IP** para que llene las que faltan.
   - Pruebas: test54 nueva; test06 y test22 ajustadas a la fila nueva. Comisiones iguales: 46/41, 83/75, 47/4.
-- **Siguen**: F (Dedicados y VGT).
+- **Parte F HECHA (v74)**. Migraciones `lote_05nov_f_dedicados_vgt` y `lote_05nov_f_vgt_casillas` (SQL y evidencia en `supabase/pruebas/lote_05nov_f.sql`).
+  - F1: "+ Registrar dedicado nuevo" junto al buscador solo con las tarjetas Dedicado corporativo e ISP, y en "No encontramos" cuando se busca un RIF (admin, analista y líder; Legal no). Clientes queda igual.
+  - F2: `dedicado_registro_datos` (avisa si el RIF ya existe y enlaza "Abrir su expediente"; trae los líderes) y `dedicado_registrar` (RIF J/G/C, razón social, ISP o corporativo, líder, servicio opcional): crea el cliente con su RIF real, `dedicados.a_mano_en`, hilo y bitácora, y abre el expediente en Documentos. No se marca `provisional` porque ya tiene RIF: cuando el TAD o la base de la analista traigan ese RIF caen en el mismo cliente (un cliente es un RIF) y la etiqueta azul "Aún no está en el TAD" (`privado.ded_sin_tad`: a mano, sin servicios ni enlaces) se va sola. El abogado lo recibe en "Por elaborar" con el flujo de siempre (documentos aprobados).
+  - F3: VGT por solicitud. `privado.vgt_requisitos`: la propuesta (68) ya no es requisito del cliente (la única que existe queda visible como historial). Tabla `vgt_solicitud_docs` (casillas 71-79 y 82-99 de "otro", porque `documentos.numero` solo admite 0-99; da para 13 solicitudes por cliente y hoy el máximo es 6). `vgt_casilla` da la casilla de la propuesta o de cada planilla ("+ Otra planilla"); `vgt_solicitud_nueva`; `vgt_faltan` = pólizas + lo que falta en cada solicitud que pide (en uso o en proyecto, no negada, no firmada). El contrato VGT de una solicitud no pasa a Por firmar sin sus pólizas, propuesta y planilla. El abogado ve cada solicitud lista en Mi trabajo, "Por elaborar · VGT" (`elaborar_vgt`).
+  - Efecto real: 6 de los 8 clientes con VGT piden ahora propuesta y planilla por solicitud (el cliente 493 tiene la propuesta vieja: hay que subirla en su solicitud). Comisiones iguales 46/41, 83/75, 47/4.
+  - Queda vacía y sin uso la tabla `vgt_documentos` (primer intento con rango 200-999, que `documentos` no admite); sin permisos. Se puede borrar desde el chat del proyecto.
+  - Pruebas: test55 nueva (registro, RIF existente, etiqueta, solicitud con propuesta, planillas, negada, nueva solicitud, líder); test28 ajustada (pólizas arriba, propuesta por solicitud). El simulador ahora guarda bien las casillas "otro" de 60 en adelante.
 
 
 

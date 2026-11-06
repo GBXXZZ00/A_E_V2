@@ -68,7 +68,12 @@
   const nSel = () => GR.reduce((a, x) => a + (sel[x.k] || []).length, 0);
   const clave = () => 'clientes5:' + tarjeta + ':' + filtro + ':' + q + ':' + JSON.stringify(sel);
 
+  // Lote 05/11 F1: "+ Registrar dedicado nuevo" solo con la tarjeta de dedicados y para quien puede registrar (no Legal)
+  const puedeRegistrar = () => !!yo && ['admin', 'analista', 'lider'].indexOf(yo.rol) >= 0;
+  const esRif = (v) => /^[vejgpc]?[\s-]*\d{5,10}([\s-]*\d)?$/i.test(String(v || '').trim());
+  function registrarDed(){ window.Gestion.registrarDedicado({ yo, tipo: esDed() ? tarjeta : '', rif: esRif(q) ? q : '', alCrear: (cid) => { refrescar(); abrirCliente(cid, { tab: 'documentos' }); } }); }
   function pintarTarjetas(){
+    const bd = $('dedNuevo'); if(bd) bd.classList.toggle('hidden', !(esDed() && puedeRegistrar()));
     $('tarjetas').innerHTML = TARJETAS.map((t) => { const n = nTarjetas ? nTarjetas[t.id] : null; const on = t.id === tarjeta;
       return '<button type="button" class="tcli' + (on ? ' on' : '') + '" data-tarjeta="' + t.id + '" aria-pressed="' + on + '"><b>' + (n === null || n === undefined ? '<span class="sk" style="display:inline-block;width:42px;height:26px"></span>' : esc(n)) + '</b><span>' + esc(t.t) + (window.ClientesPanel && window.ClientesPanel.sub(t.id) ? '<small>' + esc(window.ClientesPanel.sub(t.id)) + '</small>' : '') + '</span></button>'; }).join('');
   }
@@ -140,7 +145,7 @@
     const sub = [c.provisional ? 'Provisional, sin RIF' : docFmt(c.doc_tipo, c.doc_numero), c.combinado ? '' : c.seg, dedSolo ? plural(c.n_enl || 0, 'enlace activo', 'enlaces activos') : s ? (sucursal(s.sucursal) === s.sucursal ? 'Suc. ' + s.sucursal : sucursal(s.sucursal)) : '', c.n_serv > 1 ? c.n_serv + ' servicios' : ''].filter(Boolean).join(' · ');
     const g = c.etq && GESTION[c.etq.e] ? c.etq : null;
     const ges = (c.ges || []).map((x) => { const p = String(x).split(':'); const gg = gestiones.find((y) => String(y.id) === p[0]); return gg ? '<span class="tagn gest-' + esc(p[1] === 'cumplido' || p[1] === 'resuelto' ? 'contactado' : p[1]) + '">' + esc(gg.nombre + ': ' + ((EST_GES.find((e) => e[0] === p[1]) || [])[1] || p[1])) + '</span>' : ''; }).join('');
-    const tags = (c.suspendido ? '<span class="tagn rojo">Suspendido</span>' : '') + (c.no_aparece_tad ? '<span class="tagn ambar">No aparece en el TAD</span>' : '') + ges + (g ? '<span class="tagn gest-' + esc(g.e) + '">' + esc(GESTION[g.e]) + (g.fecha ? ' ' + esc(String(g.fecha).slice(8, 10) + '/' + String(g.fecha).slice(5, 7)) : '') + '</span>' : '') +
+    const tags = (c.suspendido ? '<span class="tagn rojo">Suspendido</span>' : '') + (c.sin_tad ? '<span class="tagn azul">Aún no está en el TAD</span>' : '') + (c.no_aparece_tad ? '<span class="tagn ambar">No aparece en el TAD</span>' : '') + ges + (g ? '<span class="tagn gest-' + esc(g.e) + '">' + esc(GESTION[g.e]) + (g.fecha ? ' ' + esc(String(g.fecha).slice(8, 10) + '/' + String(g.fecha).slice(5, 7)) : '') + '</span>' : '') +
       (c.combinado ? '<span class="tagn azul">PYME + Dedicado' + (c.ded === 'isp' ? ' ISP' : '') + '</span>' : '') + (c.vgt ? '<span class="tagn azul">VGT</span>' : '') + polizaTag(c.poliza_vence) +
       (c.ctr === 'sin_archivo' ? '<span class="tagn ambar">Firmado: falta subir contrato</span>' : c.ctr === 'sin_vence' ? '<span class="tagn ambar">Falta vencimiento</span>' : '');
     return '<div class="cli-w"><button type="button" class="cli' + (marcado === c.id ? ' sel' : '') + '" data-cliente="' + esc(c.id) + '">' +
@@ -155,7 +160,8 @@
     $('cuentaLista').innerHTML = (q ? plural(total, 'resultado', 'resultados') + ' en todos los clientes' : (verSus() ? plural(total, 'cliente suspendido', 'clientes suspendidos') : plural(total, 'cliente', 'clientes')) + (T ? ' en ' + T.t : ' en todas las tarjetas')) + (n ? '<button type="button" class="enlace" id="quitarFiltros">Quitar filtros</button>' : '');
     if(!filas.length){
       $('enc').classList.add('hidden');
-      $('lista').innerHTML = q ? vacio('No encontramos nada con "' + q + '"', 'Prueba con otra parte del nombre, el RIF sin guiones o el código del servicio.')
+      $('lista').innerHTML = q ? vacio('No encontramos nada con "' + q + '"', 'Prueba con otra parte del nombre, el RIF sin guiones o el código del servicio.' + (esRif(q) && puedeRegistrar() ? ' Si es un dedicado nuevo, regístralo.' : ''),
+          esRif(q) && puedeRegistrar() ? '<button type="button" class="btn btn-chico btn-2" data-ded-nuevo="1">' + ic('mas') + 'Registrar dedicado nuevo</button>' : '')
         : n ? vacio('Ningún cliente con esos filtros', 'Quita alguno para ver más.', '<button type="button" class="btn btn-chico btn-2" id="quitarFiltros2">Quitar filtros</button>')
         : T && conteosTodas() ? vacio('Nada aquí en ' + T.t, 'Hay clientes en este grupo en otras tarjetas.', '<button type="button" class="btn btn-chico btn-2" data-tarjeta-todas="1">Ver en todas</button>')
         : vacio('No hay clientes aquí', filtro === 'en_curso' ? 'Cuando se cargue una instalación nueva, el cliente aparece en esta lista.' : 'Ningún cliente está en este grupo ahora mismo.',
@@ -237,6 +243,7 @@
     }
     if(t.closest('#lista [data-tarjeta-todas]')){ tarjeta = 'todas'; soltarDed(); guardarUrl(); pintarTarjetas(); pintarSels(); cargar(); return; }
     if((b = t.closest('#filtros [data-filtro], #lista [data-filtro]'))){ filtro = b.dataset.filtro; q = ''; $('busca').value = ''; guardarUrl(); pintarAtajos(); cargar(); return; }
+    if(t.closest('[data-ded-nuevo]')){ registrarDed(); return; }
     if(t.closest('#abrirFiltros')){ abrirHoja('hojaFiltros'); return; }
     if(t.closest('#quitarFiltros') || t.closest('#quitarFiltros2') || t.closest('#limpiarFiltros')){ limpiar(); return; }
     if(t.closest('#pagAnt')){ cargar(Math.max(0, desde - POR_PAGINA)); return; }

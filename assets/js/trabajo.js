@@ -109,7 +109,7 @@
       [dias === null ? 'Sin fecha' : plural(dias, 'día', 'días'), 'Para el cierre del corte' + (D.limite ? ' (' + fecha(D.limite).replace(/ de \d{4}$/, '') + ')' : ''), '', ''], [n('falta'), 'Faltan para comisionar', 'b', D.vende ? 'falta' : '']];
     else if(D.vista === 'analista' || D.vista === 'coord') l = [[n('carta'), 'Cartas y proformas por enviar', 'a', 'carta'], [n('ip'), 'IP por escribir', '', 'ip'], [n('pago'), 'Del corte sin pago', 'r', 'pago'], [n('emi'), 'Cambios por emitir', 'b', 'emi']];
     // Lote 05/11 D8: los mismos números que Inicio (salen de la misma lista)
-    else if(D.vista === 'abogado'){ const t = (x) => (D.items || []).filter((f) => f.tipo === x).length; l = [[t('elaborar_contrato'), 'Por elaborar contrato', 'r', ''], [t('seguir_firma'), 'Enviados a firmar', '', ''], [t('contrato_archivo'), 'Firmados, falta subir', 'a', ''], [t('contrato_vence'), 'Vencen pronto', 'a', 'ven']]; }
+    else if(D.vista === 'abogado'){ const t = (x) => (D.items || []).filter((f) => f.tipo === x).length; l = [[t('elaborar_contrato') + t('elaborar_vgt'), 'Por elaborar contrato', 'r', ''], [t('seguir_firma'), 'Enviados a firmar', '', ''], [t('contrato_archivo'), 'Firmados, falta subir', 'a', ''], [t('contrato_vence'), 'Vencen pronto', 'a', 'ven']]; }
     else if(D.senior && D.rol !== 'admin') l = [[n('sin'), 'Sin dueño', 'r', 'sin'], [n('prov'), 'Provisionales y verificar', 'a', 'prov'], [n('car'), 'Cargas del día', 'a', 'car'], [(D.items || []).length, 'En total', '', '']];
     else if(D.vista === 'admin') l = [[n('rev'), 'Documentos por revisar', 'b', 'rev'], [n('dec'), 'Por decidir', 'r', 'dec'], [n('ale'), 'Alertas y cargas', 'a', 'ale'], [n('ali'), 'De aliados', '', 'ali']];
     z.classList.toggle('hidden', !l);
@@ -148,7 +148,7 @@
     if(f.tipo === 'ordenes_atrasadas' || ((f.tipo === 'orden_atrasada' || f.tipo === 'por_instalar') && !f.cliente_id)) return 'Ir a Por instalar';
     if(!f.cliente_id || f.tipo === 'cerrar_corte') return 'Ir a Comisiones';
     if(f.tipo === 'venta_falta' || ['certificar', 'por_enviar', 'sin_ip', 'revisar_pago', 'carta_enviar'].indexOf(f.tipo) >= 0) return 'Ir a la comisión';
-    if(['elaborar_contrato', 'seguir_firma', 'contrato_archivo', 'contrato_vence', 'por_firmar'].indexOf(f.tipo) >= 0) return 'Abrir contrato';
+    if(['elaborar_contrato', 'elaborar_vgt', 'seguir_firma', 'contrato_archivo', 'contrato_vence', 'por_firmar'].indexOf(f.tipo) >= 0) return 'Abrir contrato';
     return 'Abrir expediente';
   }
   function plazo(f){
@@ -220,12 +220,12 @@
     const ven = gs.find((g) => g.id === 'ven') || { items: [], tipos: ['contrato_vence'] };
     // Lote 05/11 D4: "Por elaborar contrato" por tipo de cliente, prioridad ISP, corporativo, VGT, PYME, con filtros arriba
     const TIPOS_C = [['isp', 'Dedicado ISP', 'Prioridad 1'], ['corp', 'Dedicado corporativo', 'Prioridad 2'], ['vgt', 'VGT', 'Prioridad 3 · por solicitud'], ['pyme', 'PYME', 'Prioridad 4']];
-    const tipoDe = (f) => { const s = String(f.seg || ''); return /ISP/.test(s) ? 'isp' : /corporativo/i.test(s) ? 'corp' : /VGT/.test(s) ? 'vgt' : 'pyme'; };
-    const elab = its.filter((f) => f.tipo === 'elaborar_contrato').sort((a, b) => (String(a.desde) < String(b.desde) ? -1 : 1));
+    const tipoDe = (f) => { if(f.tipo === 'elaborar_vgt') return 'vgt'; const s = String(f.seg || ''); return /ISP/.test(s) ? 'isp' : /corporativo/i.test(s) ? 'corp' : /VGT/.test(s) ? 'vgt' : 'pyme'; };
+    const elab = its.filter((f) => f.tipo === 'elaborar_contrato' || f.tipo === 'elaborar_vgt').sort((a, b) => (String(a.desde) < String(b.desde) ? -1 : 1));
     const filtros = '<div class="bz-fl" role="group" aria-label="Filtrar por tipo de cliente"><button type="button" class="' + (!filtroC ? 'on' : '') + '" data-filtro-c="" aria-pressed="' + !filtroC + '">Todos <b>' + elab.length + '</b></button>' +
       TIPOS_C.map((t) => '<button type="button" class="' + (filtroC === t[0] ? 'on' : '') + '" data-filtro-c="' + t[0] + '" aria-pressed="' + (filtroC === t[0]) + '">' + esc(t[1]) + ' <b>' + elab.filter((f) => tipoDe(f) === t[0]).length + '</b></button>').join('') + '</div>';
     const porTipo = TIPOS_C.filter((t) => !filtroC || filtroC === t[0]).map((t) => { const l = elab.filter((f) => tipoDe(f) === t[0]); if(!l.length && filtroC !== t[0]) return '';
-      return seccion('Por elaborar · ' + t[1], t[2] + ' · ' + plural(l.length, 'cliente', 'clientes'), l.length ? l.slice(0, 40).map((f) => itemHtml(f)).join('') : '<p class="nota-chica bz-nada">Nada por elaborar de este tipo.</p>'); }).join('');
+      return seccion('Por elaborar · ' + t[1], t[2] + ' · ' + (t[0] === 'vgt' ? plural(l.length, 'solicitud', 'solicitudes') : plural(l.length, 'cliente', 'clientes')), l.length ? l.slice(0, 40).map((f) => itemHtml(f)).join('') : '<p class="nota-chica bz-nada">Nada por elaborar de este tipo.</p>'); }).join('');
     const etapa = (t, tipo) => { const l = its.filter((f) => f.tipo === tipo); return l.length ? seccion(t, plural(l.length, 'cliente', 'clientes'), l.slice(0, 40).map((f) => itemHtml(f)).join('')) : ''; };
     return filtros + (elab.length > 1 && !solo() ? '<p style="margin:10px 0"><button type="button" class="btn btn-chico" data-tr="cola">Uno tras otro, del más viejo</button></p>' : '') + porTipo +
       etapa('Enviado a firmar', 'seguir_firma') + etapa('Firmado, falta subir', 'contrato_archivo') + seccion('Vencen pronto', 'Se tachan solos cuando suben el documento nuevo', listaGrupo(ven)) +
@@ -280,7 +280,7 @@
     else if(f.tipo === 'venta_falta') o.tab = ref.legal === false ? 'documentos' : 'comision';
     else if(['certificar', 'por_enviar', 'sin_ip', 'revisar_pago', 'carta_enviar'].indexOf(f.tipo) >= 0) o.tab = 'comision';
     else if(f.tipo === 'ip_confirmar') o.tab = 'datos';
-    else if(['elaborar_contrato', 'seguir_firma', 'contrato_archivo', 'contrato_vence', 'por_firmar'].indexOf(f.tipo) >= 0) o.tab = 'contrato';
+    else if(['elaborar_contrato', 'elaborar_vgt', 'seguir_firma', 'contrato_archivo', 'contrato_vence', 'por_firmar'].indexOf(f.tipo) >= 0) o.tab = 'contrato';
     else if(['docs_faltan', 'devuelto', 'vgt', 'poliza', 'revisar_docs', 'cambio_revisar', 'cliente_nuevo', 'orden_atrasada'].indexOf(f.tipo) >= 0) o.tab = 'documentos';
     if(f.tipo === 'devuelto') o.casilla = 'devuelto';
     else if(f.tipo === 'docs_faltan' || f.tipo === 'cliente_nuevo') o.casilla = 'falta';

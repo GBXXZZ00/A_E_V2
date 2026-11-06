@@ -82,12 +82,72 @@
     catch (x) { $('eSus').textContent = x.message; toast(x.message, 'error'); b.disabled = false; b.textContent = c.si ? 'Suspender' : 'Reactivar'; }
   }
 
+
+  // ---------- Lote 05/11 F1-F2: registrar un dedicado nuevo (antes de que exista en el TAD) ----------
+  let reloj = null; let datos = null;
+  function registrarDedicado(o){
+    ctx = { tipo: 'ded', yo: o.yo, alCrear: o.alCrear, tipoDed: o.tipo === 'isp' ? 'isp' : o.tipo === 'corporativo' ? 'corporativo' : '' }; datos = null;
+    const h = hoja('hojaDedNuevo', 'tDedNuevo'); const esLider = o.yo && o.yo.rol === 'lider';
+    h.innerHTML = cab('tDedNuevo', 'Registrar dedicado nuevo', 'Para adelantar documentos y contrato') + '<form id="formDedNuevo" novalidate>' +
+      '<label class="rotulo" for="dnRif">RIF</label><input class="campo" id="dnRif" maxlength="14" autocomplete="off" inputmode="text" value="' + esc(o.rif || '') + '" data-foco><div class="error" id="eDnRif" role="alert"></div><p class="nota" id="dnRifNota" aria-live="polite"></p>' +
+      '<label class="rotulo arriba" for="dnNom">Razón social</label><input class="campo" id="dnNom" maxlength="200" autocomplete="off"><div class="error" id="eDnNom" role="alert"></div>' +
+      '<div class="rotulo arriba" id="dnTipoT">Tipo</div><div class="dp-modos" role="group" aria-labelledby="dnTipoT">' +
+        '<button type="button" class="dp-modo' + (ctx.tipoDed === 'isp' ? ' on' : '') + '" data-dn-tipo="isp" aria-pressed="' + (ctx.tipoDed === 'isp') + '"><b>ISP</b></button>' +
+        '<button type="button" class="dp-modo' + (ctx.tipoDed === 'corporativo' ? ' on' : '') + '" data-dn-tipo="corporativo" aria-pressed="' + (ctx.tipoDed === 'corporativo') + '"><b>Corporativo</b></button></div>' +
+      '<div class="error" id="eDnTipo" role="alert"></div><p class="nota" id="dnTipoNota">' + (ctx.tipoDed === 'isp' ? 'ISP pide además el permiso de Conatel.' : '') + '</p>' +
+      (esLider ? '<p class="nota">Líder: tú.</p>' : '<label class="rotulo arriba" for="dnLider">Líder</label><select class="campo" id="dnLider"><option value="">Cargando…</option></select><div class="error" id="eDnLider" role="alert"></div>') +
+      '<label class="rotulo arriba" for="dnSrv">Servicio a contratar (opcional)</label><input class="campo" id="dnSrv" maxlength="200" autocomplete="off">' +
+      '<div class="acciones"><button type="submit" class="btn btn-ancho" id="guardarDedNuevo">Registrar y subir documentos</button></div>' +
+      '<p class="nota">Se abre su expediente en la pestaña Documentos, igual que cualquier cliente.</p></form>';
+    abrirHoja('hojaDedNuevo');
+    revisarRif(true);
+  }
+  async function revisarRif(conLideres){
+    const v = ($('dnRif') || {}).value || ''; const nota = $('dnRifNota'); const dig = v.replace(/\D/g, '');
+    if(!conLideres && dig.length < 5){ if(nota) nota.innerHTML = ''; return; }
+    try {
+      const d = await rpc('dedicado_registro_datos', { p_rif: dig.length >= 5 ? v : null });
+      if(!$('formDedNuevo')) return; datos = d;
+      if(conLideres && $('dnLider')) $('dnLider').innerHTML = '<option value="">Elige el líder</option>' + (d.lideres || []).map((x) => '<option value="' + esc(x.id) + '">' + esc(x.nombre) + '</option>').join('');
+      const e = d.existe;
+      nota.innerHTML = dig.length < 5 ? '' : !e ? 'No existe en la app. Puedes seguir.'
+        : e.puedo ? '<b>Ya existe: ' + esc(e.nombre || '') + '.</b> <button type="button" class="enlace" data-dn-abrir="' + esc(e.id) + '">Abrir su expediente</button>'
+        : '<b>Ese RIF ya es un cliente' + (e.lider ? ' de ' + esc(e.lider) : '') + '.</b> Pídele al administrador que lo revise.';
+    } catch (x) { if(nota) nota.textContent = x.message; }
+  }
+  async function guardarDed(e){
+    e.preventDefault(); if(!ctx || ctx.tipo !== 'ded') return;
+    ['eDnRif', 'eDnNom', 'eDnTipo', 'eDnLider'].forEach((k) => { if($(k)) $(k).textContent = ''; });
+    const rif = $('dnRif').value.trim(); const nom = $('dnNom').value.trim(); const lid = $('dnLider') ? $('dnLider').value : null;
+    let mal = false;
+    if(rif.replace(/\D/g, '').length < 5){ $('eDnRif').textContent = 'Escribe el RIF de la empresa'; mal = true; }
+    if(datos && datos.existe){ $('eDnRif').textContent = 'Ese RIF ya existe en la app'; mal = true; }
+    if(nom.length < 3){ $('eDnNom').textContent = 'Escribe la razón social'; mal = true; }
+    if(!ctx.tipoDed){ $('eDnTipo').textContent = 'Elige si es ISP o corporativo'; mal = true; }
+    if($('dnLider') && !lid){ $('eDnLider').textContent = 'Elige el líder'; mal = true; }
+    if(mal) return;
+    const b = $('guardarDedNuevo'); b.disabled = true; b.textContent = 'Registrando…'; const c = ctx;
+    try {
+      const r = await rpc('dedicado_registrar', { p_rif: rif, p_nombre: nom, p_tipo: c.tipoDed, p_lider: lid || null, p_servicio: $('dnSrv').value.trim() || null });
+      toast('Dedicado registrado. Sube sus documentos'); cerrarHoja(); ctx = null; if(c.alCrear) c.alCrear(r.cliente_id);
+    } catch (x) { $('eDnRif').textContent = x.message; toast(x.message, 'error'); b.disabled = false; b.textContent = 'Registrar y subir documentos'; }
+  }
+  document.addEventListener('input', (e) => { if(e.target && e.target.id === 'dnRif'){ clearTimeout(reloj); datos = null; reloj = setTimeout(() => revisarRif(false), 400); } });
+  document.addEventListener('click', (e) => {
+    let b = e.target.closest('#hojaDedNuevo [data-dn-tipo]');
+    if(b && ctx && ctx.tipo === 'ded'){ ctx.tipoDed = b.dataset.dnTipo; Array.prototype.forEach.call(document.querySelectorAll('#hojaDedNuevo [data-dn-tipo]'), (x) => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', String(x === b)); });
+      $('dnTipoNota').textContent = ctx.tipoDed === 'isp' ? 'ISP pide además el permiso de Conatel.' : ''; return; }
+    b = e.target.closest('#hojaDedNuevo [data-dn-abrir]');
+    if(b && ctx){ const c = ctx; cerrarHoja(); ctx = null; if(c.alCrear) c.alCrear(Number(b.dataset.dnAbrir)); }
+  });
+
   document.addEventListener('click', (e) => { const b = e.target.closest('#hojaEtq [data-etq]'); if(b){ e.preventDefault(); guardarEtq(b); } });
   document.addEventListener('submit', (e) => {
     if(e.target.id === 'formEtq') e.preventDefault();
     else if(e.target.id === 'formLider') guardarLider(e);
     else if(e.target.id === 'formSus') guardarSus(e);
+    else if(e.target.id === 'formDedNuevo') guardarDed(e);
   });
 
-  window.Gestion = { etiquetar, lider, suspender };
+  window.Gestion = { etiquetar, lider, suspender, registrarDedicado };
 })();

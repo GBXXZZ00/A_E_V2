@@ -100,7 +100,7 @@ const llamo = (m, f) => m.llamadas.filter((l) => l[1] === f);
     await p.click('.cli[data-cliente="' + a.id + '"]'); await p.waitForSelector('#hojaFicha.ver #tab-datos');
     await p.waitForFunction(() => (document.querySelector('#tab-datos') || {}).textContent.includes('Requisitos VGT'), null, { timeout: 8000 }).catch(() => {});
     const dts = await p.textContent('#tab-datos');
-    ok(nombre + ': Datos dice Líder (no Ejecutiva) y los requisitos VGT', dts.includes('Líder') && !dts.includes('Ejecutiva') && dts.includes('Requisitos VGT') && dts.includes('Faltan 3'));
+    ok(nombre + ': Datos dice Líder (no Ejecutiva) y los requisitos VGT', dts.includes('Líder') && !dts.includes('Ejecutiva') && dts.includes('Requisitos VGT') && dts.includes('Faltan 6'));   // 05/11 F3: 2 pólizas + 2 por cada solicitud que pide (2)
     // Lote 21/10: Contrato (servicio y colocation) y VGT en su pestaña (contrato, proyectos, requisitos y pólizas)
     await p.click('#tabs [data-tab="contrato"]'); await p.waitForSelector('#tab-contrato.on .ctr-t');
     const ct = await p.textContent('#tab-contrato');
@@ -123,10 +123,11 @@ const llamo = (m, f) => m.llamadas.filter((l) => l[1] === f);
     const vg = await p.textContent('[data-grupo="vgt"]');
     await p.locator('[data-grupo="vgt"]').screenshot({ path: 'capturas/28-' + nombre + '-vgt.png' });
     // Parte D (22/10): solo las 2 pólizas y la propuesta; el correo opcional debajo; lo demás ya no sale
-    ok(nombre + ': Requisitos VGT: 2 pólizas y propuesta, el correo opcional y nada más', vg.includes('Faltan 3') && vg.includes('Propuesta comercial firmada y sellada') && vg.indexOf('Póliza de responsabilidad patronal') < vg.indexOf('Opcional') && vg.indexOf('Opcional') < vg.indexOf('Correo para notificaciones') && !vg.includes('factibilidad') && !vg.includes('Poder') && !vg.includes('cambios sustanciales'))
+    // Lote 05/11 F3: arriba solo las 2 pólizas del cliente; la propuesta va por solicitud
+    ok(nombre + ': Pólizas VGT del cliente: 2 pólizas, el correo opcional y nada más', vg.includes('Pólizas VGT del cliente') && vg.includes('0 de 2') && !vg.includes('Propuesta comercial') && vg.indexOf('Póliza de responsabilidad patronal') < vg.indexOf('Opcional') && vg.indexOf('Opcional') < vg.indexOf('Correo para notificaciones') && !vg.includes('factibilidad') && !vg.includes('Poder') && !vg.includes('cambios sustanciales'))
     ok(nombre + ': la póliza que vence en menos de 30 días avisa', vg.includes('Pide la renovación'));
     ok(nombre + ': ya no hay actas de cambios sustanciales ni botón para agregarlas', (await p.locator('[data-grupo="vgt"] [data-casilla="otro:60"]').count()) === 0 && (await p.locator('#agregarVgt').count()) === 0);
-    ok(nombre + ': la propuesta comercial es obligatoria', (await p.locator('[data-grupo="vgt"] [data-casilla="otro:68"]').count()) === 1);
+    ok(nombre + ': la propuesta comercial se pide en cada solicitud, no en el cliente', (await p.locator('[data-grupo="vgt"] [data-casilla="otro:68"]').count()) === 0 && (await p.locator('[data-grupo="vgt-sol"] [data-vgt-subir="12:propuesta"]').count()) === 1 && (await p.locator('[data-grupo="vgt-sol"] [data-vgt-subir="13:propuesta"]').count()) === 1);
     // 22/10: la póliza pide su fecha de vencimiento al subirse; la pestaña VGT dice "Subiendo"
     { const [fc] = await Promise.all([p.waitForEvent('filechooser'), p.locator('[data-grupo="vgt"] [data-subir="otro:67"]').click()]);
       await fc.setFiles({ name: 'patronal.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4 prueba') });

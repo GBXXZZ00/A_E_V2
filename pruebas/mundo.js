@@ -280,7 +280,7 @@ const CATEGORIAS = ['PYME-1GB', 'DEDICADO', 'EXONERADO', '1 GB', 'PROMO-1GB', 'R
 function moduloDe(t){
   return ['docs_faltan', 'devuelto', 'por_firmar', 'sin_gestion', 'rif_verificar'].includes(t) ? 'expedientes'
     : ['por_instalar', 'por_enviar', 'sin_ip', 'por_asignar', 'certificar', 'sin_cliente', 'sin_servicio'].includes(t) ? 'comisiones'
-    : ['cambio_emitir', 'sin_registro', 'cambio_revisar', 'planilla', 'ip_confirmar'].includes(t) ? (t === 'ip_confirmar' ? 'comisiones' : 'migraciones') : ['vgt', 'poliza'].includes(t) ? 'dedicados' : t === 'referido' ? 'aliados' : 'otros';
+    : ['cambio_emitir', 'sin_registro', 'cambio_revisar', 'planilla', 'ip_confirmar'].includes(t) ? (t === 'ip_confirmar' ? 'comisiones' : 'migraciones') : ['vgt', 'poliza', 'elaborar_vgt'].includes(t) ? 'dedicados' : t === 'referido' ? 'aliados' : 'otros';
 }
 function misPendientes(m, yo, persona){
   const sen = yo.rol === 'analista' && !!yo.senior; const can = !!yo.canales;
@@ -292,6 +292,21 @@ function misPendientes(m, yo, persona){
       : p.para === 'analista' && p.analista_id === yo.id);
 }
 // Lote 22/10: el cambio como lo devuelve el servidor (documentos que pide cada tipo, con su estado en el expediente)
+
+// Lote 05/11 F3: VGT por solicitud (como privado.vgt_json): pólizas del cliente y por solicitud propuesta y planillas
+const VGT_SLOTS = [71, 72, 73, 74, 75, 76, 77, 78, 79].concat(Array.from({ length: 18 }, (_, i) => 82 + i));
+const vgtDocOk = (c, n) => (c.documentos || []).some((d) => d.casilla === 'otro' && d.numero === n && d.estado !== 'devuelto');
+const vgtPide = (k) => k.tipo === 'vgt' && !k.negada_en && ['SI', 'SÍ', 'EN PROYECTO'].includes(String(k.en_uso || '').toUpperCase()) && !['firmado', 'del_cliente'].includes(k.estatus);
+const vgtReq = (c, k) => ['propuesta', 'planilla'].filter((t) => !(c.vgtDocs || []).some((v) => v.contrato === k.id && v.tipo === t && vgtDocOk(c, v.numero))).length;
+function vgtJson(c){
+  const V = c.dedicado && c.dedicado.vgt; if(!V) return V || null;
+  const pol = (V.requisitos || []).filter((r) => r.requerido && r.numero !== 68).filter((r) => !vgtDocOk(c, r.numero)).length;
+  const sols = ((c.dedicado.contratos) || []).filter((k) => k.tipo === 'vgt').map((k) => ({ id: k.id, proyecto: k.proyecto, postes: k.postes, fecha: k.fecha, en_uso: k.en_uso, estatus: k.estatus, odt: k.odt,
+    negada: !!k.negada_en || String(k.en_uso || '').toUpperCase() === 'NEGADA', pide: vgtPide(k), faltan: vgtPide(k) ? vgtReq(c, k) : 0,
+    docs: (c.vgtDocs || []).filter((v) => v.contrato === k.id).map((v) => { const d = (c.documentos || []).find((x) => x.casilla === 'otro' && x.numero === v.numero); return { numero: v.numero, tipo: v.tipo, ok: vgtDocOk(c, v.numero), id: d ? d.id : null, estado: d ? d.estado : null }; }) }));
+  return Object.assign({}, V, { requisitos: (V.requisitos || []).map((r) => (r.numero === 68 ? Object.assign({}, r, { requerido: false, texto: 'Propuesta comercial (subida antes de las solicitudes)' }) : r)),
+    polizas_faltan: pol, solicitudes: sols, faltan: pol + sols.reduce((t, x) => t + x.faltan, 0) });
+}
 function requisitosCambio(m, c){
   if(c.tipo === 'residencial') return [];
   const cid = c.tipo === 'migracion' ? c.cliente_id : c.nuevo && c.nuevo.cliente_id; const cli = m.datos.clientes.find((x) => x.id === cid); if(!cli) return [];
@@ -650,7 +665,7 @@ const RPC = {
     if(a.p_filtro === 'vgt' && !buscando){ const ids = new Set(vis.filter(esVgt).map((c) => c.id)); r.filas = r.filas.filter((x) => ids.has(x.id)); r.total = r.filas.length; }
     if(a.p_filtro === 'faltan' && !buscando){ const l = vis.filter((c) => casillasVacias(c) > 0); const ids = new Set(l.map((c) => c.id)); r.total = l.length; r.filas = r.filas.filter((x) => ids.has(x.id)); }
     r.tarjetas = { pyme: vb.filter((c) => tarjetaDe(c).pyme).length, corporativo: vb.filter((c) => tarjetaDe(c).ded === 'corporativo').length, isp: vb.filter((c) => tarjetaDe(c).ded === 'isp').length };
-    r.filas.forEach((x) => { const c = m.datos.clientes.find((k) => k.id === x.id); const t = tarjetaDe(c); x.ded = t.ded; x.combinado = !!t.ded && t.pyme; x.vgt = esVgt(c); x.poliza_vence = polDe(c); x.n_enl = ((c.dedicado && c.dedicado.enlaces) || []).filter((e) => e.activo).length;
+    r.filas.forEach((x) => { const c = m.datos.clientes.find((k) => k.id === x.id); const t = tarjetaDe(c); x.ded = t.ded; x.combinado = !!t.ded && t.pyme; x.vgt = esVgt(c); x.poliza_vence = polDe(c); x.sin_tad = !!(c.dedicado && c.dedicado.a_mano_en) && !(c.servicios || []).length && !((c.dedicado && c.dedicado.enlaces) || []).length; x.n_enl = ((c.dedicado && c.dedicado.enlaces) || []).filter((e) => e.activo).length;
       x.suspendido = !!c.suspendido_en; const g = ultimaEtq(c); x.etq = g ? { e: g.e, fecha: g.fecha, nota: g.nota } : null; x.ctr = contratoPend(c); });
     const visT = vb.filter(enT);
     r.gestion = { contactado: 0, sin_contacto: 0, esperando: 0 }; visT.forEach((c) => { const g = ultimaEtq(c); if(g) r.gestion[g.e]++; });
@@ -751,7 +766,7 @@ const RPC = {
     return { rol: r, hoy: hoy(), yo: { id: yo.id, nombre: yo.nombre }, corte: { etiqueta: actual, fin: corteFin(actual), limite: corteLimite(actual), dias: dias(hoy(), corteLimite(actual)) },
       cliente: { id: c.id, nombre: c.nombre, doc_tipo: c.doc_tipo, doc_numero: c.doc_numero, es_natural: c.es_natural, seg: segmento(c), estatus: c.estatus, estatus_desde: c.estatus_desde, legal_ok_en: c.legal_ok_en,
         legal_como: c.legal_como || null, presencial: !!c.contrato_presencial, exc_pagada: !!c.exc_pagada, abierta: c.abierta || null, aprobado_por_subir: aprobadoPorSubir(c), por_subir: porSubir(c),
-        dedicado: c.dedicado && !excluido(c) ? Object.assign({}, c.dedicado, { vacias: casillasVacias(c), contratos: (c.dedicado.contratos || []).map((k) => Object.assign({ con_archivo: k.tipo === 'servicio' && !!c.documentos.some((d) => d.casilla === 'contrato_dedicado' && (d.archivos || []).length) }, k)) }) : null,
+        dedicado: c.dedicado && !excluido(c) ? Object.assign({}, c.dedicado, { vacias: casillasVacias(c), vgt: vgtJson(c), sin_tad: !!c.dedicado.a_mano_en && !(c.servicios || []).length && !(c.dedicado.enlaces || []).length, contratos: (c.dedicado.contratos || []).map((k) => Object.assign({ con_archivo: k.tipo === 'servicio' && !!c.documentos.some((d) => d.casilla === 'contrato_dedicado' && (d.archivos || []).length) }, k)) }) : null,
         lider: c.lider, es_top: c.es_top, regimen_firma: c.regimen_firma, es_isp: c.es_isp, correo_empresa: c.correo_empresa, telefono: c.telefono, direccion: c.direccion,
         proforma_en: c.proforma_en, proforma_por: c.proforma_por, bienvenida_en: c.bienvenida_en, bienvenida_por: c.bienvenida_por, ug_en: c.ug_en, ug_por: c.ug_por, creado_en: c.creado_en, es_demo: c.es_demo,
         tel: rp.telefono || c.telefono || (s0 && s0.telefono) || null, correo: rp.correo || c.correo_empresa || null, por_instalar: porInstalar(c), por_subir: porSubir(c), aprobado_por_subir: aprobadoPorSubir(c), provisional: !!c.provisional, unido_a: c.unido_a || null,
@@ -836,6 +851,52 @@ const RPC = {
   cliente_marca(m, yo, a){ if(!['admin', 'abogado'].includes(yo.rol)) return error('No tienes permiso para hacer esto'); const c = m.datos.clientes.find((x) => x.id === Number(a.p_cliente));
     if(a.p_marca === 'exc_pagada' && yo.rol !== 'admin') return error('Solo el administrador marca la excepción pagada');
     c[a.p_marca] = !!a.p_valor; c.hilo.push(linea('dato', a.p_marca, { valor: String(!!a.p_valor) }, yo.nombre)); if(a.p_marca === 'contrato_presencial') recalcular(c, yo); return null; },
+  // Lote 05/11 F1-F3: registrar un dedicado a mano y VGT por solicitud
+  dedicado_registro_datos(m, yo, a){
+    if(!['admin', 'analista', 'lider'].includes(yo.rol)) return error('No tienes permiso para hacer esto');
+    const num = String(a.p_rif || '').replace(/\D/g, '').replace(/^0+/, ''); const k = num.length >= 5 ? m.datos.clientes.find((c) => c.doc_numero === num) : null;
+    const puedo = !!k && visibles(m, yo).some((x) => x.id === k.id);
+    return { existe: k ? { id: k.id, nombre: puedo ? k.nombre : null, puedo, lider: k.lider || null } : null,
+      lideres: yo.rol === 'lider' ? [] : m.personas.filter((p) => p.activo && p.rol === 'lider').map((p) => ({ id: p.id, nombre: p.nombre })) };
+  },
+  dedicado_registrar(m, yo, a){
+    if(!['admin', 'analista', 'lider'].includes(yo.rol)) return error('No tienes permiso para hacer esto');
+    const raw = String(a.p_rif || '').trim(); const num = raw.replace(/\D/g, '').replace(/^0+/, ''); const tipo = (/^[VEJGPC]/i.exec(raw) || ['J'])[0].toUpperCase();
+    const nom = String(a.p_nombre || '').trim().replace(/\s+/g, ' ');
+    if(!/^[1-9]\d{4,9}$/.test(num)) return error('Escribe un RIF válido');
+    if(['V', 'E'].includes(tipo)) return error('Un dedicado es una empresa: escribe el RIF que empieza por J, G o C');
+    if(nom.length < 3) return error('Escribe la razón social');
+    if(!['isp', 'corporativo'].includes(a.p_tipo)) return error('Elige si es ISP o corporativo');
+    if(m.datos.clientes.some((c) => c.doc_numero === num)) return error('Ese RIF ya existe en la app. Ábrelo desde el aviso');
+    const lid = yo.rol === 'lider' ? yo : m.personas.find((p) => p.id === a.p_lider && p.activo && p.rol === 'lider'); if(!lid) return error('Elige el líder');
+    const c = { id: 91000 + m.datos.clientes.length, doc_tipo: tipo, doc_numero: num, nombre: nom, es_natural: false, es_isp: a.p_tipo === 'isp', lider: lid.nombre, lider_id: lid.id,
+      estatus: 'documentos_pendientes', estatus_desde: hace(0), creado_en: hace(0), documentos: [], servicios: [], instalaciones: [], representantes: [], hilo: [],
+      dedicado: { tipo: a.p_tipo, ejecutiva: lid.nombre, ejecutiva_id: lid.id, activo: true, cods: [], enlaces: [], contactos: [], contratos: [], a_mano_en: hace(0), servicio_texto: a.p_servicio || null } };
+    m.datos.clientes.push(c); c.hilo.push(linea('dato', 'dedicado_registrado', { rif: tipo + '-' + num, nombre: nom, tipo: a.p_tipo }, yo.nombre));
+    (m.bitacora = m.bitacora || []).push({ accion: 'dedicado_registrado', cliente: c.id, por: yo.nombre });
+    return { cliente_id: c.id, nombre: nom };
+  },
+  vgt_solicitud_nueva(m, yo, a){
+    const c = visibles(m, yo).find((x) => x.id === Number(a.p_cliente)); if(!c) return error('No tienes acceso a este cliente');
+    if(!c.dedicado) return error('Este cliente no es dedicado');
+    const pro = String(a.p_proyecto || '').trim(); if(pro.length < 3) return error('Escribe el nombre del proyecto o del tramo');
+    const k = { id: 7000 + Math.floor(Math.random() * 999), tipo: 'vgt', estatus: 'sin_contrato', proyecto: pro, postes: a.p_postes || null, en_uso: 'EN PROYECTO', fecha: a.p_fecha ? a.p_fecha.split('-').reverse().join('/') : null };
+    c.dedicado.contratos = (c.dedicado.contratos || []).concat([k]);
+    if(!c.dedicado.vgt) c.dedicado.vgt = { correo: null, polizas: [], requisitos: [[66, 'poliza_rc', 'Póliza de responsabilidad civil general', true, true], [67, 'poliza_patronal', 'Póliza de responsabilidad patronal', true, true]].map((r) => ({ numero: r[0], clave: r[1], texto: r[2], requerido: r[3], vence: r[4] })) };
+    (m.bitacora = m.bitacora || []).push({ accion: 'vgt_solicitud_nueva', cliente: c.id, por: yo.nombre });
+    return k.id;
+  },
+  vgt_casilla(m, yo, a){
+    const c = visibles(m, yo).find((x) => x.dedicado && (x.dedicado.contratos || []).some((k) => k.id === Number(a.p_contrato) && k.tipo === 'vgt')); if(!c) return error('Esa solicitud de VGT no existe');
+    c.vgtDocs = c.vgtDocs || []; const sol = Number(a.p_contrato);
+    if(!a.p_otra || a.p_tipo === 'propuesta'){
+      const v = c.vgtDocs.find((x) => x.contrato === sol && x.tipo === a.p_tipo && (a.p_tipo === 'propuesta' || !c.documentos.some((d) => d.casilla === 'otro' && d.numero === x.numero)))
+        || (a.p_tipo === 'planilla' && !a.p_otra ? c.vgtDocs.find((x) => x.contrato === sol && x.tipo === 'planilla') : null);
+      if(v) return v.numero;
+    }
+    const n = VGT_SLOTS.find((x) => !c.vgtDocs.some((v) => v.numero === x) && !c.documentos.some((d) => d.casilla === 'otro' && d.numero === x)); if(!n) return error('Este cliente ya usa todas las casillas de VGT. Avísale al administrador');
+    c.vgtDocs.push({ contrato: sol, tipo: a.p_tipo, numero: n }); return n;
+  },
   dedicado_vgt_correo(m, yo, a){ const c = m.datos.clientes.find((x) => x.id === Number(a.p_cliente)); if(!c || !c.dedicado || !c.dedicado.vgt) return error('No es un cliente dedicado');
     c.dedicado.vgt.correo = a.p_correo; c.dedicado.vgt.faltan = Math.max(0, (c.dedicado.vgt.faltan || 0) - (a.p_correo ? 1 : 0)); return null; },
   // ----- Lote 27/10: Comisiones, atajos Sin instalar (con el RIF) y Sin líder -----
@@ -1304,7 +1365,7 @@ const RPC = {
         if(/^contrato_/.test(ca.casilla) && !['admin', 'abogado'].includes(yo.rol)) return error('El contrato lo sube Legal');
         if(/^contrato_/.test(ca.casilla) && it.firmado_en && !it.vence_en) return error('Pon la fecha de vencimiento del contrato');
         if(ca.casilla === 'otro' && !(num >= 60)) num = c.documentos.filter((d) => d.casilla === 'otro' && d.numero < 60).length + 1;
-        else if(!['cedula', 'rif_personal', 'acta_asamblea'].includes(ca.casilla)) num = 0;
+        else if(ca.casilla !== 'otro' && !['cedula', 'rif_personal', 'acta_asamblea'].includes(ca.casilla)) num = 0;
         let d = busca(c, ca.casilla, num);
         if(!d){ d = { id: ++sec, casilla: ca.casilla, numero: num }; c.documentos.push(d); }
         const ok = aprob && !/^contrato_/.test(ca.casilla); if(!ok) recalc = true;

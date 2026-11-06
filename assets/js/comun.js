@@ -196,7 +196,7 @@
       case 'conatel': return 'Conatel: habilitación vigente';
       case 'contrato_pyme': return 'Contrato PYME';
       case 'contrato_dedicado': return 'Contrato dedicado';
-      case 'otro': return VGT[n] || 'Otro documento' + (n ? ' ' + n : '');
+      case 'otro': return VGT[n] || ((n >= 71 && n <= 79) || (n >= 82 && n <= 99) ? 'Documento de solicitud VGT' : 'Otro documento' + (n ? ' ' + n : ''));   // Lote 05/11 F3: 71-79 y 82-99 son de las solicitudes VGT
       default: return c || '';
     }
   }

@@ -155,7 +155,7 @@
         '<button type="button" class="cerrar" data-cierra="1" aria-label="Cerrar">' + ic('x') + '</button></div>' +
       '<div class="chips">' + chipEstatus(c.estatus) + '<span class="seg">' + esc(c.seg) + '</span>' + (s0 ? estadoServicio(s0.estado) : '') + (pinst ? '<span class="chip azul">Por instalar</span>' : '') +
         (c.es_top ? '<span class="chip">Cliente TOP</span>' : '') + (c.es_demo ? '<span class="chip">Dato de ejemplo</span>' : '') +
-        (c.suspendido_en ? '<span class="chip rojo">Suspendido</span>' : '') + etqChip() + '</div>' +
+        (c.suspendido_en ? '<span class="chip rojo">Suspendido</span>' : '') + (c.dedicado && c.dedicado.sin_tad ? '<span class="chip azul" title="Registrado a mano. Cuando el TAD traiga este RIF se une solo">Aún no está en el TAD</span>' : '') + etqChip() + '</div>' +
       '<div class="contacto">' + window.Pedir.iconos(clienteContacto()) + '</div>' +
       (p ? '<div class="paso ' + p.tono + '" id="paso"><span class="tx">' + esc(p.texto) + (sub ? '<small>' + esc(sub) + '</small>' : '') + '</span>' +
         (p.boton ? '<button type="button" class="btn btn-chico" data-paso="' + esc(p.accion) + '">' + esc(p.boton) + '</button>' : '') + '</div>' : '') +
@@ -411,9 +411,9 @@
     return h;
   }
   // Lote 3: requisitos VGT, con su propio contador. Los comunes (actas, RIF, cédulas, Conatel) no se repiten.
-  // Parte D (22/10): solo se exigen las 2 pólizas y la propuesta comercial; el correo queda opcional, debajo. Lo demás ya no se pide.
+  // Lote 05/11 F3: las 2 pólizas son del cliente (sirven para todas sus solicitudes); la propuesta comercial firmada y las planillas de tendido van por solicitud
   let vgtExtra = 0;
-  function grupoVgt(){
+  function grupoVgt(conSol){
     const V = (F.cliente.dedicado || {}).vgt; if(!V) return '';
     const R = V.requisitos || []; const hoy = F.hoy || new Date().toISOString().slice(0, 10);
     const asam = R.filter((r) => r.clave === 'asamblea'); const conAsam = asam.filter((r) => docDe('otro', r.numero));
@@ -429,16 +429,71 @@
     const sinFecha = R.filter((r) => r.vence).map((r) => docDe('otro', r.numero)).filter((d) => d && d.estado !== 'devuelto' && !d.vence_en);
     const faltaFecha = sinFecha.length ? '<div class="al-banda ambar" role="note"><b>' + (sinFecha.length === 1 ? 'Falta la fecha de vencimiento de una póliza' : 'Falta la fecha de vencimiento de las pólizas') + '</b><p>' +
       (F.puedo.revisar ? 'Toca la póliza, escribe la fecha de vencimiento y guarda. Sin fecha no te podemos avisar antes de que venza.' : 'Pídele al administrador que la escriba. Sin fecha no te podemos avisar antes de que venza.') + '</p></div>' : '';
-    return '<section class="bloque" data-grupo="vgt"><div class="sec">Requisitos VGT<span>' + (V.faltan ? (V.faltan === 1 ? 'Falta 1' : 'Faltan ' + V.faltan) : 'Completos') + '</span></div>' +
+    const req = R.filter((r) => r.requerido); const pf = V.polizas_faltan != null ? V.polizas_faltan : req.filter((r) => { const d = docDe('otro', r.numero); return !d || d.estado === 'devuelto'; }).length;
+    const vieja = R.filter((r) => r.clave === 'propuesta' && !r.requerido && docDe('otro', r.numero));
+    return '<section class="bloque" data-grupo="vgt"><div class="sec">Pólizas VGT del cliente<span>' + (req.length - pf) + ' de ' + req.length + '</span></div>' +
       '<p class="nota-chica estado-sub' + (colaDe(id) ? '' : ' hidden') + '" role="status"><span class="cargando-linea"><i></i><span class="texto-sub">' + esc(textoCola()) + '</span></span></p>' + aviso + faltaFecha +
-      R.filter((r) => r.requerido).map((r) => casillaHtml('otro', r.numero, { nombre: r.texto, req: true, sub: sub(r) })).join('') +
-      '<p class="nota-chica">El contrato VGT no pasa a Por firmar mientras falte alguno. La fecha de vencimiento de las pólizas se escribe al revisarlas; 30 días antes te avisamos.</p>' +
+      '<p class="nota-chica">Sirven para todas sus solicitudes. La fecha de vencimiento se escribe al subirlas o revisarlas; 30 días antes te avisamos.</p>' +
+      req.map((r) => casillaHtml('otro', r.numero, { nombre: r.texto, req: true, sub: sub(r) })).join('') +
+      vieja.map((r) => casillaHtml('otro', r.numero, { nombre: r.texto, req: false })).join('') +
       '<div class="rot">Opcional</div>' +
       datoHtml('Correo para notificaciones', V.correo, 'vgt_correo', true) +
       verAsam.map((r) => casillaHtml('otro', r.numero, { nombre: r.texto.replace(/ \d$/, ''), req: false, sub: sub(r) })).join('') +
       (verAsam.length < asam.length ? '<button type="button" class="btn btn-chico btn-2 btn-ancho" id="agregarVgt" style="margin-top:10px">' + ic('mas') + 'Agregar acta de cambios sustanciales</button>' : '') +
-      R.filter((r) => r.clave !== 'asamblea' && !r.requerido).map((r) => casillaHtml('otro', r.numero, { nombre: r.texto, req: false, sub: sub(r) })).join('') + '</section>';
+      R.filter((r) => r.clave !== 'asamblea' && r.clave !== 'propuesta' && !r.requerido).map((r) => casillaHtml('otro', r.numero, { nombre: r.texto, req: false, sub: sub(r) })).join('') + '</section>' +
+      (conSol ? solicitudesVgt(V) : '<p class="nota-chica">La propuesta comercial y las planillas de tendido van por solicitud, en la pestaña Contratos y VGT.</p>');
   }
+  // Una tarjeta por solicitud (fila de VGT del dedicado): propuesta comercial firmada (1) y planillas de tendido (1 o más)
+  function solicitudesVgt(V){
+    const S = V.solicitudes || []; const puedeNueva = yo && yo.rol !== 'aliado';
+    const fila = (s, tipo, ds) => {
+      const nom = tipo === 'propuesta' ? 'Propuesta comercial firmada' : 'Planilla de tendido aprobada por infraestructura';
+      const subidos = ds.filter((d) => docDe('otro', d.numero));
+      if(!subidos.length){
+        if(!s.pide) return '';
+        return '<button type="button" class="casilla doc falta" data-vgt-subir="' + esc(s.id + ':' + tipo) + '"><span class="ico" aria-hidden="true">!</span><span class="tx"><b>' + esc(tipo === 'propuesta' ? nom : 'Planillas de tendido aprobadas por infraestructura') + '</b><small>' +
+          esc(tipo === 'propuesta' ? 'La genera el administrador; falta la firma del cliente' : 'Puede llevar varias si los postes están en zonas distintas') + '</small></span><span class="chip rojo">Falta</span></button>';
+      }
+      return subidos.map((d, i) => casillaHtml('otro', d.numero, { nombre: tipo === 'planilla' && subidos.length > 1 ? 'Planilla de tendido ' + (i + 1) : nom, req: true })).join('') +
+        (tipo === 'planilla' && s.pide !== false ? '<button type="button" class="btn btn-chico btn-2" data-vgt-subir="' + esc(s.id + ':planilla:otra') + '">' + ic('mas') + 'Otra planilla</button>' : '');
+    };
+    const tarjeta = (s) => {
+      const ds = s.docs || []; const prop = ds.filter((d) => d.tipo === 'propuesta'); const plan = ds.filter((d) => d.tipo === 'planilla');
+      const est = s.negada ? ['rojo', 'Negada'] : s.estatus === 'firmado' ? ['verde', 'Contrato firmado'] : !s.pide ? ['gris', 'No pide documentos'] : s.faltan ? ['ambar', s.faltan === 1 ? 'Falta 1' : 'Faltan ' + s.faltan] : (V.polizas_faltan ? ['ambar', 'Faltan las pólizas'] : ['verde', 'Lista para contrato']);
+      const sub = [s.postes ? s.postes + ' postes' : '', s.fecha ? 'solicitada ' + s.fecha : '', s.odt && !/revisar/i.test(s.odt) ? 'ODT ' + s.odt : ''].filter(Boolean).join(' · ');
+      return '<div class="vgt-sol" data-sol="' + esc(s.id) + '"><div class="vgt-sol-c"><span class="tx"><b>' + esc(s.proyecto || 'Solicitud ' + s.id) + '</b><small>' + esc(sub) + '</small></span><span class="chip ' + est[0] + '">' + esc(est[1]) + '</span></div>' +
+        (s.negada ? '<p class="nota-chica">Solicitud negada: no se le pide nada.</p>' : fila(s, 'propuesta', prop) + fila(s, 'planilla', plan)) + '</div>';
+    };
+    const activas = S.filter((s) => !s.negada); const neg = S.filter((s) => s.negada);
+    return '<section class="bloque" data-grupo="vgt-sol"><div class="sec">Solicitudes de VGT<span>' + S.length + '</span></div>' +
+      (activas.length ? activas.map(tarjeta).join('') : '<p class="nota-chica">Ninguna solicitud activa.</p>') +
+      (neg.length ? '<details class="vgt-hist"><summary>' + esc(plural(neg.length, 'solicitud negada', 'solicitudes negadas')) + '</summary>' + neg.map(tarjeta).join('') + '</details>' : '') +
+      (puedeNueva ? '<button type="button" class="btn btn-chico btn-2 btn-ancho" id="vgtNueva" style="margin-top:10px">' + ic('mas') + 'Nueva solicitud</button>' : '') +
+      '<p class="nota-chica">El abogado ve cada solicitud en Mi trabajo, "Por elaborar · VGT", cuando tiene las pólizas del cliente y su propuesta y planilla.</p></section>';
+  }
+  // Un dedicado sin VGT activo también puede pedir uno
+  const vgtSinSol = () => '<section class="bloque" data-grupo="vgt-sol"><div class="sec">VGT</div><p class="nota-chica">Sin solicitudes de VGT activas. Si el cliente va a usar postes, crea su solicitud.</p>' +
+    '<button type="button" class="btn btn-chico btn-2 btn-ancho" id="vgtNueva">' + ic('mas') + 'Nueva solicitud de VGT</button></section>';
+  function abrirNuevaSol(){
+    campo = { tipo: 'vgt_sol' };
+    $('hojaCampo').innerHTML = cabHoja('tCampo', 'Nueva solicitud de VGT', F.cliente.nombre) + '<form id="formSol" novalidate>' +
+      '<label class="rotulo" for="sProy">Proyecto o tramo</label><input class="campo" id="sProy" maxlength="120" autocomplete="off" data-foco><div class="error" id="eSProy" role="alert"></div>' +
+      '<label class="rotulo arriba" for="sPostes">Postes</label><input class="campo" id="sPostes" inputmode="numeric" maxlength="4" autocomplete="off"><div class="error" id="eSPostes" role="alert"></div>' +
+      '<label class="rotulo arriba" for="sFecha">Fecha de la solicitud</label><input class="campo" id="sFecha" type="date" max="' + esc(F.hoy || '') + '" value="' + esc(F.hoy || '') + '">' +
+      '<p class="nota">Después sube la propuesta comercial firmada y la planilla de tendido aprobada por infraestructura.</p>' +
+      '<div class="acciones"><button type="submit" class="btn btn-ancho" id="guardarSol">Crear solicitud</button></div></form>';
+    abrirHoja('hojaCampo');
+  }
+  async function guardarSol(e){
+    e.preventDefault(); $('eSProy').textContent = ''; $('eSPostes').textContent = '';
+    const p = $('sProy').value.trim(); const n = $('sPostes').value.trim();
+    if(p.length < 3){ $('eSProy').textContent = 'Escribe el nombre del proyecto o del tramo'; $('sProy').focus(); return; }
+    if(n && !/^\d{1,4}$/.test(n)){ $('eSPostes').textContent = 'Solo el número de postes'; $('sPostes').focus(); return; }
+    const b = $('guardarSol'); b.disabled = true; b.textContent = 'Creando…';
+    try { await rpc('vgt_solicitud_nueva', { p_cliente: F.cliente.id, p_proyecto: p, p_postes: n ? Number(n) : null, p_fecha: $('sFecha').value || null }); cerrarHoja(); toast('Solicitud creada. Sube su propuesta y su planilla'); await cargar(); }
+    catch (x) { $('eSProy').textContent = x.message; b.disabled = false; b.textContent = 'Crear solicitud'; }
+  }
+  document.addEventListener('submit', (e) => { if(e.target && e.target.id === 'formSol') guardarSol(e); });
   const resumenMarcas = () => { const ap = marcas().filter((m) => m.accion === 'aprobar').length; const dv = marcas().length - ap;
     return [ap ? plural(ap, 'para aprobar', 'para aprobar') : '', dv ? plural(dv, 'para devolver', 'para devolver') : ''].filter(Boolean).join(' y '); };
   // ---------- Revisión con IA ----------
@@ -959,8 +1014,8 @@
     tb.querySelector('[data-tab="comision"]').classList.toggle('hidden', !hayCom);
     const bc = tb.querySelector('[data-tab="contrato"]'); bc.innerHTML = (junto ? 'Contratos y VGT' : 'Contrato') + (nPend ? '<em>' + (junto ? nPend : '!') + '</em>' : '');
     $('tab-contrato').innerHTML = (hayCtr && window.FichaDedicado ? window.FichaDedicado.contratos(F, yo) : '') +
-      (junto && window.FichaDedicado ? '<div class="secc ctr-vgt-t">VGT</div>' + window.FichaDedicado.vgt(F, yo) + grupoVgt() : '');
-    $('tab-vgt').innerHTML = hayVgt && !junto && window.FichaDedicado ? window.FichaDedicado.vgt(F, yo) + grupoVgt() : '';
+      (junto && window.FichaDedicado ? '<div class="secc ctr-vgt-t">VGT</div>' + window.FichaDedicado.vgt(F, yo) + grupoVgt(true) : '') + (D && !D.vgt && yo && yo.rol !== 'aliado' ? vgtSinSol() : '');
+    $('tab-vgt').innerHTML = hayVgt && !junto && window.FichaDedicado ? window.FichaDedicado.vgt(F, yo) + grupoVgt(true) : '';
     if(tab === 'vgt' && junto){ irTab('contrato', true); return; }
     if((tab === 'contrato' && !hayCtr && !junto) || (tab === 'vgt' && !hayVgt) || (tab === 'comision' && !hayCom)) irTab('datos', true);
   }
@@ -1242,9 +1297,11 @@
     destino = { casilla: cas, numero: num };
     const inp = $('archivo'); inp.value = ''; inp.click();
   }
-  function alElegir(){
+  async function alElegir(){
     const files = Array.prototype.slice.call($('archivo').files || []); if(!files.length || !destino) return;
     const d = destino; destino = null;
+    // Lote 05/11 F3: la casilla de una propuesta o planilla de solicitud se pide al servidor después de elegir el archivo
+    if(d.vgt){ try { d.numero = await rpc('vgt_casilla', { p_contrato: d.vgt.sol, p_tipo: d.vgt.tipo, p_otra: !!d.vgt.otra }); } catch (e) { toast(e.message, 'error'); return; } guardarItems([{ files, casillas: [{ casilla: 'otro', numero: d.numero }] }]); return; }
     if(d.casilla.indexOf('contrato_') === 0){ abrirFechas(d, files); return; }
     if(esPoliza(d)){ abrirVence(d, files); return; }
     if(d.casilla === 'otro' && d.numero < 60){ abrirOtro(d, files); return; }
@@ -1661,6 +1718,8 @@
     }
     if(t.closest('#hiloMas')){ hiloTodo = true; pintarHilo(); return; }
     if((b = t.closest('[data-hilo]'))){ hiloF = b.dataset.hilo; pintarHilo(); return; }
+    if((b = t.closest('#hojaFicha [data-vgt-subir]'))){ fuera = null; const p = b.dataset.vgtSubir.split(':'); destino = { casilla: 'otro', numero: 0, vgt: { sol: Number(p[0]), tipo: p[1], otra: p[2] === 'otra' } }; const inp = $('archivo'); inp.value = ''; inp.click(); return; }
+    if(t.closest('#hojaFicha #vgtNueva')){ abrirNuevaSol(); return; }
     if((b = t.closest('#hojaFicha [data-subir]'))){ fuera = null; const p = b.dataset.subir.split(':'); elegirPara(p[0], Number(p[1])); return; }
     if((b = t.closest('#hojaFicha [data-ip]'))){ fuera = null; abrirCampo('ip:' + b.dataset.ip); return; }
     if((b = t.closest('#hojaFicha [data-enviar]'))){ abrirEnviar(b.dataset.enviar); return; }
