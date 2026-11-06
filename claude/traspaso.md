@@ -1,8 +1,8 @@
 # Traspaso (se actualiza al cerrar cada sesión)
 
-Actualizado: 05/11/2026, LOTE 05/11 en curso (una versión por parte). Publicado: `?v=74` (partes G, A, B, C, D, E y F).
+Actualizado: 06/11/2026, LOTE 05/11 TERMINADO (una versión por parte). Publicado: `?v=74` (partes G, A, B, C, D, E y F).
 
-## LOTE 05/11 (`claude/lote-05nov.md`): EN CURSO
+## LOTE 05/11 (`claude/lote-05nov.md`): HECHO (v68 a v74)
 Referencia de comisiones (`privado.comision_filas3`) al empezar: septiembre 46/41, octubre 83/75, noviembre 34/4.
 - **Parte G HECHA (v68)**: índice del TAD en segundo plano. SQL y comprobación en `supabase/pruebas/lote_05nov_g.sql`.
   - Diagnóstico con la base real: lo lento no era comparar sino MARCAR las filas sin cambios en la tabla ancha (20.000 filas = 25 s; `explain analyze`). Antes: cargas del índice 13, 14 y 15 tardaron 34, 36 y 25 minutos; la de hoy (16) quedó a medias en 399.986 de 416.901.
@@ -55,6 +55,8 @@ Referencia de comisiones (`privado.comision_filas3`) al empezar: septiembre 46/4
   - Efecto real: 6 de los 8 clientes con VGT piden ahora propuesta y planilla por solicitud (el cliente 493 tiene la propuesta vieja: hay que subirla en su solicitud). Comisiones iguales 46/41, 83/75, 47/4.
   - Queda vacía y sin uso la tabla `vgt_documentos` (primer intento con rango 200-999, que `documentos` no admite); sin permisos. Se puede borrar desde el chat del proyecto.
   - Pruebas: test55 nueva (registro, RIF existente, etiqueta, solicitud con propuesta, planillas, negada, nueva solicitud, líder); test28 ajustada (pólizas arriba, propuesta por solicitud). El simulador ahora guarda bien las casillas "otro" de 60 en adelante.
+- **Cierre del lote (06/11)**: batería completa una vez: 54 de 55 a la primera; test08 esperaba "Por decidir" en el Inicio de la Senior (desde D5 su grupo es "Sin dueño") y se ajustó: 55 de 55. Capturas 1366x768 e iPhone en `pruebas/capturas/lote05nov-{G,B,C,D,E,F}-*` (no se suben). Revisión propia: funciones nuevas con `exigir`/`exigir_cliente`, bitácora en registro y solicitud, tablas nuevas con RLS (lectura solo por funciones del servidor), texto del usuario escapado y errores de red con `.toast`. Inventario `claude/inventario-05nov.md` marcado ✔ con la prueba de cada fila. Comisiones al terminar: 46/41, 83/75, 47/4.
+- **Pendiente para el administrador**: probar en la app el registro de un dedicado real y una solicitud VGT; subir la propuesta del cliente que la tenía a nivel de cliente en su solicitud.
 
 
 

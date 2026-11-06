@@ -89,7 +89,7 @@ const llamo = (m, n) => m.llamadas.filter((l) => l[1] === n);
     // Inicio de la analista: bienvenidas por enviar
     const s = await contexto(nav, dispositivo); const q = await entrar(s.ctx, 'elena', '315806'); q.on('pageerror', (e) => errores.push(e.message));
     await q.waitForSelector('.bz-ini-card');
-    ok(nombre + ': Inicio agrupa los pendientes de Mi trabajo sin repetir por asignar aparte', /Por decidir/.test(await q.textContent('#zonaPendientes')) && (await q.locator('[data-pend="asignar"]').count()) === 0);
+    ok(nombre + ': Inicio agrupa los pendientes de Mi trabajo sin repetir por asignar aparte (lote 05/11 D5)', /Mis pendientes, agrupados/.test(await q.textContent('#zonaPendientes')) && (await q.locator('[data-pend="asignar"]').count()) === 0);
     await q.screenshot({ path: 'capturas/08-' + nombre + '-inicio.png', fullPage: true });
     await q.goto(H + 'clientes.html?bienvenidas=1'); await q.waitForSelector('#hojaBienv.ver [data-bienv]');
     const n = await q.locator('#hojaBienv [data-bienv]').count();
