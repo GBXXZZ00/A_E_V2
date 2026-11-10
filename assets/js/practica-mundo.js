@@ -1709,6 +1709,7 @@ const RPC = {
     r.puedo = Object.assign({}, r.puedo, { enviar: ['admin', 'analista', 'lider'].includes(yo.rol), enviar_aliados: ['admin', 'analista'].includes(yo.rol), subir_nuevo: ['admin', 'analista', 'lider'].includes(yo.rol), horas: yo.rol === 'admin' });
     return r;
   },
+  carta_descargada(m, yo, a){ if(!['admin', 'analista', 'lider'].includes(yo.rol)) return error('No tienes permiso para hacer esto'); (m.bitacora = m.bitacora || []).push({ accion: 'carta_descargada', registro: Number(a.p_servicio) }); (m.descargas = m.descargas || []).push(Number(a.p_servicio)); return { id: m.descargas.length }; },
   carta_enviar(m, yo, a){
     for(const c of visibles(m, yo)){ const sv = c.servicios.find((x) => x.id === Number(a.p_servicio)); if(!sv) continue;
       const k = cartaDe(m, c, sv); const r = RPC.envio_registrar(m, yo, { p_servicio: sv.id, p_tipos: k.puede ? ['proforma', 'bienvenida'] : ['proforma'], p_canal: a.p_canal, p_destino: a.p_destino });

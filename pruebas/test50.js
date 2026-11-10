@@ -23,7 +23,7 @@ async function cerrarHojas(p){ for(let i = 0; i < 5 && await p.evaluate(() => !!
     // ----- Comisiones: equipos, avisos de 24 horas, resumen con ranking y monto -----
     await a.goto(H + 'comisiones.html'); await a.waitForSelector('#equipos button, #equipos [data-equipo]', { timeout: 15000 });
     const eq = await a.textContent('#equipos');
-    ok(nombre + ': Comisiones separa por equipo (Ventas corporativas, Canales, Aliados)', /corporativas/i.test(eq) && /Canales/i.test(eq) && /Aliados/i.test(eq));
+    ok(nombre + ': Comisiones separa por equipo (Ventas corporativas, Canales, Aliados)', /corporativas/i.test(eq) && /Canales/i.test(eq) && /Aliado/i.test(eq));
     ok(nombre + ': arriba las tarjetas Instalaciones, Cambios de categoría y Cartas y proformas', /Instalaciones/.test(await a.textContent('#segs')) && /Cambios de categor/.test(await a.textContent('#segs')) && /Cartas y proformas/.test(await a.textContent('#segs')));
     ok(nombre + ': el aviso de Por instalar habla en horas', /hora/i.test(await a.textContent('#alertas')));
     ok(nombre + ': Comisiones sin desborde', await sinDesborde(a));

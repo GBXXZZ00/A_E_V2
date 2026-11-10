@@ -1,6 +1,6 @@
 // Comisiones, tanda A: orden de Odoo a la vista, pendientes por asignar, dueño, excepción, pago del Analista Senior, certificar, Excel y buscador.
 const fs = require('fs');
-const { chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar, plegables } = require('./simulador');
+const { enHoja, chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar, plegables } = require('./simulador');
 const { ok, cerrar } = marcador();
 const { RPC } = require('./mundo');
 const llamo = (m, f) => m.llamadas.filter((l) => l[1] === f);
@@ -27,7 +27,7 @@ const cerrarHojas = async (p) => { for(let i = 0; i < 4; i++){ if(await p.evalua
     let h = await p.textContent('#hojaComision');
     ok(nombre + ': la hoja muestra la orden y a quién se propone', h.includes('confirme la orden') && h.includes('Por confirmar') && h.includes('PRUEBA-001/4') && h.includes('Tomás Guerra (propuesto)'));
     await p.screenshot({ path: 'capturas/06-' + nombre + '-por-confirmar.png' });
-    await p.click('#asigConfirmar'); await p.waitForFunction(() => document.querySelectorAll('#lista [data-com]').length === 1);
+    await enHoja(p, '#asigConfirmar'); await p.click('#asigConfirmar'); await p.waitForFunction(() => document.querySelectorAll('#lista [data-com]').length === 1);
     const conf = mundo.llamadas.filter((l) => l[1] === 'instalacion_asignar').pop();
     ok(nombre + ': Confirmar asigna con la orden y el dueño propuestos', conf && conf[2].p_dueno === 'Tomás Guerra' && typeof conf[2].p_orden === 'number');
     await p.waitForFunction(() => !document.getElementById('asigConfirmar') && /asignó la comisión/.test(document.getElementById('hojaComision').textContent));
@@ -37,7 +37,7 @@ const cerrarHojas = async (p) => { for(let i = 0; i < 4; i++){ if(await p.evalua
     // Sin orden: asignar a mano
     await abrir(p, 'Comercial de Prueba 10,');
     ok(nombre + ': sin orden ofrece Asignar', (await p.textContent('#asigCambiar')) === 'Elegir orden y dueño' && (await p.locator('#asigConfirmar').count()) === 0 && (await p.textContent('#hojaComision')).includes('Sin orden'));
-    await p.click('#asigCambiar'); await p.waitForSelector('#hojaAsignar.ver .opr');
+    await enHoja(p, '#asigCambiar'); await p.click('#asigCambiar'); await p.waitForSelector('#hojaAsignar.ver .opr');
     ok(nombre + ': la hoja de asignar se abre encima', (await p.evaluate(() => window.Comun.hojasAbiertas().join())) === 'hojaComision,hojaAsignar');
     await p.click('#asigGuardar');
     ok(nombre + ': sin elegir orden no guarda', (await p.textContent('#eAsig')).includes('Elige la orden'));
@@ -70,7 +70,7 @@ const cerrarHojas = async (p) => { for(let i = 0; i < 4; i++){ if(await p.evalua
     await p.click('[data-docs-com]'); h = await p.textContent('#docsCom');
     ok(nombre + ': natural: contacto opcional y sin bloque de empresa', h.includes('Titular') && h.includes('Opcional') && !h.includes('Empresa'));
     h = await p.textContent('#hojaComision');
-    await p.click('#excAbrir'); await p.waitForSelector('#hojaExc.ver'); await p.click('#excGuardar');
+    await enHoja(p, '#excAbrir'); await p.click('#excAbrir'); await p.waitForSelector('#hojaExc.ver'); await p.click('#excGuardar');
     ok(nombre + ': la excepción exige motivo', (await p.textContent('#eExc')).includes('motivo'));
     await p.fill('#excMotivo', 'Cliente antiguo, se aprobó por gerencia'); await p.screenshot({ path: 'capturas/06-' + nombre + '-excepcion.png' });
     await p.click('#excGuardar'); await p.waitForFunction(() => document.querySelector('#hojaComision').textContent.includes('Comisiona por excepción'));
@@ -78,7 +78,7 @@ const cerrarHojas = async (p) => { for(let i = 0; i < 4; i++){ if(await p.evalua
     ok(nombre + ': con excepción comisiona y se ve el motivo', h.includes('Cliente antiguo, se aprobó por gerencia') && h.includes('Activa') && mundo.llamadas.some((l) => l[1] === 'instalacion_excepcion' && l[2].p_motivo && l[2].p_corte));
     await cerrarHojas(p); await p.waitForFunction(() => /por excepción/.test(document.querySelector('#lista [data-com] .cx-et').textContent));
     ok(nombre + ': la fila queda marcada con Excepción', true);
-    await abrir(p, 'Kiosco La Parada'); await p.click('#excQuitar'); await p.waitForFunction(() => !document.querySelector('#hojaComision').textContent.includes('Comisiona por excepción') && !!document.querySelector('#excAbrir'));
+    await abrir(p, 'Kiosco La Parada'); await enHoja(p, '#excQuitar'); await p.click('#excQuitar'); await p.waitForFunction(() => !document.querySelector('#hojaComision').textContent.includes('Comisiona por excepción') && !!document.querySelector('#excAbrir'));
     ok(nombre + ': la excepción se puede quitar', true);
     await cerrarHojas(p); await p.fill('#busca', ''); await p.waitForFunction(() => document.querySelectorAll('.grupo').length >= 3);
 
@@ -127,9 +127,9 @@ const cerrarHojas = async (p) => { for(let i = 0; i < 4; i++){ if(await p.evalua
     await q.goto(H + 'comisiones.html?f=asignar'); await q.waitForSelector('[data-com]');
     await abrir(q, 'Comercial de Prueba 8,');
     ok(nombre + ': la Analista Senior puede confirmar y marcar el pago', (await q.locator('#asigConfirmar').count()) === 1 && (await q.locator('#pagoCom').count()) === 1 && (await q.locator('#excAbrir').count()) === 0);
-    await q.click('#pagoCom'); await q.waitForFunction(() => document.querySelector('#hojaComision').textContent.includes('Quitar pago'));
+    await enHoja(q, '#pagoCom'); await q.click('#pagoCom'); await q.waitForFunction(() => document.querySelector('#hojaComision').textContent.includes('Quitar pago'));
     ok(nombre + ': marca el pago', s.mundo.llamadas.some((l) => l[1] === 'instalacion_pago' && l[2].p_pagada === true));
-    await q.click('#pagoCom'); await q.waitForSelector('#pagoSi'); await q.click('#pagoSi'); await q.waitForFunction(() => document.querySelector('#hojaComision').textContent.includes('Marcar pagada'));
+    await enHoja(q, '#pagoCom'); await q.click('#pagoCom'); await q.waitForSelector('#pagoSi'); await q.click('#pagoSi'); await q.waitForFunction(() => document.querySelector('#hojaComision').textContent.includes('Marcar pagada'));
     ok(nombre + ': y lo quita', s.mundo.llamadas.some((l) => l[1] === 'instalacion_pago' && l[2].p_pagada === false));
     await s.ctx.close();
 

@@ -1996,7 +1996,9 @@
   function cartaPdf(ficha, servicioId, tipo){ montar(); envF = ficha; env = { servicio: Number(servicioId), tipo }; verPdf(tipo); }
   function cartaOtra(ficha, servicioId, alTerminar){ enviarDesde(ficha, servicioId, alTerminar); }
   function enviarDesde(ficha, servicioId, alTerminar){ montar(); envF = ficha; envFin = alTerminar || null; abrirEnviar(servicioId); }
+  // Lote 10/11 D11: a qué número sale la carta (primero el del representante, si no el de Proham y luego el del TAD)
+  function telefonosCarta(ficha, servicioId){ const g = envF; envF = ficha; try { const sv = (EF().servicios || []).find((x) => String(x.id) === String(servicioId)); return sv ? telefonosDe(sv) : []; } finally { envF = g; } }
   function editarCampo(ficha, clave, alTerminar){ montar(); fuera = { cliente: ficha.cliente.id, F: ficha, alTerminar }; abrirCampo(clave); }
-  window.Ficha = { cartaWhatsapp, cartaPdf, cartaOtra, subirA, subirArchivoA, documentosPara, variosA, soltarA, ocupado: () => ocupado, editarCampo, enviarDesde, lineaHilo, abrir, montar, abierta: () => id, alContactarFuera: (f) => { externo = f; }, recargar: () => { if(id) cargar(); },
+  window.Ficha = { cartaWhatsapp, telefonosCarta, cartaPdf, cartaOtra, subirA, subirArchivoA, documentosPara, variosA, soltarA, ocupado: () => ocupado, editarCampo, enviarDesde, lineaHilo, abrir, montar, abierta: () => id, alContactarFuera: (f) => { externo = f; }, recargar: () => { if(id) cargar(); },
     etiquetar: (cli, alTerminar) => { if(window.Gestion) window.Gestion.etiquetar(cli, alTerminar); } };
 })();

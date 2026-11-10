@@ -2353,3 +2353,58 @@ button.bz-ck.on::after{left:17px;top:13px}
   .rp-chip{align-self:flex-start;min-height:36px}
   .rp-linea small{text-align:left;flex-basis:100%;order:3}
 }
+
+/* Lote 10/11 D: Comisiones. Panel de filtros (equipo, persona o aliado, vista y fechas), lista por fecha y hoja blanca */
+.cx-panel{margin-top:16px;border:1px solid var(--line);border-radius:20px;padding:12px 16px;background:#fff;display:flex;flex-direction:column;gap:10px}
+.cx-fl{display:flex;align-items:center;gap:10px;flex-wrap:wrap;min-width:0}
+.cx-fl:empty{display:none}
+.cx-rot{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text2);min-width:54px}
+.cx-panel .cx-equipos{margin-top:0;border-bottom:0;gap:8px;flex-wrap:wrap;overflow:visible}
+.cx-panel .cx-eq{min-height:40px;padding:0 14px;border:1px solid var(--line);border-radius:999px;font-size:14px;border-bottom-width:1px}
+.cx-panel .cx-eq.on{background:var(--text);color:#fff;border-color:var(--text)}
+.cx-panel .cx-eq.on .cnt{background:rgba(255,255,255,.18);color:#fff}
+.cx-chips{display:flex;gap:8px;flex-wrap:wrap}
+.cx-chip{min-height:40px;padding:0 14px;border:1px solid var(--line);border-radius:999px;background:#fff;font-size:14px;font-weight:600;color:var(--text);white-space:nowrap;transition:transform 140ms var(--ease-out)}
+.cx-chip span{color:var(--text2);font-weight:600;margin-left:2px}
+.cx-chip.on{background:var(--text);color:#fff;border-color:var(--text)} .cx-chip.on span{color:rgba(255,255,255,.75)}
+.cx-chip:active{transform:scale(.97)}
+.cx-sel{min-height:40px;border-radius:999px;padding:0 14px;max-width:260px}
+.cx-fecha{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--text2)}
+.cx-fecha .campo{height:40px;min-height:40px;border-radius:999px;padding:0 12px;width:auto;font-size:14px;border-width:1px}
+.cx-lfecha{border:1px solid var(--line);border-radius:20px;background:#fff;padding:4px 8px;margin-top:12px}
+.cx-lf{display:grid;grid-template-columns:90px minmax(160px,2fr) minmax(130px,1.3fr) minmax(170px,1.6fr) minmax(140px,1.3fr) 20px;gap:12px;align-items:center;width:100%;padding:12px 10px;border-top:1px solid var(--line);text-align:left;background:none;transition:transform 140ms var(--ease-out)}
+.cx-lf:first-child,.cx-lf-cab + .cx-lf{border-top:0}
+.cx-lf:active{transform:scale(.99)}
+.cx-lf-cab{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text2);border-top:0}
+.cx-lf b{display:block;font-size:14px} .cx-lf small{display:block;font-size:12px;color:var(--text2)}
+.cx-lf-c,.cx-lf-p{min-width:0} .cx-lf-c b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cx-lf-p{display:flex;align-items:center;gap:8px} .cx-lf-p small{font-size:13px;color:var(--text)}
+.cx-3p{display:inline-flex;gap:4px;flex:none} .cx-3p i{width:8px;height:8px;border-radius:50%;background:#C98A12} .cx-3p i.ok{background:var(--verde)}
+.cx-lf .chip{max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.cx-lf-pie{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 10px;border-top:1px solid var(--line)}
+.cx-lf-pie small{font-size:12.5px;color:var(--text2)}
+.cx-solo{border-color:transparent;background:transparent}
+.hc-corte{padding:4px 0 6px} .hc-corte b{display:block;font-size:14.5px} .hc-corte small{display:block;font-size:12.5px;color:var(--text2)}
+/* Hoja de comisión: fondo blanco siempre; pendiente = borde y punto naranja; cumplido = borde verde suave y check */
+#hojaComision .plg-com{border:1px solid var(--line);background:#fff}
+#hojaComision .plg-com .plegado{border:0;background:transparent}
+#hojaComision .plg-com .plg-z{padding:0 14px 14px}
+#hojaComision .plg-com.hc-falta{border:1.5px solid #E2A84A;background:#fff}
+#hojaComision .plg-com.hc-listo{border:1.5px solid #A9D9C2;background:#fff}
+#hojaComision .plg-com.hc-listo .pt{background:var(--verde)}
+@media (max-width:760px){
+  .cx-panel{padding:12px}
+  .cx-fl{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+  .cx-fl::-webkit-scrollbar{display:none}
+  .cx-panel .cx-equipos,.cx-chips{flex-wrap:nowrap}
+  .cx-rot{display:none}
+  .cx-lf{grid-template-columns:1fr auto;gap:4px 10px;padding:12px 8px}
+  .cx-lf-cab{display:none}
+  .cx-lf-f{grid-column:2;grid-row:1;text-align:right} .cx-lf-f small{display:none}
+  .cx-lf-c{grid-column:1;grid-row:1}
+  .cx-lf-d{grid-column:1 / -1} .cx-lf-p{grid-column:1} .cx-lf-k{grid-column:2;justify-self:end}
+  .cx-lf > .i{display:none}
+}
+#hojaComision .plg-com .acc{display:flex;flex-wrap:wrap;gap:8px}
+#hojaComision .plg-com .acc .btn{flex:0 0 auto;width:auto}
+.cp-wa,#descWa{background:var(--verde);border-color:var(--verde);color:#fff}

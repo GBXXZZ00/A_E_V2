@@ -1,5 +1,5 @@
 // Inicio, navegación, menú de cuenta y Comisiones.
-const { chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar, plegables } = require('./simulador');
+const { enHoja, chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar, plegables } = require('./simulador');
 const { ok, cerrar } = marcador();
 (async () => {
   const nav = await chromium.launch(); const errores = [];
@@ -43,17 +43,18 @@ const { ok, cerrar } = marcador();
     ok(nombre + ': la fila abre la hoja de comisión, sin salir', p.url().includes('comisiones.html') && hc.includes('Legal') && hc.includes('Pago'));
     // Lote 28/10: resumen arriba (Legal, Pago, Orden); lo que falta primero y abierto, lo listo plegado
     ok(nombre + ': resumen arriba con Legal, Pago y Orden', /Legal/.test(await p.textContent('#hojaComision .hc-res')) && /Orden/.test(await p.textContent('#hojaComision .hc-res')));
-    ok(nombre + ': plegables Legal, Carta, Pago, Orden, Más acciones e Hilo', await p.evaluate(() => ['legal', 'carta', 'pago', 'orden', 'ajustes', 'hilo'].every((id) => document.querySelector('[data-plg-btn="' + id + '"]'))));
-    ok(nombre + ': lo que falta (Legal) viene abierto', (await p.getAttribute('[data-plg-btn="legal"]', 'aria-expanded')) === 'true');
+    ok(nombre + ': plegables Cliente y orden, Legal, Pago, Carta, Corte y comisión e Hilo (sin Más acciones)', await p.evaluate(() => ['legal', 'carta', 'pago', 'orden', 'corte', 'hilo'].every((id) => document.querySelector('[data-plg-btn="' + id + '"]')) && !document.querySelector('[data-plg-btn="ajustes"]')));
+    // Lote 10/11 D10: todo cerrado al abrir; Legal se abre al tocarlo
+    ok(nombre + ': Legal empieza cerrado y se abre al tocarlo', (await p.getAttribute('[data-plg-btn="legal"]', 'aria-expanded')) === 'false' && (await p.click('[data-plg-btn="legal"]'), await p.getAttribute('[data-plg-btn="legal"]', 'aria-expanded')) === 'true');
     await p.screenshot({ path: 'capturas/03-' + nombre + '-comision.png' });
     const dz = await p.textContent('#docsCom');
     ok(nombre + ': trae las mismas casillas del expediente y Subir varios', dz.includes('Representante 1') && dz.includes('Empresa') && dz.includes('RIF de la empresa') && (await p.locator('#docsCom [data-casilla="cedula:1"]').count()) === 1 && (await p.locator('#comVarios').count()) === 1);
-    await p.locator('#docsCom [data-ver]').first().click(); await p.waitForSelector('#hojaFicha.ver #tFicha');
+    await enHoja(p, '#docsCom [data-ver]'); await p.locator('#docsCom [data-ver]').first().click(); await p.waitForSelector('#hojaFicha.ver #tFicha');
     ok(nombre + ': gestionar un documento abre el expediente encima, en Documentos', (await p.evaluate(() => window.Comun.hojasAbiertas().join())) === 'hojaComision,hojaFicha' && (await p.locator('#tabs .on').textContent()).includes('Documentos'));
     await p.click('#cabFicha [data-cierra]'); await p.waitForFunction(() => window.Comun.hojasAbiertas().join() === 'hojaComision');
     ok(nombre + ': al cerrarlo se vuelve a la comisión', true);
     const pagos = mundo.llamadas.filter((l) => l[1] === 'instalacion_pago').length;
-    await plegables(p, 'pago'); await p.click('#pagoCom'); if(await p.locator('#pagoSi').count()) await p.click('#pagoSi');
+    await plegables(p, 'pago'); await enHoja(p, '#pagoCom'); await p.click('#pagoCom'); if(await p.locator('#pagoSi').count()) await p.click('#pagoSi');
     await p.waitForFunction(() => Array.from(document.querySelectorAll('.toast')).some((t) => /pagada|Pago quitado/.test(t.textContent)));
     ok(nombre + ': el pago se gestiona desde la hoja', mundo.llamadas.filter((l) => l[1] === 'instalacion_pago').length === pagos + 1);
     await plegables(p, 'orden'); await p.click('#abrirExp'); await p.waitForSelector('#hojaFicha.ver #tFicha');

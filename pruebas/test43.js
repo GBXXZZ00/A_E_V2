@@ -1,7 +1,7 @@
 // Lote 21/10, tanda A: hoja de comisión con datos clave y plegables; No comisiona con su bandeja (solo el administrador la reactiva);
 // nota del pago; días para el pago (administrador) y la regla de N días del TAD; Revisar pago por factura del mes y por residenciales;
 // corregir un corte certificado sin tocar la foto y la bandeja "Fuera de la foto".
-const { chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar, plegables } = require('./simulador');
+const { enHoja, chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar, plegables } = require('./simulador');
 const { ok, cerrar } = marcador();
 const { RPC } = require('./mundo');
 const llamo = (m, f) => m.llamadas.filter((l) => l[1] === f);
@@ -26,13 +26,14 @@ function cargaTad(m, yo, cl, conDeuda){
     await abrirGrupo(p, fila.lider); await p.click('[data-com="' + fila.instalacion_id + '"]'); await p.waitForSelector('#hojaComision.ver [data-plg-btn="legal"]');
 
     // 1. Plegables cerrados que se abren y cierran con su estado en la cabecera
-    ok(nombre + ': lo que falta empieza abierto y Más acciones e Hilo plegados', await p.evaluate(() => { const bs = [...document.querySelectorAll('#hojaComision [data-plg-btn]')]; const ab = (id) => (bs.find((b) => b.dataset.plgBtn === id) || {}).getAttribute('aria-expanded');
-      return bs.some((b) => b.getAttribute('aria-expanded') === 'true') && ab('ajustes') === 'false' && ab('hilo') === 'false'; }));
+    // Lote 10/11 D10: todo empieza cerrado (antes: lo que faltaba abierto)
+    ok(nombre + ': todas las secciones empiezan cerradas, también Corte y comisión e Hilo', await p.evaluate(() => { const bs = [...document.querySelectorAll('#hojaComision [data-plg-btn]')];
+      return bs.length > 0 && bs.every((b) => b.getAttribute('aria-expanded') === 'false') && bs.some((b) => b.dataset.plgBtn === 'corte'); }));
     ok(nombre + ': la cabecera de Pago dice que debe', /Debe|Revisar pago/.test(await p.textContent('[data-plg-btn="pago"]')));
     await plegables(p, 'pago');
     ok(nombre + ': al tocarlo se abre', (await p.getAttribute('[data-plg-btn="pago"]', 'aria-expanded')) === 'true' && await p.isVisible('#pagoNota'));
     // Nota del pago
-    await p.fill('#pagoNota', 'Pagó en efectivo en la oficina'); await p.click('#pagoNotaGuardar');
+    await enHoja(p, '#pagoNota'); await p.fill('#pagoNota', 'Pagó en efectivo en la oficina'); await enHoja(p, '#pagoNotaGuardar'); await p.click('#pagoNotaGuardar');
     await p.waitForFunction(() => Array.from(document.querySelectorAll('.toast')).some((t) => /[Nn]ota/.test(t.textContent)));
     ok(nombre + ': la nota del pago se guarda en el servidor', llamo(mundo, 'instalacion_pago_nota').slice(-1)[0][2].p_nota === 'Pagó en efectivo en la oficina');
     ok(nombre + ': el plegable abierto sigue abierto después de guardar', (await p.getAttribute('[data-plg-btn="pago"]', 'aria-expanded')) === 'true');
@@ -42,12 +43,12 @@ function cargaTad(m, yo, cl, conDeuda){
     await p.screenshot({ path: 'capturas/43-' + nombre + '-hoja.png', fullPage: true });
 
     // 2. No comisiona: con motivo, sale de la lista y entra en su bandeja
-    await plegables(p, 'ajustes'); await p.click('#ncAbrir'); await p.waitForSelector('#hojaMotivoCom.ver #motivoCom');
+    await plegables(p, 'corte'); await enHoja(p, '#ncAbrir'); await p.click('#ncAbrir'); await p.waitForSelector('#hojaMotivoCom.ver #motivoCom');
     await p.click('#motivoComGuardar');
     ok(nombre + ': No comisiona sin motivo da error debajo', (await p.textContent('#eMotivoCom')).length > 0 && llamo(mundo, 'instalacion_no_comisiona').length === 0);
     await p.fill('#motivoCom', 'Era una mudanza del mismo cliente'); await p.click('#motivoComGuardar');
     await p.waitForFunction(() => !document.querySelector('#hojaMotivoCom.ver'));
-    await p.waitForFunction(() => /No comisiona/.test(document.querySelector('[data-plg-btn="ajustes"]').textContent));
+    await p.waitForFunction(() => /No comisiona/.test(document.querySelector('[data-plg-btn="corte"]').textContent));
     ok(nombre + ': queda marcada con motivo y en la bitácora', llamo(mundo, 'instalacion_no_comisiona').slice(-1)[0][2].p_si === true && mundo.bitacora.some((b) => b.accion === 'instalacion_no_comisiona' && b.instalacion === fila.instalacion_id));
     await cerrarHojas(p);
     await p.waitForSelector('.bandeja-extra[data-lider="__nc"]');
@@ -58,9 +59,9 @@ function cargaTad(m, yo, cl, conDeuda){
     // El Analista Senior no la puede volver a activar
     ok(nombre + ': el Analista Senior no la reactiva (servidor)', !!(RPC.instalacion_no_comisiona(mundo, sen, { p_instalacion: fila.instalacion_id, p_si: false }) || {}).__error);
     // El administrador sí
-    await p.click('.bandeja-extra [data-com="' + fila.instalacion_id + '"]'); await plegables(p, 'ajustes'); await p.waitForSelector('#ncReactivar');
+    await p.click('.bandeja-extra [data-com="' + fila.instalacion_id + '"]'); await plegables(p, 'corte'); await enHoja(p, '#ncReactivar'); await p.waitForSelector('#ncReactivar');
     ok(nombre + ': la hoja dice el motivo y que no comisiona', (await p.textContent('#hojaComision')).includes('Era una mudanza'));
-    await p.click('#ncReactivar');
+    await enHoja(p, '#ncReactivar'); await p.click('#ncReactivar');
     await p.waitForFunction(() => !document.querySelector('#ncReactivar'));
     ok(nombre + ': el administrador la vuelve a activar', llamo(mundo, 'instalacion_no_comisiona').slice(-1)[0][2].p_si === false && mundo.bitacora.some((b) => b.accion === 'instalacion_reactivada'));
     await cerrarHojas(p);
@@ -115,9 +116,9 @@ function cargaTad(m, yo, cl, conDeuda){
     await q.waitForSelector('.bandeja-extra[data-lider="__ff"]');
     ok(nombre + ': el administrador ve la bandeja "Fuera de la foto"', (await q.textContent('.bandeja-extra[data-lider="__ff"]')).includes('Fuera de la foto'));
     await q.click('.bandeja-extra[data-lider="__ff"] .grupo-cab'); await q.click('.bandeja-extra [data-com="' + fuera.instalacion_id + '"]');
-    await plegables(q, 'ajustes'); await q.waitForSelector('[data-corregir="se_pago"]');
+    await plegables(q, 'corte'); await enHoja(q, '[data-corregir="se_pago"]'); await q.waitForSelector('[data-corregir="se_pago"]');
     ok(nombre + ': la hoja dice que no quedó en la foto', (await q.textContent('#hojaComision')).includes('no quedó en su foto'));
-    await q.click('[data-corregir="se_pago"]'); await q.waitForSelector('#hojaMotivoCom.ver #motivoCom');
+    await enHoja(q, '[data-corregir="se_pago"]'); await q.click('[data-corregir="se_pago"]'); await q.waitForSelector('#hojaMotivoCom.ver #motivoCom');
     await q.fill('#motivoCom', 'Se pagó en la nómina de ese mes'); await q.click('#motivoComGuardar'); await q.waitForFunction(() => !document.querySelector('#hojaMotivoCom.ver'));
     const fi = b.mundo.datos.clientes.find((c) => c.id === fuera.cliente_id).instalaciones.find((i) => i.id === fuera.instalacion_id);
     ok(nombre + ': "Se pagó allá" la deja en ese corte con excepción y en la bitácora', fi.correccion === 'se_pago' && fi.excepcion_corte === corte && b.mundo.bitacora.some((x) => x.accion === 'corte_certificado_correccion'));

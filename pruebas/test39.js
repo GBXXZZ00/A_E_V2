@@ -1,6 +1,6 @@
 // Lote urgente 20/10, parte 4: en la hoja de comisión los documentos son las mismas casillas del expediente (arrastrar, Subir varios),
 // en un bloque plegable cerrado; arriba los datos clave (lote 21/10). Persona natural: solo cédula y RIF (teléfono opcional), nada de empresa.
-const { chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar, plegables } = require('./simulador');
+const { enHoja, chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar, plegables } = require('./simulador');
 const { ok, cerrar } = marcador();
 const { RPC } = require('./mundo');
 const llamo = (m, f) => m.llamadas.filter((l) => l[1] === f);
@@ -47,7 +47,7 @@ const cerrarHojas = async (p) => { for(let i = 0; i < 5 && await p.evaluate(() =
     const emp = d0.filas.find((f) => !f.es_natural && f.orden_ok);
     await abrirFila(emp);
     ok(nombre + ': empresa: trae las casillas de empresa en el mismo orden (representantes, empresa, otros)', await p.evaluate(() => { const g = Array.from(document.querySelectorAll('#docsCom [data-grupo]')).map((x) => x.dataset.grupo); return g.indexOf('rep1') === 0 && g.indexOf('empresa') > 0 && g.indexOf('otros') === g.length - 1; }));
-    await p.click('#comVarios'); await p.waitForSelector('#hojaVarios.ver');
+    await enHoja(p, '#comVarios'); await p.click('#comVarios'); await p.waitForSelector('#hojaVarios.ver');
     ok(nombre + ': Subir varios se abre encima con el nombre del cliente', (await p.textContent('#hojaVarios')).includes(emp.nombre.split(',')[0]));
     await p.setInputFiles('#archivosLote', [{ name: 'acta.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4 acta') }]);
     await p.waitForSelector('#hojaVarios [data-marca="acta_constitutiva:0"]'); await p.click('#hojaVarios [data-marca="acta_constitutiva:0"]');

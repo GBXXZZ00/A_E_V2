@@ -1,6 +1,6 @@
 // Lote urgente 20/10, parte 3: el pago marcado a mano no lo quita la carga del TAD; quitar el pago pide confirmación;
 // el texto de "Revisar pago" explica que el TAD no puede decidir cuando hay más de un servicio.
-const { chromium, H, TEL, PC, contexto, marcador, entrar, plegables } = require('./simulador');
+const { enHoja, chromium, H, TEL, PC, contexto, marcador, entrar, plegables } = require('./simulador');
 const { ok, cerrar } = marcador();
 const { RPC } = require('./mundo');
 const llamo = (m, f) => m.llamadas.filter((l) => l[1] === f);
@@ -32,14 +32,14 @@ function cargaTad(m, yo, cl, conDeuda){
     await p.goto(H + 'comisiones.html'); await p.waitForSelector('.grupo');
     const g = p.locator('.grupo').filter({ has: p.locator('.grupo-cab', { hasText: fila.lider }) });
     if(!(await g.evaluate((x) => x.classList.contains('abierto')))) await g.locator('.grupo-cab').click();
-    await p.click('[data-com="' + ins.id + '"]'); await p.waitForSelector('#hojaComision.ver #pagoCom', { state: 'attached' }); await plegables(p, 'pago');
+    await p.click('[data-com="' + ins.id + '"]'); await enHoja(p, '#hojaComision.ver #pagoCom'); await p.waitForSelector('#hojaComision.ver #pagoCom', { state: 'attached' }); await plegables(p, 'pago');
     const antes = llamo(mundo, 'instalacion_pago').length;
-    await p.click('#pagoCom'); await p.waitForSelector('#pagoConfirma');
+    await enHoja(p, '#pagoCom'); await p.click('#pagoCom'); await p.waitForSelector('#pagoConfirma');
     ok(nombre + ': "Quitar pago" pregunta antes', (await p.textContent('#pagoConfirma')).includes('¿Quitar el pago de este cliente?') && llamo(mundo, 'instalacion_pago').length === antes);
     await p.screenshot({ path: 'capturas/38-' + nombre + '-quitar-pago.png' });
     await p.click('[data-pago-no]');
     ok(nombre + ': "No" lo deja como estaba', (await p.locator('#pagoConfirma').count()) === 0 && (await p.textContent('#hojaComision')).includes('Quitar pago') && !!ins.pago_ok_en);
-    await p.click('#pagoCom'); await p.click('#pagoSi');
+    await enHoja(p, '#pagoCom'); await p.click('#pagoCom'); await p.click('#pagoSi');
     await p.waitForFunction(() => document.querySelector('#hojaComision').textContent.includes('Marcar pagada'));
     ok(nombre + ': "Sí, quitar" lo quita', !ins.pago_ok_en && llamo(mundo, 'instalacion_pago').slice(-1)[0][2].p_pagada === false);
     // 4. Quitado a mano, el TAD sin deuda no lo vuelve a marcar solo

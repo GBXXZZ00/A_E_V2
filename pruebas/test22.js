@@ -1,7 +1,7 @@
 // Comisiones del 13/10: período del 18 al 17 con límite el 18, evento a mano, orden de otra persona,
 // motivo visible, IP a mano, Excel con técnico, Proforma y carta en la hoja, archivos por subir y quienes crean órdenes por otros.
 const fs = require('fs');
-const { chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar, plegables } = require('./simulador');
+const { enHoja, chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar, plegables } = require('./simulador');
 const { corte: K } = require('./mundo');
 const { ok, cerrar } = marcador();
 
@@ -67,11 +67,11 @@ async function cerrarHojas(p){ for(let i = 0; i < 4 && await p.evaluate(() => !!
     ok(nombre + ': el plegable trae la proforma, la carta, la IP y un solo botón de WhatsApp', prof.includes('Carta de bienvenida') && prof.includes('Proforma') && (await p.locator('#cartaWa').count()) === 1 && (await p.locator('#cartaOtra').count()) === 1);
     ok(nombre + ': sin IP dice que falta, con el enlace Escribir', /Falta/.test(prof) && (await p.textContent('#profIp')).includes('Escribir'));
     await p.screenshot({ path: 'capturas/22-' + nombre + '-hoja-proforma.png' });
-    await p.click('#profIp'); await p.waitForSelector('#hojaCampo.ver #cIp');
+    await enHoja(p, '#profIp'); await p.click('#profIp'); await p.waitForSelector('#hojaCampo.ver #cIp');
     await p.fill('#cIp', '190.124.30.15'); await p.click('#guardarCampo');
     await p.waitForFunction(() => !/falta la IP/.test(document.querySelector('[data-plg-btn="carta"]').textContent));
     ok(nombre + ': la IP escrita en la hoja de comisión se guarda y quita el Falta IP', mundo.llamadas.some((l) => l[1] === 'servicio_ip' && l[2].p_ip === '190.124.30.15'));
-    await plegables(p, 'carta'); await p.click('#cartaOtra'); await p.waitForSelector('#hojaEnviar.ver');
+    await plegables(p, 'carta'); await enHoja(p, '#cartaOtra'); await p.click('#cartaOtra'); await p.waitForSelector('#hojaEnviar.ver');
     ok(nombre + ': Enviar por correo u otro abre la hoja de envío encima, sin abrir el expediente', (await p.evaluate(() => window.Comun.hojasAbiertas().join())) === 'hojaComision,hojaEnviar');
     await p.click('#envManual'); await p.click('#envManual');
     await p.waitForFunction(() => /Enviada por Canales/.test(document.querySelector('[data-plg-btn="carta"]').textContent));
@@ -84,9 +84,9 @@ async function cerrarHojas(p){ for(let i = 0; i < 4 && await p.evaluate(() => !!
     // Evento a mano: el Analista Senior lo ve aparte y decide si comisiona
     await p.click('[data-filtro="eventos"]'); await p.waitForSelector('#lista [data-com]');
     ok(nombre + ': filtro Eventos con el evento que no comisiona', (await p.textContent('#lista')).includes('Comercial de Prueba 14'));
-    await p.locator('#lista [data-com]').first().click(); await plegables(p, 'ajustes'); await p.waitForSelector('#hojaComision.ver [data-evento]');
+    await p.locator('#lista [data-com]').first().click(); await plegables(p, 'ajustes'); await enHoja(p, '#hojaComision.ver [data-evento]'); await p.waitForSelector('#hojaComision.ver [data-evento]');
     ok(nombre + ': la hoja dice que es evento y no comisiona', (await p.textContent('#hojaComision')).includes('Evento: no comisiona'));
-    await p.click('[data-evento="si_com"]');
+    await enHoja(p, '[data-evento="si_com"]'); await p.click('[data-evento="si_com"]');
     await p.waitForFunction(() => document.querySelector('[data-evento="si_com"].on'));
     const ev = mundo.llamadas.filter((l) => l[1] === 'instalacion_evento').pop();
     ok(nombre + ': marcar Comisiona lo guarda en el servidor', ev && ev[2].p_evento === true && ev[2].p_comisiona === true && mundo.bitacora.some((b) => b.accion === 'instalacion_evento'));

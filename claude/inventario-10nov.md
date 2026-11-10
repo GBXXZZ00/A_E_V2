@@ -39,3 +39,20 @@ Columna "Queda": **igual**, **movido a …** o **nuevo**. Se marca ✔ cuando la
 | Panel "Revisión del expediente" con 6 puntos, Bien / Pedir / Revisar, propuesta de la IA, Cerrar revisión | igual; fuera de una revisión es una línea "Revisión: N de 6 marcados · Abrir" (se abre con Abrir, con Revisar o entrando con revisar=1); los puntos van en una fila compacta; lo marcado queda como chip y al tocarlo se cambia; "Plegar" ✔ (test52) |
 | Pedir (requerimiento), Devolver, Ya no aplica, actas, Qué pedirle al cliente | igual ✔ (test52, test40, test04) |
 | Pestañas del expediente | igual (Documentos con secciones plegables cerradas en la parte J) |
+
+## Parte D · Comisiones (`comisiones.js`, `comisiones.html`)
+| Función de hoy | Queda |
+|---|---|
+| Tarjetas Instalaciones, Cambios de categoría, Cartas y proformas (filtran) | igual |
+| Avisos Por instalar, Por asignar, Subir documentos de un cliente nuevo | igual, junto a las tarjetas |
+| Pestañas por equipo (Ventas corporativas, Canales, Aliados) | chips con **Todos** por defecto; persona al elegir un equipo; aliado (sin subgrupos, etiqueta morada en cada fila) |
+| Filtros Todas, Comisionan, Falta legal, Sin pago, Del corte anterior, Por asignar, Archivos por subir, Pendientes, Eventos | igual + **Les falta algo** y **Carta por enviar** |
+| Buscador, Bajar Excel, Días para el pago, Cerrar corte, selector de corte | igual |
+| Agrupado por dueño con secciones (corte anterior, este corte, cumplieron, por instalar) y Enviar pendientes | igual (vista normal); los aliados en un solo grupo |
+| Nuevo | **Lista por fecha** (la más nueva primero, dueño en etiqueta, Legal · Pago · Orden y carta) y **Desde / Hasta** |
+| Hoja: Cliente y orden (¿Es este cliente?, Confirmar orden, Elegir otra orden, Cambiar dueño) | igual, cerrada al abrir |
+| Hoja: Legal (firma, Aprobar o Quitar Legal, Pedir al cliente, Subir varios, casillas con subir o arrastrar) | igual, cerrada al abrir |
+| Hoja: Pago (TAD, Marcar o Quitar pago, nota) | igual, cerrada al abrir |
+| Hoja: Carta (WhatsApp, Descargar, correo, Ya enviada, IP con lo más parecido y el pool) | igual + "Se envía a" con Cambiar; sin número: Descargar en color y Agregar número; al descargar "¿La vas a enviar por WhatsApp?"; "Descargada · por confirmar" con Ya la envié; aviso a las 2 horas |
+| Hoja: Más acciones (evento, cambiar de corte, excepción, No comisiona, corregir corte certificado, escribir nota) | movido a **Corte y comisión** (todo menos la nota) y la nota al **Hilo** |
+| Hoja: Hilo | igual, cerrado, con "Escribir una nota" |

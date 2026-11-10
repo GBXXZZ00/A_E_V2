@@ -207,4 +207,11 @@ async function plegables(p, ...ids){
 async function esperarDia(p, ms){
   await p.waitForFunction(() => { const d = document.getElementById('dia'); return d && d.dataset.estado === 'listo' && !/Leyendo|En espera|Subiendo|Cruzando|Índice \d+ %/.test(d.textContent); }, null, { timeout: ms || 30000 });
 }
-module.exports = { chromium, H, TEL, PC, contexto, marcador, pin, sinDesborde, basePersonas, entrar, plegables, esperarDia };
+// Lote 10/11 D10: la hoja de comisión abre con todo cerrado; antes de tocar un botón se abre su sección
+async function enHoja(p, sel){
+  await p.waitForSelector(sel, { state: 'attached', timeout: 15000 }).catch(() => {});
+  if(await p.locator(sel).first().isVisible().catch(() => false)) return;
+  await p.evaluate((s) => { const el = document.querySelector(s); const sec = el && el.closest('.plg-com'); const b = sec && sec.querySelector('[data-plg-btn]'); if(b && b.getAttribute('aria-expanded') !== 'true') b.click(); }, sel);
+  await p.waitForTimeout(120);
+}
+module.exports = { enHoja, chromium, H, TEL, PC, contexto, marcador, pin, sinDesborde, basePersonas, entrar, plegables, esperarDia };
