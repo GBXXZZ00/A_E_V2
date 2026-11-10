@@ -32,3 +32,10 @@ Columna "Queda": **igual**, **movido a …** o **nuevo**. Se marca ✔ cuando la
 | Cruzar ahora → resumen → Guardar cruce | **el cruce corre solo** al terminar (decidido 10/11); el resumen queda en "Ver detalle del cruce"; si falla, "Cruzar otra vez" |
 | Historial agrupado por fecha con quién subió | tabla Fecha, Archivo, Estado, Números (las últimas 15 y "Ver más") |
 | Solo administrador y Analista Senior | igual |
+
+## Parte C · Clientes (`ficha.js`)
+| Función de hoy | Queda |
+|---|---|
+| Panel "Revisión del expediente" con 6 puntos, Bien / Pedir / Revisar, propuesta de la IA, Cerrar revisión | igual; fuera de una revisión es una línea "Revisión: N de 6 marcados · Abrir" (se abre con Abrir, con Revisar o entrando con revisar=1); los puntos van en una fila compacta; lo marcado queda como chip y al tocarlo se cambia; "Plegar" ✔ (test52) |
+| Pedir (requerimiento), Devolver, Ya no aplica, actas, Qué pedirle al cliente | igual ✔ (test52, test40, test04) |
+| Pestañas del expediente | igual (Documentos con secciones plegables cerradas en la parte J) |

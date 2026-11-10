@@ -1,6 +1,6 @@
 # Traspaso (se actualiza al cerrar cada sesión)
 
-Actualizado: 10/11/2026, LOTE 10/11 EN CURSO (una versión por parte). Publicado: `?v=76` (partes A y B).
+Actualizado: 10/11/2026, LOTE 10/11 EN CURSO (una versión por parte). Publicado: `?v=77` (partes A, B y C).
 
 ## LOTE 10/11 (`claude/lote-10nov.md`): EN CURSO
 Referencia de comisiones (`privado.comision_filas3`) al empezar: septiembre 46/41, octubre 83/75, noviembre 55/4. Inventario en `claude/inventario-10nov.md`.
@@ -12,6 +12,7 @@ Referencia de comisiones (`privado.comision_filas3`) al empezar: septiembre 46/4
   - A5 (informe, sin cambios): duplicados por nombre (3 candidatos con RIF casi igual, se le mostraron al administrador por id para que decida); Odoo desde el 01/09: 191 órdenes, 123 cruzan; de las 68 que no: 23 canceladas, 27 en curso, 18 realizadas sin instalación (8 sin cliente en la app, 5 del mismo cliente con otra instalación cerca, 1 con instalación sin orden cerca, 4 sin instalación). Dueño: `creador_id` vacío en todas las órdenes aunque 178 de 191 creadores coinciden con un perfil; `vendedor_id` solo en 2 de 2.266. Instalaciones desde el 01/09: 191, 18 sin dueño real, 50 sin orden (27 sin orden, 23 manual).
   - Comisiones después: 46/41, 83/75, 55/4 (iguales).
 - **Parte B HECHA (v76)**: "Subir lo del día" (`actualizar.js`, `actualizar.html`, maqueta Main). Una zona para soltar todo; tabla con una fila por archivo (TAD, Índice, IP, Odoo, Instalaciones, Dedicados y lo demás que se suelte) con Leído → Cruzado → Listo y sus números; error en rojo con qué hacer (Quitar, Reintentar, Cruzar otra vez); "Falta el de hoy" para los diarios; chip "Hoy, dd/mm · N de M listos". Sin botón de cargar ni de cruzar: lo leído se sube solo y el cruce (`cruce_aplicar`) corre solo al terminar, también al abrir si quedó algo sin cruzar; el resumen queda en "Ver detalle del cruce". Índice en su fila con su porcentaje, "Saltar el índice hoy" y "Actualizar el índice igual" (reemplazan la casilla). Instalaciones viejas: "Así está bien" o "Usarlo para comisiones" en su fila. Historial como tabla (últimas 15 y Ver más). Inventario en `inventario-10nov.md`. Pruebas ajustadas: test05, 12, 27, 29, 49, 50, 51 (helper `esperarDia` en simulador.js).
+- **Parte C HECHA (v77)**: en el expediente, fuera de una revisión, el panel "Revisión del expediente" es una línea punteada "Revisión: N de 6 marcados · Falta … · Abrir"; se abre con Abrir, al tocar Revisar o con `revisar=1`. Puntos compactos (Bien, Pedir, Revisar en una fila; lo marcado como chip que se toca para cambiar; propuesta de la IA en azul). Los plegables cerrados de Documentos llegan con la parte J. test52 ajustada.
 
 ## LOTE 05/11 (`claude/lote-05nov.md`): HECHO (v68 a v74)
 Referencia de comisiones (`privado.comision_filas3`) al empezar: septiembre 46/41, octubre 83/75, noviembre 34/4.

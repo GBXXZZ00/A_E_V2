@@ -649,8 +649,16 @@
     ['junta', 'Junta directiva', 'junta', 'junta'], ['firmantes', 'Firmantes', 'firmantes', 'nombra'], ['contacto', 'Contacto', 'contacto', 'otro']];
   const tipoDeFalta = (t) => { const n = normalizeStr(t || ''); return /junta/.test(n) ? 'junta' : /razon social|nombre/.test(n) ? 'razon' : /domicilio/.test(n) ? 'domicilio' : /prorroga|duracion/.test(n) ? 'prorroga' : /representante/.test(n) ? 'nombra' : null; };
   // C1: panel "Revisión del expediente". La IA solo propone (borde punteado, "Propuesta, falta confirmar"); nunca sale como Bien ya marcado.
+  // Lote 10/11 C1: fuera de una revisión el panel es una sola línea "Revisión: N de M marcados · Abrir"; se abre al revisar
+  let rpAbierto = /[?&]revisar=1/.test(location.search); const rpCambiar = {};
   function panelRevision(){
     if(!F.puedo.revisar || !rev || rev.error || F.cliente.es_natural) return '';
+    const ptsL = rev.puntos || {}; const marcados = PUNTOS_REV.filter((q) => ptsL[q[0]]).length;
+    if(!rpAbierto && !marcas().length){
+      const faltan = PUNTOS_REV.filter((q) => !ptsL[q[0]]).map((q) => q[1].toLowerCase());
+      const txt = faltan.length ? 'Falta ' + (faltan.length > 2 ? faltan[0] + ' y ' + (faltan.length - 1) + ' más' : faltan.join(' y ')) : 'Todo marcado';
+      return '<div class="rp-linea' + (faltan.length ? '' : ' ok') + '"><span class="pt" aria-hidden="true"></span><b>Revisión: ' + marcados + ' de ' + PUNTOS_REV.length + ' marcados</b><small>' + esc(txt) + '</small><button type="button" class="btn btn-chico btn-2" data-rp-abrir="1">Abrir</button></div>';
+    }
     const k = rev.ia && rev.ia.estado === 'lista' ? rev.ia : null;
     const noLeyo = !!(rev.ia && rev.ia.estado === 'error') || !!(k && (k.puntos || []).some((p) => p.id === 'actas' && p.estado === 'mano'));
     const pts = rev.puntos || {}; let pend = 0, ped = 0, man = 0;
@@ -661,11 +669,12 @@
       const chip = s ? (s.decision === 'bien' ? ['verde', 'Bien'] : s.decision === 'pedir' ? ['rojo', 'Por pedir'] : ['ambar', 'Revisar a mano']) : prop ? ['azul', 'Propuesta, falta confirmar'] : ['gris', 'Sin marcar'];
       const cls = (d) => 'rp-op' + (s && s.decision === d ? ' on' : (!s && prop === d ? ' prop' : ''));
       const extra = s && s.decision === 'pedir' ? 'Se pedirá: ' + reqTexto(s.documento) + (s.nota ? '. ' + s.nota : '') : !s && prop === 'pedir' && p.falta ? 'Propuesta de la IA: pedir ' + p.falta : '';
-      return '<div class="rp-f" data-rp="' + pid + '"><div class="rp-t"><b>' + esc(t) + '</b><span class="chip ' + chip[0] + '">' + chip[1] + '</span></div><small>' + esc(p ? p.detalle : 'Mira el documento y marca') + '</small>' + (extra ? '<small class="rp-x">' + esc(extra) + '</small>' : '') +
-        '<div class="rp-ops" role="group" aria-label="' + esc(t) + '"><button type="button" class="' + cls('bien') + '" data-pt="' + pid + ':bien" aria-pressed="' + !!(s && s.decision === 'bien') + '">Bien</button><button type="button" class="' + cls('pedir') + '" data-pt="' + pid + ':pedir" aria-pressed="' + !!(s && s.decision === 'pedir') + '">Pedir</button><button type="button" class="' + cls('revisar') + '" data-pt="' + pid + ':revisar" aria-pressed="' + !!(s && s.decision === 'revisar') + '">Revisar</button></div></div>';
+      // Marcado: solo su chip (tocarlo deja cambiarlo); sin marcar: los tres botones en una fila
+      const ops = s && !rpCambiar[pid] ? '<button type="button" class="chip ' + chip[0] + ' rp-chip" data-rp-cambiar="' + pid + '" aria-label="' + esc(t + ': ' + chip[1] + '. Cambiar') + '">' + chip[1] + '</button>' : '<div class="rp-ops" role="group" aria-label="' + esc(t) + '"><button type="button" class="' + cls('bien') + '" data-pt="' + pid + ':bien" aria-pressed="' + !!(s && s.decision === 'bien') + '">Bien</button><button type="button" class="' + cls('pedir') + '" data-pt="' + pid + ':pedir" aria-pressed="' + !!(s && s.decision === 'pedir') + '">Pedir</button><button type="button" class="' + cls('revisar') + '" data-pt="' + pid + ':revisar" aria-pressed="' + !!(s && s.decision === 'revisar') + '">Revisar</button></div>';
+      return '<div class="rp-f" data-rp="' + pid + '"><div class="rp-tx"><b>' + esc(t) + '</b><small>' + esc(p ? p.detalle : 'Mira el documento y marca') + '</small>' + (!s && prop ? '<small class="rp-pr">Propuesta de la IA: ' + esc(prop === 'bien' ? 'Bien' : prop === 'pedir' ? 'Pedir' : 'Revisar') + ', falta confirmar</small>' : '') + (extra ? '<small class="rp-x">' + esc(extra) + '</small>' : '') + '</div>' + ops + '</div>';
     }).join('');
     const hay = Object.keys(pts).length;
-    return '<section class="rp" aria-labelledby="rpT"><div class="rp-cab"><b id="rpT">Revisión del expediente</b><small>' + esc(noLeyo ? 'La IA no pudo leer los documentos. Revisa tú y marca cada punto.' : k ? 'La IA leyó los documentos. Sus propuestas salen con borde punteado: confirma con un toque o cambia.' : 'Sin lectura de la IA. Revisas tú y marcas cada punto; funciona igual.') + '</small></div>' + filas +
+    return '<section class="rp" aria-labelledby="rpT"><div class="rp-cab"><b id="rpT">Revisión del expediente</b>' + (!marcas().length ? '<button type="button" class="enlace rp-plegar" data-rp-plegar="1">Plegar</button>' : '') + '<small>' + esc(noLeyo ? 'La IA no pudo leer los documentos. Revisa tú y marca cada punto.' : k ? 'La IA leyó los documentos. Sus propuestas salen con borde punteado: confirma con un toque o cambia.' : 'Sin lectura de la IA. Revisas tú y marcas cada punto; funciona igual.') + '</small></div>' + filas +
       '<div class="rp-pie"><span>' + esc(pend ? (pend === 1 ? 'Falta 1 punto por confirmar' : 'Faltan ' + pend + ' puntos por confirmar') : plural(ped, 'por pedir', 'por pedir') + ' · ' + plural(man, 'a mano', 'a mano')) + '</span>' +
       '<button type="button" class="btn btn-chico" data-pt-cerrar' + (hay ? '' : ' disabled') + '>Cerrar revisión</button></div></section>';
   }
@@ -678,7 +687,7 @@
     }
     const nueva = actual && actual.decision === dec ? null : dec;   // tocar lo mismo otra vez lo desmarca
     b.disabled = true;
-    try { await rpc('revision_punto', { p_cliente: id, p_punto: pid, p_decision: nueva }); rev.puntos = Object.assign({}, rev.puntos); if(nueva) rev.puntos[pid] = { decision: nueva }; else delete rev.puntos[pid]; pintarDocumentos(); }
+    try { await rpc('revision_punto', { p_cliente: id, p_punto: pid, p_decision: nueva }); delete rpCambiar[pid]; rev.puntos = Object.assign({}, rev.puntos); if(nueva) rev.puntos[pid] = { decision: nueva }; else delete rev.puntos[pid]; pintarDocumentos(); }
     catch (e) { toast(e.message, 'error'); b.disabled = false; }
   }
   async function cerrarPuntos(b){
@@ -1430,7 +1439,7 @@
   }
 
   // ---------- Ver y revisar un documento ----------
-  function abrirRevision(){ const cola = sinMarcar().map((d) => d.id); if(!cola.length) return; irTab('documentos'); soltarBlobs(); ver = { docId: cola[0], cola, paso: 'ver', motivo: null, archivo: 0, url: {} }; pintarVer(); abrirHoja('hojaVer'); cargarArchivo(); }
+  function abrirRevision(){ rpAbierto = true; const cola = sinMarcar().map((d) => d.id); if(!cola.length) return; irTab('documentos'); soltarBlobs(); ver = { docId: cola[0], cola, paso: 'ver', motivo: null, archivo: 0, url: {} }; pintarVer(); abrirHoja('hojaVer'); cargarArchivo(); }
   function abrirVer(docId){ soltarBlobs(); ver = { docId, cola: null, paso: 'ver', motivo: null, archivo: 0, url: {} }; pintarVer(); abrirHoja('hojaVer'); cargarArchivo(); const d = docVer(); if(d) cargarActa(d); }
   // Motivos de devolución: "Sin los datos del Registro" se guarda como otro motivo con esa nota (la base solo tiene los 5 de siempre)
   const MOTIVOS_DEV = Object.assign({}, C.MOTIVOS, { no_corresponde: 'No es de esta empresa', sin_registro: 'Sin los datos del Registro' });
@@ -1752,6 +1761,9 @@
       accion('cliente_marca', { p_cliente: id, p_marca: 'contrato_presencial', p_valor: fis }, fis ? 'Firma física: no se piden correos ni teléfono' : 'Firma digital', b); return; }
     if(t.closest('#revisarTodo')){ abrirRevision(); return; }
     // Lote 05/11 parte C
+    if((b = t.closest('#hojaFicha [data-rp-abrir]'))){ rpAbierto = true; pintarDocumentos(); return; }
+    if((b = t.closest('#hojaFicha [data-rp-plegar]'))){ rpAbierto = false; pintarDocumentos(); return; }
+    if((b = t.closest('#hojaFicha [data-rp-cambiar]'))){ rpCambiar[b.dataset.rpCambiar] = true; pintarDocumentos(); return; }
     if((b = t.closest('#hojaFicha [data-pt]'))){ marcarPunto(b); return; }
     if((b = t.closest('#hojaFicha [data-pt-cerrar]'))){ cerrarPuntos(b); return; }
     if((b = t.closest('[data-req-quitar]'))){ if(b.dataset.armado !== '1'){ b.dataset.armado = '1'; b.textContent = '¿Quitar? Toca otra vez'; setTimeout(() => { if(document.contains(b)){ b.dataset.armado = ''; b.textContent = 'Quitar pedido'; } }, 4000); return; }

@@ -13,16 +13,21 @@ const cerrarHojas = async (p) => { for(let i = 0; i < 5 && await p.evaluate(() =
     const p = await entrar(ctx, 'marcos', '482913'); p.on('pageerror', (e) => errores.push(nombre + ': ' + e.message));
     const c = mundo.datos.clientes.find((x) => x.id === 1001);
     c.representantes = [{ orden: 1, nombre: 'Persona Uno Inventada', correo: 'personauno@ejemplo.test', telefono: '0414-0000001' }, { orden: 2, nombre: 'Persona Dos Inventada', correo: null, telefono: null }];
-    await p.goto(H + 'cliente.html?id=1001&t=documentos'); await p.waitForSelector('.rp [data-pt]');
+    // Lote 10/11 C1: fuera de una revisión el panel es una línea "Revisión: N de 6 marcados · Abrir"
+    await p.goto(H + 'cliente.html?id=1001&t=documentos'); await p.waitForSelector('.rp-linea [data-rp-abrir]');
+    ok(nombre + ': fuera de la revisión el panel es una sola línea con lo marcado y Abrir', /Revisión: 0 de 6 marcados/.test(await p.textContent('.rp-linea')) && !(await p.locator('.rp [data-pt]').count()));
+    await p.click('[data-rp-abrir]'); await p.waitForSelector('.rp [data-pt]');
     const panel = await p.textContent('.rp');
     ok(nombre + ': panel con los 6 puntos en el orden de la oficina', ['Razón social', 'Domicilio fiscal', 'Vigencia de la empresa', 'Junta directiva', 'Firmantes', 'Contacto'].every((t) => panel.includes(t)) && (await p.locator('.rp [data-rp]').count()) === 6);
     ok(nombre + ': sin marcar nada no dice Bien (la IA nunca lo deja marcado)', !(await p.locator('.rp .rp-op.on').count()));
-    await p.click('[data-pt="razon_social:bien"]'); await p.waitForSelector('[data-rp="razon_social"] .rp-op.on');
+    await p.click('[data-pt="razon_social:bien"]'); await p.waitForSelector('[data-rp="razon_social"] .rp-chip');
     ok(nombre + ': Bien queda marcado', /Bien/.test(await p.textContent('[data-rp="razon_social"] .chip')));
     await p.click('[data-pt="junta:pedir"]'); await p.waitForSelector('#hojaCampo.ver [data-req-tipo="junta"][aria-checked="true"]');
     ok(nombre + ': Pedir abre la lista cerrada con el acta de la junta elegida', (await p.locator('#hojaCampo [data-req-tipo]').count()) === 6 && /ratificación o cambio de junta directiva/.test(await p.textContent('#hojaCampo')));
     await p.fill('#reqNota', 'La constitutiva no dice cuánto dura la junta'); await p.click('#reqGuardar');
-    await p.waitForSelector('[data-rp="junta"] .rp-op.on'); await p.click('[data-pt-cerrar]');
+    await p.waitForSelector('[data-rp="junta"] .rp-chip');
+    ok(nombre + ': lo marcado queda como chip y al tocarlo se puede cambiar', (await p.click('[data-rp-cambiar="razon_social"]'), await p.locator('[data-rp="razon_social"] [data-pt]').count()) === 3);
+    await p.click('[data-pt-cerrar]');
     await p.waitForSelector('.casilla.pedida', { timeout: 15000 });
     const ped = await p.textContent('.casilla.pedida');
     ok(nombre + ': al cerrar, la casilla queda en rojo con el nombre completo, el motivo y quién lo pidió', /Falta: Acta de asamblea de ratificación o cambio de junta directiva/.test(ped) && /cuánto dura/.test(ped) && /Marcos/.test(ped));
