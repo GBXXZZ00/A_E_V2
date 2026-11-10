@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="utf-8">
-<title>VGT por solicitud</title>
+<title>VGT en Documentos</title>
 <script src="./support.js"></script>
 </head>
 <body>
@@ -59,16 +59,16 @@ h1,h2,h3,p{margin:0}
 </style>
 </helmet>
 <div style="width:2240px;height:1180px;padding:30px;display:flex;gap:40px;align-items:flex-start"><div class="col" style="width:640px;gap:12px">
-<span class="lbl">Ficha del cliente · pestaña VGT</span>
+<span class="lbl">Ficha del cliente · pestaña Documentos, sección VGT abierta</span>
 <div class="card" style="gap:14px;padding:20px">
-<div class="row" style="gap:8px;border-bottom:1px solid #E3E6EA;padding-bottom:10px"><span class="seg">Datos</span><span class="seg">Documentos</span><span class="seg">Servicio dedicado</span><span class="seg on">VGT</span><span class="seg">Hilo</span></div>
+<div class="row" style="gap:8px;border-bottom:1px solid #E3E6EA;padding-bottom:10px"><span class="seg">Datos</span><span class="seg on">Documentos</span><span class="seg">Hilo</span></div><button class="pleg list" style="width:100%;font:inherit;text-align:left;cursor:pointer"><span class="dot ok"></span><b>Expediente del cliente</b><span class="chip ok">Completo</span><span class="car">⌄</span></button><button class="pleg list" style="width:100%;font:inherit;text-align:left;cursor:pointer"><span class="dot ok"></span><b>Contratos</b><span class="chip ok">Dedicado firmado</span><span class="car">⌄</span></button><div class="row" style="padding:4px 2px"><span class="dot w"></span><b style="flex:1;font-size:16px">VGT</b><span class="chip w">Falta 1 adendum</span><button class="btn chico">Editar</button><span class="car">⌃</span></div>
 <div class="row" style="gap:12px;flex-wrap:nowrap">
 <div style="flex:1;display:flex;align-items:center;gap:12px;padding:14px;border-radius:14px;border:1px solid #E3E6EA"><b style="font-size:26px">19</b><span class="tx"><b>postes</b><span class="mut">8 en uso · 11 en proyecto</span></span></div>
 <div style="flex:1;display:flex;align-items:center;gap:12px;padding:14px;border-radius:14px;border:1px solid #E3E6EA"><b style="font-size:26px">2</b><span class="tx"><b>solicitudes</b><span class="mut">Contrato + 1 adendum</span></span></div>
 <div style="flex:1.3;display:flex;flex-direction:column;gap:4px;padding:14px;border-radius:14px;background:#E7F5EE"><b style="color:#0F6642">Contrato VGT N.º 0123</b><span style="font-size:12px;color:#0F6642">Firmado 08/11/2026 · vence 08/11/2027 · 1 adendum</span><span style="font-size:12px;font-weight:600;color:#1F45C4">Ver contrato · está en la solicitud 1</span></div></div>
 <div class="row"><b style="flex:1;font-size:15px">Requisitos del cliente</b><span class="mut">Sirven para todas sus solicitudes</span></div>
 <div class="row" style="padding:10px 0;border-bottom:1px solid #F0F2F4"><div class="tx"><b>Póliza de responsabilidad civil general</b><span class="mut">USD 100.000 · Seguros Ejemplo · vence 15/03/2027</span></div><span class="chip ok">Aprobada</span><button class="btn chico">Ver</button></div><div class="row" style="padding:10px 0;border-bottom:1px solid #F0F2F4"><div class="tx"><b>Póliza de responsabilidad patronal</b><span class="mut">4 trabajadores · vence 15/03/2027</span></div><span class="chip ok">Aprobada</span><button class="btn chico">Ver</button></div>
-<span class="mut">Las pólizas viven aquí porque solo aplican a VGT. En Documentos sale una línea que trae hasta aquí. 30 días antes del vencimiento avisamos.</span>
+<span class="mut">Todo se puede editar aquí mismo mientras se arma: datos de cada solicitud, postes, estado, ODT, documentos, contrato y adendums. 30 días antes del vencimiento de las pólizas avisamos.</span>
 <div class="row"><b style="flex:1;font-size:15px">Solicitudes</b><button class="btn chico pri">+ Nueva solicitud</button></div>
 <button style="width:100%;display:flex;flex-direction:column;gap:8px;padding:14px 16px;border-radius:16px;border:1px solid #E3E6EA;background:#fff;font:inherit;text-align:left;cursor:pointer">
 <div class="row"><span class="lbl" style="flex:1">Solicitud 1</span><span class="chip b">En proyecto</span></div>
@@ -114,7 +114,7 @@ h1,h2,h3,p{margin:0}
 <span class="lbl" style="margin-top:12px">Semáforo de cada solicitud</span>
 <div class="card" style="gap:6px;font-size:13px"><span>1. Pólizas del cliente al día</span><span>2. Aprobada por infraestructura + ODT</span><span>3. Propuesta firmada</span><span>4. Planilla(s) de tendido</span><span>5. Contrato o adendum firmado y subido</span><span class="mut" style="margin-top:4px">En uso sin contrato o adendum: aviso rojo al administrador y a Legal.</span></div>
 </div><div class="col" style="width:440px;gap:12px">
-<span class="lbl">Sin contrato todavía: así sube el primero</span>
+<span class="lbl">Cliente sin VGT: la sección queda en una línea</span><button class="pleg" style="width:100%;font:inherit;text-align:left;cursor:pointer;border-style:dashed"><b>VGT</b><span class="mut">Este cliente no tiene solicitudes</span><span class="btn chico pri">+ Agregar solicitud</span></button><span class="lbl" style="margin-top:14px">Sin contrato todavía: así sube el primero</span>
 <div class="card" style="gap:10px;padding:18px">
 <div class="tx"><b style="font-size:16px">Solicitud 1 · La Polar</b><span class="mut">Cliente de ejemplo · 2 postes · En uso</span></div>
 <div style="border-radius:14px;background:#FCEDEB;padding:14px;display:flex;flex-direction:column;gap:8px">
@@ -123,9 +123,9 @@ h1,h2,h3,p{margin:0}
 <div style="border:2px dashed #E39A92;border-radius:12px;padding:12px;text-align:center;font-size:13px;font-weight:600;color:#A32117;background:#fff">Arrastra aquí el contrato VGT firmado</div>
 <div class="row" style="gap:8px;flex-wrap:nowrap"><div class="campo" style="flex:1"><label>N.º de contrato</label><div class="inp ph">Ej.: 0124</div></div><div class="campo" style="flex:1"><label>Firma</label><div class="inp ph">dd/mm/aaaa</div></div><div class="campo" style="flex:1"><label>Vence</label><div class="inp ph">dd/mm/aaaa</div></div></div></div>
 </div>
-<span class="lbl" style="margin-top:14px">Pestaña Documentos: el contrato dedicado como una sección más</span>
+<span class="lbl" style="margin-top:14px">Pestaña Documentos con todo cerrado</span>
 <div class="card" style="gap:10px;padding:18px">
-<div class="row" style="gap:8px;border-bottom:1px solid #E3E6EA;padding-bottom:10px"><span class="seg">Datos</span><span class="seg on">Documentos</span><span class="seg">VGT</span><span class="seg">Hilo</span></div>
+<div class="row" style="gap:8px;border-bottom:1px solid #E3E6EA;padding-bottom:10px"><span class="seg">Datos</span><span class="seg on">Documentos</span><span class="seg">Hilo</span></div>
 <button class="pleg list" style="width:100%;font:inherit;text-align:left;cursor:pointer"><span class="dot ok"></span><b>Expediente del cliente</b><span class="chip ok">Completo</span><span class="car">⌄</span></button>
 <div class="card" style="border-color:#E8A040;gap:8px;padding:14px">
 <div class="row"><span class="dot w"></span><b style="flex:1">Contratos</b><span class="chip w">Falta 1</span><span class="car">⌃</span></div>
@@ -133,8 +133,8 @@ h1,h2,h3,p{margin:0}
 <div class="row" style="padding:6px 0;border-bottom:1px solid #F0F2F4"><div class="tx"><b>Adendum N.º 1 (aumento a 300 Mbps)</b><span class="mut">Firmado 10/01/2026</span></div><span class="chip ok">Bien</span><button class="btn chico">Ver</button></div>
 <div class="row" style="padding:6px 0"><div class="tx"><b>Contrato PYME</b><span class="mut">Por elaborar</span></div><div style="border:1.5px dashed #B9C2CE;border-radius:10px;padding:6px 10px;font-size:12px;font-weight:600;color:#1F45C4">+ Subir o arrastrar</div></div>
 <div class="row" style="gap:8px"><button class="btn chico">+ Adendum</button><button class="btn chico">+ Otro contrato</button></div></div>
-<button class="pleg" style="width:100%;font:inherit;text-align:left;cursor:pointer"><b>Pólizas VGT</b><span class="mut">Están en la pestaña VGT</span><span class="car">›</span></button>
-<span class="mut">Sin pestaña "Servicio dedicado": los contratos van en Documentos, en su sección plegable como el expediente. Cerrada si está completa, con su estado a la vista; se abre al tocarla. VGT sigue en su pestaña por las solicitudes.</span>
+<button class="pleg" style="width:100%;font:inherit;text-align:left;cursor:pointer"><span class="dot w"></span><b>VGT</b><span class="chip w">Falta 1 adendum</span><span class="car">⌄</span></button>
+<span class="mut">Sin pestañas aparte: Expediente, Contratos y VGT son tres secciones plegables de Documentos. Cerradas con su estado a la vista; se abren al tocarlas. Si el cliente no tiene VGT, solo sale "+ Agregar solicitud".</span>
 </div></div></div>
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2240,"height":1180}}'>
