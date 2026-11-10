@@ -123,14 +123,18 @@ h1,h2,h3,p{margin:0}
 <div style="border:2px dashed #E39A92;border-radius:12px;padding:12px;text-align:center;font-size:13px;font-weight:600;color:#A32117;background:#fff">Arrastra aquí el contrato VGT firmado</div>
 <div class="row" style="gap:8px;flex-wrap:nowrap"><div class="campo" style="flex:1"><label>N.º de contrato</label><div class="inp ph">Ej.: 0124</div></div><div class="campo" style="flex:1"><label>Firma</label><div class="inp ph">dd/mm/aaaa</div></div><div class="campo" style="flex:1"><label>Vence</label><div class="inp ph">dd/mm/aaaa</div></div></div></div>
 </div>
-<span class="lbl" style="margin-top:14px">Pestaña Servicio dedicado: el contrato del servicio</span>
+<span class="lbl" style="margin-top:14px">Pestaña Documentos: el contrato dedicado como una sección más</span>
 <div class="card" style="gap:10px;padding:18px">
-<div class="row" style="gap:8px;border-bottom:1px solid #E3E6EA;padding-bottom:10px"><span class="seg">Documentos</span><span class="seg on">Servicio dedicado</span><span class="seg">VGT</span></div>
-<div class="row"><b style="flex:1">Contrato de servicio dedicado</b><span class="chip ok">Firmado</span></div>
-<span class="mut">2 enlaces · 300 Mbps · firmado 02/05/2025 · vence 02/05/2026</span>
-<div class="row" style="gap:8px"><button class="btn chico">Ver contrato</button><button class="btn chico">Reemplazar</button><button class="btn chico">+ Adendum</button></div>
-<div class="row" style="padding-top:8px;border-top:1px solid #F0F2F4"><b style="flex:1">Colocation</b><span class="chip">No aplica</span></div>
-<span class="mut">Cada tipo tiene su lugar: el dedicado en su pestaña, VGT en la suya (contrato en la solicitud 1, adendums en las demás). Los dos usan el mismo bloque para arrastrar el archivo.</span>
+<div class="row" style="gap:8px;border-bottom:1px solid #E3E6EA;padding-bottom:10px"><span class="seg">Datos</span><span class="seg on">Documentos</span><span class="seg">VGT</span><span class="seg">Hilo</span></div>
+<button class="pleg list" style="width:100%;font:inherit;text-align:left;cursor:pointer"><span class="dot ok"></span><b>Expediente del cliente</b><span class="chip ok">Completo</span><span class="car">⌄</span></button>
+<div class="card" style="border-color:#E8A040;gap:8px;padding:14px">
+<div class="row"><span class="dot w"></span><b style="flex:1">Contratos</b><span class="chip w">Falta 1</span><span class="car">⌃</span></div>
+<div class="row" style="padding:6px 0;border-bottom:1px solid #F0F2F4"><div class="tx"><b>Contrato de servicio dedicado</b><span class="mut">Firmado 02/05/2025 · vence 02/05/2026</span></div><span class="chip ok">Bien</span><button class="btn chico">Ver</button></div>
+<div class="row" style="padding:6px 0;border-bottom:1px solid #F0F2F4"><div class="tx"><b>Adendum N.º 1 (aumento a 300 Mbps)</b><span class="mut">Firmado 10/01/2026</span></div><span class="chip ok">Bien</span><button class="btn chico">Ver</button></div>
+<div class="row" style="padding:6px 0"><div class="tx"><b>Contrato PYME</b><span class="mut">Por elaborar</span></div><div style="border:1.5px dashed #B9C2CE;border-radius:10px;padding:6px 10px;font-size:12px;font-weight:600;color:#1F45C4">+ Subir o arrastrar</div></div>
+<div class="row" style="gap:8px"><button class="btn chico">+ Adendum</button><button class="btn chico">+ Otro contrato</button></div></div>
+<button class="pleg" style="width:100%;font:inherit;text-align:left;cursor:pointer"><b>Pólizas VGT</b><span class="mut">Están en la pestaña VGT</span><span class="car">›</span></button>
+<span class="mut">Sin pestaña "Servicio dedicado": los contratos van en Documentos, en su sección plegable como el expediente. Cerrada si está completa, con su estado a la vista; se abre al tocarla. VGT sigue en su pestaña por las solicitudes.</span>
 </div></div></div>
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2240,"height":1180}}'>
