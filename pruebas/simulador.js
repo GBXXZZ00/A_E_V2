@@ -203,4 +203,8 @@ async function plegables(p, ...ids){
     if((await b.count()) && (await b.getAttribute('aria-expanded')) !== 'true') await b.click(); }
 }
 
-module.exports = { chromium, H, TEL, PC, contexto, marcador, pin, sinDesborde, basePersonas, entrar, plegables };
+// Lote 10/11 B: "Subir lo del día" sube y cruza solo; espera a que la tabla del día deje de leer, subir y cruzar
+async function esperarDia(p, ms){
+  await p.waitForFunction(() => { const d = document.getElementById('dia'); return d && d.dataset.estado === 'listo' && !/Leyendo|En espera|Subiendo|Cruzando|Índice \d+ %/.test(d.textContent); }, null, { timeout: ms || 30000 });
+}
+module.exports = { chromium, H, TEL, PC, contexto, marcador, pin, sinDesborde, basePersonas, entrar, plegables, esperarDia };

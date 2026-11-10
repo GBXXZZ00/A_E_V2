@@ -1,7 +1,7 @@
 // Lote 05/11, parte A: Inicio y Mi trabajo con la misma cuenta; la Analista Senior no aprueba ni devuelve documentos
 // ni ve la revisión de documentos; texto de la póliza VGT (responsabilidad civil general mínimo US$ 100.000).
 // Datos inventados (mundo.js).
-const { chromium, H, TEL, PC, contexto, marcador, entrar } = require('./simulador');
+const { esperarDia, chromium, H, TEL, PC, contexto, marcador, entrar } = require('./simulador');
 const { RPC } = require('./mundo');
 const { ok, cerrar } = marcador();
 
@@ -31,20 +31,18 @@ const { ok, cerrar } = marcador();
     let t = cab + '\n'; for(let i = 1; i <= 5; i++) t += fila(i) + '\n';
     await a.goto(H + 'actualizar.html'); await a.waitForSelector('#zona');
     await a.setInputFiles('#archivos', { name: 'tad.csv', mimeType: 'text/csv', buffer: Buffer.from(t) });
-    await a.waitForSelector('#cargarTodo'); await a.uncheck('[data-con-indice]').catch(() => {}); await a.click('#cargarTodo'); await a.waitForSelector('#otro', { timeout: 20000 });
-    ok(nombre + ': un TAD sin fechas de suspensión ni habilitación sale en rojo y lo explica', /Sin fechas/.test(await a.textContent('#listaArch')) && /no trajo fechas/.test(await a.textContent('#listaArch')));
-    await a.click('#otro');
-    t = cab + ',Fecha Ultima Suspension,Fecha Reconexion\n'; for(let i = 1; i <= 5; i++) t += fila(i, ',2026/10/0' + i + ',05-oct-2026') + '\n';
+    await esperarDia(a); await a.click('[data-saltar-indice]').catch(() => {}); await a.waitForFunction(() => !/en segundo plano/.test(document.getElementById('dia').textContent), null, { timeout: 20000 });
+    ok(nombre + ': un TAD sin fechas de suspensión ni habilitación sale en rojo y lo explica', /Sin fechas/.test(await a.textContent('#dia')) && /no trajo fechas/.test(await a.textContent('#dia')));
+        t = cab + ',Fecha Ultima Suspension,Fecha Reconexion\n'; for(let i = 1; i <= 5; i++) t += fila(i, ',2026/10/0' + i + ',05-oct-2026') + '\n';
     await a.setInputFiles('#archivos', { name: 'tad2.csv', mimeType: 'text/csv', buffer: Buffer.from(t) });
-    await a.waitForSelector('#cargarTodo'); await a.uncheck('[data-con-indice]').catch(() => {}); await a.click('#cargarTodo'); await a.waitForSelector('#otro', { timeout: 20000 });
+    await esperarDia(a); await a.click('[data-saltar-indice]').catch(() => {}); await a.waitForFunction(() => !/en segundo plano/.test(document.getElementById('dia').textContent), null, { timeout: 20000 });
     const ult = mundo2.cargas.filter((c) => c.fuente === 'tad').slice(-1)[0];
-    ok(nombre + ': con columnas "Fecha Ultima Suspension" y "Fecha Reconexion" lee las fechas y guarda qué columnas usó', ult.resumen.con_fechas === 5 && ult.resumen.columnas_fechas && /suspension/.test(ult.resumen.columnas_fechas.suspension) && /reconexion/.test(ult.resumen.columnas_fechas.habilitacion) && !/Sin fechas/.test(await a.textContent('#listaArch')));
+    ok(nombre + ': con columnas "Fecha Ultima Suspension" y "Fecha Reconexion" lee las fechas y guarda qué columnas usó', ult.resumen.con_fechas === 5 && ult.resumen.columnas_fechas && /suspension/.test(ult.resumen.columnas_fechas.suspension) && /reconexion/.test(ult.resumen.columnas_fechas.habilitacion) && !/Sin fechas/.test(await a.textContent('#dia')));
     // Lote 10/11 A1: encabezados reales ULTSUPENSION y ULTACTIVACION; 01-01-1900 significa "nunca" y se guarda vacío
-    await a.click('#otro');
-    t = cab + ',ULTSUPENSION,ULTACTIVACION\n';
+        t = cab + ',ULTSUPENSION,ULTACTIVACION\n';
     for(let i = 1; i <= 5; i++) t += fila(i, i <= 3 ? ',0' + i + '-10-2026,1' + i + '-10-2026' : ',01-01-1900,01-01-1900') + '\n';
     await a.setInputFiles('#archivos', { name: 'tad3.csv', mimeType: 'text/csv', buffer: Buffer.from(t) });
-    await a.waitForSelector('#cargarTodo'); await a.uncheck('[data-con-indice]').catch(() => {}); await a.click('#cargarTodo'); await a.waitForSelector('#otro', { timeout: 20000 });
+    await esperarDia(a); await a.click('[data-saltar-indice]').catch(() => {}); await a.waitForFunction(() => !/en segundo plano/.test(document.getElementById('dia').textContent), null, { timeout: 20000 });
     const u3 = mundo2.cargas.filter((c) => c.fuente === 'tad').slice(-1)[0];
     ok(nombre + ': lee ULTSUPENSION y ULTACTIVACION; 01-01-1900 queda vacío (3 de 5 con fechas)', u3.resumen.con_fechas === 3 && u3.resumen.columnas_fechas && u3.resumen.columnas_fechas.suspension === 'ultsupension' && u3.resumen.columnas_fechas.habilitacion === 'ultactivacion', u3.resumen);
     await ctx2.close();

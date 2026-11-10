@@ -271,55 +271,112 @@
   // ---------- Pantalla ----------
   const num = (n) => Number(n || 0).toLocaleString('es-VE');
   const ICO = '<svg class="i g" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 16V4M7 9l5-5 5 5M5 20h14"/></svg>';
-  function detalle(a){
-    if(a.error) return '<small style="color:var(--rojo)">' + esc(a.error) + '</small>';
-    if(a.leyendo) return '<small>' + (a.espera ? 'En espera' : 'Leyendo' + (a.avance ? ' ' + a.avance + ' %' : '...')) + '</small>';
-    if(a === (fondo && fondo.a)) return (a.resultado ? '<small>' + esc(a.resultado) + '</small>' : '') + '<small class="para-que"><b>Índice de residenciales: ' + pctIdx(a) + ' %</b> Sigue solo: puedes subir otros archivos y tocar Cruzar ahora. Si cierras esta pestaña se pausa y luego se retoma.</small>' +
-      '<span class="idx-pista" aria-hidden="true"><i style="transform:scaleX(' + (pctIdx(a) / 100) + ')"></i></span>';
-    if(a.resultado && a.indiceFallo && a.indice) return '<small>' + esc(a.resultado) + '</small><small class="para-que"><b>Empresas cargadas. El índice de residenciales quedó a medias</b> (' + pctIdx(a) + ' %). Comisiones y clientes ya usan este TAD; falta el índice para Migraciones y la búsqueda de servicios. ' +
-      '<button type="button" class="enlace" data-seguir="' + lista.indexOf(a) + '">Seguir con el índice</button></small>';
-    if(a.resultado && a.sinFechas) return '<small>' + esc(a.resultado) + '</small>' + avisoSinFechas(a.colsFechas);
-    if(a.resultado) return '<small>' + esc(a.resultado) + '</small>';
-    if(a.tipo === 'dedicados') return '<small>' + plural(a.clientes, 'cliente', 'clientes') + ' y ' + plural(a.enlaces, 'enlace', 'enlaces') + '. Se aplica al subirlo; no toca comisiones</small>';
-    if(a.tipo === 'ip') return '<small>' + plural(a.datos.length - (a.fuera || 0), 'IP asignada', 'IP asignadas') + (a.fuera ? ' · ' + num(a.fuera) + ' disponibles (se usan para proponer la siguiente IP del pool)' : '') + '. Llena la IP de los servicios que cuadran</small>';
-    if(a.tipo === 'cambios') return '<small>' + plural(a.datos.length, 'cambio', 'cambios') + '. Pone la fecha exacta de los cambios de Migraciones</small>';
-    if(a.tipo === 'tad'){
-      const ab = idxEstado && idxEstado.abierta; const i = lista.indexOf(a);
-      const retomar = a.indice && ab && ab.archivo === a.nombre.slice(0, 200) && ab.total === a.indice.length && !a.estado && !fondo;
-      return '<small>' + num(a.datos.length) + ' servicios de ' + num(a.clientes) + ' clientes' + (a.fuera ? ' · ' + num(a.fuera) + ' residenciales quedan fuera' : '') + (a.malas ? ' · ' + plural(a.malas, 'fila', 'filas') + ' sin RIF, nombre o código' : '') + '</small>' +
-        (a.indice && !a.estado ? '<label class="idx-op"><input type="checkbox" data-con-indice="' + i + '"' + (a.conIndice ? ' checked' : '') + '><span>Actualizar también el índice de residenciales<small>' + esc(textoToca()) + '</small></span></label>' : '') +
-        (retomar ? '<small class="para-que"><b>Este índice quedó a medias</b> (' + Math.round(ab.filas * 100 / Math.max(1, ab.total)) + ' %). <button type="button" class="enlace" data-solo-indice="' + i + '">Seguir solo con el índice</button></small>' : '');
-    }
-    if(a.tipo === 'instalaciones' && !a.estado) return '<small>' + plural(a.datos.length, 'fila', 'filas') + (a.fuera ? ' de empresas' : '') + (a.desde ? ' · desde el ' + esc(fecha(a.desde)) : '') + '</small>' +
-      '<small class="para-que">' + (a.soloAliados ? '<b>Va solo a Aliados</b> (instalaciones por mes). No entra al cruce ni toca comisiones.' : '<b>Va a comisiones</b> y entra al cruce.') +
-      ' <button type="button" class="enlace" data-para="' + lista.indexOf(a) + '">' + (a.soloAliados ? 'Usarlo para comisiones' : 'Solo para aliados') + '</button></small>';
-    return '<small>' + plural(a.datos.length, 'fila', 'filas') + (a.fuera ? ' de empresas · ' + num(a.fuera) + ' residenciales quedan fuera' : '') + (a.soloAliados ? ' · solo aliados' : '') + '</small>';
+  // ---------- Lote 10/11 B: "Subir lo del día". Una fila por archivo: Leído → Cruzado → Listo, sin botones de cargar ni de cruzar ----------
+  const FILAS_DIA = [['tad', 'TAD'], ['indice', 'Índice de residenciales'], ['ip', 'IP (Clientes Empresariales)'], ['odoo', 'Odoo'], ['instalaciones', 'Órdenes de instalación'], ['dedicados', 'Dedicados']];
+  const CRUDOS = ['odoo', 'instalaciones', 'base_vieja'];
+  let estadoAct = null;   // última respuesta de actualizar_estado
+  const hoyIso = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/Caracas' });
+  const pill = (t, c) => '<span class="chip ' + (c || '') + '">' + esc(t) + '</span>';
+  const pasos = (l, c, k) => '<span class="sd-pasos">' + pill('Leído', l) + pill('Cruzado', c) + pill('Listo', k) + '</span>';
+  function cargaHoy(fuente){
+    const g = ((estadoAct && estadoAct.historial) || []).find((x) => x.fecha === hoyIso());
+    return g ? g.cargas.find((c) => c.fuente === fuente && !(c.resumen || {}).solo_aliados) || null : null;
   }
-  function marca(a){
-    if(a.error) return '<span class="m rojo">No sirve</span>';
-    if(a.leyendo) return '<span class="m">' + (a.espera ? 'En espera' : 'Leyendo') + '</span>';
-    if(a.estado === 'lista' && a.indiceFallo && a.indice) return '<span class="m ambar">Índice a medias</span>';
-    if(a.estado === 'lista' && a.sinFechas) return '<span class="m rojo">Sin fechas</span>';
-    if(a.estado === 'lista') return '<span class="m verde">Cargado</span>';
-    if(a.estado === 'fallo') return '<span class="m rojo">Se detuvo</span>';
-    if(a === (fondo && fondo.a)) return '<span class="m ambar">Índice ' + pctIdx(a) + ' %</span>';
-    if(a.estado === 'subiendo') return '<span class="m ambar">' + (a.fase ? a.fase + ' ' : '') + Math.round((a.hecho || 0) * 100 / Math.max(1, a.fase ? (a.totalIdx || (a.indice || []).length) : (a.datos || []).length)) + ' %</span>';
-    return '<span class="m">Listo para cargar</span>';
+  const fuenteDe = (k) => ((estadoAct && estadoAct.fuentes) || []).find((x) => x.k === k) || null;
+  // Números de una carga ya guardada (historial)
+  function numerosCarga(c){
+    const r = c.resumen || {};
+    if(c.fuente === 'tad') return [num(c.filas) + ' servicios' + (r.servicios_nuevos ? ' · ' + num(r.servicios_nuevos) + ' nuevos' : ''), 'Fechas de suspensión y activación: ' + num(r.con_fechas || 0) + ' leídas' + (r.columnas_fechas && (r.columnas_fechas.suspension || r.columnas_fechas.habilitacion) ? ' (' + [r.columnas_fechas.suspension, r.columnas_fechas.habilitacion].filter(Boolean).join(' y ').toUpperCase() + ')' : '')];
+    if(c.fuente === 'ip') return [num(r.cuadran || 0) + ' en su servicio' + (r.llenadas ? ' · ' + num(r.llenadas) + ' IP nuevas' : ''), r.disponibles ? num(r.disponibles) + ' IP del pool sin cliente guardadas para proponerlas a mano' : 'Llena la IP de los servicios que cuadran'];
+    if(c.fuente === 'dedicados') return [plural(c.filas || 0, 'fila', 'filas'), 'Aplicado al subir'];
+    return [plural(c.filas || 0, 'fila', 'filas'), estadoAct && estadoAct.cruce_pendiente ? 'Falta cruzar: se cruza solo' : (r.solo_aliados ? 'Solo para aliados, no toca comisiones' : 'Cruzado')];
+  }
+  // Una fila de la tabla: { k, nombre, archivo, avance, titulo, detalle, clase, acciones }
+  function filaHtml(f){
+    return '<div class="sd-f' + (f.clase ? ' ' + f.clase : '') + '" data-k="' + esc(f.k) + '"><span class="sd-a"><b>' + esc(f.nombre) + '</b><small>' + esc(f.archivo || '') + '</small></span>' +
+      '<span class="sd-av">' + f.avance + '</span><span class="sd-r"><b>' + esc(f.titulo || '') + '</b>' + (f.detalle ? '<small>' + f.detalle + '</small>' : '') + '</span>' +
+      (f.acciones ? '<span class="sd-acc">' + f.acciones + '</span>' : '') + '</div>';
+  }
+  function filaArchivo(a, k, nombre){
+    const i = lista.indexOf(a); const base = { k, nombre: nombre || (a.tipo ? TIPOS[a.tipo].nombre : 'Sin reconocer'), archivo: a.nombre };
+    if(a.error) return Object.assign(base, { clase: 'rojo', avance: pill(a.tipo ? 'Leído' : 'No se reconoce', a.tipo ? 'verde' : 'rojo') + (a.tipo ? pill('No se cruzó', 'rojo') : ''), titulo: a.error,
+      detalle: esc(a.tipo ? 'Descárgalo otra vez del sistema con todas las columnas y suéltalo aquí.' : 'Revisa que sea el archivo correcto (TAD, IP, Odoo, Instalaciones o Dedicados) y suéltalo otra vez.'), acciones: '<button type="button" class="btn btn-chico btn-2" data-quitar="' + i + '">Quitar</button>' });
+    if(a.leyendo) return Object.assign(base, { avance: pill(a.espera ? 'En espera' : 'Leyendo' + (a.avance ? ' ' + a.avance + ' %' : ''), ''), titulo: a.espera ? 'Va después del anterior' : 'Leyendo el archivo', detalle: esc('Los más pesados pueden tardar un par de minutos.') });
+    if(a.pregunta) return Object.assign(base, { clase: 'ambar', avance: pasos('verde', '', ''), titulo: 'Va solo a Aliados (fechas de antes del 21/08)',
+      detalle: esc('Es el histórico de instalaciones por mes. No entra al cruce ni toca comisiones.'), acciones: '<button type="button" class="btn btn-chico" data-ok-para="' + i + '">Así está bien</button><button type="button" class="btn btn-chico btn-2" data-para="' + i + '">Usarlo para comisiones</button>' });
+    if(a.estado === 'fallo') return Object.assign(base, { clase: 'rojo', avance: pasos('verde', 'rojo', '').replace('>Cruzado<', '>Se detuvo<'), titulo: 'La carga se detuvo', detalle: esc((a.falla || '') + ' Vuelve a intentarlo: no se duplica nada.'), acciones: '<button type="button" class="btn btn-chico" data-reintentar="1">Reintentar</button>' });
+    if(a.estado === 'subiendo') return Object.assign(base, { avance: pill('Leído', 'verde') + pill((a.fase ? a.fase + ' ' : 'Subiendo ') + Math.round((a.hecho || 0) * 100 / Math.max(1, a.fase ? (a.totalIdx || (a.indice || []).length) : (a.datos || []).length)) + ' %', 'ambar'), titulo: 'Subiendo', detalle: esc('No cierres esta pantalla hasta que termine.') });
+    if(a.estado === 'lista'){
+      const crudo = CRUDOS.indexOf(a.tipo) >= 0 && !a.soloAliados; const t = String(a.resultado || '').split(' · ');
+      if(crudo && cruzando) return Object.assign(base, { avance: pill('Leído', 'verde') + pill('Cruzando', 'ambar'), titulo: t[0], detalle: esc('Uniendo órdenes, instalaciones y líderes.') });
+      if(crudo && cruceFallo) return Object.assign(base, { clase: 'rojo', avance: pill('Leído', 'verde') + pill('No se cruzó', 'rojo'), titulo: 'No se pudo cruzar', detalle: esc(cruceFallo + '. Vuelve a intentarlo.'), acciones: '<button type="button" class="btn btn-chico" data-recruzar="1">Cruzar otra vez</button>' });
+      if(a.tipo === 'tad' && a.sinFechas) return Object.assign(base, { clase: 'rojo', avance: pill('Leído', 'verde') + pill('Cruzado', 'verde') + pill('Sin fechas', 'rojo'), titulo: t[0], detalle: (t.length > 1 ? esc(t.slice(1).join(' · ')) + '. ' : '') + avisoSinFechas(a.colsFechas).replace(/^<small[^>]*>|<\/small>$/g, '') });
+      return Object.assign(base, { avance: pasos('verde', 'verde', 'verde'), titulo: t[0], detalle: esc(t.slice(1).join(' · ') || (a.soloAliados ? 'Solo para aliados, no toca comisiones' : '')) });
+    }
+    // Leído, esperando su turno
+    return Object.assign(base, { avance: pasos('verde', '', ''), titulo: detalleTexto(a), detalle: esc('Se sube y se cruza solo.') });
+  }
+  function detalleTexto(a){
+    if(a.tipo === 'tad') return num(a.datos.length) + ' servicios de ' + num(a.clientes) + ' clientes' + (a.fuera ? ' · ' + num(a.fuera) + ' residenciales quedan fuera' : '');
+    if(a.tipo === 'ip') return plural(a.datos.length - (a.fuera || 0), 'IP asignada', 'IP asignadas') + (a.fuera ? ' · ' + num(a.fuera) + ' disponibles' : '');
+    if(a.tipo === 'dedicados') return plural(a.clientes, 'cliente', 'clientes') + ' y ' + plural(a.enlaces, 'enlace', 'enlaces');
+    if(a.tipo === 'cambios') return plural(a.datos.length, 'cambio', 'cambios');
+    return plural(a.datos.length, 'fila', 'filas') + (a.desde ? ' · desde el ' + fecha(a.desde) : '');
+  }
+  function filaIndiceDia(){
+    const base = { k: 'indice', nombre: 'Índice de residenciales', archivo: 'Del mismo TAD' };
+    const conTad = lista.find((a) => a.tipo === 'tad' && a.indice);
+    if(fondo) return Object.assign(base, { avance: '<span class="sd-barra"><span class="idx-pista"><i style="transform:scaleX(' + (pctIdx(fondo.a) / 100) + ')"></i></span><small>' + pctIdx(fondo.a) + ' % · en segundo plano</small></span>',
+      titulo: 'No tienes que hacer nada', detalle: esc('Sirve para saber si un RIF ya es cliente residencial. Puedes seguir usando la app y subir otros archivos. Si cierras esta pestaña se pausa.'),
+      acciones: '<button type="button" class="btn btn-chico btn-2" data-saltar-indice="1">Saltar el índice hoy</button>' });
+    if(conTad && conTad.indiceFallo) return Object.assign(base, { clase: 'ambar', avance: pill('Índice a medias', 'ambar'), titulo: 'Quedó a medias (' + pctIdx(conTad) + ' %)', detalle: esc('Comisiones y clientes ya usan este TAD; falta el índice para Migraciones y la búsqueda de servicios.'),
+      acciones: '<button type="button" class="btn btn-chico" data-seguir="' + lista.indexOf(conTad) + '">Seguir con el índice</button>' });
+    // Hoy no tocaba: se puede forzar (antes era la casilla "Actualizar también el índice")
+    if(conTad && !conTad.conIndice && !conTad.indiceFallo) return Object.assign(base, { avance: pill('Hoy no toca', ''), titulo: 'Hoy no se actualiza', detalle: esc(textoToca()),
+      acciones: '<button type="button" class="btn btn-chico btn-2" data-forzar-indice="' + lista.indexOf(conTad) + '">Actualizar el índice igual</button>' });
+    if(conTad && conTad.conIndice && conTad.estado !== 'lista') return Object.assign(base, { avance: pill('Después del TAD', ''), titulo: 'Se actualiza solo después del TAD', detalle: esc(textoToca()), acciones: '<button type="button" class="btn btn-chico btn-2" data-saltar-indice="1">Saltar el índice hoy</button>' });
+    const ab = idxEstado && idxEstado.abierta;
+    if(ab){
+      const t = lista.find((a) => a.tipo === 'tad' && a.indice && ab.archivo === a.nombre.slice(0, 200) && ab.total === a.indice.length);
+      return Object.assign(base, { clase: 'ambar', avance: pill('A medias', 'ambar'), titulo: 'Quedó en ' + Math.round(ab.filas * 100 / Math.max(1, ab.total)) + ' %', detalle: esc(t ? 'Es el mismo TAD: puedes seguir solo con el índice.' : 'Suelta el mismo TAD para seguir donde quedó.'),
+        acciones: t ? '<button type="button" class="btn btn-chico" data-solo-indice="' + lista.indexOf(t) + '">Seguir solo con el índice</button>' : '' });
+    }
+    if(!idxEstado) return Object.assign(base, { avance: pill('Sin datos', ''), titulo: 'Una vez por semana', detalle: '' });
+    return Object.assign(base, { avance: idxEstado.toca ? pill('Toca hoy', 'ambar') : pasos('verde', 'verde', 'verde'), titulo: idxEstado.toca ? 'Toca hoy: se actualiza solo al subir el TAD' : 'Al día',
+      detalle: esc(idxEstado.ultima ? 'Último: ' + fecha(idxEstado.ultima) + '. Sirve para saber si un RIF ya es cliente residencial.' : 'Nunca se ha cargado.') });
+  }
+  function filaSinArchivo(k, nombre){
+    const c = cargaHoy(k); const f = fuenteDe(k); const base = { k, nombre };
+    if(c && c.estado === 'fallo') return Object.assign(base, { clase: 'rojo', archivo: c.archivo, avance: pill('No terminó', 'rojo'), titulo: 'La carga de hoy no terminó', detalle: esc('Suelta el archivo otra vez: no se duplica nada.') });
+    if(c){
+      const n = numerosCarga(c); const pend = CRUDOS.indexOf(k) >= 0 && !!(estadoAct && estadoAct.cruce_pendiente);
+      if(k === 'tad' && (c.resumen || {}).con_fechas === 0) return Object.assign(base, { clase: 'rojo', archivo: c.archivo, avance: pill('Leído', 'verde') + pill('Cruzado', 'verde') + pill('Sin fechas', 'rojo'), titulo: n[0], detalle: esc('No trajo fechas de suspensión ni de activación. Pide el TAD con esas columnas.') });
+      return Object.assign(base, { archivo: c.archivo, avance: pasos('verde', pend ? (cruzando ? 'ambar' : '') : 'verde', pend ? '' : 'verde'), titulo: n[0], detalle: esc(pend && cruzando ? 'Cruzando…' : n[1]) });
+    }
+    const diaria = f && f.frecuencia === 'diaria';
+    if(diaria && !f.al_dia) return Object.assign(base, { clase: 'falta', archivo: f.ultima ? 'Último: ' + fecha(f.ultima).replace(/ de \d{4}$/, '') : 'Nunca se ha subido', avance: pill('Sin subir', ''), titulo: 'Falta el de hoy', detalle: esc(FREC.diaria) });
+    return Object.assign(base, { archivo: f && f.ultima ? 'Último: ' + fecha(f.ultima).replace(/ de \d{4}$/, '') : 'Sin cargas', avance: pill(diaria ? 'Al día' : 'Sin subir', diaria ? 'verde' : ''), titulo: diaria ? 'Al día' : 'Opcional', detalle: esc(diaria ? FREC.diaria : 'Solo cuando haya archivo nuevo') });
   }
   function pintar(){
     const z = $('zona');
-    const soltar = '<button type="button" class="soltar" id="soltar">' + ICO + '<b>' + (lista.length ? 'Agregar más archivos' : 'Elige los archivos') + '</b>O arrástralos aquí, todos juntos. CSV, Excel (.xlsx) o el mapa de red (KMZ).</button>';
-    if(!lista.length){ z.innerHTML = soltar; return; }
-    const buenos = lista.filter((a) => a.datos && a.estado !== 'lista');
-    const filas = '<div class="grupo abierto" id="listaArch" role="status" aria-live="polite">' + lista.map((a, i) =>
-      '<div class="fila carga-f"' + (i === 0 ? ' style="border-top:0"' : '') + ' data-i="' + i + '"><span class="tx"><b>' + esc(a.tipo ? TIPOS[a.tipo].nombre : 'Sin reconocer') + ' · ' + esc(a.nombre) + '</b>' + detalle(a) + '</span>' + marca(a) + '</div>').join('') + '</div>';
-    let pie;
-    if(ocupado) pie = '<p class="nota-chica">' + (lista.some((a) => a.leyendo) ? 'Leyendo los archivos. Los más pesados pueden tardar un par de minutos.' : 'No cierres esta pantalla hasta que termine.') + '</p>';
-    else if(corto) pie = '<div class="al-banda ambar" role="alert" style="margin-top:14px"><b>El TAD parece incompleto</b><p>' + esc(corto.texto) + '. Si estás seguro de que está completo, cárgalo igual.</p>' +
-      '<p style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap"><button type="button" class="btn btn-chico btn-2" id="limpiar">Quitar todos</button><button type="button" class="btn btn-chico" id="cargarCorto">Cargar igual</button></p></div>';
-    else if(fin) pie = '<div class="aviso" style="margin-top:14px"><b>' + esc(fin.titulo) + '</b><p>' + esc(fin.texto) + '</p><p style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap"><button type="button" class="btn btn-chico btn-2" id="otro">Subir otros</button></p></div>';
-    else pie = '<div class="acc" style="margin-top:14px"><button type="button" class="btn btn-2" id="limpiar">Quitar todos</button>' + (buenos.length ? '<button type="button" class="btn" id="cargarTodo">Cargar ' + plural(buenos.length, 'archivo', 'archivos') + '</button>' : '') + '</div><p class="nota-chica">No borra nada. Agrega lo nuevo y actualiza lo que ya está.</p>';
-    z.innerHTML = filas + (ocupado || fin ? '' : '<div style="margin-top:12px">' + soltar + '</div>') + pie;
+    z.innerHTML = '<button type="button" class="soltar sd-soltar" id="soltar">' + ICO + '<span><b>Suelta aquí el TAD, Clientes Empresariales (IP), Odoo, Órdenes de instalación y Dedicados</b>Puedes soltarlos todos a la vez. No importa el orden. También el mapa de red (KMZ).</span><span class="btn btn-2 btn-chico sd-elegir">Elegir archivos</span></button>' +
+      (corto ? '<div class="al-banda ambar" role="alert" style="margin-top:14px"><b>El TAD parece incompleto</b><p>' + esc(corto.texto) + '. Si estás seguro de que está completo, cárgalo igual.</p>' +
+        '<p style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap"><button type="button" class="btn btn-chico btn-2" id="limpiar">Quitar todos</button><button type="button" class="btn btn-chico" id="cargarCorto">Cargar igual</button></p></div>' : '');
+    const usados = new Set(); const filas = [];
+    FILAS_DIA.forEach(([k, nombre]) => {
+      if(k === 'indice'){ filas.push(filaIndiceDia()); return; }
+      const a = lista.slice().reverse().find((x) => x.tipo === k && !x.soloAliados && !usados.has(x));
+      if(a){ usados.add(a); filas.push(filaArchivo(a, k, nombre)); }
+      else filas.push(filaSinArchivo(k, nombre));
+    });
+    // Lo demás que se soltó (cambios de categoría, base anterior, instalaciones para aliados, archivos que no se reconocen)
+    lista.filter((a) => !usados.has(a)).forEach((a) => filas.push(filaArchivo(a, a.tipo || 'otro')));
+    const req = filas.filter((f) => ['tad', 'odoo', 'instalaciones'].indexOf(f.k) >= 0 || (f.k === 'ip' && cargaHoy('ip')));
+    const listos = req.filter((f) => /sd-pasos/.test(f.avance) && (f.avance.match(/chip verde/g) || []).length === 3).length;
+    const chip = $('hoyChip'); if(chip){ chip.textContent = 'Hoy, ' + hoyIso().slice(8, 10) + '/' + hoyIso().slice(5, 7) + ' · ' + listos + ' de ' + req.length + ' listos'; chip.className = 'chip ' + (listos === req.length ? 'verde' : 'ambar'); }
+    const d = $('dia');
+    d.innerHTML = '<div class="sd-cab" aria-hidden="true"><span>Archivo</span><span>Avance</span><span>Resultado</span></div>' + filas.map(filaHtml).join('');
+    d.dataset.estado = ocupado || cruzando || lista.some((a) => a.leyendo || a.estado === 'subiendo') ? 'ocupado' : 'listo';
   }
   // Lote 05/11 B1: un TAD sin fechas de suspensión ni habilitación no se da por bueno (churn y calidad dependen de ellas)
   function avisoSinFechas(cf){
@@ -339,7 +396,8 @@
     const todos = Array.prototype.slice.call(files); const M = window.MapaRed;
     if(M){ const mapas = todos.filter(M.esMapa); if(mapas.length){ M.recibir(mapas[0]); files = todos.filter((f) => !M.esMapa(f)); if(!files.length) return; } }
     if(ocupado) return;
-    if(fin){ lista = lista.filter((x) => fondo && x === fondo.a); fin = null; }
+    // Lote 10/11 B: lo ya terminado sale de la lista (su fila se ve con la carga de hoy); se queda lo pendiente, lo que falló y el índice en curso
+    lista = lista.filter((x) => (fondo && x === fondo.a) || x.pregunta || x.estado === 'fallo' || x.leyendo || (x.datos && x.estado !== 'lista') || (x.tipo === 'tad' && x.indiceFallo && x.indice)); fin = null;
     // Los livianos primero: la base anterior le dice al TAD cuáles RIF son de empresas
     const nuevos = Array.prototype.slice.call(files, 0, 12).sort((x, y) => x.size - y.size).map((f) => ({ nombre: f.name, file: f, leyendo: true, espera: true }));
     lista = lista.concat(nuevos); ocupado = true; pintar();
@@ -355,12 +413,15 @@
         if(rep){ a.tipo = p.tipo; throw new Error('Ya hay otro archivo de ' + TIPOS[p.tipo].nombre + ' en la lista'); }
         Object.assign(a, p);
         if(a.tipo === 'tad') a.conIndice = !idxEstado || !!idxEstado.toca;
+        if(a.soloAliados) a.pregunta = true;   // Lote 10/11 B: se confirma en su fila antes de subirlo
       } catch (e) { a.error = e.message || 'No se pudo leer'; }
       a.leyendo = false; a.file = null; pintar();
     }
     ocupado = false; pintar();
     const malos = nuevos.filter((a) => a.error).length;
-    if(malos) toast(plural(malos, 'archivo no se pudo usar', 'archivos no se pudieron usar') + '. Mira el motivo en la lista', 'error');
+    if(malos) toast(plural(malos, 'archivo no se pudo usar', 'archivos no se pudieron usar') + '. Mira el motivo en su fila', 'error');
+    // Lote 10/11 B: sin botón de cargar: lo leído se sube y se cruza solo
+    if(!corto) cargarTodo();
   }
   async function subirDedicados(a){
     a.estado = 'subiendo'; a.hecho = 0; pintar();
@@ -410,6 +471,7 @@
       const iguales = bloques.filter((b, i) => !dif.has(i));
       for(let i = 0; i < iguales.length; i += LOTE_MARCAR){
         const tr = iguales.slice(i, i + LOTE_MARCAR);
+        if(a.saltar) throw new Error('SALTADO');
         await conReintento(() => rpc('tad_indice_marcar', { p_carga: k, p_bloques: tr.map((b) => ({ a: b.a, z: b.z })) }));
         a.hecho += tr.reduce((s, b) => s + b.filas.length, 0); pintar();
       }
@@ -417,6 +479,7 @@
     } else distintas = claves.map((c) => primera.get(c));
     let subidas = 0;
     for(let i = 0; i < distintas.length; i += LOTE_COMPARAR){
+      if(a.saltar) throw new Error('SALTADO');
       const trozo = distintas.slice(i, i + LOTE_COMPARAR).map((j) => a.indice[j]);
       const faltan = await conReintento(() => rpc('tad_indice_comparar', { p_carga: k, p_filas: trozo.map((o) => ({ s: o.s, c: o.c, e: o.e, h: o.h })) }));
       const cambiaron = (faltan || []).map((j) => trozo[j]).filter(Boolean);
@@ -441,7 +504,8 @@
     try { const ri = await subirIndice(a); a.resultado = (a.resultadoBase || '') + textoIndice(ri); fondo = null; toast('Índice de residenciales al día'); }
     catch (e) {
       fondo = null; a.fase = null;
-      if(/TAD_CORTO/.test(e.message)){ a.indiceFallo = 'corto'; corto = { tipo: 'indice', texto: e.message.replace(/^.*TAD_CORTO:\s*/, ''), a }; }
+      if(/SALTADO/.test(e.message)){ a.indice = null; a.saltar = false; a.resultado = (a.resultadoBase || '') + ' · índice de residenciales saltado hoy'; toast('Índice saltado. Se retoma con el próximo TAD'); }
+      else if(/TAD_CORTO/.test(e.message)){ a.indiceFallo = 'corto'; corto = { tipo: 'indice', texto: e.message.replace(/^.*TAD_CORTO:\s*/, ''), a }; }
       else { a.indiceFallo = e.message; toast('El índice de residenciales se detuvo. ' + e.message + '. Toca Seguir con el índice: retoma donde quedó', 'error'); }
     }
     pintar(); cargas();
@@ -472,6 +536,7 @@
     if(a.tipo === 'cambios') return subirCambios(a);
     a.estado = 'subiendo'; a.hecho = 0; pintar();
     const tad = a.tipo === 'tad'; const paso = tad ? LOTE : LOTE_CRUDO;
+    if(tad && !a.indiceElegido) a.conIndice = !idxEstado || !!idxEstado.toca;   // con lo último que se sabe del índice
     const carga = tad ? await rpc('tad_iniciar', { p_archivo: a.nombre, p_total: a.datos.length + a.malas })
       : await rpc('crudo_iniciar', { p_fuente: a.tipo, p_archivo: a.nombre, p_total: a.datos.length });
     if(a.soloAliados) await rpc('carga_solo_aliados', { p_carga: carga });
@@ -493,19 +558,19 @@
       : plural(r.guardadas, 'fila guardada', 'filas guardadas') + (a.soloAliados ? ' · solo para aliados, no toca comisiones' : '');
     a.resultadoBase = a.resultado;
     a.datos = null;
-    if(tad && a.indice && !a.conIndice){ a.indice = null; a.resultado += ' · sin índice de residenciales (hoy no tocaba)'; }
-    if(tad && a.indice) setTimeout(() => indiceFondo(a), 0);   // sigue solo; la cola no lo espera
+    if(tad && a.indice && !a.conIndice){ a.indiceOmitido = true; a.resultadoBase = a.resultado; a.resultado += ' · sin índice de residenciales (hoy no tocaba)'; }
+    if(tad && a.indice && a.conIndice) setTimeout(() => indiceFondo(a), 0);   // sigue solo; la cola no lo espera
     return r;
   }
   async function cargarTodo(){
     if(ocupado) return;
-    let cola = [].concat.apply([], ORDEN.map((t) => lista.filter((a) => a.tipo === t && a.datos && a.estado !== 'lista')));
+    let cola = [].concat.apply([], ORDEN.map((t) => lista.filter((a) => a.tipo === t && a.datos && !a.pregunta && a.estado !== 'lista' && a.estado !== 'fallo')));
     if(fondo && cola.some((a) => a.tipo === 'tad')){ cola = cola.filter((a) => a.tipo !== 'tad'); toast('Otro TAD tiene que esperar a que termine el índice de residenciales', 'error'); }
     if(!cola.length) return;
     ocupado = true; fin = null; let total = null; let fallo = null;
     for(const a of cola){
       try { const r = await subir(a); if(a.tipo === 'tad') total = r.clientes_total; }
-      catch (e) { a.estado = 'fallo'; a.resultado = null; fallo = e; break; }
+      catch (e) { a.estado = 'fallo'; a.resultado = null; a.falla = e.message; fallo = e; break; }
     }
     ocupado = false; cache.borrarTodo();
     // Lote 22/10: un TAD con menos del 95 % de las filas de la carga anterior no se aplica sin confirmar
@@ -513,11 +578,11 @@
     else if(fallo){ pintar(); toast('La carga se detuvo. ' + fallo.message + '. Puedes volver a intentarlo: no se duplica nada', 'error'); }
     else {
       const crudos = cola.some((a) => a.tipo !== 'tad' && a.tipo !== 'dedicados' && a.tipo !== 'cambios' && a.tipo !== 'ip' && !a.soloAliados);
-      fin = { titulo: plural(cola.length, 'archivo cargado', 'archivos cargados'), texto: (total !== null ? 'Ahora hay ' + num(total) + ' clientes en total. ' : '') +
-        (crudos ? 'Falta un paso: toca Cruzar ahora, revisa lo que cambia y guárdalo.' : 'Ya quedó aplicado. No hace falta cruce.') +
-        (fondo ? ' El índice de residenciales sigue solo arriba; no hace falta esperarlo para cruzar.' : '') };
-      cruce = null; pintar(); toast(fondo ? 'Archivos cargados. El índice de residenciales sigue en segundo plano' : 'Carga completa');
-      estadoCruce();
+      // Lote 10/11 B: el cruce corre solo al terminar (ya no hay "Cruzar ahora")
+      if(total !== null) totalClientes = total;
+      cruce = null; pintar();
+      if(crudos) await correrCruce(true);
+      else toast(fondo ? 'Archivos cargados. El índice de residenciales sigue en segundo plano' : 'Listo: ya quedó aplicado');
     }
     cargas();
   }
@@ -541,23 +606,21 @@
     return '<div class="act-f"><span class="tx"><b>Índice de residenciales</b><small>' + esc('Una vez por semana o con migraciones esperando · ' + (x.ultima ? 'último: ' + fecha(x.ultima).replace(/ de \d{4}$/, '') + ', ' + hora(x.ultima) : 'sin cargas')) +
       (ab ? esc(' · quedó en ' + Math.round(x.abierta.filas * 100 / Math.max(1, x.abierta.total)) + ' %: suelta el mismo TAD y toca Seguir solo con el índice') : '') + '</small></span><span class="chip ' + est[0] + '">' + esc(est[1]) + '</span></div>';
   }
+  let verTodoHist = false;
   async function cargas(){
     try {
       const d = await rpc('actualizar_estado', {});
-      idxEstado = d.indice || null;
-      const ultTad = [].concat.apply([], (d.historial || []).map((g) => g.cargas)).filter((c) => c.fuente === 'tad' && c.estado !== 'fallo')[0];
-      const tadSinFechas = !!(ultTad && ultTad.resumen && ultTad.resumen.con_fechas === 0);
-      const t = (d.fuentes || []).find((x) => x.k === 'tad');
-      $('ultimoTad').textContent = t && t.ultima ? 'Último TAD: ' + fecha(t.ultima) + ' a las ' + hora(t.ultima) + '.' : 'Todavía no se ha subido ningún TAD.';
-      $('ultimas').innerHTML = '<div class="act-toca">' + (d.fuentes || []).map((x) => {
-        const est = x.k === 'tad' && tadSinFechas ? ['rojo', 'Sin fechas'] : !x.ultima && x.frecuencia !== 'cuando' ? ['rojo', 'Nunca se ha subido'] : x.al_dia ? (x.tarde ? ['azul', 'Falta la de la tarde (opcional)'] : ['verde', 'Al día']) : ['ambar', 'Toca hoy'];
-        return '<div class="act-f"><span class="tx"><b>' + esc(x.nombre) + '</b><small>' + esc(FREC[x.frecuencia] || '') + ' · ' + esc(x.ultima ? 'última: ' + fecha(x.ultima).replace(/ de \d{4}$/, '') + ', ' + hora(x.ultima) : 'sin cargas') + '</small></span>' +
-          (x.frecuencia === 'cuando' && x.al_dia && x.ultima ? '' : '<span class="chip ' + est[0] + '">' + esc(est[1]) + '</span>') + '</div>'; }).join('') + filaIndice(idxEstado) + '</div>';
+      estadoAct = d; idxEstado = d.indice || null;
       pintar();
-      const H = d.historial || [];
-      $('cargas').innerHTML = H.length ? H.map((g, n) => '<details class="act-dia"' + (n === 0 ? ' open' : '') + '><summary><b>' + esc(capital(fechaDia(g.fecha + 'T12:00:00'))) + '</b><span>' + esc(plural(g.cargas.length, 'carga', 'cargas')) + '</span></summary>' +
-        g.cargas.map((c) => '<div class="fila"><span class="tx"><b>' + esc(FUENTES[c.fuente] || c.fuente) + ' · ' + esc(c.archivo || '') + '</b><small>' + esc(hora(c.en)) + (c.por ? ' · ' + esc(c.por) : '') + (c.filas !== null && c.filas !== undefined ? ' · ' + esc(plural(c.filas, 'fila', 'filas')) : '') +
-          (c.estado === 'con_errores' ? ' · con filas sin leer' : c.estado === 'fallo' ? ' · no terminó' : '') + '</small></span>' + (c.estado === 'fallo' ? '<span class="m rojo">No terminó</span>' : c.fuente === 'tad' && c.resumen && c.resumen.con_fechas === 0 ? '<span class="m rojo">Sin fechas</span>' : (c.resumen || {}).solo_aliados ? '<span class="m azul">Solo aliados</span>' : '') + '</div>').join('') + '</details>').join('')
+      // Lote 10/11 B: historial como tabla (fecha, archivo, estado, números); las últimas 15 y "Ver más"
+      const todas = [].concat.apply([], (d.historial || []).map((g) => g.cargas));
+      const estadoH = (c) => c.estado === 'fallo' ? ['rojo', 'No terminó'] : c.fuente === 'tad' && c.resumen && c.resumen.con_fechas === 0 ? ['ambar', 'Sin fechas'] : (c.resumen || {}).solo_aliados ? ['azul', 'Solo aliados'] : c.estado === 'con_errores' ? ['ambar', 'Con filas sin leer'] : ['verde', 'Listo'];
+      const fila = (c) => { const e = estadoH(c); const n = numerosCarga(c);
+        return '<div class="sd-h"><span class="sd-hf">' + esc(fecha(c.en).replace(/ de \d{4}$/, '') + ' ' + hora(c.en)) + '</span><span class="sd-ha"><b>' + esc(FUENTES[c.fuente] || c.fuente) + '</b><small>' + esc((c.archivo || '') + (c.por ? ' · ' + c.por : '')) + '</small></span>' +
+          '<span class="sd-he"><span class="chip ' + e[0] + '">' + esc(e[1]) + '</span></span><span class="sd-hn">' + esc(n[0]) + '</span></div>'; };
+      const vis = verTodoHist ? todas : todas.slice(0, 15);
+      $('cargas').innerHTML = todas.length ? '<div class="sd-hist"><div class="sd-h sd-hcab" aria-hidden="true"><span>Fecha</span><span>Archivo</span><span>Estado</span><span>Números</span></div>' + vis.map(fila).join('') + '</div>' +
+          (todas.length > vis.length ? '<button type="button" class="enlace" id="verMasHist" style="margin-top:10px">Ver más (' + (todas.length - vis.length) + ')</button>' : '')
         : '<div class="vacio"><b>Aún no hay cargas</b><p>Cuando subas el primer archivo aparecerá aquí con su fecha y quién lo subió.</p></div>';
     } catch (e) {
       $('cargas').innerHTML = '<div class="vacio" role="alert"><b>No se pudo ver el historial</b><p>' + esc(e.message) + '</p><button type="button" class="btn btn-chico" id="reintentarCargas">Reintentar</button></div>';
@@ -581,37 +644,31 @@
     return h + '</div>';
   }
   let estado = null;   // { ultimo_en, ultimo_por, pendientes }
+  let cruceFallo = null; let totalClientes = null;
   async function estadoCruce(){
     try { estado = await rpc('cruce_estado', {}); } catch (e) { estado = { error: e.message }; }
-    pintarCruce();   // Lote 28/10: con cargas sin cruzar sale el botón "Cruzar ahora" (ya no se prepara solo)
+    // Lote 10/11 B: si quedó algo sin cruzar (por ejemplo una carga de ayer), se cruza solo al abrir
+    if(estado && !estado.error && estado.pendientes > 0 && !ocupado && !cruzando) { await correrCruce(true); return; }
+    pintarCruce();
   }
+  // Detalle del último cruce (plegado): lo mismo que antes mostraba "Esto cambia al guardar el cruce"
   function pintarCruce(){
-    const z = $('cruce');
-    if(cruzando){ z.innerHTML = esqueleto(2); return; }
-    const ult = estado && estado.ultimo_en ? 'Último cruce guardado el ' + fecha(estado.ultimo_en) + ' a las ' + hora(estado.ultimo_en) + (estado.ultimo_por ? ', por ' + estado.ultimo_por : '') + '.' : 'Todavía no se ha guardado ningún cruce.';
-    if(!cruce && estado && !estado.error && estado.pendientes > 0){
-      z.innerHTML = '<div class="estado ambar"><b>' + esc(plural(estado.pendientes, 'carga sin cruzar', 'cargas sin cruzar')) + '</b><small>Cuando termines de subir todo, cruza: une líder, órdenes e instalaciones. Primero ves el resumen y después lo guardas.</small></div>' +
-        '<div class="acc" style="margin-top:12px"><button type="button" class="btn" id="cruzarAhora">Cruzar ahora</button></div><p class="nota-chica">' + esc(ult) + '</p>';
-      return;
-    }
-    if(!cruce){
-      z.innerHTML = estado && estado.error ? '<div class="vacio" role="alert"><b>No se pudo ver el cruce</b><p>' + esc(estado.error) + '</p><button type="button" class="btn btn-chico" id="reintentarCruce">Reintentar</button></div>'
-        : '<p class="cruce-ok"><b>Todo cruzado.</b> ' + esc(ult) + ' Cuando subas órdenes de Odoo, instalaciones o la base anterior, el cruce se prepara solo.</p>';
-      return;
-    }
-    z.innerHTML = '<b style="font-size:15.5px">' + (cruce.aplicado ? 'Cruce guardado' : 'Esto cambia al guardar el cruce') + '</b><div style="margin-top:10px">' + resumenCruce(cruce.r) + '</div>' +
-      (cruce.aplicado ? '<p class="nota-chica">Listo. Comisiones, Clientes y Por instalar ya tienen lo nuevo.</p>'
-        : '<div class="acc" style="margin-top:14px"><button type="button" class="btn" id="aplicarCruce">Guardar cruce</button></div><p class="nota-chica">Todavía no se ha guardado nada. ' + esc(ult) + '</p>');
+    const z = $('cruce'); if(!z) return;
+    const ult = estado && estado.ultimo_en ? 'Último cruce el ' + fecha(estado.ultimo_en) + ' a las ' + hora(estado.ultimo_en) + (estado.ultimo_por ? ', por ' + estado.ultimo_por : '') + '.' : 'Todavía no se ha guardado ningún cruce.';
+    if(cruzando){ z.innerHTML = '<p class="nota-chica">Cruzando órdenes, instalaciones y líderes…</p>'; return; }
+    if(estado && estado.error){ z.innerHTML = '<div class="vacio" role="alert"><b>No se pudo ver el cruce</b><p>' + esc(estado.error) + '</p><button type="button" class="btn btn-chico" id="reintentarCruce">Reintentar</button></div>'; return; }
+    z.innerHTML = cruce ? '<details class="sd-det" id="detCruce"><summary><b>Ver detalle del cruce</b><small>' + esc(ult) + (totalClientes !== null ? ' Ahora hay ' + num(totalClientes) + ' clientes en total.' : '') + '</small></summary>' + resumenCruce(cruce.r) + '<p class="nota-chica">Comisiones, Clientes y Por instalar ya tienen lo nuevo.</p></details>'
+      : '<p class="nota-chica">' + esc(ult) + ' Cuando subas órdenes de Odoo, instalaciones o la base anterior, se cruza solo.</p>';
   }
   async function correrCruce(aplicar){
     if(cruzando || ocupado) return;
-    cruzando = true; pintarCruce();
+    cruzando = true; cruceFallo = null; pintarCruce(); pintar();
     try {
       const r = await rpc(aplicar ? 'cruce_aplicar' : 'cruce_probar', {});
       cruce = { r, aplicado: aplicar };
-      if(aplicar){ cache.borrarTodo(); toast('Cruce guardado'); estado = null; cargas(); }
-    } catch (e) { toast('No se pudo ' + (aplicar ? 'guardar' : 'preparar') + ' el cruce. ' + e.message, 'error'); if(!aplicar) cruce = null; }
-    cruzando = false; pintarCruce();
+      if(aplicar){ cache.borrarTodo(); toast('Listo: archivos cargados y cruzados'); estado = Object.assign({}, estado || {}, { pendientes: 0, ultimo_en: new Date().toISOString() }); }
+    } catch (e) { cruceFallo = e.message; toast('No se pudo cruzar. ' + e.message, 'error'); }
+    cruzando = false; pintarCruce(); pintar(); cargas();
   }
 
   document.addEventListener('click', (e) => {
@@ -622,12 +679,18 @@
     if(t.closest('#cargarCorto') && corto){ const k = corto; const b = t.closest('#cargarCorto'); b.disabled = true;
       rpc('tad_permitir_corto', { p_tipo: k.tipo }).then(() => { corto = null; if(k.a){ indiceFondo(k.a); return; } lista.forEach((x) => { if(x.estado === 'fallo') x.estado = null; }); cargarTodo(); })
         .catch((e) => { b.disabled = false; toast(e.message, 'error'); }); return; }
-    if(t.closest('#aplicarCruce')){ correrCruce(true); return; }
-    if(t.closest('#cruzarAhora')){ correrCruce(false); return; }
+    // Lote 10/11 B: acciones dentro de cada fila
+    const qu = t.closest('[data-quitar]'); if(qu){ const a = lista[Number(qu.dataset.quitar)]; if(a && !a.leyendo){ lista = lista.filter((x) => x !== a); pintar(); } return; }
+    const okp = t.closest('[data-ok-para]'); if(okp){ const a = lista[Number(okp.dataset.okPara)]; if(a){ a.pregunta = false; pintar(); cargarTodo(); } return; }
+    if(t.closest('[data-reintentar]')){ lista.forEach((x) => { if(x.estado === 'fallo'){ x.estado = null; x.falla = null; } }); cargarTodo(); return; }
+    if(t.closest('[data-recruzar]')){ correrCruce(true); return; }
+    const fz = t.closest('[data-forzar-indice]'); if(fz){ const a = lista[Number(fz.dataset.forzarIndice)]; if(a && a.indice){ a.conIndice = true; a.indiceElegido = true; a.indiceOmitido = false; if(a.estado === 'lista'){ a.resultado = a.resultadoBase || a.resultado; indiceFondo(a); } else pintar(); } return; }
+    if(t.closest('[data-saltar-indice]')){ const a = fondo ? fondo.a : lista.find((x) => x.tipo === 'tad' && x.conIndice && x.estado !== 'lista'); if(a){ if(fondo) a.saltar = true; else { a.conIndice = false; a.indiceElegido = true; } toast(fondo ? 'Se detiene el índice en un momento' : 'Hoy no se actualiza el índice'); pintar(); } return; }
     if(t.closest('#reintentarCargas')){ cargas(); return; }
+    if(t.closest('#verMasHist')){ verTodoHist = true; cargas(); return; }
     const sg = t.closest('[data-seguir]'); if(sg){ const a = lista[Number(sg.dataset.seguir)]; if(a) seguirIndice(a); return; }
     const si = t.closest('[data-solo-indice]'); if(si){ const a = lista[Number(si.dataset.soloIndice)]; if(a && !ocupado && !fondo){ a.datos = null; a.resultadoBase = 'Solo el índice (las empresas ya estaban cargadas)'; a.resultado = a.resultadoBase; indiceFondo(a); } return; }
-    const pq = t.closest('[data-para]'); if(pq){ const a = lista[Number(pq.dataset.para)]; if(a && !ocupado && !a.estado){ a.soloAliados = !a.soloAliados; pintar(); } return; }
+    const pq = t.closest('[data-para]'); if(pq){ const a = lista[Number(pq.dataset.para)]; if(a && !a.estado){ a.soloAliados = !a.soloAliados; a.pregunta = false; pintar(); cargarTodo(); } return; }
     if(t.closest('#reintentarCruce')){ estadoCruce(); }
   });
   document.addEventListener('change', (e) => { const c = e.target.closest && e.target.closest('[data-con-indice]'); if(c){ const a = lista[Number(c.dataset.conIndice)]; if(a) a.conIndice = c.checked; } });
@@ -643,7 +706,7 @@
     yo = p;
     // Lote 28/10: Actualizar es solo del administrador y la Analista Senior
     if(p.rol !== 'admin' && !p.senior){ document.querySelector('main.pagina').innerHTML = '<div class="vacio" role="alert" style="margin-top:40px"><b>Actualizar es del administrador y la Analista Senior</b><p>Si hace falta subir un archivo, pídeselo a ellos.</p><a class="btn btn-chico" href="inicio.html">Volver al inicio</a></div>'; return; }
-    pintar(); $('cruce').innerHTML = esqueleto(1); estadoCruce();
+    pintar(); estadoCruce();
     if(window.MapaRed) window.MapaRed.montar(yo);
     $('cargas').innerHTML = esqueleto(2);
     cargas();

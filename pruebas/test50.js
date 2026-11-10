@@ -108,8 +108,8 @@ async function cerrarHojas(p){ for(let i = 0; i < 5 && await p.evaluate(() => !!
     }
 
     // ----- Actualizar: qué toca, solo administrador y Senior -----
-    await a.goto(H + 'actualizar.html'); await a.waitForSelector('#ultimas .act-f', { timeout: 15000 });
-    ok(nombre + ': Actualizar dice qué toca actualizar con cada archivo', /TAD/.test(await a.textContent('#ultimas')) && /Mapa de red/.test(await a.textContent('#ultimas')));
+    await a.goto(H + 'actualizar.html'); await a.waitForSelector('#dia .sd-f', { timeout: 15000 });
+    ok(nombre + ': Subir lo del día dice qué toca con cada archivo y el mapa de red', /TAD/.test(await a.textContent('#dia')) && /Mapa de red/.test(await a.textContent('main')));
     ok(nombre + ': Actualizar no tiene los botones de ir a Comisiones ni a Factibilidad', !/Ver comisiones|Ir a Factibilidad/.test(await a.textContent('main')));
     mundo.personas.find((x) => x.usuario === 'pedro').debe_cambiar_pin = false;
     const cP = await contexto(nav, dispositivo, mundo); const q = await entrar(cP.ctx, 'pedro', '204871').catch(() => null);

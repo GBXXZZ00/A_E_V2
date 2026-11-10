@@ -1,7 +1,7 @@
 // Lote 27/10, partes A2, A5 y C: índice del TAD que sube solo lo que cambió y retoma; en Comisiones los atajos Sin instalar
 // (con "Subir documentos": RIF, cliente nuevo unido a la orden, casillas y Enviar a revisión) y Sin líder (asignar a varios);
 // en Clientes el atajo Revisar fecha de los dedicados.
-const { chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar } = require('./simulador');
+const { esperarDia, chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar } = require('./simulador');
 const { ok, cerrar } = marcador();
 const llamo = (m, f) => m.llamadas.filter((l) => l[1] === f);
 function csv(n, cambio){
@@ -17,39 +17,38 @@ const cerrarHojas = async (p) => { for(let i = 0; i < 5 && await p.evaluate(() =
     const { ctx, mundo } = await contexto(nav, dispositivo);
     const p = await entrar(ctx, 'marcos', '482913'); p.on('pageerror', (e) => errores.push(e.message));
     // ----- A2: el índice falla, las empresas quedan y se sigue después -----
-    await p.goto(H + 'actualizar.html'); await p.waitForSelector('#zona');
+    await p.goto(H + 'actualizar.html'); await p.waitForSelector('#zona .soltar');
+    mundo.fallaRpc = 'tad_indice_parte';
     await p.setInputFiles('#archivos', { name: 'tad.csv', mimeType: 'text/csv', buffer: Buffer.from(csv(30)) });
-    await p.waitForSelector('#cargarTodo'); mundo.fallaRpc = 'tad_indice_parte';
-    await p.click('#cargarTodo'); await p.waitForSelector('[data-seguir]', { timeout: 15000 }).catch(async () => console.log('DBG', await p.textContent('#zona'), JSON.stringify(mundo.llamadas.slice(-6).map((x) => x[1]))));
-    ok(nombre + ': si el índice falla, el TAD de empresas queda cargado y lo dice', /Empresas cargadas/.test(await p.textContent('#listaArch')) && /Índice a medias/.test(await p.textContent('#listaArch')) && llamo(mundo, 'tad_cerrar').length === 1);
+    await p.waitForSelector('[data-seguir]', { timeout: 15000 }).catch(async () => console.log('DBG', await p.textContent('#dia'), JSON.stringify(mundo.llamadas.slice(-6).map((x) => x[1]))));
+    ok(nombre + ': si el índice falla, el TAD de empresas queda cargado y la fila del índice lo dice', /Leído\s*Cruzado/.test(await p.textContent('#dia [data-k="tad"]')) && /Índice a medias/.test(await p.textContent('#dia [data-k="indice"]')) && llamo(mundo, 'tad_cerrar').length === 1);
     mundo.fallaRpc = null; const antes = llamo(mundo, 'tad_indice_iniciar').length;
-    await p.click('[data-seguir]'); await p.waitForFunction(() => /índice de \d+ servicios/.test(document.getElementById('listaArch').textContent), null, { timeout: 12000 }).catch(async () => console.log('DBG', await p.textContent('#zona'), JSON.stringify(mundo.llamadas.slice(-5).map((x) => x[1]))));
+    await p.click('[data-seguir]'); await p.waitForFunction(() => /índice de \d+ servicios/.test(document.getElementById('dia').textContent), null, { timeout: 12000 }).catch(async () => console.log('DBG', await p.textContent('#dia'), JSON.stringify(mundo.llamadas.slice(-5).map((x) => x[1]))));
     ok(nombre + ': Seguir con el índice retoma en la misma carga', llamo(mundo, 'tad_indice_iniciar').length === antes + 1 && mundo.datos.cambiosK.cargas.length === 1 && llamo(mundo, 'tad_indice_comparar').length >= 2);
     // Otra carga con una sola fila distinta: solo esa sube
-    await p.click('#otro').catch(() => {});
+    await p.waitForFunction(() => /Al día/.test(document.querySelector('#dia [data-k="indice"]').textContent));
+    const partes = llamo(mundo, 'tad_indice_parte').length; mundo.lentoRpc = { tad_indice_cerrar: 2500 };
     await p.setInputFiles('#archivos', { name: 'tad2.csv', mimeType: 'text/csv', buffer: Buffer.from(csv(30, true)) });
-    await p.waitForSelector('#cargarTodo'); const partes = llamo(mundo, 'tad_indice_parte').length;
-    // Lote 05/11 G: el índice es opcional; recién cargado no toca y la casilla sale desmarcada
-    ok(nombre + ': con el índice al día la casilla del índice sale desmarcada y dice la fecha', !(await p.isChecked('[data-con-indice]')) && /Último índice/.test(await p.textContent('#listaArch')));
-    await p.check('[data-con-indice]');
-    mundo.lentoRpc = { tad_indice_cerrar: 2500 };
-    await p.click('#cargarTodo'); await p.waitForFunction(() => /Índice de residenciales: \d+ %/.test(document.getElementById('listaArch').textContent));
-    ok(nombre + ': el índice sigue en segundo plano y la pantalla deja subir otros archivos', (await p.locator('#soltar, #otro').count()) >= 1 && await p.evaluate(() => window.AE_ocupado()) && !(await p.locator('#cargarTodo').count()));
-    await p.waitForFunction(() => /índice de \d+ servicios \(1 cambió\)/.test(document.getElementById('listaArch').textContent)); mundo.lentoRpc = null;
+    // Lote 10/11 B: recién cargado no toca; la fila del índice lo dice y deja "Actualizar el índice igual"
+    await p.waitForSelector('[data-forzar-indice]', { timeout: 8000 }).catch(async () => console.log('DBG2', await p.textContent('#dia')));
+    ok(nombre + ': con el índice al día la fila dice que hoy no toca y la fecha', /Hoy no toca/.test(await p.textContent('#dia [data-k="indice"]')) && /Último índice/.test(await p.textContent('#dia [data-k="indice"]')));
+    await esperarDia(p); await p.click('[data-forzar-indice]');
+    await p.waitForFunction(() => /en segundo plano/.test(document.getElementById('dia').textContent));
+    ok(nombre + ': el índice sigue en segundo plano, se puede saltar y la pantalla deja subir otros archivos', (await p.locator('#soltar').count()) === 1 && (await p.locator('[data-saltar-indice]').count()) === 1 && await p.evaluate(() => window.AE_ocupado()) && !(await p.locator('#cargarTodo').count()));
+    await p.waitForFunction(() => /índice de \d+ servicios \(1 cambió\)/.test(document.getElementById('dia').textContent)); mundo.lentoRpc = null;
     const ult = llamo(mundo, 'tad_indice_parte').slice(partes);
     ok(nombre + ': la segunda carga sube solo la fila que cambió', ult.length === 1 && ult[0][2].p_filas.length === 1);
     // Tercera carga igual: el bloque cuadra y solo se marca, sin comparar fila por fila
-    await p.click('#otro').catch(() => {});
+    const cmp = llamo(mundo, 'tad_indice_comparar').length; const mar = llamo(mundo, 'tad_indice_marcar').length;
     await p.setInputFiles('#archivos', { name: 'tad3.csv', mimeType: 'text/csv', buffer: Buffer.from(csv(30, true)) });
-    await p.waitForSelector('#cargarTodo'); await p.check('[data-con-indice]'); const cmp = llamo(mundo, 'tad_indice_comparar').length; const mar = llamo(mundo, 'tad_indice_marcar').length;
-    await p.click('#cargarTodo'); await p.waitForFunction(() => /índice de \d+ servicios \(0 cambiaron\)/.test(document.getElementById('listaArch').textContent));
+    await p.waitForSelector('[data-forzar-indice]'); await esperarDia(p); await p.click('[data-forzar-indice]');
+    await p.waitForFunction(() => /índice de \d+ servicios \(0 cambiaron\)/.test(document.getElementById('dia').textContent));
     ok(nombre + ': con el archivo igual se manda una huella por bloque y no se compara fila por fila', llamo(mundo, 'tad_indice_comparar').length === cmp && llamo(mundo, 'tad_indice_marcar').length === mar + 1);
-    // Sin marcar la casilla, solo empresas
-    await p.click('#otro').catch(() => {});
+    // Sin pedirlo, solo empresas
+    const ini = llamo(mundo, 'tad_indice_iniciar').length;
     await p.setInputFiles('#archivos', { name: 'tad4.csv', mimeType: 'text/csv', buffer: Buffer.from(csv(30)) });
-    await p.waitForSelector('#cargarTodo'); const ini = llamo(mundo, 'tad_indice_iniciar').length;
-    await p.click('#cargarTodo'); await p.waitForSelector('#otro');
-    ok(nombre + ': con la casilla desmarcada no se toca el índice', llamo(mundo, 'tad_indice_iniciar').length === ini && /sin índice de residenciales/.test(await p.textContent('#listaArch')));
+    await p.waitForSelector('[data-forzar-indice]'); await esperarDia(p);
+    ok(nombre + ': si no toca y no se pide, no se toca el índice', llamo(mundo, 'tad_indice_iniciar').length === ini && /sin índice de residenciales/.test(await p.textContent('#dia [data-k="tad"]')));
     // ----- A5: Sin instalar con Subir documentos y RIF nuevo -----
     mundo.datos.sueltas = [{ id: 880001, numero: 'PRUEBA/9001', titulo: 'Solicitud de Instalación PROMO PYME', etapa: 'Planificada', creada_en: new Date(Date.now() - 40 * 864e5).toISOString(), nombre: 'Panadería Inventada', lider: 'Lucía Ferrer', parecido_id: null }];
     // Lote 28/10: Por instalar es una hoja; Subir documentos abre "cliente nuevo" con la orden ya elegida

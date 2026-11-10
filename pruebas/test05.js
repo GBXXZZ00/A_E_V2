@@ -1,5 +1,5 @@
 // Actualizar datos: subir varios archivos juntos, reconocerlos, cargarlos por lotes y ver el resultado.
-const { chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar } = require('./simulador');
+const { esperarDia, chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar } = require('./simulador');
 const { ok, cerrar } = marcador();
 const llamo = (m, f) => m.llamadas.filter((l) => l[0] === 'rpc' && l[1] === f);
 function csv(n){
@@ -33,27 +33,24 @@ function xlsx(filas){
     const p = await entrar(ctx, 'marcos', '482913'); p.on('pageerror', (e) => errores.push(e.message));
     await p.click('#cuenta'); await p.waitForSelector('#hojaCuenta.ver');
     await p.click('#hojaCuenta a[data-ir="actualizar"]'); await p.waitForURL('**/actualizar.html'); await p.waitForSelector('#cargas .vacio');
-    ok(nombre + ': se llega desde el menú de cuenta y empieza sin cargas', (await p.textContent('#ultimoTad')).includes('ningún'));
+    ok(nombre + ': se llega desde el menú de cuenta y empieza sin cargas; el TAD dice Falta el de hoy', /Falta el de hoy/.test(await p.textContent('#dia [data-k="tad"]')) && /Subir lo del día/.test(await p.textContent('h1')));
     await p.setInputFiles('#archivos', { name: 'notas.csv', mimeType: 'text/csv', buffer: Buffer.from('a,b\n1,2\n') });
     await p.waitForSelector('.toast');
-    ok(nombre + ': un archivo desconocido se marca y no se carga', (await p.textContent('#listaArch')).includes('No reconozco') && (await p.locator('#cargarTodo').count()) === 0);
-    await p.click('#limpiar');
+    ok(nombre + ': un archivo desconocido sale en rojo con qué hacer y no se carga', /No reconozco/.test(await p.textContent('#dia .sd-f.rojo')) && /Quitar/.test(await p.textContent('#dia .sd-f.rojo')) && !llamo(mundo, 'crudo_iniciar').length);
+    await p.click('[data-quitar]');
     await p.setInputFiles('#archivos', [
       { name: 'tad.csv', mimeType: 'text/csv', buffer: Buffer.from(csv(900), 'latin1') },
       { name: 'odoo.xlsx', mimeType: 'application/octet-stream', buffer: xlsx([['odt', 'tema', 'creado', 'creador', 'etapa', 'fejec', 'rel', 'cliente'], ['OT-1', 'Instalación ñandú', '2026-09-01', 'Inventado', 'Nuevo', '', '', 'Comercio de Prueba 1'], ['OT-2', '#N/A', '', '', 'Hecho', '', '', 'Comercio de Prueba 2']]) },
       { name: 'ordenes.csv', mimeType: 'text/csv', buffer: Buffer.from('Título del reporte\nPref;Codcliente;Nombre;Cedula;Feccump;Usuario;Tipo;Categoria\n824;700001;Comercio de Prueba 1;597000001;2026-09-03 03:57:53 p.m.;SERIE1;INSTALACION;pyme-1gb\n824;700002;Vecino Inventado;12345678;2026-09-03 03:57:53 p.m.;SERIE2;INSTALACION;promo-1gb\n') },
       { name: 'base.csv', mimeType: 'text/csv', buffer: Buffer.from('Sucursal,EJECUTIVO,COD.,RAZON SOCIAL,RIF,TIPO_CLIENTE,ESTATUS_LEGAL\n824,Lucia,700001,Comercio de Prueba 1,597000001,PYMES,CONTRATO FIRMADO\n') }
     ]);
-    await p.waitForSelector('#cargarTodo');
-    await p.waitForFunction(() => !document.querySelector('#listaArch').textContent.includes('Leyendo'));
-    const z = await p.textContent('#zona');
-    ok(nombre + ': reconoce los cuatro archivos por sus columnas', z.includes('TAD · tad.csv') && z.includes('Órdenes de Odoo · odoo.xlsx') && z.includes('Órdenes de instalación · ordenes.csv') && z.includes('Base de la app anterior · base.csv') && z.includes('Cargar 4 archivos'));
-    ok(nombre + ': antes de cargar dice cuántos servicios y clientes trae', z.includes('901 servicios de 900 clientes') && z.includes('2 filas'));
-    await p.screenshot({ path: 'capturas/05-' + nombre + '-listo.png', fullPage: true });
     const antes = mundo.datos.clientes.length;
-    await p.click('#cargarTodo'); await p.waitForSelector('#zona .aviso');
+    await esperarDia(p);
+    const z = await p.textContent('#dia');
+    ok(nombre + ': reconoce los cuatro archivos por sus columnas, cada uno en su fila', /tad\.csv/.test(await p.textContent('#dia [data-k="tad"]')) && /odoo\.xlsx/.test(await p.textContent('#dia [data-k="odoo"]')) && /ordenes\.csv/.test(await p.textContent('#dia [data-k="instalaciones"]')) && /base\.csv/.test(await p.textContent('#dia [data-k="base_vieja"]')));
+    await p.screenshot({ path: 'capturas/05-' + nombre + '-listo.png', fullPage: true });
     const lotes = llamo(mundo, 'tad_filas');
-    ok(nombre + ': carga por lotes y cierra', lotes.length === 3 && lotes.every((l) => l[2].p_filas.length <= 400) && llamo(mundo, 'tad_cerrar').length === 1);
+    ok(nombre + ': sin botón de cargar: sube solo, por lotes, y cierra', lotes.length === 3 && lotes.every((l) => l[2].p_filas.length <= 400) && llamo(mundo, 'tad_cerrar').length === 1 && !(await p.locator('#cargarTodo').count()));
     ok(nombre + ': los clientes quedan en la base', mundo.datos.clientes.length === antes + 900);
     const f0 = lotes[0][2].p_filas[0];
     ok(nombre + ': la fecha viaja como fecha y los acentos se leen', f0.f === '2025-03-15' && f0.n === 'Comercio de Prueba 1, C.A' && lotes[2][2].p_filas.slice(-1)[0].f === '');
@@ -64,31 +61,20 @@ function xlsx(filas){
     const od = cr[1][2].p_filas;
     ok(nombre + ': el Excel se lee con sus tildes y sin valores dañados', od.length === 2 && od[0].tema === 'Instalación ñandú' && od[0].cliente === 'Comercio de Prueba 1' && !('tema' in od[1]) && !('fejec' in od[0]));
     ok(nombre + ': las columnas se guardan con nombre limpio', cr[0][2].p_filas[0].razon_social === 'Comercio de Prueba 1' && cr[0][2].p_filas[0].cod === '700001' && cr[2][2].p_filas[0].feccump.startsWith('2026-09-03'));
-    const fin = await p.textContent('#zona');
-    ok(nombre + ': el resultado dice qué entró y qué no se leyó', fin.includes('900 clientes nuevos') && fin.includes('2 filas no se pudieron leer') && fin.includes('4 archivos cargados') && fin.includes('2 filas guardadas'));
-    await p.waitForFunction(() => document.querySelectorAll('#cargas .fila').length === 4);
-    ok(nombre + ': queda en el historial con quién la subió', (await p.textContent('#cargas')).includes('Marcos') && !(await p.textContent('#ultimoTad')).includes('ningún'));
-    await p.waitForSelector('#cruzarAhora');
-    ok(nombre + ': avisa las cargas sin cruzar con Cruzar ahora y el historial trae el TAD', /sin cruzar/.test(await p.textContent('#cruce')) && (await p.textContent('#cargas')).includes('TAD'));
-    ok(nombre + ': al terminar dice qué falta, sin "Ver clientes"', fin.includes('Falta un paso') && !fin.includes('Ver clientes'));
+    ok(nombre + ': el resultado dice qué entró, en la fila de cada archivo', /900 clientes nuevos/.test(z) && /2 filas no se pudieron leer/.test(z) && /2 filas guardadas/.test(z), z.slice(0, 900));
+    ok(nombre + ': el cruce corre solo al terminar (sin Cruzar ahora) y las filas quedan Leído, Cruzado y Listo', mundo.cruceAplicado === true && !(await p.locator('#cruzarAhora, #aplicarCruce').count()) && /Leído\s*Cruzado\s*Listo/.test(await p.textContent('#dia [data-k="odoo"]')));
+    await p.click('#detCruce summary'); const cz = await p.textContent('#cruce');
+    ok(nombre + ': Ver detalle del cruce dice qué cambió', cz.includes('9 clientes reciben su líder') && cz.includes('Comisiones de octubre') && cz.includes('3 quedan pendientes por asignar'));
+    await p.waitForFunction(() => document.querySelectorAll('#cargas .sd-h:not(.sd-hcab)').length === 4);
+    ok(nombre + ': queda en el historial (tabla) con quién la subió', (await p.textContent('#cargas')).includes('Marcos') && (await p.textContent('#cargas')).includes('TAD'));
     ok(nombre + ': sin desborde', await sinDesborde(p));
     await p.screenshot({ path: 'capturas/05-' + nombre + '-fin.png', fullPage: true });
-    await p.waitForSelector('#cruzarAhora'); await p.click('#cruzarAhora'); await p.waitForSelector('#aplicarCruce');   // Lote 28/10: el cruce se lanza con Cruzar ahora
-    const cz = await p.textContent('#cruce');
-    ok(nombre + ': el cruce primero muestra qué va a cambiar sin guardar', cz.includes('9 clientes reciben su líder') && cz.includes('Comisiones de octubre') && cz.includes('3 quedan pendientes por asignar') && cz.includes('no se ha guardado nada') && llamo(mundo, 'cruce_aplicar').length === 0 && (await p.locator('#cruce button').count()) === 1);
-    await p.screenshot({ path: 'capturas/05-' + nombre + '-cruce.png', fullPage: true });
-    await p.click('#aplicarCruce'); await p.waitForFunction(() => /Cruce guardado/.test(document.getElementById('cruce').textContent));
-    ok(nombre + ': al guardar lo confirma, sin botón para salir a Comisiones', mundo.cruceAplicado === true && (await p.locator('#cruce a[href="comisiones.html"]').count()) === 0);
-    ok(nombre + ': el historial queda agrupado por fecha', (await p.locator('#cargas details.act-dia').count()) >= 1);
-    ok(nombre + ': sin desborde con el cruce', await sinDesborde(p));
-    mundo.fallaRpc = 'tad_filas'; await p.click('#otro');
+    mundo.fallaRpc = 'tad_filas';
     await p.setInputFiles('#archivos', [{ name: 'tad2.csv', mimeType: 'text/csv', buffer: Buffer.from(csv(5)) }, { name: 'tad3.csv', mimeType: 'text/csv', buffer: Buffer.from(csv(3)) }]);
-    await p.waitForSelector('#cargarTodo');
-    await p.waitForFunction(() => !document.querySelector('#listaArch').textContent.includes('Leyendo'));
-    ok(nombre + ': dos archivos del mismo tipo no se mezclan', (await p.textContent('#listaArch')).includes('Ya hay otro archivo de TAD') && (await p.textContent('#cargarTodo')).includes('1 archivo'));
-    await p.click('#cargarTodo');
     await p.waitForFunction(() => Array.from(document.querySelectorAll('.toast')).some((t) => t.textContent.includes('se detuvo')));
-    ok(nombre + ': si falla a mitad avisa y deja reintentar', (await p.locator('#cargarTodo').count()) === 1 && (await p.textContent('#listaArch')).includes('Se detuvo'));
+    const dz = await p.textContent('#dia');
+    ok(nombre + ': dos archivos del mismo tipo no se mezclan', dz.includes('Ya hay otro archivo de TAD'));
+    ok(nombre + ': si falla a mitad avisa y deja reintentar en la fila', (await p.locator('[data-reintentar]').count()) === 1 && /La carga se detuvo/.test(dz));
     mundo.fallaRpc = null;
     await ctx.close();
 

@@ -30,7 +30,7 @@ const archivo = (nombre, buffer) => ({ name: nombre, mimeType: 'application/vnd.
     const t = await p.textContent('#mapaRed');
     ok(nombre + ': lee zonas, puntos y el reparto por estado', t.includes('8 zonas y 4 puntos') && t.includes('Liberado 3 · Exclusiva 2 · Diseño 1 · Construcción 1 · Permiso VGT 1'), t);
     ok(nombre + ': avisa de la zona que no está en una carpeta de estado', t.includes('1 zona queda fuera'));
-    ok(nombre + ': no se metió en la lista de archivos del TAD', (await p.locator('#listaArch').count()) === 0);
+    ok(nombre + ': no se metió en la lista de archivos del TAD', !/\.kmz/i.test(await p.textContent('#dia')));
     ok(nombre + ': el panel del mapa no desborda', await sinDesborde(p));
     await p.screenshot({ path: 'capturas/12-' + nombre + '-leido.png', fullPage: true });
 

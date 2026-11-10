@@ -14,3 +14,21 @@ Columna "Queda": **igual**, **movido a …** o **nuevo**. Se marca ✔ cuando la
 | Clientes y Gerencia: churn, infancia y calidad (escondidos con `churn_visible = no`) | igual de escondidos; la pérdida sale de las reglas del 10/11 |
 | IA: reglas de contratos (21) | igual (tabla Contratos y Aliados en `ia-reglas.md`); RIF sin vencimiento con fecha de inscripción o actualización = Digital ✔ (test16) |
 | IA: lectura adelantada de aliados, OCR de RIF y cédula, combinados | igual; RIF y cédula con el modelo rápido |
+
+## Parte B · Subir lo del día (`actualizar.js`, `actualizar.html`)
+| Función de hoy | Queda |
+|---|---|
+| Qué toca actualizar (TAD, Odoo, Instalaciones, IP, Dedicados, índice; al día, toca hoy, nunca se ha subido, sin fechas) | movido a la tabla del día: cada archivo es una fila con su estado ("Falta el de hoy", "Opcional", "Al día") |
+| Qué toca: Cambios de categoría y Mapa de red | Cambios: fila propia cuando se suelta; Mapa de red: su panel debajo (igual) |
+| Zona para soltar varios archivos (CSV, Excel, KMZ) y Elegir archivos | igual, arriba, con los nombres de los archivos del día |
+| Reconocer cada archivo por sus columnas; archivo desconocido "No sirve"; dos del mismo tipo no se mezclan | igual; la fila sale en rojo con qué hacer y "Quitar" |
+| Cargar N archivos (botón) | **sin botón**: lo leído se sube solo (decidido 10/11) |
+| TAD corto: Cargar igual / Quitar todos | igual (aviso arriba) |
+| Casilla "Actualizar también el índice de residenciales" | movido a la fila del índice: se decide solo (toca o no) con "Actualizar el índice igual" y "Saltar el índice hoy" |
+| Índice en segundo plano con su porcentaje; Seguir con el índice; Seguir solo con el índice | igual, en la fila "Índice de residenciales" |
+| Instalaciones con fechas viejas: Va solo a Aliados / Usarlo para comisiones | igual, en su fila: "Así está bien" o "Usarlo para comisiones" antes de subirlo |
+| Carga que se detiene: Reintentar | igual, en la fila ("Reintentar") |
+| TAD sin fechas en rojo | igual, en la fila y en el historial |
+| Cruzar ahora → resumen → Guardar cruce | **el cruce corre solo** al terminar (decidido 10/11); el resumen queda en "Ver detalle del cruce"; si falla, "Cruzar otra vez" |
+| Historial agrupado por fecha con quién subió | tabla Fecha, Archivo, Estado, Números (las últimas 15 y "Ver más") |
+| Solo administrador y Analista Senior | igual |

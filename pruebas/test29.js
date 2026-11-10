@@ -1,7 +1,7 @@
 // Lote 22/10: Migraciones simple. Nuevo cambio en una pantalla (servicio por código, nombre o RIF; qué cambia con sus 4 tipos; nuevo titular y documentos),
 // planilla oficial con fondo, Por revisar (documentos del expediente), Hecho del analista, confirmación con el TAD (con aviso de lo que falta),
 // Sin registro (asignar, error o revertido) y en Actualizar el reporte de cambios de categoría (solo la fecha) y el de IP.
-const { chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar } = require('./simulador');
+const { esperarDia, chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar } = require('./simulador');
 const { RPC } = require('./mundo');
 const { ok, cerrar } = marcador();
 const llamo = (m, f) => m.llamadas.filter((l) => l[1] === f);
@@ -128,15 +128,15 @@ function cargarTad(m, filas){
 
     // ----- Actualizar: fecha exacta del reporte de Proham y reporte de IP -----
     const b = await contexto(nav, dispositivo, mundo); const z = await entrar(b.ctx, 'marcos', '482913'); z.on('pageerror', (e) => errores.push(e.message));
-    await z.goto(H + 'actualizar.html'); await z.waitForSelector('#ultimas .act-f');
-    ok(nombre + ': Actualizar dice qué toca y la última subida de cada archivo, también IP', /TAD/.test(await z.textContent('#ultimas')) && /IP de clientes/.test(await z.textContent('#ultimas')));
+    await z.goto(H + 'actualizar.html'); await z.waitForSelector('#dia .sd-f');
+    ok(nombre + ': Subir lo del día dice qué toca y la última subida de cada archivo, también IP', /TAD/.test(await z.textContent('#dia')) && /IP \(Clientes Empresariales\)/.test(await z.textContent('#dia')));
     await z.setInputFiles('#archivos', [{ name: 'cambios_categoria.csv', mimeType: 'text/csv', buffer: Buffer.from('Código;Nombre;Fecha;Categoría anterior;Categoría actual;Operador;Comentario\n777002;PANADERIA;14-10-2026;RESIDENCIAL;PYME-1GB;Juan;\n777010;Y;14-10-2026;056;PYME-1GB;RADIUS;\n') },
       { name: 'clientes_empresariales.csv', mimeType: 'text/csv', buffer: Buffer.from('Clientes Empresariales;;;;;;;;\nSucursal;Cliente;Nombre;ONT;VLAN;Fecha Asignación;Estado;IPV4;IPV6\n824 - MARACAIBO;777001;PANADERIA;48575443AAAA0001;100;01/10/2026;ASIGNADA;190.1.1.1;2803::1\n824 - MARACAIBO;;;;100;;DISPONIBLE;190.1.1.9;\n') }]);
-    await z.waitForSelector('#cargarTodo');
-    ok(nombre + ': reconoce el reporte de cambios y el de IP (la fila DISPONIBLE queda fuera)', /Cambios de categoría/.test(await z.textContent('#zona')) && /IP \(Clientes Empresariales\)/.test(await z.textContent('#zona')) && /1 disponibles quedan fuera/.test(await z.textContent('#zona')));
-    await z.click('#cargarTodo'); await z.waitForFunction(() => /IP por confirmar/.test(document.getElementById('zona').textContent) && /fecha exacta/.test(document.getElementById('zona').textContent));
+    await esperarDia(z);
+    ok(nombre + ': reconoce el reporte de cambios y el de IP y los sube solos', /cambios_categoria\.csv/.test(await z.textContent('#dia')) && /clientes_empresariales\.csv/.test(await z.textContent('#dia [data-k="ip"]')) && /IP por confirmar/.test(await z.textContent('#dia')) && /fecha exacta/.test(await z.textContent('#dia')));
     const ip = llamo(mundo, 'ip_reporte_cargar').slice(-1)[0];
-    ok(nombre + ': el reporte de IP sube sucursal, código, ONT e IP', ip && ip[2].p_filas.length === 1 && ip[2].p_filas[0].e === '48575443AAAA0001' && ip[2].p_filas[0].ip === '190.1.1.1' && /824 - MARACAIBO/.test(ip[2].p_filas[0].s));
+    // Lote 10/11 A3: la fila DISPONIBLE también viaja (solo con su IP) para proponer la siguiente del pool
+    ok(nombre + ': el reporte de IP sube sucursal, código, ONT e IP, y la DISPONIBLE con su IP', ip && ip[2].p_filas.length === 2 && ip[2].p_filas[0].e === '48575443AAAA0001' && ip[2].p_filas[0].ip === '190.1.1.1' && /824 - MARACAIBO/.test(ip[2].p_filas[0].s) && ip[2].p_filas[1].est === 'DISPONIBLE' && ip[2].p_filas[1].ip === '190.1.1.9');
     ok(nombre + ': Actualizar sin desborde', await sinDesborde(z));
     await b.ctx.close(); await ctx.close();
   }

@@ -2285,3 +2285,49 @@ button.bz-ck.on::after{left:17px;top:13px}
 .ip-op span{flex:1;min-width:0}
 .ip-op b{display:block;font-size:13.5px;overflow-wrap:anywhere}
 .ip-op small{display:block;font-size:12px;color:var(--text2)}
+
+/* Lote 10/11 B: Subir lo del día (una fila por archivo: Leído → Cruzado → Listo) */
+.sd-titulo{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.sd-titulo .chip{margin-top:8px}
+.sd-soltar{flex-direction:row;align-items:center;gap:16px;text-align:left;padding:22px 26px;cursor:pointer}
+.sd-soltar > span:first-of-type{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;font-size:12.5px}
+.sd-soltar .i{width:28px;height:28px;flex:none;color:var(--accent)}
+.sd-elegir{flex:none;pointer-events:none}
+.sd-cab,.sd-f{display:grid;grid-template-columns:minmax(150px,1.1fr) minmax(200px,1.4fr) minmax(220px,2.4fr) auto;gap:14px;align-items:center}
+.sd-cab{padding:2px 12px 10px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text2)}
+.sd-f{padding:12px;border-top:1px solid var(--line);border-radius:12px}
+.sd-f.rojo{background:var(--rojo-bg);border-top-color:transparent} .sd-f.rojo .sd-r b{color:var(--rojo)}
+.sd-f.ambar{background:var(--ambar-bg);border-top-color:transparent}
+.sd-f.falta .sd-r b{color:var(--ambar)}
+.sd-a,.sd-r{min-width:0;display:flex;flex-direction:column;gap:2px}
+.sd-a b,.sd-r b{font-size:14px;overflow-wrap:anywhere} .sd-a small,.sd-r small{font-size:12.5px;color:var(--text2);overflow-wrap:anywhere}
+.sd-r small .enlace{font-size:12.5px}
+.sd-av{display:flex;flex-wrap:wrap;gap:6px;min-width:0}
+.sd-pasos{display:flex;flex-wrap:wrap;gap:6px}
+.sd-barra{display:flex;flex-direction:column;gap:6px;width:100%} .sd-barra .idx-pista{margin-top:0} .sd-barra small{font-size:12.5px;color:var(--text2)}
+.sd-acc{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.sd-acc .btn{white-space:nowrap}
+.sd-det{margin-top:6px;border-top:1px solid var(--line);padding-top:10px}
+.sd-det summary{cursor:pointer;display:flex;flex-direction:column;gap:2px;min-height:44px;justify-content:center;list-style:none}
+.sd-det summary::-webkit-details-marker{display:none}
+.sd-det summary b{color:var(--accent);font-size:14px} .sd-det summary small{font-size:12.5px;color:var(--text2)}
+.sd-hist{background:#fff;border:1px solid var(--line);border-radius:18px;padding:6px 12px}
+.sd-h{display:grid;grid-template-columns:120px minmax(180px,2fr) 150px minmax(160px,2fr);gap:14px;align-items:center;padding:12px 6px;border-top:1px solid var(--line);font-size:13.5px}
+.sd-h:first-child{border-top:0}
+.sd-hcab{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text2)}
+.sd-ha{display:flex;flex-direction:column;min-width:0} .sd-ha small{font-size:12px;color:var(--text2);overflow-wrap:anywhere}
+.sd-hf,.sd-hn{color:var(--text2)}
+@media (max-width:760px){
+  .sd-soltar{flex-direction:column;align-items:flex-start;padding:18px}
+  .sd-elegir{align-self:stretch}
+  .sd-cab{display:none}
+  .sd-f{grid-template-columns:1fr;gap:8px;padding:14px 12px}
+  .sd-acc{justify-content:flex-start}
+  .sd-acc .btn{min-height:44px}
+  .sd-hcab{display:none}
+  .sd-h{grid-template-columns:1fr auto;gap:4px 10px}
+  .sd-hf{grid-column:1 / -1;font-size:12px}
+  .sd-ha{grid-column:1}
+  .sd-he{grid-column:2;grid-row:2}
+  .sd-hn{grid-column:1 / -1;font-size:12.5px}
+}
