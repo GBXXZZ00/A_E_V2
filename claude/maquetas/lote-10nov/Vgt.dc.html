@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>VGT por solicitud</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap">
+<style>
+body{margin:0;background:#F5F6F7;font-family:Inter,system-ui,sans-serif;color:#111315;font-size:14px}
+*{box-sizing:border-box}
+h1,h2,h3,p{margin:0}
+.mut{color:#5B636E;font-size:12px}
+.chip{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px;border-radius:999px;font-size:12px;font-weight:600;background:#ECEEF1;color:#5B636E;white-space:nowrap}
+.r{background:#FCEDEB;color:#A32117}.w{background:#FBF1DC;color:#754B00}.ok{background:#E7F5EE;color:#0F6642}.b{background:#E8EEFF;color:#1F45C4}.m{background:#F0EBFA;color:#5B3AA6}
+.card{background:#fff;border:1px solid #E3E6EA;border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:40px;padding:0 16px;border-radius:999px;border:1px solid #E3E6EA;background:#fff;font:600 13px Inter,sans-serif;color:#111315;white-space:nowrap;cursor:pointer;text-decoration:none}
+.btn.pri{background:#2B5CFF;color:#fff;border-color:#2B5CFF}
+.btn.wa{background:#0F6642;color:#fff;border-color:#0F6642}
+.btn.neg{background:#111315;color:#fff;border-color:#111315}
+.btn.chico{height:32px;padding:0 12px;font-size:12px}
+.seg{height:36px;padding:0 14px;border-radius:999px;border:1px solid #E3E6EA;background:#fff;font:600 13px Inter,sans-serif;color:#5B636E;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.seg.on{background:#111315;color:#fff;border-color:#111315}
+.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.col{display:flex;flex-direction:column;gap:8px}
+.t{display:flex;align-items:center;gap:12px;padding:12px;border-radius:12px}
+.t + .t{border-top:1px solid #F0F2F4}
+.tx{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block;background:#C9CED6}
+.dot.w{background:#D98A00}.dot.ok{background:#0F6642}.dot.r{background:#C0271B}
+.nota{position:absolute;background:#FFF6C9;border:1px solid #E8D27A;border-radius:10px;padding:8px 10px;font-size:12px;line-height:1.35;color:#4A3F00;max-width:240px}
+.tel{width:390px;height:844px;background:#fff;border-radius:36px;border:1px solid #E3E6EA;overflow:hidden;display:flex;flex-direction:column;position:relative;flex:none}
+.top{height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;border-bottom:1px solid #E3E6EA;flex:none}
+.logo{font-weight:800;letter-spacing:.18em;font-size:14px;color:#3A414A}
+.body{padding:18px;display:flex;flex-direction:column;gap:12px;flex:1;overflow:hidden}
+.campo{display:flex;flex-direction:column;gap:6px}
+.campo label{font-size:12px;font-weight:600;color:#5B636E}
+.inp{height:44px;border:1.5px solid #CCD2DA;border-radius:12px;padding:0 14px;font:14px Inter,sans-serif;display:flex;align-items:center;color:#111315;background:#fff}
+.inp.ph{color:#69717C}
+.cas{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid #F0F2F4}
+.barra{position:absolute;left:0;right:0;bottom:0;background:#fff;border-top:1px solid #E3E6EA;padding:12px 18px 18px;display:flex;flex-direction:column;gap:8px}
+.pasos{display:flex;gap:6px}
+.pasos i{flex:1;height:4px;border-radius:4px;background:#E3E6EA;display:block}
+.pasos i.on{background:#2B5CFF}
+.full{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:32px;text-align:center}
+.ico{width:88px;height:88px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.lbl{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#5B636E}
+.tabla{width:100%;border-collapse:collapse;font-size:13px}
+.tabla th{text-align:left;font-size:11px;font-weight:700;color:#5B636E;padding:8px 10px;letter-spacing:.04em;text-transform:uppercase}
+.tabla td{padding:12px 10px;border-top:1px solid #F0F2F4;vertical-align:middle}
+.pleg{background:#fff;border:1px solid #E3E6EA;border-radius:16px;display:flex;align-items:center;gap:10px;padding:14px 16px;min-height:52px}
+.pleg.pend{border-color:#E8A040}
+.pleg.list{border-color:#9BD1B6}
+.pleg b{flex:1}
+.car{color:#69717C;font-size:16px}
+</style>
+</helmet>
+<div style="width:2240px;height:1180px;padding:30px;display:flex;gap:40px;align-items:flex-start"><div class="col" style="width:640px;gap:12px">
+<span class="lbl">Ficha del cliente · pestaña VGT</span>
+<div class="card" style="gap:14px;padding:20px">
+<div class="row" style="gap:8px;border-bottom:1px solid #E3E6EA;padding-bottom:10px"><span class="seg">Datos</span><span class="seg">Documentos</span><span class="seg">Servicio dedicado</span><span class="seg on">VGT</span><span class="seg">Hilo</span></div>
+<div class="row" style="gap:12px;flex-wrap:nowrap">
+<div style="flex:1;display:flex;align-items:center;gap:12px;padding:14px;border-radius:14px;border:1px solid #E3E6EA"><b style="font-size:26px">19</b><span class="tx"><b>postes</b><span class="mut">8 en uso · 11 en proyecto</span></span></div>
+<div style="flex:1;display:flex;align-items:center;gap:12px;padding:14px;border-radius:14px;border:1px solid #E3E6EA"><b style="font-size:26px">2</b><span class="tx"><b>solicitudes</b><span class="mut">Contrato + 1 adendum</span></span></div>
+<div style="flex:1.3;display:flex;flex-direction:column;gap:4px;padding:14px;border-radius:14px;background:#E7F5EE"><b style="color:#0F6642">Contrato VGT N.º 0123</b><span style="font-size:12px;color:#0F6642">Firmado 08/11/2026 · vence 08/11/2027 · 1 adendum</span><span style="font-size:12px;font-weight:600;color:#1F45C4">Ver contrato · está en la solicitud 1</span></div></div>
+<div class="row"><b style="flex:1;font-size:15px">Requisitos del cliente</b><span class="mut">Sirven para todas sus solicitudes</span></div>
+<div class="row" style="padding:10px 0;border-bottom:1px solid #F0F2F4"><div class="tx"><b>Póliza de responsabilidad civil general</b><span class="mut">USD 100.000 · Seguros Ejemplo · vence 15/03/2027</span></div><span class="chip ok">Aprobada</span><button class="btn chico">Ver</button></div><div class="row" style="padding:10px 0;border-bottom:1px solid #F0F2F4"><div class="tx"><b>Póliza de responsabilidad patronal</b><span class="mut">4 trabajadores · vence 15/03/2027</span></div><span class="chip ok">Aprobada</span><button class="btn chico">Ver</button></div>
+<span class="mut">Las pólizas viven aquí porque solo aplican a VGT. En Documentos sale una línea que trae hasta aquí. 30 días antes del vencimiento avisamos.</span>
+<div class="row"><b style="flex:1;font-size:15px">Solicitudes</b><button class="btn chico pri">+ Nueva solicitud</button></div>
+<button style="width:100%;display:flex;flex-direction:column;gap:8px;padding:14px 16px;border-radius:16px;border:1px solid #E3E6EA;background:#fff;font:inherit;text-align:left;cursor:pointer">
+<div class="row"><span class="lbl" style="flex:1">Solicitud 1</span><span class="chip b">En proyecto</span></div>
+<div class="tx"><b style="font-size:15px">Yaracal · Troncal 3, Sector El Caimán</b><span class="mut">Cacique Manaure, Falcón · 11 postes</span></div>
+<div class="row" style="gap:6px"><span class="chip ok">Propuesta firmada ✓</span><span class="chip ok">Planilla ✓</span><span class="chip ok">ODT ✓</span></div>
+<div class="row" style="background:#E7F5EE;border-radius:10px;padding:8px 10px;font-size:13px;color:#0F6642"><b style="flex:1">Contrato VGT N.º 0123 · firmado</b><span>›</span></div></button>
+<button style="width:100%;display:flex;flex-direction:column;gap:8px;padding:14px 16px;border-radius:16px;border:2px solid #1F45C4;background:#fff;font:inherit;text-align:left;cursor:pointer">
+<div class="row"><span class="lbl" style="flex:1">Solicitud 2</span><span class="chip ok">En uso</span></div>
+<div class="tx"><b style="font-size:15px">Dabajuro · Las Tinajitas y Sector Libertador</b><span class="mut">Dabajuro, Falcón · 8 postes</span></div>
+<div class="row" style="gap:6px"><span class="chip ok">Propuesta firmada ✓</span><span class="chip ok">2 planillas ✓</span><span class="chip ok">ODT ✓</span></div>
+<div class="row" style="background:#FBF1DC;border-radius:10px;padding:8px 10px;font-size:13px;color:#754B00"><b style="flex:1">Adendum N.º 1 al contrato 0123 · falta subirlo</b><span>›</span></div></button>
+<details style="font-size:13px;color:#5B636E"><summary>Historial: 1 tramo sin uso</summary></details>
+</div></div><div class="col" style="width:520px;gap:12px">
+<span class="lbl">Al tocar la solicitud 2: su drawer</span>
+<div class="card" style="gap:12px;padding:22px;box-shadow:-12px 0 32px rgba(17,19,21,.06)">
+<div class="row"><span class="lbl" style="flex:1">Solicitud 2 de Redes Ejemplo, C.A.</span><span class="mut">Cerrar ✕</span></div>
+<div class="tx"><b style="font-size:19px">Dabajuro · Las Tinajitas y Sector Libertador</b><span class="mut">Recibida el 20/10 · Aprobada por infraestructura el 30/10</span></div>
+<div class="row" style="gap:6px"><span class="seg">Solicitada</span><span class="seg">Aprobada</span><span class="seg">En proyecto</span><span class="seg on">En uso</span><span class="seg">Negada</span></div>
+<div class="row" style="gap:10px;flex-wrap:nowrap"><div class="campo" style="flex:1"><label>Postes</label><div class="inp">8</div></div><div class="campo" style="flex:1.4"><label>Municipio y estado</label><div class="inp">Dabajuro, Falcón</div></div></div>
+<div class="campo"><label>ODT de infraestructura</label><div class="inp">F-OPE-AIRTEK-001/000000</div></div>
+<b style="font-size:15px;margin-top:4px">Documentos de esta solicitud</b>
+<div class="row" style="padding:8px 0;border-bottom:1px solid #F0F2F4"><div class="tx"><b>Propuesta comercial firmada</b><span class="mut">Una por solicitud · 8 postes</span></div><span class="chip ok">Bien</span><button class="btn chico">Ver</button></div>
+<div class="row" style="padding:8px 0;border-bottom:1px solid #F0F2F4"><div class="tx"><b>Planillas de tendido</b><span class="mut">Las Tinajitas (5) · Sector Libertador (3)</span></div><span class="chip ok">2</span><button class="btn chico">+ Agregar</button></div>
+<div style="border-radius:16px;background:#FBF1DC;padding:16px;display:flex;flex-direction:column;gap:10px">
+<div class="row"><b style="flex:1;color:#754B00">Adendum N.º 1 al contrato VGT 0123</b><span class="chip w">Falta subirlo</span></div>
+<span style="font-size:12px;color:#754B00">La primera solicitud lleva el contrato; las siguientes, un adendum a ese contrato. Lo propone la app sola.</span>
+<div style="border:2px dashed #D9A84A;border-radius:12px;padding:14px;text-align:center;font-size:13px;font-weight:600;color:#754B00;background:#fff">Arrastra aquí el adendum firmado o toca para elegirlo</div>
+<div class="row" style="gap:10px;flex-wrap:nowrap"><div class="campo" style="flex:1"><label>Fecha de firma</label><div class="inp ph">dd/mm/aaaa</div></div><div class="campo" style="flex:1"><label>Vence</label><div class="inp">08/11/2027 (el del contrato)</div></div></div>
+<div class="row" style="gap:6px"><span class="lbl" style="flex:1">Firma</span><span class="seg on">Digital</span><span class="seg">Física</span></div>
+</div>
+<div class="row" style="gap:8px;justify-content:flex-end"><button class="btn">Denegar solicitud</button><button class="btn pri">Guardar</button></div>
+</div></div><div class="col" style="width:420px;gap:12px">
+<span class="lbl">+ Nueva solicitud</span>
+<div class="card" style="gap:12px;padding:22px">
+<b style="font-size:18px">Nueva solicitud de VGT</b><span class="mut">Redes Ejemplo, C.A. · será el Adendum N.º 2 al contrato 0123</span>
+<div class="campo"><label>Nombre del tramo o ruta</label><div class="inp ph">Ej.: Troncal 3, Sector El Caimán</div></div>
+<div class="row" style="gap:10px;flex-wrap:nowrap"><div class="campo" style="flex:1"><label>Municipio</label><div class="inp ph">Municipio</div></div><div class="campo" style="flex:1"><label>Estado</label><div class="inp ph">Estado</div></div></div>
+<div class="row" style="gap:10px;flex-wrap:nowrap"><div class="campo" style="flex:1"><label>Postes</label><div class="inp ph">0</div></div><div class="campo" style="flex:1"><label>Recibida el</label><div class="inp">10/11/2026</div></div></div>
+<div class="campo"><label>Viene de</label><div class="row" style="gap:6px"><span class="seg on">Correo</span><span class="seg">Líder</span><span class="seg">Infraestructura</span></div></div>
+<div class="row" style="background:#E8EEFF;border-radius:12px;padding:10px 12px;font-size:12px;color:#1F45C4">Después: infraestructura aprueba y da la ODT; tú haces la propuesta y la planilla; el cliente firma; se sube el adendum.</div>
+<button class="btn pri" style="height:46px">Crear solicitud</button>
+</div>
+<span class="lbl" style="margin-top:12px">Semáforo de cada solicitud</span>
+<div class="card" style="gap:6px;font-size:13px"><span>1. Pólizas del cliente al día</span><span>2. Aprobada por infraestructura + ODT</span><span>3. Propuesta firmada</span><span>4. Planilla(s) de tendido</span><span>5. Contrato o adendum firmado y subido</span><span class="mut" style="margin-top:4px">En uso sin contrato o adendum: aviso rojo al administrador y a Legal.</span></div>
+</div><div class="col" style="width:440px;gap:12px">
+<span class="lbl">Sin contrato todavía: así sube el primero</span>
+<div class="card" style="gap:10px;padding:18px">
+<div class="tx"><b style="font-size:16px">Solicitud 1 · La Polar</b><span class="mut">Cliente de ejemplo · 2 postes · En uso</span></div>
+<div style="border-radius:14px;background:#FCEDEB;padding:14px;display:flex;flex-direction:column;gap:8px">
+<div class="row"><b style="flex:1;color:#A32117">Contrato VGT</b><span class="chip r">En uso sin contrato</span></div>
+<span style="font-size:12px;color:#A32117">Es la primera solicitud: aquí va el contrato. Las siguientes serán adendums.</span>
+<div style="border:2px dashed #E39A92;border-radius:12px;padding:12px;text-align:center;font-size:13px;font-weight:600;color:#A32117;background:#fff">Arrastra aquí el contrato VGT firmado</div>
+<div class="row" style="gap:8px;flex-wrap:nowrap"><div class="campo" style="flex:1"><label>N.º de contrato</label><div class="inp ph">Ej.: 0124</div></div><div class="campo" style="flex:1"><label>Firma</label><div class="inp ph">dd/mm/aaaa</div></div><div class="campo" style="flex:1"><label>Vence</label><div class="inp ph">dd/mm/aaaa</div></div></div></div>
+</div>
+<span class="lbl" style="margin-top:14px">Pestaña Servicio dedicado: el contrato del servicio</span>
+<div class="card" style="gap:10px;padding:18px">
+<div class="row" style="gap:8px;border-bottom:1px solid #E3E6EA;padding-bottom:10px"><span class="seg">Documentos</span><span class="seg on">Servicio dedicado</span><span class="seg">VGT</span></div>
+<div class="row"><b style="flex:1">Contrato de servicio dedicado</b><span class="chip ok">Firmado</span></div>
+<span class="mut">2 enlaces · 300 Mbps · firmado 02/05/2025 · vence 02/05/2026</span>
+<div class="row" style="gap:8px"><button class="btn chico">Ver contrato</button><button class="btn chico">Reemplazar</button><button class="btn chico">+ Adendum</button></div>
+<div class="row" style="padding-top:8px;border-top:1px solid #F0F2F4"><b style="flex:1">Colocation</b><span class="chip">No aplica</span></div>
+<span class="mut">Cada tipo tiene su lugar: el dedicado en su pestaña, VGT en la suya (contrato en la solicitud 1, adendums en las demás). Los dos usan el mismo bloque para arrastrar el archivo.</span>
+</div></div></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2240,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

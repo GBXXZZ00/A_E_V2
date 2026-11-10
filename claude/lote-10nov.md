@@ -6,7 +6,7 @@ Este repo es público: nada de datos reales en pruebas, capturas ni maquetas.
 ## Reglas para este lote (obligatorias)
 1. Las 7 reglas del lote 05/11 siguen vigentes: nunca quitar una función (inventario antes y después), evidencia con consulta y captura, pruebas contra datos reales, una sola fuente por número, publicar por partes, sin guion largo.
 2. Las partes marcadas con 🖼 tienen **maqueta APROBADA** en `claude/maquetas/lote-10nov/` (abrir los `.dc.html`; mandan sobre el texto si hay duda). El estilo final usa `base.css` y `app.css`. Se programa todo seguido, sin volver a pedir aprobación de diseño.
-3. Orden de ejecución: A (datos) → B, C, D, E, F, H, I → G (correo) → batería completa y revisión independiente. Referencia de maquetas (copia en `claude/maquetas/lote-10nov/`, abrir los `.dc.html`; lienzo vivo del administrador: https://claude.ai/artifact/PjFwv7wpZ7yYfC8CuE8W8a). Las maquetas ya están APROBADAS: no hay que volver a hacerlas → B, C, D, E, F → G (correo) → batería completa y revisión independiente.
+3. Orden de ejecución: A (datos) → B, C, D, E, F, H, I, J → G (correo) → batería completa y revisión independiente. Referencia de maquetas (copia en `claude/maquetas/lote-10nov/`, abrir los `.dc.html`; lienzo vivo del administrador: https://claude.ai/artifact/PjFwv7wpZ7yYfC8CuE8W8a). Las maquetas ya están APROBADAS: no hay que volver a hacerlas → B, C, D, E, F → G (correo) → batería completa y revisión independiente.
 4. Comisiones: referencia `privado.comision_filas3` igual al empezar y al terminar (este lote no cambia el cálculo).
 
 ---
@@ -132,6 +132,21 @@ Diagnóstico: el primer aliado real (10/11) dejó una solicitud en borrador sin 
 
 ## Parte I · Teléfono (maqueta 7)
 Comisiones (tarjetas que se deslizan, chips, por dueño, filas como tarjetas), hoja de comisión cerrada, Mi trabajo y cliente con todo cerrado. Barra de navegación abajo.
+
+## Parte J · VGT por solicitud 🖼 (maqueta 8)
+Diagnóstico del 10/11: la tarjeta VGT de la ficha (`dedicado-ficha.js`, función `vgt`) solo muestra número y fechas del primer tramo y **no tiene botón para subir el contrato**; la propuesta comercial está como requisito del cliente (debe ser por solicitud).
+Reglas (DECIDIDAS 10/11):
+1. **Por cliente:** expediente completo + 2 pólizas (responsabilidad civil general y patronal), con vencimiento y aviso 30 días antes. Las pólizas viven en la pestaña VGT ("Requisitos del cliente"); en Documentos queda una línea que lleva ahí. La propuesta comercial deja de ser requisito del cliente.
+2. **Por solicitud:** datos (tramo, municipio, estado, postes, recibida el, viene de), estado (Solicitada, Aprobada, En proyecto, En uso, Negada con motivo), ODT, **propuesta comercial firmada** (una por solicitud), **planillas de tendido** (una o varias).
+3. **Documento contractual:** la **primera** solicitud firmada lleva el **Contrato VGT** (número, fecha de firma, vencimiento, firma digital o física, archivo). **Cada solicitud siguiente lleva un Adendum N.º n a ese contrato**; la app propone cuál toca. El adendum hereda el vencimiento del contrato salvo que se escriba otro.
+4. Lo que no está en uso no se cuenta; una solicitud negada no pide pólizas (como hoy).
+5. **Aviso rojo** al administrador y a Legal: solicitud En uso sin contrato o adendum firmado.
+Pantalla:
+1. Pestaña VGT: tarjetas arriba (postes en uso y en proyecto, solicitudes, contrato con su vencimiento); Requisitos del cliente (pólizas); lista de solicitudes como tarjetas con sus chips (propuesta, planillas, ODT) y la franja del documento contractual (verde firmado, ámbar falta); historial plegado; **+ Nueva solicitud**.
+2. **Drawer de la solicitud**: estado, datos editables, documentos de la solicitud (Ver, + Agregar planilla) y el bloque del contrato o adendum con **zona para arrastrar el archivo firmado**, fecha de firma, vencimiento y firma; Guardar y Denegar solicitud. Todo deja bitácora e hilo.
+3. Migrar lo que hay: cada fila VGT de `dedicado_contratos` es una solicitud; las propuestas y planillas de `vgt_solicitud_docs` quedan en su solicitud; la "propuesta subida antes de las solicitudes" a nivel cliente pasa a la primera solicitud del cliente o queda como historial (preguntar al administrador si hay duda). Agregar el tipo de documento "Adendum".
+4. **Dónde se sube cada contrato:** el Contrato VGT se sube en el drawer de la **solicitud 1** (si no hay contrato todavía, ahí sale el bloque rojo "En uso sin contrato" con la zona para arrastrar, N.º, fecha de firma y vencimiento); la tarjeta de arriba dice "Ver contrato · está en la solicitud 1". Los adendums, en el drawer de cada solicitud siguiente. El **contrato de servicio dedicado** sigue en la pestaña **Servicio dedicado**, con el mismo bloque para arrastrar el archivo, Ver, Reemplazar y **+ Adendum** (también tipo Adendum).
+5. En Mi trabajo del abogado, "Por elaborar contrato" de VGT es por solicitud y dice si toca Contrato o Adendum N.º n.
 
 ## Parte G · Correo (Gmail) y clientes ISP
 Diagnóstico del correo de los últimos 30 días: 4 clientes ISP o dedicados que no existen en la app y 5 clientes que existen con 0 documentos. **Los nombres están en el traspaso del chat del proyecto (`claude/traspaso-chat.md` en el Project), no en este repo público.** El administrador los confirma al empezar esta parte.
