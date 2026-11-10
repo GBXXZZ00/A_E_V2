@@ -10,12 +10,12 @@
 <link rel="expect" href="#navListo" blocking="render">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="assets/img/icon-192.png">
-<link rel="stylesheet" href="assets/css/base.css?v=78">
-<link rel="stylesheet" href="assets/css/modulos.css?v=78">
-<link rel="stylesheet" href="assets/css/app.css?v=78">
+<link rel="stylesheet" href="assets/css/base.css?v=79">
+<link rel="stylesheet" href="assets/css/modulos.css?v=79">
+<link rel="stylesheet" href="assets/css/app.css?v=79">
 </head>
 <body>
-<header class="barra" id="barra"><a class="marca" href="inicio.html" aria-label="Inicio"><img class="logo" src="assets/img/logo.svg?v=78" alt="Airtek" width="96" height="12"><span>Empresas</span></a></header>
+<header class="barra" id="barra"><a class="marca" href="inicio.html" aria-label="Inicio"><img class="logo" src="assets/img/logo.svg?v=79" alt="Airtek" width="96" height="12"><span>Empresas</span></a></header>
 <main class="pagina">
   <a class="volver solo-pc" href="inicio.html" style="display:inline-flex"><svg class="i ch" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M11 6l-6 6 6 6"/></svg>Inicio</a>
   <div class="encabezado">
@@ -33,26 +33,45 @@
 
 <section class="hoja" id="hojaUsuario" role="dialog" aria-modal="true" aria-labelledby="tHoja" aria-hidden="true">
   <div class="cab"><h2 id="tHoja">Nuevo usuario</h2><button type="button" class="cerrar" data-cierra="1" aria-label="Cerrar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+  <!-- Lote 10/11 F: primero el cargo; la app pide solo lo de ese cargo y llena sola rol, espacio y equipo de comisiones -->
+  <div id="pasoCargo" class="hidden">
+    <p class="nota" style="margin-top:0">Paso 1 de 2 · ¿Qué cargo tiene?</p>
+    <div class="us-cargos" role="list">
+      <button type="button" class="us-cargo" data-cargo="lider"><b>Líder de ventas</b><small>Vende corporativo y PYME. Ve lo suyo.</small></button>
+      <button type="button" class="us-cargo" data-cargo="canales"><b>Canales de atención (ATC)</b><small>Cartas, pago, IP y cambios. Ve todo el equipo.</small></button>
+      <button type="button" class="us-cargo" data-cargo="abogado"><b>Abogado</b><small>Contratos y revisión de documentos.</small></button>
+      <button type="button" class="us-cargo" data-cargo="analista"><b>Analista</b><small>Apoya a los líderes con sus clientes.</small></button>
+      <button type="button" class="us-cargo" data-cargo="aliado"><b>Aliado comercial</b><small>Registra sus clientes desde el teléfono.</small></button>
+      <button type="button" class="us-cargo" data-cargo="gerencia"><b>Gerencia</b><small>Solo consulta.</small></button>
+      <button type="button" class="us-cargo" data-cargo="admin"><b>Administrador</b><small>Todo.</small></button>
+    </div>
+  </div>
   <form id="form" novalidate>
+    <p class="nota hidden" id="pasoDos" style="margin-top:0">Paso 2 de 2 · Solo lo que necesita este cargo. <button type="button" class="enlace" id="otroCargo">Cambiar cargo</button></p>
     <div class="fila-campos dos">
       <div><label class="rotulo" for="fNombre">Nombre y apellido</label><input class="campo" id="fNombre" maxlength="80" autocomplete="off" data-foco><div class="error" id="eNombre" role="alert"></div></div>
       <div><label class="rotulo" for="fUsuario">Usuario para entrar</label><input class="campo" id="fUsuario" maxlength="30" autocapitalize="none" autocomplete="off" spellcheck="false"><div class="error" id="eUsuarioF" role="alert"></div></div>
+      <div class="hidden" data-campo="aliado" style="grid-column:1/-1"><label class="rotulo" for="fAliado">Empresa del aliado</label><select class="campo" id="fAliado"><option value="">Elige la empresa</option></select><p class="nota">De la lista de aliados. Sin esto no ve sus solicitudes.</p><div class="error" id="eAliado" role="alert"></div></div>
+      <div data-campo="whatsapp"><label class="rotulo" for="fWhatsapp">WhatsApp</label><input class="campo" id="fWhatsapp" type="tel" inputmode="tel" maxlength="20" autocomplete="off"><div class="error" id="eWhatsapp" role="alert"></div></div>
+      <div data-campo="correo"><label class="rotulo" for="fCorreo">Correo</label><input class="campo" id="fCorreo" type="email" inputmode="email" autocapitalize="none" maxlength="120" autocomplete="off"><div class="error" id="eCorreo" role="alert"></div></div>
+      <div data-campo="codigo"><label class="rotulo" for="fCodigo">Número de vendedor</label><input class="campo" id="fCodigo" inputmode="numeric" maxlength="2" autocomplete="off"><p class="nota">Su número de vendedor en Odoo; con él se sabe de quién es cada orden.</p><div class="error" id="eCodigo" role="alert"></div></div>
+      <div class="hidden" id="zonaAnalista" style="grid-column:1/-1"><label class="rotulo" for="fAnalista">Analista</label><select class="campo" id="fAnalista"><option value="">Sin analista</option></select><p class="nota">Le llegan los pendientes de los clientes de este líder. Créalo primero en Usuarios con rol Analista.</p><div class="error" id="eAnalista" role="alert"></div></div>
+    </div>
+    <p class="nota" data-campo="notaCarta" style="margin:-6px 0 14px">El WhatsApp y el correo de un líder salen en la carta de bienvenida de sus clientes.</p>
+    <p class="nota us-info hidden" id="infoAliado">Entra por "Aliados comerciales". El equipo y los permisos se ponen solos.</p>
+    <details class="us-mas" id="masOpciones"><summary><b>Más opciones</b><small>Senior, coordinador, dedicados, gerencia</small></summary><div class="fila-campos dos">
       <div><label class="rotulo" for="fCargo">Cargo</label><input class="campo" id="fCargo" maxlength="80" autocomplete="off"><div class="error"></div></div>
       <div><label class="rotulo" for="fRol">Rol</label><select class="campo" id="fRol"><option value="lider">Líder</option><option value="analista">Analista</option><option value="analista_senior">Analista Senior</option><option value="analista_coord">Coordinador de analistas</option><option value="abogado">Legal</option><option value="aliado">Aliado</option><option value="admin">Administrador</option><option value="gerencia">Gerencia (solo lectura)</option></select><div class="error"></div></div>
       <div><label class="rotulo" for="fEquipo">Espacio</label><select class="campo" id="fEquipo"><option value="ventas">Ventas corporativas</option><option value="aliados">Aliados comerciales</option><option value="ambos">Los dos</option></select><div class="error"></div></div>
       <div><label class="rotulo" for="fEquipoCom">Equipo en comisiones</label><select class="campo" id="fEquipoCom"><option value="">Según su rol</option><option value="corporativas">Ventas corporativas</option><option value="canales">Canales de atención</option><option value="aliados">Aliado</option></select><div class="error" id="eEquipoCom" role="alert"></div></div>
-      <div class="hidden" id="zonaAnalista" style="grid-column:1/-1"><label class="rotulo" for="fAnalista">Analista</label><select class="campo" id="fAnalista"><option value="">Sin analista</option></select><p class="nota">Le llegan los pendientes de los clientes de este líder. Créalo primero en Usuarios con rol Analista.</p><div class="error" id="eAnalista" role="alert"></div></div>
-      <div><label class="rotulo" for="fCodigo">Número de vendedor</label><input class="campo" id="fCodigo" inputmode="numeric" maxlength="2" autocomplete="off"><div class="error" id="eCodigo" role="alert"></div></div>
-      <div><label class="rotulo" for="fWhatsapp">WhatsApp</label><input class="campo" id="fWhatsapp" type="tel" inputmode="tel" maxlength="20" autocomplete="off"><div class="error" id="eWhatsapp" role="alert"></div></div>
-      <div><label class="rotulo" for="fCorreo">Correo</label><input class="campo" id="fCorreo" type="email" inputmode="email" autocapitalize="none" maxlength="120" autocomplete="off"><div class="error" id="eCorreo" role="alert"></div></div>
     </div>
-    <p class="nota" style="margin:-6px 0 14px">El WhatsApp y el correo de un líder salen en la carta de bienvenida de sus clientes.</p>
     <div><label class="rotulo" for="fOdoo">Nombre en Odoo</label><input class="campo" id="fOdoo" maxlength="120" autocomplete="off"><p class="nota">Tal como sale en "Creado por" de las órdenes. Sirve para asignar las ventas solas.</p></div>
+    </details>
     <div id="zonaPin" style="margin-top:16px">
-      <label class="rotulo" for="fPin">PIN temporal</label>
+      <label class="rotulo" for="fPin">PIN de entrada</label>
       <div class="con-boton"><input class="campo" id="fPin" inputmode="numeric" maxlength="6" autocomplete="off"><button type="button" class="btn btn-2" id="generar">Generar</button></div>
       <div class="error" id="ePin" role="alert"></div>
-      <p class="nota">La persona lo cambia la primera vez que entra.</p>
+      <p class="nota">Entra con él sin tener que cambiarlo. Lo puede cambiar cuando quiera desde su cuenta.</p>
     </div>
     <div class="acciones"><button type="submit" class="btn" id="guardar">Guardar</button></div>
   </form>
@@ -63,17 +82,17 @@
       <button type="button" class="btn btn-peligro btn-chico" id="alternar">Desactivar</button>
     </div>
   </div>
-  <div class="pin-listo hidden" id="pinListo" role="status"><span class="quien-es" id="pinDe"></span><span>PIN temporal</span><b id="pinNuevo"></b><p>Dáselo a la persona. Solo se muestra esta vez y lo cambia al entrar.</p></div>
+  <div class="pin-listo hidden" id="pinListo" role="status"><span class="quien-es" id="pinDe"></span><span>PIN temporal</span><b id="pinNuevo"></b><p>Dáselo a la persona. Solo se muestra esta vez. Entra con él y lo puede cambiar desde su cuenta.</p></div>
   <div class="acciones hidden" id="zonaListo"><button type="button" class="btn" data-cierra="1">Listo</button></div>
 </section>
 
 <script src="assets/vendor/supabase.js?v=1"></script>
-<script src="assets/js/practica.js?v=78"></script>
-<script src="assets/js/supabase-client.js?v=78"></script>
-<script src="assets/js/comun.js?v=78"></script>
-<script src="assets/js/sesion.js?v=78"></script>
-<script src="assets/js/armazon.js?v=78"></script>
+<script src="assets/js/practica.js?v=79"></script>
+<script src="assets/js/supabase-client.js?v=79"></script>
+<script src="assets/js/comun.js?v=79"></script>
+<script src="assets/js/sesion.js?v=79"></script>
+<script src="assets/js/armazon.js?v=79"></script>
 <i id="navListo" hidden></i>
-<script src="assets/js/usuarios.js?v=78"></script>
+<script src="assets/js/usuarios.js?v=79"></script>
 </body>
 </html>

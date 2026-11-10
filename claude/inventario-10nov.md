@@ -56,3 +56,18 @@ Columna "Queda": **igual**, **movido a …** o **nuevo**. Se marca ✔ cuando la
 | Hoja: Carta (WhatsApp, Descargar, correo, Ya enviada, IP con lo más parecido y el pool) | igual + "Se envía a" con Cambiar; sin número: Descargar en color y Agregar número; al descargar "¿La vas a enviar por WhatsApp?"; "Descargada · por confirmar" con Ya la envié; aviso a las 2 horas |
 | Hoja: Más acciones (evento, cambiar de corte, excepción, No comisiona, corregir corte certificado, escribir nota) | movido a **Corte y comisión** (todo menos la nota) y la nota al **Hilo** |
 | Hoja: Hilo | igual, cerrado, con "Escribir una nota" |
+
+## Parte E · Aliados (`aliados.js`)
+| Función de hoy | Queda |
+|---|---|
+| Nueva solicitud: Empresa o Persona natural, RIF primero (disponible, cartera, otro, repetida, ilegible), casillas con Subir, Agregar acta y representante, contacto, Enviar | igual, **por pasos** (RIF y contacto → Documentos → Contacto → Revisa y envía) con barra fija "Te falta"; cada casilla con su barra mientras sube y lee ✔ (test20) |
+| Nuevo | Soltar todos los documentos juntos (cada uno a su casilla por el nombre) o uno sobre su casilla (escritorio) |
+| Correo de la empresa obligatorio | **opcional** (decidido 10/11, A4); si se escribe, debe ser válido |
+| Resultado en la hoja de la solicitud (estado, pasos de la IA) | igual + **pantalla de resultado** a pantalla completa: cartera, no disponible, revisando, lista, con observaciones, te falta, en revisión, excepción, no procede, instalada ✔ (test20) |
+| Lista: etiqueta Borrador | **Sin enviar · faltan N** (`al_fila.faltan`) |
+| Mis solicitudes | igual + chips Todas, Sin enviar, Listas, Revisión, Instaladas del mes |
+| Inicio: Nueva solicitud, Referir cliente, Lo que te toca | igual + tarjetas Listas para instalar, Sin enviar, Instaladas del mes ✔ (test20) |
+| Nuevo | Pestaña **Avisos** (historial; cada aviso abre su solicitud) ✔ (test20) |
+| Escribir al administrador por WhatsApp | igual + en la pantalla Revisando, Te falta, En revisión y en el registro mientras se revisa |
+| Avisos al aliado (bloqueada, aprobada, devuelta, pago) | igual + "Tu solicitud de X quedó sin enviar. Falta: …" una vez a la hora (`privado.avisos_borradores_aliado`) |
+| Registro del administrador (chips, por aliado, decidir, excepción, expediente) | igual + chip **Sin enviar** |

@@ -65,41 +65,57 @@ const entrarAliado = (ctx, persona) => entrarComo(ctx, persona, 'aliados');
     ok(nombre + ': el nombre del cliente se escapa (no ejecuta código)', !(await p.evaluate(() => window.__xss)) && (await p.textContent('#lista')).includes('<img'));
     ok(nombre + ': sin barra de navegación del equipo de ventas', (await p.locator('#navAbajo').count()) === 0);
     await p.screenshot({ path: 'capturas/t20-' + nombre + '-inicio.png' });
+    // Lote 10/11 E7 y E13: pestaña Avisos (cada aviso abre su solicitud) y tarjetas que filtran Mis solicitudes
+    ok(nombre + ': el inicio trae Listas para instalar, Sin enviar e Instaladas del mes', (await p.locator('.al-tarjetas [data-ircard]').count()) === 3);
+    await p.click('[data-tab="avisos"]'); await p.waitForSelector('.al-avisos .al-av');
+    ok(nombre + ': la pestaña Avisos muestra el historial', (await p.locator('.al-avisos .al-av').count()) === 2 && /Pago registrado/.test(await p.textContent('.al-avisos')));
+    await p.click('[data-tab="inicio"]'); await p.waitForSelector('.al-grande.prin');
 
     // ----- Nueva solicitud: cliente disponible -----
     await p.click('.al-grande.prin'); await p.waitForSelector('#hojaNueva.ver [data-subirn="rif_empresa:0"]');
-    ok(nombre + ': las demás casillas esperan al RIF', await p.isDisabled('[data-subirn="acta_constitutiva:0"]'));
+    // Lote 10/11 E1-E3: por pasos; en el paso 1 van el RIF y el contacto a la vez; abajo "Te falta"
+    ok(nombre + ': paso 1 de 4 con el RIF y el contacto en la misma pantalla', /Paso 1 de 4/.test(await p.textContent('#hojaNueva')) && (await p.locator('#n_tel').count()) === 1 && (await p.locator('[data-subirn="acta_constitutiva:0"]').count()) === 0);
+    ok(nombre + ': la barra de abajo dice lo que falta', /Te falta:.*RIF de la empresa/.test(await p.textContent('#pNueva')));
     await subirEn(p, '[data-subirn="rif_empresa:0"]');
-    await p.waitForSelector('.al-banda.azul:not(.av-push)'); ok(nombre + ': mientras lee dice que revisa la cartera', (await p.textContent('.al-banda:not(.av-push)')).includes('revisando la cartera'));
+    await p.waitForSelector('.al-banda.azul:not(.av-push)'); ok(nombre + ': mientras lee dice que revisa la cartera y deja llenar el contacto', (await p.textContent('.al-banda:not(.av-push)')).includes('revisando la cartera') && await p.isEditable('#n_tel'));
     await p.waitForSelector('.al-banda.verde');
     ok(nombre + ': RIF libre: Cliente disponible con el nombre', (await p.textContent('.al-banda.verde')).includes('PANADERÍA EJEMPLO'));
-    await p.waitForFunction(() => !document.querySelector('[data-subirn="rif_empresa:0"]') || document.querySelector('.al-cas .chip') && !/Subiendo/.test(document.querySelector('.al-cas').textContent));
+    await p.waitForFunction(() => !/Subiendo/.test(document.querySelector('#cNueva').textContent));
     ok(nombre + ': el RIF se guarda en Drive del cliente nuevo', m.al.subidas.some((c) => Number(c) >= 9100));
+    await p.fill('#n_correo', 'malo'); await p.fill('#n_tel', '0414 1234567');
+    await p.click('[data-acc="sigN"]');
+    ok(nombre + ': correo malo: error debajo del campo y no avanza', (await p.textContent('#e_correo')).includes('correo válido') && /Paso 1 de 4/.test(await p.textContent('#hojaNueva')));
+    await p.fill('#n_correo', 'rep@ejemplo.test'); await p.click('[data-acc="sigN"]'); await p.waitForSelector('[data-subirn="acta_constitutiva:0"]');
+    ok(nombre + ': paso 2 Documentos con la zona para soltar todos juntos', /Paso 2 de 4/.test(await p.textContent('#hojaNueva')) && /Te falta:/.test(await p.textContent('#pNueva')));
     for(const k of ['acta_constitutiva:0', 'cedula:1', 'rif_personal:1']){ await subirEn(p, '[data-subirn="' + k + '"]'); await p.waitForFunction((x) => !/Subiendo/.test(document.querySelector('[data-subirn="' + x + '"]').textContent), k); }
-    ok(nombre + ': Enviar sigue apagado sin contacto', await p.isDisabled('[data-acc="enviarN"]'));
-    await p.fill('#n_correo', 'malo'); await p.fill('#n_tel', '0414 1234567'); await p.fill('#n_correoEmp', 'empresa@ejemplo.test');
+    await p.click('[data-acc="sigN"]'); await p.waitForFunction(() => /Paso 3 de 4/.test(document.getElementById('hojaNueva').textContent));
+    ok(nombre + ': paso 3 Contacto trae lo escrito y el correo de la empresa es opcional', (await p.inputValue('#n_correo')) === 'rep@ejemplo.test' && /Si no tiene, déjalo vacío/.test(await p.textContent('#hojaNueva')));
+    await p.click('[data-acc="sigN"]'); await p.waitForSelector('[data-acc="enviarN"]');
+    ok(nombre + ': paso 4 Revisa y envía con todo completo', /Revisa y envía/.test(await p.textContent('#hojaNueva')) && /Todo completo/.test(await p.textContent('#pNueva')) && !(await p.isDisabled('[data-acc="enviarN"]')));
+    await p.screenshot({ path: 'capturas/lote10nov-E-' + nombre + '-paso4.png' });
     await p.click('[data-acc="enviarN"]');
-    ok(nombre + ': correo malo: error debajo del campo', (await p.textContent('#e_correo')).includes('correo válido'));
-    await p.fill('#n_correo', 'rep@ejemplo.test'); await p.click('[data-acc="enviarN"]');
-    await p.waitForSelector('#hojaSol.ver .al-pasos');
+    await p.waitForSelector('#alRes.ver');
+    ok(nombre + ': al enviar sale la pantalla "Revisando tu solicitud" con sus pasos', /Revisando tu solicitud/.test(await p.textContent('#alRes')) && (await p.locator('#alRes [data-res="whats"]').count()) === 1);
     ok(nombre + ': al enviar guarda el contacto y lanza la IA', llamo('solicitud_contacto').length >= 1 && llamo('solicitud_enviar').length === 1);
-    ok(nombre + ': pantalla de avance con los pasos', (await p.textContent('.al-pasos')).includes('Leyendo documentos') && (await p.textContent('.al-pasos')).includes('1 de 4'));
-    await p.screenshot({ path: 'capturas/t20-' + nombre + '-carga.png' });
-    await p.waitForSelector('#hojaSol .estado.verde', { timeout: 12000 });
-    ok(nombre + ': sola pasa a Lista para instalar', (await p.textContent('#hojaSol .estado')).includes('Lista para instalar'));
+    await p.screenshot({ path: 'capturas/lote10nov-E-' + nombre + '-revisando.png' });
+    await p.waitForFunction(() => /Puedes instalar/.test(document.getElementById('alRes').textContent), null, { timeout: 15000 });
+    ok(nombre + ': al terminar la IA la pantalla pasa sola a "¡Puedes instalar!" con Marcar instalación', (await p.locator('#alRes [data-res="form:curso"]').count()) === 1);
+    await p.screenshot({ path: 'capturas/lote10nov-E-' + nombre + '-lista.png' });
+    await p.click('#alRes [data-res="ver"]'); await p.waitForSelector('#hojaSol .estado.verde', { timeout: 12000 });
+    ok(nombre + ': Ver la solicitud deja el registro con Lista para instalar', (await p.textContent('#hojaSol .estado')).includes('Lista para instalar'));
     ok(nombre + ': en una solicitud lista el aliado puede escribir al administrador', (await p.locator('#hojaSol [data-acc="whats"]').count()) === 1);
     await p.click('[data-form="curso"]'); await p.waitForSelector('#hojaForm.ver #fFecha'); await p.click('#hojaForm [data-acc="guardarForm"]');
     await p.waitForSelector('#hojaSol .estado.azul');
     ok(nombre + ': marcar instalación en curso', llamo('solicitud_instalacion').length === 1 && (await p.textContent('#hojaSol .estado')).includes('Instalación en curso'));
     await p.click('#hojaSol [data-cierra]'); await p.waitForTimeout(350);
 
-    // ----- Cliente en cartera: referir desde el resultado -----
+    // ----- Cliente en cartera: pantalla de resultado y referir -----
     m.al.rifCaso = 'cartera';
     await p.click('.al-grande.prin'); await p.waitForSelector('#hojaNueva.ver [data-subirn="rif_empresa:0"]'); await p.waitForTimeout(300);
-    await subirEn(p, '[data-subirn="rif_empresa:0"]'); await p.waitForSelector('#hojaNueva [data-acc="referirSol"]');
-    ok(nombre + ': cliente en cartera: no deja seguir y ofrece referir', (await p.textContent('#hojaNueva .al-banda')).includes('Cliente en cartera') && await p.isDisabled('[data-subirn="acta_constitutiva:0"]'));
-    ok(nombre + ': el aviso dice claro que sus archivos no se guardaron (lote 5)', (await p.textContent('#hojaNueva .al-banda')).includes('Sus archivos no se guardaron'));
-    await p.click('#hojaNueva [data-acc="referirSol"]'); await p.waitForSelector('#hojaForm.ver #fRif');
+    await subirEn(p, '[data-subirn="rif_empresa:0"]'); await p.waitForSelector('#alRes.ver [data-res="referirSol"]');
+    ok(nombre + ': cliente en cartera: pantalla "Este cliente ya es de la oficina" con Referir cliente', /ya es de la oficina/.test(await p.textContent('#alRes')) && /solo leímos el RIF/.test(await p.textContent('#alRes')));
+    ok(nombre + ': debajo, la solicitud dice claro que sus archivos no se guardaron (lote 5)', (await p.textContent('#hojaNueva .al-banda')).includes('Sus archivos no se guardaron'));
+    await p.click('#alRes [data-res="referirSol"]'); await p.waitForSelector('#hojaForm.ver #fRif');
     ok(nombre + ': el RIF del referido viene leído y fijo', await p.isDisabled('#fRif') && (await p.inputValue('#fRif')).includes('J-'));
     await p.click('#hojaForm [data-acc="guardarForm"]'); await p.waitForTimeout(400);
     ok(nombre + ': referido enviado con la solicitud', llamo('referido_crear').length === 1 && llamo('referido_crear')[0][2].p_solicitud > 0);
@@ -109,8 +125,9 @@ const entrarAliado = (ctx, persona) => entrarComo(ctx, persona, 'aliados');
     await p.click('.al-grande.prin'); await p.waitForSelector('#hojaNueva.ver [data-subirn="rif_empresa:0"]'); await p.waitForTimeout(300);
     await subirEn(p, '[data-subirn="rif_empresa:0"]'); await p.waitForSelector('#hojaNueva .al-banda.ambar');
     ok(nombre + ': RIF ilegible: pide una foto más clara y deja subir de nuevo', (await p.textContent('#hojaNueva .al-banda')).includes('foto más clara') && !(await p.isDisabled('[data-subirn="rif_empresa:0"]')));
-    m.al.rifCaso = 'otro'; await subirEn(p, '[data-subirn="rif_empresa:0"]'); await p.waitForSelector('#hojaNueva .al-banda:not(.azul):not(.ambar)');
-    ok(nombre + ': en gestión por otro: sin referir', (await p.textContent('#hojaNueva .al-banda')).includes('Otra persona') && (await p.locator('#hojaNueva [data-acc="referirSol"]').count()) === 0);
+    m.al.rifCaso = 'otro'; await subirEn(p, '[data-subirn="rif_empresa:0"]'); await p.waitForSelector('#alRes.ver');
+    ok(nombre + ': en gestión por otro: pantalla "No disponible por ahora", sin referir', /No disponible por ahora/.test(await p.textContent('#alRes')) && (await p.locator('#alRes [data-res="referirSol"]').count()) === 0 && (await p.textContent('#hojaNueva .al-banda')).includes('Otra persona'));
+    await p.click('#alRes [data-res="cerrar"]');
     if(nombre === 'tel') await p.screenshot({ path: 'capturas/t20-tel-otro.png' });
     await p.click('#hojaNueva .hoja-pie [data-cierra]'); await p.waitForTimeout(350);
 
