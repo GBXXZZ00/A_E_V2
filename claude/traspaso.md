@@ -1,6 +1,16 @@
 # Traspaso (se actualiza al cerrar cada sesión)
 
-Actualizado: 06/11/2026, LOTE 05/11 TERMINADO (una versión por parte). Publicado: `?v=74` (partes G, A, B, C, D, E y F).
+Actualizado: 10/11/2026, LOTE 10/11 EN CURSO (una versión por parte). Publicado: `?v=75` (parte A).
+
+## LOTE 10/11 (`claude/lote-10nov.md`): EN CURSO
+Referencia de comisiones (`privado.comision_filas3`) al empezar: septiembre 46/41, octubre 83/75, noviembre 55/4. Inventario en `claude/inventario-10nov.md`.
+- **Parte A HECHA (v75)**. Migraciones `lote10_a2_churn_reglas`, `lote10_a3_ip_pool`, `lote10_a3_ip_pool_b`, `lote10_a4_ia_aliado_y_casillas`; SQL de churn en `supabase/pruebas/lote_10nov_a2_churn.sql`.
+  - A1: `actualizar.js` reconoce `ULTSUPENSION` / `ULTSUSPENSION` y `ULTACTIVACION` / `ULT_ACTIVACION`; 01-01-1900 (y años menores a 1990) quedan vacíos. test51 con un TAD de ejemplo (3 de 5 con fechas). **Falta: el administrador sube el TAD y se verifica `con_fechas > 0`.**
+  - A2: `privado.churn_clase` (12 casos en SQL, todos bien), `srv_base` usa las reglas, `privado.srv_churn` y `churn_revisar()` (solo administrador). Hoy, sin fechas en el TAD: normal 3.257, posible 358, infancia 1, baja 74; "fechas por revisar" 327 (suspendidos sin fecha: bajan con el TAD nuevo). `churn_visible` sigue en `no`. Reglas en `reglas-negocio.md`.
+  - A3: el reporte de IP guarda las filas DISPONIBLE con su IP (`ip_reporte_filas.est`); `privado.ip_pool` propone las siguientes libres después de la última asignada (prueba deshecha: última .160, propone .161, .162, .163). La hoja de comisión las muestra arriba "Posible IP, confírmala en el sistema técnico" con "Usar esta IP" (nunca se pone sola). **Hay que volver a subir el reporte de IP** para que entren las DISPONIBLE.
+  - A4: reglas.mjs VERSION 6 (tabla Contratos | Aliados en `ia-reglas.md`): en aliados correo distinto, correo de la empresa, junta vencida, domicilio y duración son observación (Lista con observaciones); basta un representante aunque la firma sea conjunta. En las dos: RIF sin vencimiento con fecha de inscripción o actualización = Digital. Lector: pide `fecha_actualizacion` y busca mejor las fechas; RIF y cédula con el modelo rápido (Flash). `ia_trabajo` manda `cliente.aliado`; `ia_archivo_datos` manda `casillas`. test16 con 9 casos nuevos.
+  - A5 (informe, sin cambios): duplicados por nombre (3 candidatos con RIF casi igual, se le mostraron al administrador por id para que decida); Odoo desde el 01/09: 191 órdenes, 123 cruzan; de las 68 que no: 23 canceladas, 27 en curso, 18 realizadas sin instalación (8 sin cliente en la app, 5 del mismo cliente con otra instalación cerca, 1 con instalación sin orden cerca, 4 sin instalación). Dueño: `creador_id` vacío en todas las órdenes aunque 178 de 191 creadores coinciden con un perfil; `vendedor_id` solo en 2 de 2.266. Instalaciones desde el 01/09: 191, 18 sin dueño real, 50 sin orden (27 sin orden, 23 manual).
+  - Comisiones después: 46/41, 83/75, 55/4 (iguales).
 
 ## LOTE 05/11 (`claude/lote-05nov.md`): HECHO (v68 a v74)
 Referencia de comisiones (`privado.comision_filas3`) al empezar: septiembre 46/41, octubre 83/75, noviembre 34/4.

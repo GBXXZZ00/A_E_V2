@@ -212,10 +212,12 @@
           // Lote 28/10: última suspensión, última habilitación y estatus actual, si el TAD los trae (los nombres cambian: se buscan por palabra)
           // Lote 05/11 B1: más nombres posibles (suspensión también se llama "corte"; habilitación, "reconexión" o "activación")
           const libre = (h) => h !== COLUMNAS.es && h !== COLUMNAS.f;
-          idx.us = cab.findIndex((h) => /susp/.test(h) && /fec|ult|^suspension$/.test(h)); if(idx.us < 0) idx.us = cab.findIndex((h) => /susp/.test(h) && libre(h));
+          // Lote 10/11 A1: el TAD real trae ULTSUPENSION (sin la primera "s") y ULTACTIVACION (pegada); 01-01-1900 = nunca (fechaIso lo deja vacío)
+          const SUSP = /sus?pen|susp/;
+          idx.us = cab.findIndex((h) => SUSP.test(h) && /fec|ult|^sus?pension$/.test(h)); if(idx.us < 0) idx.us = cab.findIndex((h) => SUSP.test(h) && libre(h));
           if(idx.us < 0) idx.us = cab.findIndex((h) => /(^|_)(fec\w*|ult\w*)_corte|corte_(fec|ult)/.test(h) && libre(h));
           idx.uh = cab.findIndex((h) => /habilit|reactiv|reconex/.test(h) && libre(h));
-          if(idx.uh < 0) idx.uh = cab.findIndex((h) => /(fec\w*|ult\w*)_activ/.test(h) && libre(h));
+          if(idx.uh < 0) idx.uh = cab.findIndex((h) => /(fec\w*|ult\w*)_activ|^ult_?activ/.test(h) && libre(h));
           idx.ea = cab.findIndex((h) => /(status|estatus|estado)_actual/.test(h)); if(idx.ea < 0) idx.ea = cab.findIndex((h) => h === 'status' || h === 'estatus');
           colsFechas = { suspension: idx.us >= 0 ? cab[idx.us] : null, habilitacion: idx.uh >= 0 ? cab[idx.uh] : null, estatus_actual: idx.ea >= 0 ? cab[idx.ea] : null }; } }
         else if(++vistas >= 6) return false;
@@ -246,7 +248,8 @@
       }
       if(!hay){ total--; return true; }
       if(tipo === 'cambios' && !o.codigo){ total--; return true; }
-      if(tipo === 'ip' && /^disponible$/i.test(o.estado || '')){ fuera++; return true; }   // IP libres, sin cliente
+      // Lote 10/11 A3: las IP libres (sin cliente) también se mandan, solo con su IP, para proponer la siguiente del pool
+      if(tipo === 'ip' && /^disponible$/i.test(o.estado || '')){ fuera++; datos.push({ estado: 'DISPONIBLE', ipv4: o.ipv4 || '', ipv6: o.ipv6 || '' }); return true; }
       if(tipo === 'instalaciones' && !esEmpresa(o.categoria, o.profile, soloDoc(o.cedula), conocidos)){ fuera++; return true; }
       if(tipo === 'instalaciones' && /^\d{4}-\d\d-\d\d/.test(o.feccump || '') && (!desde || o.feccump < desde)) desde = o.feccump.slice(0, 10);
       if(tipo === 'base_vieja'){ const r = soloDoc(o.rif); if(r) rifs.push(r); }
@@ -278,7 +281,7 @@
     if(a.resultado && a.sinFechas) return '<small>' + esc(a.resultado) + '</small>' + avisoSinFechas(a.colsFechas);
     if(a.resultado) return '<small>' + esc(a.resultado) + '</small>';
     if(a.tipo === 'dedicados') return '<small>' + plural(a.clientes, 'cliente', 'clientes') + ' y ' + plural(a.enlaces, 'enlace', 'enlaces') + '. Se aplica al subirlo; no toca comisiones</small>';
-    if(a.tipo === 'ip') return '<small>' + plural(a.datos.length, 'IP asignada', 'IP asignadas') + (a.fuera ? ' · ' + num(a.fuera) + ' disponibles quedan fuera' : '') + '. Llena la IP de los servicios PYME que cuadran</small>';
+    if(a.tipo === 'ip') return '<small>' + plural(a.datos.length - (a.fuera || 0), 'IP asignada', 'IP asignadas') + (a.fuera ? ' · ' + num(a.fuera) + ' disponibles (se usan para proponer la siguiente IP del pool)' : '') + '. Llena la IP de los servicios que cuadran</small>';
     if(a.tipo === 'cambios') return '<small>' + plural(a.datos.length, 'cambio', 'cambios') + '. Pone la fecha exacta de los cambios de Migraciones</small>';
     if(a.tipo === 'tad'){
       const ab = idxEstado && idxEstado.abierta; const i = lista.indexOf(a);

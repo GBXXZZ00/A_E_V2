@@ -598,7 +598,7 @@
       '<div class="cp-doc"><span><b>Proforma de instalación</b><small>' + esc(sv.plan || 'Servicio de internet') + ' · contrato ' + esc(String(sv.codigo || '').replace(/^0+/, '')) + '</small></span><button type="button" class="enlace" data-cp-pdf="proforma">Ver PDF</button></div>' +
       ((sv.carta || {}).puede ? '<div class="cp-doc"><span><b>Carta de bienvenida</b><small>Con los datos del líder y la IP</small></span><button type="button" class="enlace" data-cp-pdf="bienvenida">Ver PDF</button></div>'
         : '<p class="nota-chica">La carta sale cuando la instalación tenga dueño. Por ahora va solo la proforma.</p>') +
-      '<div class="chk"><span>IP del servicio<small>' + esc(sinIp ? 'Falta: la carta dirá "Pendiente por asignar"' : [sv.ip, sv.ip6].filter(Boolean).join(' · ')) + '</small></span>' + (F.puedo.ip ? '<button type="button" class="mini" id="profIp">' + (sinIp ? 'Escribir la IP a mano' : 'Cambiar') + '</button>' : '') + '</div>' +
+      '<div class="chk"><span>IP del servicio<small>' + esc(sinIp ? 'Falta: la carta dirá "Pendiente por asignar"' : [sv.ip, sv.ip6].filter(Boolean).join(' · ')) + '</small></span>' + (F.puedo.ip ? '<button type="button" class="mini" id="profIp">' + (sinIp ? 'Escribir IP' : 'Cambiar') + '</button>' : '') + '</div>' +
       (sinIp && F.puedo.ip ? '<div class="ip-par" id="ipPar" data-servicio="' + esc(sv.id) + '"><span class="cargando-linea"><i></i>Buscando lo más parecido en el reporte de IP</span></div>' : '');
     if(soloVe) h += '<p class="nota-chica">Es un cliente de aliado: la carta y proforma la envía Canales de atención.</p>';
     else {
@@ -821,10 +821,14 @@
     try { if(!parecidos || parecidos.sid !== sid) parecidos = Object.assign({ sid }, await rpc('ip_parecidos', { p_servicio: sid })); }
     catch (e) { z.innerHTML = '<p class="nota-chica">No se pudo buscar en el reporte de IP: ' + esc(e.message) + '</p>'; return; }
     const l = parecidos.filas || [];
-    if(parecidos.sin_reporte || !l.length){ z.innerHTML = '<p class="nota-chica">' + (parecidos.sin_reporte ? 'Todavía no se ha subido el reporte de IP.' : 'No cuadró en el reporte de IP y no hay nada parecido. Escríbela a mano.') + '</p>'; return; }
+    // Lote 10/11 A3: las siguientes IP libres del pool, en orden; el analista la confirma en el sistema técnico y la elige con un toque
+    const pool = parecidos.pool || [];
+    const poolHtml = pool.length ? '<div class="estado azul chico"><small><b>Posible IP, confírmala en el sistema técnico.</b> Son las siguientes libres del pool, en orden.</small></div>' +
+      pool.map((x) => '<div class="ip-op"><span><b>' + esc([x.ip, x.ip6].filter(Boolean).join(' · ')) + '</b><small>Libre en el reporte de IP</small></span><button type="button" class="btn btn-chico" data-ip-fila="' + esc(x.id) + '">Usar esta IP</button></div>').join('') : '';
+    if(parecidos.sin_reporte || !l.length){ z.innerHTML = poolHtml + '<p class="nota-chica">' + (parecidos.sin_reporte ? 'Todavía no se ha subido el reporte de IP.' : 'No cuadró en el reporte de IP y no hay nada parecido por ONT, código o nombre. Si no es ninguna del pool, escríbela.') + '</p>'; return; }
     const fila = (x) => '<div class="ip-op"><span><b>' + esc([x.nombre || 'Sin nombre', x.sucursal ? 'sucursal ' + x.sucursal : '', x.ip || x.ip6].filter(Boolean).join(' · ')) + '</b><small>' + esc(x.por + (x.ont ? ' · ONT ' + x.ont : '') + (x.codigo ? ' · código ' + x.codigo : '')) + '</small></span>' +
       '<button type="button" class="btn btn-chico" data-ip-fila="' + esc(x.id) + '">Usar esta IP</button></div>';
-    z.innerHTML = '<div class="estado ambar chico"><small>No cuadró en el reporte de IP por sucursal, código y ONT. Lo más parecido:</small></div>' + (todos ? l : l.slice(0, 1)).map(fila).join('') +
+    z.innerHTML = poolHtml + '<div class="estado ambar chico"><small>No cuadró en el reporte de IP por sucursal, código y ONT. Lo más parecido:</small></div>' + (todos ? l : l.slice(0, 1)).map(fila).join('') +
       (!todos && l.length > 1 ? '<button type="button" class="enlace" id="ipOtros">Ver otros parecidos (' + (l.length - 1) + ')</button>' : '');
   }
   async function usarIp(b){

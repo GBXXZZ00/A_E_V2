@@ -43,6 +43,35 @@ Estado: SEGUIR = se queda como estaba; CAMBIAR = propongo otra cosa; CONFIRMAR =
 20. **Persona natural:** solo cédula y RIF personal, más contacto. SEGUIR.
 21. **Varios documentos en un solo PDF.** La pantalla de subida YA deja marcar un archivo en varias casillas (por ejemplo cédula y RIF): no hay que tocar `ficha.js`. Lo nuevo es solo de la IA: lee el archivo una vez, devuelve cada documento con su página y, si encuentra uno que no se marcó, lo avisa en el resultado ("en el archivo de la cédula también hay un RIF personal, página 2"). No lo marca sola: el aviso dice qué hacer. No se pide separar archivos. PROPUESTA AJUSTADA 09/10, falta el OK.
 
+## Contratos | Aliados (Lote 10/11 A4, reglas versión 6, decidido 10/11)
+La corrida es de aliado cuando viene de una solicitud de aliado (`ia_trabajo` manda `cliente.aliado`). Lo que no aparece en la tabla es igual en los dos.
+
+| Regla | Contratos | Aliados |
+|---|---|---|
+| 1 Cédula vigente | Bloquea (excepción posible) | Igual |
+| 2 Cruce expedición más 10 años | A mano si no cuadra | Igual |
+| 3 y 6 RIF vigente | Viejo por su vencimiento; Digital siempre. **Nuevo:** sin vencimiento pero con fecha de inscripción o de última actualización = Digital y vale | Igual |
+| 4 Nombre de la cédula igual al del RIF | Bloquea si no se parece | Igual |
+| 5 Cédula vencida con excepción | Sí | Igual |
+| 7 Razón social del acta igual a la del RIF | Bloquea | Igual |
+| 8 Domicilio distinto al RIF | Bloquea y pide el acta | **Observación** (sigue sin frenar al aliado) |
+| 9 Fecha de inscripción manda | Sí | Igual |
+| 10 Duración de la empresa vencida | Bloquea y pide el acta | **Observación** (sigue sin frenar al aliado) |
+| 11 Conatel solo ISP | Sí | No aplica |
+| 12 y 13 Junta vigente y cláusula de permanencia | Sí | Igual |
+| 14 Junta vencida | Bloquea (excepción posible) | **Observación** ("Lista con observaciones"): "Sube el acta de asamblea donde se ratifica la junta". No bloquea si el representante está en el acta |
+| 15 Firmante en la junta vigente | Bloquea si no está | Igual |
+| 16 Régimen de firma | Conjunta y/o separada = separada | Igual |
+| 17 Firma conjunta | Todos los que exige la cláusula | **Basta uno** de la junta vigente; no se le pide el segundo al aliado |
+| 18 Contacto del firmante | Falta teléfono o correo: bloquea | Igual |
+| 18b Correo de la empresa que falta | Bloquea | **Observación** (no frena) |
+| 18c Correo que no se parece al nombre | Revisar a mano (excepción posible) | **Observación** (no frena) |
+| 19 Cédula repetida | Aviso | Igual |
+| 20 Persona natural | Cédula, RIF y contacto | Igual |
+| 21 Documento sin marcar | Aviso | Igual |
+
+Lectura (las dos): el lector ahora pide también `fecha_actualizacion` del RIF y insiste en buscar las fechas en todo el documento (esquinas, sellos, reverso, años de dos dígitos y en letras). RIF y cédula de una sola casilla se leen con el modelo rápido (Flash, ajuste `modelo_rapido`); actas y archivos combinados siguen con el Pro.
+
 ## Excepciones
 Las concede solo el administrador, con motivo, y quedan en la bitácora: cédula vencida, junta vencida y firmante fuera de la junta (poder).
 

@@ -1,7 +1,7 @@
 // Reglas de la revisión con IA (claude/ia-reglas.md). La IA solo lee; aquí se decide, siempre igual con los mismos datos.
 // Corre en la función de borde ia_revisar y en las pruebas (pruebas/test16.js). Sin dependencias.
 
-export const VERSION_REGLAS = '5';
+export const VERSION_REGLAS = '6';
 // Lote 05/11 A4: nombres completos de las actas que se piden (mandan en toda la app)
 export const ACTAS = { junta: 'Acta de asamblea de ratificación o cambio de junta directiva', razon: 'Acta de asamblea de cambio de razón social', domicilio: 'Acta de asamblea de cambio de domicilio fiscal', duracion: 'Acta de asamblea de prórroga de la duración' };
 
@@ -53,7 +53,7 @@ export function nombreCasilla(casilla, numero){
 /*
   e = {
     hoy: 'AAAA-MM-DD',
-    cliente: { nombre, es_natural, regimen_firma, es_isp },
+    cliente: { nombre, es_natural, regimen_firma, es_isp, aliado },   // aliado: la corrida es de una solicitud de aliado (Lote 10/11 A4)
     representantes: [{ orden, nombre, correo, telefono }],
     faltantes: [{ k, n, t, e: 'falta'|'devuelto', dato }],      // privado.faltantes
     documentos: [{ id, casilla, numero, estado, archivos: [archivo_id] }],   // solo archivos vigentes
@@ -64,6 +64,7 @@ export function nombreCasilla(casilla, numero){
 */
 export function evaluar(e){
   const hoy = e.hoy; const c = e.cliente || {}; const docs = e.documentos || []; const lect = e.lecturas || {};
+  const ali = !!c.aliado;   // Lote 10/11 A4: reglas de aliados (claude/ia-reglas.md, tabla Contratos | Aliados)
   const exc = e.excepciones || [];
   const puntos = []; const marcas = {}; const usados = new Set();
   const punto = (id, titulo, estado, detalle, extra) => puntos.push(Object.assign({ id, titulo, estado, detalle: detalle || '' }, extra || {}));
@@ -139,6 +140,8 @@ export function evaluar(e){
     if(d.casilla === 'rif_personal'){
       const venc = fecha(h.fecha_vencimiento); const datos = { nombre: h.nombre || null, numero: h.numero || null, vence: venc };
       // Corrida 14/10 tarde: el RIF Digital v2.0 no vence; el viejo vale si su vencimiento no pasó
+      // Lote 10/11 A4: sin vencimiento pero con fecha de inscripción o de última actualización: es RIF Digital y vale
+      if(!venc && h.formato !== 'rif_digital' && (fecha(h.fecha_inscripcion) || fecha(h.fecha_actualizacion))){ marca(d, 'bien', null, 'RIF Digital: no vence (trae fecha de ' + (fecha(h.fecha_actualizacion) ? 'última actualización ' + fechaTexto(fecha(h.fecha_actualizacion)) : 'inscripción ' + fechaTexto(fecha(h.fecha_inscripcion))) + ').', h, datos); return; }
       if(h.formato === 'rif_digital' && !venc){ marca(d, 'bien', null, 'RIF Digital v2.0: no vence.', h, datos); return; }
       // Dice digital pero trae una fecha vencida: puede ser un RIF viejo o la fecha de actualización; lo ve una persona
       if(h.formato === 'rif_digital' && venc < hoy){ marca(d, 'revisar_a_mano', null, 'Parece RIF Digital pero trae fecha ' + fechaTexto(venc) + '. Confirmar si es el viejo vencido.', h, datos); return; }
@@ -148,6 +151,8 @@ export function evaluar(e){
     }
     if(d.casilla === 'rif_empresa'){
       const venc = fecha(h.fecha_vencimiento); const datos = { nombre: h.razon_social || h.nombre || null, numero: h.numero || null, vence: venc };
+      // Lote 10/11 A4: sin vencimiento pero con fecha de inscripción o de última actualización: es RIF Digital y vale
+      if(!venc && h.formato !== 'rif_digital' && (fecha(h.fecha_inscripcion) || fecha(h.fecha_actualizacion))){ marca(d, 'bien', null, 'RIF Digital: no vence (trae fecha de ' + (fecha(h.fecha_actualizacion) ? 'última actualización ' + fechaTexto(fecha(h.fecha_actualizacion)) : 'inscripción ' + fechaTexto(fecha(h.fecha_inscripcion))) + ').', h, datos); return; }
       if(h.formato === 'rif_digital' && !venc){ marca(d, 'bien', null, 'RIF Digital v2.0: no vence.', h, datos); return; }
       // Dice digital pero trae una fecha vencida: puede ser un RIF viejo o la fecha de actualización; lo ve una persona
       if(h.formato === 'rif_digital' && venc < hoy){ marca(d, 'revisar_a_mano', null, 'Parece RIF Digital pero trae fecha ' + fechaTexto(venc) + '. Confirmar si es el viejo vencido.', h, datos); return; }
@@ -185,15 +190,20 @@ export function evaluar(e){
   Object.keys(numerosCed).forEach((n) => { if(numerosCed[n].length > 1) punto('duplicado_' + n, 'Cédula repetida', 'aviso', 'La misma cédula está en los representantes ' + numerosCed[n].join(' y ') + '.'); });
 
   // Lo que falta en el expediente (documentos y contacto)
+  // Lote 10/11 A4: en aliados, el correo de la empresa que falta es observación (no frena)
+  const obsAli = (f) => ali && f.k === 'correo_empresa';
   (e.faltantes || []).filter((f) => f.e === 'falta').forEach((f) => {
+    if(obsAli(f)){ punto('falta_' + f.k + '_' + f.n, 'Falta ' + f.t, 'aviso', 'Agrégalo cuando lo tengas. No frena la instalación.'); return; }
     punto('falta_' + f.k + '_' + f.n, 'Falta ' + f.t, 'bloquea', f.dato ? 'Hay que escribirlo en el expediente.' : 'No está en el expediente.', { falta: f.t });
   });
-  if(!c.es_natural && !(e.faltantes || []).some((f) => f.dato)){
+  if(!c.es_natural && !(e.faltantes || []).some((f) => f.dato && !obsAli(f))){
     // Lote 05/11 A4: el correo personal del representante se parece a su nombre o apellido; si no, revisar a mano (se acepta por excepción)
     const raros = (e.representantes || []).map((r) => Object.assign({}, r, { nombre: r.nombre || nombresRep[r.orden] || null })).filter((r) => r.correo && r.nombre && !correoParecido(r.correo, r.nombre));
     const x = excPunto('contacto');
     if(!raros.length) punto('contacto', 'Teléfono y correo del representante', 'ok', 'Están en el expediente.');
     else if(x) punto('contacto', 'Correo del representante', 'ok', 'Excepción: ' + x.motivo, { excepcion: x.motivo });
+    // Lote 10/11 A4: en aliados es observación (no frena); en contratos sigue para revisar a mano
+    else if(ali) punto('contacto', 'Correo del representante', 'aviso', raros.map((r) => 'El correo ' + r.correo + ' no se parece a ' + r.nombre).join('. ') + '. Confírmalo con el cliente.');
     else punto('contacto', 'Correo del representante', 'mano', raros.map((r) => 'El correo ' + r.correo + ' no se parece a ' + r.nombre).join('. ') + '. Confirma que es suyo.', { excepcionable: true });
   }
 
@@ -236,6 +246,8 @@ export function evaluar(e){
         const base = (Number(acta.duracion_anos) > 0 ? anos + ' años' : 'No dice la duración en ninguna página: se toman 30 años') + ' desde el ' + fechaTexto(inscActa);
         if(vence >= hoy) punto('duracion', 'Duración de la empresa', 'ok', base + '. Vigente hasta el ' + fechaTexto(vence) + '.', { pagina: pg(actaC) });
         else if(ult && masAnios(ult._insc, 10) >= hoy) punto('duracion', 'Duración de la empresa', 'ok', base + ' venció el ' + fechaTexto(vence) + ', pero la asamblea inscrita el ' + fechaTexto(ult._insc) + ' la renueva hasta el ' + fechaTexto(masAnios(ult._insc, 10)) + '.', { pagina: pg(ult) });
+        // Lote 10/11 A4: en aliados la duración vencida no frena (observación)
+        else if(ali) punto('duracion', 'Empresa vencida', 'aviso', base + ': venció el ' + fechaTexto(vence) + '. Sube el acta de prórroga cuando la tengas.', { pagina: pg(actaC), falta: ACTAS.duracion });
         else punto('duracion', 'Empresa vencida', 'bloquea', base + ': venció el ' + fechaTexto(vence) + '.', { pagina: pg(actaC), falta: ACTAS.duracion, pedir: true });
       }
 
@@ -255,6 +267,8 @@ export function evaluar(e){
         const tope = masAnios(designa._insc, 10); const x = excPunto('junta');
         if(venceJ >= hoy) punto('junta', 'Junta vigente', 'ok', 'Designada en el acta inscrita el ' + fechaTexto(designa._insc) + ' por ' + anosJ + ' años. Vigente hasta el ' + fechaTexto(venceJ) + '.', { pagina: pg(designa) });
         else if(perm && tope >= hoy) punto('junta', 'Junta vigente por cláusula de permanencia', 'ok', 'Su período venció el ' + fechaTexto(venceJ) + ', pero la cláusula de permanencia la mantiene hasta el ' + fechaTexto(tope) + '.', { pagina: pg(designa) });
+        // Lote 10/11 A4: en aliados, junta vencida con el representante en el acta: Lista con observaciones (los firmantes se revisan aparte)
+        else if(ali && !x) punto('junta', 'Junta vencida', 'aviso', 'Designada en el acta inscrita el ' + fechaTexto(designa._insc) + ': venció el ' + fechaTexto(venceJ) + '. Sube el acta de asamblea donde se ratifica la junta.', { pagina: pg(designa), falta: ACTAS.junta });
         else if(x) punto('junta', 'Junta vencida', 'ok', 'Venció el ' + fechaTexto(venceJ) + '. Excepción: ' + x.motivo, { pagina: pg(designa), excepcion: x.motivo });
         else punto('junta', 'Junta vencida', 'bloquea', 'Designada en el acta inscrita el ' + fechaTexto(designa._insc) + ' por ' + anosJ + ' años: venció el ' + fechaTexto(venceJ) + '.' + (perm ? ' Tenía cláusula de permanencia, pero ya pasaron 10 años.' : ''), { pagina: pg(designa), falta: ACTAS.junta, pedir: true, excepcionable: true });
       }
@@ -291,7 +305,8 @@ export function evaluar(e){
           else if(bien('cedula', n) && bien('rif_personal', n)) completos.push(nom);
           else if(ps.includes('revisar_a_mano') && !ps.includes('problema')) dudosos.push(nom);
         });
-        const necesita = conjunta ? 2 : 1; const x = excPunto('firmantes');
+        // Lote 10/11 A4: en aliados basta un representante de la junta vigente, aunque la firma sea conjunta
+        const necesita = conjunta && !ali ? 2 : 1; const x = excPunto('firmantes');
         const reg = conjunta ? 'conjunta' : conRegimen.regimen_firma === 'conjunta_o_separada' ? 'conjunta y/o separada (cuenta como separada)' : 'separada';
         if(completos.length >= necesita) punto('firmantes', 'Firmantes', 'ok', 'Firma ' + reg + '. ' + completos.join(' y ') + (completos.length === 1 ? ' está en la junta y tiene cédula y RIF bien.' : ' están en la junta y tienen cédula y RIF bien.'), { pagina: pg(conRegimen) });
         else if(x) punto('firmantes', 'Firmantes', 'ok', 'Excepción: ' + x.motivo, { excepcion: x.motivo });
@@ -314,6 +329,8 @@ export function evaluar(e){
       else {
         const p = parecido(dirActa, dirRif);
         if(p !== null && p >= 0.65) punto('domicilio', 'Domicilio igual al del RIF', 'ok', 'Se parece en un ' + pct(p) + '.', { pagina: pg(cambioDom || actaC) });
+        // Lote 10/11 A4: en aliados el domicilio distinto no frena (observación)
+        else if(ali) punto('domicilio', 'Domicilio distinto al del RIF', 'aviso', 'La dirección ' + (cambioDom ? 'de la última asamblea' : 'del acta') + ' se parece en un ' + pct(p || 0) + ' a la del RIF. Sube el acta de cambio de domicilio cuando la tengas.', { pagina: pg(cambioDom || actaC), falta: ACTAS.domicilio });
         else punto('domicilio', 'Domicilio distinto al del RIF', 'bloquea', 'La dirección ' + (cambioDom ? 'de la última asamblea' : 'del acta') + ' se parece en un ' + pct(p || 0) + ' a la del RIF.', { pagina: pg(cambioDom || actaC), falta: ACTAS.domicilio, pedir: true });
       }
     }

@@ -39,6 +39,14 @@ const { ok, cerrar } = marcador();
     await a.waitForSelector('#cargarTodo'); await a.uncheck('[data-con-indice]').catch(() => {}); await a.click('#cargarTodo'); await a.waitForSelector('#otro', { timeout: 20000 });
     const ult = mundo2.cargas.filter((c) => c.fuente === 'tad').slice(-1)[0];
     ok(nombre + ': con columnas "Fecha Ultima Suspension" y "Fecha Reconexion" lee las fechas y guarda qué columnas usó', ult.resumen.con_fechas === 5 && ult.resumen.columnas_fechas && /suspension/.test(ult.resumen.columnas_fechas.suspension) && /reconexion/.test(ult.resumen.columnas_fechas.habilitacion) && !/Sin fechas/.test(await a.textContent('#listaArch')));
+    // Lote 10/11 A1: encabezados reales ULTSUPENSION y ULTACTIVACION; 01-01-1900 significa "nunca" y se guarda vacío
+    await a.click('#otro');
+    t = cab + ',ULTSUPENSION,ULTACTIVACION\n';
+    for(let i = 1; i <= 5; i++) t += fila(i, i <= 3 ? ',0' + i + '-10-2026,1' + i + '-10-2026' : ',01-01-1900,01-01-1900') + '\n';
+    await a.setInputFiles('#archivos', { name: 'tad3.csv', mimeType: 'text/csv', buffer: Buffer.from(t) });
+    await a.waitForSelector('#cargarTodo'); await a.uncheck('[data-con-indice]').catch(() => {}); await a.click('#cargarTodo'); await a.waitForSelector('#otro', { timeout: 20000 });
+    const u3 = mundo2.cargas.filter((c) => c.fuente === 'tad').slice(-1)[0];
+    ok(nombre + ': lee ULTSUPENSION y ULTACTIVACION; 01-01-1900 queda vacío (3 de 5 con fechas)', u3.resumen.con_fechas === 3 && u3.resumen.columnas_fechas && u3.resumen.columnas_fechas.suspension === 'ultsupension' && u3.resumen.columnas_fechas.habilitacion === 'ultactivacion', u3.resumen);
     await ctx2.close();
   }
   ok('sin errores de JavaScript', !errores.length, errores.slice(0, 3));

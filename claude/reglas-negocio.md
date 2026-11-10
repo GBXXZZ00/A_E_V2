@@ -206,3 +206,14 @@ Sin nombres reales: el repo es público. "Analista Senior" es el responsable de 
 - Mes en curso: se compara contra el mismo tramo (del 1 al día de hoy) del período con que se compara y se rotula "mes en curso".
 - Sin datos no es cero: las series empiezan donde hay datos (Comisiones desde septiembre). Lo que no funciona no se publica (sin recuadros "Por armar").
 - Churn, churn de infancia y calidad por dueño se esconden hasta que el TAD traiga fechas de suspensión y habilitación de al menos un mes completo y el administrador confirme que cuadran con un caso conocido (ajuste `churn_visible` = si en `privado.ia_ajustes`). Un TAD que llega con 0 fechas sale en rojo en Actualizar ("Sin fechas").
+
+
+## Churn por servicio (DECIDIDO 10/11, Lote 10/11 A2)
+Se comparan el **Estado** del TAD (manda siempre), la instalación (I), la última suspensión (S, columna `ULTSUPENSION`) y la última activación (A, `ULTACTIVACION`). `01-01-1900` y cualquier año menor a 1990 = vacío ("nunca").
+- Habilitado con S vacía o A anterior a S: **normal**.
+- Suspendido con S menos I de 60 días o menos: **churn de infancia**, pérdida en el mes de S.
+- Suspendido con S menos I de más de 60 días: hasta 80 días suspendido = **posible pérdida** (no cuenta); más de 80 = **pérdida** en el mes de S.
+- Vuelve a Habilitado (A mayor o igual que S): **reactivación** en el mes de A. Un mes cerrado no se recalcula: si ya era pérdida (más de 80 días, o infancia reactivada en otro mes) sigue contada en el mes de S.
+- Fechas que contradicen el Estado (Habilitado con S después de A, Suspendido con A después de S, Suspendido sin S): manda el Estado y el servicio sale en "fechas por revisar" (`churn_revisar`, solo administrador). Si el TAD no trae S, se usa el cambio de estado que guardó la app.
+- Retirado del TAD: baja definitiva (como antes).
+- Dónde vive: `privado.churn_clase` (la regla), `privado.srv_base` (la pérdida que usan Clientes y Gerencia), `privado.srv_churn` (la clase por servicio). `churn_visible` sigue en `no` hasta revisar con el administrador los números del primer TAD con fechas.

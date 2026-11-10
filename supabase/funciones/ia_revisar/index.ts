@@ -41,23 +41,24 @@ async function bajar(driveId: string): Promise<Uint8Array> {
 // ---------- Gemini ----------
 const CLAVE = () => (Deno.env.get("GEMINI_API_KEY") || "").trim();
 const API = "https://generativelanguage.googleapis.com/v1beta/";
-let modeloElegido = "";
-// 'auto': el Pro más nuevo que ofrezca Google para esta clave
-async function elegirModelo(ajuste: string): Promise<string> {
+let modeloElegido = ""; let rapidoElegido = "";
+// 'auto': el Pro más nuevo que ofrezca Google para esta clave.
+// Lote 10/11 A4: rapido = el Flash más nuevo (RIF y cédulas de una sola casilla); las actas y los combinados siguen con el Pro
+async function elegirModelo(ajuste: string, rapido = false): Promise<string> {
   const a = String(ajuste || "auto").trim();
   if (a && a !== "auto") return a.replace(/^models\//, "");
-  if (modeloElegido) return modeloElegido;
+  if (rapido ? rapidoElegido : modeloElegido) return rapido ? rapidoElegido : modeloElegido;
   const r = await fetch(API + "models?pageSize=1000", { headers: { "x-goog-api-key": CLAVE() } });
   const d = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error(r.status === 400 || r.status === 403 ? "Google no aceptó la clave de Gemini" : "Google no respondió (" + r.status + ")");
   const ver = (n: string) => { const m = n.match(/gemini-(\d+(?:\.\d+)?)/); return m ? Number(m[1]) : 0; };
   const pros = ((d.models || []) as { name: string; supportedGenerationMethods?: string[] }[])
     .map((m) => ({ n: String(m.name || "").replace(/^models\//, ""), g: m.supportedGenerationMethods || [] }))
-    .filter((m) => /^gemini-[\d.]+-pro/.test(m.n) && m.g.includes("generateContent") && !/(tts|image|audio|live|computer|embedding|exp)/.test(m.n))
+    .filter((m) => (rapido ? /^gemini-[\d.]+-flash/.test(m.n) && !/(lite|8b)/.test(m.n) : /^gemini-[\d.]+-pro/.test(m.n)) && m.g.includes("generateContent") && !/(tts|image|audio|live|computer|embedding|exp)/.test(m.n))
     .sort((x, y) => ver(y.n) - ver(x.n) || Number(/latest/.test(y.n)) - Number(/latest/.test(x.n)) || x.n.length - y.n.length);
-  if (!pros.length) throw new Error("Esta clave no tiene un modelo Pro de Gemini disponible");
-  modeloElegido = pros[0].n;
-  return modeloElegido;
+  if (!pros.length) throw new Error("Esta clave no tiene un modelo " + (rapido ? "Flash" : "Pro") + " de Gemini disponible");
+  if (rapido) rapidoElegido = pros[0].n; else modeloElegido = pros[0].n;
+  return pros[0].n;
 }
 
 const S = (extra: Record<string, unknown> = {}) => ({ type: "STRING", nullable: true, ...extra });
@@ -82,7 +83,8 @@ const ESQUEMA = {
           fecha_vencimiento: S({ description: "AAAA-MM-DD o AAAA-MM" }),
           formato: { type: "STRING", nullable: true, enum: ["rif_viejo", "rif_digital"], description: "Solo RIF: rif_digital si dice 'RIF Digital v2.0' (no trae vencimiento); rif_viejo si trae fecha de vencimiento" },
           direccion: S({ description: "Domicilio completo como aparece" }),
-          fecha_inscripcion: S({ description: "Fecha de inscripción en el Registro Mercantil, AAAA-MM-DD" }),
+          fecha_inscripcion: S({ description: "Actas: fecha de inscripción en el Registro Mercantil. RIF: FECHA DE INSCRIPCIÓN. AAAA-MM-DD" }),
+          fecha_actualizacion: S({ description: "Solo RIF: FECHA DE ÚLTIMA ACTUALIZACIÓN, AAAA-MM-DD" }),
           fecha_asamblea: S({ description: "Fecha de la reunión de la asamblea, AAAA-MM-DD" }),
           duracion_anos: { type: "INTEGER", nullable: true },
           duracion_indefinida: { type: "BOOLEAN", nullable: true },
@@ -107,9 +109,13 @@ const INSTRUCCIONES = `Eres un lector de documentos legales de Venezuela para un
 El archivo puede traer uno o varios documentos (por ejemplo cédula y RIF en el mismo PDF). Devuelve cada documento por separado con la página donde empieza y termina.
 Reglas:
 - No inventes. Si un dato no se ve o no está, déjalo en null. Si algo se ve borroso o dudoso, pon legible en false o explícalo en observacion.
-- Fechas en formato AAAA-MM-DD; si solo trae mes y año, AAAA-MM. La cédula venezolana trae fecha de expedición y de vencimiento (mes y año).
+- Fechas en formato AAAA-MM-DD; si solo trae mes y año, AAAA-MM. Las fechas son lo más importante: búscalas en todo el documento (esquinas, sellos, márgenes, reverso).
+  Si la fecha está pero cuesta leerla, escribe tu mejor lectura y explica la duda en observacion; déjala en null solo si de verdad no aparece.
+  Años de dos dígitos: 05/31 es 2031-05. Fechas en letras ("quince de marzo de dos mil veinte") también valen.
+- Cédula venezolana: trae fecha de expedición y de vencimiento (mes y año), por ejemplo "F. EXPEDICIÓN 05/2020" y "F. VENCIMIENTO 05/2030"; a veces solo dice "VENCE".
 - RIF: fecha de vencimiento, razón social o nombre, y el domicilio fiscal completo. Hay dos formatos: el viejo trae "FECHA DE VENCIMIENTO" (formato rif_viejo);
   el nuevo "RIF Digital v2.0" no trae vencimiento, solo inscripción y última actualización (formato rif_digital, fecha_vencimiento en null).
+  En los dos, llena fecha_inscripcion ("FECHA DE INSCRIPCIÓN") y fecha_actualizacion ("FECHA DE ÚLTIMA ACTUALIZACIÓN") si aparecen.
 - Actas (constitutiva o de asamblea): revisa TODAS las páginas, no solo la cláusula. Busca:
   * fecha_inscripcion: la fecha en que el Registro Mercantil inscribió el documento, no la fecha de la reunión. Suele estar en la nota o sello de registro,
     al principio, al final o en el margen, con frases como "quedó inscrito", "inscrito en el Registro Mercantil", "bajo el N°", "Tomo"; las fechas pueden venir en letras;
@@ -277,12 +283,16 @@ async function trabajar(corrida: number) {
       pendientes = pendientes.filter((a) => !resueltos.has(a.id) && !luego.has(a.id));
       diferidos = luego.size > 0;
     }
-    let modelo = "";
+    let modelo = ""; let rapido = "";
     if (pendientes.length) {
       if (!CLAVE()) throw new Error("Falta la clave de Gemini en Supabase (GEMINI_API_KEY)");
       modelo = await elegirModelo(w.ajustes.modelo);
+      rapido = await elegirModelo(w.ajustes.modelo_rapido, true).catch(() => modelo);
     }
     const pe = Number(w.ajustes.precio_entrada) || 0; const ps = Number(w.ajustes.precio_salida) || 0;
+    const pre = Number(w.ajustes.precio_rapido_entrada) || pe; const prs = Number(w.ajustes.precio_rapido_salida) || ps;
+    // Lote 10/11 A4: un archivo que solo está en casillas de RIF o cédula se lee con el modelo rápido
+    const esRapido = (a: Archivo) => { const cas = w.documentos.filter((d) => (d.archivos || []).includes(a.id)).map((d) => d.casilla); return cas.length > 0 && cas.every((c) => OCR_CASILLAS.includes(c)); };
     // Varios archivos a la vez (hasta 4 y sin pasar ~45 MB entre todos) para tardar menos; cada uno se lee igual que antes.
     // Lo que quede se sigue en otra llamada, así ninguna pasa los límites de la función.
     const lote: typeof pendientes = []; let peso = 0;
@@ -293,7 +303,7 @@ async function trabajar(corrida: number) {
     }
     if (lote.length) {
       // Lote 3: un archivo que no se lee a tiempo queda "revisar a mano" y no frena a los demás
-      const leidas = await Promise.all(lote.map((a) => conLimite(leerArchivo(a, modelo, pe, ps))));
+      const leidas = await Promise.all(lote.map((a) => conLimite(esRapido(a) && rapido ? leerArchivo(a, rapido, pre, prs) : leerArchivo(a, modelo, pe, ps))));
       const fatal = leidas.find((l) => l.fatal);
       if (fatal) throw fatal.fatal;   // permiso de Google o clave de Gemini: no sirve seguir con los demás
       for (let i = 0; i < lote.length; i++) {
@@ -322,8 +332,10 @@ async function leerSuelto(archivo: number, releer = false) {
   if ((data.leido && !releer) || !CLAVE()) return;
   const aj = (data.ajustes || {}) as Record<string, string>;
   try {
-    const modelo = await elegirModelo(aj.modelo);
-    const l = await leerArchivo(data.archivo as Archivo, modelo, Number(aj.precio_entrada) || 0, Number(aj.precio_salida) || 0);
+    // Lote 10/11 A4: RIF y cédula (archivo en una sola de esas casillas) con el modelo rápido
+    const cas = ((data.casillas || []) as string[]); const rap = cas.length > 0 && cas.every((c) => OCR_CASILLAS.includes(c));
+    const modelo = rap ? await elegirModelo(aj.modelo_rapido, true).catch(() => elegirModelo(aj.modelo)) : await elegirModelo(aj.modelo);
+    const l = await leerArchivo(data.archivo as Archivo, modelo, Number(rap ? aj.precio_rapido_entrada : aj.precio_entrada) || 0, Number(rap ? aj.precio_rapido_salida : aj.precio_salida) || 0);
     if (l.fatal) { console.error("lectura adelantada", archivo, l.fatal.message); return; }
     const { error: eg } = await db.rpc("ia_guardar_lectura_sola", { p_archivo: archivo, p_datos: l.lectura });
     if (eg) console.error("guardar lectura adelantada", eg.message);
@@ -344,6 +356,17 @@ Deno.serve(async (req: Request) => {
   if (valido !== true) return respuesta({ error: "No autorizado" }, 401);
   TAREA = tk;
   const b = (await req.json().catch(() => ({}))) as Record<string, unknown>;
+  // Lote 10/11 A4: medir la velocidad de lectura con los mismos archivos (no guarda nada; solo tiempos y si leyó las fechas)
+  if (Array.isArray(b.medir)) {
+    const ids = (b.medir as unknown[]).map(Number).filter((n) => Number.isInteger(n) && n > 0).slice(0, 6);
+    const modelo = await elegirModelo(String(b.modelo || "auto"), b.rapido === true);
+    const { data: arch } = await db.from("archivos").select("id, drive_id, nombre, mime, tamano").in("id", ids);
+    const out = await Promise.all(((arch || []) as Archivo[]).map(async (a) => {
+      const t0 = Date.now(); const l = await conLimite(leerArchivo(a, modelo, 0, 0)); const hs = ((l.lectura.hallazgos || []) as Record<string, unknown>[]);
+      return { id: a.id, ms: Date.now() - t0, estado: l.lectura.estado, tipos: hs.map((h) => h.tipo), con_fecha: hs.map((h) => !!(h.fecha_vencimiento || h.fecha_inscripcion || h.fecha_actualizacion)) };
+    }));
+    return respuesta({ modelo, archivos: out });
+  }
   const archivo = Number(b.archivo);
   if (Number.isInteger(archivo) && archivo > 0) { EdgeRuntime.waitUntil(leerSuelto(archivo, b.releer === true)); return respuesta({ ok: true }, 202); }
   const corrida = Number(b.corrida);
