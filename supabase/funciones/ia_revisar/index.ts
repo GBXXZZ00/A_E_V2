@@ -291,8 +291,10 @@ async function trabajar(corrida: number) {
     }
     const pe = Number(w.ajustes.precio_entrada) || 0; const ps = Number(w.ajustes.precio_salida) || 0;
     const pre = Number(w.ajustes.precio_rapido_entrada) || pe; const prs = Number(w.ajustes.precio_rapido_salida) || ps;
-    // Lote 10/11 A4: un archivo que solo está en casillas de RIF o cédula se lee con el modelo rápido
-    const esRapido = (a: Archivo) => { const cas = w.documentos.filter((d) => (d.archivos || []).includes(a.id)).map((d) => d.casilla); return cas.length > 0 && cas.every((c) => OCR_CASILLAS.includes(c)); };
+    // Lote 10/11 A4: un archivo que solo está en casillas de RIF o cédula se lee con el modelo rápido, SOLO con el ajuste rapido_rif = 'si'.
+    // Medición del 10/11 con 9 archivos iguales: Pro 15,3 s y 7 de 9 con fecha; Flash 13,6 s y 6 de 9. No compensa: queda apagado.
+    const esRapido = (a: Archivo) => String(w.ajustes.rapido_rif || "no") === "si" && esRif(a);
+    const esRif = (a: Archivo) => { const cas = w.documentos.filter((d) => (d.archivos || []).includes(a.id)).map((d) => d.casilla); return cas.length > 0 && cas.every((c) => OCR_CASILLAS.includes(c)); };
     // Varios archivos a la vez (hasta 4 y sin pasar ~45 MB entre todos) para tardar menos; cada uno se lee igual que antes.
     // Lo que quede se sigue en otra llamada, así ninguna pasa los límites de la función.
     const lote: typeof pendientes = []; let peso = 0;
@@ -333,7 +335,7 @@ async function leerSuelto(archivo: number, releer = false) {
   const aj = (data.ajustes || {}) as Record<string, string>;
   try {
     // Lote 10/11 A4: RIF y cédula (archivo en una sola de esas casillas) con el modelo rápido
-    const cas = ((data.casillas || []) as string[]); const rap = cas.length > 0 && cas.every((c) => OCR_CASILLAS.includes(c));
+    const cas = ((data.casillas || []) as string[]); const rap = String(aj.rapido_rif || "no") === "si" && cas.length > 0 && cas.every((c) => OCR_CASILLAS.includes(c));
     const modelo = rap ? await elegirModelo(aj.modelo_rapido, true).catch(() => elegirModelo(aj.modelo)) : await elegirModelo(aj.modelo);
     const l = await leerArchivo(data.archivo as Archivo, modelo, Number(rap ? aj.precio_rapido_entrada : aj.precio_entrada) || 0, Number(rap ? aj.precio_rapido_salida : aj.precio_salida) || 0);
     if (l.fatal) { console.error("lectura adelantada", archivo, l.fatal.message); return; }

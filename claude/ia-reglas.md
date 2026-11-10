@@ -70,7 +70,7 @@ La corrida es de aliado cuando viene de una solicitud de aliado (`ia_trabajo` ma
 | 20 Persona natural | Cédula, RIF y contacto | Igual |
 | 21 Documento sin marcar | Aviso | Igual |
 
-Lectura (las dos): el lector ahora pide también `fecha_actualizacion` del RIF y insiste en buscar las fechas en todo el documento (esquinas, sellos, reverso, años de dos dígitos y en letras). RIF y cédula de una sola casilla se leen con el modelo rápido (Flash, ajuste `modelo_rapido`); actas y archivos combinados siguen con el Pro.
+Lectura (las dos): el lector ahora pide también `fecha_actualizacion` del RIF y insiste en buscar las fechas en todo el documento (esquinas, sellos, reverso, años de dos dígitos y en letras). Modelo rápido para RIF y cédula: medido el 10/11 con 9 archivos (Pro 15,3 s y 7 de 9 con fecha; Flash 13,6 s y 6 de 9). No compensa: queda apagado (ajuste `rapido_rif` = si para encenderlo).
 
 ## Excepciones
 Las concede solo el administrador, con motivo, y quedan en la bitácora: cédula vencida, junta vencida y firmante fuera de la junta (poder).
