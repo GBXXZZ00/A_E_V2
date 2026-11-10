@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Aliado escritorio solicitud</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap">
+<style>
+body{margin:0;background:#F5F6F7;font-family:Inter,system-ui,sans-serif;color:#111315;font-size:14px}
+*{box-sizing:border-box}
+h1,h2,h3,p{margin:0}
+.mut{color:#5B636E;font-size:12px}
+.chip{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px;border-radius:999px;font-size:12px;font-weight:600;background:#ECEEF1;color:#5B636E;white-space:nowrap}
+.r{background:#FCEDEB;color:#A32117}.w{background:#FBF1DC;color:#754B00}.ok{background:#E7F5EE;color:#0F6642}.b{background:#E8EEFF;color:#1F45C4}.m{background:#F0EBFA;color:#5B3AA6}
+.card{background:#fff;border:1px solid #E3E6EA;border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:40px;padding:0 16px;border-radius:999px;border:1px solid #E3E6EA;background:#fff;font:600 13px Inter,sans-serif;color:#111315;white-space:nowrap;cursor:pointer;text-decoration:none}
+.btn.pri{background:#2B5CFF;color:#fff;border-color:#2B5CFF}
+.btn.wa{background:#0F6642;color:#fff;border-color:#0F6642}
+.btn.neg{background:#111315;color:#fff;border-color:#111315}
+.btn.chico{height:32px;padding:0 12px;font-size:12px}
+.seg{height:36px;padding:0 14px;border-radius:999px;border:1px solid #E3E6EA;background:#fff;font:600 13px Inter,sans-serif;color:#5B636E;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.seg.on{background:#111315;color:#fff;border-color:#111315}
+.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.col{display:flex;flex-direction:column;gap:8px}
+.t{display:flex;align-items:center;gap:12px;padding:12px;border-radius:12px}
+.t + .t{border-top:1px solid #F0F2F4}
+.tx{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block;background:#C9CED6}
+.dot.w{background:#D98A00}.dot.ok{background:#0F6642}.dot.r{background:#C0271B}
+.nota{position:absolute;background:#FFF6C9;border:1px solid #E8D27A;border-radius:10px;padding:8px 10px;font-size:12px;line-height:1.35;color:#4A3F00;max-width:240px}
+.tel{width:390px;height:844px;background:#fff;border-radius:36px;border:1px solid #E3E6EA;overflow:hidden;display:flex;flex-direction:column;position:relative;flex:none}
+.top{height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;border-bottom:1px solid #E3E6EA;flex:none}
+.logo{font-weight:800;letter-spacing:.18em;font-size:14px;color:#3A414A}
+.body{padding:18px;display:flex;flex-direction:column;gap:12px;flex:1;overflow:hidden}
+.campo{display:flex;flex-direction:column;gap:6px}
+.campo label{font-size:12px;font-weight:600;color:#5B636E}
+.inp{height:44px;border:1.5px solid #CCD2DA;border-radius:12px;padding:0 14px;font:14px Inter,sans-serif;display:flex;align-items:center;color:#111315;background:#fff}
+.inp.ph{color:#69717C}
+.cas{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid #F0F2F4}
+.barra{position:absolute;left:0;right:0;bottom:0;background:#fff;border-top:1px solid #E3E6EA;padding:12px 18px 18px;display:flex;flex-direction:column;gap:8px}
+.pasos{display:flex;gap:6px}
+.pasos i{flex:1;height:4px;border-radius:4px;background:#E3E6EA;display:block}
+.pasos i.on{background:#2B5CFF}
+.full{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:32px;text-align:center}
+.ico{width:88px;height:88px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.lbl{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#5B636E}
+.tabla{width:100%;border-collapse:collapse;font-size:13px}
+.tabla th{text-align:left;font-size:11px;font-weight:700;color:#5B636E;padding:8px 10px;letter-spacing:.04em;text-transform:uppercase}
+.tabla td{padding:12px 10px;border-top:1px solid #F0F2F4;vertical-align:middle}
+.pleg{background:#fff;border:1px solid #E3E6EA;border-radius:16px;display:flex;align-items:center;gap:10px;padding:14px 16px;min-height:52px}
+.pleg.pend{border-color:#E8A040}
+.pleg.list{border-color:#9BD1B6}
+.pleg b{flex:1}
+.car{color:#69717C;font-size:16px}
+</style>
+</helmet>
+<div style="width:1366px;height:960px;display:flex">
+<div style="width:220px;background:#fff;border-right:1px solid #E3E6EA;padding:22px 14px;display:flex;flex-direction:column;gap:4px"><span class="logo" style="padding:0 10px 18px">AIRTEK</span>
+<span class="seg" style="border:0;border-radius:12px">Inicio</span><span class="seg on" style="border-radius:12px;justify-content:space-between">Solicitudes <b>7</b></span><span class="seg" style="border:0;border-radius:12px;justify-content:space-between">Avisos <span class="chip r">3</span></span><span class="seg" style="border:0;border-radius:12px">Referidos</span>
+<div style="flex:1"></div><span class="mut" style="padding:0 10px">Carlos Ejemplo · Aliado</span></div>
+<div style="flex:1;padding:26px 28px;display:flex;flex-direction:column;gap:14px;min-width:0">
+<div class="row" style="justify-content:space-between"><h1 style="font-size:24px">Mis solicitudes</h1><button class="btn pri">Nueva solicitud</button></div>
+<div class="row" style="gap:10px;flex-wrap:nowrap"><div style="flex:1;display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:16px;border:1px solid #E3E6EA;background:#fff;border:2px solid #1F45C4"><b style="font-size:24px">2</b><span style="font-size:13px;font-weight:600">Listas para instalar</span></div><div style="flex:1;display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:16px;border:1px solid #E3E6EA;background:#fff;background:#FBF1DC;border-color:#F0D9A8;color:#754B00"><b style="font-size:24px">1</b><span style="font-size:13px;font-weight:600">Sin enviar</span></div><div style="flex:1;display:flex;align-items:center;gap:12px;padding:14px 16px;border-radius:16px;border:1px solid #E3E6EA;background:#fff;"><b style="font-size:24px">3</b><span style="font-size:13px;font-weight:600">Instaladas este mes</span></div></div>
+<div class="card" style="padding:4px 8px"><table class="tabla"><tr><th>Cliente</th><th>Estado</th><th></th></tr>
+<tr style="background:#F3F6FF"><td><b>Tienda Modelo, C.A.</b><div class="mut">Aprobada hoy 10:52 · 1 nota</div></td><td><span class="chip ok">Lista para instalar</span></td><td class="mut">›</td></tr><tr style=""><td><b>Joyería Modelo, C.A.</b><div class="mut">Aprobada ayer</div></td><td><span class="chip ok">Lista para instalar</span></td><td class="mut">›</td></tr><tr style=""><td><b>Mercado Ejemplo, C.A.</b><div class="mut">Falta RIF del representante y correo</div></td><td><span class="chip w">Sin enviar · faltan 2</span></td><td class="mut">›</td></tr><tr style=""><td><b>Bodega Prueba</b><div class="mut">Instala el 12/11</div></td><td><span class="chip b">Instalación en curso</span></td><td class="mut">›</td></tr><tr style=""><td><b>Panadería Ejemplo</b><div class="mut">Instalada el 05/11</div></td><td><span class="chip ok">Instalada</span></td><td class="mut">›</td></tr></table></div>
+</div>
+<div style="width:500px;background:#fff;border-left:1px solid #E3E6EA;box-shadow:-12px 0 32px rgba(17,19,21,.06);padding:24px;display:flex;flex-direction:column;gap:12px">
+<div class="row" style="justify-content:space-between"><span class="chip ok">Lista para instalar</span><span class="mut">Cerrar ✕</span></div>
+<div class="tx"><b style="font-size:20px">Tienda Modelo, C.A.</b><span class="mut">J-00000000-0 · Solicitud 0045 · enviada hoy 10:15</span></div>
+<div class="card" style="background:#E7F5EE;border-color:#E7F5EE;padding:14px;gap:8px"><b style="color:#0F6642">Qué sigue: marca cuándo vas a instalar</b><span style="font-size:13px;color:#0F6642">Así el cliente queda reservado para ti. Tienes 15 días.</span>
+<div class="row" style="gap:8px"><div class="campo" style="flex:1"><label>Fecha de instalación</label><div class="inp ph">dd/mm/aaaa</div></div><button class="btn pri" style="align-self:flex-end;height:44px">Marcar instalación</button></div></div>
+<div class="card" style="padding:12px;gap:4px;background:#F5F6F7;border-color:#F5F6F7"><b style="font-size:13px">Nota del administrador</b><span style="font-size:13px">El correo no se parece al nombre del representante. Confírmalo con el cliente.</span></div>
+<span class="lbl">Historial</span>
+<div class="row" style="gap:10px;align-items:flex-start;padding:4px 0"><span class="dot ok" style="margin-top:6px;flex:none"></span><div class="tx"><b style="font-size:13px">Aprobada por el administrador</b><span class="mut">Con 1 nota</span></div><span class="mut">10:52</span></div><div class="row" style="gap:10px;align-items:flex-start;padding:4px 0"><span class="dot " style="margin-top:6px;flex:none"></span><div class="tx"><b style="font-size:13px">Pasó a revisión del administrador</b><span class="mut">El correo no se parece al nombre</span></div><span class="mut">10:35</span></div><div class="row" style="gap:10px;align-items:flex-start;padding:4px 0"><span class="dot ok" style="margin-top:6px;flex:none"></span><div class="tx"><b style="font-size:13px">Documentos revisados</b><span class="mut">4 de 4 bien</span></div><span class="mut">10:16</span></div><div class="row" style="gap:10px;align-items:flex-start;padding:4px 0"><span class="dot " style="margin-top:6px;flex:none"></span><div class="tx"><b style="font-size:13px">Solicitud enviada</b><span class="mut"></span></div><span class="mut">10:15</span></div>
+<span class="lbl">Documentos</span>
+<div class="row" style="padding:7px 0;border-bottom:1px solid #F0F2F4"><span style="flex:1">RIF de la empresa</span><span class="chip ok">Bien</span><button class="btn chico">Ver</button></div><div class="row" style="padding:7px 0;border-bottom:1px solid #F0F2F4"><span style="flex:1">Acta constitutiva</span><span class="chip ok">Bien</span><button class="btn chico">Ver</button></div><div class="row" style="padding:7px 0;border-bottom:1px solid #F0F2F4"><span style="flex:1">Cédula del representante</span><span class="chip ok">Bien</span><button class="btn chico">Ver</button></div><div class="row" style="padding:7px 0;border-bottom:1px solid #F0F2F4"><span style="flex:1">RIF del representante</span><span class="chip ok">Bien</span><button class="btn chico">Ver</button></div>
+<div style="flex:1"></div>
+<div class="row" style="gap:8px;border-top:1px solid #E3E6EA;padding-top:12px"><button class="btn wa" style="flex:1">Escribir al administrador por WhatsApp</button><button class="btn">No se instaló</button></div>
+</div></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1366,"height":960}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

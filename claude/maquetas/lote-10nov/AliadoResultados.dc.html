@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Aliado resultados</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap">
+<style>
+body{margin:0;background:#F5F6F7;font-family:Inter,system-ui,sans-serif;color:#111315;font-size:14px}
+*{box-sizing:border-box}
+h1,h2,h3,p{margin:0}
+.mut{color:#5B636E;font-size:12px}
+.chip{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px;border-radius:999px;font-size:12px;font-weight:600;background:#ECEEF1;color:#5B636E;white-space:nowrap}
+.r{background:#FCEDEB;color:#A32117}.w{background:#FBF1DC;color:#754B00}.ok{background:#E7F5EE;color:#0F6642}.b{background:#E8EEFF;color:#1F45C4}.m{background:#F0EBFA;color:#5B3AA6}
+.card{background:#fff;border:1px solid #E3E6EA;border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:40px;padding:0 16px;border-radius:999px;border:1px solid #E3E6EA;background:#fff;font:600 13px Inter,sans-serif;color:#111315;white-space:nowrap;cursor:pointer;text-decoration:none}
+.btn.pri{background:#2B5CFF;color:#fff;border-color:#2B5CFF}
+.btn.wa{background:#0F6642;color:#fff;border-color:#0F6642}
+.btn.neg{background:#111315;color:#fff;border-color:#111315}
+.btn.chico{height:32px;padding:0 12px;font-size:12px}
+.seg{height:36px;padding:0 14px;border-radius:999px;border:1px solid #E3E6EA;background:#fff;font:600 13px Inter,sans-serif;color:#5B636E;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.seg.on{background:#111315;color:#fff;border-color:#111315}
+.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.col{display:flex;flex-direction:column;gap:8px}
+.t{display:flex;align-items:center;gap:12px;padding:12px;border-radius:12px}
+.t + .t{border-top:1px solid #F0F2F4}
+.tx{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block;background:#C9CED6}
+.dot.w{background:#D98A00}.dot.ok{background:#0F6642}.dot.r{background:#C0271B}
+.nota{position:absolute;background:#FFF6C9;border:1px solid #E8D27A;border-radius:10px;padding:8px 10px;font-size:12px;line-height:1.35;color:#4A3F00;max-width:240px}
+.tel{width:390px;height:844px;background:#fff;border-radius:36px;border:1px solid #E3E6EA;overflow:hidden;display:flex;flex-direction:column;position:relative;flex:none}
+.top{height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;border-bottom:1px solid #E3E6EA;flex:none}
+.logo{font-weight:800;letter-spacing:.18em;font-size:14px;color:#3A414A}
+.body{padding:18px;display:flex;flex-direction:column;gap:12px;flex:1;overflow:hidden}
+.campo{display:flex;flex-direction:column;gap:6px}
+.campo label{font-size:12px;font-weight:600;color:#5B636E}
+.inp{height:44px;border:1.5px solid #CCD2DA;border-radius:12px;padding:0 14px;font:14px Inter,sans-serif;display:flex;align-items:center;color:#111315;background:#fff}
+.inp.ph{color:#69717C}
+.cas{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid #F0F2F4}
+.barra{position:absolute;left:0;right:0;bottom:0;background:#fff;border-top:1px solid #E3E6EA;padding:12px 18px 18px;display:flex;flex-direction:column;gap:8px}
+.pasos{display:flex;gap:6px}
+.pasos i{flex:1;height:4px;border-radius:4px;background:#E3E6EA;display:block}
+.pasos i.on{background:#2B5CFF}
+.full{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:32px;text-align:center}
+.ico{width:88px;height:88px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.lbl{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#5B636E}
+.tabla{width:100%;border-collapse:collapse;font-size:13px}
+.tabla th{text-align:left;font-size:11px;font-weight:700;color:#5B636E;padding:8px 10px;letter-spacing:.04em;text-transform:uppercase}
+.tabla td{padding:12px 10px;border-top:1px solid #F0F2F4;vertical-align:middle}
+.pleg{background:#fff;border:1px solid #E3E6EA;border-radius:16px;display:flex;align-items:center;gap:10px;padding:14px 16px;min-height:52px}
+.pleg.pend{border-color:#E8A040}
+.pleg.list{border-color:#9BD1B6}
+.pleg b{flex:1}
+.car{color:#69717C;font-size:16px}
+</style>
+</helmet>
+<div style="width:1800px;height:1920px;padding:30px 40px;display:flex;flex-direction:column;gap:60px"><div class="row" style="gap:40px;align-items:flex-start;flex-wrap:nowrap"><div class="col" style="gap:12px"><span class="lbl">Al leer el RIF · ya es de la oficina</span>
+<div class="tel" style="background:#F5F6F7"><div class="top" style="border-color:transparent"><span class="logo">AIRTEK</span><span class="mut">Cerrar</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:28px;text-align:center">
+<div class="ico" style="background:#fff"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#5B636E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 11l8-6 8 6v8H4z"/><path d="M10 19v-5h4v5"/></svg></div>
+<b style="font-size:24px;color:#111315;line-height:1.2">Este cliente ya es de la oficina</b>
+<span style="font-size:14px;color:#3A414A;line-height:1.45">Comercial Ejemplo, C.A. ya tiene servicio con Airtek. No guardamos sus documentos, solo leímos el RIF.</span>
+<div class="chip">Si lo conseguiste tú, se te paga si se instala</div>
+</div>
+<div style="padding:0 24px 28px;display:flex;flex-direction:column;gap:10px"><button class="btn neg" style="height:50px;font-size:15px">Referir cliente</button><button class="btn " style="height:50px;font-size:15px">Volver al inicio</button></div>
+</div></div><div class="col" style="gap:12px"><span class="lbl">Al leer el RIF · lo gestiona otra persona</span>
+<div class="tel" style="background:#F5F6F7"><div class="top" style="border-color:transparent"><span class="logo">AIRTEK</span><span class="mut">Cerrar</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:28px;text-align:center">
+<div class="ico" style="background:#fff"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#5B636E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg></div>
+<b style="font-size:24px;color:#111315;line-height:1.2">No disponible por ahora</b>
+<span style="font-size:14px;color:#3A414A;line-height:1.45">Otra persona ya está gestionando este cliente. No se puede instalar ni referir mientras tanto.</span>
+
+</div>
+<div style="padding:0 24px 28px;display:flex;flex-direction:column;gap:10px"><button class="btn neg" style="height:50px;font-size:15px">Nueva solicitud</button><button class="btn " style="height:50px;font-size:15px">Volver al inicio</button></div>
+</div></div><div class="col" style="gap:12px"><span class="lbl">Al enviar · revisando</span>
+<div class="tel" style="background:#E8EEFF"><div class="top" style="border-color:transparent"><span class="logo">AIRTEK</span><span class="mut">Cerrar</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:28px;text-align:center">
+<div class="ico" style="background:#fff"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#1F45C4" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg></div>
+<b style="font-size:24px;color:#1F45C4;line-height:1.2">Revisando tu solicitud</b>
+<span style="font-size:14px;color:#3A414A;line-height:1.45">Puedes cerrar la app. Te avisamos con una notificación.</span>
+<div class="card" style="width:100%;text-align:left;gap:10px;padding:14px"><div class="row"><span class="chip ok">✓</span><span style="font-size:13px">Documentos leídos (4 de 4)</span></div><div class="row"><span class="chip b">…</span><span style="font-size:13px"><b>Revisando firmantes, junta y actas</b></span></div><div class="row"><span class="chip">3</span><span style="font-size:13px;color:#5B636E">Armando el resultado</span></div></div>
+</div>
+<div style="padding:0 24px 28px;display:flex;flex-direction:column;gap:10px"><button class="btn " style="height:50px;font-size:15px">Ir a Mis solicitudes</button><button class="btn wa" style="height:44px;font-size:14px">Escribir al administrador por WhatsApp</button></div>
+</div></div><div class="col" style="gap:12px"><span class="lbl">Resultado · lista para instalar</span>
+<div class="tel" style="background:#E7F5EE"><div class="top" style="border-color:transparent"><span class="logo">AIRTEK</span><span class="mut">Cerrar</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:28px;text-align:center">
+<div class="ico" style="background:#fff"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#0F6642" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
+<b style="font-size:24px;color:#0F6642;line-height:1.2">¡Puedes instalar!</b>
+<span style="font-size:14px;color:#3A414A;line-height:1.45">Comercial Ejemplo, C.A. pasó la revisión. Marca cuándo vas a instalar para reservar el cliente.</span>
+
+</div>
+<div style="padding:0 24px 28px;display:flex;flex-direction:column;gap:10px"><button class="btn pri" style="height:50px;font-size:15px">Marcar instalación</button><button class="btn " style="height:50px;font-size:15px">Ver la solicitud</button></div>
+</div></div></div><div class="row" style="gap:40px;align-items:flex-start;flex-wrap:nowrap"><div class="col" style="gap:12px"><span class="lbl">Resultado · lista con observaciones</span>
+<div class="tel" style="background:#E7F5EE"><div class="top" style="border-color:transparent"><span class="logo">AIRTEK</span><span class="mut">Cerrar</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:28px;text-align:center">
+<div class="ico" style="background:#fff"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#0F6642" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></div>
+<b style="font-size:24px;color:#0F6642;line-height:1.2">Puedes instalar, con observaciones</b>
+<span style="font-size:14px;color:#3A414A;line-height:1.45">Estas notas no te frenan. Súbelas cuando puedas.</span>
+<div class="card" style="width:100%;text-align:left;gap:8px;padding:14px"><div class="row" style="gap:8px;align-items:flex-start"><span class="dot" style="background:#0F6642;margin-top:6px;flex:none"></span><span style="font-size:13px">La junta venció, pero el representante está en el acta. Sube el acta de asamblea donde se ratifica la junta.</span></div><div class="row" style="gap:8px;align-items:flex-start"><span class="dot" style="background:#0F6642;margin-top:6px;flex:none"></span><span style="font-size:13px">El correo no se parece al nombre del representante. Confirma que es suyo.</span></div></div>
+</div>
+<div style="padding:0 24px 28px;display:flex;flex-direction:column;gap:10px"><button class="btn pri" style="height:50px;font-size:15px">Marcar instalación</button><button class="btn " style="height:50px;font-size:15px">Subir el acta ahora</button></div>
+</div></div><div class="col" style="gap:12px"><span class="lbl">Resultado · te falta algo</span>
+<div class="tel" style="background:#FBF1DC"><div class="top" style="border-color:transparent"><span class="logo">AIRTEK</span><span class="mut">Cerrar</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:28px;text-align:center">
+<div class="ico" style="background:#fff"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#754B00" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V5M7.5 9.5L12 5l4.5 4.5M5 19h14"/></svg></div>
+<b style="font-size:24px;color:#754B00;line-height:1.2">Te falta algo para poder instalar</b>
+<span style="font-size:14px;color:#3A414A;line-height:1.45">Corrige esto y toca Revisar de nuevo.</span>
+<div class="card" style="width:100%;text-align:left;gap:8px;padding:14px"><div class="row" style="gap:8px;align-items:flex-start"><span class="dot" style="background:#D98A00;margin-top:6px;flex:none"></span><span style="font-size:13px">Cédula del representante: no se lee la fecha. Sube una foto más clara.</span></div><div class="row" style="gap:8px;align-items:flex-start"><span class="dot" style="background:#D98A00;margin-top:6px;flex:none"></span><span style="font-size:13px">Falta el RIF del representante.</span></div></div>
+</div>
+<div style="padding:0 24px 28px;display:flex;flex-direction:column;gap:10px"><button class="btn pri" style="height:50px;font-size:15px">Subir ahora</button><button class="btn " style="height:50px;font-size:15px">Pedir excepción</button><button class="btn wa" style="height:44px;font-size:14px">Escribir al administrador por WhatsApp</button></div>
+</div></div><div class="col" style="gap:12px"><span class="lbl">Resultado · lo revisa el administrador</span>
+<div class="tel" style="background:#F0EBFA"><div class="top" style="border-color:transparent"><span class="logo">AIRTEK</span><span class="mut">Cerrar</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:28px;text-align:center">
+<div class="ico" style="background:#fff"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#5B3AA6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="2.8"/></svg></div>
+<b style="font-size:24px;color:#5B3AA6;line-height:1.2">Lo está revisando el administrador</b>
+<span style="font-size:14px;color:#3A414A;line-height:1.45">Un punto necesita una persona. Te avisamos apenas responda.</span>
+<div class="card" style="width:100%;text-align:left;gap:8px;padding:14px"><div class="row" style="gap:8px;align-items:flex-start"><span class="dot" style="background:#5B3AA6;margin-top:6px;flex:none"></span><span style="font-size:13px">Firmantes: el nombre del acta no coincide del todo con la cédula.</span></div></div>
+</div>
+<div style="padding:0 24px 28px;display:flex;flex-direction:column;gap:10px"><button class="btn wa" style="height:44px;font-size:14px">Escribir al administrador por WhatsApp</button><button class="btn " style="height:50px;font-size:15px">Ver la solicitud</button></div>
+</div></div><div class="col" style="gap:12px"><span class="lbl">Después · instalada y pagada</span>
+<div class="tel" style="background:#E7F5EE"><div class="top" style="border-color:transparent"><span class="logo">AIRTEK</span><span class="mut">Cerrar</span></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:28px;text-align:center">
+<div class="ico" style="background:#fff"><svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#0F6642" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c1-4 4-5.5 7-5.5s6 1.5 7 5.5"/></svg></div>
+<b style="font-size:24px;color:#0F6642;line-height:1.2">Instalación confirmada</b>
+<span style="font-size:14px;color:#3A414A;line-height:1.45">Llegó la orden con tu nombre. Comercial Ejemplo, C.A. ya está en tu cartera.</span>
+<div class="chip ok">Pago registrado el 12/11</div>
+</div>
+<div style="padding:0 24px 28px;display:flex;flex-direction:column;gap:10px"><button class="btn pri" style="height:50px;font-size:15px">Ver la solicitud</button></div>
+</div></div></div></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1800,"height":1920}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

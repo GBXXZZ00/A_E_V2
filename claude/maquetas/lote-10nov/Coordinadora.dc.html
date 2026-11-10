@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Coordinadora de Canales</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap">
+<style>
+body{margin:0;background:#F5F6F7;font-family:Inter,system-ui,sans-serif;color:#111315;font-size:14px}
+*{box-sizing:border-box}
+h1,h2,h3,p{margin:0}
+.mut{color:#5B636E;font-size:12px}
+.chip{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px;border-radius:999px;font-size:12px;font-weight:600;background:#ECEEF1;color:#5B636E;white-space:nowrap}
+.r{background:#FCEDEB;color:#A32117}.w{background:#FBF1DC;color:#754B00}.ok{background:#E7F5EE;color:#0F6642}.b{background:#E8EEFF;color:#1F45C4}.m{background:#F0EBFA;color:#5B3AA6}
+.card{background:#fff;border:1px solid #E3E6EA;border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:40px;padding:0 16px;border-radius:999px;border:1px solid #E3E6EA;background:#fff;font:600 13px Inter,sans-serif;color:#111315;white-space:nowrap;cursor:pointer;text-decoration:none}
+.btn.pri{background:#2B5CFF;color:#fff;border-color:#2B5CFF}
+.btn.wa{background:#0F6642;color:#fff;border-color:#0F6642}
+.btn.neg{background:#111315;color:#fff;border-color:#111315}
+.btn.chico{height:32px;padding:0 12px;font-size:12px}
+.seg{height:36px;padding:0 14px;border-radius:999px;border:1px solid #E3E6EA;background:#fff;font:600 13px Inter,sans-serif;color:#5B636E;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.seg.on{background:#111315;color:#fff;border-color:#111315}
+.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.col{display:flex;flex-direction:column;gap:8px}
+.t{display:flex;align-items:center;gap:12px;padding:12px;border-radius:12px}
+.t + .t{border-top:1px solid #F0F2F4}
+.tx{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block;background:#C9CED6}
+.dot.w{background:#D98A00}.dot.ok{background:#0F6642}.dot.r{background:#C0271B}
+.nota{position:absolute;background:#FFF6C9;border:1px solid #E8D27A;border-radius:10px;padding:8px 10px;font-size:12px;line-height:1.35;color:#4A3F00;max-width:240px}
+.tel{width:390px;height:844px;background:#fff;border-radius:36px;border:1px solid #E3E6EA;overflow:hidden;display:flex;flex-direction:column;position:relative;flex:none}
+.top{height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;border-bottom:1px solid #E3E6EA;flex:none}
+.logo{font-weight:800;letter-spacing:.18em;font-size:14px;color:#3A414A}
+.body{padding:18px;display:flex;flex-direction:column;gap:12px;flex:1;overflow:hidden}
+.campo{display:flex;flex-direction:column;gap:6px}
+.campo label{font-size:12px;font-weight:600;color:#5B636E}
+.inp{height:44px;border:1.5px solid #CCD2DA;border-radius:12px;padding:0 14px;font:14px Inter,sans-serif;display:flex;align-items:center;color:#111315;background:#fff}
+.inp.ph{color:#69717C}
+.cas{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid #F0F2F4}
+.barra{position:absolute;left:0;right:0;bottom:0;background:#fff;border-top:1px solid #E3E6EA;padding:12px 18px 18px;display:flex;flex-direction:column;gap:8px}
+.pasos{display:flex;gap:6px}
+.pasos i{flex:1;height:4px;border-radius:4px;background:#E3E6EA;display:block}
+.pasos i.on{background:#2B5CFF}
+.full{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:32px;text-align:center}
+.ico{width:88px;height:88px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.lbl{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#5B636E}
+.tabla{width:100%;border-collapse:collapse;font-size:13px}
+.tabla th{text-align:left;font-size:11px;font-weight:700;color:#5B636E;padding:8px 10px;letter-spacing:.04em;text-transform:uppercase}
+.tabla td{padding:12px 10px;border-top:1px solid #F0F2F4;vertical-align:middle}
+.pleg{background:#fff;border:1px solid #E3E6EA;border-radius:16px;display:flex;align-items:center;gap:10px;padding:14px 16px;min-height:52px}
+.pleg.pend{border-color:#E8A040}
+.pleg.list{border-color:#9BD1B6}
+.pleg b{flex:1}
+.car{color:#69717C;font-size:16px}
+</style>
+</helmet>
+<div style="width:1366px;min-height:1000px;display:flex">
+<div style="width:230px;background:#fff;border-right:1px solid #E3E6EA;padding:24px 14px;display:flex;flex-direction:column;gap:4px">
+<span class="lbl" style="padding:0 10px 8px">Mi trabajo</span>
+<span class="seg" style="justify-content:space-between;border:0;border-radius:12px">Lo mío <b>8</b></span>
+<span class="seg on" style="justify-content:space-between;border-radius:12px">Mi equipo <b>46</b></span>
+<span class="seg" style="justify-content:space-between;border:0;border-radius:12px">Cartas y proformas <b>18</b></span>
+<span class="seg" style="justify-content:space-between;border:0;border-radius:12px">Sin IP <b>6</b></span>
+<span class="seg" style="justify-content:space-between;border:0;border-radius:12px">Cambios por emitir <b>9</b></span>
+<span class="seg" style="justify-content:space-between;border:0;border-radius:12px">Pago <b>8</b></span>
+<span class="seg" style="justify-content:space-between;border:0;border-radius:12px">Órdenes sin dueño <b>5</b></span>
+</div>
+<div style="flex:1;padding:28px 36px;display:flex;flex-direction:column;gap:16px">
+<div class="row" style="justify-content:space-between"><div class="col" style="gap:4px"><h1 style="font-size:26px">Mi equipo · Canales de atención</h1><span class="mut" style="font-size:14px">Coordinadora: ves lo de todos y puedes pasar una tarea a otra persona.</span></div><div class="inp ph" style="width:300px;border-radius:999px">Buscar por RIF, nombre o código</div></div>
+<div class="row" style="gap:12px"><div class="card" style="flex:1;gap:4px"><div class="row"><b style="flex:1">Emmanuel A.</b><span class="chip r">4 vencidas</span></div><span class="mut">12 cartas · 3 sin confirmar · 2 IP</span><button class="btn chico" style="align-self:flex-start">Ver su trabajo</button></div><div class="card" style="flex:1;gap:4px"><div class="row"><b style="flex:1">Luis E.</b><span class="chip w">1 vencida</span></div><span class="mut">9 cartas · 4 cambios por emitir</span><button class="btn chico" style="align-self:flex-start">Ver su trabajo</button></div><div class="card" style="flex:1;gap:4px"><div class="row"><b style="flex:1">Marta R.</b><span class="chip ok">Al día</span></div><span class="mut">6 cartas · 2 pagos</span><button class="btn chico" style="align-self:flex-start">Ver su trabajo</button></div><div class="card" style="flex:1;gap:4px"><div class="row"><b style="flex:1">Yo</b><span class="chip w">2 hoy</span></div><span class="mut">5 órdenes sin dueño · 3 pagos</span><button class="btn chico" style="align-self:flex-start">Ver su trabajo</button></div></div>
+<div class="card" style="gap:4px;padding:8px 10px">
+<div class="row" style="padding:10px 6px"><span class="dot r"></span><b style="font-size:16px;flex:1">Cartas y proformas del equipo · 18</b><span class="seg on">Por persona</span><span class="seg">Por días</span></div>
+<div class="t"><div class="tx"><b>Comercial Ejemplo, C.A.</b><span class="mut">Emmanuel A. · IP lista · con número</span></div><span class="chip r">5 días</span><button class="btn chico">Pasar a otra persona</button><button class="btn chico wa">Enviar yo</button></div>
+<div class="t"><div class="tx"><b>Tienda Modelo, C.A.</b><span class="mut">Emmanuel A. · descargada ayer, sin confirmar</span></div><span class="chip b">Por confirmar</span><button class="btn chico">Recordarle</button></div>
+<div class="t"><div class="tx"><b>Farmacia Muestra, C.A.</b><span class="mut">Luis E. · sin número del cliente</span></div><span class="chip w">3 días</span><button class="btn chico">Pasar a otra persona</button><button class="btn chico pri">Descargar</button></div>
+<div class="row" style="padding:8px 12px"><span class="mut">Y 15 más</span><button class="btn chico">Ver todas</button></div>
+</div>
+<div class="card" style="gap:4px;padding:8px 10px">
+<div class="row" style="padding:10px 6px"><span class="dot w"></span><b style="font-size:16px;flex:1">Órdenes de Canales sin dueño · 5</b><span class="car">⌃</span></div>
+<div class="t"><div class="tx"><b>Juan Ejemplo</b><span class="mut">Orden de Odoo con código de vendedor de Canales · instalada el 06/11</span></div><span class="chip w">Falta elegir</span><button class="btn chico pri">Elegir dueño</button></div>
+</div>
+<button class="pleg" style="width:100%;font:inherit;text-align:left;cursor:pointer"><span class="dot w"></span><b>Cambios por emitir · 9</b><span class="mut">Luis E. 4 · Emmanuel A. 3 · Marta R. 2</span><span class="car">⌄</span></button>
+<button class="pleg" style="width:100%;font:inherit;text-align:left;cursor:pointer"><span class="dot w"></span><b>Pago por revisar · 8</b><span class="car">⌄</span></button>
+<p class="mut">En Comisiones la coordinadora ve lo mismo que el administrador, sin cerrar corte ni dar excepciones. El ranking de Canales es de equipo.</p>
+</div></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1366,"height":1000}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

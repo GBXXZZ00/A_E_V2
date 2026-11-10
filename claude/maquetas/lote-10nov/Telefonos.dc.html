@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Teléfono</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap">
+<style>
+body{margin:0;background:#F5F6F7;font-family:Inter,system-ui,sans-serif;color:#111315;font-size:14px}
+*{box-sizing:border-box}
+h1,h2,h3,p{margin:0}
+.mut{color:#5B636E;font-size:12px}
+.chip{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 10px;border-radius:999px;font-size:12px;font-weight:600;background:#ECEEF1;color:#5B636E;white-space:nowrap}
+.r{background:#FCEDEB;color:#A32117}.w{background:#FBF1DC;color:#754B00}.ok{background:#E7F5EE;color:#0F6642}.b{background:#E8EEFF;color:#1F45C4}.m{background:#F0EBFA;color:#5B3AA6}
+.card{background:#fff;border:1px solid #E3E6EA;border-radius:18px;padding:16px;display:flex;flex-direction:column;gap:10px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:40px;padding:0 16px;border-radius:999px;border:1px solid #E3E6EA;background:#fff;font:600 13px Inter,sans-serif;color:#111315;white-space:nowrap;cursor:pointer;text-decoration:none}
+.btn.pri{background:#2B5CFF;color:#fff;border-color:#2B5CFF}
+.btn.wa{background:#0F6642;color:#fff;border-color:#0F6642}
+.btn.neg{background:#111315;color:#fff;border-color:#111315}
+.btn.chico{height:32px;padding:0 12px;font-size:12px}
+.seg{height:36px;padding:0 14px;border-radius:999px;border:1px solid #E3E6EA;background:#fff;font:600 13px Inter,sans-serif;color:#5B636E;cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.seg.on{background:#111315;color:#fff;border-color:#111315}
+.row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.col{display:flex;flex-direction:column;gap:8px}
+.t{display:flex;align-items:center;gap:12px;padding:12px;border-radius:12px}
+.t + .t{border-top:1px solid #F0F2F4}
+.tx{display:flex;flex-direction:column;gap:2px;flex:1;min-width:0}
+.dot{width:8px;height:8px;border-radius:50%;display:inline-block;background:#C9CED6}
+.dot.w{background:#D98A00}.dot.ok{background:#0F6642}.dot.r{background:#C0271B}
+.nota{position:absolute;background:#FFF6C9;border:1px solid #E8D27A;border-radius:10px;padding:8px 10px;font-size:12px;line-height:1.35;color:#4A3F00;max-width:240px}
+.tel{width:390px;height:844px;background:#fff;border-radius:36px;border:1px solid #E3E6EA;overflow:hidden;display:flex;flex-direction:column;position:relative;flex:none}
+.top{height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;border-bottom:1px solid #E3E6EA;flex:none}
+.logo{font-weight:800;letter-spacing:.18em;font-size:14px;color:#3A414A}
+.body{padding:18px;display:flex;flex-direction:column;gap:12px;flex:1;overflow:hidden}
+.campo{display:flex;flex-direction:column;gap:6px}
+.campo label{font-size:12px;font-weight:600;color:#5B636E}
+.inp{height:44px;border:1.5px solid #CCD2DA;border-radius:12px;padding:0 14px;font:14px Inter,sans-serif;display:flex;align-items:center;color:#111315;background:#fff}
+.inp.ph{color:#69717C}
+.cas{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid #F0F2F4}
+.barra{position:absolute;left:0;right:0;bottom:0;background:#fff;border-top:1px solid #E3E6EA;padding:12px 18px 18px;display:flex;flex-direction:column;gap:8px}
+.pasos{display:flex;gap:6px}
+.pasos i{flex:1;height:4px;border-radius:4px;background:#E3E6EA;display:block}
+.pasos i.on{background:#2B5CFF}
+.full{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:32px;text-align:center}
+.ico{width:88px;height:88px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.lbl{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#5B636E}
+.tabla{width:100%;border-collapse:collapse;font-size:13px}
+.tabla th{text-align:left;font-size:11px;font-weight:700;color:#5B636E;padding:8px 10px;letter-spacing:.04em;text-transform:uppercase}
+.tabla td{padding:12px 10px;border-top:1px solid #F0F2F4;vertical-align:middle}
+.pleg{background:#fff;border:1px solid #E3E6EA;border-radius:16px;display:flex;align-items:center;gap:10px;padding:14px 16px;min-height:52px}
+.pleg.pend{border-color:#E8A040}
+.pleg.list{border-color:#9BD1B6}
+.pleg b{flex:1}
+.car{color:#69717C;font-size:16px}
+</style>
+</helmet>
+<div style="width:1800px;height:960px;padding:30px 40px;display:flex;gap:40px"><div class="col" style="gap:12px"><span class="lbl">Comisiones</span><div class="tel"><div class="top"><span class="logo">AIRTEK</span></div><div class="body" style="gap:10px"><b style="font-size:20px">Comisiones</b><div class="row" style="gap:8px;flex-wrap:nowrap;overflow:hidden"><div class="card" style="padding:10px;gap:0;min-width:110px"><span class="mut">Del corte</span><b style="font-size:18px">96</b></div><div class="card" style="padding:10px;gap:0;min-width:110px;border:2px solid #111315"><span class="mut">Por enviar</span><b style="font-size:18px">18</b></div><div class="card" style="padding:10px;gap:0;min-width:110px"><span class="mut">Les falta</span><b style="font-size:18px">55</b></div></div>
+<div class="row" style="gap:6px;flex-wrap:nowrap;overflow:hidden"><span class="seg on">Todos</span><span class="seg">Ventas</span><span class="seg">Canales</span><span class="seg">Aliados</span></div>
+<div class="row"><span class="seg">Filtros · fechas ⌄</span><span class="seg on">Por dueño</span></div>
+<b style="font-size:13px;margin-top:4px">Ana Pérez · 5</b><div class="card" style="padding:12px;gap:6px"><div class="row"><b style="flex:1;font-size:14px">Comercial Ejemplo, C.A.</b><span class="chip r">5 días</span></div><span class="mut">824-000001 · instalado 05/11</span><div class="row" style="gap:6px"><span class='dot ok'></span><span class='dot ok'></span><span class='dot ok'></span><span class="mut" style="flex:1">Cumple</span><span class="mut">›</span></div></div><div class="card" style="padding:12px;gap:6px"><div class="row"><b style="flex:1;font-size:14px">Tienda Modelo, C.A.</b><span class="chip w">3 días</span></div><span class="mut">824-000002 · instalado 07/11</span><div class="row" style="gap:6px"><span class='dot w'></span><span class='dot ok'></span><span class='dot ok'></span><span class="mut" style="flex:1">Falta 1 documento</span><span class="mut">›</span></div></div></div><div style="position:absolute;left:0;right:0;bottom:0;height:72px;border-top:1px solid #E3E6EA;background:#fff;display:flex;align-items:center;padding:0 6px 8px"><div class="col" style="flex:1;align-items:center;gap:2px;font-size:10.5px;font-weight:600;color:#69717C"><span style="width:22px;height:22px;border-radius:7px;background:#E3E6EA"></span>Inicio</div><div class="col" style="flex:1;align-items:center;gap:2px;font-size:10.5px;font-weight:600;color:#69717C"><span style="width:22px;height:22px;border-radius:7px;background:#E3E6EA"></span>Mi trabajo</div><div class="col" style="flex:1;align-items:center;gap:2px;font-size:10.5px;font-weight:600;color:#69717C"><span style="width:22px;height:22px;border-radius:7px;background:#E3E6EA"></span>Clientes</div><div class="col" style="flex:1;align-items:center;gap:2px;font-size:10.5px;font-weight:600;color:#2B5CFF"><span style="width:22px;height:22px;border-radius:7px;background:#2B5CFF"></span>Comisiones</div><div class="col" style="flex:1;align-items:center;gap:2px;font-size:10.5px;font-weight:600;color:#69717C"><span style="width:22px;height:22px;border-radius:7px;background:#E3E6EA"></span>Más</div></div></div></div><div class="col" style="gap:12px"><span class="lbl">Hoja de comisión</span><div class="tel"><div class="top"><span class=mut>‹ Comisiones</span><span class=mut>Ver expediente</span></div><div class="body" style="gap:10px"><div class="tx"><b style="font-size:18px">Comercial Ejemplo, C.A.</b><span class="mut">824-000001 · Ana Pérez</span></div><span class="chip w" style="align-self:flex-start">Faltan 2 de 3</span>
+<div class="pleg list"><span class="dot ok"></span><b>Corte y comisión</b><span class="car">⌄</span></div>
+<div class="pleg list"><span class="dot ok"></span><b>Cliente y orden</b><span class="car">⌄</span></div>
+<div class="pleg pend"><span class="dot w"></span><b>Legal</b><span class="chip w">Faltan 2</span></div>
+<div class="pleg pend"><span class="dot w"></span><b>Pago</b><span class="chip w">Revisar</span></div>
+<div class="card" style="border-color:#E8A040;padding:12px;gap:8px"><div class="row"><span class="dot w"></span><b style="flex:1">Carta y proforma</b><span class="car">⌃</span></div><button class="btn wa" style="height:46px">Enviar por WhatsApp</button><div class="row" style="gap:6px"><button class="btn chico">Descargar</button><button class="btn chico">Ya enviada</button></div></div>
+<div class="pleg"><b>Hilo</b><span class="car">⌄</span></div></div><div style="position:absolute;left:0;right:0;bottom:0;height:72px;border-top:1px solid #E3E6EA;background:#fff;display:flex;align-items:center;padding:0 6px 8px"><div class="col" style="flex:1;align-items:center;gap:2px;font-size:10.5px;font-weight:600;color:#69717C"><span style="width:22px;height:22px;border-radius:7px;background:#E3E6EA"></span>Inicio</div><div class="col" style="flex:1;align-items:center;gap:2px;font-size:10.5px;font-weight:600;color:#69717C"><span style="width:22px;height:22px;border-radius:7px;background:#E3E6EA"></span>Mi trabajo</div><div class="col" style="flex:1;align-items:center;gap:2px;font-size:10.5px;font-weight:600;color:#69717C"><span style="width:22px;height:22px;border-radius:7px;background:#E3E6EA"></span>Clientes</div><div class="col" style="flex:1;align-items:center;gap:2px;font-size:10.5px;font-weight:600;color:#2B5CFF"><span style="width:22px;height:22px;border-radius:7px;background:#2B5CFF"></span>Comisiones</div><div class="col" style="flex:1;align-items:center;gap:2px;font-size:10.5px;font-weight:600;color:#69717C"><span style="width:22px;height:22px;border-radius:7px;background:#E3E6EA"></span>Más</div></div></div></div><div class="col" style="gap:12px"><span class="lbl">Mi trabajo del analista</span><div class="tel"><div class="top"><span class="logo">AIRTEK</span></div><div class="body" style="gap:10px"><b style="font-size:20px">Hola, Emmanuel</b><div class="row" style="gap:6px;flex-wrap:nowrap;overflow:hidden"><span class="seg on">Todo 31</span><span class="seg">Cartas 12</span><span class="seg">IP 6</span><span class="seg">Pago 6</span></div>
+<div class="card" style="padding:10px;gap:6px"><div class="row"><span class="dot r"></span><b style="flex:1">Cartas y proformas · 12</b></div>
+<div class="col" style="gap:4px;padding:6px 0;border-top:1px solid #F0F2F4"><b style="font-size:13px">Tienda Modelo, C.A.</b><span class="mut">Descargada ayer. ¿Ya la enviaste?</span><button class="btn chico pri" style="align-self:flex-start">Ya la envié</button></div>
+<div class="col" style="gap:4px;padding:6px 0;border-top:1px solid #F0F2F4"><b style="font-size:13px">Comercial Ejemplo, C.A.</b><span class="mut">5 días · con número</span><button class="btn chico wa" style="align-self:flex-start">Enviar por WhatsApp</button></div></div>
+<div class="pleg"><span class="dot w"></span><b>Esperan la IP · 6</b><span class="car">⌄</span></div>
+<div class="pleg"><span class="dot w"></span><b>Cambios por emitir · 5</b><span class="car">⌄</span></div>
+<div class="pleg"><span class="dot w"></span><b>Pago por revisar · 6</b><span class="car">⌄</span></div></div><div style="position:absolute;left:0;right:0;bottom:0;height:72px;border-top:1px solid #E3E6EA;background:#fff;display:flex;align-items:center;padding:0 6px 8px"><div class="col" style="flex:1;align-items:center;gap:2px;font-size:10.5px;font-weight:600;color:#69717C"><span style="width:22px;height:22px;border-radius:7px;background:#E3E6EA"></span>Inicio</div><div class="col" style="flex:1;align-items:center;gap:2px;font-size:10.5px;font-weight:600;color:#2B5CFF"><span style="width:22px;height:22px;border-radius:7px;background:#2B5CFF"></span>Mi trabajo</div><div class="col" style="flex:1;align-items:center;gap:2px;font-size:10.5px;font-weight:600;color:#69717C"><span style="width:22px;height:22px;border-radius:7px;background:#E3E6EA"></span>Clientes</div><div class="col" style="flex:1;align-items:center;gap:2px;font-size:10.5px;font-weight:600;color:#69717C"><span style="width:22px;height:22px;border-radius:7px;background:#E3E6EA"></span>Comisiones</div><div class="col" style="flex:1;align-items:center;gap:2px;font-size:10.5px;font-weight:600;color:#69717C"><span style="width:22px;height:22px;border-radius:7px;background:#E3E6EA"></span>Más</div></div></div></div><div class="col" style="gap:12px"><span class="lbl">Cliente: todo cerrado</span><div class="tel"><div class="top"><span class=mut>‹ Clientes</span><span class=mut>⋯</span></div><div class="body" style="gap:10px"><div class="tx"><b style="font-size:18px">Comercial Ejemplo, C.A.</b><span class="mut">J-00000000-0 · Ana Pérez</span></div><span class="chip w" style="align-self:flex-start">Documentos pendientes</span>
+<div class="pleg" style="border-style:dashed"><span class="dot w"></span><b>Revisión: 4 de 6</b><span class="btn chico">Abrir</span></div>
+<div class="pleg"><b>Datos</b><span class="car">⌄</span></div><div class="pleg pend"><span class="dot w"></span><b>Documentos</b><span class="chip w">Faltan 2</span></div><div class="pleg"><b>Representantes</b><span class="car">⌄</span></div><div class="pleg list"><span class="dot ok"></span><b>Servicios</b><span class="chip ok">Con IP</span></div><div class="pleg pend"><span class="dot w"></span><b>Comisión</b><span class="chip w">Pago</span></div><div class="pleg"><b>Hilo</b><span class="car">⌄</span></div></div><div style="position:absolute;left:0;right:0;bottom:0;height:72px;border-top:1px solid #E3E6EA;background:#fff;display:flex;align-items:center;padding:0 6px 8px"><div class="col" style="flex:1;align-items:center;gap:2px;font-size:10.5px;font-weight:600;color:#69717C"><span style="width:22px;height:22px;border-radius:7px;background:#E3E6EA"></span>Inicio</div><div class="col" style="flex:1;align-items:center;gap:2px;font-size:10.5px;font-weight:600;color:#69717C"><span style="width:22px;height:22px;border-radius:7px;background:#E3E6EA"></span>Mi trabajo</div><div class="col" style="flex:1;align-items:center;gap:2px;font-size:10.5px;font-weight:600;color:#2B5CFF"><span style="width:22px;height:22px;border-radius:7px;background:#2B5CFF"></span>Clientes</div><div class="col" style="flex:1;align-items:center;gap:2px;font-size:10.5px;font-weight:600;color:#69717C"><span style="width:22px;height:22px;border-radius:7px;background:#E3E6EA"></span>Comisiones</div><div class="col" style="flex:1;align-items:center;gap:2px;font-size:10.5px;font-weight:600;color:#69717C"><span style="width:22px;height:22px;border-radius:7px;background:#E3E6EA"></span>Más</div></div></div></div></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1800,"height":960}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
