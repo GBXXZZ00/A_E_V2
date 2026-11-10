@@ -224,11 +224,19 @@
     const elab = its.filter((f) => f.tipo === 'elaborar_contrato' || f.tipo === 'elaborar_vgt').sort((a, b) => (String(a.desde) < String(b.desde) ? -1 : 1));
     const filtros = '<div class="bz-fl" role="group" aria-label="Filtrar por tipo de cliente"><button type="button" class="' + (!filtroC ? 'on' : '') + '" data-filtro-c="" aria-pressed="' + !filtroC + '">Todos <b>' + elab.length + '</b></button>' +
       TIPOS_C.map((t) => '<button type="button" class="' + (filtroC === t[0] ? 'on' : '') + '" data-filtro-c="' + t[0] + '" aria-pressed="' + (filtroC === t[0]) + '">' + esc(t[1]) + ' <b>' + elab.filter((f) => tipoDe(f) === t[0]).length + '</b></button>').join('') + '</div>';
-    const porTipo = TIPOS_C.filter((t) => !filtroC || filtroC === t[0]).map((t) => { const l = elab.filter((f) => tipoDe(f) === t[0]); if(!l.length && filtroC !== t[0]) return '';
-      return seccion('Por elaborar · ' + t[1], t[2] + ' · ' + (t[0] === 'vgt' ? plural(l.length, 'solicitud', 'solicitudes') : plural(l.length, 'cliente', 'clientes')), l.length ? l.slice(0, 40).map((f) => itemHtml(f)).join('') : '<p class="nota-chica bz-nada">Nada por elaborar de este tipo.</p>'); }).join('');
-    const etapa = (t, tipo) => { const l = its.filter((f) => f.tipo === tipo); return l.length ? seccion(t, plural(l.length, 'cliente', 'clientes'), l.slice(0, 40).map((f) => itemHtml(f)).join('')) : ''; };
-    return filtros + (elab.length > 1 && !solo() ? '<p style="margin:10px 0"><button type="button" class="btn btn-chico" data-tr="cola">Uno tras otro, del más viejo</button></p>' : '') + porTipo +
-      etapa('Enviado a firmar', 'seguir_firma') + etapa('Firmado, falta subir', 'contrato_archivo') + seccion('Vencen pronto', 'Se tachan solos cuando suben el documento nuevo', listaGrupo(ven)) +
+    // Lote 10/11 H1 (maqueta 4a): un solo grupo "Por elaborar contrato" con chips por tipo; ISP primero, luego corporativo, VGT y PYME, y del más viejo al más nuevo
+    const ORD = { isp: 0, corp: 1, vgt: 2, pyme: 3 }; const ETQ_C = { isp: ['azul', 'ISP'], corp: ['', 'Corporativo'], vgt: ['morado', 'VGT'], pyme: ['', 'PYME'] };
+    const diasDe = (f) => { const t = new Date(f.desde || f.en || ''); return isNaN(t) ? null : Math.max(0, Math.floor((Date.now() - t.getTime()) / 864e5)); };
+    const fila = (f) => { const tp = tipoDe(f); const dd = diasDe(f); const c = ETQ_C[tp];
+      return '<div class="lg-row"><span class="chip ' + c[0] + ' lg-tag">' + c[1] + '</span><div class="lg-it">' + itemHtml(f) + '</div>' + (dd === null ? '' : '<span class="chip ' + (dd > 5 ? 'rojo' : dd > 2 ? 'ambar' : '') + ' lg-dias">' + (dd === 0 ? 'Nuevo' : plural(dd, 'día', 'días')) + '</span>') + '</div>'; };
+    const lista = elab.filter((f) => !filtroC || tipoDe(f) === filtroC).sort((a, b) => ORD[tipoDe(a)] - ORD[tipoDe(b)] || (String(a.desde) < String(b.desde) ? -1 : 1));
+    const masViejos = elab.filter((f) => (diasDe(f) || 0) > 5).length;
+    const porTipo = seccion('Por elaborar contrato · ' + elab.length, masViejos ? plural(masViejos, 'lleva', 'llevan') + ' más de 5 días' : 'Primero los ISP. Cada uno abre el expediente donde se hace', filtros + (lista.length ? lista.slice(0, 60).map(fila).join('') : '<p class="nota-chica bz-nada">Nada por elaborar de este tipo.</p>'));
+    const etapa = (t, tipo, sub) => { const l = its.filter((f) => f.tipo === tipo); const viejo = l.reduce((m, f) => Math.max(m, diasDe(f) || 0), 0);
+      return '<details class="bz-pl lg-pl"><summary><b>' + esc(t) + ' · ' + l.length + '</b><span class="lg-sub">' + esc(sub || (l.length && viejo ? 'El más viejo: ' + plural(viejo, 'día', 'días') : '')) + '</span></summary>' + (l.length ? l.slice(0, 40).map((f) => itemHtml(f)).join('') : '<p class="nota-chica bz-nada">Nada aquí.</p>') + '</details>'; };
+    return (elab.length > 1 && !solo() ? '<p style="margin:10px 0"><button type="button" class="btn btn-chico" data-tr="cola">Uno tras otro, del más viejo</button></p>' : '') + porTipo +
+      etapa('Enviado a firmar', 'seguir_firma') + etapa('Firmado, falta subir', 'contrato_archivo') +
+      '<details class="bz-pl lg-pl"><summary><b>Vencen en 60 días · ' + ven.items.length + '</b><span class="lg-sub">Se tachan solos cuando suben el documento nuevo</span></summary>' + listaGrupo(ven) + '</details>' +
       '<p class="nota-chica">' + esc(plural(k.firmados || 0, 'contrato firmado', 'contratos firmados')) + ' en los últimos 7 días.</p>';
   }
   // ---------- Notas personales ----------

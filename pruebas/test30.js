@@ -88,7 +88,7 @@ const dia = (n) => { const d = new Date(Date.now() - 4 * 3600e3); d.setUTCDate(d
     const c4 = await contexto(nav, dispositivo, mundo); const s = await entrar(c4.ctx, 'paula', '615243'); s.on('pageerror', (e) => errores.push(e.message));
     await s.goto(H + 'trabajo.html'); await s.waitForSelector('#tarjetas .bz-cd');
     // Lote 05/11 D4: Legal ve "Por elaborar" por tipo de cliente con filtros, y luego enviados, firmados y vencimientos
-    ok(nombre + ': Legal ve Por elaborar por tipo de cliente con filtros y los vencimientos', /Por elaborar · /.test(await s.textContent('#cuerpo')) && (await s.locator('#cuerpo [data-filtro-c]').count()) === 5 && /Vencen pronto/.test(await s.textContent('#cuerpo')));
+    ok(nombre + ': Legal ve Por elaborar contrato con chips por tipo y los vencimientos en 60 días plegados', /Por elaborar contrato · /.test(await s.textContent('#cuerpo')) && (await s.locator('#cuerpo [data-filtro-c]').count()) === 5 && /Vencen en 60 días/.test(await s.textContent('#cuerpo')));
     ok(nombre + ': Legal tiene la cola de contratos', (await s.locator('[data-tr="cola"]').count()) === 1);
     await s.click('[data-tr="cola"]'); await s.waitForSelector('#hojaFicha.ver #tFicha');
     ok(nombre + ': Empezar abre el más viejo', (await s.textContent('#tFicha')).includes(cli[0].nombre.split(',')[0]));

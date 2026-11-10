@@ -80,3 +80,8 @@ Columna "Queda": **igual**, **movido a …** o **nuevo**. Se marca ✔ cuando la
 | Aliado: se enlazaba a mano en Aliados | al crearlo se elige **la empresa del aliado** y queda enlazado (`aliado_enlazar`); en Aliados sigue el enlace a mano |
 | PIN temporal con cambio obligatorio al entrar | **sin cambio obligatorio** (al crear y al restablecer); se cambia desde la cuenta cuando quiera |
 | Editar, Restablecer PIN, Desactivar o Activar, analista del líder, equipo en comisiones | igual (al editar, "Más opciones" abierto) ✔ (test02, test07) |
+
+## Parte H · Mi trabajo (`trabajo.js`)
+| Función de hoy | Queda |
+|---|---|
+| Abogado: Por elaborar por tipo (secciones), filtros, Uno tras otro, Enviado a firmar, Firmado falta subir, Vencen pronto, firmados en 7 días | un solo grupo con chips, etiqueta por tipo y días; las etapas y "Vencen en 60 días" plegadas; lo demás igual ✔ (test30, test44, test53) |

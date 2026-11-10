@@ -2475,3 +2475,15 @@ button.bz-ck.on::after{left:17px;top:13px}
 .us-mas summary small{margin-left:auto;font-size:12.5px;color:var(--text2)}
 .us-mas[open]{padding-bottom:14px}
 .us-info{padding:10px 14px;border-radius:12px;background:var(--azul-bg);color:var(--azul)}
+
+/* Lote 10/11 H: Mi trabajo del abogado (maqueta 4a) */
+.lg-row{display:flex;align-items:center;gap:10px;border-top:1px solid var(--line)}
+.lg-row:first-of-type{border-top:0}
+.lg-tag{flex:none;min-width:92px;justify-content:center}
+.lg-it{flex:1;min-width:0} .lg-it .bz-it{border-top:0}
+.lg-dias{flex:none}
+.lg-pl{margin-top:10px;border:1px solid var(--line);border-radius:18px;background:#fff;padding:0 14px}
+.lg-pl summary{display:flex;align-items:center;gap:10px;min-height:52px;cursor:pointer;list-style:none}
+.lg-pl summary::-webkit-details-marker{display:none}
+.lg-pl .lg-sub{margin-left:auto;font-size:12.5px;color:var(--text2)}
+@media (max-width:760px){ .lg-row{flex-wrap:wrap;gap:6px;padding-top:8px} .lg-tag{min-width:0} .lg-it{flex-basis:100%;order:3} }
