@@ -20,12 +20,16 @@ const { ok, cerrar } = marcador();
     await p.screenshot({ path: 'capturas/02-' + nombre + '-lista.png' });
 
     await p.click('#nuevo'); await p.waitForSelector('#hojaUsuario.ver');
+    // Lote 10/11 F: primero el cargo; la app llena sola rol y equipo de comisiones y pide solo lo de ese cargo
+    ok(nombre + ': al crear, primero se elige el cargo (7 cargos)', (await p.locator('#pasoCargo [data-cargo]').count()) === 7 && !(await p.locator('#form').isVisible()));
+    await p.click('[data-cargo="canales"]'); await p.waitForSelector('#form #fNombre');
+    ok(nombre + ': Canales de atención llena solo rol, cargo y equipo de comisiones, y pide el código de vendedor con su ayuda', (await p.inputValue('#fRol')) === 'analista' && (await p.inputValue('#fEquipoCom')) === 'canales' && (await p.inputValue('#fCargo')) === 'Canales de atención' && /con él se sabe de quién es cada orden/.test(await p.textContent('#hojaUsuario')) && !(await p.locator('#fRol').isVisible()));
     await p.click('#guardar');
     ok(nombre + ': crear vacío marca cada campo', (await p.textContent('#eNombre')) === 'Escribe el nombre' && (await p.textContent('#eUsuarioF')).includes('usuario') && (await p.textContent('#ePin')).includes('6 números'));
     ok(nombre + ': no llama al servidor con errores', !mundo.llamadas.some((l) => l[0] === 'usuarios' && l[1].accion === 'crear'));
     await p.fill('#fNombre', 'Andrés Peña'); await p.fill('#fUsuario', 'Andrés Peña'); await p.locator('#fUsuario').blur();
     ok(nombre + ': el usuario se limpia solo', (await p.inputValue('#fUsuario')) === 'andrespena');
-    await p.fill('#fCargo', 'Analista de canales'); await p.selectOption('#fRol', 'analista'); await p.fill('#fCodigo', '3');
+    await p.fill('#fCodigo', '3');
     await p.fill('#fPin', '123456'); await p.click('#guardar');
     ok(nombre + ': PIN fácil rechazado', (await p.textContent('#ePin')).includes('muy fácil'));
     await p.click('#generar');

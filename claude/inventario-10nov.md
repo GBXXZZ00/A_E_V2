@@ -71,3 +71,12 @@ Columna "Queda": **igual**, **movido a …** o **nuevo**. Se marca ✔ cuando la
 | Escribir al administrador por WhatsApp | igual + en la pantalla Revisando, Te falta, En revisión y en el registro mientras se revisa |
 | Avisos al aliado (bloqueada, aprobada, devuelta, pago) | igual + "Tu solicitud de X quedó sin enviar. Falta: …" una vez a la hora (`privado.avisos_borradores_aliado`) |
 | Registro del administrador (chips, por aliado, decidir, excepción, expediente) | igual + chip **Sin enviar** |
+
+## Parte F · Usuarios (`usuarios.js`, `usuarios.html`, función `gestionar_usuarios`)
+| Función de hoy | Queda |
+|---|---|
+| Nuevo usuario con nombre, usuario, cargo, rol, espacio, equipo en comisiones, analista del líder, número de vendedor, WhatsApp, correo, nombre en Odoo, PIN temporal con Generar | igual, pero **primero el cargo** (7 cargos) y solo lo de ese cargo; cargo, rol, espacio, equipo de comisiones y nombre en Odoo en **Más opciones** ✔ (test02) |
+| Código de vendedor | igual, con la ayuda "Su número de vendedor en Odoo; con él se sabe de quién es cada orden" |
+| Aliado: se enlazaba a mano en Aliados | al crearlo se elige **la empresa del aliado** y queda enlazado (`aliado_enlazar`); en Aliados sigue el enlace a mano |
+| PIN temporal con cambio obligatorio al entrar | **sin cambio obligatorio** (al crear y al restablecer); se cambia desde la cuenta cuando quiera |
+| Editar, Restablecer PIN, Desactivar o Activar, analista del líder, equipo en comisiones | igual (al editar, "Más opciones" abierto) ✔ (test02, test07) |

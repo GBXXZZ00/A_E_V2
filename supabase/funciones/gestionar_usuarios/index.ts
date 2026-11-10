@@ -6,6 +6,8 @@
 // Corrida urgente 14/10: al crear, editar o activar un líder se enlazan solos los clientes que tienen su nombre y no tienen cuenta.
 // Lote 22/10: marca de coordinador de analistas (ve y hace lo de todos los analistas).
 // Lote S (21/10): CORS solo para la app publicada; restablecer PIN o desactivar cierra las sesiones abiertas.
+// Lote 10/11 F5: el PIN que pone el administrador (al crear o al restablecer) sirve para entrar sin cambio obligatorio;
+// la persona lo cambia cuando quiera desde su cuenta (problemas reales con el cambio de PIN, 09/11).
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
@@ -135,7 +137,7 @@ async function atender(req: Request): Promise<Response> {
         email: usuario + DOMINIO, password: await clave(admin, usuario, b.pin as string), email_confirm: true,
       });
       if (eCrear || !creado?.user) return fallo("No se pudo crear la cuenta. Intenta de nuevo", 500);
-      const fila = { id: creado.user.id, usuario, ...p.datos, debe_cambiar_pin: true };
+      const fila = { id: creado.user.id, usuario, ...p.datos, debe_cambiar_pin: false };
       const { error: ePerfil } = await admin.from("perfiles").insert(fila);
       if (ePerfil) {
         await admin.auth.admin.deleteUser(creado.user.id);
@@ -166,7 +168,7 @@ async function atender(req: Request): Promise<Response> {
       if (!per) return fallo("No existe ese usuario", 404);
       const { error } = await admin.auth.admin.updateUserById(id, { password: await clave(admin, per.usuario, b.pin as string) });
       if (error) return fallo("No se pudo cambiar el PIN", 500);
-      await admin.from("perfiles").update({ debe_cambiar_pin: true }).eq("id", id);
+      await admin.from("perfiles").update({ debe_cambiar_pin: false }).eq("id", id);
       await admin.rpc("acceso_desbloquear", { p_usuario: per.usuario });
       const cerradas = id === yo || await cerrarSesiones(admin, id);
       await anotar("pin_restablecido", id, null);

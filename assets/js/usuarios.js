@@ -84,10 +84,42 @@
     }
   }
 
-  function limpiarErrores(){ ['eNombre','eUsuarioF','eCodigo','ePin','eWhatsapp','eCorreo','eEquipoCom'].forEach((id) => { $(id).textContent = ''; }); }
+  function limpiarErrores(){ ['eNombre','eUsuarioF','eCodigo','ePin','eWhatsapp','eCorreo','eEquipoCom','eAliado'].forEach((id) => { $(id).textContent = ''; }); }
+  // Lote 10/11 F: cargos. Cada uno llena solo rol, espacio, equipo de comisiones y cargo; y dice qué campos pide
+  const CARGOS = {
+    lider: { t: 'Nuevo líder de ventas', rol: 'lider', equipo: 'ventas', com: 'corporativas', cargo: 'Líder de ventas', campos: ['whatsapp', 'correo', 'codigo', 'notaCarta'] },
+    canales: { t: 'Nuevo de Canales de atención', rol: 'analista', equipo: 'ventas', com: 'canales', cargo: 'Canales de atención', campos: ['whatsapp', 'correo', 'codigo'] },
+    abogado: { t: 'Nuevo abogado', rol: 'abogado', equipo: 'ventas', com: '', cargo: 'Abogado', campos: ['whatsapp', 'correo'] },
+    analista: { t: 'Nuevo analista', rol: 'analista', equipo: 'ventas', com: '', cargo: 'Analista', campos: ['whatsapp', 'correo'] },
+    aliado: { t: 'Nuevo aliado comercial', rol: 'aliado', equipo: 'aliados', com: '', cargo: 'Aliado comercial', campos: ['aliado', 'whatsapp'], nombre: 'Nombre de quien entra' },
+    gerencia: { t: 'Nuevo de Gerencia', rol: 'gerencia', equipo: 'ventas', com: '', cargo: 'Gerencia', campos: ['correo'] },
+    admin: { t: 'Nuevo administrador', rol: 'admin', equipo: 'ambos', com: '', cargo: 'Administrador', campos: ['whatsapp', 'correo'] }
+  };
+  let cargoSel = null; let ALIS = null;
+  function verCampos(lista){
+    Array.prototype.forEach.call(document.querySelectorAll('#hojaUsuario [data-campo]'), (el) => el.classList.toggle('hidden', !!lista && lista.indexOf(el.dataset.campo) < 0));
+  }
+  async function elegirCargo(k){
+    const c = CARGOS[k]; if(!c) return; cargoSel = k;
+    $('pasoCargo').classList.add('hidden'); $('form').classList.remove('hidden'); $('pasoDos').classList.remove('hidden');
+    $('tHoja').textContent = c.t; $('fRol').value = c.rol; $('fEquipo').value = c.equipo; $('fEquipoCom').value = c.com; $('fCargo').value = c.cargo;
+    document.querySelector('label[for="fNombre"]').textContent = c.nombre || 'Nombre y apellido';
+    verCampos(c.campos); $('infoAliado').classList.toggle('hidden', k !== 'aliado'); $('masOpciones').classList.toggle('hidden', k === 'aliado'); $('masOpciones').open = false;
+    if(k === 'aliado') await cargarAliados();
+    $('fNombre').focus();
+  }
+  async function cargarAliados(){
+    try { if(!ALIS) ALIS = await rpc('aliados_lista', {}); }
+    catch (e) { $('eAliado').textContent = 'No se pudo cargar la lista de aliados. ' + e.message; return; }
+    const l = ((ALIS && ALIS.aliados) || []).filter((a) => !a.es_canales);
+    $('fAliado').innerHTML = '<option value="">Elige la empresa</option>' + l.map((a) => '<option value="' + window.Comun.esc(a.id) + '">' + window.Comun.esc(a.nombre) + (a.perfil ? ' (ya tiene usuario)' : '') + '</option>').join('');
+  }
   function abrir(u){
     editando = u || null;
-    limpiarErrores();
+    limpiarErrores(); cargoSel = null;
+    // Al crear, primero el cargo; al editar, todo el formulario con "Más opciones" abierto
+    $('pasoCargo').classList.toggle('hidden', !!u); $('pasoDos').classList.add('hidden'); $('infoAliado').classList.add('hidden'); $('masOpciones').classList.remove('hidden'); $('masOpciones').open = !!u;
+    verCampos(null); document.querySelector('label[for="fNombre"]').textContent = 'Nombre y apellido';
     $('tHoja').textContent = u ? 'Editar usuario' : 'Nuevo usuario';
     $('fNombre').value = u ? u.nombre : '';
     $('fUsuario').value = u ? u.usuario : ''; $('fUsuario').disabled = !!u;
@@ -101,7 +133,7 @@
     $('fOdoo').value = u ? (u.nombre_odoo || '') : '';
     $('fPin').value = '';
     $('zonaPin').classList.toggle('hidden', !!u);
-    $('form').classList.remove('hidden');
+    $('form').classList.toggle('hidden', !u);
     $('zonaEditar').classList.toggle('hidden', !u);
     $('pinListo').classList.add('hidden'); $('zonaListo').classList.add('hidden');
     desarmar();
@@ -127,6 +159,7 @@
     if(wa && (wa.length < 10 || wa.length > 15)){ $('eWhatsapp').textContent = 'Escribe el número completo, con el código del operador'; ok = false; }
     const correo = $('fCorreo').value.trim().toLowerCase();
     if(correo && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(correo)){ $('eCorreo').textContent = 'Ese correo no parece válido'; ok = false; }
+    if(!editando && cargoSel === 'aliado' && !$('fAliado').value){ $('eAliado').textContent = 'Elige la empresa del aliado'; ok = false; }
     if(!ok) return null;
     const rolForm = $('fRol').value;
     return { nombre, usuario, pin, cargo: $('fCargo').value.trim(), rol: rolForm === 'analista_senior' || rolForm === 'analista_coord' ? 'analista' : rolForm, senior: rolForm === 'analista_senior', coordinador: rolForm === 'analista_coord', whatsapp: wa, correo, equipo: $('fEquipo').value,
@@ -162,7 +195,13 @@
           catch (x) { $('eEquipoCom').textContent = x.message; b.disabled = false; b.textContent = 'Guardar'; return; }
         }
       }
-      else r = await llamar(Object.assign({ accion: 'crear' }, d));
+      else {
+        r = await llamar(Object.assign({ accion: 'crear' }, d));
+        // Lote 10/11 F3: el aliado queda enlazado a su empresa al crearlo (antes se hacía a mano)
+        if(cargoSel === 'aliado' && r && r.id && $('fAliado').value){ try { await rpc('aliado_enlazar', { p_aliado: Number($('fAliado').value), p_perfil: r.id }); ALIS = null; } catch (x) { toast('Usuario creado, pero no se pudo enlazar a su empresa: ' + x.message + '. Enlázalo en Aliados', 'error'); } }
+        // Equipo en comisiones según el cargo (Canales o corporativas)
+        if(r && r.id && cargoSel && CARGOS[cargoSel].com){ try { await rpc('perfil_equipo_guardar', { p_perfil: r.id, p_equipo: CARGOS[cargoSel].com }); } catch (x) {} }
+      }
       // Un líder nuevo o editado se queda con los clientes que tienen su nombre y no tenían cuenta
       const enl = r && r.enlazados > 0 ? '. ' + plural(r.enlazados, 'cliente enlazado', 'clientes enlazados') + ' a su cuenta' : '';
       if(editando){ toast('Cambios guardados' + enl); cerrarHoja(); }
@@ -227,6 +266,9 @@
   }
 
   $('nuevo').addEventListener('click', () => abrir(null));
+  $('pasoCargo').addEventListener('click', (e) => { const b = e.target.closest('[data-cargo]'); if(b) elegirCargo(b.dataset.cargo); });
+  $('otroCargo').addEventListener('click', () => { $('form').classList.add('hidden'); $('pasoDos').classList.add('hidden'); $('pasoCargo').classList.remove('hidden'); $('tHoja').textContent = 'Nuevo usuario'; });
+  $('fAliado').addEventListener('change', () => { $('eAliado').textContent = ''; });
   $('lista').addEventListener('click', (e) => {
     if(e.target.closest('#reintentar')){ usuarios = []; cargar(); return; }
     const f = e.target.closest('.persona'); if(f) abrir(usuarios[Number(f.dataset.i)]);

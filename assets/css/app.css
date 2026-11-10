@@ -2462,3 +2462,16 @@ button.bz-ck.on::after{left:17px;top:13px}
 .al-tj.verde{border-color:#A9D9C2} .al-tj.ambar{border-color:#E2A84A}
 .al-tj:active{transform:scale(.97)}
 @media (max-width:520px){ .al-tarjetas{grid-template-columns:1fr 1fr} }
+
+/* Lote 10/11 F: Usuarios. Primero el cargo; lo avanzado en "Más opciones" */
+.us-cargos{display:flex;flex-direction:column;gap:10px;margin-top:8px}
+.us-cargo{display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;padding:14px 16px;border:1px solid var(--line);border-radius:16px;background:#fff;text-align:left;transition:transform 140ms var(--ease-out)}
+.us-cargo b{font-size:15px} .us-cargo small{font-size:13px;color:var(--text2)}
+.us-cargo:active{transform:scale(.97)}
+@media (hover:hover) and (pointer:fine){ .us-cargo:hover{border-color:var(--accent);background:var(--azul-bg)} }
+.us-mas{margin:6px 0 14px;border:1px solid var(--line);border-radius:16px;padding:0 16px;background:#fff}
+.us-mas summary{display:flex;align-items:center;gap:10px;min-height:52px;cursor:pointer;list-style:none}
+.us-mas summary::-webkit-details-marker{display:none}
+.us-mas summary small{margin-left:auto;font-size:12.5px;color:var(--text2)}
+.us-mas[open]{padding-bottom:14px}
+.us-info{padding:10px 14px;border-radius:12px;background:var(--azul-bg);color:var(--azul)}
