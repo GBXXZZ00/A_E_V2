@@ -35,14 +35,14 @@ const { ok, cerrar } = marcador();
         ok(nombre + ': "Usar" guarda la IP sugerida del pool', (mundo.bitacora || []).some((b) => b.accion === 'servicio_ip'));
       } else ok(nombre + ': (no hay IP sugerida en estos datos)', true);
       await p.click('[data-cn-eq="1"]'); await p.waitForTimeout(150);
-      ok(nombre + ': "Todo el equipo" muestra lo de Canales', (await p.getAttribute('[data-cn-eq="1"]', 'aria-selected')) === 'true');
+      ok(nombre + ': "Todo el equipo" muestra lo de Canales', (await p.getAttribute('[data-cn-eq="1"]', 'aria-pressed')) === 'true');
       await ctx.close(); }
     // Coordinadora
     { const { ctx, mundo } = await contexto(nav, dispositivo);
       const pedro = mundo.personas.find((p) => p.usuario === 'pedro'); pedro.debe_cambiar_pin = false; pedro.coordinador = true;
       const p = await entrar(ctx, 'pedro', '204871'); p.on('pageerror', (e) => errores.push(nombre + ' coord: ' + e.message));
-      await p.goto(H + 'trabajo.html'); await p.waitForSelector('.cn-tiles', { timeout: 15000 });
-      ok(nombre + ': la coordinadora abre en "Mi equipo" con "Lo mío" al lado', (await p.getAttribute('[data-cn-modo="equipo"]', 'aria-selected')) === 'true' && (await p.locator('[data-cn-modo="mio"]').count()) === 1);
+      await p.goto(H + 'trabajo.html'); await p.waitForSelector('.cn-team', { timeout: 15000 });
+      ok(nombre + ': la coordinadora abre en "Mi equipo" con "Lo mío" al lado', (await p.getAttribute('[data-cn-modo="equipo"]', 'aria-pressed')) === 'true' && (await p.locator('[data-cn-modo="mio"]').count()) === 1);
       ok(nombre + ': carga por persona con Ver su trabajo', (await p.locator('.cn-team .cn-per').count()) >= 2 && (await p.locator('.cn-team [data-persona]').count()) >= 1);
       const txt = await p.textContent('#cuerpo');
       ok(nombre + ': cartas del equipo y órdenes sin dueño', /Cartas y proformas del equipo/.test(txt) && /Órdenes sin dueño/.test(txt));
@@ -57,7 +57,7 @@ const { ok, cerrar } = marcador();
         ok(nombre + ': Pasar a otra persona la asigna y queda en la bitácora', Object.values(mundo.datos.asig || {}).includes(destino) && (mundo.bitacora || []).some((b) => b.accion === 'trabajo_pasado'));
       } else ok(nombre + ': (no hay carta para pasar)', true);
       await p.click('[data-cn-modo="mio"]'); await p.waitForTimeout(100);
-      ok(nombre + ': Lo mío deja solo lo suyo', (await p.getAttribute('[data-cn-modo="mio"]', 'aria-selected')) === 'true' && !(await p.locator('.cn-team').count()));
+      ok(nombre + ': Lo mío deja solo lo suyo', (await p.getAttribute('[data-cn-modo="mio"]', 'aria-pressed')) === 'true' && !(await p.locator('.cn-team').count()));
       await ctx.close(); }
   }
   ok('sin errores de JavaScript', !errores.length, errores.slice(0, 3));

@@ -220,4 +220,16 @@ async function irContratos(p){
   await p.evaluate(() => ['ctr', 'vgt'].forEach((k) => { const d = document.querySelector('#tab-documentos details[data-sec="' + k + '"]'); if(d && !d.open) d.querySelector('summary').click(); }));
   await p.waitForTimeout(150);
 }
-module.exports = { irContratos, enHoja, chromium, H, TEL, PC, contexto, marcador, pin, sinDesborde, basePersonas, entrar, plegables, esperarDia };
+// Lote 12/11: cada contrato es una fila con "Abrir"; esto abre la hoja del contrato de esa clase (ctr-pyme, ctr-ded, ...)
+async function abrirCtr(p, clase){
+  if(!(await p.locator('#tab-documentos.on details[data-sec="ctr"][open]').count())) await irContratos(p);
+  await p.click('#tab-documentos .ctr-fila' + (clase ? '[data-ctr-clase~="' + clase + '"]' : '') + ' [data-ctr-abrir]'); await p.waitForSelector('#hojaCtrVer.ver');
+}
+async function cerrarCtr(p){ if(await p.locator('#hojaCtrVer.ver').count()){ await p.keyboard.press('Escape'); await p.waitForTimeout(300); } }
+// Lote 12/11: los filtros poco usados viven en "Más filtros"; esto abre el menú si hace falta y toca el filtro
+async function irFiltro(p, id){
+  const sel = '#filtros [data-filtro="' + id + '"]';
+  if(!(await p.locator(sel).isVisible().catch(() => false))){ await p.click('#filtros .cx-mas > summary'); await p.waitForSelector(sel); }
+  await p.click(sel);
+}
+module.exports = { irFiltro, abrirCtr, cerrarCtr, irContratos, enHoja, chromium, H, TEL, PC, contexto, marcador, pin, sinDesborde, basePersonas, entrar, plegables, esperarDia };

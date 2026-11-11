@@ -1,6 +1,6 @@
 // Tanda B: gestionar desde la hoja de comisión sin saltar, casilla de Contacto, actas agregables, contrato desde Pendiente por firmar,
 // servicios con número grande, ISP solo con dedicado, IP por servicio y Usuarios con WhatsApp, correo y Analista Senior.
-const { irContratos, chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar, plegables } = require('./simulador');
+const { abrirCtr, cerrarCtr, irContratos, chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar, plegables } = require('./simulador');
 const { ok, cerrar } = marcador();
 const PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
 const abiertas = (p) => p.evaluate(() => window.Comun.hojasAbiertas().join());
@@ -43,13 +43,13 @@ const cerrarTodo = async (p) => { for(let i = 0; i < 4; i++){ if(await p.evaluat
     await p.screenshot({ path: 'capturas/07-' + nombre + '-documentos.png' });
     await cerrarTodo(p);
     // Lote 21/10: el contrato vive en la pestaña Contrato (una tarjeta por contrato)
-    await abrirCliente(p, 'Posada Brisa Marina'); await irContratos(p);
-    ok(nombre + ': en Pendiente por firmar aparece el contrato', (await p.locator('#tab-documentos .ctr-ded [data-subir="contrato_dedicado:0"]').count()) === 1 && (await p.textContent('#tab-documentos .ctr-ded')).includes('Por firmar') && (await p.locator('#tab-documentos [data-grupo="contrato"]').count()) === 0);
+    await abrirCliente(p, 'Posada Brisa Marina'); await irContratos(p); const filaDed = await p.textContent('#tab-documentos [data-ctr-clase~="ctr-ded"]'); await abrirCtr(p, 'ctr-ded');
+    ok(nombre + ': en Pendiente por firmar aparece el contrato', (await p.locator('#hojaCtrVer .ctr-ded [data-subir="contrato_dedicado:0"]').count()) === 1 && filaDed.includes('Por firmar') && (await p.locator('#tab-documentos [data-grupo="contrato"]').count()) === 0);
     await cerrarTodo(p);
     await abrirCliente(p, 'Tornillos El Yunque');
     ok(nombre + ': sin dedicado no sale el interruptor de ISP', (await p.locator('[data-interr="es_isp"]').count()) === 0 && (await p.locator('[data-interr="es_top"]').count()) === 1);
     await irContratos(p);
-    ok(nombre + ': firmado conserva su contrato', (await p.locator('#tab-documentos .ctr-pyme').count()) === 1 && (await p.textContent('#tab-documentos .ctr-pyme')).includes('Firmado'));
+    ok(nombre + ': firmado conserva su contrato', (await p.locator('#tab-documentos [data-ctr-clase~="ctr-pyme"]').count()) === 1 && (await p.textContent('#tab-documentos [data-ctr-clase~="ctr-pyme"]')).includes('Firmado'));
     await cerrarTodo(p);
     await abrirCliente(p, 'Kiosco La Parada'); await p.click('[data-tab="documentos"]');
     ok(nombre + ': natural: contacto opcional y sin contrato', (await p.textContent('[data-grupo="rep1"] [data-campo]')).includes('Opcional') && (await p.locator('[data-grupo="contrato"]').count()) === 0 && (await p.locator('.chip.rojo:has-text("Falta")').count()) === 2);

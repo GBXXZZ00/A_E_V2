@@ -46,12 +46,12 @@ async function cerrarHojas(p){ for(let i = 0; i < 5 && await p.evaluate(() => !!
       ok(nombre + ': Aprobar seleccionados pasa por revision_lote y avisa en la misma pantalla', llamo(mundo, 'revision_lote').length === 1 && /aprobad/.test(await a.textContent('#bzAviso')) && /quedan/.test(await a.textContent('#bzAviso')));
     } else ok(nombre + ': hay documentos por revisar en el mundo de prueba', false);
     await a.screenshot({ path: 'capturas/lote28-' + nombre + '-revision-lote.png', fullPage: true });
-    await a.click('[data-rl="volver"]'); await a.waitForSelector('#tarjetas .bz-cd');
+    await a.click('[data-rl="volver"]'); await a.waitForSelector('#tarjetas .bz-mi');
     ok(nombre + ': Volver deja el buzón', await a.isVisible('#vistaBuzon'));
 
     // ----- Mi trabajo: líder (Mis ventas y su rol), Ir con tachado, notas -----
     const cL = await contexto(nav, dispositivo, mundo); const p = await entrar(cL.ctx, 'lucia', '739105'); vigilar(p);
-    await p.goto(H + 'trabajo.html'); await p.waitForSelector('#tarjetas .bz-cd');
+    await p.goto(H + 'trabajo.html'); await p.waitForSelector('#tarjetas .bz-mi');
     // Carta y proforma: el líder no envía la de un cliente de aliado (lo decide el servidor); Canales sí
     const ali = mundo.datos.clientes.find((c) => c.lider_id === '22222222-2222-4222-8222-222222222222' && c.servicios.length && c.instalaciones.length);
     ali.instalaciones.forEach((i) => { i.es_aliado = true; });
@@ -101,7 +101,7 @@ async function cerrarHojas(p){ for(let i = 0; i < 5 && await p.evaluate(() => !!
     await p.screenshot({ path: 'capturas/lote28-' + nombre + '-inicio.png', fullPage: true });
 
     // ----- Mi trabajo del administrador: el equipo en solo consulta -----
-    await a.goto(H + 'trabajo.html'); await a.waitForSelector('#tarjetas .bz-cd');
+    await a.goto(H + 'trabajo.html'); await a.waitForSelector('#tarjetas .bz-mi');
     if(await a.locator('[data-persona]').count()){
       await a.locator('[data-persona]').first().click(); await a.waitForSelector('#bandaPersona:not(.hidden)');
       ok(nombre + ': el administrador ve el buzón de otra persona en solo consulta, sin botones', /Solo consulta/.test(await a.textContent('#bandaPersona')) && (await a.locator('#cuerpo [data-hacer]').count()) === 0);

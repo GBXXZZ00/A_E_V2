@@ -59,7 +59,7 @@ const marcarFiltro = async (p, k, v) => { if(!(await p.evaluate(() => !!document
     ok(nombre + ': subir manda el archivo a Drive (drive_subir) y registra su drive_id', reg && reg[2].p_items[0].casillas[0].casilla === 'cedula' && dr && mundo.datos.subidas[dr] && sub1.length === 1 && sub1[0][1] === String(kiosco) && sub1[0][3] === 'application/pdf' && /\.pdf$/.test(sub1[0][2]));
     ok(nombre + ': la carpeta "RIF - NOMBRE" se crea sola con el primer documento y la subcarpeta va por tipo', k1 && k1.nombre === '99100022 - KIOSCO LA PARADA' && mundo.datos.subidas[dr].nueva && k1.subs['PERSONA NATURAL'].length === 1);
     ok(nombre + ': nada pasa por el almacenamiento de Supabase', !mundo.llamadas.some((l) => l[0] === 'storage'));
-    ok(nombre + ': la casilla queda Por revisar', (await p.locator('.casilla:has-text("Cédula") :text("Por revisar")').count()) >= 1);
+    ok(nombre + ': la casilla queda Por revisar', (await p.locator('.casilla:has-text("Cédula")').filter({ hasText: /Por revisar|En revisión/ }).count()) >= 1);
     mundo.fallaSubida = true;
     const [fc2] = await Promise.all([p.waitForEvent('filechooser'), p.locator('#tab-documentos [data-subir]').first().click()]);
     await fc2.setFiles(PDF); await p.waitForFunction(() => Array.from(document.querySelectorAll('.toast')).some((t) => /Drive no recibió el archivo/.test(t.textContent)));

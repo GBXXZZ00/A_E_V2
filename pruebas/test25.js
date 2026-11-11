@@ -1,7 +1,7 @@
 // Lote 2, parte D: Dedicados (desde la corrida 14/10 tarde, todo en Clientes: sin pantalla propia, atajo VGT, filtro de pólizas, enlaces plegados y VGT arriba de Contratos),
 // expediente con enlaces, contactos de la empresa y Contratos (sin Comisión), edición solo del administrador
 // con errores debajo del campo, la ejecutiva ve solo los suyos, navegación e Inicio, y el segmento en Clientes.
-const { irContratos, chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar, basePersonas } = require('./simulador');
+const { abrirCtr, irContratos, chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar, basePersonas } = require('./simulador');
 const { ok, cerrar } = marcador();
 
 const NORA = '77777777-7777-4777-8777-777777777777';
@@ -80,9 +80,9 @@ async function cerrarHojas(p){ for(let i = 0; i < 5 && await p.evaluate(() => !!
     ok(nombre + ': guardar pasa por el servidor y se ve al momento', mundo.llamadas.some((l) => l[1] === 'dedicado_editar' && l[2].p_campos.verificar === true && l[2].p_campos.ruta_documentos === 'pedir'));
 
     // Contratos
-    await irContratos(p); await p.waitForSelector('#tab-documentos.on [data-ctr-editar]');
-    const ctr = await p.textContent('#tab-documentos');
-    ok(nombre + ': Contrato con una tarjeta por contrato, su estatus y su firma Digital o Física', ctr.includes('Contrato dedicado') && ctr.includes('Por firmar') && (await p.locator('#tab-documentos .ctr-ded [data-firma-ctr]').count()) === 2);
+    await irContratos(p); await abrirCtr(p, 'ctr-ded'); await p.waitForSelector('#hojaCtrVer [data-ctr-editar]');
+    const ctr = (await p.textContent('#tab-documentos')) + (await p.textContent('#hojaCtrVer'));
+    ok(nombre + ': Contrato con una tarjeta por contrato, su estatus y su firma Digital o Física', ctr.includes('Contrato dedicado') && ctr.includes('Por firmar') && (await p.locator('#hojaCtrVer .ctr-ded [data-firma-ctr]').count()) === 2);
     // Lote 28/10 (pantalla 9): en un dedicado, Contratos y VGT van juntos en una pestaña
     ok(nombre + ': Documentos trae el contrato, las solicitudes VGT con sus postes y los requisitos', ctr.includes('Vía de prueba') && ctr.includes('12 postes') && (await p.locator('#tab-documentos [data-sec="vgt"] [data-vgt-sol]').count()) >= 1 && (await p.locator('#tab-documentos [data-sec="vgt"] [data-grupo="vgt"]').count()) <= 1, await p.textContent('#tab-documentos [data-sec="vgt"]').catch(() => 'sin seccion vgt'));
     ok(nombre + ': ya no hay pestaña VGT aparte', await p.isHidden('#tabs [data-tab="vgt"]'));
@@ -94,7 +94,7 @@ async function cerrarHojas(p){ for(let i = 0; i < 5 && await p.evaluate(() => !!
     await p.fill('#kFirma', '2026-10-01'); await p.click('#guardarCtr');
     ok(nombre + ': marcar Firmado sin fecha de vencimiento da error debajo', (await p.textContent('#eVence')).includes('vencimiento'));
     await p.fill('#kVenceEn', '2027-10-01'); await p.click('#guardarCtr');
-    await p.waitForFunction(() => /1 de octubre de 2027|01\/10\/2027|oct/.test(document.querySelector('#tab-documentos .ctr-ded').textContent) && /Marcos Rivas/.test(document.querySelector('#tab-documentos').textContent));
+    await p.waitForFunction(() => /1 de octubre de 2027|01\/10\/2027|oct/.test(document.querySelector('#hojaCtrVer .ctr-ded').textContent) && /Marcos Rivas/.test(document.querySelector('#hojaCtrVer').textContent));
     ok(nombre + ': el contrato queda firmado con su vencimiento y quién lo cambió', (await p.textContent('#tab-documentos')).includes('Firmado') && mundo.llamadas.some((l) => l[1] === 'dedicado_contrato_editar' && l[2].p_campos.vence_en === '2027-10-01'));
     ok(nombre + ': firmado sin archivo dice "Firmado: falta subir contrato"', (await p.textContent('#tab-documentos')).includes('Firmado: falta subir contrato'));
     await cerrarHojas(p);

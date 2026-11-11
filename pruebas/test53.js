@@ -18,9 +18,8 @@ const { ok, cerrar } = marcador();
     const botones = await l.$$eval('#cuerpo [data-hacer]', (xs) => xs.map((x) => x.textContent));
     ok(nombre + ': cada botón dice adónde lleva', botones.length > 0 && botones.every((t) => /^(Abrir expediente|Abrir contrato|Ir a |Revisar aquí|Registrar|Hacerlo yo)/.test(t)));
     // Qué cambió, una vez por persona
-    ok(nombre + ': sale el aviso Qué cambió', !(await l.locator('#queCambio').evaluate((x) => x.classList.contains('hidden'))) && /devuelto o pedido/.test(await l.textContent('#queCambio')));
-    await l.click('#queCambio [data-tr="entendido"]'); await l.reload(); await l.waitForSelector('#cuerpo .bz-it');
-    ok(nombre + ': con Entendido no vuelve a salir', await l.locator('#queCambio').evaluate((x) => x.classList.contains('hidden')));
+    // Lote 12/11 (maqueta mi-trabajo): ya no sale el aviso "Qué cambió"; arriba solo "Hola" y el buscador
+    ok(nombre + ': sin el aviso Qué cambió y con "Hola, …"', (await l.locator('#queCambio').evaluate((x) => x.classList.contains('hidden'))) && /^Hola, /.test(await l.textContent('#saludo')));
     // Buscador por nombre y por RIF
     await l.fill('#bzBuscar', c.nombre); await l.waitForTimeout(400);
     let tit = await l.$$eval('#cuerpo .bz-it b > span:not(.mt-pill)', (xs) => xs.map((x) => x.textContent));

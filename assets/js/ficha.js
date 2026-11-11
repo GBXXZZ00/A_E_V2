@@ -363,12 +363,12 @@
       '<button type="button" class="fd-drop" id="subirVarios">' + ic('subir') + '<span><span class="solo-pc">Arrastra aquí varios archivos y marca qué trae cada uno</span><span class="solo-tel">Toca para subir varios archivos y marca qué trae cada uno</span></span></button>' +
       '<p class="nota-chica' + (colaDe(id) ? '' : ' hidden') + '" id="estadoSubida" role="status"><span class="cargando-linea"><i></i><span id="textoSubida">' + esc(textoCola()) + '</span></span></p>' + driveHtml();
     // Lote 10/11 J: el expediente es una sección plegable (abierta si hay algo que hacer), seguida de Contratos y VGT
-    const pendExp = fal.length > 0 || nr > 0 || selMode;
+    const pendExp = fal.length > 0 || nr > 0 || selMode || !!c.aprobado_por_subir || reqs().length > 0;
     h += seccionDoc('exp', 'Expediente del cliente', fal.length ? ['ambar', fal.length === 1 ? 'Falta 1' : 'Faltan ' + fal.length] : nr ? ['azul', plural(nr, 'por revisar', 'por revisar')] : ['verde', 'Completo'], arribaExp + casillasHtml(false), pendExp) +
       seccionContratos() + seccionVgt() + historialRevisiones();
     $('tab-documentos').innerHTML = h;
     if(hojaAbierta() === 'hojaVgtSol' && vgtSolId) pintarVgtSol();
-    if(hojaAbierta() === 'hojaCtr' && ctrAbierto >= 0) pintarContrato();
+    if(hojaAbierta() === 'hojaCtrVer' && ctrAbierto >= 0) pintarContrato();
   }
   // Las casillas del expediente, en su orden. emb: dentro de otra hoja (la de comisión), sin agregar representantes ni actas
   // Lote urgente 20/10: el interruptor de contrato presencial va arriba de Documentos (y en la hoja de comisión)
@@ -503,17 +503,18 @@
       const fi = val('Firmado'); const ve = val('Vence');
       const sub = [fi && fi !== 'Sin fecha' ? 'Firmado ' + fi : 'Sin firmar', ve && ve !== 'Sin fecha' ? 'vence ' + ve : ''].filter(Boolean).join(' · ');
       const i = ctrCuerpos.length; ctrCuerpos.push({ titulo: tit, html: n.outerHTML });
-      out += '<div class="ctr-fila"><span class="tx"><b>' + esc(tit) + '</b><small>' + esc(sub) + '</small></span><span class="ctr-chips">' + chips + '</span><button type="button" class="mini" data-ctr-abrir="' + i + '">Abrir</button></div>';
+      const cl = Array.prototype.filter.call(n.classList, (x) => x !== 'ctr-t').join(' ');
+      out += '<div class="ctr-fila" data-ctr-clase="' + esc(cl) + '"><span class="tx"><b>' + esc(tit) + '</b><small>' + esc(sub) + '</small></span><span class="ctr-chips">' + chips + '</span><button type="button" class="mini" data-ctr-abrir="' + i + '">Abrir</button></div>';
     });
     return out;
   }
   function abrirContrato(i){
-    const k = ctrCuerpos[i]; if(!k) return; ctrAbierto = i; let h = $('hojaCtr');
-    if(!h){ h = document.createElement('section'); h.id = 'hojaCtr'; h.className = 'hoja lado ctr-hoja'; h.setAttribute('role', 'dialog'); h.setAttribute('aria-modal', 'true'); h.setAttribute('aria-labelledby', 'tCtr'); h.setAttribute('aria-hidden', 'true'); document.body.appendChild(h); C.prepararHojas(); }
-    pintarContrato(); if(hojaAbierta() !== 'hojaCtr') abrirHoja('hojaCtr');
+    const k = ctrCuerpos[i]; if(!k) return; ctrAbierto = i; let h = $('hojaCtrVer');
+    if(!h){ h = document.createElement('section'); h.id = 'hojaCtrVer'; h.className = 'hoja lado ctr-hoja'; h.setAttribute('role', 'dialog'); h.setAttribute('aria-modal', 'true'); h.setAttribute('aria-labelledby', 'tCtr'); h.setAttribute('aria-hidden', 'true'); document.body.appendChild(h); C.prepararHojas(); }
+    pintarContrato(); if(hojaAbierta() !== 'hojaCtrVer') abrirHoja('hojaCtrVer');
   }
   function pintarContrato(){
-    const h = $('hojaCtr'); const k = ctrCuerpos[ctrAbierto]; if(!h || !k) return;
+    const h = $('hojaCtrVer'); const k = ctrCuerpos[ctrAbierto]; if(!h || !k) return;
     h.innerHTML = '<div class="cab"><div><h2 id="tCtr">' + esc(k.titulo) + '</h2><p class="sub-hoja">' + esc(F.cliente.nombre) + '</p></div><button type="button" class="cerrar" data-cierra="1" aria-label="Cerrar">' + ic('x') + '</button></div>' +
       '<div class="hoja-cuerpo">' + ctrBanda + k.html + '</div>';
   }
@@ -1879,7 +1880,7 @@
     if((b = t.closest('[data-hilo]'))){ hiloF = b.dataset.hilo; pintarHilo(); return; }
     if((b = t.closest('#hojaFicha [data-vgt-subir]'))){ fuera = null; const p = b.dataset.vgtSubir.split(':'); destino = { casilla: 'otro', numero: 0, vgt: { sol: Number(p[0]), tipo: p[1], otra: p[2] === 'otra' } }; const inp = $('archivo'); inp.value = ''; inp.click(); return; }
     if(t.closest('#hojaFicha #vgtNueva')){ abrirNuevaSol(); return; }
-    if((b = t.closest('#hojaFicha [data-subir], #hojaCtr [data-subir]'))){ fuera = null; const p = b.dataset.subir.split(':'); elegirPara(p[0], Number(p[1])); return; }
+    if((b = t.closest('#hojaFicha [data-subir], #hojaCtrVer [data-subir]'))){ fuera = null; const p = b.dataset.subir.split(':'); elegirPara(p[0], Number(p[1])); return; }
     if((b = t.closest('#hojaFicha [data-ip]'))){ fuera = null; abrirCampo('ip:' + b.dataset.ip); return; }
     if((b = t.closest('#hojaFicha [data-enviar]'))){ abrirEnviar(b.dataset.enviar); return; }
     if((b = t.closest('#hojaEnviar [data-env-tipo]')) && env){ env.tipo = b.dataset.envTipo; Array.prototype.forEach.call($('hojaEnviar').querySelectorAll('[data-env-tipo]'), (x) => { const on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-checked', String(on)); }); return; }
@@ -1914,7 +1915,7 @@
     if((b = t.closest('#hojaFicha [data-lider-cambiar]')) && F && window.Gestion){ window.Gestion.lider(F, b.dataset.liderCambiar, () => cargar()); return; }
     if((b = t.closest('#hojaFicha [data-suspender]')) && F && window.Gestion){ window.Gestion.suspender(F, b.dataset.suspender === '1', () => cargar()); return; }
     // Firma Digital o Física del contrato PYME (Física = contrato presencial)
-    if((b = t.closest('#hojaFicha [data-firma-cli], #hojaCtr [data-firma-cli]')) && F){ if(b.classList.contains('on')) return; const fis = b.dataset.valor === 'fisica';
+    if((b = t.closest('#hojaFicha [data-firma-cli], #hojaCtrVer [data-firma-cli]')) && F){ if(b.classList.contains('on')) return; const fis = b.dataset.valor === 'fisica';
       accion('cliente_marca', { p_cliente: id, p_marca: 'contrato_presencial', p_valor: fis }, fis ? 'Firma física: no se piden correos ni teléfono' : 'Firma digital', b); return; }
     if(t.closest('#revisarTodo')){ abrirRevision(); return; }
     // Lote 05/11 parte C

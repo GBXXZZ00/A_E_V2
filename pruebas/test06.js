@@ -1,6 +1,6 @@
 // Comisiones, tanda A: orden de Odoo a la vista, pendientes por asignar, dueño, excepción, pago del Analista Senior, certificar, Excel y buscador.
 const fs = require('fs');
-const { enHoja, chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar, plegables } = require('./simulador');
+const { irFiltro, enHoja, chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar, plegables } = require('./simulador');
 const { ok, cerrar } = marcador();
 const { RPC } = require('./mundo');
 const llamo = (m, f) => m.llamadas.filter((l) => l[1] === f);
@@ -18,7 +18,7 @@ const cerrarHojas = async (p) => { for(let i = 0; i < 4; i++){ if(await p.evalua
     ok(nombre + ': la bandeja trae solo las pendientes, ya abiertas', (await p.locator('[data-com]').count()) === 2 && p.url().includes('f=asignar'));
     const t = await p.textContent('#lista');
     // Lote 05/11 E2: la fila solo trae etiquetas: "Sin orden" en rojo y "Orden sin confirmar" en ámbar; el grupo se llama "Sin dueño"
-    ok(nombre + ': Sin orden en rojo y orden sin confirmar', /Sin orden/.test(await p.locator('#lista .chip.rojo', { hasText: 'Sin orden' }).first().textContent()) && (await p.locator('#lista .chip.ambar', { hasText: 'Orden sin confirmar' }).count()) >= 1 && (t.includes('Sin dueño') || t.includes('Por asignar')));
+    ok(nombre + ': Sin orden en rojo y orden sin confirmar', /Sin orden/.test(await p.locator('#lista .tx-rojo', { hasText: 'Sin orden' }).first().textContent()) && (await p.textContent('#lista')).includes('sin confirmar') && (t.includes('Sin dueño') || t.includes('Por asignar')));
     ok(nombre + ': bandeja sin desborde', await sinDesborde(p));
     await p.screenshot({ path: 'capturas/06-' + nombre + '-bandeja.png', fullPage: true });
 
@@ -60,7 +60,7 @@ const cerrarHojas = async (p) => { for(let i = 0; i < 4; i++){ if(await p.evalua
     // Buscador y marca Natural
     await p.fill('#busca', 'kiosco'); await p.waitForFunction(() => document.querySelectorAll('#lista [data-com]').length === 1);
     ok(nombre + ': el buscador filtra y abre el grupo', (await p.locator('.grupo.abierto').count()) === 1 && p.url().includes('q=kiosco'));
-    ok(nombre + ': documento de persona natural y orden a la vista', /^V-/.test(await p.textContent('#lista [data-com] .cx-c small')) && !/Sin orden/.test(await p.textContent('#lista [data-com]')));
+    ok(nombre + ': documento de persona natural y orden a la vista', /^V-/.test(await p.textContent('#lista [data-com] .cx-lf-c small')) && !/Sin orden/.test(await p.textContent('#lista [data-com]')));
     await p.fill('#busca', 'zzzz'); await p.waitForSelector('#lista .vacio');
     ok(nombre + ': sin resultados lo dice claro', (await p.textContent('#lista .vacio')).includes('Sin resultados'));
     await p.fill('#busca', 'kiosco'); await p.waitForSelector('#lista [data-com]');
@@ -76,7 +76,7 @@ const cerrarHojas = async (p) => { for(let i = 0; i < 4; i++){ if(await p.evalua
     await p.click('#excGuardar'); await p.waitForFunction(() => document.querySelector('#hojaComision').textContent.includes('Comisiona por excepción'));
     h = await p.textContent('#hojaComision');
     ok(nombre + ': con excepción comisiona y se ve el motivo', h.includes('Cliente antiguo, se aprobó por gerencia') && h.includes('Activa') && mundo.llamadas.some((l) => l[1] === 'instalacion_excepcion' && l[2].p_motivo && l[2].p_corte));
-    await cerrarHojas(p); await p.waitForFunction(() => /por excepción/.test(document.querySelector('#lista [data-com] .cx-et').textContent));
+    await cerrarHojas(p); await p.waitForFunction(() => /por excepción/.test(document.querySelector('#lista [data-com]').textContent));
     ok(nombre + ': la fila queda marcada con Excepción', true);
     await abrir(p, 'Kiosco La Parada'); await enHoja(p, '#excQuitar'); await p.click('#excQuitar'); await p.waitForFunction(() => !document.querySelector('#hojaComision').textContent.includes('Comisiona por excepción') && !!document.querySelector('#excAbrir'));
     ok(nombre + ': la excepción se puede quitar', true);

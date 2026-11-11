@@ -57,9 +57,9 @@ const llamo = (m, f) => m.llamadas.filter((l) => l[1] === f);
     // Lote 21/10: la firma Física (contrato presencial) se marca en la tarjeta del contrato PYME
     // Lote 10/11 J: el contrato vive en Documentos, sección plegable "Contratos"
     await p.click('#tabs [data-tab="documentos"]'); await p.waitForSelector('#tab-documentos [data-sec="ctr"]'); await p.evaluate(() => { const d = document.querySelector('#tab-documentos [data-sec="ctr"]'); if(!d.open) d.querySelector('summary').click(); });
-    await p.waitForSelector('#tab-documentos [data-sec="ctr"] [data-firma-cli]');
-    ok(nombre + ': Firma Digital/Física en Contratos y Excepción pagada en Datos (admin)', (await p.locator('#tab-documentos [data-sec="ctr"] .ctr-pyme [data-firma-cli]').count()) === 2 && (await p.locator('[data-marca-cli="exc_pagada"]').count()) === 1);
-    await p.click('#tab-documentos [data-sec="ctr"] .ctr-pyme [data-firma-cli][data-valor="fisica"]'); await p.waitForFunction(() => { const b = document.querySelector('#tab-documentos .ctr-pyme [data-firma-cli][data-valor="fisica"]'); return b && b.getAttribute('aria-checked') === 'true'; });
+    await p.click('#tab-documentos [data-ctr-clase~="ctr-pyme"] [data-ctr-abrir]'); await p.waitForSelector('#hojaCtrVer [data-firma-cli]');   // Lote 12/11: el contrato se abre en su hoja
+    ok(nombre + ': Firma Digital/Física en Contratos y Excepción pagada en Datos (admin)', (await p.locator('#hojaCtrVer .ctr-pyme [data-firma-cli]').count()) === 2 && (await p.locator('[data-marca-cli="exc_pagada"]').count()) === 1);
+    await p.click('#hojaCtrVer .ctr-pyme [data-firma-cli][data-valor="fisica"]'); await p.waitForFunction(() => { const b = document.querySelector('#hojaCtrVer .ctr-pyme [data-firma-cli][data-valor="fisica"]'); return b && b.getAttribute('aria-checked') === 'true'; }); await p.keyboard.press('Escape'); await p.waitForTimeout(300);
     ok(nombre + ': marcar contrato presencial pasa por el servidor y queda en el hilo', llamo(mundo, 'cliente_marca').some((l) => l[2].p_marca === 'contrato_presencial' && l[2].p_valor === true) && faro.hilo.some((h) => h.texto === 'contrato_presencial'));
     await p.click('#tabs [data-tab="documentos"]');
     faro.representantes[0].correo = '';
@@ -104,9 +104,9 @@ const llamo = (m, f) => m.llamadas.filter((l) => l[1] === f);
     const dts = await p.textContent('#tab-datos');
     ok(nombre + ': Datos dice Líder (no Ejecutiva) y los requisitos VGT', dts.includes('Líder') && !dts.includes('Ejecutiva') && dts.includes('Requisitos VGT') && dts.includes('Faltan 6'));   // 05/11 F3: 2 pólizas + 2 por cada solicitud que pide (2)
     // Lote 21/10: Contrato (servicio y colocation) y VGT en su pestaña (contrato, proyectos, requisitos y pólizas)
-    await p.click('#tabs [data-tab="documentos"]'); await p.evaluate(() => { const d = document.querySelector('#tab-documentos [data-sec="ctr"]'); if(d && !d.open) d.querySelector('summary').click(); }); await p.waitForSelector('#tab-documentos [data-sec="ctr"] .ctr-t');
+    await p.click('#tabs [data-tab="documentos"]'); await p.evaluate(() => { const d = document.querySelector('#tab-documentos [data-sec="ctr"]'); if(d && !d.open) d.querySelector('summary').click(); }); await p.waitForSelector('#tab-documentos [data-sec="ctr"] .ctr-fila');
     const ct = await p.textContent('#tab-documentos [data-sec="ctr"]');
-    ok(nombre + ': sin pestaña de contrato; una tarjeta por contrato en Documentos: servicio y colocation por sitio', (await p.locator('#tabs [data-tab="contrato"]:not(.hidden)').count()) === 0 && (await p.locator('#tab-documentos [data-sec="ctr"] .ctr-t').count()) === 2 && ct.includes('Contrato dedicado') && ct.includes('Sitio Inventado'));
+    ok(nombre + ': sin pestaña de contrato; una tarjeta por contrato en Documentos: servicio y colocation por sitio', (await p.locator('#tabs [data-tab="contrato"]:not(.hidden)').count()) === 0 && (await p.locator('#tab-documentos [data-sec="ctr"] .ctr-fila').count()) === 2 && ct.includes('Contrato dedicado') && ct.includes('Colocation'));
     await p.screenshot({ path: 'capturas/28-' + nombre + '-contratos.png', fullPage: true });
     await p.evaluate(() => { const d = document.querySelector('#tab-documentos [data-sec="vgt"]'); if(d && !d.open) d.querySelector('summary').click(); }); await p.waitForSelector('#tab-documentos [data-sec="vgt"] [data-vgt-sol]');
     const tv = await p.textContent('#tab-documentos [data-sec="vgt"]');

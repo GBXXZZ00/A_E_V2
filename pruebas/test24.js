@@ -1,6 +1,6 @@
 // Lote 2, parte A: arrastrar y soltar sin recuadro pegado, "Aprobado, documentos por subir",
 // a Documentos recibidos solo con documentos, y Por instalar con indicadores y dos bandejas.
-const { chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar } = require('./simulador');
+const { irFiltro, chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar } = require('./simulador');
 const { ok, cerrar } = marcador();
 
 const cliente = (mundo, nombre) => mundo.datos.clientes.find((c) => c.nombre === nombre || c.nombre === nombre + ', C.A.');
@@ -59,10 +59,10 @@ async function arrastrar(p, sobre){
     ok(nombre + ': en Clientes sale la etiqueta "Aprobado, documentos por subir"', (await p.textContent('#lista')).includes('Aprobado, documentos por subir'));
 
     // C: Debe instalación y Por asignar se explican en una línea al elegirlos
-    await p.goto(H + 'comisiones.html'); await p.waitForSelector('#filtros [data-filtro="pago"]');
-    await p.click('#filtros [data-filtro="pago"]'); await p.waitForSelector('#ayudaFiltro .ayuda-filtro');
+    await p.goto(H + 'comisiones.html'); await p.waitForSelector('#filtros [data-filtro="pago"]', { state: 'attached' });
+    await irFiltro(p, 'pago'); await p.waitForSelector('#ayudaFiltro .ayuda-filtro');
     ok(nombre + ': "Debe instalación" dice qué es (falta el pago según el TAD)', /según el TAD.*no ha pagado la instalación/.test(await p.textContent('#ayudaFiltro .ayuda-filtro')));
-    await p.click('#filtros [data-filtro="asignar"]'); await p.waitForFunction(() => /de quién es la instalación/.test((document.querySelector('#ayudaFiltro .ayuda-filtro') || {}).textContent || ''));
+    await irFiltro(p, 'asignar'); await p.waitForFunction(() => /de quién es la instalación/.test((document.querySelector('#ayudaFiltro .ayuda-filtro') || {}).textContent || ''));
     ok(nombre + ': "Por asignar" dice qué es (no se sabe el dueño) y quién lo resuelve', /Analista Senior/.test(await p.textContent('#ayudaFiltro .ayuda-filtro')));
     await p.screenshot({ path: 'capturas/24-' + nombre + '-ayuda-filtro.png' });
     await p.click('#filtros [data-filtro="todos"]');

@@ -107,7 +107,7 @@ const ABOGADA = { id: '77777777-7777-4777-8777-777777777777', usuario: 'sara', p
     // ----- El líder no entra -----
     const li = await contexto(nav, dispositivo, m); const l = await entrar(li.ctx, 'lucia', '739105');
     ok(nombre + ': el líder no ve Revisión en la navegación', (await l.locator('a[href="revision.html"]').count()) === 0);
-    await l.goto(H + 'revision.html'); await l.waitForURL(/trabajo\.html/); await l.waitForSelector('#tarjetas .bz-cd');
+    await l.goto(H + 'revision.html'); await l.waitForURL(/trabajo\.html/); await l.waitForSelector('#tarjetas .bz-mi');
     ok(nombre + ': si el líder entra a la dirección, queda en su Mi trabajo, sin la revisión en lote', await l.isHidden('#vistaLote'));
     await li.ctx.close();
     await ctx.close();

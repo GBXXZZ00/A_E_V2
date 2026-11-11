@@ -11,8 +11,8 @@ const { ok, cerrar } = marcador();
     await p.goto(H + 'comisiones.html'); await p.waitForSelector('.cx-grupo', { timeout: 15000 });
     if(!(await p.locator('.cx-grupo.abierto .cx-fila2').count())) await p.locator('.cx-grupo:not(.bandeja-extra) .grupo-cab').first().click().catch(() => {});
     await p.waitForSelector('.cx-grupo.abierto .cx-fila2', { timeout: 15000 }).catch(async () => console.log('DBG', (await p.textContent('#lista')).slice(0, 300)));
-    ok(nombre + ': la fila no tiene botones adentro, solo etiquetas', (await p.locator('.cx-fila2 button').count()) === 0 && (await p.locator('.cx-fila2 .cx-pts').count()) > 0);
-    const pts = await p.textContent('.cx-fila2 .cx-pts');
+    ok(nombre + ': la fila no tiene botones adentro, solo etiquetas', (await p.locator('.cx-fila2 button').count()) === 0 && (await p.locator('.cx-fila2 .cx-3p').count()) > 0);
+    const pts = await p.getAttribute('.cx-fila2 .cx-3p', 'title');
     ok(nombre + ': Legal, Pago y Orden como puntos de color', /Legal/.test(pts) && /Pago/.test(pts) && /Orden/.test(pts));
     ok(nombre + ': secciones dentro del dueño', (await p.locator('.cx-sec').count()) > 0);
     // Abrir la hoja tocando la fila

@@ -2565,7 +2565,7 @@ details.doc-sec{display:block;margin-top:12px;padding:0;font-size:14px;font-weig
 .mini.sub{border:1.5px dashed #A9B6DE;color:var(--accent);background:#F7F9FE}
 .doc-sec .sec{margin:18px 0 2px}
 #tab-documentos > .rp-linea,#tab-documentos > .rp{margin-top:4px}
-@media (max-width:720px){ .doc-sec .casilla.doc .mini{display:none} .doc-sec-c{padding:2px 14px 14px} }
+@media (max-width:720px){ .doc-sec button.casilla.doc > span.mini{display:none} .doc-sec-c{padding:2px 14px 14px} }
 .ctr-fila{display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--line)}
 .doc-sec-c > .ctr-fila:first-child,.doc-sec-c > .al-banda + .ctr-fila{border-top:0}
 .ctr-fila .tx{flex:1;min-width:0}

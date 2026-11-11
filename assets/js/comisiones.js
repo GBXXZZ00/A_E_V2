@@ -256,7 +256,7 @@
   function filaTabla(f){
     const att = f.pend ? 'data-exp="' + esc(f.cliente_id) + '"' : 'data-com="' + esc(f.instalacion_id) + '" data-cliente="' + esc(f.cliente_id) + '"';
     const pt = (ok) => '<i class="' + (ok ? 'ok' : 'no') + '" aria-hidden="true"></i>';
-    const texto = f.pend ? 'Sin instalar' : f.cumple ? (f.excepcion ? 'Comisiona por excepción' : 'Comisiona') : 'Falta ' + window.Comun.lista([!f.legal_ok ? 'legal' : '', !f.pago_ok ? 'pago' : '', !f.orden_ok ? 'orden' : ''].filter(Boolean));
+    const texto = f.pend ? 'Sin instalar' : f.cumple ? (f.excepcion ? 'Comisiona por excepción' : 'Comisiona') : 'Falta ' + window.Comun.lista([!f.legal_ok ? 'legal' : '', !f.pago_ok ? 'pago' : '', !f.orden_ok ? (f.orden ? 'orden sin confirmar' : 'orden') : ''].filter(Boolean));
     const c = f.pend ? ['', 'Se envía al instalar'] : (etiquetaCarta(f) || ['', 'Sin registro']);
     const et = [];
     if(!f.pend){

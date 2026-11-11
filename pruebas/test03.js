@@ -1,5 +1,5 @@
 // Inicio, navegación, menú de cuenta y Comisiones.
-const { enHoja, chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar, plegables } = require('./simulador');
+const { irFiltro, enHoja, chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar, plegables } = require('./simulador');
 const { ok, cerrar } = marcador();
 (async () => {
   const nav = await chromium.launch(); const errores = [];
@@ -23,13 +23,13 @@ const { ok, cerrar } = marcador();
     await p.locator('.grupo-cab').filter({ hasText: 'Rosa Paredes' }).click();
     ok(nombre + ': Comisiones sin desborde', await sinDesborde(p));
     await p.screenshot({ path: 'capturas/03-' + nombre + '-comisiones.png', fullPage: true });
-    await p.click('#filtros [data-filtro="ultimo"]');
+    await irFiltro(p, 'ultimo');
     ok(nombre + ': filtro Del corte anterior', (await p.locator('[data-com]').count()) === 1 && p.url().includes('f=ultimo'));
     await p.click('#alertas [data-abrir="por_instalar"]'); await p.waitForSelector('#hojaPorInst.ver');
     await p.waitForFunction(() => /hora/i.test(document.querySelector('#hojaPorInst').textContent), null, { timeout: 5000 }).catch(() => {});
     ok(nombre + ': Por instalar sale como hoja encima, con las órdenes en horas', /hora/i.test(await p.textContent('#hojaPorInst')));
     await p.keyboard.press('Escape'); await p.waitForFunction(() => !window.Comun.hojaAbierta());
-    await p.click('#filtros [data-filtro="legal"]');
+    await irFiltro(p, 'legal');
     ok(nombre + ': Falta legal solo trae las que no cumplen legal', (await p.locator('[data-com]').count()) === 11);
     // El corte anterior al que está en curso (arriba puede estar el siguiente)
     const enCursoVal = await p.evaluate(() => Array.from(document.getElementById('corte').options).find((o) => /en curso/.test(o.textContent)).value);

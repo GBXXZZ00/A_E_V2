@@ -1,7 +1,7 @@
 // Comisiones del 13/10: período del 18 al 17 con límite el 18, evento a mano, orden de otra persona,
 // motivo visible, IP a mano, Excel con técnico, Proforma y carta en la hoja, archivos por subir y quienes crean órdenes por otros.
 const fs = require('fs');
-const { enHoja, chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar, plegables } = require('./simulador');
+const { irFiltro, enHoja, chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar, plegables } = require('./simulador');
 const { corte: K } = require('./mundo');
 const { ok, cerrar } = marcador();
 
@@ -45,17 +45,17 @@ async function cerrarHojas(p){ for(let i = 0; i < 4 && await p.evaluate(() => !!
     await p.goto(H + 'comisiones.html'); await p.waitForSelector('.grupo');
     ok(nombre + ': el rango dice el período y el día límite como aviso', /Del .+\. (Día límite el \d+|Hoy es el día límite|El día límite fue el \d+)/.test(await p.textContent('#rango')));
     // Orden de otra persona: por asignar con su motivo
-    await p.click('[data-filtro="asignar"]'); await p.waitForSelector('[data-com]');
+    await irFiltro(p, 'asignar'); await p.waitForSelector('[data-com]');
     const lista = await p.textContent('#lista');
     ok(nombre + ': la orden de otra persona sale por asignar con su motivo', lista.includes('Comercial de Prueba 12') && lista.includes('Orden creada por otra persona, sin código'));
     ok(nombre + ': cada pendiente dice su motivo en una frase', lista.includes('Nombre parecido') && lista.includes('Sin orden de Odoo reciente'));
     // Archivos por subir: filtro con contador y etiqueta
-    await p.click('[data-filtro="subir"]'); await p.waitForFunction(() => /Tornillos El Yunque/.test(document.getElementById('lista').textContent));
+    await irFiltro(p, 'subir'); await p.waitForFunction(() => /Tornillos El Yunque/.test(document.getElementById('lista').textContent));
     ok(nombre + ': filtro Archivos por subir con contador', /Archivos por subir\s*\d+/.test(await p.textContent('[data-filtro="subir"]')) && (await p.textContent('#lista')).includes('Tornillos El Yunque'));
-    ok(nombre + ': la fila lleva la etiqueta Archivos por subir sin cambiar la comisión', (await p.locator('#lista [data-com] .cx-et', { hasText: /Archivos por subir/ }).count()) === (await p.locator('#lista [data-com]').count()) && (await p.locator('#lista [data-com]', { hasText: 'Tornillos El Yunque' }).locator('.chip.verde').count()) >= 1);
+    ok(nombre + ': la fila lleva la etiqueta Archivos por subir sin cambiar la comisión', (await p.locator('#lista [data-com] .cx-et', { hasText: /Archivos por subir/ }).count()) === (await p.locator('#lista [data-com]').count()) && /Comisiona/.test(await p.locator('#lista [data-com]', { hasText: 'Tornillos El Yunque' }).first().textContent()));
     await p.click('[data-filtro="todos"]'); await p.waitForSelector('.grupo');
     await p.locator('.grupo-cab').filter({ hasText: 'Lucía Ferrer' }).click();
-    ok(nombre + ': la fila dice Carta y proforma por enviar', (await p.locator('.grupo.abierto .cx-et', { hasText: /por enviar|espera la IP/ }).count()) >= 1);
+    ok(nombre + ': la fila dice Carta y proforma por enviar', (await p.locator('.grupo.abierto .cx-lf-k', { hasText: /por enviar|espera la IP/i }).count()) >= 1);
     ok(nombre + ': Comisiones sin desborde', await sinDesborde(p));
     await p.screenshot({ path: 'capturas/22-' + nombre + '-comisiones.png', fullPage: true });
 
@@ -78,11 +78,11 @@ async function cerrarHojas(p){ for(let i = 0; i < 4 && await p.evaluate(() => !!
     const prof2 = await p.textContent('#plg-carta');
     ok(nombre + ': queda anotado quién la envió y cuándo, y se puede volver a enviar', /Elena/.test(prof2) && (await p.textContent('#cartaWa')).includes('Volver a enviar') && mundo.llamadas.some((l) => l[1] === 'carta_enviar'));
     await cerrarHojas(p);
-    await p.waitForFunction(() => [...document.querySelectorAll('.grupo.abierto .cx-et')].some((t) => /enviada por Canales · \d\d\/\d\d/.test(t.textContent)));
+    await p.waitForFunction(() => [...document.querySelectorAll('.grupo.abierto .cx-lf-k')].some((t) => /Enviada · \d\d\/\d\d/.test(t.textContent)));
     ok(nombre + ': en la fila queda Enviada con la fecha', true);
 
     // Evento a mano: el Analista Senior lo ve aparte y decide si comisiona
-    await p.click('[data-filtro="eventos"]'); await p.waitForSelector('#lista [data-com]');
+    await irFiltro(p, 'eventos'); await p.waitForSelector('#lista [data-com]');
     ok(nombre + ': filtro Eventos con el evento que no comisiona', (await p.textContent('#lista')).includes('Comercial de Prueba 14'));
     await p.locator('#lista [data-com]').first().click(); await plegables(p, 'ajustes'); await enHoja(p, '#hojaComision.ver [data-evento]'); await p.waitForSelector('#hojaComision.ver [data-evento]');
     ok(nombre + ': la hoja dice que es evento y no comisiona', (await p.textContent('#hojaComision')).includes('Evento: no comisiona'));

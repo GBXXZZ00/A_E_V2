@@ -20,9 +20,9 @@ const dia = (n) => { const d = new Date(Date.now() - 4 * 3600e3); d.setUTCDate(d
 
     // ----- Líder (lote 28/10: índice compacto a la izquierda, checklist a la derecha) -----
     const p = await entrar(ctx, 'lucia', '739105'); p.on('pageerror', (e) => errores.push(e.message));
-    await p.goto(H + 'trabajo.html'); await p.waitForSelector('#tarjetas .bz-cd');
+    await p.goto(H + 'trabajo.html'); await p.waitForSelector('#tarjetas .bz-mi');
     ok(nombre + ': el líder ve el saludo con su nombre', /Lucía/.test(await p.textContent('#frase')));
-    const cards = await p.$$eval('#tarjetas .bz-cd b', (xs) => xs.map((x) => x.textContent));
+    const cards = await p.$$eval('#tarjetas .bz-mi span', (xs) => xs.map((x) => x.textContent));
     ok(nombre + ': sus grupos (Conseguir documentos, Hacer firmar, Gestiones asignadas y Mis notas)', ['Conseguir documentos', 'Hacer firmar', 'Gestiones asignadas', 'Mis notas'].every((t) => cards.includes(t)));
     ok(nombre + ': píldoras de vencidos, de hoy y total', /vencid/.test(await p.textContent('#pildoras')) && /en total/.test(await p.textContent('#pildoras')));
     await p.click('#tarjetas [data-grupo="ges"]');
@@ -50,8 +50,8 @@ const dia = (n) => { const d = new Date(Date.now() - 4 * 3600e3); d.setUTCDate(d
 
     // ----- Analista Senior: vista de administrador, el equipo en solo consulta y nueva gestión -----
     const c2 = await contexto(nav, dispositivo, mundo); const q = await entrar(c2.ctx, 'elena', '315806'); q.on('pageerror', (e) => errores.push(e.message));
-    await q.goto(H + 'trabajo.html'); await q.waitForSelector('#tarjetas .bz-cd');
-    const c2t = await q.$$eval('#tarjetas .bz-cd b', (xs) => xs.map((x) => x.textContent));
+    await q.goto(H + 'trabajo.html'); await q.waitForSelector('#tarjetas .bz-mi');
+    const c2t = await q.$$eval('#tarjetas .bz-mi span', (xs) => xs.map((x) => x.textContent));
     // Lote 05/11 D5: la Senior ve sin dueño, provisionales y cargas; ya no ve la revisión de documentos
     ok(nombre + ': la Senior ve Sin dueño, Provisionales y Cargas del día, sin Revisar documentos', ['Sin dueño', 'Provisionales', 'Cargas del día'].every((t) => c2t.some((x) => x.indexOf(t) === 0)) && !c2t.includes('Revisar documentos'));
     ok(nombre + ': El equipo en el índice y en Todo', (await q.locator('#tarjetas [data-grupo="equipo"]').count()) === 1 && (await q.locator('#cuerpo [data-persona]').count()) >= 1);
@@ -78,16 +78,16 @@ const dia = (n) => { const d = new Date(Date.now() - 4 * 3600e3); d.setUTCDate(d
     // ----- Coordinador: lo de todos los analistas (Canales), con "Hacerlo yo" -----
     Object.assign(mundo.personas.find((x) => x.usuario === 'pedro'), { coordinador: true, debe_cambiar_pin: false, canales: false });
     const c3 = await contexto(nav, dispositivo, mundo); const r = await entrar(c3.ctx, 'pedro', '204871'); r.on('pageerror', (e) => errores.push(e.message));
-    await r.goto(H + 'trabajo.html'); await r.waitForSelector('#tarjetas .bz-cd');
-    ok(nombre + ': el coordinador ve Cartas y proformas, IP, Apoyo con pago y Emitir en Proham, con filtro por analista', (await r.textContent('#tarjetas')).includes('Cartas y proformas') && (await r.textContent('#tarjetas')).includes('Cambios por emitir') && !(await r.locator('#zonaPersona').evaluate((x) => x.classList.contains('hidden'))));
-    await r.waitForSelector('.cn-tiles .bz-num');   // Lote 11/11 H2: los números de Canales van dentro del tablero (6, como la maqueta)
-    ok(nombre + ': números arriba para Canales', (await r.locator('.cn-tiles .bz-num').count()) === 6 && (await r.locator('#nums').isHidden()));
+    await r.goto(H + 'trabajo.html'); await r.waitForSelector('#tarjetas .bz-mi');
+    ok(nombre + ': el coordinador ve Cartas y proformas, IP, Apoyo con pago y Emitir en Proham, con filtro por analista', (await r.textContent('#tarjetas')).includes('Cartas y proformas') && (await r.textContent('#tarjetas')).includes('Cambios por emitir') && (await r.locator('#cuerpo [data-persona]').count()) >= 1);   // Lote 12/11: se entra por "Ver su trabajo"
+    await r.waitForSelector('.cn-team .cn-per');   // Lote 12/11 (maqueta Coordinadora): la coordinadora ve la carga de cada persona, sin los números de arriba
+    ok(nombre + ': números arriba para Canales', (await r.locator('.cn-team .cn-per').count()) >= 1 && (await r.locator('#nums').isHidden()));
     await r.screenshot({ path: 'capturas/30-' + nombre + '-coord.png', fullPage: true });
     await c3.ctx.close();
 
     // ----- Legal: elaborar contrato en cola -----
     const c4 = await contexto(nav, dispositivo, mundo); const s = await entrar(c4.ctx, 'paula', '615243'); s.on('pageerror', (e) => errores.push(e.message));
-    await s.goto(H + 'trabajo.html'); await s.waitForSelector('#tarjetas .bz-cd');
+    await s.goto(H + 'trabajo.html'); await s.waitForSelector('#tarjetas .bz-mi');
     // Lote 05/11 D4: Legal ve "Por elaborar" por tipo de cliente con filtros, y luego enviados, firmados y vencimientos
     ok(nombre + ': Legal ve Por elaborar contrato con chips por tipo y los vencimientos en 60 días plegados', /Por elaborar contrato · /.test(await s.textContent('#cuerpo')) && (await s.locator('#cuerpo [data-filtro-c]').count()) === 5 && /Vencen en 60 días/.test(await s.textContent('#cuerpo')));
     ok(nombre + ': Legal tiene la cola de contratos', (await s.locator('[data-tr="cola"]').count()) === 1);
