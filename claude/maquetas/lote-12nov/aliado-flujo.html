@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Flujo del aliado</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="base.css">
+<style>
+/* Maqueta 12/11 · Flujo del aliado propuesto: 3 momentos (¿Está disponible? → Completa el expediente → Seguimiento). Datos inventados. */
+.fila6{display:flex;gap:18px;align-items:flex-start}
+.fl{display:flex;flex-direction:column;gap:10px;width:340px}
+.n{display:flex;align-items:center;gap:8px;font-weight:800;font-size:15px}
+.n i{font-style:normal;width:26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center;font-size:13px}
+.fon{width:340px;height:700px;background:#fff;border-radius:28px;box-shadow:0 18px 50px rgba(15,23,42,.14);overflow:hidden;display:flex;flex-direction:column}
+.tb{height:52px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;font-weight:800;letter-spacing:.18em;font-size:13px;border-bottom:1px solid var(--line)}
+.tb small{letter-spacing:0;font-weight:600;color:var(--text2);font-size:12.5px}
+.bd{padding:16px;display:flex;flex-direction:column;gap:12px;flex:1}
+.bd h2{font-size:21px;font-weight:800}
+.big{height:56px;border-radius:16px;background:var(--accent);color:#fff;font-weight:700;font-size:16px;display:flex;align-items:center;justify-content:center;gap:8px}
+.card{border:1px solid var(--line);border-radius:16px;padding:12px 14px;display:flex;flex-direction:column;gap:6px}
+.card .k{display:flex;align-items:center;gap:8px} .card .k b{font-size:14.5px;margin-right:auto}
+.card small{color:var(--text2);font-size:12.5px}
+.ok{background:var(--verde-bg);border-color:#A9D9C2} .am{background:#FFFBF2;border-color:#F1D9A6} .ro{background:var(--rojo-bg);border-color:#F0C4BE}
+.foto{height:44px;border-radius:12px;border:1.5px dashed #9FB0E3;color:var(--accent);background:#F7F9FE;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px}
+.chk{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--line)}
+.chk:first-child{border-top:0}
+.chk .ic{width:30px;height:30px;border-radius:9px}
+.chk .tx b{font-size:14px} .chk .tx small{font-size:12px}
+.piebar{margin-top:auto;border-top:1px solid var(--line);padding:12px 16px;display:flex;flex-direction:column;gap:8px}
+.tl{display:flex;flex-direction:column;gap:0;margin-top:4px}
+.tl div{display:flex;gap:12px;align-items:flex-start;position:relative;padding-bottom:16px}
+.tl div::before{content:"";position:absolute;left:11px;top:24px;bottom:0;width:2px;background:var(--line)}
+.tl div:last-child::before{display:none}
+.tl i{width:24px;height:24px;border-radius:50%;flex:none;display:grid;place-items:center;font-style:normal;font-size:12px;font-weight:800;background:var(--surface-2);color:var(--text3)}
+.tl i.v{background:var(--verde);color:#fff} .tl i.a{background:var(--azul);color:#fff}
+.tl b{font-size:14px;display:block} .tl small{color:var(--text2);font-size:12.5px}
+.flecha2{align-self:center;font-size:26px;color:var(--text3);margin-top:-200px}
+.leyenda{max-width:1900px;font-size:13.5px;color:var(--text2);line-height:1.5}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="ok" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="mas" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="reloj" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></symbol>
+</svg>
+<div class="lienzo" style="flex-direction:column" id="F">
+<div class="et">Flujo del aliado propuesto · 3 momentos, todo en una sola hoja que se guarda sola</div>
+<div class="fila6">
+
+<div class="fl"><div class="n"><i>1</i>Inicio: una sola acción</div>
+  <div class="fon"><div class="tb">AIRTEK<small>Carlos</small></div><div class="bd">
+    <h2>Hola, Carlos</h2>
+    <div class="big">+ Nuevo cliente</div>
+    <div class="card am"><div class="k"><b>Sigue donde quedaste</b><span class="chip ambar">Faltan 2</span></div><small>Mercado Ejemplo, C.A. · falta cédula y RIF del representante</small><span class="lnk">Continuar</span></div>
+    <div class="card ok"><div class="k"><b>Tienda Modelo, C.A.</b><span class="chip verde">Lista</span></div><small>Ya puedes instalar · marca la fecha</small><span class="lnk">Marcar instalación</span></div>
+    <div class="card"><div class="k"><b>Joyería Modelo, C.A.</b><span class="chip morado">En revisión</span></div><small>El administrador revisa el correo · te avisamos</small></div>
+    <span class="lnk" style="align-self:center">Ver todas mis solicitudes (7)</span>
+  </div></div>
+  <p class="nota">Arriba lo que necesita de él (continuar, marcar instalación). Nada de pestañas ni números que leer.</p>
+</div>
+
+<div class="fl"><div class="n"><i>2</i>¿Está disponible? (10 segundos)</div>
+  <div class="fon"><div class="tb">AIRTEK<small>Cancelar</small></div><div class="bd">
+    <h2>Nuevo cliente</h2>
+    <p class="nota">Primero vemos si puedes venderle.</p>
+    <div><label>RIF del cliente</label><div class="campo">J-00000000-0</div></div>
+    <div class="foto">o toma una foto del RIF</div>
+    <div class="card ok"><div class="k"><b>Comercial Ejemplo, C.A.</b><span class="chip verde">Disponible</span></div><small>Puedes venderle. Sigue con los documentos.</small></div>
+    <p class="nota" style="font-size:12.5px">Si no: <b style="color:var(--rojo)">Ya es cliente de Airtek</b> (no se puede) o <b style="color:var(--ambar)">Lo registró otro aliado el 02/11</b> (pide permiso con un toque).</p>
+  </div><div class="piebar"><span class="btn ancho pri">Seguir</span></div></div>
+  <p class="nota">Antes de pedir nada, sabe si vale la pena. Se reserva cuando marca la instalación, como hoy.</p>
+</div>
+
+<div class="fl"><div class="n"><i>3</i>Completa el expediente (una pantalla)</div>
+  <div class="fon"><div class="tb">AIRTEK<small>Guardado</small></div><div class="bd">
+    <h2 style="font-size:18px">Comercial Ejemplo, C.A.</h2>
+    <div class="foto">Toma fotos o suelta todos los archivos juntos</div>
+    <div>
+      <div class="chk"><span class="ic ok"><svg><use href="#ok"/></svg></span><span class="tx"><b>RIF de la empresa</b><small>Leído · vigente</small></span></div>
+      <div class="chk"><span class="ic rev"><svg><use href="#reloj"/></svg></span><span class="tx"><b>Acta constitutiva</b><small>Leyendo · unos 30 s</small></span></div>
+      <div class="chk"><span class="ic falta"><svg><use href="#mas"/></svg></span><span class="tx"><b>Cédula del representante</b><small>Toca para tomar la foto</small></span><span class="chip rojo">Falta</span></div>
+      <div class="chk"><span class="ic ok"><svg><use href="#ok"/></svg></span><span class="tx"><b>RIF del representante</b><small>Leído · María Ejemplo</small></span></div>
+      <div class="chk"><span class="ic ok"><svg><use href="#ok"/></svg></span><span class="tx"><b>Contacto</b><small>0412 000 0000 · maria@comercialejemplo.com</small></span></div>
+    </div>
+    <p class="nota" style="font-size:12px">Lo que la IA lee (nombre, cédula, correo) se llena solo. Él solo corrige.</p>
+  </div><div class="piebar"><span class="nota" style="color:var(--ambar)"><b>Te falta:</b> la cédula del representante</span><span class="btn ancho">Enviar (cuando esté completo)</span></div></div>
+  <p class="nota">Sin pasos 1 a 4: una lista que se va poniendo en verde. Enviar se activa cuando no falta nada.</p>
+</div>
+
+<div class="fl"><div class="n"><i>4</i>Enviado: ve en qué va</div>
+  <div class="fon"><div class="tb">AIRTEK<small>Listo</small></div><div class="bd">
+    <h2>Enviado</h2>
+    <p class="nota">Comercial Ejemplo, C.A.</p>
+    <div class="tl">
+      <div><i class="v">✓</i><span><b>Enviado</b><small>Hoy 10:15</small></span></div>
+      <div><i class="a">2</i><span><b>Revisión automática</b><small>Unos 2 minutos · puedes cerrar, te avisamos</small></span></div>
+      <div><i>3</i><span><b>Revisión del administrador</b><small>Solo si algo no cuadra</small></span></div>
+      <div><i>4</i><span><b>Lista para instalar</b><small>Marcas la fecha de instalación</small></span></div>
+      <div><i>5</i><span><b>Instalado y pagado</b><small>Ves tu pago aquí</small></span></div>
+    </div>
+  </div><div class="piebar"><span class="btn ancho">Volver al inicio</span></div></div>
+  <p class="nota">La misma línea de tiempo sale en cada solicitud: siempre sabe en qué paso va y qué sigue.</p>
+</div>
+
+<div class="fl"><div class="n"><i>5</i>Resultado con la próxima acción</div>
+  <div class="fon"><div class="tb">AIRTEK<small></small></div><div class="bd">
+    <div class="card ok" style="align-items:center;text-align:center;padding:18px"><b style="font-size:19px;color:var(--verde)">¡Puedes instalar!</b><small>Comercial Ejemplo pasó la revisión.</small></div>
+    <div><label>¿Cuándo instalas?</label><div class="campo">Jueves 14/11</div></div>
+    <span class="btn ancho pri">Marcar instalación</span>
+    <div class="et" style="margin-top:10px">Si la devuelven</div>
+    <div class="card ro"><div class="k"><b>Falta corregir 1 cosa</b></div><small>Cédula del representante: está vencida. Sube la vigente.</small><span class="btn" style="align-self:flex-start;margin-top:4px">Subir la cédula</span></div>
+  </div></div>
+  <p class="nota">Nunca una pantalla sin salida: aprobada lleva a marcar instalación; devuelta lleva directo a lo que hay que corregir.</p>
+</div>
+
+</div>
+<p class="leyenda">En PC es lo mismo dentro de la hoja de la derecha (lista de solicitudes atrás). Se guarda solo en cada paso. Al aliado le llega notificación en 2 (si está disponible), 4 (resultado) y 5 (pago). Tu bandeja (maqueta 4-A) no cambia.</p>
+</div>
+</body>
+</html>
