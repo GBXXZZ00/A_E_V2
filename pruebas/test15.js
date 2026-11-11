@@ -50,8 +50,9 @@ const ABOGADA = { id: '77777777-7777-4777-8777-777777777777', usuario: 'sara', p
 
     // ----- La abogada marca pero no cierra -----
     const ab = await contexto(nav, dispositivo, m); const s = await entrar(ab.ctx, 'sara', '640217'); s.on('pageerror', (e) => errores.push(e.message));
-    await s.goto(H + 'clientes.html?c=1001&t=documentos'); await s.waitForSelector('#barraRev');
-    ok(nombre + ': la abogada ve la revisión en curso sin el botón de cerrar', (await s.locator('#abrirCerrarRev').count()) === 0);
+    await s.goto(H + 'clientes.html?c=1001&t=documentos'); await s.waitForSelector('#tab-documentos .casilla'); await s.waitForTimeout(400);
+    // Lote 12/11 (maqueta legal): la revisión es del administrador; Legal no ve la barra ni el cierre
+    ok(nombre + ': la abogada no ve la revisión del administrador ni el cierre', (await s.locator('#barraRev, #abrirCerrarRev').count()) === 0);
     await ab.ctx.close();
 
     // ----- Cerrar: error del servidor -----

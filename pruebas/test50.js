@@ -104,7 +104,7 @@ async function cerrarHojas(p){ for(let i = 0; i < 5 && await p.evaluate(() => !!
     await a.goto(H + 'trabajo.html'); await a.waitForSelector('#tarjetas .bz-mi');
     if(await a.locator('[data-persona]').count()){
       await a.locator('[data-persona]').first().click(); await a.waitForSelector('#bandaPersona:not(.hidden)');
-      ok(nombre + ': el administrador ve el buzón de otra persona en solo consulta, sin botones', /Solo consulta/.test(await a.textContent('#bandaPersona')) && (await a.locator('#cuerpo [data-hacer]').count()) === 0);
+      ok(nombre + ': el administrador ve el buzón de otra persona en solo consulta, solo con "Ver"', /Solo consulta/.test(await a.textContent('#bandaPersona')) && (await a.locator('#cuerpo [data-hacer]').allTextContents()).every((t) => t === 'Ver'));
     }
 
     // ----- Actualizar: qué toca, solo administrador y Senior -----

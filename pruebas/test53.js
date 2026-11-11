@@ -16,7 +16,7 @@ const { ok, cerrar } = marcador();
     ok(nombre + ': el líder tiene "Devueltos o pedidos" y ahí está lo pedido', /Devueltos o pedidos/.test(idx) && /Falta: Acta de asamblea de ratificación/.test(await l.textContent('#cuerpo')));
     ok(nombre + ': los grupos son plegables con su número', (await l.locator('#cuerpo details.bz-pl').count()) >= 1 && (await l.locator('#cuerpo details.bz-pl .bz-pl-n').count()) >= 1);
     const botones = await l.$$eval('#cuerpo [data-hacer]', (xs) => xs.map((x) => x.textContent));
-    ok(nombre + ': cada botón dice adónde lleva', botones.length > 0 && botones.every((t) => /^(Abrir expediente|Abrir contrato|Ir a |Revisar aquí|Registrar|Hacerlo yo)/.test(t)));
+    ok(nombre + ': cada botón dice adónde lleva', botones.length > 0 && botones.every((t) => /^(Abrir expediente|Abrir|Subir firmado|Ir a |Revisar aquí|Registrar|Hacerlo yo)/.test(t)));
     // Qué cambió, una vez por persona
     // Lote 12/11 (maqueta mi-trabajo): ya no sale el aviso "Qué cambió"; arriba solo "Hola" y el buscador
     ok(nombre + ': sin el aviso Qué cambió y con "Hola, …"', (await l.locator('#queCambio').evaluate((x) => x.classList.contains('hidden'))) && /^Hola, /.test(await l.textContent('#saludo')));

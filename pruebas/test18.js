@@ -78,8 +78,8 @@ const ABOGADA = { id: '77777777-7777-4777-8777-777777777777', usuario: 'sara', p
     cli().correo_empresa = 'otro@vidrioselfaro.test';
     await s.goto(H + 'revision.html?c=1001'); await s.waitForSelector('#hojaFicha.ver #tab-documentos .casilla'); await s.waitForTimeout(600);
     ok(nombre + ': la abogada no lanza la actualización', llamo(m, 'ia_actualizar').length === n0 && (await s.locator('[data-actualizar-ia]').count()) === 0);
-    ok(nombre + ': la abogada ve que el resultado es de antes', /El administrador debe actualizarlo/.test(await s.textContent('#iaResultado')));
-    await s.locator('#iaResultado').scrollIntoViewIfNeeded(); await s.screenshot({ path: 'capturas/18-' + nombre + '-abogada.png' });
+    // Lote 12/11 (maqueta legal): a Legal no le sale la revisión de la IA; eso es del administrador
+    ok(nombre + ': la abogada no ve el bloque de la IA', (await s.locator('#iaResultado').count()) === 0);
     await ab.ctx.close();
     await ctx.close();
   }

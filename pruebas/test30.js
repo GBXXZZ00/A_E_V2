@@ -57,7 +57,7 @@ const dia = (n) => { const d = new Date(Date.now() - 4 * 3600e3); d.setUTCDate(d
     ok(nombre + ': El equipo en el índice y en Todo', (await q.locator('#tarjetas [data-grupo="equipo"]').count()) === 1 && (await q.locator('#cuerpo [data-persona]').count()) >= 1);
     await q.screenshot({ path: 'capturas/30-' + nombre + '-senior.png', fullPage: true });
     await q.locator('#cuerpo [data-persona]').first().click(); await q.waitForSelector('#bandaPersona:not(.hidden)');
-    ok(nombre + ': tocar a una persona muestra su buzón en solo consulta', llamo(mundo, 'mi_trabajo').some((l) => l[2].p_persona) && (await q.locator('#cuerpo [data-hacer]').count()) === 0);
+    ok(nombre + ': tocar a una persona muestra su buzón en solo consulta', llamo(mundo, 'mi_trabajo').some((l) => l[2].p_persona) && (await q.locator('#cuerpo [data-hacer]').allTextContents()).every((t) => t === 'Ver'));
     await q.click('#bandaPersona [data-tr="volver"]'); await q.waitForSelector('#bandaPersona.hidden', { state: 'attached' });
     await q.click('#tarjetas [data-grupo="ges"]').catch(() => {});
     await q.goto(H + 'clientes.html'); await q.waitForSelector('#panelCli');
