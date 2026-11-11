@@ -584,7 +584,7 @@
     // Si se estaba escribiendo en el formulario de esta misma solicitud (por ejemplo, mientras sube el archivo), no se borra
     const previo = h.dataset.sol === String(s.id) && $('vgNum') ? { vgNum: $('vgNum').value, vgFirma: $('vgFirma').value, vgVence: $('vgVence').value, firma: (h.querySelector('[data-vg-firma].on') || { dataset: {} }).dataset.vgFirma } : null;
     h.dataset.sol = String(s.id);
-    h.innerHTML = cabHoja('tVgtSol', s.proyecto || 'Solicitud de VGT', d.titulo + (s.postes ? ' · ' + s.postes + ' postes' : '')) +
+    h.innerHTML = cabHoja('tVgtSol', s.proyecto || 'Solicitud de VGT', d.titulo + (s.postes ? ' · ' + s.postes + ' postes' : '')) + '<div class="hoja-cuerpo">' +
       '<div class="vgt-franja ' + fr[0] + '" style="margin-top:0">' + esc(fr[1]) + '</div>' +
       '<div class="sec">Estado y datos</div><div class="datos">' + [['Uso', s.en_uso || 'Sin dato'], ['Proyecto o tramo', s.proyecto || ''], ['Municipio', s.municipio || ''], ['Estado', s.estado_geo || ''], ['Postes', s.postes == null ? '' : String(s.postes)], ['Recibida', s.fecha || ''], ['ODT', s.odt || 'Sin ODT']]
         .map((x) => '<div class="dato-f"><span>' + esc(x[0]) + '</span><b>' + esc(x[1] || 'Sin dato') + '</b></div>').join('') + (s.negada && s.negada_motivo ? '<div class="dato-f"><span>Negada</span><b>' + esc(s.negada_motivo) + '</b></div>' : '') + '</div>' +
@@ -603,7 +603,7 @@
         '<span class="rotulo arriba" id="rVgF">Firma</span><div class="tres dos" role="radiogroup" aria-labelledby="rVgF">' + [['digital', 'Digital'], ['fisica', 'Física']].map((x) => '<button type="button" role="radio" data-vg-firma="' + x[0] + '" aria-checked="' + (s.firma === x[0]) + '" class="' + (s.firma === x[0] ? 'on' : '') + '">' + x[1] + '</button>').join('') + '</div>' +
         '<div class="error" id="eVgDoc" role="alert"></div><div class="acciones"><button type="submit" class="btn btn-ancho" id="vgGuardar">Guardar</button></div></form>'
         : '<div class="datos">' + [['N.º', s.numero], ['Firmado', s.firmado_en ? fecha(s.firmado_en) : ''], ['Vence', s.vence_en ? fecha(s.vence_en) : '']].map((x) => '<div class="dato-f"><span>' + x[0] + '</span><b>' + esc(x[1] || 'Sin dato') + '</b></div>').join('') + '</div>') +
-      '<p class="nota-chica">Todo queda en la bitácora y en el hilo.</p>';
+      '<p class="nota-chica">Todo queda en la bitácora y en el hilo.</p></div>';
     if(previo && $('vgNum')){ ['vgNum', 'vgFirma', 'vgVence'].forEach((k) => { if(previo[k]) $(k).value = previo[k]; });
       if(previo.firma) Array.prototype.forEach.call(h.querySelectorAll('[data-vg-firma]'), (x) => { const on = x.dataset.vgFirma === previo.firma; x.classList.toggle('on', on); x.setAttribute('aria-checked', String(on)); }); }
   }
