@@ -68,9 +68,11 @@ const entrarAliado = (ctx, persona) => entrarComo(ctx, persona, 'aliados');
     // Lote 10/11 E7 y E13: pestaña Avisos (cada aviso abre su solicitud) y tarjetas que filtran Mis solicitudes
     ok(nombre + ': el inicio trae solo tarjetas de lo que necesita de él y el enlace a todas', (await p.locator('#lista .al-tc[data-sol]').count()) >= 1 && (await p.locator('#lista [data-tab="solicitudes"]').count()) === 1);
     if(nombre === 'pc') ok('pc: el menú del aliado va a la izquierda', await p.evaluate(() => { const a = document.getElementById('filtros').getBoundingClientRect(), b = document.getElementById('lista').getBoundingClientRect(); return a.right <= b.left; }));
-    await p.click('[data-tab="avisos"]'); await p.waitForSelector('.al-avisos .al-av');
+    if(nombre === 'tel') ok('tel: el inicio del aliado va sin pestañas', !(await p.isVisible('#filtros')));
+    await p.click('#lista [data-tab="solicitudes"]'); await p.waitForSelector('#filtros [data-tab="avisos"]', { state: 'visible' });
+    await p.click('#filtros [data-tab="avisos"]'); await p.waitForSelector('.al-avisos .al-av');
     ok(nombre + ': la pestaña Avisos muestra el historial', (await p.locator('.al-avisos .al-av').count()) === 2 && /Pago registrado/.test(await p.textContent('.al-avisos')));
-    await p.click('[data-tab="inicio"]'); await p.waitForSelector('.al-nuevo');
+    await p.click('#filtros [data-tab="inicio"]'); await p.waitForSelector('.al-nuevo');
 
     // ----- Nueva solicitud: cliente disponible -----
     await p.click('.al-nuevo'); await p.waitForSelector('#hojaNueva.ver [data-subirn="rif_empresa:0"]');
@@ -130,7 +132,7 @@ const entrarAliado = (ctx, persona) => entrarComo(ctx, persona, 'aliados');
     await p.click('#hojaNueva .hoja-pie [data-cierra]'); await p.waitForTimeout(350);
 
     // ----- Recaudos incompletos: qué falta, subir de nuevo, pedir excepción -----
-    await p.click('[data-tab="solicitudes"]'); await p.click('[data-sol="31"]'); await p.waitForSelector('#hojaSol.ver .estado.ambar');
+    await p.click('#lista [data-tab="solicitudes"]'); await p.click('[data-sol="31"]'); await p.waitForSelector('#hojaSol.ver .estado.ambar');
     const t31 = await p.textContent('#cSol');
     ok(nombre + ': cada documento dice qué le pasa', t31.includes('La junta venció') && t31.includes('Por corregir') && t31.includes('Bien'));
     ok(nombre + ': lo que falta aparece con Subir y el contacto que falta', t31.includes('Falta RIF personal') && (await p.locator('[data-subirs="rif_personal:1"]').count()) === 1 && (await p.locator('#s_correoEmp').count()) === 1);
