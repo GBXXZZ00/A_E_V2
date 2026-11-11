@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aliados comerciales</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="base.css">
+<style>
+/* Maqueta 12/11 · Aliados comerciales: bandeja del administrador, pantalla del aliado en PC, formulario por pasos y teléfono. Datos inventados. */
+.pag{width:1366px;background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 10px 40px rgba(15,23,42,.08)}
+.barra{display:flex;align-items:center;gap:22px;height:68px;padding:0 40px;border-bottom:1px solid var(--line)}
+.logo{font-weight:800;letter-spacing:.18em;font-size:15px}
+.logo small{font-weight:500;letter-spacing:0;color:var(--text2);font-size:14px;margin-left:10px;padding-left:12px;border-left:1px solid var(--line)}
+.barra nav{display:flex;gap:6px;margin-left:14px}
+.barra nav span{height:38px;padding:0 12px;border-radius:999px;display:flex;align-items:center;gap:6px;font-weight:600;font-size:14.5px;color:var(--text2)}
+.barra nav span.on{background:var(--acc-bg);color:var(--accent)}
+.barra nav i{font-style:normal;font-size:11px;background:var(--rojo);color:#fff;border-radius:999px;padding:1px 6px}
+.barra .av{margin-left:auto;width:40px;height:40px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center;font-weight:700}
+.dos-col{display:grid;grid-template-columns:520px minmax(0,1fr);min-height:760px}
+.izq{border-right:1px solid var(--line);padding:24px 28px;display:flex;flex-direction:column;gap:14px;background:#FBFBFC}
+.der{padding:24px 32px;display:flex;flex-direction:column;gap:14px}
+h1{font-size:26px;font-weight:800;letter-spacing:-.01em}
+.tabs2{display:flex;gap:6px;flex-wrap:wrap}
+.tabs2 span{height:38px;padding:0 14px;border-radius:999px;border:1px solid var(--line);background:#fff;display:inline-flex;align-items:center;gap:6px;font-weight:600;font-size:13.5px}
+.tabs2 span i{font-style:normal;color:var(--text3)}
+.tabs2 span.on{background:var(--text);border-color:var(--text);color:#fff} .tabs2 span.on i{color:#C8CCD2}
+.lista{border:1px solid var(--line);border-radius:16px;background:#fff;overflow:hidden}
+.it{display:flex;align-items:center;gap:12px;padding:12px 16px;border-top:1px solid var(--line)}
+.it:first-child{border-top:0}
+.it.sel{background:var(--acc-bg)}
+.it .tx b{font-size:14.5px}
+.motivo{border-radius:12px;padding:10px 14px;background:var(--morado-bg);color:var(--morado);font-size:13.5px}
+.motivo b{margin-right:8px}
+.cols2{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.visor{background:#F1F2F4;border-radius:16px;height:210px;display:grid;place-items:center;color:var(--text2);font-size:13px;margin-top:10px}
+.piebar{display:flex;gap:10px;justify-content:flex-end;border-top:1px solid var(--line);padding-top:14px;margin-top:auto}
+.btn.peligro{border-color:#E8B4AE;color:var(--rojo)}
+.btn.neg{background:var(--text);border-color:var(--text);color:#fff}
+.lado{width:230px;border-right:1px solid var(--line);padding:22px 14px;background:#FBFBFC;display:flex;flex-direction:column;gap:2px}
+.lado .t{font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--text2);padding:4px 12px 10px}
+.lado span.it2{display:flex;justify-content:space-between;align-items:center;height:40px;padding:0 14px;border-radius:12px;font-weight:600;font-size:14px;color:var(--text2)}
+.lado span.it2.on{background:var(--text);color:#fff}
+.lado span.it2 b.r{background:var(--rojo-bg);color:var(--rojo);border-radius:999px;padding:0 8px;font-size:12px}
+.ali{display:grid;grid-template-columns:230px minmax(0,1fr) 470px;min-height:780px}
+.tabla{border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.th,.tr{display:grid;grid-template-columns:minmax(0,1fr) 190px 20px;gap:12px;align-items:center;padding:12px 18px}
+.th{font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--text2);border-bottom:1px solid var(--line)}
+.tr{border-top:1px solid var(--line)} .tr:nth-child(2){border-top:0}
+.tr b{display:block;font-size:14.5px} .tr small{color:var(--text2);font-size:12.5px}
+.cajon{border-left:1px solid var(--line);padding:22px 24px;display:flex;flex-direction:column;gap:12px;box-shadow:-12px 0 30px rgba(15,23,42,.06)}
+.pasos{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.pasos i{height:4px;border-radius:4px;background:var(--line)} .pasos i.on{background:var(--accent)}
+.disp{border-radius:12px;padding:10px 14px;background:var(--verde-bg);color:var(--verde);font-weight:700;font-size:14px}
+.dz{border:1.5px dashed #9FB0E3;border-radius:16px;padding:18px;text-align:center;background:#F7F9FE;color:var(--accent);display:flex;flex-direction:column;gap:6px;align-items:center}
+.dz b{font-size:15px} .dz small{font-size:12.5px}
+.rif{border-radius:14px;padding:12px 14px;background:var(--azul-bg)}
+.rif .k{display:flex;justify-content:space-between;color:var(--azul);font-weight:700;font-size:14px}
+.barra2{height:5px;border-radius:5px;background:#fff;margin:8px 0 6px;overflow:hidden} .barra2 i{display:block;height:100%;width:55%;background:var(--azul)}
+.tefalta{display:flex;align-items:center;gap:10px;border-top:1px solid var(--line);padding-top:12px;margin-top:auto;font-size:13.5px;color:var(--ambar)}
+.tefalta b{margin-right:4px} .tefalta .btn{margin-left:auto}
+.fon{width:390px;background:#fff;border-radius:28px;box-shadow:0 18px 50px rgba(15,23,42,.14);overflow:hidden;display:flex;flex-direction:column}
+.fon .tb{height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;font-weight:800;letter-spacing:.18em;font-size:14px;border-bottom:1px solid var(--line)}
+.fon .tb small{letter-spacing:0;font-weight:500;color:var(--text2);font-size:13px}
+.fon .bd{padding:14px 16px;display:flex;flex-direction:column;gap:10px;flex:1}
+.ft{border:1px solid var(--line);border-radius:16px;padding:12px 14px;display:flex;flex-direction:column;gap:6px}
+.ft .k{display:flex;align-items:center;gap:8px} .ft .k b{font-size:15px;margin-right:auto}
+.ft small{color:var(--text2);font-size:12.5px}
+.navb{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--line);padding:8px 6px 14px}
+.navb span{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11px;color:var(--text2);font-weight:600}
+.navb span::before{content:"";width:26px;height:22px;border-radius:8px;background:var(--surface-2)}
+.navb span.on{color:var(--accent)} .navb span.on::before{background:var(--accent)}
+.campo.foco{border:2px solid var(--accent)}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="ok" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="mas" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="reloj" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></symbol>
+  <symbol id="subir" viewBox="0 0 24 24"><path d="M12 16V5M7 10l5-5 5 5M5 19h14"/></symbol>
+</svg>
+<div class="lienzo" style="flex-direction:column">
+
+<!-- A · bandeja del administrador -->
+<div class="col" id="A">
+  <div class="et">A · PC · Tú (administrador): Aliados comerciales es una bandeja</div>
+  <div class="pag">
+    <div class="barra"><span class="logo">AIRTEK<small>Empresas</small></span><nav><span>Inicio</span><span>Comisiones</span><span>Mi trabajo</span><span>Clientes</span><span class="on">Aliados <i>2</i></span><span>Gerencia</span></nav><span class="av">GB</span></div>
+    <div class="dos-col">
+      <div class="izq">
+        <div style="display:flex;align-items:center;gap:10px"><h1>Aliados comerciales</h1><span class="lnk" style="margin-left:auto">Pagos</span><span class="lnk">Aliados y usuarios</span></div>
+        <div class="tabs2"><span class="on">Esperan tu decisión <i>2</i></span><span>En curso <i>6</i></span><span>Sin enviar <i>1</i></span><span>Todas <i>82</i></span></div>
+        <div class="busca" style="height:40px;border:1px solid #C9CED6;border-radius:999px;display:flex;align-items:center;padding:0 16px;color:var(--text3);font-size:14px">Buscar cliente, RIF o aliado</div>
+        <div class="lista">
+          <div class="it sel"><span class="tx"><b>Joyería Modelo, C.A.</b><small>Carlos Ejemplo · Inversiones Ejemplo · hoy 10:15</small></span><span class="chip morado">Revisar correo</span></div>
+          <div class="it"><span class="tx"><b>Óptica Prueba, C.A.</b><small>Otro aliado · pidió excepción de cédula</small></span><span class="chip morado">Excepción</span></div>
+        </div>
+        <div class="et" style="margin-top:6px">Sin enviar (para que sepas quién se quedó a medias)</div>
+        <div class="lista"><div class="it"><span class="tx"><b>Mercado Ejemplo, C.A.</b><small>Carlos Ejemplo · desde 09:55 · le avisamos a las 10:55</small></span><span class="chip ambar">Faltan 2</span></div></div>
+        <p class="nota">También te llegan a Mi trabajo, en "Aliados", con el mismo botón Revisar aquí.</p>
+      </div>
+      <div class="der">
+        <div style="display:flex;align-items:flex-start;gap:12px"><div><h2 style="font-size:22px">Joyería Modelo, C.A.</h2><p class="nota">J-00000000-0 · Aliado: Inversiones Ejemplo · enviada hoy 10:15</p></div><span class="btn" style="margin-left:auto">Abrir expediente completo</span></div>
+        <div class="motivo"><b>Por qué está aquí:</b>el correo del representante no se parece a su nombre.</div>
+        <div class="cols2">
+          <div>
+            <div class="grp" style="margin-top:0"><span class="t">Documentos</span></div>
+            <div class="fila" style="border-top:0"><span class="tx"><b>RIF de la empresa</b></span><span class="chip verde">Bien</span><span class="btn">Ver</span></div>
+            <div class="fila"><span class="tx"><b>Acta constitutiva</b></span><span class="chip verde">Bien</span><span class="btn">Ver</span></div>
+            <div class="fila"><span class="tx"><b>Cédula del representante</b></span><span class="chip verde">Bien</span><span class="btn">Ver</span></div>
+            <div class="fila"><span class="tx"><b>RIF del representante</b></span><span class="chip verde">Bien</span><span class="btn">Ver</span></div>
+            <div class="visor">Vista del documento al tocar Ver</div>
+          </div>
+          <div>
+            <div class="grp" style="margin-top:0"><span class="t">Revisión de la IA</span></div>
+            <div class="fila" style="border-top:0"><span class="tx"><b>Razón social</b><small>Igual a la del RIF</small></span><span class="chip verde">Bien</span></div>
+            <div class="fila"><span class="tx"><b>Junta vigente</b><small>Hasta 15/10/2036</small></span><span class="chip verde">Bien</span></div>
+            <div class="fila"><span class="tx"><b>Firmantes</b><small>El representante está en la junta</small></span><span class="chip verde">Bien</span></div>
+            <div class="fila"><span class="tx"><b>Domicilio</b><small>El acta permite sucursales</small></span><span class="chip verde">Bien</span></div>
+            <div class="fila"><span class="tx"><b>Correo</b><small>No se parece al nombre</small></span><span class="chip morado">Revisar</span></div>
+            <div style="margin-top:12px"><label>Nota para el aliado</label><div class="campo vacio">Ej.: confirma el correo con el cliente</div></div>
+          </div>
+        </div>
+        <div class="piebar"><span class="btn g">Negar</span><span class="btn g">Devolver para corregir</span><span class="btn g pri">Aprobar con la nota</span><span class="btn g neg">Aprobar</span></div>
+      </div>
+    </div>
+  </div>
+  <p class="nota" style="max-width:1300px">Igual a la maqueta AdminAliado. Lo de hoy no se pierde: "Todas" es el registro completo (con "Por mes" y "Sin autorización" como filtros dentro), y Pagos y Aliados y usuarios quedan como enlaces arriba. Al aprobar o devolver, el aliado recibe su pantalla de resultado y la notificación.</p>
+</div>
+
+<!-- B · el aliado en PC -->
+<div class="col" id="B">
+  <div class="et">B · PC · El aliado: menú, sus solicitudes y la solicitud nueva como hoja a la derecha (paso 1)</div>
+  <div class="pag">
+    <div class="ali">
+      <div class="lado"><span class="logo" style="padding:4px 12px 18px">AIRTEK</span><span class="it2">Inicio</span><span class="it2 on">Solicitudes<b>7</b></span><span class="it2">Avisos<b class="r">3</b></span><span class="it2">Referidos</span><span class="nota" style="margin-top:auto;padding:0 12px">Carlos Ejemplo · Aliado</span></div>
+      <div class="der">
+        <div style="display:flex;align-items:center"><h1>Mis solicitudes</h1><span class="btn g pri" style="margin-left:auto">Nueva solicitud</span></div>
+        <div class="tabs2"><span class="on">Todas <i>7</i></span><span>Sin enviar <i>1</i></span><span>Listas <i>2</i></span><span>En revisión <i>1</i></span><span>Instaladas <i>2</i></span></div>
+        <div class="tabla">
+          <div class="th"><span>CLIENTE</span><span>ESTADO</span><span></span></div>
+          <div class="tr"><span><b>Mercado Ejemplo, C.A.</b><small>Desde hoy 09:55 · falta RIF del representante y correo</small></span><span><span class="chip ambar">Sin enviar · faltan 2</span></span><span>›</span></div>
+          <div class="tr"><span><b>Joyería Modelo, C.A.</b><small>El administrador revisa el correo</small></span><span><span class="chip morado">En revisión</span></span><span>›</span></div>
+          <div class="tr"><span><b>Tienda Modelo, C.A.</b><small>Aprobada ayer</small></span><span><span class="chip verde">Lista para instalar</span></span><span>›</span></div>
+          <div class="tr"><span><b>Bodega Prueba</b><small>Instala el 12/11</small></span><span><span class="chip azul">Instalación en curso</span></span><span>›</span></div>
+          <div class="tr"><span><b>Panadería Ejemplo</b><small>Instalada el 05/11 · pago registrado</small></span><span><span class="chip verde">Instalada</span></span><span>›</span></div>
+        </div>
+      </div>
+      <div class="cajon">
+        <div style="display:flex;align-items:center"><b style="font-size:19px">Nueva solicitud</b><span class="cerrar" style="margin-left:auto"><svg width="22" height="22"><use href="#x"/></svg></span></div>
+        <div class="pasos"><i class="on"></i><i></i><i></i><i></i></div>
+        <p class="nota">Paso 1 de 4 · Empresa</p>
+        <div class="seg"><span class="on">Empresa</span><span>Persona natural</span></div>
+        <div class="rif"><div class="k"><span>RIF de la empresa</span><span>Leyendo · 12 s</span></div><div class="barra2"><i></i></div><small style="color:var(--azul)">Mientras lo leemos, llena el contacto.</small></div>
+        <div><label>Teléfono del representante</label><div class="campo">0412 000 0000</div></div>
+        <div><label>Correo del representante</label><div class="campo foco vacio">Ej.: nombre@empresa.com</div></div>
+        <div><label>Correo de la empresa (opcional)</label><div class="campo vacio">Si no tiene, déjalo vacío</div></div>
+        <div class="tefalta"><span><b>Te falta:</b>correo del representante</span><span class="btn g">Siguiente</span></div>
+      </div>
+    </div>
+  </div>
+  <p class="nota" style="max-width:1300px">Igual a AliadoWeb y AliadoForm. Sin el título repetido ni la caja "Empieza por el RIF": el RIF se sube primero y se lee mientras llena el contacto. Campos con borde visible y etiqueta arriba. Abajo, fijo, "Te falta" y Siguiente (gris hasta que esté completo).</p>
+</div>
+
+<div style="display:flex;gap:40px;align-items:flex-start">
+<!-- C · paso 2 -->
+<div class="col" id="C">
+  <div class="et">C · Paso 2: documentos (suelta todos juntos)</div>
+  <div class="cajon" style="width:470px;background:#fff;border-radius:24px 0 0 24px;border:0;min-height:780px">
+    <div style="display:flex;align-items:center"><b style="font-size:19px">Nueva solicitud</b><span class="nota" style="margin-left:auto">Guardado</span></div>
+    <div class="pasos"><i class="on"></i><i class="on"></i><i></i><i></i></div>
+    <p class="nota">Paso 2 de 4 · Documentos</p>
+    <div class="disp">Comercial Ejemplo, C.A. está disponible.</div>
+    <div class="dz"><svg width="22" height="22" style="fill:none;stroke:currentColor;stroke-width:2"><use href="#subir"/></svg><b>Arrastra aquí todos los documentos juntos</b><small>Los reconocemos y los ponemos en su casilla. También puedes soltar uno sobre su casilla.</small><span class="btn">Elegir archivos</span></div>
+    <div>
+      <div class="fila" style="border-top:0"><span class="ic ok"><svg><use href="#ok"/></svg></span><span class="tx"><b>RIF de la empresa</b><small>RIF digital · vale</small></span><span class="chip verde">Leído ✓</span></div>
+      <div class="fila"><span class="ic rev"><svg><use href="#reloj"/></svg></span><span class="tx"><b>Acta constitutiva</b><small>11 páginas · unos 30 s</small></span><span class="chip azul">Leyendo</span></div>
+      <div class="fila"><span class="ic falta"><svg><use href="#mas"/></svg></span><span class="tx"><b>Cédula del representante</b><small>Foto o PDF</small></span><span class="btn pri">Subir</span></div>
+      <div class="fila"><span class="ic falta"><svg><use href="#mas"/></svg></span><span class="tx"><b>RIF del representante</b><small>Foto o PDF</small></span><span class="btn pri">Subir</span></div>
+      <div class="fila"><span class="ic op"><svg><use href="#mas"/></svg></span><span class="tx"><b>Acta de asamblea</b><small>Solo si cambió la junta, la dirección o el nombre</small></span><span class="chip">Opcional</span></div>
+    </div>
+    <div class="tefalta"><span><b>Te falta:</b>cédula y RIF del representante</span><span class="btn g">Siguiente</span></div>
+  </div>
+</div>
+
+<!-- D · paso 4 y resultado -->
+<div class="col" id="D">
+  <div class="et">D · Paso 4 y la pantalla de resultado</div>
+  <div class="cajon" style="width:470px;background:#fff;border-radius:24px 0 0 24px;border:0">
+    <div style="display:flex;align-items:center"><b style="font-size:19px">Nueva solicitud</b><span class="nota" style="margin-left:auto">Guardado</span></div>
+    <div class="pasos"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></div>
+    <p class="nota">Paso 4 de 4 · Enviar</p>
+    <h3 style="font-size:20px">Revisa y envía</h3>
+    <div class="fila" style="border-top:0"><span class="tx"><b>Empresa</b><small>Comercial Ejemplo, C.A.</small></span><span class="ic ok" style="width:28px;height:28px"><svg><use href="#ok"/></svg></span><span class="lnk">Cambiar</span></div>
+    <div class="fila"><span class="tx"><b>Documentos</b><small>4 de 4 leídos</small></span><span class="ic ok" style="width:28px;height:28px"><svg><use href="#ok"/></svg></span><span class="lnk">Cambiar</span></div>
+    <div class="fila"><span class="tx"><b>Contacto</b><small>Teléfono y 2 correos</small></span><span class="ic ok" style="width:28px;height:28px"><svg><use href="#ok"/></svg></span><span class="lnk">Cambiar</span></div>
+    <p class="nota">Al enviar revisamos firmantes, junta y actas. Te avisamos con una pantalla y una notificación.</p>
+    <div class="tefalta" style="color:var(--verde)"><span><b>Todo completo</b></span><span class="btn g pri">Enviar solicitud</span></div>
+  </div>
+  <div class="cajon" style="width:470px;background:#F3FAF6;border-radius:24px;border:0;margin-top:18px;align-items:center;text-align:center;padding:30px">
+    <span class="ic ok" style="width:56px;height:56px;border-radius:50%;background:#fff"><svg style="width:26px;height:26px"><use href="#ok"/></svg></span>
+    <h3 style="font-size:22px;color:var(--verde)">¡Puedes instalar!</h3>
+    <p class="nota">Comercial Ejemplo, C.A. pasó la revisión. Marca cuándo vas a instalar para reservar el cliente.</p>
+    <span class="btn ancho pri">Marcar instalación</span><span class="btn ancho">Ver la solicitud</span>
+  </div>
+  <p class="nota" style="max-width:470px">En PC el resultado sale como hoja (no pantalla completa). Si queda en revisión o devuelta, la misma hoja en azul o ámbar con qué hacer.</p>
+</div>
+
+<!-- E · teléfono -->
+<div class="col" id="E">
+  <div class="et">E · Teléfono · el aliado</div>
+  <div class="fon" style="height:820px">
+    <div class="tb">AIRTEK<small>Carlos</small></div>
+    <div class="bd">
+      <div style="display:flex;align-items:center"><h2 style="font-size:22px">Mis solicitudes</h2></div>
+      <span class="btn ancho pri">Nueva solicitud</span>
+      <div class="tabs2"><span class="on">Todas 7</span><span>Sin enviar 1</span><span>Listas 2</span></div>
+      <div class="ft"><div class="k"><b>Mercado Ejemplo, C.A.</b><span class="chip ambar">Faltan 2</span></div><small>Sin enviar · falta RIF del representante y correo</small></div>
+      <div class="ft"><div class="k"><b>Joyería Modelo, C.A.</b><span class="chip morado">En revisión</span></div><small>El administrador revisa el correo</small></div>
+      <div class="ft"><div class="k"><b>Tienda Modelo, C.A.</b><span class="chip verde">Lista</span></div><small>Aprobada ayer · marca la instalación</small></div>
+    </div>
+    <div class="navb"><span>Inicio</span><span class="on">Solicitudes</span><span>Avisos</span><span>Referidos</span></div>
+  </div>
+  <p class="nota" style="max-width:390px">En teléfono la solicitud nueva sube desde abajo con los mismos 4 pasos.</p>
+</div>
+</div>
+
+</div>
+</body>
+</html>

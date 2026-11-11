@@ -223,3 +223,8 @@ Se comparan el **Estado** del TAD (manda siempre), la instalación (I), la últi
 - Una solicitud VGT "en uso" sin el contrato o adendum firmado y subido avisa una vez al administrador y a Legal.
 - Duplicados por RIF mal escrito: vale el RIF completo (con dígito verificador). Se unen solo si la comisión no cambia (prueba con rollback contra la referencia). Si la venta y la aprobación legal están en el otro, decide el administrador.
 - Canales: la coordinadora puede pasar una tarea a otra persona y recordarle. Queda en la bitácora y en el hilo, y le llega un aviso.
+
+## Decisiones del 12/11
+- Legal (Reina) puede detener un contrato desde su tarea con "Hay un problema": devolver un documento, pedir otro o solo avisar. El cliente pasa a "Documentos pendientes" con la observación para el administrador; aviso al administrador y al líder, bitácora e hilo. Cuando el líder sube lo que falta y el administrador lo aprueba, vuelve solo a "Por elaborar" de Legal.
+- Una sola aprobación: al aprobar el último documento sale el paso final con los 6 puntos (propuestos por la IA) y "Dar Legal". Ya no se aprueba dos veces.
+- Si Legal ya está dado, la línea de revisión queda en verde y la tarjeta de la IA no sale; la IA solo aparece cuando hay documentos por revisar.

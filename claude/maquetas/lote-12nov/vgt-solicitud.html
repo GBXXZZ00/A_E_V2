@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Solicitud VGT</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="base.css">
+<style>
+/* Maqueta 12/11 · Hoja de una solicitud VGT (la aprobada el 10/11, con los estilos de la app). Datos inventados. */
+.hs{width:560px;background:#fff;border-radius:24px 0 0 24px;box-shadow:0 18px 50px rgba(15,23,42,.14);display:flex;flex-direction:column}
+.hs .top{display:flex;align-items:flex-start;gap:10px;padding:22px 24px 12px}
+.hs .k{font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--text2)}
+.hs h3{font-size:20px;font-weight:700;margin-top:4px} .hs .sub{font-size:13px;color:var(--text2);margin-top:3px}
+.hs .cu{padding:4px 24px 24px;display:flex;flex-direction:column;gap:12px}
+.estados{display:flex;gap:6px;flex-wrap:wrap}
+.estados span{height:36px;padding:0 14px;border-radius:999px;border:1px solid var(--line);display:grid;place-items:center;font-weight:600;font-size:13.5px}
+.estados span.on{background:var(--text);border-color:var(--text);color:#fff}
+.dc{border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:10px}
+.dc.am{background:#FDF6E8;border:1px solid #F1D9A6}
+.dc.ro{background:var(--rojo-bg);border:1px solid #F0C4BE}
+.dc.ve{background:var(--verde-bg);border:1px solid #A9D9C2}
+.dc .t{display:flex;align-items:center;gap:8px}
+.dc .t b{font-size:15px;margin-right:auto}
+.drop2{border:1.5px dashed #D4A84F;border-radius:12px;padding:14px;text-align:center;font-weight:600;font-size:13.5px;color:var(--ambar);background:#fff}
+.dc.ro .drop2{border-color:#E39B92;color:var(--rojo)}
+.tres2{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.pie3{display:flex;gap:10px;justify-content:flex-end;padding:14px 24px;border-top:1px solid var(--line)}
+.btn.peligro{border-color:#E8B4AE;color:var(--rojo)}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="ok" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="mas" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+</svg>
+<div class="lienzo">
+
+<div class="col" id="A">
+  <div class="et">A · PC · Al tocar una solicitud: su hoja (falta el contrato)</div>
+  <div class="hs">
+    <div class="top"><div><span class="k">SOLICITUD 1 DE REDES EJEMPLO, C.A.</span><h3>Yaracal · Troncal 3, Sector El Caimán</h3><p class="sub">Recibida el 22/09 · aprobada por infraestructura el 30/09</p></div><span class="cerrar"><svg width="22" height="22"><use href="#x"/></svg></span></div>
+    <div class="cu">
+      <div class="estados"><span>Solicitada</span><span>Aprobada</span><span>En proyecto</span><span class="on">En uso</span><span>Negada</span></div>
+      <div class="dos"><div><label>Postes</label><div class="campo">11</div></div><div><label>Municipio y estado</label><div class="campo">Cacique Manaure, Falcón</div></div></div>
+      <div><label>ODT de infraestructura</label><div class="campo">F-OPE-AIRTEK-001/000000</div></div>
+      <div class="grp" style="margin:6px 0 0"><span class="t">Documentos de esta solicitud</span></div>
+      <div>
+        <div class="fila" style="border-top:0"><span class="ic ok"><svg><use href="#ok"/></svg></span><span class="tx"><b>Propuesta comercial firmada</b><small>Subida el 06/11 por Gualfredo</small></span><span class="chip verde">Bien</span><span class="btn">Ver</span></div>
+        <div class="fila"><span class="ic ok"><svg><use href="#ok"/></svg></span><span class="tx"><b>Planillas de tendido · 2</b><small>Tramo 1 (6) · Tramo 2 (5)</small></span><span class="chip verde">Bien</span><span class="btn">+ Agregar</span></div>
+      </div>
+      <div class="dc ro">
+        <div class="t"><b>Contrato VGT</b><span class="chip rojo">En uso sin contrato</span></div>
+        <p class="nota" style="color:var(--rojo)">Es la primera solicitud: aquí va el contrato. Las siguientes serán adendums a este contrato.</p>
+        <div class="drop2">Arrastra aquí el contrato VGT firmado o toca para elegirlo</div>
+        <div class="tres2"><div><label>N.º de contrato</label><div class="campo vacio">Ej.: 0124</div></div><div><label>Fecha de firma</label><div class="campo vacio">dd/mm/aaaa</div></div><div><label>Vence</label><div class="campo vacio">dd/mm/aaaa</div></div></div>
+        <div><label>Tipo de firma</label><div class="seg" style="background:#fff"><span class="on">Digital</span><span>Física</span></div></div>
+      </div>
+      <p class="nota">Todo se edita aquí mismo y queda en la bitácora y en el hilo.</p>
+    </div>
+    <div class="pie3"><span class="btn g peligro">Denegar solicitud</span><span class="btn g pri">Guardar</span></div>
+  </div>
+  <p class="nota" style="max-width:560px">Estado en botones (un toque lo cambia). Datos editables en la misma hoja, sin "Editar datos". El recuadro del contrato toma el color de su estado: rojo si está en uso sin contrato, ámbar si falta, verde si está firmado. Los botones Guardar y Denegar quedan fijos abajo.</p>
+</div>
+
+<div class="col" id="B">
+  <div class="et">B · Con el contrato subido (y una solicitud 2 con su adendum)</div>
+  <div class="hs">
+    <div class="top"><div><span class="k">SOLICITUD 1</span><h3>Yaracal · Troncal 3, Sector El Caimán</h3><p class="sub">Contrato VGT N.º 0123 · firmado</p></div><span class="cerrar"><svg width="22" height="22"><use href="#x"/></svg></span></div>
+    <div class="cu">
+      <div class="dc ve">
+        <div class="t"><b>Contrato VGT N.º 0123</b><span class="chip verde">Firmado</span></div>
+        <div class="fila" style="border-top:0;padding:4px 0"><span class="ic ok"><svg><use href="#ok"/></svg></span><span class="tx"><b>contrato-vgt-0123.pdf</b><small>Firmado 08/11/2026 · vence 08/11/2027 · digital</small></span><span class="btn">Ver</span><span class="btn">Reemplazar</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="hs" style="margin-top:18px">
+    <div class="top"><div><span class="k">SOLICITUD 2</span><h3>Dabajuro · Las Tinajitas y Sector Libertador</h3><p class="sub">8 postes · En uso</p></div><span class="cerrar"><svg width="22" height="22"><use href="#x"/></svg></span></div>
+    <div class="cu">
+      <div class="dc am">
+        <div class="t"><b>Adendum N.º 1 al contrato VGT 0123</b><span class="chip ambar">Falta subirlo</span></div>
+        <div class="drop2">Arrastra aquí el adendum firmado o toca para elegirlo</div>
+        <div class="dos"><div><label>Fecha de firma</label><div class="campo vacio">dd/mm/aaaa</div></div><div><label>Vence</label><div class="campo">08/11/2027 (el del contrato)</div></div></div>
+      </div>
+    </div>
+  </div>
+  <p class="nota" style="max-width:560px">El adendum hereda el vencimiento del contrato. La app propone sola si toca Contrato o Adendum N.º n.</p>
+</div>
+
+</div>
+</body>
+</html>

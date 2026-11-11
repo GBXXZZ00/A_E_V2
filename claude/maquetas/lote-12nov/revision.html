@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Revisión y Legal</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="base.css">
+<style>
+/* Maqueta 12/11 · Revisión: línea de revisión, una sola aprobación ("Dar Legal") y "Hay un problema" de Legal. Datos inventados. */
+.rev.ok{border-style:solid;border-color:#A9D9C2;background:#F3FAF6}
+.rev.am{border-style:solid;border-color:#F1D9A6;background:#FFFBF2}
+.pto{display:flex;align-items:center;gap:12px;padding:11px 0;border-top:1px solid var(--line)}
+.pto:first-of-type{border-top:0}
+.pto .tx b{font-size:14.5px}
+.op3{display:flex;gap:4px;padding:3px;border-radius:999px;background:var(--surface-2);flex:none}
+.op3 span{height:32px;padding:0 12px;border-radius:999px;display:grid;place-items:center;font-size:13px;font-weight:600;color:var(--text2)}
+.op3 span.on{background:#fff;color:var(--text);box-shadow:0 1px 2px rgba(15,23,42,.1)}
+.op3 span.on.v{color:var(--verde)} .op3 span.on.r{color:var(--rojo)} .op3 span.on.a{color:var(--ambar)}
+.ia2{font-size:12px;color:var(--azul);font-weight:600}
+.res{display:flex;gap:8px;flex-wrap:wrap}
+.opc{border:1px solid var(--line);border-radius:14px;padding:12px 14px;display:flex;gap:12px;align-items:flex-start}
+.opc.on{border:2px solid var(--accent);background:#F7F9FE}
+.opc i{width:18px;height:18px;border-radius:50%;border:2px solid #C9CED6;flex:none;margin-top:2px}
+.opc.on i{border:5px solid var(--accent)}
+.opc b{display:block;font-size:14.5px} .opc small{color:var(--text2);font-size:12.5px}
+.docsel{display:flex;flex-direction:column;gap:6px;margin-left:30px}
+.docsel span{display:flex;align-items:center;gap:10px;height:40px;padding:0 12px;border:1px solid var(--line);border-radius:10px;font-size:14px}
+.docsel span.on{border-color:var(--accent);background:#F7F9FE;font-weight:600}
+.docsel span i{width:16px;height:16px;border-radius:5px;border:2px solid #C9CED6}
+.docsel span.on i{background:var(--accent);border-color:var(--accent)}
+.tarea{border:1px solid var(--line);border-radius:18px;padding:4px 18px 10px;background:#fff;width:760px}
+.tk{display:flex;align-items:center;gap:12px;padding:11px 0;border-top:1px solid var(--line)}
+.tk:first-of-type{border-top:0}
+.tk .acc{display:flex;gap:8px;align-items:center;flex:none}
+.cab2{display:flex;align-items:center;gap:10px;min-height:52px}
+.cab2 b{font-size:16px}
+.btn.peligro{border-color:#E8B4AE;color:var(--rojo)}
+.btn.rojo{background:var(--rojo);border-color:var(--rojo);color:#fff}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="ok" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="abajo" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+</svg>
+<div class="lienzo">
+
+<!-- A · la línea de revisión según el caso -->
+<div class="col" id="A">
+  <div class="et">A · Arriba de Documentos: la línea dice lo que toca</div>
+  <div class="hoja" style="padding:18px 24px;border-radius:24px">
+    <p class="nota" style="margin-bottom:8px"><b style="color:var(--text)">1. Legal ya dado.</b> En verde, sin la tarjeta de la IA.</p>
+    <div class="rev ok"><span class="dot v"></span><b>Legal aprobado el 05/11</b><small>Por Gualfredo · 6 de 6 bien</small><span class="btn">Ver revisión</span></div>
+    <p class="nota" style="margin:16px 0 8px"><b style="color:var(--text)">2. Documentos completos, falta dar Legal.</b> Un paso: abre la pantalla final (B).</p>
+    <div class="rev am"><span class="dot a"></span><b>Documentos completos</b><small>Falta confirmar los 6 puntos para dar Legal</small><span class="btn pri">Dar Legal</span></div>
+    <p class="nota" style="margin:16px 0 8px"><b style="color:var(--text)">3. Hay documentos por revisar.</b> La IA solo sale aquí, dentro del Expediente.</p>
+    <div class="rev"><span class="dot a"></span><b>3 documentos por revisar</b><small>La IA ya los leyó · propone aprobar 2 y devolver 1</small><span class="btn pri">Revisar</span></div>
+    <p class="nota" style="margin:16px 0 8px"><b style="color:var(--text)">4. Legal lo devolvió (D).</b> En ámbar, con la observación para ti.</p>
+    <div class="rev am"><span class="dot a"></span><b>Detenido por Legal</b><small>Reina: falta el acta de cambio de junta · hace 2 h</small><span class="btn">Ver</span></div>
+  </div>
+  <p class="nota">"No falta nada" y "Revisión 0 de 6" ya no salen juntos: si los documentos están bien, la línea dice qué falta para Legal y lleva directo a darlo.</p>
+</div>
+
+<!-- B · una sola aprobación -->
+<div class="col" id="B">
+  <div class="et">B · Al aprobar el último documento (o tocar "Dar Legal"): el paso final</div>
+  <div class="hc" style="width:560px">
+    <div class="top" style="display:flex"><div><h3>Último paso: dar Legal</h3><p class="sub">Redes Ejemplo, C.A. · todos los documentos aprobados</p></div><span class="cerrar"><svg width="22" height="22"><use href="#x"/></svg></span></div>
+    <div class="res"><span class="chip verde">8 aprobados</span><span class="chip">0 devueltos</span><span class="chip azul">La IA revisó el 11/11</span></div>
+    <p class="nota">Confirma cada punto. Ya vienen marcados como los propuso la IA; cambia solo lo que no estés de acuerdo.</p>
+    <div>
+      <div class="pto"><span class="tx"><b>Razón social</b><small>Igual a la del RIF · <span class="ia2">IA: bien</span></small></span><span class="op3"><span class="on v">Bien</span><span>Pedir</span><span>Revisar</span></span></div>
+      <div class="pto"><span class="tx"><b>Domicilio fiscal</b><small>El acta permite sucursales · <span class="ia2">IA: bien</span></small></span><span class="op3"><span class="on v">Bien</span><span>Pedir</span><span>Revisar</span></span></div>
+      <div class="pto"><span class="tx"><b>Vigencia de la empresa</b><small>Hasta 15/10/2046 · <span class="ia2">IA: bien</span></small></span><span class="op3"><span class="on v">Bien</span><span>Pedir</span><span>Revisar</span></span></div>
+      <div class="pto"><span class="tx"><b>Junta directiva</b><small>Vigente hasta 03/2029 · <span class="ia2">IA: bien</span></small></span><span class="op3"><span class="on v">Bien</span><span>Pedir</span><span>Revisar</span></span></div>
+      <div class="pto"><span class="tx"><b>Firmantes</b><small>María Ejemplo está en la junta · <span class="ia2">IA: bien</span></small></span><span class="op3"><span class="on v">Bien</span><span>Pedir</span><span>Revisar</span></span></div>
+      <div class="pto"><span class="tx"><b>Contacto</b><small>Correo y teléfono del firmante</small></span><span class="op3"><span class="on v">Bien</span><span>Pedir</span><span>Revisar</span></span></div>
+    </div>
+    <div><label>Mensaje al líder (opcional)</label><div class="campo vacio" style="height:60px;align-items:flex-start;padding-top:12px">Ej.: listo, pasa a contrato</div></div>
+    <div class="acciones"><span class="btn g">Cerrar sin dar Legal</span><span class="btn g pri">Dar Legal</span></div>
+  </div>
+  <p class="nota" style="max-width:560px">Un solo toque: aprueba lo marcado, cierra la revisión, da Legal y el cliente pasa a "Por elaborar contrato" de Reina. Si marcas algún punto en "Pedir", el botón cambia a "Pedir y avisar al líder" y el cliente queda en Documentos pendientes. Todo queda en la bitácora y el hilo con tu nombre.</p>
+</div>
+
+<!-- C · Legal: hay un problema -->
+<div class="col" id="C">
+  <div class="et">C · Mi trabajo de Reina: cada contrato por elaborar tiene "Hay un problema"</div>
+  <div class="tarea">
+    <div class="cab2"><span class="dot r"></span><b>Por elaborar contrato · 11</b></div>
+    <div class="tk"><span class="chip azul" style="width:96px;justify-content:center">ISP</span><span class="tx"><b>Redes Ejemplo, C.A.</b><small>Documentos completos desde el 03/11 · Líder: Ana Pérez</small></span><span class="acc"><span class="chip rojo">7 días</span><span class="btn">Hay un problema</span><span class="btn pri">Abrir expediente</span></span></div>
+    <div class="tk"><span class="chip azul" style="width:96px;justify-content:center">ISP</span><span class="tx"><b>Fibra Modelo, C.A.</b><small>Documentos completos desde el 06/11</small></span><span class="acc"><span class="chip ambar">4 días</span><span class="btn">Hay un problema</span><span class="btn pri">Abrir expediente</span></span></div>
+  </div>
+  <div class="et" style="margin-top:14px">Al tocarlo: la hoja (también desde la sección Contratos de la ficha)</div>
+  <div class="hc" style="width:560px">
+    <div class="top" style="display:flex"><div><h3>Hay un problema</h3><p class="sub">Redes Ejemplo, C.A. · el contrato se detiene</p></div><span class="cerrar"><svg width="22" height="22"><use href="#x"/></svg></span></div>
+    <div class="opc"><i></i><span><b>Devolver un documento</b><small>El que subieron está malo</small></span></div>
+    <div class="opc on"><i></i><span style="flex:1"><b>Pedir otro documento</b><small>Falta algo que no está en el expediente</small></span></div>
+    <div><label>¿Qué falta?</label><div class="campo">Acta de asamblea de cambio de junta directiva</div></div>
+    <div class="opc"><i></i><span><b>Solo avisar</b><small>Una nota para el administrador, sin devolver nada</small></span></div>
+    <div><label>Observación para el administrador</label><div class="campo" style="height:70px;align-items:flex-start;padding-top:12px">La junta del acta de 2021 venció en marzo. Necesito la de cambio de junta.</div></div>
+    <div class="banda ambar"><b>Qué pasa al enviar</b>El cliente vuelve a Documentos pendientes con tu observación. Te avisamos cuando lo aprueben y vuelve solo a "Por elaborar".</div>
+    <div class="acciones"><span class="btn g">Cancelar</span><span class="btn g pri">Enviar y detener</span></div>
+  </div>
+  <p class="nota" style="max-width:560px">Si eliges "Devolver un documento", debajo sale la lista de documentos del expediente para marcar cuál y el motivo (vencido, ilegible, no corresponde, falta firma u otro), igual que al revisar.</p>
+</div>
+
+<!-- D · lo que ves tú -->
+<div class="col" id="D">
+  <div class="et">D · Lo que ves tú (administrador)</div>
+  <div class="tarea" style="width:620px">
+    <div class="cab2"><span class="dot a"></span><b>Observaciones de Legal · 1</b><span class="nota" style="margin-left:auto;font-size:13px">En tu Mi trabajo, arriba de todo</span></div>
+    <div class="tk"><span class="tx"><b>Redes Ejemplo, C.A.</b><small>Reina pide: acta de asamblea de cambio de junta · hace 2 h</small></span><span class="acc"><span class="chip ambar">Documentos pendientes</span><span class="btn pri">Abrir</span></span></div>
+  </div>
+  <div class="et" style="margin-top:14px">En la ficha, arriba de Documentos</div>
+  <div class="hoja" style="padding:18px 24px;border-radius:24px;width:620px">
+    <div class="banda ambar"><b>Detenido por Legal el 12/11</b>Reina: "La junta del acta de 2021 venció en marzo. Necesito la de cambio de junta." Ya se le pidió al líder. Cuando la suba y la apruebes, vuelve a "Por elaborar".</div>
+    <div class="sec falta" style="margin-top:12px"><div class="sec-c"><span class="dot a"></span><b>Expediente del cliente</b><span class="chip rojo">Pedido: acta de cambio de junta</span><svg class="flecha"><use href="#abajo"/></svg></div></div>
+  </div>
+  <p class="nota" style="max-width:620px">Al líder le llega el aviso con lo que falta (en su Mi trabajo: "Devueltos o pedidos"). Queda en la bitácora y en el hilo: quién lo detuvo, cuándo y por qué.</p>
+</div>
+
+</div>
+</body>
+</html>
