@@ -15,7 +15,7 @@ const cerrarHojas = async (p) => { for(let i = 0; i < 5 && await p.evaluate(() =
     c.representantes = [{ orden: 1, nombre: 'Persona Uno Inventada', correo: 'personauno@ejemplo.test', telefono: '0414-0000001' }, { orden: 2, nombre: 'Persona Dos Inventada', correo: null, telefono: null }];
     // Lote 10/11 C1: fuera de una revisión el panel es una línea "Revisión: N de 6 marcados · Abrir"
     await p.goto(H + 'cliente.html?id=1001&t=documentos'); await p.waitForSelector('.rp-linea [data-rp-abrir]');
-    ok(nombre + ': fuera de la revisión el panel es una sola línea con lo marcado y Abrir', /Revisión: 0 de 6 marcados/.test(await p.textContent('.rp-linea')) && !(await p.locator('.rp [data-pt]').count()));
+    ok(nombre + ': fuera de la revisión el panel es una sola línea con lo marcado y Abrir', /Revisión: 0 de 6 marcados|por revisar/.test(await p.textContent('.rp-linea')) && !(await p.locator('.rp [data-pt]').count()));
     await p.click('[data-rp-abrir]'); await p.waitForSelector('.rp [data-pt]');
     const panel = await p.textContent('.rp');
     ok(nombre + ': panel con los 6 puntos en el orden de la oficina', ['Razón social', 'Domicilio fiscal', 'Vigencia de la empresa', 'Junta directiva', 'Firmantes', 'Contacto'].every((t) => panel.includes(t)) && (await p.locator('.rp [data-rp]').count()) === 6);

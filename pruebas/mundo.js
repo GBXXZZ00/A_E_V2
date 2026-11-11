@@ -1164,6 +1164,18 @@ const RPC = {
     const z = (m.datos.asig || {})[a.p_tipo + '|' + a.p_clave]; if(!z) return error('Nadie tiene esa tarea todavía. Pásala a una persona primero');
     (m.bitacora = m.bitacora || []).push({ accion: 'trabajo_recordado', registro: a.p_tipo + ':' + a.p_clave }); return { a: (m.personas.find((x) => x.id === z) || {}).nombre };
   },
+  // Lote 12/11: "Hay un problema" de Legal
+  legal_observacion(m, yo, a){ return ((m.datos.legalObs || []).filter((o) => o.cliente_id === Number(a.p_cliente)).slice(-1)[0]) || null; },
+  legal_observar(m, yo, a){
+    if(!['admin', 'abogado'].includes(yo.rol)) return error('No tienes permiso para hacer esto');
+    if(!['devolver', 'pedir', 'avisar'].includes(a.p_tipo)) return error('Elige qué pasa');
+    if(String(a.p_texto || '').trim().length < 10) return error('Escribe la observación (al menos 10 letras)');
+    const c = m.datos.clientes.find((x) => x.id === Number(a.p_cliente)); if(!c) return error('Ese cliente no existe');
+    if(a.p_tipo === 'devolver'){ const d = (c.documentos || []).find((x) => x.id === Number(a.p_documento)); if(!d) return error('Elige el documento que devuelves'); d.estado = 'devuelto'; d.motivo = a.p_motivo; d.nota = a.p_texto; }
+    const o = { id: (m.datos.legalObs || []).length + 1, cliente_id: c.id, tipo: a.p_tipo, texto: String(a.p_texto).trim(), en: new Date().toISOString(), por: yo.nombre };
+    (m.datos.legalObs = m.datos.legalObs || []).push(o); (m.bitacora = m.bitacora || []).push({ accion: 'legal_observa', registro: c.id });
+    return { id: o.id, estatus: c.estatus };
+  },
   mi_trabajo_personas(m, yo){ if(!esSenior(yo) && !yo.coordinador) return error('No tienes permiso para hacer esto');
     return m.personas.filter((p) => p.activo && ['lider', 'analista', 'abogado', 'admin'].includes(p.rol)).map((p) => ({ id: p.id, nombre: p.nombre, rol: p.rol, rol_txt: p.rol === 'lider' ? 'Líder' : p.rol === 'abogado' ? 'Legal' : p.rol === 'admin' ? 'Administrador' : 'Analista' })); },
   gestiones_lista(m, yo){ return { puedo_crear: esSenior(yo) || !!yo.coordinador, gestiones: gestionesDe(m).map((x) => gestionJson(m, x, false)) }; },

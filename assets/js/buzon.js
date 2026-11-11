@@ -33,7 +33,8 @@
       ['car', 'Cargas del día', 'Actualizar', 'alerta', 'a', ['alerta_carga', 'ordenes_atrasadas', 'cerrar_corte']]],
     abogado: [['con', 'Contratos', 'Por elaborar, por firmar y por subir', 'contrato', 'b', ['elaborar_contrato', 'elaborar_vgt', 'seguir_firma', 'contrato_archivo']],
       ['ven', 'Vencimientos', 'Contratos, juntas y pólizas', 'alerta', 'a', ['contrato_vence']]],
-    admin: [['rev', 'Revisar documentos', 'Líderes, aliados y correo', 'lupa', 'b', ['revisar_docs', 'cambio_revisar']],
+    admin: [['leg', 'Observaciones de Legal', 'Contratos que Legal detuvo', 'alerta', 'a', ['legal_obs']],
+      ['rev', 'Revisar documentos', 'Líderes, aliados y correo', 'lupa', 'b', ['revisar_docs', 'cambio_revisar']],
       ['dec', 'Por decidir', 'Corte, comisiones y sin registro', 'decidir', 'r', ['cerrar_corte', 'certificar', 'por_asignar', 'sin_registro', 'sin_cliente', 'sin_servicio', 'rif_verificar', 'por_instalar', 'sin_ip']],
       ['ali', 'Aliados', 'Permisos y bloqueos', 'inst', 'm', ['aliado_permisos', 'aliado_sin_permiso']],
       ['ale', 'Alertas', 'Cargas raras y órdenes atrasadas', 'alerta', 'a', ['alerta_carga', 'ordenes_atrasadas']]]
@@ -47,7 +48,7 @@
     cambio_emitir: ['Emitir en Proham', 'Ir al cambio'], por_enviar: ['Enviar carta y proforma', 'Enviar'], carta_enviar: ['Enviar carta y proforma', 'Enviar'], sin_ip: ['Falta la IP', 'Escribir IP'], ip_confirmar: ['Confirmar IP', 'Confirmar'],
     revisar_pago: ['Revisar pago', 'Ir'], elaborar_contrato: ['Elaborar contrato', 'Subir contrato'], elaborar_vgt: ['Elaborar contrato VGT', 'Abrir contrato'], seguir_firma: ['Seguir firma', 'Subir firmado'], contrato_archivo: ['Subir contrato firmado', 'Subir'],
     contrato_vence: ['Contrato por vencer', 'Ir'], revisar_docs: ['Revisar expediente', 'Revisar'], cambio_revisar: ['Aprobar documentos del cambio', 'Ir al cambio'],
-    pedido: ['Conseguir lo pedido', 'Abrir expediente'],
+    pedido: ['Conseguir lo pedido', 'Abrir expediente'], legal_obs: ['Observación de Legal', 'Abrir expediente'],
     cerrar_corte: ['Cerrar corte', 'Revisar y cerrar'], certificar: ['Para certificar', 'Ir'], por_asignar: ['Asignar orden', 'Asignar'], sin_registro: ['Cambio sin registro', 'Asignar líder'],
     sin_cliente: ['Instalación sin cliente', 'Ir'], sin_servicio: ['Instalación sin servicio', 'Ir'], aliado_permisos: ['Permisos de aliados', 'Revisar'], aliado_sin_permiso: ['Instalado sin permiso', 'Revisar'],
     alerta_carga: ['Carga rara', 'Revisar'], ordenes_atrasadas: ['Órdenes atrasadas', 'Ir'], venta_falta: ['Falta para comisionar', 'Ir'], cliente_nuevo: ['Cliente nuevo por instalar', 'Ir']

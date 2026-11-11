@@ -2661,3 +2661,25 @@ details.doc-sec{display:block;margin-top:12px;padding:0;font-size:14px;font-weig
 #hojaVgtSol > .cab,#hojaCtrVer > .cab{padding:20px 24px 12px;flex:none}
 #hojaVgtSol > .hoja-cuerpo,#hojaCtrVer > .hoja-cuerpo{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;padding:4px 24px 28px}
 @media (max-width:720px){ #hojaVgtSol > .cab,#hojaCtrVer > .cab{padding:16px 16px 10px} #hojaVgtSol > .hoja-cuerpo,#hojaCtrVer > .hoja-cuerpo{padding:4px 16px 24px} }
+
+/* Lote 12/11 · Revisión y Legal (maqueta claude/maquetas/lote-12nov/revision.html) */
+.rp-linea.ok{border-style:solid;border-color:#A9D9C2;background:#F3FAF6} .rp-linea.ok .pt{background:var(--verde)}
+.rp-linea.am{border-style:solid;border-color:#F1D9A6;background:#FFFBF2}
+.lg-obs{margin-bottom:10px}
+.hoja-simple{padding:0;display:flex;flex-direction:column}
+.hoja-simple > .cab{padding:20px 24px 12px;flex:none}
+.hoja-simple > .hoja-cuerpo{flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;padding:4px 24px 24px;display:flex;flex-direction:column;gap:10px}
+.ae-res{display:flex;gap:8px;flex-wrap:wrap}
+.ae-pto{display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--line)}
+.ae-pto .tx{flex:1;min-width:0} .ae-pto .tx b{display:block;font-size:14.5px} .ae-pto .tx small{display:block;font-size:12.5px;color:var(--azul)}
+.ae-op{display:flex;gap:4px;padding:3px;border-radius:999px;background:var(--surface-2);flex:none}
+.ae-op button{height:34px;padding:0 12px;border-radius:999px;font-size:13px;font-weight:600;color:var(--text2)}
+.ae-op button.on{background:#fff;box-shadow:0 1px 2px rgba(15,23,42,.1)} .ae-op .on.bien{color:var(--verde)} .ae-op .on.pedir{color:var(--rojo)} .ae-op .on.revisar{color:var(--ambar)}
+.pb-ops{display:flex;flex-direction:column;gap:8px}
+.pb-op{display:flex;gap:12px;align-items:flex-start;text-align:left;width:100%;border:1px solid var(--line);border-radius:14px;padding:12px 14px;background:#fff}
+.pb-op i{width:18px;height:18px;border-radius:50%;border:2px solid #C9CED6;flex:none;margin-top:2px}
+.pb-op.on{border:2px solid var(--accent);background:#F7F9FE} .pb-op.on i{border:5px solid var(--accent)}
+.pb-op b{display:block;font-size:14.5px} .pb-op small{color:var(--text2);font-size:12.5px}
+.pb-det{padding:2px 4px 6px}
+.lg-prob{flex:none;white-space:nowrap}
+@media (max-width:720px){ .ae-pto{flex-wrap:wrap} .ae-op{width:100%} .ae-op button{flex:1} .hoja-simple > .cab{padding:16px 16px 10px} .hoja-simple > .hoja-cuerpo{padding:4px 16px 20px} .lg-row{flex-wrap:wrap} }

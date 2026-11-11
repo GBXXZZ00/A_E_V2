@@ -356,7 +356,7 @@
     const ORD = { isp: 0, corp: 1, vgt: 2, pyme: 3 }; const ETQ_C = { isp: ['azul', 'ISP'], corp: ['', 'Corporativo'], vgt: ['morado', 'VGT'], pyme: ['', 'PYME'] };
     const diasDe = (f) => { const t = new Date(f.desde || f.en || ''); return isNaN(t) ? null : Math.max(0, Math.floor((Date.now() - t.getTime()) / 864e5)); };
     const fila = (f) => { const tp = tipoDe(f); const dd = diasDe(f); const c = ETQ_C[tp];
-      return '<div class="lg-row"><span class="chip ' + c[0] + ' lg-tag">' + c[1] + '</span><div class="lg-it">' + itemHtml(f) + '</div>' + (dd === null ? '' : '<span class="chip ' + (dd > 5 ? 'rojo' : dd > 2 ? 'ambar' : '') + ' lg-dias">' + (dd === 0 ? 'Nuevo' : plural(dd, 'día', 'días')) + '</span>') + '</div>'; };
+      return '<div class="lg-row"><span class="chip ' + c[0] + ' lg-tag">' + c[1] + '</span><div class="lg-it">' + itemHtml(f) + '</div>' + (f.tipo === 'elaborar_contrato' && !solo() ? '<button type="button" class="btn btn-chico btn-2 lg-prob" data-problema="' + esc(f.cliente_id) + '">Hay un problema</button>' : '') + (dd === null ? '' : '<span class="chip ' + (dd > 5 ? 'rojo' : dd > 2 ? 'ambar' : '') + ' lg-dias">' + (dd === 0 ? 'Nuevo' : plural(dd, 'día', 'días')) + '</span>') + '</div>'; };
     const lista = elab.filter((f) => !filtroC || tipoDe(f) === filtroC).sort((a, b) => ORD[tipoDe(a)] - ORD[tipoDe(b)] || (String(a.desde) < String(b.desde) ? -1 : 1));
     const masViejos = elab.filter((f) => (diasDe(f) || 0) > 5).length;
     const porTipo = seccion('Por elaborar contrato · ' + elab.length, masViejos ? plural(masViejos, 'lleva', 'llevan') + ' más de 5 días' : 'Primero los ISP. Cada uno abre el expediente donde se hace', filtros + (lista.length ? lista.slice(0, 60).map(fila).join('') : '<p class="nota-chica bz-nada">Nada por elaborar de este tipo.</p>'));
@@ -417,7 +417,7 @@
     else if(['certificar', 'por_enviar', 'sin_ip', 'revisar_pago', 'carta_enviar'].indexOf(f.tipo) >= 0) o.tab = 'comision';
     else if(f.tipo === 'ip_confirmar') o.tab = 'datos';
     else if(['elaborar_contrato', 'elaborar_vgt', 'seguir_firma', 'contrato_archivo', 'contrato_vence', 'por_firmar'].indexOf(f.tipo) >= 0) o.tab = 'contrato';
-    else if(['docs_faltan', 'devuelto', 'vgt', 'poliza', 'revisar_docs', 'cambio_revisar', 'cliente_nuevo', 'orden_atrasada'].indexOf(f.tipo) >= 0) o.tab = 'documentos';
+    else if(['docs_faltan', 'devuelto', 'vgt', 'poliza', 'revisar_docs', 'cambio_revisar', 'cliente_nuevo', 'orden_atrasada', 'legal_obs'].indexOf(f.tipo) >= 0) o.tab = 'documentos';
     if(f.tipo === 'devuelto') o.casilla = 'devuelto';
     else if(f.tipo === 'docs_faltan' || f.tipo === 'cliente_nuevo') o.casilla = 'falta';
     if(f.tipo === 'revisar_docs' || f.tipo === 'cambio_revisar') o.revisar = true;
@@ -456,6 +456,7 @@
     if((b = t.closest('[data-grupo]')) && (b.closest('#tarjetas') || b.closest('#nums') || b.closest('.cn-tiles') || b.classList.contains('bz-ver'))){ sel = b.dataset.grupo; if(sel === '') verEq = false; cuantos = 40; guardarUrl(); pintar(); if(b.classList.contains('bz-ver') || b.closest('#nums')) $('cuerpo').scrollIntoView({ block: 'start' }); return; }
     if((b = t.closest('[data-hacer]'))){ const f = buscar(b.dataset.hacer); if(f) hacer(f); return; }
     if((b = t.closest('[data-cn-wa],[data-cn-pdf],[data-cn-ya],[data-cn-rec],[data-cn-pasar],[data-cn-ip],[data-cn-hacer]'))){ cnAccion(b); return; }
+    if((b = t.closest('#cuerpo [data-problema]'))){ window.Ficha.problemaLegal(Number(b.dataset.problema), () => { cache.borrarTodo(); cargar(); }); return; }
     if((b = t.closest('[data-cn-modo]'))){ modoC = b.dataset.cnModo; sel = ''; guardarUrl(); pintar(); return; }
     if((b = t.closest('[data-cn-eq]'))){ verEq = b.dataset.cnEq === '1'; sel = ''; guardarUrl(); pintar(); return; }
     if((b = t.closest('[data-cn-por]'))){ cartasPor = b.dataset.cnPor; pintar(); return; }
