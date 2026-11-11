@@ -54,6 +54,7 @@ const { ok, cerrar } = marcador();
         ok(nombre + ': con número, WhatsApp es el botón principal y dice a quién se envía; sin número, Descargar en color', (await p.locator('#cartaWa').count()) === 1 ? /Se envía a/.test(await p.textContent('[data-plg="carta"]')) : /Sin número/.test(await p.textContent('[data-plg="carta"]')));
         await enHoja(p, '#cartaPdfs'); await p.click('#cartaPdfs'); await p.waitForSelector('#hojaDescargada.ver');
         ok(nombre + ': al descargar sale "¿La vas a enviar por WhatsApp?" con Ya la envié y Solo descargar', /La vas a enviar por WhatsApp/.test(await p.textContent('#hojaDescargada')) && (await p.locator('#descOtro').count()) === 1 && (await p.locator('#descSolo').count()) === 1);
+        await p.screenshot({ path: 'capturas/lote12nov-descargada-' + nombre + '.png' });
         await p.waitForFunction(() => true); await p.waitForTimeout(200);
         ok(nombre + ': la descarga queda anotada (para el aviso de las 2 horas)', (mundo.bitacora || []).some((b) => b.accion === 'carta_descargada'));
         await p.click('#descSolo');

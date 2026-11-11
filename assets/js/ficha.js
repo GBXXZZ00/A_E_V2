@@ -53,6 +53,7 @@
       if(mio !== id || n !== cargaN) return;   // ya se abrió otro cliente o hay una carga más nueva: esta respuesta no es de él
       F = r; rev = rv; F.gesActivas = ga || []; F.legalObs = lo || null;
       F.puedo = Object.assign({ marcar_rep: !!(F.puedo || {}).revisar }, F.puedo || {});   // Lote 05/11 C4: Firma este / Ya no aplica
+      if(esLegal()) F.puedo.revisar = false;   // Lote 12/11 (maqueta legal): Legal lee el expediente; revisar y aprobar es del administrador
       // Un provisional que ya se unió: se abre el cliente real
       if(F.cliente.unido_a){ id = Number(F.cliente.unido_a); toast('Ese cliente provisional ya se unió a su cliente real'); cargar(primera); return; }
       pintarTodo(); vigilar();
@@ -109,6 +110,7 @@
     else if(o.pedir) pedir(o.pedir === '1' ? null : o.pedir);
     else if(o.campo) abrirCampo(o.campo);
     else if(o.enviar) abrirEnviar(o.enviar);
+    else if(o.subirFirmado) subirFirmado();
     // Lote 28/10: desde Mi trabajo, 'devuelto' o 'falta' llevan a la primera casilla en ese estado
     else if(o.casilla){ const el = o.casilla === 'devuelto' || o.casilla === 'falta' ? document.querySelector('#tab-documentos .casilla.' + (o.casilla === 'devuelto' ? 'dev' : 'falta')) : document.querySelector('#tab-documentos [data-casilla="' + o.casilla + '"]'); if(el){ el.scrollIntoView({ block: 'center' }); el.classList.add('sobre'); setTimeout(() => el.classList.remove('sobre'), 1600); } }
   }
@@ -117,6 +119,7 @@
   // El cliente provisional (de una orden sin RIF) muestra "Provisional, sin RIF" en vez del número interno
   const rifDe = (c) => (c.provisional ? 'Provisional, sin RIF' : docFmt(c.doc_tipo, c.doc_numero));
   function paso(){
+    if(esLegal() && PASOS_L.some((x) => x[0] === F.cliente.estatus && x[0] !== 'contrato_firmado')) return null;   // su paso va en Documentos
     const c = F.cliente; const f = F.faltantes || []; const n = F.puedo.revisar ? sinMarcar().length : porRevisar().length;
     const dev = f.some((x) => x.e === 'devuelto'); const fal = f.some((x) => x.e === 'falta');
     if(c.provisional && F.rol !== 'abogado') return { tono: 'azul', texto: 'Cliente provisional, todavía sin RIF', sub: 'Salió de una orden de Odoo. Sube sus documentos desde ya; al conocer el RIF se une al cliente real o queda como cliente normal', boton: 'Escribir RIF', accion: 'rif' };
@@ -351,7 +354,7 @@
     const falN = fal.map((x) => x.t + (x.e === 'devuelto' ? ' (devuelta)' : ''));
     const lo = F.legalObs;   // Lote 12/11 (maqueta revision, D): lo que Legal detuvo, con su observación
     let h = presencialHtml() + suspHtml() + (lo ? '<div class="al-banda ambar lg-obs" role="note"><b>' + esc(lo.tipo === 'avisar' ? 'Observación de Legal' : 'Detenido por Legal') + ' el ' + esc(fecha(lo.en, true)) + '</b><p>' + esc((lo.por ? primerNombre(lo.por) + ': ' : '') + '"' + lo.texto + '"') +
-      (lo.tipo === 'avisar' ? '' : ' Cuando el líder suba lo que falta y lo apruebes, vuelve a "Por elaborar".') + '</p></div>' : '') + panelRevision();
+      (lo.tipo === 'avisar' ? '' : esLegal() ? ' Cuando el líder suba lo que falta y el administrador lo apruebe, vuelve a Recibidos y te sale otra vez en Por elaborar.' : ' Cuando el líder suba lo que falta y lo apruebes, vuelve a "Por elaborar".') + '</p></div>' : '') + panelLegal() + panelRevision();
     // Lote 12/11 (maqueta ficha-documentos): lo que antes iba arriba ahora va dentro del Expediente
     const arribaExp = (fal.length ? '<div class="fd-sum" data-faltan="' + fal.length + '"><span><b>' + (fal.length === 1 ? 'Falta 1:' : 'Faltan ' + fal.length + ':') + '</b> ' + esc(C.lista(falN)) + '</span><button type="button" class="btn btn-chico" data-paso="pedir:' + pedirM + '">Pedir lo que falta</button></div>'
         : '<div class="fd-sum ok" data-faltan="0"><span><b>No falta nada.</b> ' + esc(plural(aprobados, 'documento aprobado', 'documentos aprobados')) + (nr ? ', ' + esc(plural(nr, 'por revisar', 'por revisar')) : '') + '</span></div>') +
@@ -365,7 +368,7 @@
       '<button type="button" class="fd-drop" id="subirVarios">' + ic('subir') + '<span><span class="solo-pc">Arrastra aquí varios archivos y marca qué trae cada uno</span><span class="solo-tel">Toca para subir varios archivos y marca qué trae cada uno</span></span></button>' +
       '<p class="nota-chica' + (colaDe(id) ? '' : ' hidden') + '" id="estadoSubida" role="status"><span class="cargando-linea"><i></i><span id="textoSubida">' + esc(textoCola()) + '</span></span></p>' + driveHtml();
     // Lote 10/11 J: el expediente es una sección plegable (abierta si hay algo que hacer), seguida de Contratos y VGT
-    const pendExp = fal.length > 0 || nr > 0 || selMode || !!c.aprobado_por_subir || reqs().length > 0;
+    const pendExp = fal.length > 0 || nr > 0 || selMode || !!c.aprobado_por_subir || reqs().length > 0 || (esLegal() && ['documentos_recibidos', 'contrato_en_curso'].indexOf(c.estatus) >= 0);
     h += seccionDoc('exp', 'Expediente del cliente', fal.length ? ['ambar', fal.length === 1 ? 'Falta 1' : 'Faltan ' + fal.length] : nr ? ['azul', plural(nr, 'por revisar', 'por revisar')] : ['verde', 'Completo'], arribaExp + casillasHtml(false), pendExp) +
       seccionContratos() + seccionVgt() + historialRevisiones();
     $('tab-documentos').innerHTML = h;
@@ -484,6 +487,30 @@
   }
   // ---------- Lote 10/11 J: Documentos con tres secciones plegables (Expediente del cliente, Contratos y VGT) ----------
   const secAb = {};   // qué sección dejó abierta la persona (se recuerda mientras la ficha está abierta)
+  // ---------- Lote 12/11 (maqueta legal): "Tu paso" de Legal arriba de Documentos ----------
+  function esLegal(){ return !!((F && F.rol === 'abogado') || (yo && yo.rol === 'abogado')); }
+  const PASOS_L = [['documentos_recibidos', 'Recibidos'], ['contrato_en_curso', 'En curso'], ['por_firmar', 'Por firmar'], ['contrato_firmado', 'Firmado']];
+  function panelLegal(){
+    if(!esLegal() || F.cliente.es_natural) return '';
+    const c = F.cliente; const i = PASOS_L.findIndex((x) => x[0] === c.estatus);
+    if(i < 0) return F.legalObs ? '' : '<div class="lp"><div class="lp-k"><b>Todavía no te toca</b>' + chipEstatus(c.estatus) + '</div><p class="nota-chica">Cuando el administrador apruebe el expediente pasa a Recibidos y te sale en Mi trabajo.</p></div>';
+    const t0 = c.estatus_desde ? new Date(c.estatus_desde) : null; const dd = t0 && !isNaN(t0) ? Math.max(0, Math.floor((Date.now() - t0.getTime()) / 864e5)) : null;
+    const hace = dd === null ? null : [dd > 5 ? 'rojo' : dd > 2 ? 'ambar' : '', (i === 2 ? 'Enviado ' : '') + (dd === 0 ? (i === 2 ? 'hoy' : 'Desde hoy') : (i === 2 ? 'hace ' : 'Hace ') + plural(dd, 'día', 'días'))];
+    const tit = ['Tu paso: elaborar el contrato', 'Tu paso: terminar y enviar a firmar', 'Tu paso: esperar la firma y subirla', 'Listo: contrato firmado'][i];
+    const prob = '<button type="button" class="btn btn-2 lp-prob" data-problema="1">Hay un problema</button>';
+    const acc = i === 0 ? '<button type="button" class="btn" data-lp-sig="contrato_en_curso">Empecé el contrato</button>' + prob
+      : i === 1 ? '<button type="button" class="btn" data-lp-sig="por_firmar">Lo envié a firmar</button>' + prob
+      : i === 2 ? '<button type="button" class="btn" data-lp-subir="1">Subir firmado</button><button type="button" class="btn btn-2" data-paso="pedir:firma">Recordar al cliente</button>'
+      : c.contrato_pend ? '<button type="button" class="btn" data-lp-subir="1">' + (c.contrato_pend === 'sin_archivo' ? 'Subir firmado' : 'Poner el vencimiento') + '</button>' : '';
+    return '<section class="lp" aria-labelledby="lpT"><div class="lp-k"><b id="lpT">' + esc(tit) + '</b>' + (i === 3 ? (c.contrato_pend ? '<span class="chip ambar">' + (c.contrato_pend === 'sin_archivo' ? 'Falta subir el firmado' : 'Falta el vencimiento') + '</span>' : '<span class="chip verde">Firmado</span>') : hace ? '<span class="chip ' + hace[0] + '">' + esc(hace[1]) + '</span>' : '') + '</div>' +
+      '<div class="lp-est" role="group" aria-label="Estatus del contrato">' + PASOS_L.map((x, j) => '<button type="button" class="' + (j < i ? 'hecho' : j === i ? 'on' : '') + '" data-lp-est="' + x[0] + '" aria-pressed="' + (j === i) + '"' + (j === i ? ' disabled' : '') + '>' + x[1] + '</button>').join('') + '</div>' +
+      (acc ? '<div class="lp-acc">' + acc + '</div>' : '') + (i < 3 ? '<p class="nota-chica">Tocar un estatus lo cambia (pide confirmar). Cada cambio queda en la bitácora y en el hilo, y la tarea se mueve sola en tu Mi trabajo.</p>' : '') + '</section>';
+  }
+  function subirFirmado(){
+    const b = document.querySelector('#tab-documentos .ctr-fila[data-ctr-clase*="ctr-pyme"] [data-ctr-abrir], #tab-documentos .ctr-fila[data-ctr-clase*="ctr-ded"] [data-ctr-abrir], #tab-documentos [data-ctr-abrir]');
+    if(b){ abrirContrato(Number(b.dataset.ctrAbrir)); return; }
+    secAb.ctr = true; pintarDocumentos(); const s = document.querySelector('#tab-documentos [data-sec="ctr"]'); if(s) s.scrollIntoView({ block: 'start' });
+  }
   function seccionDoc(k, titulo, chipEst, cuerpo, abiertaPorDefecto){
     const ab = secAb[k] !== undefined ? secAb[k] : !!abiertaPorDefecto;
     return '<details class="doc-sec' + (chipEst && /rojo|ambar/.test(chipEst[0]) ? ' falta' : chipEst && chipEst[0] === 'verde' ? ' listo' : '') + '" data-sec="' + k + '"' + (ab ? ' open' : '') + '><summary>' + (chipEst && /rojo|ambar|verde/.test(chipEst[0]) ? '<span class="doc-dot ' + (chipEst[0] === 'verde' ? 'v' : 'a') + '" aria-hidden="true"></span>' : '') + '<b>' + esc(titulo) + '</b>' +
@@ -1999,6 +2026,9 @@
     if((b = t.closest('#hojaProblema [data-pb-mot]'))){ leerProblema(); pb.motivo = b.dataset.pbMot; pintarProblema(); return; }
     if((b = t.closest('#pbOk'))){ guardarProblema(b); return; }
     if((b = t.closest('#hojaFicha [data-problema]'))){ problemaLegal(id, null); return; }
+    if((b = t.closest('#hojaFicha [data-lp-sig]'))){ const v = b.dataset.lpSig; accion('cliente_estatus', { p_cliente: id, p_estatus: v }, v === 'por_firmar' ? 'Listo: pasó a Por firmar' : 'Listo: contrato en curso', b).then((ok) => { if(ok && alCerrar) C.cache.borrarTodo(); }); return; }
+    if((b = t.closest('#hojaFicha [data-lp-est]'))){ abrirEstatus(); const x = $('hojaEstatus') && $('hojaEstatus').querySelector('[data-estatus="' + b.dataset.lpEst + '"]'); if(x) x.click(); return; }
+    if(t.closest('#hojaFicha [data-lp-subir]')){ subirFirmado(); return; }
     if((b = t.closest('#hojaFicha [data-ctr-abrir]'))){ abrirContrato(Number(b.dataset.ctrAbrir)); return; }
     if((b = t.closest('#hojaFicha [data-ctr-mas]'))){ elegirPara('otro', 0); toast(b.dataset.ctrMas === 'adendum' ? 'Al subirlo, ponle de título "Adendum al contrato"' : 'Al subirlo, ponle de título el nombre del contrato'); return; }
     if(t.closest('#agregarActa')){ actaExtra = Math.min(ACTAS.length, actaExtra + 1); pintarDocumentos(); const cs = document.querySelectorAll('[data-grupo="empresa"] [data-casilla^="acta_asamblea"]'); if(cs.length) cs[cs.length - 1].scrollIntoView({ block: 'center' }); return; }
@@ -2185,7 +2215,7 @@
     const o = opciones || {};
     montar();
     yo = o.yo || yo; id = Number(idCliente) || 0; drive = undefined; rev = null; clearTimeout(sondeo); sondeo = null; if(!id) return;
-    F = null; fuera = null; hiloTodo = false; hiloF = 'todo'; repExtra = 0; actaExtra = 0; selMode = false; selDocs = new Set(); llegada = { revisar: o.revisar, pedir: o.pedir, casilla: o.casilla, campo: o.campo, enviar: o.enviar }; alCerrar = o.alCerrar || null;
+    F = null; fuera = null; hiloTodo = false; hiloF = 'todo'; repExtra = 0; actaExtra = 0; selMode = false; selDocs = new Set(); llegada = { revisar: o.revisar, pedir: o.pedir, casilla: o.casilla, campo: o.campo, enviar: o.enviar, subirFirmado: o.subirFirmado }; alCerrar = o.alCerrar || null;
     $('cabFicha').innerHTML = '<div class="f-cab"><span class="mono sk" aria-hidden="true"></span><div class="tx"><span class="sk" style="width:70%;height:22px"></span><span class="sk" style="width:50%;height:12px;margin-top:8px"></span></div>' +
       '<button type="button" class="cerrar" data-cierra="1" aria-label="Cerrar">' + ic('x') + '</button></div>';
     TABS.forEach((x) => { $('tab-' + x).innerHTML = '<div class="sk-bloque"><span class="sk" style="height:64px;border-radius:16px"></span><span class="sk" style="height:64px;border-radius:16px"></span><span class="sk" style="height:64px;border-radius:16px"></span></div>'; });

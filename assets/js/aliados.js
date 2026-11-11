@@ -809,7 +809,7 @@
       if(d.cliente_id) acc += '<button type="button" class="btn btn-chico btn-2" data-acc="expediente">Abrir expediente</button>';
     }
     const det = k === 'recaudos' ? 'Revisa lo marcado abajo. ' + SIGUE[k] : k === 'curso' && d.fecha_instalacion ? 'Instalas el ' + fecha(d.fecha_instalacion) + '. ' + SIGUE[k] : k === 'sininst' ? (d.motivo_cierre || '') + ' ' + SIGUE[k] : SIGUE[k] || '';
-    $('cSol').innerHTML = (k === 'analizando' ? pasos(d) :
+    $('cSol').innerHTML = (adm ? '' : lineaSol(d)) + (k === 'analizando' ? pasos(d) :
       '<div class="estado ' + (e[1] || 'al-gris') + '"><b>' + esc(e[0]) + '</b><small>' + esc(det) + '</small></div>' +
       (adm && d.bloqueo ? '<p class="nota">Bloqueo: ' + esc({ top: 'cliente TOP', cartera: 'cartera de un líder', grandes_negocios: 'Grandes negocios', servicio: 'ya tiene servicio', odoo: 'orden de Odoo abierta', otro_aliado: 'otro aliado lo pidió' }[d.bloqueo] || d.bloqueo) + (d.lider ? ' (' + esc(d.lider) + ')' : '') + '.</p>' : '') +
       (d.excepcion && d.excepcion.motivo ? '<div class="al-nota"><b>Excepción pedida' + (d.excepcion.punto ? ': ' + esc(d.excepcion.punto) : '') + '.</b> ' + esc(d.excepcion.motivo) + '</div>' : '') +
@@ -821,6 +821,19 @@
       '<div class="h2 al-h2">Historial</div><div class="al-hilo">' + (d.hilo || []).map((x) => '<div class="al-hi ' + esc(x.color) + '"><div>' + esc(x.texto) + '<small>' + esc(fecha(x.en) + ' ' + hora(x.en)) + '</small></div></div>').join('') + '</div>' +
       fechasSol(d) + bitacoraSol(d);
     if(k === 'analizando'){ sondeoS = setTimeout(() => { if(hojaAbierta() === 'hojaSol') cargarSol(); }, 3000); }
+  }
+  // Lote 12/11 (maqueta aliado-flujo, 4): la misma línea de tiempo en cada solicitud; siempre dice en qué paso va y qué sigue
+  function lineaSol(d){
+    const k = d.etiqueta; const pagada = !!d.pagada_en;
+    const n = { analizando: 1, recaudos: 1, excepcion: 2, revision: 2, lista: 3, listaobs: 3, curso: 4, instalada: pagada ? 5 : 4 }[k];
+    if(n === undefined) return '';
+    const P = [['Enviado', d.enviada_en || d.creada_en ? fecha(d.enviada_en || d.creada_en, true) : ''],
+      ['Revisión automática', k === 'recaudos' ? 'Falta corregir algo: míralo abajo' : n === 1 ? 'Unos 2 minutos · puedes cerrar, te avisamos' : 'Lista'],
+      ['Revisión del administrador', n === 2 ? 'La está revisando · te avisamos' : n > 2 && (d.excepcion || d.respuesta) ? 'Aprobada' : 'Solo si algo no cuadra'],
+      ['Lista para instalar', n === 3 ? 'Marca la fecha de instalación' : d.aprobada_en ? fecha(d.aprobada_en, true) : ''],
+      ['Instalado y pagado', k === 'curso' ? (d.fecha_instalacion ? 'Instalas el ' + fecha(d.fecha_instalacion) : 'Instalación en curso') : k === 'instalada' ? (pagada ? 'Pagado el ' + fecha(d.pagada_en, true) : 'Instalada, falta el pago') : 'Ves tu pago aquí']];
+    return '<ol class="al-tl" aria-label="En qué va la solicitud">' + P.map((x, i) => { const st = i < n || (i === 4 && pagada) ? 'v' : i === n ? (k === 'recaudos' ? 'r' : 'a') : '';
+      return '<li class="' + st + '"' + (st === 'a' || st === 'r' ? ' aria-current="step"' : '') + '><i aria-hidden="true">' + (st === 'v' ? '✓' : i + 1) + '</i><span><b>' + esc(x[0]) + '</b>' + (x[1] ? '<small>' + esc(x[1]) + '</small>' : '') + '</span></li>'; }).join('') + '</ol>';
   }
   function fechasSol(d){
     const f = [['Creada', d.creada_en], ['Aprobada', d.aprobada_en], ['Instalación prevista', d.fecha_instalacion], ['Instalada', d.instalada_en], ['Cerrada', d.cerrada_en], ['Vence', d.vence_en]].filter((x) => x[1]);

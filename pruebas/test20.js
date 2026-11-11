@@ -103,6 +103,8 @@ const entrarAliado = (ctx, persona) => entrarComo(ctx, persona, 'aliados');
     await p.screenshot({ path: 'capturas/lote10nov-E-' + nombre + '-lista.png' });
     await p.click('#alRes [data-res="ver"]'); await p.waitForSelector('#hojaSol .estado.verde', { timeout: 12000 });
     ok(nombre + ': Ver la solicitud deja el registro con Lista para instalar', (await p.textContent('#hojaSol .estado')).includes('Lista para instalar'));
+    ok(nombre + ': la solicitud trae la línea de tiempo en el paso Lista para instalar', (await p.locator('#hojaSol .al-tl li').count()) === 5 && /Lista para instalar/.test(await p.textContent('#hojaSol .al-tl li[aria-current]')));
+    await p.screenshot({ path: 'capturas/lote12nov-aliado-linea-' + nombre + '.png' });
     ok(nombre + ': en una solicitud lista el aliado puede escribir al administrador', (await p.locator('#hojaSol [data-acc="whats"]').count()) === 1);
     await p.click('[data-form="curso"]'); await p.waitForSelector('#hojaForm.ver #fFecha'); await p.click('#hojaForm [data-acc="guardarForm"]');
     await p.waitForSelector('#hojaSol .estado.azul');

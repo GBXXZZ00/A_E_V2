@@ -2734,3 +2734,31 @@ details.doc-sec{display:block;margin-top:12px;padding:0;font-size:14px;font-weig
 }
 main.al-en-inicio #ayuda{display:none}
 @media (max-width:899px){ main.al-m-aliado.al-en-inicio #filtros{display:none} }
+
+/* Lote 12/11 · Legal: "Tu paso" arriba de Documentos (maqueta legal.html) */
+.lp{border:1px solid var(--line);border-radius:18px;padding:14px 16px;display:flex;flex-direction:column;gap:12px;margin-bottom:12px;background:#fff}
+.lp-k{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.lp-k b{font-size:15px;margin-right:auto}
+.lp-est{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.lp-est button{min-height:44px;border-radius:12px;border:1px solid var(--line);background:#fff;font:inherit;font-weight:600;font-size:12.5px;color:var(--text2);padding:0 4px;line-height:1.15;cursor:pointer;transition:transform .16s var(--ease-out)}
+.lp-est button:active{transform:scale(.97)}
+.lp-est button.hecho{background:var(--verde-bg);border-color:#A9D9C2;color:var(--verde)}
+.lp-est button.on{background:var(--text);border-color:var(--text);color:#fff;cursor:default;opacity:1}
+.lp-acc{display:flex;gap:8px}
+.lp-acc .btn{flex:1;min-height:44px;white-space:nowrap}
+.lp-acc .lp-prob{border:1px solid #E8B4AE;color:var(--rojo);background:#fff}
+@media (max-width:620px){ .lp-acc{flex-direction:column} }
+
+/* Lote 12/11 · Aliados: línea de tiempo de cada solicitud (maqueta aliado-flujo, 4) */
+.al-tl{list-style:none;margin:0 0 14px;padding:0;display:flex;flex-direction:column}
+.al-tl li{display:flex;gap:12px;align-items:flex-start;position:relative;padding-bottom:14px}
+.al-tl li::before{content:"";position:absolute;left:11px;top:26px;bottom:2px;width:2px;background:var(--line)}
+.al-tl li:last-child{padding-bottom:0}
+.al-tl li:last-child::before{display:none}
+.al-tl i{width:24px;height:24px;border-radius:50%;flex:none;display:grid;place-items:center;font-style:normal;font-size:12px;font-weight:800;background:var(--surface-2);color:var(--text3)}
+.al-tl li.v i{background:var(--verde);color:#fff}
+.al-tl li.a i{background:var(--accent);color:#fff}
+.al-tl li.r i{background:var(--rojo);color:#fff}
+.al-tl b{display:block;font-size:14px}
+.al-tl small{display:block;color:var(--text2);font-size:12.5px;margin-top:1px}
+.al-tl li:not(.v):not(.a):not(.r) b{color:var(--text2)}

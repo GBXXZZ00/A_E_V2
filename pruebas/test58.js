@@ -8,13 +8,20 @@ const dia = (n) => { const d = new Date(); d.setDate(d.getDate() + n); return d.
   for(const [nombre, dispositivo] of [['pc', PC], ['tel', TEL]]){
     const { ctx, mundo } = await contexto(nav, dispositivo);
     mundo.personas.push({ id: '77777777-7777-4777-8777-777777777777', usuario: 'paula', pin: '615243', nombre: 'Paula Legal', rol: 'abogado', cargo: 'Legal', equipo: 'ventas', activo: true, debe_cambiar_pin: false });
-    const cli = mundo.datos.clientes;
+    const cli = mundo.datos.clientes; cli[0].estatus = 'documentos_recibidos'; (cli[0].documentos || []).forEach((d) => { if(d.estado === 'por_revisar') d.estado = 'aprobado'; });
     mundo.datos.extra = [{ tipo: 'elaborar_contrato', clave: String(cli[0].id), cliente_id: cli[0].id, titulo: cli[0].nombre, detalle: 'PYME · en Documentos recibidos', para: 'abogado', vence: dia(-2), desde: dia(-5) + 'T12:00:00Z', ref: {} }];
     // Legal: "Hay un problema" en su contrato por elaborar
     const p = await entrar(ctx, 'paula', '615243'); p.on('pageerror', (e) => errores.push(nombre + ': ' + e.message));
-    await p.goto(H + 'trabajo.html'); await p.waitForSelector('#cuerpo [data-problema]', { timeout: 15000 });
-    ok(nombre + ': cada contrato por elaborar trae "Hay un problema"', (await p.locator('#cuerpo [data-problema]').count()) >= 1);
-    await p.locator('#cuerpo [data-problema]').first().click(); await p.waitForSelector('#hojaProblema.ver');
+    await p.goto(H + 'trabajo.html'); await p.waitForSelector('#cuerpo [data-hacer]', { timeout: 15000 });
+    // Lote 12/11 (maqueta legal): la fila trae "Abrir" y abre la hoja del cliente con "Tu paso"
+    ok(nombre + ': la fila de Legal trae Abrir y ya no "Hay un problema" suelto', /Abrir/.test(await p.locator('#cuerpo [data-hacer]').first().textContent()) && (await p.locator('#cuerpo [data-problema]').count()) === 0);
+    await p.locator('#cuerpo [data-hacer]').first().click(); await p.waitForSelector('#hojaFicha .lp', { timeout: 15000 });
+    ok(nombre + ': la hoja abre en Documentos con su paso y los 4 estatus', /Tu paso: elaborar el contrato/.test(await p.textContent('#hojaFicha .lp')) && (await p.locator('#hojaFicha .lp [data-lp-est]').count()) === 4);
+    ok(nombre + ': a Legal no le sale Revisar ni la revisión del administrador', (await p.locator('#hojaFicha #revisarTodo, #hojaFicha .rp-linea, #hojaFicha .rp').count()) === 0);
+    await p.screenshot({ path: 'capturas/lote12nov-legal-paso-' + nombre + '.png' });
+    await p.click('#hojaFicha [data-lp-sig="contrato_en_curso"]'); await p.waitForFunction(() => /terminar y enviar a firmar/.test((document.querySelector('#hojaFicha .lp') || {}).textContent || ''), null, { timeout: 10000 });
+    ok(nombre + ': "Empecé el contrato" lo pasa a En curso', cli[0].estatus === 'contrato_en_curso');
+    await p.click('#hojaFicha .lp [data-problema]'); await p.waitForSelector('#hojaProblema.ver');
     ok(nombre + ': la hoja trae Devolver, Pedir y Solo avisar', (await p.locator('#hojaProblema [data-pb]').count()) === 3);
     await p.click('#pbOk'); await p.waitForTimeout(150);
     ok(nombre + ': sin observación no deja enviar', /observación/.test(await p.textContent('#ePb')));
