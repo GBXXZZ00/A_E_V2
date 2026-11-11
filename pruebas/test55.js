@@ -90,8 +90,8 @@ const pdf = (n) => ({ name: n, mimeType: 'application/pdf', buffer: Buffer.from(
     await p.waitForFunction(() => /firmado/.test(document.getElementById('hojaVgtSol').textContent) && !!document.querySelector('#hojaVgtSol [data-ver]'), null, { timeout: 15000 }).catch(() => {});
     ok(nombre + ': el contrato firmado se sube en su casilla de la solicitud', llamo(mundo, 'vgt_casilla').some((l) => l[2].p_tipo === 'contrato' && l[2].p_contrato === 12));
     await p.fill('#vgNum', '1234'); await p.fill('#vgFirma', '2026-10-01'); await p.fill('#vgVence', '2027-10-01'); await p.click('#hojaVgtSol [data-vg-firma="digital"]'); await p.click('#vgGuardar');
-    await p.waitForFunction(() => !!document.querySelector('#hojaVgtSol .vgt-franja.verde'), null, { timeout: 10000 }).catch(() => {});
-    ok(nombre + ': al guardar el número y la firma, la franja pasa a verde', llamo(mundo, 'vgt_documento_guardar').length === 1 && (await p.locator('#hojaVgtSol .vgt-franja.verde').count()) === 1, await p.textContent('#hojaVgtSol .vgt-franja'));
+    await p.waitForFunction(() => !!document.querySelector('#hojaVgtSol .vs-caja.ve'), null, { timeout: 10000 }).catch(() => {});
+    ok(nombre + ': al guardar el número y la firma, la franja pasa a verde', llamo(mundo, 'vgt_documento_guardar').length === 1 && (await p.locator('#hojaVgtSol .vs-caja.ve').count()) === 1, await p.textContent('#hojaVgtSol .vs-caja-t'));
     await p.screenshot({ path: 'capturas/lote10nov-J-' + nombre + '-solicitud.png' });
     await p.keyboard.press('Escape'); await p.waitForTimeout(300);
     await p.screenshot({ path: 'capturas/lote10nov-J-' + nombre + '-documentos.png', fullPage: true });

@@ -2683,3 +2683,26 @@ details.doc-sec{display:block;margin-top:12px;padding:0;font-size:14px;font-weig
 .pb-det{padding:2px 4px 6px}
 .lg-prob{flex:none;white-space:nowrap}
 @media (max-width:720px){ .ae-pto{flex-wrap:wrap} .ae-op{width:100%} .ae-op button{flex:1} .hoja-simple > .cab{padding:16px 16px 10px} .hoja-simple > .hoja-cuerpo{padding:4px 16px 20px} .lg-row{flex-wrap:wrap} }
+
+/* Lote 12/11 · Hoja de una solicitud VGT (maqueta claude/maquetas/lote-12nov/vgt-solicitud.html) */
+#hojaVgtSol .hoja-cuerpo{display:flex;flex-direction:column;gap:10px}
+.vs-k{display:block;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text2);margin-bottom:4px}
+.vs-est{display:flex;gap:6px;flex-wrap:wrap}
+.vs-est button,.vs-est span{height:36px;padding:0 14px;border-radius:999px;border:1px solid var(--line);display:inline-flex;align-items:center;font-weight:600;font-size:13.5px;background:#fff;color:var(--text)}
+.vs-est span.on{background:var(--text);border-color:var(--text);color:#fff}
+.vs-est span:not(.on){color:var(--text3)}
+.vs-datos{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.vs-dato .rotulo{display:block;margin-bottom:6px}
+.vs-campo{display:flex;align-items:center;width:100%;text-align:left;min-height:46px;font-size:15px}
+#hojaVgtSol .sec{margin:8px 0 0}
+.vs-caja{border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:10px;margin-top:6px}
+.vs-caja.am{background:#FDF6E8;border:1px solid #F1D9A6} .vs-caja.ro{background:var(--rojo-bg);border:1px solid #F0C4BE} .vs-caja.ve{background:var(--verde-bg);border:1px solid #A9D9C2}
+.vs-caja-t{display:flex;align-items:center;gap:8px} .vs-caja-t b{font-size:15px;margin-right:auto}
+.vs-caja.ro .nota-chica{color:var(--rojo)}
+.vs-caja .vs-drop{background:#fff}
+.vs-caja .campo{background:#fff}
+.vs-tres{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.vs-caja .tres{background:#fff}
+@media (max-width:720px){ .vs-tres{grid-template-columns:1fr} .vs-datos{grid-template-columns:1fr} }
+.casilla span.mini{display:inline-flex;align-items:center;height:36px}
+#hojaVgtSol .hoja-cuerpo > .enlace{align-self:flex-start}
