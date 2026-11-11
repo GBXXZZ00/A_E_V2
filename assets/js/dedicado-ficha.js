@@ -278,5 +278,5 @@
       guardarTramo({ proyecto: $('tProy').value, postes: p, fecha: $('tFecha').value, odt: $('tOdt').value }, e.target.querySelector('[type="submit"]')); }
   });
 
-  window.FichaDedicado = { datos, contratos, vgt, RUTAS, CONTRATO };
+  window.FichaDedicado = { datos, contratos, vgt, RUTAS, CONTRATO, abrirTramo };
 })();

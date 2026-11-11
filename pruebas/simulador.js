@@ -214,4 +214,10 @@ async function enHoja(p, sel){
   await p.evaluate((s) => { const el = document.querySelector(s); const sec = el && el.closest('.plg-com'); const b = sec && sec.querySelector('[data-plg-btn]'); if(b && b.getAttribute('aria-expanded') !== 'true') b.click(); }, sel);
   await p.waitForTimeout(120);
 }
-module.exports = { enHoja, chromium, H, TEL, PC, contexto, marcador, pin, sinDesborde, basePersonas, entrar, plegables, esperarDia };
+// Lote 10/11 J: ya no hay pestaña Contrato ni VGT; abre Documentos con sus secciones Contratos y VGT
+async function irContratos(p){
+  await p.click('#tabs [data-tab="documentos"]'); await p.waitForSelector('#tab-documentos.on');
+  await p.evaluate(() => ['ctr', 'vgt'].forEach((k) => { const d = document.querySelector('#tab-documentos details[data-sec="' + k + '"]'); if(d && !d.open) d.querySelector('summary').click(); }));
+  await p.waitForTimeout(150);
+}
+module.exports = { irContratos, enHoja, chromium, H, TEL, PC, contexto, marcador, pin, sinDesborde, basePersonas, entrar, plegables, esperarDia };

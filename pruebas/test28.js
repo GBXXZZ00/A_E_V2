@@ -55,9 +55,11 @@ const llamo = (m, f) => m.llamadas.filter((l) => l[1] === f);
 
     // Contrato presencial y excepción pagada
     // Lote 21/10: la firma Física (contrato presencial) se marca en la tarjeta del contrato PYME
-    await p.click('#tabs [data-tab="contrato"]'); await p.waitForSelector('#tab-contrato [data-firma-cli]');
-    ok(nombre + ': Firma Digital/Física en Contrato y Excepción pagada en Datos (admin)', (await p.locator('#tab-contrato .ctr-pyme [data-firma-cli]').count()) === 2 && (await p.locator('[data-marca-cli="exc_pagada"]').count()) === 1);
-    await p.click('#tab-contrato .ctr-pyme [data-firma-cli][data-valor="fisica"]'); await p.waitForFunction(() => { const b = document.querySelector('#tab-contrato .ctr-pyme [data-firma-cli][data-valor="fisica"]'); return b && b.getAttribute('aria-checked') === 'true'; });
+    // Lote 10/11 J: el contrato vive en Documentos, sección plegable "Contratos"
+    await p.click('#tabs [data-tab="documentos"]'); await p.waitForSelector('#tab-documentos [data-sec="ctr"]'); await p.evaluate(() => { const d = document.querySelector('#tab-documentos [data-sec="ctr"]'); if(!d.open) d.querySelector('summary').click(); });
+    await p.waitForSelector('#tab-documentos [data-sec="ctr"] [data-firma-cli]');
+    ok(nombre + ': Firma Digital/Física en Contratos y Excepción pagada en Datos (admin)', (await p.locator('#tab-documentos [data-sec="ctr"] .ctr-pyme [data-firma-cli]').count()) === 2 && (await p.locator('[data-marca-cli="exc_pagada"]').count()) === 1);
+    await p.click('#tab-documentos [data-sec="ctr"] .ctr-pyme [data-firma-cli][data-valor="fisica"]'); await p.waitForFunction(() => { const b = document.querySelector('#tab-documentos .ctr-pyme [data-firma-cli][data-valor="fisica"]'); return b && b.getAttribute('aria-checked') === 'true'; });
     ok(nombre + ': marcar contrato presencial pasa por el servidor y queda en el hilo', llamo(mundo, 'cliente_marca').some((l) => l[2].p_marca === 'contrato_presencial' && l[2].p_valor === true) && faro.hilo.some((h) => h.texto === 'contrato_presencial'));
     await p.click('#tabs [data-tab="documentos"]');
     faro.representantes[0].correo = '';
@@ -102,24 +104,24 @@ const llamo = (m, f) => m.llamadas.filter((l) => l[1] === f);
     const dts = await p.textContent('#tab-datos');
     ok(nombre + ': Datos dice Líder (no Ejecutiva) y los requisitos VGT', dts.includes('Líder') && !dts.includes('Ejecutiva') && dts.includes('Requisitos VGT') && dts.includes('Faltan 6'));   // 05/11 F3: 2 pólizas + 2 por cada solicitud que pide (2)
     // Lote 21/10: Contrato (servicio y colocation) y VGT en su pestaña (contrato, proyectos, requisitos y pólizas)
-    await p.click('#tabs [data-tab="contrato"]'); await p.waitForSelector('#tab-contrato.on .ctr-t');
-    const ct = await p.textContent('#tab-contrato');
-    ok(nombre + ': una tarjeta por contrato: servicio y colocation por sitio', (await p.locator('#tab-contrato .ctr-t:not(.ctr-vgt)').count()) === 2 && ct.includes('Contrato dedicado') && ct.includes('Sitio Inventado'));
+    await p.click('#tabs [data-tab="documentos"]'); await p.evaluate(() => { const d = document.querySelector('#tab-documentos [data-sec="ctr"]'); if(d && !d.open) d.querySelector('summary').click(); }); await p.waitForSelector('#tab-documentos [data-sec="ctr"] .ctr-t');
+    const ct = await p.textContent('#tab-documentos [data-sec="ctr"]');
+    ok(nombre + ': sin pestaña de contrato; una tarjeta por contrato en Documentos: servicio y colocation por sitio', (await p.locator('#tabs [data-tab="contrato"]:not(.hidden)').count()) === 0 && (await p.locator('#tab-documentos [data-sec="ctr"] .ctr-t').count()) === 2 && ct.includes('Contrato dedicado') && ct.includes('Sitio Inventado'));
     await p.screenshot({ path: 'capturas/28-' + nombre + '-contratos.png', fullPage: true });
-    await p.click('#tabs [data-tab="contrato"]'); await p.waitForSelector('#tab-contrato.on [data-grupo="vgt"]');
-    const tv = await p.textContent('#tab-contrato');
-    ok(nombre + ': la pestaña VGT trae el contrato con proyectos y total de postes', (await p.locator('#tab-contrato .ctr-vgt').count()) === 1 && tv.includes('Ruta Inventada Uno') && tv.includes('Ruta Inventada Dos') && tv.includes('12 postes en uso · 8 en proyecto') && tv.includes('En proyecto') && tv.includes('ODT ODT-9') && /VGT en uso · 12 postes/.test(tv));
-    // 23/10 (Parte F): menú del tramo (administrador): denegar pide motivo y fecha
-    if(await p.locator('#tab-contrato [data-tramo-menu="12"]').count()){
-      await p.click('#tab-contrato [data-tramo-menu="12"]'); await p.waitForSelector('#hojaTramo.ver [data-tramo-paso="negar"]');
-      await p.click('#hojaTramo [data-tramo-paso="negar"]'); await p.waitForSelector('#formNegar'); await p.click('#formNegar [type="submit"]');
-      ok(nombre + ': denegar sin motivo avisa debajo del campo', /motivo/.test(await p.textContent('#eNMot')));
-      await p.fill('#nMot', 'El ente no aprobó el tramo'); await p.fill('#nFecha', '2026-10-15'); await p.click('#formNegar [type="submit"]');
-      await p.waitForFunction(() => !document.querySelector('#hojaTramo.ver'), null, { timeout: 8000 });
-      const lt = mundo.llamadas.filter((l) => l[1] === 'dedicado_tramo_editar').pop();
-      ok(nombre + ': denegar guarda NEGADA con motivo y fecha', !!lt && lt[2].p_id === 12 && lt[2].p_campos.en_uso === 'NEGADA' && lt[2].p_campos.negada_en === '2026-10-15');
-    } else ok(nombre + ': el administrador ve el menú del tramo', false);
-    ok(nombre + ': Documentos ya no trae los requisitos VGT', (await p.locator('#tab-documentos [data-grupo="vgt"]').count()) === 0);
+    await p.evaluate(() => { const d = document.querySelector('#tab-documentos [data-sec="vgt"]'); if(d && !d.open) d.querySelector('summary').click(); }); await p.waitForSelector('#tab-documentos [data-sec="vgt"] [data-vgt-sol]');
+    const tv = await p.textContent('#tab-documentos [data-sec="vgt"]');
+    ok(nombre + ': la sección VGT trae las solicitudes con su total de postes, uso y ODT', tv.includes('Ruta Inventada Uno') && tv.includes('Ruta Inventada Dos') && tv.includes('12 postes en uso · 8 en proyecto') && tv.includes('En proyecto') && tv.includes('ODT ODT-9'), tv.slice(0, 400));
+    // 23/10 (Parte F): denegar pide motivo y fecha (ahora desde la hoja de la solicitud)
+    await p.click('[data-vgt-sol="12"]'); await p.waitForSelector('#hojaVgtSol.ver [data-vgt-tramo="12"][data-tpaso="negar"]');
+    await p.click('#hojaVgtSol [data-vgt-tramo="12"][data-tpaso="negar"]'); await p.waitForSelector('#formNegar'); await p.click('#formNegar [type="submit"]');
+    ok(nombre + ': denegar sin motivo avisa debajo del campo', /motivo/.test(await p.textContent('#eNMot')));
+    await p.fill('#nMot', 'El ente no aprobó el tramo'); await p.fill('#nFecha', '2026-10-15'); await p.click('#formNegar [type="submit"]');
+    await p.waitForFunction(() => !document.querySelector('#hojaTramo.ver'), null, { timeout: 8000 });
+    const lt = mundo.llamadas.filter((l) => l[1] === 'dedicado_tramo_editar').pop();
+    ok(nombre + ': denegar guarda NEGADA con motivo y fecha', !!lt && lt[2].p_id === 12 && lt[2].p_campos.en_uso === 'NEGADA' && lt[2].p_campos.negada_en === '2026-10-15');
+    for(let i = 0; i < 3 && await p.evaluate(() => window.Comun.hojaAbierta() === 'hojaVgtSol' || window.Comun.hojaAbierta() === 'hojaTramo'); i++){ await p.keyboard.press('Escape'); await p.waitForTimeout(300); }
+    await p.evaluate(() => { const d = document.querySelector('#tab-documentos [data-sec="vgt"]'); if(d && !d.open) d.querySelector('summary').click(); });
+    ok(nombre + ': los requisitos VGT están en la sección VGT de Documentos', (await p.locator('#tab-documentos [data-sec="vgt"] [data-grupo="vgt"]').count()) === 1);
     const vg = await p.textContent('[data-grupo="vgt"]');
     await p.locator('[data-grupo="vgt"]').screenshot({ path: 'capturas/28-' + nombre + '-vgt.png' });
     // Parte D (22/10): solo las 2 pólizas y la propuesta; el correo opcional debajo; lo demás ya no sale
@@ -127,15 +129,15 @@ const llamo = (m, f) => m.llamadas.filter((l) => l[1] === f);
     ok(nombre + ': Pólizas VGT del cliente: 2 pólizas, el correo opcional y nada más', vg.includes('Pólizas VGT del cliente') && vg.includes('0 de 2') && !vg.includes('Propuesta comercial') && vg.indexOf('Póliza de responsabilidad patronal') < vg.indexOf('Opcional') && vg.indexOf('Opcional') < vg.indexOf('Correo para notificaciones') && !vg.includes('factibilidad') && !vg.includes('Poder') && !vg.includes('cambios sustanciales'))
     ok(nombre + ': la póliza que vence en menos de 30 días avisa', vg.includes('Pide la renovación'));
     ok(nombre + ': ya no hay actas de cambios sustanciales ni botón para agregarlas', (await p.locator('[data-grupo="vgt"] [data-casilla="otro:60"]').count()) === 0 && (await p.locator('#agregarVgt').count()) === 0);
-    ok(nombre + ': la propuesta comercial se pide en cada solicitud, no en el cliente', (await p.locator('[data-grupo="vgt"] [data-casilla="otro:68"]').count()) === 0 && (await p.locator('[data-grupo="vgt-sol"] [data-vgt-subir="12:propuesta"]').count()) === 1 && (await p.locator('[data-grupo="vgt-sol"] [data-vgt-subir="13:propuesta"]').count()) === 1);
+    ok(nombre + ': la propuesta comercial se pide en cada solicitud, no en el cliente', (await p.locator('[data-grupo="vgt"] [data-casilla="otro:68"]').count()) === 0 && /Falta propuesta/.test(await p.textContent('[data-vgt-sol="13"]')));
     // 22/10: la póliza pide su fecha de vencimiento al subirse; la pestaña VGT dice "Subiendo"
     { const [fc] = await Promise.all([p.waitForEvent('filechooser'), p.locator('[data-grupo="vgt"] [data-subir="otro:67"]').click()]);
       await fc.setFiles({ name: 'patronal.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4 prueba') });
       await p.waitForSelector('#hojaCampo.ver #pVence'); await p.click('#formVence [type="submit"]');
       ok(nombre + ': la póliza no se sube sin fecha de vencimiento', /fecha en que vence/.test(await p.textContent('#ePVence')));
       await p.fill('#pVence', '2027-03-31'); await p.click('#formVence [type="submit"]');
-      await p.waitForFunction(() => document.querySelector('#tab-contrato .tx-subida, #tab-contrato .estado-sub:not(.hidden)') || 0, null, { timeout: 4000 }).catch(() => {});
-      await p.waitForFunction(() => !document.querySelector('#tab-contrato .estado-sub:not(.hidden)'), null, { timeout: 15000 });
+      await p.waitForFunction(() => document.querySelector('#tab-documentos .tx-subida, #tab-documentos .estado-sub:not(.hidden)') || 0, null, { timeout: 4000 }).catch(() => {});
+      await p.waitForFunction(() => !document.querySelector('#tab-documentos .estado-sub:not(.hidden)'), null, { timeout: 15000 });
       const reg = mundo.llamadas.filter((l) => l[1] === 'documentos_registrar').pop();
       ok(nombre + ': la póliza se guarda con su vencimiento', !!reg && JSON.stringify(reg[2]).includes('2027-03-31') && JSON.stringify(reg[2]).includes('"numero":67')); }
     ok(nombre + ': Otros documentos no muestra las casillas VGT', (await p.locator('[data-grupo="otros"] [data-casilla="otro:68"]').count()) === 0);

@@ -61,31 +61,43 @@ const pdf = (n) => ({ name: n, mimeType: 'application/pdf', buffer: Buffer.from(
 
     // ----- F3: VGT por solicitud -----
     await p.fill('#busca', ''); await p.waitForTimeout(500);
-    await p.goto(H + 'clientes.html?s=isp&f=todos&c=' + a.id + '&t=contrato'); await p.waitForSelector('#hojaFicha.ver #tab-contrato [data-grupo="vgt-sol"]', { timeout: 10000 });
-    let tc = await p.textContent('#tab-contrato');
+    // Lote 10/11 J: VGT es una sección de Documentos; cada solicitud es una tarjeta que abre su hoja
+    await p.goto(H + 'clientes.html?s=isp&f=todos&c=' + a.id + '&t=vgt'); await p.waitForSelector('#hojaFicha.ver #tab-documentos details.doc-sec[data-sec="vgt"][open] [data-vgt-sol="12"]', { timeout: 10000 });
+    ok(nombre + ': sin pestañas Contrato ni VGT; Documentos tiene Expediente, Contratos y VGT', (await p.locator('#tabs [data-tab="contrato"]:not(.hidden), #tabs [data-tab="vgt"]:not(.hidden)').count()) === 0 &&
+      (await p.locator('#tab-documentos details.doc-sec[data-sec="exp"]').count()) === 1 && (await p.locator('#tab-documentos details.doc-sec[data-sec="ctr"]').count()) === 1);
+    let tc = await p.textContent('#tab-documentos [data-sec="vgt"]');
     ok(nombre + ': pólizas del cliente arriba, "Sirven para todas sus solicitudes"', /Pólizas VGT del cliente/.test(tc) && /Sirven para todas sus solicitudes/.test(tc));
-    ok(nombre + ': la solicitud activa dice "Faltan 2" y pide propuesta y planillas', /Troncal Inventada/.test(tc) && /Faltan 2/.test(await p.textContent('.vgt-sol[data-sol="12"]')) &&
-      (await p.locator('[data-vgt-subir="12:propuesta"]').count()) === 1 && (await p.locator('[data-vgt-subir="12:planilla"]').count()) === 1);
-    ok(nombre + ': la negada no pide nada', (await p.locator('[data-vgt-subir^="13:"]').count()) === 0 && /solicitud negada/i.test(tc));
+    ok(nombre + ': la tarjeta de la solicitud dice lo que falta y qué documento contractual le toca', /Troncal Inventada/.test(tc) && /Falta propuesta/.test(await p.textContent('[data-vgt-sol="12"]')) && /Contrato VGT|Adendum/.test(await p.textContent('[data-vgt-sol="12"]')), await p.textContent('[data-vgt-sol="12"]'));
+    ok(nombre + ': la negada queda en el historial', /solicitud negada/i.test(tc));
+    await p.click('[data-vgt-sol="12"]'); await p.waitForSelector('#hojaVgtSol.ver [data-vgt-subir="12:propuesta"]');
+    ok(nombre + ': la hoja de la solicitud pide propuesta, planilla y el contrato o adendum firmado', (await p.locator('#hojaVgtSol [data-vgt-subir="12:planilla"]').count()) === 1 && (await p.locator('#hojaVgtSol [data-vgt-subir="12:contrato"]').count()) === 1 && (await p.locator('#hojaVgtSol #formVgtDoc').count()) === 1);
     // Subir la propuesta: el servidor da su casilla y el archivo se registra ahí
-    { const [fc] = await Promise.all([p.waitForEvent('filechooser'), p.locator('[data-vgt-subir="12:propuesta"]').click()]); await fc.setFiles(pdf('propuesta.pdf')); }
-    await p.waitForFunction(() => !document.querySelector('[data-vgt-subir="12:propuesta"]'), null, { timeout: 15000 }).catch(() => {});
+    { const [fc] = await Promise.all([p.waitForEvent('filechooser'), p.locator('#hojaVgtSol [data-vgt-subir="12:propuesta"]').click()]); await fc.setFiles(pdf('propuesta.pdf')); }
+    await p.waitForFunction(() => !document.querySelector('#hojaVgtSol [data-vgt-subir="12:propuesta"]'), null, { timeout: 15000 }).catch(() => {});
     const vc = llamo(mundo, 'vgt_casilla').pop(); const dr = llamo(mundo, 'documentos_registrar').pop();
     ok(nombre + ': la propuesta va a la casilla de su solicitud', !!vc && vc[2].p_contrato === 12 && vc[2].p_tipo === 'propuesta' && !!dr && dr[2].p_items[0].casillas[0].numero === 71);
-    { const [fc] = await Promise.all([p.waitForEvent('filechooser'), p.locator('[data-vgt-subir="12:planilla"]').click()]); await fc.setFiles(pdf('planilla.pdf')); }
-    await p.waitForSelector('[data-vgt-subir="12:planilla:otra"]', { timeout: 15000 }).catch(async () => console.log('DBG', nombre, await p.textContent('.vgt-sol[data-sol="12"]'), JSON.stringify(llamo(mundo, 'vgt_casilla').map((l) => l[2])), JSON.stringify(a.vgtDocs), JSON.stringify(a.documentos.filter((d) => d.numero > 70).map((d) => [d.numero, d.estado]))));
-    ok(nombre + ': con una planilla sale "+ Otra planilla"', (await p.locator('[data-vgt-subir="12:planilla:otra"]').count()) === 1);
-    ok(nombre + ': completa, la solicitud solo espera las pólizas', /Faltan las pólizas/.test(await p.textContent('.vgt-sol[data-sol="12"]')));
-    if(await p.locator('[data-vgt-subir="12:planilla:otra"]').count()){ const [fc] = await Promise.all([p.waitForEvent('filechooser'), p.locator('[data-vgt-subir="12:planilla:otra"]').click()]); await fc.setFiles(pdf('planilla2.pdf')); }
-    await p.waitForFunction(() => /Planilla de tendido 2/.test(document.querySelector('.vgt-sol[data-sol="12"]').textContent), null, { timeout: 15000 }).catch(() => {});
-    ok(nombre + ': la segunda planilla queda en su propia casilla', /Planilla de tendido 2/.test(await p.textContent('.vgt-sol[data-sol="12"]')) && llamo(mundo, 'vgt_casilla').pop()[2].p_otra === true);
-    await p.locator('#tab-contrato [data-grupo="vgt-sol"]').screenshot({ path: 'capturas/lote05nov-F-' + nombre + '-vgt.png' });
+    { const [fc] = await Promise.all([p.waitForEvent('filechooser'), p.locator('#hojaVgtSol [data-vgt-subir="12:planilla"]').click()]); await fc.setFiles(pdf('planilla.pdf')); }
+    await p.waitForFunction(() => /Planilla de tendido 1/.test(document.getElementById('hojaVgtSol').textContent), null, { timeout: 15000 }).catch(() => {});
+    ok(nombre + ': la planilla queda en su casilla y sigue "Agregar planilla"', /Planilla de tendido 1/.test(await p.textContent('#hojaVgtSol')) && (await p.locator('#hojaVgtSol [data-vgt-subir="12:planilla:otra"]').count()) === 1);
+    { const [fc] = await Promise.all([p.waitForEvent('filechooser'), p.locator('#hojaVgtSol [data-vgt-subir="12:planilla:otra"]').click()]); await fc.setFiles(pdf('planilla2.pdf')); }
+    await p.waitForFunction(() => /Planilla de tendido 2/.test(document.getElementById('hojaVgtSol').textContent), null, { timeout: 15000 }).catch(() => {});
+    ok(nombre + ': la segunda planilla queda en su propia casilla', /Planilla de tendido 2/.test(await p.textContent('#hojaVgtSol')) && llamo(mundo, 'vgt_casilla').pop()[2].p_otra === true);
+    // Contrato o adendum firmado: archivo, N.º, fecha de firma y vencimiento
+    { const [fc] = await Promise.all([p.waitForEvent('filechooser'), p.locator('#hojaVgtSol [data-vgt-subir="12:contrato"]').first().click()]); await fc.setFiles(pdf('contrato-firmado.pdf')); }
+    await p.waitForFunction(() => /firmado/.test(document.getElementById('hojaVgtSol').textContent) && !!document.querySelector('#hojaVgtSol [data-ver]'), null, { timeout: 15000 }).catch(() => {});
+    ok(nombre + ': el contrato firmado se sube en su casilla de la solicitud', llamo(mundo, 'vgt_casilla').some((l) => l[2].p_tipo === 'contrato' && l[2].p_contrato === 12));
+    await p.fill('#vgNum', '1234'); await p.fill('#vgFirma', '2026-10-01'); await p.fill('#vgVence', '2027-10-01'); await p.click('#hojaVgtSol [data-vg-firma="digital"]'); await p.click('#vgGuardar');
+    await p.waitForFunction(() => !!document.querySelector('#hojaVgtSol .vgt-franja.verde'), null, { timeout: 10000 }).catch(() => {});
+    ok(nombre + ': al guardar el número y la firma, la franja pasa a verde', llamo(mundo, 'vgt_documento_guardar').length === 1 && (await p.locator('#hojaVgtSol .vgt-franja.verde').count()) === 1, await p.textContent('#hojaVgtSol .vgt-franja'));
+    await p.screenshot({ path: 'capturas/lote10nov-J-' + nombre + '-solicitud.png' });
+    await p.keyboard.press('Escape'); await p.waitForTimeout(300);
+    await p.screenshot({ path: 'capturas/lote10nov-J-' + nombre + '-documentos.png', fullPage: true });
     // Nueva solicitud
     await p.click('#vgtNueva'); await p.waitForSelector('#hojaCampo.ver #formSol');
     await p.click('#guardarSol'); ok(nombre + ': la solicitud nueva pide el proyecto', /proyecto/.test(await p.textContent('#eSProy')));
     await p.fill('#sProy', 'Ruta Nueva Inventada'); await p.fill('#sPostes', '6'); await p.click('#guardarSol');
-    await p.waitForFunction(() => /Ruta Nueva Inventada/.test((document.getElementById('tab-contrato') || {}).textContent || ''), null, { timeout: 10000 }).catch(() => {});
-    ok(nombre + ': "+ Nueva solicitud" la crea y pide sus documentos', /Ruta Nueva Inventada/.test(await p.textContent('#tab-contrato')) && (mundo.bitacora || []).some((b) => b.accion === 'vgt_solicitud_nueva'));
+    await p.waitForFunction(() => /Ruta Nueva Inventada/.test((document.getElementById('tab-documentos') || {}).textContent || ''), null, { timeout: 10000 }).catch(() => {});
+    ok(nombre + ': "+ Nueva solicitud" la crea, como Adendum', /Ruta Nueva Inventada/.test(await p.textContent('#tab-documentos')) && (mundo.bitacora || []).some((b) => b.accion === 'vgt_solicitud_nueva'));
     ok(nombre + ': sin desborde', await sinDesborde(p));
     await ctx.close();
   }

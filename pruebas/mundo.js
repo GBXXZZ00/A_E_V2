@@ -303,7 +303,11 @@ function vgtJson(c){
   const pol = (V.requisitos || []).filter((r) => r.requerido && r.numero !== 68).filter((r) => !vgtDocOk(c, r.numero)).length;
   const sols = ((c.dedicado.contratos) || []).filter((k) => k.tipo === 'vgt').map((k) => ({ id: k.id, proyecto: k.proyecto, postes: k.postes, fecha: k.fecha, en_uso: k.en_uso, estatus: k.estatus, odt: k.odt,
     negada: !!k.negada_en || String(k.en_uso || '').toUpperCase() === 'NEGADA', pide: vgtPide(k), faltan: vgtPide(k) ? vgtReq(c, k) : 0,
-    docs: (c.vgtDocs || []).filter((v) => v.contrato === k.id).map((v) => { const d = (c.documentos || []).find((x) => x.casilla === 'otro' && x.numero === v.numero); return { numero: v.numero, tipo: v.tipo, ok: vgtDocOk(c, v.numero), id: d ? d.id : null, estado: d ? d.estado : null }; }) }));
+    // Lote 10/11 J: documento contractual de la solicitud (Contrato VGT la primera no negada; las demás Adendum N.º n) y su archivo
+    doc: (() => { const l = ((c.dedicado.contratos) || []).filter((x) => x.tipo === 'vgt' && (!(x.negada_en || String(x.en_uso || '').toUpperCase() === 'NEGADA') || x.id === k.id)).sort((a, b) => a.id - b.id); const n = l.findIndex((x) => x.id === k.id) + 1; return n <= 1 ? { tipo: 'contrato', n: 0, titulo: 'Contrato VGT' } : { tipo: 'adendum', n: n - 1, titulo: 'Adendum N.º ' + (n - 1) + ' al contrato VGT' }; })(),
+    numero: k.numero || null, firmado_en: k.firmado_en || null, vence_en: k.vence_en || null, firma: k.firma || null,
+    archivo: (() => { const v = (c.vgtDocs || []).find((x) => x.contrato === k.id && x.tipo === 'contrato'); if(!v) return null; const d = (c.documentos || []).find((x) => x.casilla === 'otro' && x.numero === v.numero); return { numero: v.numero, id: d ? d.id : null, estado: d ? d.estado : null }; })(),
+    docs: (c.vgtDocs || []).filter((v) => v.contrato === k.id && v.tipo !== 'contrato').map((v) => { const d = (c.documentos || []).find((x) => x.casilla === 'otro' && x.numero === v.numero); return { numero: v.numero, tipo: v.tipo, ok: vgtDocOk(c, v.numero), id: d ? d.id : null, estado: d ? d.estado : null }; }) }));
   return Object.assign({}, V, { requisitos: (V.requisitos || []).map((r) => (r.numero === 68 ? Object.assign({}, r, { requerido: false, texto: 'Propuesta comercial (subida antes de las solicitudes)' }) : r)),
     polizas_faltan: pol, solicitudes: sols, faltan: pol + sols.reduce((t, x) => t + x.faltan, 0) });
 }
@@ -886,6 +890,12 @@ const RPC = {
     (m.bitacora = m.bitacora || []).push({ accion: 'vgt_solicitud_nueva', cliente: c.id, por: yo.nombre });
     return k.id;
   },
+  vgt_documento_guardar(m, yo, a){ if(!['admin', 'abogado'].includes(yo.rol)) return error('No tienes permiso para hacer esto');
+    for(const c of m.datos.clientes){ const k = ((c.dedicado || {}).contratos || []).find((x) => x.id === Number(a.p_sol) && x.tipo === 'vgt'); if(!k) continue;
+      if(a.p_firmado_en && a.p_vence_en && a.p_vence_en <= a.p_firmado_en) return error('El vencimiento debe ser después de la firma');
+      Object.assign(k, { numero: a.p_numero || null, firmado_en: a.p_firmado_en || null, vence_en: a.p_vence_en || k.vence_en || null, firma: a.p_firma || null }); if(a.p_firmado_en) k.estatus = 'firmado';
+      (m.bitacora = m.bitacora || []).push({ accion: 'vgt_documento', registro: k.id }); return { id: k.id }; }
+    return error('Esa solicitud de VGT no existe'); },
   vgt_casilla(m, yo, a){
     const c = visibles(m, yo).find((x) => x.dedicado && (x.dedicado.contratos || []).some((k) => k.id === Number(a.p_contrato) && k.tipo === 'vgt')); if(!c) return error('Esa solicitud de VGT no existe');
     c.vgtDocs = c.vgtDocs || []; const sol = Number(a.p_contrato);

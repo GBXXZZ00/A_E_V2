@@ -1,6 +1,6 @@
 // Lote urgente 20/10, parte 6: contrato presencial. El interruptor está arriba de Documentos (expediente y hoja de comisión);
 // con él no se piden correos ni teléfono (sí los documentos legales); faltantes, "Pedir lo que falta" y el paso a revisión cambian.
-const { chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar, plegables } = require('./simulador');
+const { irContratos, chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar, plegables } = require('./simulador');
 const { ok, cerrar } = marcador();
 const { RPC } = require('./mundo');
 const llamo = (m, f) => m.llamadas.filter((l) => l[1] === f);
@@ -24,12 +24,12 @@ const cerrarHojas = async (p) => { for(let i = 0; i < 5 && await p.evaluate(() =
     // Lote 21/10: la firma Digital o Física (Física = presencial) está en la tarjeta del contrato PYME, en la pestaña Contrato
     await p.goto(H + 'clientes.html?c=' + c.id + '&t=documentos'); await p.waitForSelector('#hojaFicha.ver #tab-documentos .fd-sum');
     ok(nombre + ': antes, el contador dice que faltan 3 (correos y teléfono)', (await p.getAttribute('#tab-documentos .fd-sum', 'data-faltan')) === '3');
-    await p.click('#tabs [data-tab="contrato"]'); await p.waitForSelector('#tab-contrato.on .ctr-pyme [data-firma-cli]');
-    ok(nombre + ': la tarjeta del contrato PYME trae Firma Digital (marcada) y Física', (await p.getAttribute('#tab-contrato [data-firma-cli][data-valor="digital"]', 'aria-checked')) === 'true');
-    await p.click('#tab-contrato [data-firma-cli][data-valor="fisica"]');
-    await p.waitForFunction(() => { const b = document.querySelector('#tab-contrato [data-firma-cli][data-valor="fisica"]'); return b && b.getAttribute('aria-checked') === 'true'; });
-    ok(nombre + ': con Física sale el aviso del contrato presencial', (await p.textContent('#tab-contrato .ctr-pyme')).includes('El cliente firma en físico. No se piden correos ni teléfono; sí los documentos legales. Comisiona igual.') &&
-      (await p.textContent('#tab-contrato .ctr-pyme')).includes('Subir firmado en físico') === !!(await p.locator('#tab-contrato .ctr-pyme [data-subir]').count()));
+    await irContratos(p); await p.waitForSelector('#tab-documentos.on .ctr-pyme [data-firma-cli]');
+    ok(nombre + ': la tarjeta del contrato PYME trae Firma Digital (marcada) y Física', (await p.getAttribute('#tab-documentos [data-firma-cli][data-valor="digital"]', 'aria-checked')) === 'true');
+    await p.click('#tab-documentos [data-firma-cli][data-valor="fisica"]');
+    await p.waitForFunction(() => { const b = document.querySelector('#tab-documentos [data-firma-cli][data-valor="fisica"]'); return b && b.getAttribute('aria-checked') === 'true'; });
+    ok(nombre + ': con Física sale el aviso del contrato presencial', (await p.textContent('#tab-documentos .ctr-pyme')).includes('El cliente firma en físico. No se piden correos ni teléfono; sí los documentos legales. Comisiona igual.') &&
+      (await p.textContent('#tab-documentos .ctr-pyme')).includes('Subir firmado en físico') === !!(await p.locator('#tab-documentos .ctr-pyme [data-subir]').count()));
     await p.screenshot({ path: 'capturas/41-' + nombre + '-presencial.png' });
     await p.click('#tabs [data-tab="documentos"]');
     ok(nombre + ': arriba de Documentos queda el aviso de firma física', await p.evaluate(() => { const z = document.getElementById('tab-documentos'); const s = z.querySelector('.presencial-docs'); return !!s && z.firstElementChild === s; }));

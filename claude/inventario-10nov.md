@@ -85,3 +85,14 @@ Columna "Queda": **igual**, **movido a …** o **nuevo**. Se marca ✔ cuando la
 | Función de hoy | Queda |
 |---|---|
 | Abogado: Por elaborar por tipo (secciones), filtros, Uno tras otro, Enviado a firmar, Firmado falta subir, Vencen pronto, firmados en 7 días | un solo grupo con chips, etiqueta por tipo y días; las etapas y "Vencen en 60 días" plegadas; lo demás igual ✔ (test30, test44, test53) |
+
+## Parte J · VGT por solicitud (`ficha.js`, `dedicado-ficha.js`)
+| Función de hoy | Queda |
+|---|---|
+| Pestaña "Contrato" / "Contratos y VGT" (contrato PYME, dedicado, colocation, firma Digital/Física, Editar, Ver, Reemplazar, Subir firmado, aviso de pendiente) | movido a **Documentos → Contratos** (plegable con su estado), todo igual + "+ Adendum" y "+ Otro contrato" ✔ (test25, test28, test34, test41, test07) |
+| Pestaña "VGT" (estado, contrato N.º, firma, vence, tramos en uso y en proyecto con postes, ODT, menú del tramo: uso, editar, denegar, historial) | movido a **Documentos → VGT**: total de postes, una tarjeta por solicitud (chips propuesta, planillas, ODT y franja del contrato o adendum), historial plegado; el menú del tramo está en la hoja de la solicitud (Cambiar uso, Editar datos, Denegar) ✔ (test28, test55) |
+| Pólizas del cliente, correo de notificaciones, avisos de vencimiento | igual, arriba de la sección VGT ✔ (test28) |
+| Propuesta y planillas por solicitud, + Otra planilla, Nueva solicitud | igual, en la hoja de la solicitud ("Agregar planilla") ✔ (test55) |
+| Contrato VGT (no se podía subir) | **nuevo**: en la hoja de cada solicitud, zona para subir o arrastrar el Contrato VGT (solicitud 1) o el Adendum N.º n (las siguientes), N.º, fecha de firma, vencimiento (el adendum hereda el del contrato) y firma; bitácora e hilo ✔ (test55) |
+| Mi trabajo del abogado: "Por elaborar · VGT" | igual, y dice "Contrato VGT" o "Adendum N.º n" |
+| Datos del dedicado (ruta, líder, enlaces, Requisitos VGT) | igual en Datos |

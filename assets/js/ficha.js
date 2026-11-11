@@ -359,8 +359,12 @@
       quePedir() + bloqueIA() + panelRevision() + barraRevision() +
       '<button type="button" class="fd-drop" id="subirVarios">' + ic('subir') + '<span><span class="solo-pc">Arrastra aquí varios archivos y marca qué trae cada uno</span><span class="solo-tel">Toca para subir varios archivos y marca qué trae cada uno</span></span></button>' +
       '<p class="nota-chica' + (colaDe(id) ? '' : ' hidden') + '" id="estadoSubida" role="status"><span class="cargando-linea"><i></i><span id="textoSubida">' + esc(textoCola()) + '</span></span></p>' + driveHtml();
-    h += casillasHtml(false) + historialRevisiones();
+    // Lote 10/11 J: el expediente es una sección plegable (abierta si hay algo que hacer), seguida de Contratos y VGT
+    const pendExp = fal.length > 0 || nr > 0 || selMode;
+    h += seccionDoc('exp', 'Expediente del cliente', fal.length ? ['ambar', fal.length === 1 ? 'Falta 1' : 'Faltan ' + fal.length] : nr ? ['azul', plural(nr, 'por revisar', 'por revisar')] : ['verde', 'Completo'], casillasHtml(false), pendExp) +
+      seccionContratos() + seccionVgt() + historialRevisiones();
     $('tab-documentos').innerHTML = h;
+    if(hojaAbierta() === 'hojaVgtSol' && vgtSolId) pintarVgtSol();
   }
   // Las casillas del expediente, en su orden. emb: dentro de otra hoja (la de comisión), sin agregar representantes ni actas
   // Lote urgente 20/10: el interruptor de contrato presencial va arriba de Documentos (y en la hoja de comisión)
@@ -471,6 +475,115 @@
       (puedeNueva ? '<button type="button" class="btn btn-chico btn-2 btn-ancho" id="vgtNueva" style="margin-top:10px">' + ic('mas') + 'Nueva solicitud</button>' : '') +
       '<p class="nota-chica">El abogado ve cada solicitud en Mi trabajo, "Por elaborar · VGT", cuando tiene las pólizas del cliente y su propuesta y planilla.</p></section>';
   }
+  // ---------- Lote 10/11 J: Documentos con tres secciones plegables (Expediente del cliente, Contratos y VGT) ----------
+  const secAb = {};   // qué sección dejó abierta la persona (se recuerda mientras la ficha está abierta)
+  function seccionDoc(k, titulo, chipEst, cuerpo, abiertaPorDefecto){
+    const ab = secAb[k] !== undefined ? secAb[k] : !!abiertaPorDefecto;
+    return '<details class="doc-sec' + (chipEst && /rojo|ambar/.test(chipEst[0]) ? ' falta' : chipEst && chipEst[0] === 'verde' ? ' listo' : '') + '" data-sec="' + k + '"' + (ab ? ' open' : '') + '><summary><b>' + esc(titulo) + '</b>' +
+      (chipEst ? '<span class="chip ' + chipEst[0] + '">' + esc(chipEst[1]) + '</span>' : '') + ic('abajo') + '</summary><div class="doc-sec-c">' + cuerpo + '</div></details>';
+  }
+  const U = (u) => String(u || '').toUpperCase();
+  function seccionContratos(){
+    const c = F.cliente; const D = c.dedicado;
+    const hayCtr = !c.es_natural || !!D || (F.documentos || []).some((d) => d.casilla.indexOf('contrato_') === 0);
+    if(!hayCtr || !window.FichaDedicado) return '';
+    const est = c.contrato_pend ? ['ambar', c.contrato_pend === 'sin_archivo' ? 'Falta subir el firmado' : 'Falta vencimiento'] : c.estatus === 'contrato_firmado' ? ['verde', 'Firmado'] : ['', ((C.ESTATUS || {})[c.estatus] || {}).t || 'Sin contrato'];
+    const puedeC = !!(F.puedo && F.puedo.contrato);
+    return seccionDoc('ctr', 'Contratos', est, window.FichaDedicado.contratos(F, yo) +
+      (puedeC ? '<div class="acc" style="margin-top:10px"><button type="button" class="btn btn-chico btn-2" data-ctr-mas="adendum">' + ic('mas') + 'Adendum</button><button type="button" class="btn btn-chico btn-2" data-ctr-mas="otro">' + ic('mas') + 'Otro contrato</button></div>' : ''), !!c.contrato_pend);
+  }
+  // Franja del documento contractual de una solicitud: verde firmado, ámbar falta, rojo en uso sin contrato
+  function franjaVgt(s){
+    const d = s.doc || { titulo: 'Contrato VGT' }; const firmado = !!s.firmado_en; const arch = !!(s.archivo && s.archivo.id);
+    const enUso = U(s.en_uso) === 'SI';
+    if(firmado && arch) return ['verde', d.titulo + (s.numero ? ' N.º ' + s.numero : '') + ' · firmado ' + fecha(s.firmado_en) + (s.vence_en ? ' · vence ' + fecha(s.vence_en) : '')];
+    if(enUso) return ['rojo', 'En uso sin ' + d.titulo.replace(/ al contrato VGT$/, '') + ' firmado' + (firmado && !arch ? ': falta subir el archivo' : '')];
+    return ['ambar', d.titulo + (firmado ? ': falta subir el archivo' : ': falta')];
+  }
+  function solsVgt(){
+    const D = (F && F.cliente.dedicado) || {}; const V = D.vgt;
+    // Sin ficha de requisitos VGT pero con tramos en el archivo de la analista: se muestran igual (como la pestaña de antes)
+    const crudos = (D.contratos || []).filter((k) => k.tipo === 'vgt').sort((a, b) => a.id - b.id);
+    const S = (V && V.solicitudes) || crudos.map((k, i, l) => { const vivos = l.filter((x) => !(x.negada_en || U(x.en_uso) === 'NEGADA')); const n = vivos.indexOf(k) + 1;
+      return { id: k.id, proyecto: k.proyecto, postes: k.postes, fecha: k.fecha, en_uso: k.en_uso, odt: k.odt, municipio: k.municipio, negada: !!k.negada_en || U(k.en_uso) === 'NEGADA', negada_motivo: k.negada_motivo,
+        numero: k.numero, firmado_en: k.firmado_en, vence_en: k.vence_en, firma: k.firma, docs: [], doc: n <= 1 ? { tipo: 'contrato', titulo: 'Contrato VGT' } : { tipo: 'adendum', titulo: 'Adendum N.º ' + (n - 1) + ' al contrato VGT' } }; });
+    return S;
+  }
+  function seccionVgt(){
+    const D = F.cliente.dedicado; if(!D) return '';
+    const V = D.vgt;
+    const S = solsVgt(); const puedeNueva = yo && yo.rol !== 'aliado';
+    if(!S.length) return '<div class="doc-sec doc-sec-1" data-sec="vgt"><b>VGT</b><span class="nota-chica">Sin solicitudes</span>' + (puedeNueva ? '<button type="button" class="btn btn-chico btn-2" id="vgtNueva">' + ic('mas') + 'Agregar solicitud</button>' : '') + '</div>';
+    const activas = S.filter((s) => !s.negada); const neg = S.filter((s) => s.negada);
+    const rojo = activas.some((s) => franjaVgt(s)[0] === 'rojo');
+    const est = rojo ? ['rojo', 'En uso sin contrato'] : (V && V.faltan ? ['ambar', V.faltan === 1 ? 'Falta 1' : 'Faltan ' + V.faltan] : ['verde', plural(activas.length, 'solicitud', 'solicitudes')]);
+    const tarjeta = (s) => {
+      const ds = s.docs || []; const prop = ds.filter((d) => d.tipo === 'propuesta' && d.id); const plan = ds.filter((d) => d.tipo === 'planilla' && d.id); const fr = franjaVgt(s);
+      const ce = { SI: ['verde', 'En uso'], 'EN PROYECTO': ['azul', 'En proyecto'], NO: ['', 'Sin uso'], NEGADA: ['rojo', 'Negada'] }[U(s.en_uso)] || ['', s.en_uso || 'Solicitada'];
+      const odt = String(s.odt || '').trim() && !/revisar/i.test(s.odt);
+      return '<button type="button" class="vgt-card" data-vgt-sol="' + esc(s.id) + '"><span class="vgt-card-c"><span class="tx"><b>' + esc(s.proyecto || 'Solicitud ' + s.id) + '</b><small>' + esc([s.municipio, s.postes ? s.postes + ' postes' : '', s.fecha ? 'recibida ' + s.fecha : ''].filter(Boolean).join(' · ')) + '</small></span><span class="chip ' + ce[0] + '">' + esc(ce[1]) + '</span></span>' +
+        '<span class="vgt-chips"><span class="chip ' + (prop.length ? 'verde' : 'ambar') + '">' + (prop.length ? 'Propuesta' : 'Falta propuesta') + '</span><span class="chip ' + (plan.length ? 'verde' : 'ambar') + '">' + (plan.length ? plural(plan.length, 'planilla', 'planillas') : 'Falta planilla') + '</span><span class="chip ' + (odt ? 'verde' : 'ambar') + '">' + (odt ? 'ODT ' + esc(s.odt) : 'Sin ODT') + '</span></span>' +
+        '<span class="vgt-franja ' + fr[0] + '">' + esc(fr[1]) + '</span></button>';
+    };
+    return seccionDoc('vgt', 'VGT', est, (V ? grupoVgt(false) : '').replace('<p class="nota-chica">La propuesta comercial y las planillas de tendido van por solicitud, en la pestaña Contratos y VGT.</p>', '') +
+      '<div class="sec">Solicitudes<span>' + activas.length + '</span></div>' +
+      '<p class="nota-chica">' + esc(activas.filter((x) => U(x.en_uso) === 'SI').reduce((t, x) => t + (Number(x.postes) || 0), 0) + ' postes en uso · ' + activas.filter((x) => U(x.en_uso) === 'EN PROYECTO').reduce((t, x) => t + (Number(x.postes) || 0), 0) + ' en proyecto') + '</p>' + activas.map(tarjeta).join('') +
+      (neg.length ? '<details class="vgt-hist"><summary>Historial: ' + esc(plural(neg.length, 'solicitud negada', 'solicitudes negadas')) + '</summary>' + neg.map(tarjeta).join('') + '</details>' : '') +
+      (puedeNueva ? '<button type="button" class="btn btn-chico btn-2 btn-ancho" id="vgtNueva" style="margin-top:10px">' + ic('mas') + 'Nueva solicitud</button>' : ''), rojo);
+  }
+  // Hoja de una solicitud VGT: estado, datos, documentos de la solicitud y el contrato o adendum (zona para el firmado, N.º, firma, vencimiento)
+  let vgtSolId = null;
+  function abrirVgtSol(sid){
+    vgtSolId = Number(sid); pintarVgtSol();
+    if(hojaAbierta() !== 'hojaVgtSol') abrirHoja('hojaVgtSol');
+  }
+  function pintarVgtSol(){
+    const s = solsVgt().find((x) => Number(x.id) === vgtSolId); let h = $('hojaVgtSol');
+    if(!h){ h = document.createElement('section'); h.id = 'hojaVgtSol'; h.className = 'hoja lado'; h.setAttribute('role', 'dialog'); h.setAttribute('aria-modal', 'true'); h.setAttribute('aria-labelledby', 'tVgtSol'); h.setAttribute('aria-hidden', 'true'); document.body.appendChild(h); C.prepararHojas(); }
+    if(!s){ h.innerHTML = cabHoja('tVgtSol', 'Solicitud de VGT', '') + '<p class="nota">Esta solicitud ya no está.</p>'; return; }
+    const d = s.doc || { titulo: 'Contrato VGT', tipo: 'contrato' }; const puede = !!(F.puedo && F.puedo.contrato) || (yo && ['admin', 'abogado'].indexOf(yo.rol) >= 0); const adm = yo && yo.rol === 'admin';
+    const fr = franjaVgt(s); const ds = s.docs || [];
+    const docFila = (x, nom) => x.id ? casillaHtml('otro', x.numero, { nombre: nom, req: true }) : '';
+    const props = ds.filter((x) => x.tipo === 'propuesta'); const plans = ds.filter((x) => x.tipo === 'planilla');
+    const arch = s.archivo && s.archivo.id ? s.archivo : null;
+    h.innerHTML = cabHoja('tVgtSol', s.proyecto || 'Solicitud de VGT', d.titulo + (s.postes ? ' · ' + s.postes + ' postes' : '')) +
+      '<div class="vgt-franja ' + fr[0] + '" style="margin-top:0">' + esc(fr[1]) + '</div>' +
+      '<div class="sec">Estado y datos</div><div class="datos">' + [['Uso', s.en_uso || 'Sin dato'], ['Proyecto o tramo', s.proyecto || ''], ['Municipio', s.municipio || ''], ['Estado', s.estado_geo || ''], ['Postes', s.postes == null ? '' : String(s.postes)], ['Recibida', s.fecha || ''], ['ODT', s.odt || 'Sin ODT']]
+        .map((x) => '<div class="dato-f"><span>' + esc(x[0]) + '</span><b>' + esc(x[1] || 'Sin dato') + '</b></div>').join('') + (s.negada && s.negada_motivo ? '<div class="dato-f"><span>Negada</span><b>' + esc(s.negada_motivo) + '</b></div>' : '') + '</div>' +
+      (adm ? '<div class="acc"><button type="button" class="btn btn-chico btn-2" data-vgt-tramo="' + esc(s.id) + '" data-tpaso="">Cambiar uso</button><button type="button" class="btn btn-chico btn-2" data-vgt-tramo="' + esc(s.id) + '" data-tpaso="editar">Editar datos</button>' + (s.negada ? '' : '<button type="button" class="btn btn-chico btn-peligro" data-vgt-tramo="' + esc(s.id) + '" data-tpaso="negar">Denegar solicitud</button>') + '</div>' : '') +
+      '<div class="sec">Documentos de la solicitud</div>' +
+      (props.filter((x) => x.id).length ? props.map((x) => docFila(x, 'Propuesta comercial firmada')).join('') : '<button type="button" class="casilla doc falta" data-vgt-subir="' + esc(s.id) + ':propuesta"><span class="ico" aria-hidden="true">!</span><span class="tx"><b>Propuesta comercial firmada</b><small>Una por solicitud</small></span><span class="chip rojo">Falta</span></button>') +
+      (plans.filter((x) => x.id).length ? plans.filter((x) => x.id).map((x, i) => docFila(x, 'Planilla de tendido ' + (i + 1))).join('') : '<button type="button" class="casilla doc falta" data-vgt-subir="' + esc(s.id) + ':planilla"><span class="ico" aria-hidden="true">!</span><span class="tx"><b>Planilla de tendido</b><small>Aprobada por infraestructura</small></span><span class="chip rojo">Falta</span></button>') +
+      '<button type="button" class="btn btn-chico btn-2" data-vgt-subir="' + esc(s.id) + ':planilla:otra">' + ic('mas') + 'Agregar planilla</button>' +
+      '<div class="sec">' + esc(d.titulo) + '</div>' +
+      (arch ? casillaHtml('otro', arch.numero, { nombre: d.titulo + ' firmado', req: true }) + (puede ? '<button type="button" class="btn btn-chico btn-2" data-vgt-subir="' + esc(s.id) + ':contrato">Reemplazar</button>' : '')
+        : (puede ? '<button type="button" class="vgt-drop" data-vgt-subir="' + esc(s.id) + ':contrato">' + ic('subir') + '<span><b>Sube o arrastra el ' + esc(d.tipo === 'adendum' ? 'adendum' : 'contrato') + ' firmado</b><small>PDF o foto, en físico o digital</small></span></button>' : '<p class="nota-chica">Lo sube Legal o el administrador.</p>')) +
+      (puede ? '<form id="formVgtDoc" novalidate class="vgt-form">' +
+        '<label class="rotulo" for="vgNum">N.º del ' + esc(d.tipo === 'adendum' ? 'adendum' : 'contrato') + '</label><input class="campo" id="vgNum" maxlength="40" autocomplete="off" value="' + esc(s.numero || '') + '">' +
+        '<label class="rotulo arriba" for="vgFirma">Fecha de firma</label><input class="campo" id="vgFirma" type="date" max="' + esc(F.hoy || '') + '" value="' + esc(s.firmado_en || '') + '">' +
+        '<label class="rotulo arriba" for="vgVence">Vencimiento</label><input class="campo" id="vgVence" type="date" value="' + esc(s.vence_en || '') + '">' + (d.tipo === 'adendum' ? '<p class="nota">Si lo dejas vacío, toma el vencimiento del contrato VGT.</p>' : '') +
+        '<span class="rotulo arriba" id="rVgF">Firma</span><div class="tres dos" role="radiogroup" aria-labelledby="rVgF">' + [['digital', 'Digital'], ['fisica', 'Física']].map((x) => '<button type="button" role="radio" data-vg-firma="' + x[0] + '" aria-checked="' + (s.firma === x[0]) + '" class="' + (s.firma === x[0] ? 'on' : '') + '">' + x[1] + '</button>').join('') + '</div>' +
+        '<div class="error" id="eVgDoc" role="alert"></div><div class="acciones"><button type="submit" class="btn btn-ancho" id="vgGuardar">Guardar</button></div></form>'
+        : '<div class="datos">' + [['N.º', s.numero], ['Firmado', s.firmado_en ? fecha(s.firmado_en) : ''], ['Vence', s.vence_en ? fecha(s.vence_en) : '']].map((x) => '<div class="dato-f"><span>' + x[0] + '</span><b>' + esc(x[1] || 'Sin dato') + '</b></div>').join('') + '</div>') +
+      '<p class="nota-chica">Todo queda en la bitácora y en el hilo.</p>';
+  }
+  async function guardarVgtDoc(e){
+    e.preventDefault(); const er = $('eVgDoc'); er.textContent = '';
+    const f = $('vgFirma').value || null; const v = $('vgVence').value || null; const fi = ($('hojaVgtSol').querySelector('[data-vg-firma].on') || {}).dataset;
+    if(f && v && v <= f){ er.textContent = 'El vencimiento debe ser después de la firma'; return; }
+    const b = $('vgGuardar'); b.disabled = true; b.textContent = 'Guardando…';
+    try { await rpc('vgt_documento_guardar', { p_sol: vgtSolId, p_numero: $('vgNum').value.trim(), p_firmado_en: f, p_vence_en: v, p_firma: fi ? fi.vgFirma : null }); toast('Guardado. Queda en la bitácora y en el hilo'); await cargar(); pintarVgtSol(); }
+    catch (x) { er.textContent = x.message; b.disabled = false; b.textContent = 'Guardar'; }
+  }
+  document.addEventListener('submit', (e) => { if(e.target && e.target.id === 'formVgtDoc') guardarVgtDoc(e); });
+  // Arrastrar el contrato o adendum firmado sobre su zona en la hoja de la solicitud
+  document.addEventListener('dragover', (e) => { const z = e.target.closest && e.target.closest('#hojaVgtSol .vgt-drop'); if(z){ e.preventDefault(); z.classList.add('sobre'); } });
+  document.addEventListener('dragleave', (e) => { const z = e.target.closest && e.target.closest('#hojaVgtSol .vgt-drop'); if(z) z.classList.remove('sobre'); });
+  document.addEventListener('drop', async (e) => { const z = e.target.closest && e.target.closest('#hojaVgtSol .vgt-drop'); if(!z) return; e.preventDefault(); z.classList.remove('sobre');
+    const files = Array.prototype.slice.call((e.dataTransfer && e.dataTransfer.files) || []); if(!files.length) return; const p = z.dataset.vgtSubir.split(':');
+    let num; try { num = await rpc('vgt_casilla', { p_contrato: Number(p[0]), p_tipo: 'contrato', p_otra: false }); } catch (x) { toast(x.message, 'error'); return; }
+    guardarItems([{ files: files.slice(0, 1), casillas: [{ casilla: 'otro', numero: num }] }]); });
+  document.addEventListener('toggle', (e) => { const d = e.target; if(d && d.classList && d.classList.contains('doc-sec') && d.dataset.sec) secAb[d.dataset.sec] = d.open; }, true);
   // Un dedicado sin VGT activo también puede pedir uno
   const vgtSinSol = () => '<section class="bloque" data-grupo="vgt-sol"><div class="sec">VGT</div><p class="nota-chica">Sin solicitudes de VGT activas. Si el cliente va a usar postes, crea su solicitud.</p>' +
     '<button type="button" class="btn btn-chico btn-2 btn-ancho" id="vgtNueva">' + ic('mas') + 'Nueva solicitud de VGT</button></section>';
@@ -1018,20 +1131,18 @@
     const hayCom = (F.comision || []).length > 0;
     // Lote 28/10: en un dedicado, contratos y VGT van juntos en una pestaña (pantalla 9 de la maqueta)
     const junto = !!D && hayVgt; const nPend = (c.contrato_pend ? 1 : 0) + (junto ? ((D.vgt && D.vgt.faltan) || 0) : 0);
-    tb.querySelector('[data-tab="contrato"]').classList.toggle('hidden', !hayCtr && !junto);
-    tb.querySelector('[data-tab="vgt"]').classList.toggle('hidden', !hayVgt || junto);
+    // Lote 10/11 J0: sin pestañas Contrato ni VGT: viven en Documentos (secciones Contratos y VGT)
+    tb.querySelector('[data-tab="contrato"]').classList.add('hidden'); tb.querySelector('[data-tab="vgt"]').classList.add('hidden'); void hayCtr; void junto;
     tb.querySelector('[data-tab="comision"]').classList.toggle('hidden', !hayCom);
     const bc = tb.querySelector('[data-tab="contrato"]'); bc.innerHTML = (junto ? 'Contratos y VGT' : 'Contrato') + (nPend ? '<em>' + (junto ? nPend : '!') + '</em>' : '');
-    $('tab-contrato').innerHTML = (hayCtr && window.FichaDedicado ? window.FichaDedicado.contratos(F, yo) : '') +
-      (junto && window.FichaDedicado ? '<div class="secc ctr-vgt-t">VGT</div>' + window.FichaDedicado.vgt(F, yo) + grupoVgt(true) : '') + (D && !D.vgt && yo && yo.rol !== 'aliado' ? vgtSinSol() : '');
-    $('tab-vgt').innerHTML = hayVgt && !junto && window.FichaDedicado ? window.FichaDedicado.vgt(F, yo) + grupoVgt(true) : '';
-    if(tab === 'vgt' && junto){ irTab('contrato', true); return; }
-    if((tab === 'contrato' && !hayCtr && !junto) || (tab === 'vgt' && !hayVgt) || (tab === 'comision' && !hayCom)) irTab('datos', true);
+    $('tab-contrato').innerHTML = ''; $('tab-vgt').innerHTML = ''; void hayVgt; void vgtSinSol;
+    if(tab === 'comision' && !hayCom) irTab('datos', true);
   }
   function tabVisible(t){ const b = $('tabs').querySelector('[data-tab="' + t + '"]'); return !!b && !b.classList.contains('hidden'); }
   function irTab(t, sinUrl){
     if(t === 'contratos') t = 'contrato';   // enlaces viejos
-    if(t === 'vgt' && F && F.cliente.dedicado && !tabVisible('vgt')) t = 'contrato';   // Lote 28/10: el VGT va dentro de Contratos y VGT
+    // Lote 10/11 J0: Contrato y VGT son secciones de Documentos; el enlace abre esa sección
+    if(t === 'contrato' || t === 'vgt'){ secAb[t === 'vgt' ? 'vgt' : 'ctr'] = true; t = 'documentos'; if(F) pintarDocumentos(); }
     if(TABS.indexOf(t) < 0 || (F && !tabVisible(t))) t = 'datos';
     tab = t;
     Array.prototype.forEach.call($('tabs').querySelectorAll('button'), (b) => { const on = b.dataset.tab === t; b.classList.toggle('on', on); b.setAttribute('aria-selected', String(on)); });
@@ -1739,7 +1850,13 @@
     if(t.closest('#envIp') && env){ const sid = env.servicio; const fe = envF ? { cliente: envF.cliente.id, F: envF, alTerminar: envFin } : null; cerrarHoja(); fuera = fe; abrirCampo('ip:' + sid); return; }
     if((b = t.closest('#envManual')) && env){ if(b.dataset.armado !== '1'){ b.dataset.armado = '1'; b.textContent = '¿Seguro? Toca otra vez'; setTimeout(() => { if(document.contains(b)){ b.dataset.armado = ''; b.textContent = 'Ya se envió por fuera'; } }, 4000); return; }
       b.disabled = true; anotarEnvio(env.tipo, 'manual', null); return; }
-    if(t.closest('#agregarVgt')){ vgtExtra = Math.min(4, vgtExtra + 1); pintarDedicado(); return; }
+    if(t.closest('#agregarVgt')){ vgtExtra = Math.min(4, vgtExtra + 1); pintarDocumentos(); return; }
+    if((b = t.closest('#hojaFicha [data-vgt-sol]'))){ abrirVgtSol(b.dataset.vgtSol); return; }
+    if((b = t.closest('#hojaVgtSol [data-vgt-subir]'))){ fuera = null; const p = b.dataset.vgtSubir.split(':'); destino = { casilla: 'otro', numero: 0, vgt: { sol: Number(p[0]), tipo: p[1], otra: p[2] === 'otra' } }; const inp = $('archivo'); inp.value = ''; inp.click(); return; }
+    if((b = t.closest('#hojaVgtSol [data-ver]'))){ abrirVer(Number(b.dataset.ver)); return; }
+    if((b = t.closest('#hojaVgtSol [data-vg-firma]'))){ Array.prototype.forEach.call(b.parentNode.querySelectorAll('[data-vg-firma]'), (x) => { const on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-checked', String(on)); }); return; }
+    if((b = t.closest('#hojaVgtSol [data-vgt-tramo]')) && window.FichaDedicado && window.FichaDedicado.abrirTramo){ window.FichaDedicado.abrirTramo(b.dataset.vgtTramo, b.dataset.tpaso || undefined); return; }
+    if((b = t.closest('#hojaFicha [data-ctr-mas]'))){ elegirPara('otro', 0); toast(b.dataset.ctrMas === 'adendum' ? 'Al subirlo, ponle de título "Adendum al contrato"' : 'Al subirlo, ponle de título el nombre del contrato'); return; }
     if(t.closest('#agregarActa')){ actaExtra = Math.min(ACTAS.length, actaExtra + 1); pintarDocumentos(); const cs = document.querySelectorAll('[data-grupo="empresa"] [data-casilla^="acta_asamblea"]'); if(cs.length) cs[cs.length - 1].scrollIntoView({ block: 'center' }); return; }
     if((b = t.closest('[data-ver]')) && !t.closest('#docsCom')){ abrirVer(Number(b.dataset.ver)); return; }   // en la hoja de comisión lo maneja comisiones.js
     if((b = t.closest('#hojaFicha [data-campo]'))){ fuera = null; abrirCampo(b.dataset.campo); return; }

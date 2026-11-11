@@ -1,7 +1,7 @@
 // Corrida urgente 14/10, parte 2: Clientes es la única lista de expedientes. Tres tarjetas (PYME, Dedicado corporativo, Dedicado ISP)
 // con su número; un combinado sale en dos con su etiqueta; la última tarjeta se recuerda; en las de dedicados aparecen los filtros VGT
 // y Enlaces; el atajo Faltan documentos; un líder sin marca de dedicados ve sus dedicados; los enlaces viejos siguen funcionando.
-const { chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar } = require('./simulador');
+const { irContratos, chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar } = require('./simulador');
 const { ok, cerrar } = marcador();
 const LUCIA = '22222222-2222-4222-8222-222222222222';
 const cli = (m, n) => m.datos.clientes.find((c) => c.nombre.indexOf(n) === 0);
@@ -51,15 +51,15 @@ function preparar(m){
     await p.click('#tarjetas [data-tarjeta="isp"]'); await p.waitForSelector('#tarjetas [data-tarjeta="isp"][aria-pressed="true"]');
     // La hoja del dedicado conserva Contratos; la del combinado, Comisión y Contratos
     await p.click('#filtros [data-filtro="todos"]'); await p.locator('.cli', { hasText: 'Tornillos El Yunque' }).click(); await p.waitForSelector('#hojaFicha.ver #tab-datos [data-ded-enl]');
-    ok(nombre + ': la hoja del ISP muestra enlaces y Contrato, sin Comisión', await p.evaluate(() => !document.querySelector('#tabs [data-tab="contrato"]').classList.contains('hidden') && document.querySelector('#tabs [data-tab="comision"]').classList.contains('hidden')));
+    ok(nombre + ': la hoja del ISP muestra enlaces y Contratos (en Documentos), sin Comisión', await p.evaluate(() => !!document.querySelector('#tab-documentos [data-sec="ctr"]') && document.querySelector('#tabs [data-tab="comision"]').classList.contains('hidden')));
     await cerrarHojas(p);
     await p.click('#tarjetas [data-tarjeta="pyme"]'); await p.click('#filtros [data-filtro="todos"]');
     await p.locator('.cli', { hasText: 'Vidrios El Faro' }).click(); await p.waitForSelector('#hojaFicha.ver');
     ok(nombre + ': la hoja del combinado dice PYME + Dedicado', (await p.textContent('#cabFicha')).includes('PYME + Dedicado'));
-    await p.click('#tabs [data-tab="contrato"]'); await p.waitForSelector('#tab-contrato.on');
-    const ctr = await p.textContent('#tab-contrato');
-    await p.click('#tabs [data-tab="contrato"]'); await p.waitForSelector('#tab-contrato.on');
-    ok(nombre + ': la hoja del combinado tiene Comisión, en Contrato el dedicado y el PYME, y en VGT su proyecto', await p.evaluate(() => !document.querySelector('#tabs [data-tab="comision"]').classList.contains('hidden')) && ctr.includes('Contrato dedicado') && ctr.includes('Contrato PYME') && (await p.textContent('#tab-contrato')).includes('Proyecto de prueba'));
+    await irContratos(p); await p.waitForSelector('#tab-documentos.on');
+    const ctr = await p.textContent('#tab-documentos');
+    await irContratos(p); await p.waitForSelector('#tab-documentos.on');
+    ok(nombre + ': la hoja del combinado tiene Comisión, en Contrato el dedicado y el PYME, y en VGT su proyecto', await p.evaluate(() => !document.querySelector('#tabs [data-tab="comision"]').classList.contains('hidden')) && ctr.includes('Contrato dedicado') && ctr.includes('Contrato PYME') && (await p.textContent('#tab-documentos')).includes('Proyecto de prueba'), ctr.slice(0, 600));
     await cerrarHojas(p);
     // Enlace viejo con el segmento
     await p.goto(H + 'clientes.html?tipo=Dedicado%20ISP'); await p.waitForSelector('#tarjetas [data-tarjeta="isp"][aria-pressed="true"]');

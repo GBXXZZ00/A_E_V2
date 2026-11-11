@@ -76,7 +76,7 @@ const archivo = (n, mime) => ({ name: n, mimeType: mime || 'application/pdf', bu
     const yun = cs.find((x) => x.nombre.indexOf('Tornillos El Yunque') === 0);
     await p.goto(H + 'clientes.html?c=' + yun.id); await p.waitForSelector('#hojaFicha.ver #tab-datos .tarjs');
     const tabs = await p.evaluate(() => Array.from(document.querySelectorAll('#tabs [data-tab]')).filter((b) => !b.classList.contains('hidden')).map((b) => b.dataset.tab).join());
-    ok(nombre + ': pestañas en orden (Datos, Documentos, Contrato, VGT si tiene, Hilo, Comisión si tiene)', /^datos,documentos,contrato,(vgt,)?hilo(,comision)?$/.test(tabs), tabs);
+    ok(nombre + ': pestañas en orden (Datos, Documentos, Hilo, Comisión si tiene; Contrato y VGT dentro de Documentos)', /^datos,documentos,hilo(,comision)?$/.test(tabs), tabs);
     await p.click('[data-lider-cambiar="pyme"]'); await p.waitForSelector('#hojaLider.ver');
     await p.click('#guardarLider');
     ok(nombre + ': cambiar líder sin elegir da error debajo', (await p.textContent('#eLider')).includes('Elige'));
@@ -173,8 +173,8 @@ const archivo = (n, mime) => ({ name: n, mimeType: mime || 'application/pdf', bu
     await lg.goto(H + 'trabajo.html'); await lg.waitForFunction(() => /Relleno Inventado 01/.test((document.getElementById('cuerpo') || {}).textContent || ''));
     ok(nombre + ': en Mi trabajo de Legal, "Firmado, falta subir" trae el firmado sin archivo', /Firmado, falta subir/.test(await lg.textContent('#cuerpo')));
     await lg.evaluate(() => document.querySelectorAll('#cuerpo details.lg-pl').forEach((x) => { x.open = true; }));   // Lote 10/11 H1: las etapas empiezan plegadas
-    await lg.locator('#cuerpo .bz-it', { hasText: 'Relleno Inventado 01' }).locator('[data-hacer]').first().click(); await lg.waitForSelector('#hojaFicha.ver #tab-contrato.on');
-    ok(nombre + ': abre la hoja en Contrato con el aviso', (await lg.textContent('#tab-contrato')).includes('Firmado: falta subir contrato'));
+    await lg.locator('#cuerpo .bz-it', { hasText: 'Relleno Inventado 01' }).locator('[data-hacer]').first().click(); await lg.waitForSelector('#hojaFicha.ver #tab-documentos.on');
+    ok(nombre + ': abre la hoja en Contrato con el aviso', (await lg.textContent('#tab-documentos')).includes('Firmado: falta subir contrato'));
     await cl.ctx.close();
 
     // ---------- Líder: sin cambiar líder ni suspender ----------
