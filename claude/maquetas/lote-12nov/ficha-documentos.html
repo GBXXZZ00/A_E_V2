@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ficha · Documentos</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<style>
+/* Maqueta 12/11 · Ficha del cliente, pestaña Documentos. Mismos colores, letra y medidas de assets/css (base.css y app.css). Datos inventados. */
+:root{--bg:#fff;--line:#E3E6EA;--text:#111315;--text2:#5B636E;--text3:#69717C;--surface-2:#F5F6F7;--accent:#1B3A9E;--acc-bg:#E8ECF9;
+  --rojo-bg:#FCEDEB;--rojo:#A32117;--ambar-bg:#FBF1DC;--ambar:#754B00;--azul-bg:#E8EEFF;--azul:#1F45C4;--verde-bg:#E7F5EE;--verde:#0F6642;--morado-bg:#F0EBFA;--morado:#5B3AA6;--pill:999px}
+*{box-sizing:border-box}
+body{margin:0;background:#EEF0F2;font-family:Inter,system-ui,sans-serif;color:var(--text);font-size:14px;-webkit-font-smoothing:antialiased}
+h1,h2,h3,p{margin:0}
+.lienzo{display:flex;gap:40px;align-items:flex-start;padding:36px 40px 60px;width:max-content}
+.col{display:flex;flex-direction:column;gap:14px}
+.et{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text2)}
+.nota{font-size:12.5px;color:var(--text2);line-height:1.45;max-width:600px}
+/* hoja de la ficha (PC: 600 px a la derecha) */
+.hoja{width:600px;background:#fff;border-radius:24px 0 0 24px;box-shadow:0 18px 50px rgba(15,23,42,.14);overflow:hidden}
+.tel .hoja{width:390px;border-radius:28px}
+.cab{display:flex;gap:14px;align-items:flex-start;padding:22px 24px 0}
+.avatar{width:48px;height:48px;border-radius:14px;background:var(--acc-bg);color:var(--accent);display:grid;place-items:center;font-weight:700;font-size:18px;flex:none}
+.cab h2{font-size:20px;font-weight:700;letter-spacing:-.01em}
+.cab .sub{font-size:13px;color:var(--text2);margin-top:3px}
+.cerrar{margin-left:auto;width:36px;height:36px;display:grid;place-items:center;color:var(--text2)}
+.chips{display:flex;gap:6px;flex-wrap:wrap;padding:12px 24px 0}
+.chip{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;border-radius:var(--pill);font-size:12.5px;font-weight:600;white-space:nowrap;background:var(--surface-2);color:var(--text2)}
+.chip.punto::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.rojo{background:var(--rojo-bg);color:var(--rojo)} .ambar{background:var(--ambar-bg);color:var(--ambar)} .azul{background:var(--azul-bg);color:var(--azul)} .verde{background:var(--verde-bg);color:var(--verde)} .morado{background:var(--morado-bg);color:var(--morado)}
+.tabs{display:flex;gap:22px;margin-top:16px;padding:0 24px;border-bottom:1px solid var(--line)}
+.tabs span{padding:12px 0;font-size:14.5px;font-weight:600;color:var(--text3);border-bottom:2.5px solid transparent;margin-bottom:-1px}
+.tabs span.on{color:var(--accent);border-color:var(--accent)}
+.cuerpo{padding:16px 24px 24px;display:flex;flex-direction:column;gap:12px}
+.tel .cuerpo{padding:14px 16px 20px}
+.tel .cab{padding:18px 16px 0} .tel .chips{padding:10px 16px 0} .tel .tabs{padding:0 16px;gap:18px}
+/* línea de revisión (parte C, ya aprobada) */
+.rev{display:flex;align-items:center;gap:10px;border:1.5px dashed var(--line);border-radius:16px;padding:10px 12px 10px 14px}
+.rev b{font-size:14px} .rev small{color:var(--text2);font-size:12.5px;margin-left:auto;text-align:right}
+.dot{width:8px;height:8px;border-radius:50%;flex:none} .dot.a{background:#D99012} .dot.v{background:var(--verde)} .dot.r{background:var(--rojo)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:36px;padding:0 14px;border-radius:var(--pill);border:1px solid var(--line);background:#fff;font:600 13px Inter,sans-serif;color:var(--text);white-space:nowrap}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.sub{border:1.5px dashed #A9B6DE;color:var(--accent);background:#F7F9FE}
+.btn.g{height:44px;padding:0 18px;font-size:14px}
+.btn.ancho{width:100%;height:48px;font-size:15px}
+/* sección plegable */
+.sec{border:1px solid var(--line);border-radius:18px;background:#fff}
+.sec.falta{border-color:#E2A84A} .sec.listo{border-color:#A9D9C2}
+.sec-c{display:flex;align-items:center;gap:10px;min-height:54px;padding:0 14px 0 16px}
+.sec-c b{font-size:15px}
+.sec-c .chip{margin-left:auto}
+.flecha{width:18px;height:18px;color:var(--text2);flex:none}
+.sec-d{padding:2px 16px 16px}
+.tel .sec-d{padding:2px 14px 14px}
+/* dentro del expediente */
+.her{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:4px 0 12px}
+.her .sp{flex:1}
+.drop{display:flex;align-items:center;justify-content:center;gap:8px;border:1.5px dashed #B9C3E3;border-radius:14px;padding:14px;color:var(--accent);font-weight:600;font-size:13px;background:#F9FAFE;text-align:center}
+.grp{display:flex;align-items:baseline;gap:10px;margin:16px 0 2px}
+.grp .t{font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text2)}
+.grp .n{font-size:13px;color:var(--text);font-weight:600}
+.grp .acc{margin-left:auto;display:flex;gap:14px}
+.lnk{color:var(--accent);font-weight:600;font-size:13px;white-space:nowrap}
+.fila{display:flex;align-items:center;gap:12px;padding:11px 0;border-top:1px solid var(--line)}
+.grp + .fila{border-top:0}
+.ic{width:36px;height:36px;border-radius:11px;display:grid;place-items:center;flex:none}
+.ic.ok{background:var(--verde-bg);color:var(--verde)}
+.ic.falta{border:1.5px dashed #A9B6DE;color:var(--accent);background:#F7F9FE}
+.ic.rev{background:var(--azul-bg);color:var(--azul)}
+.ic.mal{background:var(--rojo-bg);color:var(--rojo)}
+.ic.op{background:var(--surface-2);color:var(--text2)}
+.ic svg,.cerrar svg,.flecha{fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.ic svg{width:18px;height:18px}
+.tx{flex:1;min-width:0}
+.tx b{display:block;font-size:14.5px;font-weight:600}
+.tx small{display:block;font-size:12.5px;color:var(--text2);margin-top:2px;line-height:1.35}
+.fila .chip{flex:none}
+.fila .btn{flex:none}
+.mas{margin-top:10px}
+.otros{display:flex;align-items:center;gap:10px;margin-top:12px;padding:12px 14px;border-radius:14px;background:var(--surface-2);font-weight:600;font-size:14px}
+.otros span{margin-left:auto;color:var(--text2);font-weight:500;font-size:13px}
+/* contratos */
+.ctr{display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--line)}
+.ctr:first-child{border-top:0}
+.ctr .tx b{font-size:15px}
+.pie{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.banda{border-radius:14px;padding:12px 14px;font-size:13px;line-height:1.4}
+.banda b{display:block;font-size:14px;margin-bottom:2px}
+/* hoja chica (contrato / solicitud) */
+.hc{width:480px;background:#fff;border-radius:24px 0 0 24px;box-shadow:0 18px 50px rgba(15,23,42,.14);padding:22px 24px 24px;display:flex;flex-direction:column;gap:12px}
+.hc .top{display:flex;align-items:flex-start;gap:10px}
+.hc h3{font-size:19px;font-weight:700}
+.hc .sub{font-size:13px;color:var(--text2);margin-top:3px}
+label{display:block;font-size:13px;font-weight:600;color:var(--text);margin-bottom:6px}
+.campo{height:46px;border:1px solid #C9CED6;border-radius:12px;padding:0 14px;display:flex;align-items:center;font-size:15px;color:var(--text);background:#fff}
+.campo.vacio{color:var(--text3)}
+.campo.err{border-color:var(--rojo)}
+.error{color:var(--rojo);font-size:12.5px;margin-top:5px}
+.dos{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.seg{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;border-radius:var(--pill);background:var(--surface-2)}
+.seg span{height:38px;display:grid;place-items:center;border-radius:var(--pill);font-weight:600;font-size:14px;color:var(--text2)}
+.seg span.on{background:#fff;color:var(--text);box-shadow:0 1px 2px rgba(15,23,42,.1)}
+.arch{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--line);border-radius:14px}
+.acciones{display:flex;gap:8px;justify-content:flex-end;margin-top:6px}
+/* VGT */
+.req{display:flex;align-items:center;gap:12px;padding:11px 0;border-top:1px solid var(--line)}
+.sol{border:1px solid var(--line);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.sol.sel{border:2px solid var(--accent)}
+.sol .k{display:flex;align-items:center;justify-content:space-between}
+.sol .k span:first-child{font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--text2)}
+.sol h4{margin:0;font-size:15.5px}
+.sol small{color:var(--text2);font-size:12.5px}
+.fr{display:flex;align-items:center;justify-content:space-between;gap:8px;border-radius:12px;padding:10px 12px;font-weight:600;font-size:13px}
+.vacia{display:flex;align-items:center;gap:10px;min-height:54px;padding:0 14px 0 16px}
+.vacia small{color:var(--text2);font-size:13px;margin-left:auto}
+.tel{display:flex;flex-direction:column;gap:14px}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="ok" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="mas" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="lapiz" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16v4z"/></symbol>
+  <symbol id="reloj" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/></symbol>
+  <symbol id="x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="abajo" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+  <symbol id="arriba" viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></symbol>
+  <symbol id="subir" viewBox="0 0 24 24"><path d="M12 16V5M7 10l5-5 5 5M5 19h14"/></symbol>
+  <symbol id="alerta" viewBox="0 0 24 24"><path d="M12 8v5M12 16.5v.5M10.3 4.3L2.8 17.5A2 2 0 004.5 20.5h15a2 2 0 001.7-3L13.7 4.3a2 2 0 00-3.4 0z"/></symbol>
+</svg>
+
+<div class="lienzo">
+
+<!-- A · todo cerrado -->
+<div class="col" id="A">
+  <div class="et">A · PC · Pestaña Documentos al abrir: todo cerrado</div>
+  <div class="hoja">
+    <div class="cab"><div class="avatar">R</div><div><h2>Redes Ejemplo, C.A.</h2><p class="sub">J-00000000-0 · Ana Pérez · 1 servicio</p></div><span class="cerrar"><svg width="22" height="22"><use href="#x"/></svg></span></div>
+    <div class="chips"><span class="chip ambar punto">Documentos pendientes</span><span class="chip">Dedicado ISP</span><span class="chip verde">Habilitado</span></div>
+    <div class="tabs"><span>Datos</span><span class="on">Documentos</span><span>Hilo</span><span>Comisión</span></div>
+    <div class="cuerpo">
+      <div class="rev"><span class="dot a"></span><b>Revisión: 4 de 6 marcados</b><small>Falta junta y firmantes</small><span class="btn">Abrir</span></div>
+      <div class="sec falta"><div class="sec-c"><span class="dot a"></span><b>Expediente del cliente</b><span class="chip ambar">Faltan 2</span><svg class="flecha"><use href="#abajo"/></svg></div></div>
+      <div class="sec falta"><div class="sec-c"><span class="dot a"></span><b>Contratos</b><span class="chip ambar">Falta vencimiento</span><svg class="flecha"><use href="#abajo"/></svg></div></div>
+      <div class="sec listo"><div class="sec-c"><span class="dot v"></span><b>VGT</b><span class="chip verde">2 solicitudes al día</span><svg class="flecha"><use href="#abajo"/></svg></div></div>
+    </div>
+  </div>
+  <p class="nota">Arriba solo queda la línea de la revisión. Se quitan el aviso verde/amarillo de estado, la tarjeta "Revisión con IA", la zona para soltar y "Carpeta en Drive": pasan dentro del Expediente. Cada sección dice su estado en la cabecera; al tocarla se abre a todo el ancho, debajo de su título.</p>
+  <div class="et" style="margin-top:14px">Cliente sin VGT: la sección queda en una línea</div>
+  <div class="hoja" style="border-radius:24px 0 0 24px;padding:16px 24px">
+    <div class="sec"><div class="vacia"><b style="font-size:15px">VGT</b><small>Este cliente no tiene solicitudes</small><span class="btn pri">+ Agregar solicitud</span></div></div>
+  </div>
+</div>
+
+<!-- B · expediente abierto -->
+<div class="col" id="B">
+  <div class="et">B · PC · Expediente del cliente abierto</div>
+  <div class="hoja">
+    <div class="tabs" style="margin-top:0"><span>Datos</span><span class="on">Documentos</span><span>Hilo</span><span>Comisión</span></div>
+    <div class="cuerpo">
+      <div class="sec falta">
+        <div class="sec-c"><span class="dot a"></span><b>Expediente del cliente</b><span class="chip ambar">Faltan 2</span><svg class="flecha"><use href="#arriba"/></svg></div>
+        <div class="sec-d">
+          <div class="her"><span class="btn pri">Mandar a revisión con IA</span><span class="nota" style="font-size:12.5px">5 archivos, 2 sin leer</span><span class="sp"></span><span class="lnk">Carpeta en Drive</span></div>
+          <div class="drop"><svg width="18" height="18" style="fill:none;stroke:currentColor;stroke-width:2"><use href="#subir"/></svg>Suelta aquí varios archivos juntos: cada uno va a su casilla por el nombre</div>
+
+          <div class="grp"><span class="t">Representante 1</span><span class="n">María Ejemplo · firma</span><span class="acc"><span class="lnk">No está en la junta</span><span class="lnk">Ya no aplica</span></span></div>
+          <div class="fila"><span class="ic ok"><svg><use href="#ok"/></svg></span><span class="tx"><b>Contacto</b><small>0412 000 0000 · maria@ejemplo.com</small></span><span class="chip verde">Bien</span><span class="btn">Editar</span></div>
+          <div class="fila"><span class="ic ok"><svg><use href="#ok"/></svg></span><span class="tx"><b>Cédula</b><small>Aprobada el 05/11 · vence 03/2031</small></span><span class="chip verde">Bien</span><span class="btn">Ver</span></div>
+          <div class="fila"><span class="ic falta"><svg><use href="#mas"/></svg></span><span class="tx"><b>RIF personal</b><small>Toca o suelta el archivo aquí</small></span><span class="chip rojo">Falta</span><span class="btn sub">Subir</span></div>
+          <span class="btn mas">+ Agregar representante</span>
+
+          <div class="grp"><span class="t">Empresa</span></div>
+          <div class="fila"><span class="ic ok"><svg><use href="#ok"/></svg></span><span class="tx"><b>Correo de la empresa</b><small>administracion@redesejemplo.com</small></span><span class="chip verde">Bien</span><span class="btn">Editar</span></div>
+          <div class="fila"><span class="ic falta"><svg><use href="#mas"/></svg></span><span class="tx"><b>RIF de la empresa</b><small>Toca o suelta el archivo aquí</small></span><span class="chip rojo">Falta</span><span class="btn sub">Subir</span></div>
+          <div class="fila"><span class="ic rev"><svg><use href="#reloj"/></svg></span><span class="tx"><b>Acta constitutiva</b><small>Subida hoy 09:40 · la IA la está leyendo</small></span><span class="chip azul">En revisión</span><span class="btn">Ver</span></div>
+          <div class="fila"><span class="ic mal"><svg><use href="#alerta"/></svg></span><span class="tx"><b>Acta de asamblea</b><small>Devuelta: falta la página de la junta</small></span><span class="chip rojo">Devuelta</span><span class="btn sub">Subir otra</span></div>
+          <div class="fila"><span class="ic ok"><svg><use href="#ok"/></svg></span><span class="tx"><b>Conatel: habilitación vigente</b><small>Vence 12/2027</small></span><span class="chip verde">Bien</span><span class="btn">Ver</span></div>
+          <div class="otros">Otros documentos<span>2 · fotos del local y una carta</span><svg class="flecha"><use href="#abajo"/></svg></div>
+        </div>
+      </div>
+      <div class="sec falta"><div class="sec-c"><span class="dot a"></span><b>Contratos</b><span class="chip ambar">Falta vencimiento</span><svg class="flecha"><use href="#abajo"/></svg></div></div>
+      <div class="sec listo"><div class="sec-c"><span class="dot v"></span><b>VGT</b><span class="chip verde">2 solicitudes al día</span><svg class="flecha"><use href="#abajo"/></svg></div></div>
+    </div>
+  </div>
+  <p class="nota">Cada casilla es una fila a todo el ancho: icono del estado, nombre, qué tiene o qué falta, etiqueta y un solo botón (Subir, Ver o Editar). Se puede soltar el archivo sobre la fila. Los grupos (Representante 1, Empresa) son títulos pequeños, sin cajas. Lo raro va en "Otros documentos", plegado.</p>
+</div>
+
+<!-- C · contratos abierto + hoja del contrato -->
+<div class="col" id="C">
+  <div class="et">C · PC · Contratos abierto</div>
+  <div class="hoja">
+    <div class="tabs" style="margin-top:0"><span>Datos</span><span class="on">Documentos</span><span>Hilo</span><span>Comisión</span></div>
+    <div class="cuerpo">
+      <div class="sec listo"><div class="sec-c"><span class="dot v"></span><b>Expediente del cliente</b><span class="chip verde">Completo</span><svg class="flecha"><use href="#abajo"/></svg></div></div>
+      <div class="sec falta">
+        <div class="sec-c"><span class="dot a"></span><b>Contratos</b><span class="chip ambar">Falta vencimiento</span><svg class="flecha"><use href="#arriba"/></svg></div>
+        <div class="sec-d">
+          <div class="ctr"><span class="tx"><b>Contrato de servicio dedicado</b><small>Firmado 02/05/2025 · firma digital · N.º 0123</small></span><span class="chip ambar">Falta vencimiento</span><span class="btn">Abrir</span></div>
+          <div class="ctr"><span class="tx"><b>Adendum N.º 1 (aumento a 300 Mbps)</b><small>Firmado 10/01/2026 · vence con el contrato</small></span><span class="chip verde">Bien</span><span class="btn">Abrir</span></div>
+          <div class="ctr"><span class="tx"><b>Contrato PYME</b><small>Por elaborar · Legal lo tiene en Mi trabajo</small></span><span class="btn sub">+ Subir o arrastrar</span></div>
+          <div class="pie"><span class="btn">+ Adendum</span><span class="btn">+ Otro contrato</span></div>
+          <p class="nota" style="margin-top:12px">Los dedicados no comisionan.</p>
+        </div>
+      </div>
+      <div class="sec listo"><div class="sec-c"><span class="dot v"></span><b>VGT</b><span class="chip verde">2 solicitudes al día</span><svg class="flecha"><use href="#abajo"/></svg></div></div>
+    </div>
+  </div>
+  <p class="nota">Un contrato por fila. Todo lo que se edita (firma, fechas, archivo, nota) vive en la hoja del contrato, que se abre encima al tocar "Abrir".</p>
+  <div class="et" style="margin-top:14px">Al tocar Abrir: la hoja del contrato (se apila encima)</div>
+  <div class="hc">
+    <div class="top"><div><h3>Contrato de servicio dedicado</h3><p class="sub">Redes Ejemplo, C.A. · firmado 02/05/2025</p></div><span class="cerrar"><svg width="22" height="22"><use href="#x"/></svg></span></div>
+    <div class="banda ambar"><b>Falta la fecha de vencimiento</b>Escríbela y guarda: con eso Legal recibe el aviso 60 días antes.</div>
+    <div class="arch"><span class="ic ok"><svg><use href="#ok"/></svg></span><span class="tx"><b>contrato-firmado.pdf</b><small>Subido el 03/05/2025 por Reina</small></span><span class="btn">Ver</span><span class="btn">Reemplazar</span></div>
+    <div><label>Firma</label><div class="seg"><span class="on">Digital</span><span>Física</span></div></div>
+    <div class="dos"><div><label>Fecha de firma</label><div class="campo">02/05/2025</div></div><div><label>Vence</label><div class="campo vacio err">dd/mm/aaaa</div><div class="error">Escribe la fecha de vencimiento</div></div></div>
+    <div><label>N.º de contrato</label><div class="campo">0123</div></div>
+    <div><label>Nota</label><div class="campo vacio" style="height:70px;align-items:flex-start;padding-top:12px">Opcional</div></div>
+    <div class="acciones"><span class="btn g">Cancelar</span><span class="btn g pri">Guardar</span></div>
+  </div>
+</div>
+
+<!-- D · VGT abierto (la maqueta ya aprobada, con estos estilos) -->
+<div class="col" id="D">
+  <div class="et">D · PC · VGT abierto (lo aprobado el 10/11)</div>
+  <div class="hoja">
+    <div class="tabs" style="margin-top:0"><span>Datos</span><span class="on">Documentos</span><span>Hilo</span><span>Comisión</span></div>
+    <div class="cuerpo">
+      <div class="sec listo"><div class="sec-c"><span class="dot v"></span><b>Expediente del cliente</b><span class="chip verde">Completo</span><svg class="flecha"><use href="#abajo"/></svg></div></div>
+      <div class="sec listo"><div class="sec-c"><span class="dot v"></span><b>Contratos</b><span class="chip verde">Dedicado firmado</span><svg class="flecha"><use href="#abajo"/></svg></div></div>
+      <div class="sec falta">
+        <div class="sec-c"><span class="dot a"></span><b>VGT</b><span class="chip ambar">Falta 1 adendum</span><svg class="flecha"><use href="#arriba"/></svg></div>
+        <div class="sec-d">
+          <div class="grp" style="margin-top:4px"><span class="t">Requisitos del cliente</span><span class="acc"><span class="nota" style="font-size:12.5px">Sirven para todas sus solicitudes</span></span></div>
+          <div class="req" style="border-top:0"><span class="ic ok"><svg><use href="#ok"/></svg></span><span class="tx"><b>Póliza de responsabilidad civil general</b><small>USD 100.000 · Seguros Ejemplo · vence 15/03/2027</small></span><span class="chip verde">Aprobada</span><span class="btn">Ver</span></div>
+          <div class="req"><span class="ic ok"><svg><use href="#ok"/></svg></span><span class="tx"><b>Póliza de responsabilidad patronal</b><small>4 trabajadores · vence 15/03/2027</small></span><span class="chip verde">Aprobada</span><span class="btn">Ver</span></div>
+          <div class="grp"><span class="t">Solicitudes · 19 postes</span><span class="acc"><span class="btn pri">+ Nueva solicitud</span></span></div>
+          <div class="sol"><div class="k"><span>SOLICITUD 1</span><span class="chip azul">En proyecto</span></div><h4>Yaracal · Troncal 3, Sector El Caimán</h4><small>Cacique Manaure, Falcón · 11 postes</small>
+            <div class="chips" style="padding:0"><span class="chip verde">Propuesta firmada ✓</span><span class="chip verde">Planilla ✓</span><span class="chip verde">ODT ✓</span></div>
+            <div class="fr verde"><span>Contrato VGT N.º 0123 · firmado 08/11/2026 · vence 08/11/2027</span><span>›</span></div></div>
+          <div class="sol sel"><div class="k"><span>SOLICITUD 2</span><span class="chip verde">En uso</span></div><h4>Dabajuro · Las Tinajitas y Sector Libertador</h4><small>Dabajuro, Falcón · 8 postes</small>
+            <div class="chips" style="padding:0"><span class="chip verde">Propuesta firmada ✓</span><span class="chip verde">2 planillas ✓</span><span class="chip verde">ODT ✓</span></div>
+            <div class="fr rojo"><span>En uso sin Adendum N.º 1 firmado · falta subirlo</span><span>›</span></div></div>
+          <p class="nota" style="margin-top:10px">▸ Historial: 1 tramo sin uso</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <p class="nota">Sin cambios a lo aprobado: pólizas del cliente arriba, una tarjeta por solicitud con sus chips y la franja del contrato o adendum (verde firmado, ámbar falta, rojo en uso sin contrato). Al tocar una solicitud se abre su hoja (maqueta Vgt).</p>
+</div>
+
+<!-- E · teléfono -->
+<div class="col tel" id="E">
+  <div class="et">E · Teléfono · cerrado y Expediente abierto</div>
+  <div class="hoja">
+    <div class="cab"><div class="avatar">R</div><div><h2 style="font-size:18px">Redes Ejemplo, C.A.</h2><p class="sub">J-00000000-0 · Ana Pérez</p></div><span class="cerrar"><svg width="22" height="22"><use href="#x"/></svg></span></div>
+    <div class="chips"><span class="chip ambar punto">Documentos pendientes</span><span class="chip">Dedicado ISP</span></div>
+    <div class="tabs"><span>Datos</span><span class="on">Documentos</span><span>Hilo</span><span>Comisión</span></div>
+    <div class="cuerpo">
+      <div class="rev"><span class="dot a"></span><b>Revisión: 4 de 6</b><small></small><span class="btn">Abrir</span></div>
+      <div class="sec falta">
+        <div class="sec-c"><span class="dot a"></span><b>Expediente del cliente</b><span class="chip ambar">Faltan 2</span><svg class="flecha"><use href="#arriba"/></svg></div>
+        <div class="sec-d">
+          <div class="her"><span class="btn pri" style="width:100%;height:44px">Mandar a revisión con IA</span></div>
+          <div class="grp" style="margin-top:6px"><span class="t">Representante 1</span><span class="acc"><span class="lnk">Opciones</span></span></div>
+          <div class="fila"><span class="ic ok"><svg><use href="#ok"/></svg></span><span class="tx"><b>Contacto</b><small>0412 000 0000</small></span><span class="chip verde">Bien</span></div>
+          <div class="fila"><span class="ic ok"><svg><use href="#ok"/></svg></span><span class="tx"><b>Cédula</b><small>Vence 03/2031</small></span><span class="chip verde">Bien</span></div>
+          <div class="fila"><span class="ic falta"><svg><use href="#mas"/></svg></span><span class="tx"><b>RIF personal</b><small>Toca para subirlo</small></span><span class="chip rojo">Falta</span></div>
+          <div class="grp"><span class="t">Empresa</span></div>
+          <div class="fila"><span class="ic falta"><svg><use href="#mas"/></svg></span><span class="tx"><b>RIF de la empresa</b><small>Toca para subirlo</small></span><span class="chip rojo">Falta</span></div>
+          <div class="fila"><span class="ic rev"><svg><use href="#reloj"/></svg></span><span class="tx"><b>Acta constitutiva</b><small>La IA la está leyendo</small></span><span class="chip azul">En revisión</span></div>
+          <div class="fila"><span class="ic mal"><svg><use href="#alerta"/></svg></span><span class="tx"><b>Acta de asamblea</b><small>Devuelta: falta la página de la junta</small></span><span class="chip rojo">Devuelta</span></div>
+        </div>
+      </div>
+      <div class="sec falta"><div class="sec-c"><span class="dot a"></span><b>Contratos</b><span class="chip ambar">Falta fecha</span><svg class="flecha"><use href="#abajo"/></svg></div></div>
+      <div class="sec listo"><div class="sec-c"><span class="dot v"></span><b>VGT</b><span class="chip verde">Al día</span><svg class="flecha"><use href="#abajo"/></svg></div></div>
+    </div>
+  </div>
+  <p class="nota" style="max-width:390px">En teléfono la fila entera es el botón (Subir, Ver o Editar según su estado): sin botones sueltos, todo cabe al ancho del pulgar. Las opciones del representante van en "Opciones".</p>
+</div>
+
+</div>
+</body>
+</html>
