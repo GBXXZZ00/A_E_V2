@@ -2706,3 +2706,31 @@ details.doc-sec{display:block;margin-top:12px;padding:0;font-size:14px;font-weig
 @media (max-width:720px){ .vs-tres{grid-template-columns:1fr} .vs-datos{grid-template-columns:1fr} }
 .casilla span.mini{display:inline-flex;align-items:center;height:36px}
 #hojaVgtSol .hoja-cuerpo > .enlace{align-self:flex-start}
+
+/* Lote 12/11 · Aliados (maquetas aliados y aliado-flujo) */
+.al-nuevo{width:100%;min-height:56px;border:0;border-radius:16px;background:var(--accent);color:#fff;font:inherit;font-weight:700;font-size:16px;cursor:pointer;margin:4px 0 12px;transition:transform .16s var(--ease-out)}
+.al-nuevo:active{transform:scale(.97)}
+.al-tc{display:flex;flex-direction:column;align-items:stretch;gap:5px;width:100%;text-align:left;font:inherit;color:var(--text);background:#fff;border:1px solid var(--line);border-radius:16px;padding:12px 14px;margin-bottom:10px;cursor:pointer;transition:transform .16s var(--ease-out)}
+.al-tc:active{transform:scale(.97)}
+.al-tc.am{background:#FFFBF2;border-color:#F1D9A6}
+.al-tc.ve{background:var(--verde-bg);border-color:#A9D9C2}
+.al-tc-k{display:flex;align-items:center;gap:8px}
+.al-tc-k b{font-size:14.5px;margin-right:auto}
+.al-tc small{color:var(--text2);font-size:12.5px}
+.al-tc .enlace{align-self:flex-start;pointer-events:none}
+.al-ini-pie{display:flex;flex-direction:column;align-items:center;gap:6px;margin-top:6px}
+.al-nada{text-align:center;padding:10px 0}
+.al-enl{display:flex;align-items:center;gap:14px;flex-wrap:wrap;justify-content:flex-end}
+.al-enl .enlace{white-space:nowrap}
+#chipsAl .cx-mas{display:inline-block}
+@media (min-width:900px){
+  main.al-m-aliado,main.al-m-canales{display:grid;grid-template-columns:200px minmax(0,1fr);column-gap:28px;align-items:start}
+  main.al-m-aliado > *,main.al-m-canales > *{grid-column:2}
+  main.al-m-aliado > #filtros,main.al-m-canales > #filtros{grid-column:1;grid-row:1 / span 8;flex-direction:column;align-items:stretch;gap:4px;position:sticky;top:76px;overflow:visible}
+  main.al-m-aliado > #filtros button,main.al-m-canales > #filtros button{justify-content:space-between;background:transparent;width:100%;border-color:transparent;border-radius:12px;min-height:42px}
+  main.al-m-aliado > #filtros button.on,main.al-m-canales > #filtros button.on{background:var(--surface-2);color:var(--accent);border-color:transparent}
+  main.al-m-aliado #lista{max-width:640px}
+  main.al-m-aliado .al-nuevo{max-width:640px}
+}
+main.al-en-inicio #ayuda{display:none}
+@media (max-width:899px){ main.al-m-aliado.al-en-inicio #filtros{display:none} }

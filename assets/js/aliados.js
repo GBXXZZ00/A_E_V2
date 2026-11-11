@@ -44,7 +44,7 @@
     aliado: [['inicio', 'Inicio'], ['solicitudes', 'Mis solicitudes'], ['avisos', 'Avisos'], ['referidos', 'Referidos']],
     // Lote 3: "Instalados por aliados" quedó dentro de "Por mes"; lo instalado sin consultar va solo en "Sin autorización"
     canales: [['inicio', 'Inicio'], ['solicitudes', 'Mis solicitudes'], ['referidos', 'Referidos'], ['registro', 'Registro'], ['mes', 'Por mes'], ['sinp', 'Sin autorización'], ['pagos', 'Pagos']],
-    admin: [['registro', 'Registro'], ['mes', 'Por mes'], ['sinp', 'Sin autorización'], ['pagos', 'Pagos'], ['aliados', 'Aliados y usuarios']],
+    admin: [['registro', 'Solicitudes'], ['mes', 'Por mes'], ['sinp', 'Sin autorización'], ['pagos', 'Pagos'], ['aliados', 'Aliados y usuarios']],
     equipo: [['registro', 'Registro'], ['mes', 'Por mes'], ['sinp', 'Sin autorización']]
   };
   const AYUDA = {
@@ -58,7 +58,7 @@
     viejas: 'Los casos de la app vieja (AppSheet), con su situación.', pagos: 'Solo PYME instaladas por el mismo aliado de la solicitud, y referidos instalados. Aparte del corte de los líderes.',
     instalados: 'Clientes que instalaron los aliados. Solo para ver.',
     mes: 'Todo lo que instalaron los aliados, por mes desde enero, con o sin permiso. Aparte de las comisiones de los líderes.',
-    registro: 'Todo lo de los aliados, agrupado por aliado y con lo más reciente arriba. Toca cualquier registro para ver todo.', aliados: 'Enlaza cada aliado con su usuario. Los usuarios se crean en Usuarios con el rol Aliado.'
+    registro: 'Lo que espera tu decisión va primero. Toca un registro para revisarlo.', aliados: 'Enlaza cada aliado con su usuario. Los usuarios se crean en Usuarios con el rol Aliado.'
   };
   const tabs = () => TABS[modo] || [];
 
@@ -95,11 +95,24 @@
     }
   }
   function pintarTabs(){
+    // Lote 12/11 (maqueta aliados, A): el administrador ve una bandeja; lo demás son enlaces arriba
+    if(modo === 'admin'){
+      $('filtros').innerHTML = '';
+      $('titulo').textContent = tab === 'registro' ? 'Aliados comerciales' : (tabs().find((x) => x[0] === tab) || ['', 'Aliados'])[1];
+      $('ayuda').textContent = AYUDA[tab] || '';
+      $('zonaRegistro').classList.toggle('hidden', tab !== 'registro');
+      $('accionCab').innerHTML = '<span class="al-enl">' + tabs().filter((x) => x[0] !== tab).map((x) => { const c = cuenta(x[0]);
+        return '<button type="button" class="enlace" data-tab="' + x[0] + '">' + esc(x[0] === 'registro' ? 'Volver a solicitudes' : x[1]) + (c ? ' (' + c + ')' : '') + '</button>'; }).join('') +
+        (tab === 'registro' && R && R.puedo && R.puedo.prueba ? '<button type="button" class="btn btn-chico btn-2" data-acc="nueva">Solicitud de prueba</button>' : '') + '</span>';
+      return;
+    }
     $('filtros').innerHTML = tabs().length > 1 ? tabs().map((x) => { const c = cuenta(x[0]);
       return '<button type="button" data-tab="' + x[0] + '" class="' + (x[0] === tab ? 'on' : '') + '" aria-pressed="' + (x[0] === tab) + '">' + esc(x[1]) + (c !== null ? ' <em>' + c + '</em>' : '') + '</button>'; }).join('') : '';
+    document.querySelector('main.pagina').classList.toggle('al-en-inicio', tab === 'inicio');   // maqueta aliado-flujo: el inicio va sin pestañas ni texto de ayuda
+    if(holaTx && (modo === 'aliado' || modo === 'canales')) $('titulo').textContent = tab === 'inicio' ? holaTx : (tabs().find((x) => x[0] === tab) || ['', holaTx])[1];
     $('ayuda').textContent = (AYUDA[tab] || '') + (tab === 'registro' && modo !== 'admin' ? ' Solo para ver: las decisiones las toma el administrador.' : '');
     $('zonaRegistro').classList.toggle('hidden', tab !== 'registro');
-    $('accionCab').innerHTML = (modo === 'aliado' || modo === 'canales') && tab !== 'pagos' && tab !== 'instalados' && tab !== 'mes' && tab !== 'sinp' ? '<button type="button" class="btn btn-chico solo-pc" data-acc="nueva">Nueva solicitud</button>'
+    $('accionCab').innerHTML = (modo === 'aliado' || modo === 'canales') && tab !== 'inicio' && tab !== 'pagos' && tab !== 'instalados' && tab !== 'mes' && tab !== 'sinp' ? '<button type="button" class="btn btn-chico solo-pc" data-acc="nueva">+ Nuevo cliente</button>'
       : modo === 'admin' && tab === 'registro' && R && R.puedo && R.puedo.prueba ? '<button type="button" class="btn btn-chico btn-2" data-acc="nueva">Solicitud de prueba</button>' : '';
   }
   const clave = () => 'aliados:' + modo;
@@ -178,14 +191,17 @@
     const s = sols(); let h = ''; let n = 0;
     const de = (f) => s.filter(f);
     if(tab === 'inicio'){
-      const toca = de((x) => ['recaudos', 'lista', 'listaobs', 'curso', 'borrador'].indexOf(x.etiqueta) >= 0);
-      h = '<div class="al-grandes"><button type="button" class="al-grande prin" data-acc="nueva"><b>Nueva solicitud</b><small>Sube los documentos y te decimos si puedes instalar</small></button>' +
-        '<button type="button" class="al-grande" data-acc="referir"><b>Referir cliente</b><small>Pásalo a la oficina y cobra si se instala</small></button></div>' +
-        // Lote 10/11 E13: tarjetas que llevan a Mis solicitudes con su filtro
-        '<div class="al-tarjetas">' + [['listas', 'Listas para instalar', de((x) => x.etiqueta === 'lista' || x.etiqueta === 'listaobs').length, 'verde'], ['sin', 'Sin enviar', de((x) => x.etiqueta === 'borrador').length, 'ambar'], ['inst', 'Instaladas del mes', de(delMes).length, '']]
-          .map((c) => '<button type="button" class="al-tj ' + c[3] + '" data-ircard="' + c[0] + '"><b>' + c[2] + '</b><span>' + esc(c[1]) + '</span></button>').join('') + '</div>' +
-        '<div class="h2">Lo que te toca</div>' + paginar(toca, filaSol, ['Nada pendiente', 'Cuando una solicitud necesite algo de ti, aparece aquí.']);
-      n = toca.length;
+      // Lote 12/11 (maqueta aliado-flujo, 1): una sola acción y debajo solo lo que necesita de él
+      const sig = de((x) => x.etiqueta === 'borrador' || x.etiqueta === 'recaudos'); const lst = de((x) => x.etiqueta === 'lista' || x.etiqueta === 'listaobs');
+      const rev = de((x) => ['analizando', 'revision', 'excepcion'].indexOf(x.etiqueta) >= 0);
+      const tarjeta = (x, cls, t, sub, acc) => '<button type="button" class="al-tc ' + cls + '" data-sol="' + esc(x.id) + '"><span class="al-tc-k"><b>' + esc(t) + '</b>' + chip(x.etiqueta === 'borrador' ? 'borrador' : x.etiqueta).replace('chip punto', 'chip') + '</span><small>' + esc(sub) + '</small>' + (acc ? '<span class="enlace">' + esc(acc) + '</span>' : '') + '</button>';
+      h = '<button type="button" class="al-nuevo" data-acc="nueva">+ Nuevo cliente</button>' +
+        sig.map((x) => tarjeta(x, 'am', x.etiqueta === 'borrador' ? 'Sigue donde quedaste' : 'Falta corregir algo', (x.cliente || 'RIF por leer') + (x.faltan ? ' · ' + (x.faltan === 1 ? 'falta 1' : 'faltan ' + x.faltan) : ''), 'Continuar')).join('') +
+        lst.map((x) => tarjeta(x, 've', x.cliente || 'Cliente', 'Ya puedes instalar · marca la fecha', 'Marcar instalación')).join('') +
+        rev.map((x) => tarjeta(x, '', x.cliente || 'Cliente', x.etiqueta === 'analizando' ? 'La revisión automática está en curso · te avisamos' : 'El administrador lo está revisando · te avisamos', '')).join('') +
+        (sig.length + lst.length + rev.length ? '' : '<p class="nota al-nada">No tienes nada pendiente. Cuando registres un cliente, aquí ves en qué va.</p>') +
+        '<div class="al-ini-pie"><button type="button" class="enlace" data-tab="solicitudes">Ver todas mis solicitudes (' + s.length + ')</button><button type="button" class="enlace" data-acc="referir">Referir un cliente a la oficina</button></div>';
+      n = sig.length + lst.length + rev.length;
     } else if(tab === 'solicitudes'){
       // Lote 10/11 E: chips Todas, Sin enviar, Listas, Revisión
       const CH = [['todas', 'Todas', () => true], ['sin', 'Sin enviar', (x) => x.etiqueta === 'borrador'], ['listas', 'Listas', (x) => x.etiqueta === 'lista' || x.etiqueta === 'listaobs'], ['rev', 'Revisión', (x) => ['analizando', 'revision', 'excepcion', 'recaudos'].indexOf(x.etiqueta) >= 0], ['inst', 'Instaladas del mes', delMes]];
@@ -220,7 +236,7 @@
     $('lista').innerHTML = h;
   }
   // ---------- Registro: todo agrupado por aliado (C1 a C6) ----------
-  let R = null; let chipAl = 'todo'; let buscaAl = ''; const abiertosAl = {}; const masAl = {};
+  let R = null; let chipAl = 'todo'; let chipIni = false; let holaTx = ''; let buscaAl = ''; const abiertosAl = {}; const masAl = {};
   async function cargarRegistro(mio){
     if(!R){ const g = cache.leer('aliados:registro:' + modo); if(g){ R = g; pintarRegistro(); } else { $('lista').innerHTML = esqueleto(6); $('cuentaLista').textContent = 'Cargando…'; } }
     try { const d = await rpc('aliados_registro', {}); if(mio !== pedido) return; R = d; cache.guardar('aliados:registro:' + modo, d); pintarRegistro(); }
@@ -238,7 +254,8 @@
   const paraTi = (i) => !i.x.revisado && ((i.t === 'sol' && (i.k === 'excepcion' || i.k === 'revision')) || (i.t === 'ref' && i.x.etiqueta === 'referido'));
   const CHIPS_AL = [
     ['todo', 'Todo', () => true], ['para_ti', 'Esperan tu decisión', paraTi], ['mio', 'Lo mío', (i) => i.tu],
-    ['sin', 'Sin enviar', (i) => i.t === 'sol' && i.k === 'borrador'],   // Lote 10/11 E12: quién se quedó a medias
+    ['sin', 'Sin enviar', (i) => i.t === 'sol' && i.k === 'borrador'],
+    ['encurso', 'En curso', (i) => i.t === 'sol' && ['analizando', 'recaudos', 'lista', 'listaobs', 'curso'].indexOf(i.k) >= 0],   // Lote 10/11 E12: quién se quedó a medias
     ['analizando', 'En revisión', (i) => i.t === 'sol' && i.k === 'analizando'], ['recaudos', 'Recaudos incompletos', (i) => i.t === 'sol' && i.k === 'recaudos'],
     ['decidir', 'Excepción o revisión', (i) => i.t === 'sol' && (i.k === 'excepcion' || i.k === 'revision')], ['listas', 'Listas para instalar', (i) => i.t === 'sol' && (i.k === 'lista' || i.k === 'listaobs')],
     ['curso', 'Instalación en curso', (i) => i.t === 'sol' && i.k === 'curso'], ['instaladas', 'Instaladas', (i) => i.t === 'sol' && i.k === 'instalada'],
@@ -273,12 +290,17 @@
     const todos = itemsAl(); const P = R.puedo || {};
     const chips = CHIPS_AL.filter((c) => (c[0] !== 'para_ti' || P.decidir) && (c[0] !== 'mio' || modo !== 'admin'));
     if(!chips.some((c) => c[0] === chipAl)) chipAl = 'todo';
+    if(modo === 'admin' && !chipIni){ chipIni = true; if(P.decidir && todos.filter(paraTi).length) chipAl = 'para_ti'; }
     const pend = todos.filter(paraTi).length;
     $('avisoAl').innerHTML = P.decidir && pend && chipAl !== 'para_ti' ? '<button type="button" class="franja ambar" data-chipal="para_ti">' + ic('alerta') + '<span><b>' + plural(pend, 'espera tu decisión', 'esperan tu decisión') + '</b>Excepciones, revisiones y referidos. Si ya lo resolviste por fuera, márcalo Revisado.</span>' + ic('derecha') + '</button>' : '';
     $('vistaAl').innerHTML = '<div class="tres dos" role="radiogroup" aria-label="Cómo ver el registro">' + [['general', 'Todo junto'], ['aliado', 'Por aliado']].map((x) =>
       '<button type="button" role="radio" data-vistaal="' + x[0] + '" aria-checked="' + (verAl === x[0]) + '" class="' + (verAl === x[0] ? 'on' : '') + '">' + x[1] + '</button>').join('') + '</div>';
-    $('chipsAl').innerHTML = chips.map((c) => { const n = todos.filter(c[2]).length; if(!n && c[0] !== 'todo' && c[0] !== chipAl) return '';
-      return '<button type="button" data-chipal="' + c[0] + '" class="' + (c[0] === chipAl ? 'on' : '') + '" aria-pressed="' + (c[0] === chipAl) + '">' + esc(c[1]) + ' <em>' + n + '</em></button>'; }).join('');
+    // Lote 12/11 (maqueta aliados, A): Esperan tu decisión, En curso, Sin enviar y Todas; el resto en "Más filtros"
+    const PRIN = modo === 'admin' ? ['para_ti', 'encurso', 'sin', 'todo'] : chips.map((c) => c[0]).filter((k) => k === 'todo' || k === chipAl || todos.filter(chips.find((c) => c[0] === k)[2]).length);
+    const btnC = (c) => { const n = todos.filter(c[2]).length; return '<button type="button" data-chipal="' + c[0] + '" class="' + (c[0] === chipAl ? 'on' : '') + '" aria-pressed="' + (c[0] === chipAl) + '">' + esc(c[0] === 'todo' ? 'Todas' : c[1]) + ' <em>' + n + '</em></button>'; };
+    const otrosC = chips.filter((c) => PRIN.indexOf(c[0]) < 0 && (todos.filter(c[2]).length || c[0] === chipAl));
+    $('chipsAl').innerHTML = PRIN.map((k) => chips.find((c) => c[0] === k)).filter(Boolean).map(btnC).join('') + (otrosC.some((c) => c[0] === chipAl) ? btnC(chips.find((c) => c[0] === chipAl)) : '') +
+      (otrosC.length ? '<details class="cx-mas"><summary>Más filtros</summary><div class="cx-menu">' + otrosC.filter((c) => c[0] !== chipAl).map(btnC).join('') + '</div></details>' : '');
     const f = chips.find((c) => c[0] === chipAl)[2]; const b = window.Comun.normalizeStr(buscaAl); const dg = buscaAl.replace(/\D/g, '');
     const lista = todos.filter(f).filter((i) => !b || window.Comun.normalizeStr(i.cliente).indexOf(b) >= 0 || window.Comun.normalizeStr(i.aliado).indexOf(b) >= 0 || (dg.length >= 4 && String(i.rif).replace(/\D/g, '').indexOf(dg) >= 0));
     if(verAl === 'general') return pintarGeneral(lista, todos);
@@ -478,7 +500,7 @@
   }
   async function abrirNueva(){
     N = { paso: 1, id: null, tipo: 'empresa', rif: null, cliente: null, nombre: '', estado: null, msg: '', cas: {}, reps: 1, asambleas: 0, c: { correo: '', tel: '', correoEmp: '' }, err: {} };
-    const h = hoja('hojaNueva'); h.innerHTML = cab('hojaNueva', 'Nueva solicitud', 'Sube los documentos del cliente') + '<div class="hoja-cuerpo" id="cNueva">' + esqueleto(3) + '</div><div class="hoja-pie" id="pNueva"></div>';
+    const h = hoja('hojaNueva'); h.innerHTML = cab('hojaNueva', 'Nuevo cliente', 'Primero vemos si puedes venderle') + '<div class="hoja-cuerpo" id="cNueva">' + esqueleto(3) + '</div><div class="hoja-pie" id="pNueva"></div>';
     abrirHoja('hojaNueva');
     try { const r = await rpc('solicitud_crear', { p_tipo: 'empresa' }); N.id = r.id; N.codigo = r.codigo; pintarNueva(); }
     catch (e) { $('cNueva').innerHTML = errorCaja('No se pudo empezar la solicitud', e.message); }
@@ -502,7 +524,7 @@
     return '<span class="chip punto azul">Leyendo</span>';
   }
   // Lote 10/11 E1-E4: formulario por pasos (RIF y contacto → Documentos → Contacto → Enviar) con la barra "Te falta" fija abajo
-  const PASOS_N = ['Empresa', 'Documentos', 'Contacto', 'Enviar'];
+  const PASOS_N = ['¿Está disponible?', 'Completa el expediente'];   // Lote 12/11 (maqueta aliado-flujo): dos momentos
   const camposN = () => N.tipo === 'empresa' ? [['tel', 'Teléfono del representante', 'tel', ''], ['correo', 'Correo del representante', 'email', ''], ['correoEmp', 'Correo de la empresa', 'email', 'Si no tiene, déjalo vacío.']] : [['tel', 'Teléfono', 'tel', ''], ['correo', 'Correo', 'email', '']];
   const okMail = (v) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(v || '').trim()); const okTel = (v) => String(v || '').replace(/\D/g, '').length >= 10;
   function faltaContacto(){
@@ -513,9 +535,7 @@
   const docsN = () => casillasN().filter((c) => c[0] !== 'acta_asamblea');
   const faltaDocs = () => docsN().slice(1).filter((c) => !(N.cas[c[0] + ':' + c[1]] && N.cas[c[0] + ':' + c[1]].estado === 'listo')).map((c) => c[2].replace(/^./, (x) => x.toLowerCase()));
   function faltanPaso(p){
-    if(p === 1) return (N.estado === 'libre' ? [] : [N.tipo === 'empresa' ? 'RIF de la empresa' : 'RIF personal']).concat(faltaContacto());
-    if(p === 2) return faltaDocs();
-    if(p === 3) return faltaContacto();
+    if(p === 1) return N.estado === 'libre' ? [] : [N.tipo === 'empresa' ? 'RIF de la empresa' : 'RIF personal'];
     return faltaDocs().concat(faltaContacto());
   }
   function faltanN(){ return faltanPaso(4).concat(N.estado === 'libre' ? [] : ['RIF']); }
@@ -530,24 +550,27 @@
   }
   function pintarNueva(){
     if(!N || !$('cNueva')) return;
-    const libre = N.estado === 'libre'; const l = casillasN(); const p = N.paso || 1;
-    const barra = '<div class="al-prog" aria-hidden="true">' + PASOS_N.map((x, i) => '<i class="' + (i < p ? 'on' : '') + '"></i>').join('') + '</div><p class="al-paso-n">Paso ' + p + ' de 4 · ' + PASOS_N[p - 1] + '</p>';
+    const libre = N.estado === 'libre'; const l = casillasN(); const p = Math.min(N.paso || 1, 2); N.paso = p;
+    const barra = '<div class="al-prog" aria-hidden="true">' + PASOS_N.map((x, i) => '<i class="' + (i < p ? 'on' : '') + '"></i>').join('') + '</div><p class="al-paso-n">Paso ' + p + ' de 2 · ' + PASOS_N[p - 1] + '</p>';
     const campos = '<div class="al-contacto">' + camposN().map((c) => '<label class="rotulo arriba" for="n_' + c[0] + '">' + esc(c[1]) + '</label><input class="campo" id="n_' + c[0] + '" data-campon="' + c[0] + '" type="' + c[2] + '" inputmode="' + (c[2] === 'tel' ? 'tel' : 'email') + '" autocomplete="off" maxlength="120" value="' + esc(N.c[c[0]]) + '"' + (N.err[c[0]] ? ' aria-invalid="true"' : '') + ' aria-describedby="e_' + c[0] + '">' + (c[3] ? '<small class="ayuda-campo">' + esc(c[3]) + '</small>' : '') + '<div class="error" id="e_' + c[0] + '" role="alert">' + esc(N.err[c[0]] || '') + '</div>').join('') + '</div>';
     let h = barra;
     if(p === 1){
-      h += '<h2 class="al-tit">Nueva solicitud</h2><span class="solo-lector" id="rTipoN">El cliente es</span><div class="al-seg" role="radiogroup" aria-labelledby="rTipoN">' +
+      h += '<h2 class="al-tit">Nuevo cliente</h2><p class="nota" style="margin-top:0">Primero vemos si puedes venderle.</p><span class="solo-lector" id="rTipoN">El cliente es</span><div class="al-seg" role="radiogroup" aria-labelledby="rTipoN">' +
         [['empresa', 'Empresa'], ['natural', 'Persona natural']].map((x) => '<button type="button" role="radio" aria-checked="' + (N.tipo === x[0]) + '" class="' + (N.tipo === x[0] ? 'on' : '') + '" data-tipon="' + x[0] + '"' + (N.estado && N.estado !== 'ilegible' && N.estado !== 'no_es_rif' && N.estado !== 'error' ? ' disabled' : '') + '>' + x[1] + '</button>').join('') + '</div>' +
         bandaRif() + '<div class="al-casillas">' + filaCasN(l[0], 0) + '</div>' +
-        (N.estado === 'cartera' || N.estado === 'otro' || N.estado === 'repetida' ? '' : (N.estado === 'leyendo' ? '<p class="nota">Mientras lo leemos, llena el contacto.</p>' : '') + campos);
-    } else if(p === 2){
+        (libre ? '<div class="al-banda verde" role="status"><b>' + esc(N.nombre || 'El cliente') + ' está disponible.</b><p>Puedes venderle. Sigue con los documentos.</p></div>' : '');
+    } else {
       h += (libre ? '<div class="al-banda verde" role="status"><b>' + esc(N.nombre || 'El cliente') + ' está disponible.</b></div>' : '') +
         '<div class="al-soltar" id="alSoltar"><b>Arrastra aquí todos los documentos juntos</b><small>La app pone cada uno en su casilla. También puedes soltar uno sobre su casilla.</small></div>' +
         '<div class="al-casillas">' + l.map((c, i) => filaCasN(c, i)).join('') + '</div>' +
         (N.tipo === 'empresa' ? '<div class="al-acc"><button type="button" class="btn btn-chico btn-2" data-acc="masAsamblea"' + (N.asambleas >= 4 ? ' disabled' : '') + '>Agregar acta de asamblea</button><button type="button" class="btn btn-chico btn-2" data-acc="masRep"' + (N.reps >= 4 ? ' disabled' : '') + '>Agregar representante</button></div>' +
-          '<p class="nota">Fotos completas y derechas. Que se lean fechas y nombres. El acta de asamblea solo si cambió la junta, la dirección o el nombre.</p>' : '');
-    } else if(p === 3){
+          '<p class="nota">Fotos completas y derechas. Que se lean fechas y nombres. El acta de asamblea solo si cambió la junta, la dirección o el nombre.</p>' : '') +
+        '<div class="sec">Contacto para la firma</div>' + campos;
+    }
+    if(false){
+    } else if(false){
       h += '<h2 class="al-tit">Contacto</h2><p class="nota">A estos datos le escribimos al cliente para la firma.</p>' + campos;
-    } else {
+    } else if(false){
       const ok = (b) => '<span class="al-ok' + (b ? '' : ' no') + '" aria-hidden="true">' + (b ? ic('check') : '!') + '</span>';
       const nd = docsN().length; const listos = docsN().filter((c) => N.cas[c[0] + ':' + c[1]] && N.cas[c[0] + ':' + c[1]].estado === 'listo').length;
       const leidos = docsN().filter((c) => (N.cas[c[0] + ':' + c[1]] || {}).lectura === 'ok').length;
@@ -563,18 +586,19 @@
   function pintarPieNueva(){
     const p = $('pNueva'); if(!p || !N) return;
     if(N.estado === 'cartera' || N.estado === 'otro' || N.estado === 'repetida'){ p.className = 'hoja-pie col'; p.innerHTML = '<button type="button" class="btn btn-2" data-cierra="1">Cerrar</button>'; return; }
-    const paso = N.paso || 1; const f = faltanPaso(paso);
+    const paso = Math.min(N.paso || 1, 2); const f = faltanPaso(paso);
     const subiendo = Object.keys(N.cas).some((k) => N.cas[k].estado === 'subiendo');
     p.className = 'hoja-pie col al-pie';
-    p.innerHTML = (f.length ? '<p class="al-falta"><b>Te falta:</b> ' + esc(f.slice(0, 3).join(', ') + (f.length > 3 ? ' y ' + (f.length - 3) + ' más' : '')) + '</p>' : '<p class="al-falta ok">' + (paso === 4 ? 'Todo completo' : 'Listo este paso') + '</p>') +
+    p.innerHTML = (f.length ? '<p class="al-falta"><b>Te falta:</b> ' + esc(f.slice(0, 3).join(', ') + (f.length > 3 ? ' y ' + (f.length - 3) + ' más' : '')) + '</p>' : '<p class="al-falta ok">' + (paso === 2 ? 'Todo completo' : 'Disponible') + '</p>') +
       '<div class="al-pie-b">' + (paso > 1 ? '<button type="button" class="btn btn-2" data-acc="atrasN">Atrás</button>' : '') +
-      (paso < 4 ? '<button type="button" class="btn' + (f.length || subiendo ? ' btn-2 al-gris-b' : '') + '" data-acc="sigN">Siguiente</button>'
+      (paso < 2 ? '<button type="button" class="btn' + (f.length || subiendo ? ' btn-2 al-gris-b' : '') + '" data-acc="sigN">Seguir</button>'
         : '<button type="button" class="btn" data-acc="enviarN"' + (faltanN().length || subiendo || N.enviando ? ' disabled' : '') + '>' + (N.enviando ? 'Enviando…' : 'Enviar solicitud') + '</button>') + '</div>';
   }
   // Siguiente: valida el paso (errores debajo del campo) y avanza
   function siguienteN(){
     const p = N.paso || 1;
-    if(p === 1 || p === 3){
+    if(p === 1 && N.estado !== 'libre'){ pintarNueva(); toast('Primero sube el ' + (N.tipo === 'empresa' ? 'RIF de la empresa' : 'RIF personal'), 'error'); return; }
+    if(p === 3){
       N.err = {};
       if(!okTel(N.c.tel)) N.err.tel = 'Escribe el teléfono con su código, por ejemplo 0414 1234567.';
       if(!okMail(N.c.correo)) N.err.correo = 'Escribe un correo válido.';
@@ -583,7 +607,7 @@
       if(Object.keys(N.err).length){ pintarNueva(); const k = Object.keys(N.err)[0]; const el = $('n_' + k); if(el) el.focus(); return; }
     }
     if(p === 2 && faltaDocs().length){ toast('Te falta: ' + faltaDocs().join(', '), 'error'); return; }
-    N.paso = Math.min(4, p + 1); pintarNueva(); const c = $('cNueva'); if(c) c.scrollTop = 0;
+    N.paso = Math.min(2, p + 1); pintarNueva(); const c = $('cNueva'); if(c) c.scrollTop = 0;
   }
   // Varios archivos a la vez: cada uno va a su casilla por el nombre; si no se reconoce, a la primera que falte
   function casillaPorNombre(nombre, libres){
@@ -994,7 +1018,9 @@
     yo = p;
     modo = yo.rol === 'admin' ? 'admin' : yo.rol === 'aliado' ? 'aliado' : yo.rol === 'analista' && yo.canales ? 'canales' : 'equipo';
     if(window.Ficha && modo === 'admin'){ window.Ficha.montar(); }
-    $('titulo').textContent = modo === 'equipo' || modo === 'admin' ? 'Aliados comerciales' : 'Hola, ' + (window.Comun.primerNombre(yo.nombre) || yo.nombre);
+    document.querySelector('main.pagina').classList.add('al-m-' + modo);   // Lote 12/11: el aliado en PC lleva el menú a la izquierda
+    holaTx = 'Hola, ' + (window.Comun.primerNombre(yo.nombre) || yo.nombre);
+    $('titulo').textContent = modo === 'equipo' || modo === 'admin' ? 'Aliados comerciales' : holaTx;
     leerUrl(); pintarTabs(); cargar(); cargarAjustes();
     if(window.Resumen && (modo === 'admin' || modo === 'equipo')) window.Resumen.enModulo({ modulo: 'aliados', yo: p });   // lote 27/10
     const s = Number(new URLSearchParams(location.search).get('s')) || 0;
