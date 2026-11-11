@@ -114,6 +114,31 @@ label{display:block;font-size:13px;font-weight:600;color:var(--text);margin-bott
 .vacia{display:flex;align-items:center;gap:10px;min-height:54px;padding:0 14px 0 16px}
 .vacia small{color:var(--text2);font-size:13px;margin-left:auto}
 .tel{display:flex;flex-direction:column;gap:14px}
+/* revisar un documento */
+.hv{width:940px;background:#fff;border-radius:24px 0 0 24px;box-shadow:0 18px 50px rgba(15,23,42,.14);display:flex;flex-direction:column}
+.hv .top{display:flex;align-items:flex-start;gap:10px;padding:22px 24px 14px;border-bottom:1px solid var(--line)}
+.hv h3{font-size:19px;font-weight:700} .hv .sub{font-size:13px;color:var(--text2);margin-top:3px}
+.hv .cols{display:grid;grid-template-columns:1.25fr 1fr;gap:20px;padding:18px 24px}
+.visor{background:#F1F2F4;border-radius:16px;height:430px;display:grid;place-items:center;color:var(--text2);font-size:13px;position:relative}
+.visor .pag{position:absolute;left:12px;bottom:12px;display:flex;gap:6px}
+.visor .pag span{height:30px;padding:0 12px;border-radius:999px;background:#fff;display:grid;place-items:center;font-size:12.5px;font-weight:600}
+.visor .pag span.on{background:var(--text);color:#fff}
+.dt{display:flex;flex-direction:column}
+.dt .r{display:flex;gap:12px;padding:10px 0;border-top:1px solid var(--line);font-size:13.5px}
+.dt .r:first-child{border-top:0}
+.dt .r span:first-child{width:110px;flex:none;color:var(--text2)}
+.ia{border-radius:14px;padding:12px 14px;background:var(--azul-bg);color:#17327F;font-size:13px;line-height:1.4;margin:6px 0 10px}
+.ia b{display:block;font-size:13.5px;margin-bottom:2px}
+.hv .pie{display:flex;gap:10px;justify-content:flex-end;padding:14px 24px;border-top:1px solid var(--line)}
+.btn.peligro{border-color:#E8B4AE;color:var(--rojo)}
+.modos{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.modo{border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.modo.on{border:2px solid var(--accent);background:#F7F9FE}
+.modo b{display:block;font-size:14.5px} .modo small{color:var(--text2);font-size:12.5px}
+.radio{display:flex;align-items:center;gap:10px;height:46px;padding:0 14px;border:1px solid var(--line);border-radius:12px;font-size:14.5px}
+.radio i{width:18px;height:18px;border-radius:50%;border:2px solid #C9CED6;flex:none}
+.radio.on{border-color:var(--accent);background:#F7F9FE} .radio.on i{border:5px solid var(--accent)}
+
 </style>
 </head>
 <body>
@@ -277,6 +302,55 @@ label{display:block;font-size:13px;font-weight:600;color:var(--text);margin-bott
     </div>
   </div>
   <p class="nota" style="max-width:390px">En teléfono la fila entera es el botón (Subir, Ver o Editar según su estado): sin botones sueltos, todo cabe al ancho del pulgar. Las opciones del representante van en "Opciones".</p>
+</div>
+
+<!-- F · revisar un documento (administrador o Legal) -->
+<div class="col" id="F">
+  <div class="et">F · PC · Administrador o Legal: así se aprueba o devuelve</div>
+  <div class="hoja" style="width:600px">
+    <div class="cuerpo" style="padding-top:18px">
+      <div class="grp" style="margin-top:0"><span class="t">Empresa · como la ve quien revisa</span></div>
+      <div class="fila"><span class="ic rev"><svg><use href="#reloj"/></svg></span><span class="tx"><b>RIF de la empresa</b><small>Subido hoy 10:12 por Ana · la IA propone aprobar</small></span><span class="chip azul">Por revisar</span><span class="btn pri">Revisar</span></div>
+      <div class="fila"><span class="ic rev"><svg><use href="#reloj"/></svg></span><span class="tx"><b>Acta de asamblea</b><small>Subida hoy 10:12 · la IA propone devolver: falta la junta</small></span><span class="chip azul">Por revisar</span><span class="btn pri">Revisar</span></div>
+      <div class="fila"><span class="ic ok"><svg><use href="#ok"/></svg></span><span class="tx"><b>Acta constitutiva</b><small>Aprobada por Reina el 05/11</small></span><span class="chip verde">Bien</span><span class="btn">Ver</span></div>
+      <p class="nota" style="margin-top:8px">Para quien revisa, lo subido sin revisar dice "Por revisar" y el botón es "Revisar". Los demás ven "En revisión" y el botón "Ver". En la cabecera del Expediente sale "3 por revisar" y un botón "Revisar todo, uno tras otro".</p>
+    </div>
+  </div>
+  <div class="et" style="margin-top:14px">Al tocar Revisar: la hoja del documento (se apila encima)</div>
+  <div class="hv">
+    <div class="top"><div><h3>RIF de la empresa</h3><p class="sub">Redes Ejemplo, C.A. · 1 de 3 por revisar</p></div><span class="cerrar"><svg width="22" height="22"><use href="#x"/></svg></span></div>
+    <div class="cols">
+      <div class="visor">Vista del archivo (PDF o foto)<div class="pag"><span class="on">Archivo 1</span><span>Archivo 2</span></div></div>
+      <div class="dt">
+        <div class="ia"><b>La IA propone: aprobar</b>RIF digital, sin vencimiento, a nombre de Redes Ejemplo, C.A. Coincide con la razón social del acta.</div>
+        <div class="r"><span>Estado</span><span><span class="chip azul">Por revisar</span></span></div>
+        <div class="r"><span>Subido</span><span>Hoy 10:12 por Ana Pérez</span></div>
+        <div class="r"><span>Archivo</span><span>rif-redes-ejemplo.pdf</span></div>
+        <div style="margin-top:10px"><label>Vence (opcional)</label><div class="campo vacio">dd/mm/aaaa</div><p class="nota" style="margin-top:5px">Sirve para avisar antes de que se venza.</p></div>
+        <span class="btn" style="margin-top:12px;align-self:flex-start">Reemplazar archivo</span>
+      </div>
+    </div>
+    <div class="pie"><span class="btn g peligro">Devolver</span><span class="btn g pri">Aprobar y seguir</span></div>
+  </div>
+  <p class="nota">Aprobar queda en la bitácora y en el hilo con tu nombre, y pasa al siguiente por revisar. Si apruebas algo que la IA propuso devolver, te pide el motivo (excepción).</p>
+</div>
+
+<!-- G · devolver -->
+<div class="col" id="G">
+  <div class="et">G · PC · Al tocar Devolver</div>
+  <div class="hc" style="width:520px">
+    <div class="top"><div><h3>Acta de asamblea</h3><p class="sub">Redes Ejemplo, C.A.</p></div><span class="cerrar"><svg width="22" height="22"><use href="#x"/></svg></span></div>
+    <div class="modos"><div class="modo on"><b>Devolver este documento</b><small>El que subieron está malo</small></div><div class="modo"><b>Pedir otro documento</b><small>Este está bien, pero falta algo</small></div></div>
+    <h3 style="font-size:16px;margin-top:4px">¿Por qué lo devuelves?</h3>
+    <div class="radio"><i></i>Está vencido</div>
+    <div class="radio on"><i></i>Ilegible o incompleto</div>
+    <div class="radio"><i></i>No corresponde a este cliente</div>
+    <div class="radio"><i></i>Falta firma o sello</div>
+    <div class="radio"><i></i>Otro motivo</div>
+    <div><label>Nota para el líder</label><div class="campo" style="height:70px;align-items:flex-start;padding-top:12px">Falta la página donde sale la junta directiva</div></div>
+    <div class="acciones"><span class="btn g">Cancelar</span><span class="btn g pri" style="background:var(--rojo);border-color:var(--rojo)">Devolver</span></div>
+  </div>
+  <p class="nota" style="max-width:520px">El líder recibe el aviso con el motivo y la casilla queda "Devuelta" con "Subir otra". En teléfono las dos hojas suben desde abajo; el archivo va arriba y los botones fijos abajo.</p>
 </div>
 
 </div>

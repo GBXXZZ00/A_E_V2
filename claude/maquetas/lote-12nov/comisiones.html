@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Comisiones</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="base.css">
+<style>
+/* Maqueta 12/11 · Comisiones (lista agrupada, lista por fecha, hoja, teléfono). Datos inventados. */
+.pag{width:1366px;background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 10px 40px rgba(15,23,42,.08)}
+.barra{display:flex;align-items:center;gap:22px;height:68px;padding:0 40px;border-bottom:1px solid var(--line)}
+.logo{font-weight:800;letter-spacing:.18em;font-size:15px}
+.logo small{font-weight:500;letter-spacing:0;color:var(--text2);font-size:14px;margin-left:10px;padding-left:12px;border-left:1px solid var(--line)}
+.barra nav{display:flex;gap:6px;margin-left:14px}
+.barra nav span{height:38px;padding:0 12px;border-radius:999px;display:flex;align-items:center;gap:6px;font-weight:600;font-size:14.5px;color:var(--text2)}
+.barra nav span.on{background:var(--acc-bg);color:var(--accent)}
+.barra nav i{font-style:normal;font-size:11px;background:var(--surface-2);border-radius:999px;padding:1px 6px;color:var(--text)}
+.barra .av{margin-left:auto;width:40px;height:40px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center;font-weight:700}
+.main{padding:26px 40px 40px;display:flex;flex-direction:column;gap:14px}
+.tit{display:flex;align-items:center;gap:14px}
+.tit h1{font-size:30px;font-weight:800;letter-spacing:-.02em}
+.seg2{display:flex;gap:4px;padding:4px;border-radius:999px;background:var(--surface-2)}
+.seg2 span{height:34px;padding:0 16px;border-radius:999px;display:grid;place-items:center;font-weight:600;font-size:14px;color:var(--text2)}
+.seg2 span.on{background:var(--text);color:#fff}
+.corte{margin-left:auto;height:40px;padding:0 16px;border-radius:999px;background:var(--surface-2);display:flex;align-items:center;gap:8px;font-weight:600;font-size:14px}
+.lead{color:var(--text2);font-size:14px;margin-top:-6px}
+.kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.kpi{border:1px solid var(--line);border-radius:18px;padding:14px 18px;display:flex;gap:14px;align-items:center}
+.kpi.sel{border:2px solid var(--accent)}
+.kpi.am{background:#FDF6E8;border-color:#F1D9A6}
+.kpi b.n{font-size:28px;font-weight:800}
+.kpi b.t{display:block;font-size:14.5px} .kpi small{color:var(--text2);font-size:12.5px}
+.kpi2{grid-row:auto;flex-direction:column;align-items:flex-start;gap:2px}
+.kpi2 big{font-size:22px;font-weight:800;display:block}
+.kpi2 .lnk{margin-top:4px}
+.azulbox{background:var(--accent);border-color:var(--accent);color:#fff}
+.azulbox small{color:#D8DEF5}
+.azulbox .pill{margin-top:8px;background:#fff;color:var(--accent);border-radius:999px;padding:3px 10px;font-weight:700;font-size:12px}
+.panel{border:1px solid var(--line);border-radius:18px;padding:12px 16px;display:flex;flex-direction:column;gap:10px}
+.prow{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.prow .lb{width:76px;font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--text2)}
+.f{height:36px;padding:0 14px;border-radius:999px;border:1px solid var(--line);display:inline-flex;align-items:center;gap:6px;font-weight:600;font-size:13.5px;color:var(--text);background:#fff;white-space:nowrap}
+.f i{font-style:normal;color:var(--text3);font-weight:600}
+.f.on{background:var(--text);border-color:var(--text);color:#fff} .f.on i{color:#C8CCD2}
+.f.dd::after{content:"⌄";margin-left:2px;color:var(--text2)}
+.vsep{width:1px;height:24px;background:var(--line);margin:0 6px}
+.busca{margin-left:auto;height:38px;width:300px;border:1px solid #C9CED6;border-radius:999px;display:flex;align-items:center;padding:0 14px;color:var(--text3);font-size:14px}
+.tabla{border:1px solid var(--line);border-radius:18px;overflow:hidden}
+.th{display:grid;grid-template-columns:110px minmax(0,1.6fr) 170px minmax(0,1.4fr) 200px 24px;gap:12px;padding:12px 18px;font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--text2);border-bottom:1px solid var(--line)}
+.tr{display:grid;grid-template-columns:110px minmax(0,1.6fr) 170px minmax(0,1.4fr) 200px 24px;gap:12px;padding:11px 18px;border-top:1px solid var(--line);align-items:center;font-size:14px}
+.sinduen .tr{grid-template-columns:110px minmax(0,1.6fr) minmax(0,1.4fr) 200px 24px}
+.tr .d b{display:block;font-size:14px} .tr .d small,.tr .c small{color:var(--text2);font-size:12.5px}
+.tr .c b{display:block;font-weight:600}
+.pts{display:flex;align-items:center;gap:6px;color:var(--text2);font-size:13px}
+.pts i{width:8px;height:8px;border-radius:50%;display:inline-block}
+.pv{background:var(--verde)} .pa{background:#D99012} .pr{background:var(--rojo)}
+.gcab{display:flex;align-items:center;gap:12px;padding:14px 18px;background:#fff}
+.gcab b{font-size:16px}
+.gcab .r{margin-left:auto;display:flex;gap:6px;align-items:center}
+.gsub{padding:8px 18px;font-size:12.5px;font-weight:700;color:var(--text2);background:var(--surface-2);border-top:1px solid var(--line)}
+.gsub.rojo{background:var(--rojo-bg);color:var(--rojo)}
+.cerr{border-top:1px solid var(--line)}
+.ini{width:30px;height:30px;border-radius:50%;background:var(--surface-2);display:grid;place-items:center;font-size:11.5px;font-weight:700;color:var(--text2)}
+.pie2{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-top:1px solid var(--line);color:var(--text2);font-size:13px}
+.menu{position:absolute;right:0;top:44px;width:270px;background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:0 18px 40px rgba(15,23,42,.14);padding:6px}
+.menu div{display:flex;justify-content:space-between;padding:10px 12px;border-radius:10px;font-size:14px}
+.menu div.on{background:var(--acc-bg);color:var(--accent);font-weight:600}
+.menu div span{color:var(--text2)}
+/* hoja de comisión */
+.hk{width:520px;background:#fff;border-radius:24px 0 0 24px;box-shadow:0 18px 50px rgba(15,23,42,.14);padding:22px 22px 24px;display:flex;flex-direction:column;gap:10px}
+.hk h3{font-size:20px;font-weight:700} .hk .sub{font-size:13px;color:var(--text2);margin-top:3px}
+.estado{border-radius:14px;padding:12px 14px;background:var(--surface-2);display:flex;flex-direction:column;gap:6px}
+.estado .k{display:flex;gap:6px;align-items:center}
+.estado b{font-size:15px;margin-right:auto}
+.kv{display:flex;align-items:center;gap:12px;padding:11px 0;border-top:1px solid var(--line)}
+.kv:first-child{border-top:0}
+.wa{background:#0F6642;border-color:#0F6642;color:#fff}
+/* hoja de abajo (preguntar) */
+.abajo{width:520px;background:#fff;border-radius:24px;box-shadow:0 18px 50px rgba(15,23,42,.14);padding:22px;display:flex;flex-direction:column;gap:10px}
+.abajo .asa{width:40px;height:4px;border-radius:4px;background:#D5D9DE;align-self:center;margin-bottom:6px}
+/* teléfono */
+.fon{width:390px;background:#fff;border-radius:28px;box-shadow:0 18px 50px rgba(15,23,42,.14);overflow:hidden;display:flex;flex-direction:column}
+.fon .tb{height:56px;display:flex;align-items:center;padding:0 16px;font-weight:800;letter-spacing:.18em;font-size:14px;border-bottom:1px solid var(--line)}
+.fon .bd{padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.mini{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.mini div{border:1px solid var(--line);border-radius:14px;padding:8px 10px}
+.mini div.sel{border:2px solid var(--text)}
+.mini small{display:block;color:var(--text2);font-size:12px} .mini b{font-size:19px}
+.carta{border:1px solid var(--line);border-radius:16px;padding:12px 14px;display:flex;flex-direction:column;gap:4px}
+.carta .k{display:flex;align-items:center;gap:8px} .carta .k b{font-size:15px;margin-right:auto}
+.carta small{color:var(--text2);font-size:12.5px}
+.navb{margin-top:auto;display:grid;grid-template-columns:repeat(5,1fr);border-top:1px solid var(--line);padding:8px 6px 14px}
+.navb span{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11px;color:var(--text2);font-weight:600}
+.navb span::before{content:"";width:26px;height:22px;border-radius:8px;background:var(--surface-2)}
+.navb span.on{color:var(--accent)} .navb span.on::before{background:var(--accent)}
+</style>
+</head>
+<body>
+<div class="lienzo" style="flex-direction:column">
+
+<!-- A · lista agrupada por dueño (lo normal) -->
+<div class="col" id="A">
+  <div class="et">A · PC · Comisiones al entrar: agrupado por dueño (lo normal)</div>
+  <div class="pag">
+    <div class="barra"><span class="logo">AIRTEK<small>Empresas</small></span><nav><span>Inicio</span><span class="on">Comisiones <i>1</i></span><span>Mi trabajo <i>1</i></span><span>Clientes</span><span>Migraciones</span><span>Factibilidad</span><span>Aliados <i>6</i></span><span>Gerencia</span></nav><span class="av">MR</span></div>
+    <div class="main">
+      <div class="tit"><h1>Comisiones</h1><div class="seg2"><span class="on">Lista</span><span>Resumen</span></div><span class="corte">Noviembre 2026 (en curso) ⌄</span></div>
+      <p class="lead">Del 18 de octubre al 17 de noviembre. Día límite el 18: faltan 7 días.</p>
+      <div class="kpis">
+        <div class="kpi sel"><b class="n">62</b><span><b class="t">Instalaciones PYME</b><small>4 comisionan · 8 vienen del corte anterior</small></span></div>
+        <div class="kpi"><b class="n">2</b><span><b class="t">Cambios de categoría</b><small>Migraciones confirmadas en este corte</small></span></div>
+        <div class="kpi am"><b class="n" style="color:var(--ambar)">39</b><span><b class="t" style="color:var(--ambar)">Cartas y proformas</b><small>por enviar</small></span></div>
+        <div class="kpi kpi2 am"><small style="color:var(--text)">Por instalar</small><big>7 órdenes</big><small>Del corte, pasan de 24 horas sin instalar</small><span class="lnk">Ver órdenes</span></div>
+        <div class="kpi kpi2"><small style="color:var(--text)">Por asignar</small><big>13 instalaciones</big><small>Sin dueño: no comisionan hasta asignarlas</small><span class="lnk">Asignar dueño</span></div>
+        <div class="kpi kpi2 azulbox"><b style="font-size:17px">Subir documentos de un cliente nuevo</b><small>Buscas su orden de Odoo o lo subes con el posible nombre</small><span class="pill">0 pendientes por instalar</span></div>
+      </div>
+      <div class="panel">
+        <div class="prow"><span class="lb">EQUIPO</span><span class="f">Todos <i>96</i></span><span class="f on">Ventas corporativas <i>58</i></span><span class="f">Canales de atención <i>22</i></span><span class="f">Aliado comercial <i>16</i></span><span class="busca">Buscar por nombre, RIF o código</span></div>
+        <div class="prow"><span class="lb">LÍDER</span><span class="f on">Todas</span><span class="f">Ana Pérez <i>5</i></span><span class="f">Oriana Pérez <i>4</i></span><span class="f">Oriana Gómez <i>3</i></span></div>
+        <div class="prow"><span class="lb">VER</span><span class="f on">Agrupado por dueño</span><span class="f">Lista por fecha</span><span class="vsep"></span><span class="f">Desde 01/11</span><span class="f">Hasta 10/11</span><span class="vsep"></span><span class="f">Les falta algo <i>58</i></span><span class="f">Cumplen <i>4</i></span><span class="f on">Carta por enviar <i>33</i></span><span class="f dd">Más filtros</span></div>
+      </div>
+      <div class="tabla">
+        <div class="gcab"><span class="ini">AP</span><b>Ana Pérez</b><span class="nota" style="font-size:13px">5 por enviar · la más vieja 5 días</span><span class="r"><span class="chip">12 instaladas</span><span class="chip verde">2 comisionan</span><span class="chip ambar">9 falta legal</span><span class="btn">Enviar pendientes</span><svg class="flecha"><use href="#arriba"/></svg></span></div>
+        <div class="th" style="border-top:1px solid var(--line)"><span>INSTALADO</span><span>CLIENTE</span><span>ORDEN</span><span>LEGAL · PAGO · ORDEN</span><span>CARTA</span><span></span></div>
+        <div class="gsub rojo">Corte de octubre: si no cumplen al 18/11 se pierden · 1</div>
+        <div class="tr"><span class="d"><b>12/10</b><small>hace 30 días</small></span><span class="c"><b>Inversiones Bahía Azul, C.A.</b><small>J-00000003-3 · 824-000003</small></span><span>400003</span><span class="pts"><i class="pr"></i><i class="pr"></i><i class="pv"></i>Falta legal y pago</span><span><span class="chip verde">Enviada · WhatsApp</span></span><span>›</span></div>
+        <div class="gsub">Instaladas en este corte · 4</div>
+        <div class="tr"><span class="d"><b>05/11</b><small>hace 6 días</small></span><span class="c"><b>Comercial Ejemplo, C.A.</b><small>J-00000001-0 · 824-000001</small></span><span>502892</span><span class="pts"><i class="pv"></i><i class="pv"></i><i class="pv"></i>Cumple</span><span><span class="chip rojo">Por enviar · 5 días</span></span><span>›</span></div>
+        <div class="tr"><span class="d"><b>07/11</b><small>hace 4 días</small></span><span class="c"><b>Tienda Modelo, C.A.</b><small>J-00000002-1 · 824-000002</small></span><span>506801</span><span class="pts"><i class="pa"></i><i class="pv"></i><i class="pv"></i>Falta 1 documento</span><span><span class="chip azul">Descargada · por confirmar</span></span><span>›</span></div>
+        <div class="tr"><span class="d"><b>09/11</b><small>hace 2 días</small></span><span class="c"><b>Farmacia Muestra</b><small>J-00000004-2 · 022-000003</small></span><span>507115</span><span class="pts"><i class="pa"></i><i class="pr"></i><i class="pv"></i>Falta pago</span><span><span class="chip">Espera la IP</span></span><span>›</span></div>
+        <div class="tr"><span class="d"><b>10/11</b><small>ayer</small></span><span class="c"><b>Distribuidora Prueba, C.A.</b><small>J-00000005-3 · 824-000005</small></span><span>507300</span><span class="pts"><i class="pa"></i><i class="pv"></i><i class="pa"></i>Orden sin confirmar</span><span><span class="chip ambar">Por enviar · 1 día</span></span><span>›</span></div>
+        <div class="gsub" style="background:var(--verde-bg);color:var(--verde)">Cumplieron · 2</div>
+        <div class="tr"><span class="d"><b>03/11</b><small>hace 8 días</small></span><span class="c"><b>Posada Ejemplo, C.A.</b><small>J-00000006-4 · 824-000006</small></span><span>501100</span><span class="pts"><i class="pv"></i><i class="pv"></i><i class="pv"></i>Comisiona</span><span><span class="chip verde">Enviada · correo</span></span><span>›</span></div>
+        <div class="gcab cerr"><span class="ini">OP</span><b>Oriana Pérez</b><span class="nota" style="font-size:13px">4 por enviar</span><span class="r"><span class="chip">9 instaladas</span><span class="chip verde">1 comisiona</span><span class="chip ambar">6 falta legal</span><svg class="flecha"><use href="#abajo"/></svg></span></div>
+        <div class="gcab cerr"><span class="ini">OG</span><b>Oriana Gómez</b><span class="nota" style="font-size:13px">3 por enviar</span><span class="r"><span class="chip">6 instaladas</span><span class="chip verde">1 comisiona</span><span class="chip ambar">2 falta legal</span><svg class="flecha"><use href="#abajo"/></svg></span></div>
+        <div class="gcab cerr"><span class="ini">?</span><b>Sin dueño</b><span class="nota" style="font-size:13px">No comisionan hasta asignarlas</span><span class="r"><span class="chip ambar">13 por asignar</span><span class="btn pri">Asignar dueño</span><svg class="flecha"><use href="#abajo"/></svg></span></div>
+      </div>
+      <div style="display:flex;gap:20px;align-items:flex-start"><div class="menu" style="position:static"><div>Falta legal<span>46</span></div><div>Sin pago<span>45</span></div><div>Del corte anterior<span>8</span></div><div>Por asignar<span>13</span></div><div>Archivos por subir<span>3</span></div><div style="border-top:1px solid var(--line);border-radius:0;margin-top:4px;padding-top:12px">Bajar Excel<span>↓</span></div><div>Días para el pago<span>›</span></div></div><p class="nota">Así se abre "Más filtros": los filtros que se usan menos, con su número, y las dos herramientas (Bajar Excel, Días para el pago). La fila Líder solo aparece al elegir un equipo.</p></div>
+      <p class="nota" style="max-width:1200px">Cada dueño es una tabla compacta: una fila por instalación con fecha, cliente, orden, los tres puntos (Legal · Pago · Orden) con lo que falta en palabras y la etiqueta de la carta. Dentro, primero lo que se pierde del corte anterior, luego las de este corte y al final las que cumplieron. Los filtros viven en un solo panel: Equipo y Líder arriba (Líder solo si eliges un equipo), y abajo Ver, fechas como botones (abren un calendario pequeño), los 3 filtros más usados y "Más filtros" con el resto, Bajar Excel y Días para el pago. La lista vieja con tarjetas y la fila de chips grandes se van.</p>
+    </div>
+  </div>
+</div>
+
+<!-- B · lista por fecha -->
+<div class="col" id="B">
+  <div class="et">B · PC · Lista por fecha (todo seguido, la más nueva primero)</div>
+  <div class="pag" style="padding:0">
+    <div class="main" style="padding-top:18px">
+      <div class="panel">
+        <div class="prow"><span class="lb">EQUIPO</span><span class="f on">Todos <i>96</i></span><span class="f">Ventas corporativas <i>58</i></span><span class="f">Canales de atención <i>22</i></span><span class="f">Aliado comercial <i>16</i></span><span class="busca" style="margin-left:auto">Buscar por nombre, RIF o código</span></div>
+        <div class="prow"><span class="lb">VER</span><span class="f">Agrupado por dueño</span><span class="f on">Lista por fecha</span><span class="vsep"></span><span class="f">Desde 01/11</span><span class="f">Hasta 10/11</span><span class="vsep"></span><span class="f">Les falta algo <i>58</i></span><span class="f">Cumplen <i>4</i></span><span class="f">Carta por enviar <i>33</i></span><span class="f dd">Más filtros</span></div>
+      </div>
+      <div class="tabla">
+        <div class="th"><span>INSTALADO</span><span>CLIENTE</span><span>DUEÑO</span><span>LEGAL · PAGO · ORDEN</span><span>CARTA</span><span></span></div>
+        <div class="tr"><span class="d"><b>10/11</b><small>ayer</small></span><span class="c"><b>Distribuidora Prueba, C.A.</b><small>824-000005</small></span><span><span class="chip morado">Aliado · Redes Modelo</span></span><span class="pts"><i class="pa"></i><i class="pv"></i><i class="pv"></i>Falta 1 documento</span><span><span class="chip ambar">Por enviar · 1 día</span></span><span>›</span></div>
+        <div class="tr"><span class="d"><b>09/11</b><small>hace 2 días</small></span><span class="c"><b>Tienda Modelo, C.A.</b><small>824-000002</small></span><span><span class="chip morado">Aliado · Inversiones Ejemplo</span></span><span class="pts"><i class="pv"></i><i class="pv"></i><i class="pv"></i>Cumple</span><span><span class="chip verde">Enviada · WhatsApp</span></span><span>›</span></div>
+        <div class="tr"><span class="d"><b>07/11</b><small>hace 4 días</small></span><span class="c"><b>Farmacia Muestra, C.A.</b><small>022-000003</small></span><span><span class="chip">Oriana Gómez</span></span><span class="pts"><i class="pa"></i><i class="pv"></i><i class="pa"></i>Orden sin confirmar</span><span><span class="chip azul">Descargada · por confirmar</span></span><span>›</span></div>
+        <div class="tr"><span class="d"><b>06/11</b><small>hace 5 días</small></span><span class="c"><b>Juan Ejemplo</b><small>005-000004</small></span><span><span class="chip azul">Canales · Emmanuel A.</span></span><span class="pts"><i class="pv"></i><i class="pr"></i><i class="pv"></i>Falta pago</span><span><span class="chip">Espera la IP</span></span><span>›</span></div>
+        <div class="tr"><span class="d"><b>05/11</b><small>hace 6 días</small></span><span class="c"><b>Comercial Ejemplo, C.A.</b><small>824-000001</small></span><span><span class="chip">Oriana Pérez</span></span><span class="pts"><i class="pa"></i><i class="pr"></i><i class="pv"></i>Falta pago y 2 documentos</span><span><span class="chip rojo">Por enviar · 5 días</span></span><span>›</span></div>
+        <div class="tr"><span class="d"><b>05/11</b><small>hace 6 días</small></span><span class="c"><b>Posada Ejemplo, C.A.</b><small>824-000006</small></span><span><span class="chip ambar">Falta elegir dueño</span></span><span class="pts"><i class="pa"></i><i class="pv"></i><i class="pv"></i>Revisar documentos</span><span><span class="chip verde">Enviada · correo</span></span><span>›</span></div>
+        <div class="pie2"><span>6 de 96 · ordenadas por fecha de instalación</span><span class="btn">Ver más</span></div>
+      </div>
+      <p class="nota">Puntos: verde cumple, naranja falta, rojo bloquea. Dueño en una etiqueta: gris líder, azul Canales, morada aliado, ámbar sin dueño. Dos personas con el mismo nombre salen con su apellido.</p>
+    </div>
+  </div>
+</div>
+
+<div style="display:flex;gap:40px;align-items:flex-start">
+<!-- C · hoja de comisión -->
+<div class="col" id="C">
+  <div class="et">C · PC · Al tocar una fila: la hoja de la comisión (todo cerrado; Carta abierta de ejemplo)</div>
+  <div class="hk">
+    <div class="top" style="display:flex"><div><h3>Comercial Ejemplo, C.A.</h3><p class="sub">J-00000001-0 · 824-000001 · instalado el 05/11 · Oriana Pérez</p></div><span class="cerrar"><svg width="22" height="22"><use href="#x"/></svg></span></div>
+    <div style="display:flex;gap:8px"><span class="btn">Ver expediente</span><span class="btn">Contactar a Oriana</span></div>
+    <div class="estado"><div class="k"><b>Aún no comisiona</b><span class="chip ambar">Legal</span><span class="chip ambar">Pago</span><span class="chip verde">Orden</span></div><small class="nota" style="font-size:13px">Faltan 2 de 3: Legal y el pago. Corte de noviembre, límite el 18 (faltan 7 días).</small></div>
+    <div class="sec listo"><div class="sec-c"><span class="dot v"></span><b>Cliente y orden de Odoo</b><span class="chip verde">502892</span><svg class="flecha"><use href="#abajo"/></svg></div></div>
+    <div class="sec falta"><div class="sec-c"><span class="dot a"></span><b>Legal y documentos</b><span class="chip ambar">Faltan 2</span><svg class="flecha"><use href="#abajo"/></svg></div></div>
+    <div class="sec falta"><div class="sec-c"><span class="dot a"></span><b>Pago</b><span class="chip ambar">Revisar pago</span><svg class="flecha"><use href="#abajo"/></svg></div></div>
+    <div class="sec falta"><div class="sec-c"><span class="dot a"></span><b>Carta y proforma</b><span class="chip ambar">Por enviar · 5 días</span><svg class="flecha"><use href="#arriba"/></svg></div>
+      <div class="sec-d">
+        <div class="kv" style="border-top:0"><span class="tx"><b>IP</b><small>156.255.0.10 · IPv6 lista</small></span><span class="chip verde">Lista</span><span class="btn">Cambiar</span></div>
+        <div class="kv"><span class="tx"><b>Se envía a</b><small>Representante · 0412 000 0000</small></span><span class="btn">Cambiar</span></div>
+        <span class="btn ancho wa" style="margin-top:6px">Enviar carta y proforma por WhatsApp</span>
+        <p class="nota" style="margin:8px 0">Un toque: abre el chat con los dos PDF y el mensaje. Queda anotado solo.</p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap"><span class="btn">Descargar los PDF</span><span class="btn">Enviar por correo</span><span class="btn">Ya enviada (marcar)</span></div>
+      </div></div>
+    <div class="sec"><div class="sec-c"><b>Corte y comisión</b><span class="nota" style="margin-left:auto;font-size:13px">Corte de noviembre</span><svg class="flecha"><use href="#abajo"/></svg></div></div>
+    <div class="sec"><div class="sec-c"><b>Hilo</b><span class="nota" style="margin-left:auto;font-size:13px">Último: hoy 09:40</span><svg class="flecha"><use href="#abajo"/></svg></div></div>
+  </div>
+  <p class="nota" style="max-width:520px">Igual a lo aprobado (ComHoja): todo cerrado al abrir, borde naranja lo pendiente y verde lo cumplido. "Se envía a" con Cambiar. Sin número del cliente: banda ámbar "Envíala tú y márcala" con "Descargar carta y proforma" azul.</p>
+</div>
+
+<!-- D · descargar: pregunta abajo -->
+<div class="col" id="D">
+  <div class="et">D · Al tocar Descargar los PDF: hoja de abajo (no transparente)</div>
+  <div class="abajo">
+    <span class="asa"></span>
+    <h3 style="font-size:19px">¿La vas a enviar por WhatsApp?</h3>
+    <p class="nota">Si la mandas con este botón queda anotada sola y no te sale como pendiente.</p>
+    <span class="btn ancho wa">Enviar por WhatsApp</span>
+    <span class="btn ancho">Ya la envié por otro lado</span>
+    <span class="btn ancho" style="border:0">Solo descargar</span>
+  </div>
+  <p class="nota" style="max-width:520px">Si se descarga y no se marca, a las 2 horas llega el aviso "¿La marcamos como enviada?" con Ya la envié. En la lista sale "Descargada · por confirmar" (azul).</p>
+</div>
+
+<!-- E · teléfono -->
+<div class="col" id="E">
+  <div class="et">E · Teléfono · Comisiones</div>
+  <div class="fon" style="height:820px">
+    <div class="tb">AIRTEK</div>
+    <div class="bd">
+      <h2 style="font-size:22px">Comisiones</h2>
+      <div class="mini"><div><small>Del corte</small><b>96</b></div><div class="sel"><small>Por enviar</small><b>18</b></div><div><small>Les falta</small><b>55</b></div></div>
+      <div class="prow" style="gap:6px"><span class="f on">Todos</span><span class="f">Ventas</span><span class="f">Canales</span><span class="f">Aliados</span></div>
+      <div class="prow" style="gap:6px"><span class="f dd">Filtros · fechas</span><span class="f on">Por dueño</span><span class="f">Por fecha</span></div>
+      <b style="margin-top:4px">Ana Pérez · 5</b>
+      <div class="carta"><div class="k"><b>Comercial Ejemplo, C.A.</b><span class="chip rojo">5 días</span></div><small>824-000001 · instalado 05/11</small><span class="pts"><i class="pv"></i><i class="pv"></i><i class="pv"></i>Cumple</span></div>
+      <div class="carta"><div class="k"><b>Tienda Modelo, C.A.</b><span class="chip azul">Por confirmar</span></div><small>824-000002 · instalado 07/11</small><span class="pts"><i class="pa"></i><i class="pv"></i><i class="pv"></i>Falta 1 documento</span></div>
+      <div class="carta"><div class="k"><b>Farmacia Muestra</b><span class="chip">Espera IP</span></div><small>022-000003 · instalado 09/11</small><span class="pts"><i class="pa"></i><i class="pr"></i><i class="pv"></i>Falta pago</span></div>
+    </div>
+    <div class="navb"><span>Inicio</span><span>Mi trabajo</span><span>Clientes</span><span class="on">Comisiones</span><span>Más</span></div>
+  </div>
+  <p class="nota" style="max-width:390px">En teléfono la tabla pasa a tarjetas (sin scroll de lado). La hoja de comisión sube desde abajo, con las mismas secciones.</p>
+</div>
+</div>
+
+</div>
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="abajo" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+  <symbol id="arriba" viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></symbol>
+</svg>
+</body>
+</html>

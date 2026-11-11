@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mi trabajo</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="base.css">
+<style>
+/* Maqueta 12/11 · Mi trabajo (Legal, analista, coordinadora, líder, administrador y teléfono). Datos inventados. */
+.pag{width:1366px;background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 10px 40px rgba(15,23,42,.08)}
+.barra{display:flex;align-items:center;gap:22px;height:68px;padding:0 40px;border-bottom:1px solid var(--line)}
+.logo{font-weight:800;letter-spacing:.18em;font-size:15px}
+.logo small{font-weight:500;letter-spacing:0;color:var(--text2);font-size:14px;margin-left:10px;padding-left:12px;border-left:1px solid var(--line)}
+.barra nav{display:flex;gap:6px;margin-left:14px}
+.barra nav span{height:38px;padding:0 12px;border-radius:999px;display:flex;align-items:center;gap:6px;font-weight:600;font-size:14.5px;color:var(--text2)}
+.barra nav span.on{background:var(--acc-bg);color:var(--accent)}
+.barra nav i{font-style:normal;font-size:11px;background:var(--rojo);color:#fff;border-radius:999px;padding:1px 6px}
+.barra .av{margin-left:auto;width:40px;height:40px;border-radius:50%;background:var(--accent);color:#fff;display:grid;place-items:center;font-weight:700}
+.mt{display:grid;grid-template-columns:230px minmax(0,1fr)}
+.lado{border-right:1px solid var(--line);padding:22px 14px;background:#FBFBFC;display:flex;flex-direction:column;gap:2px;min-height:760px}
+.lado .t{font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--text2);padding:10px 12px 6px}
+.lado span.it{display:flex;justify-content:space-between;align-items:center;height:40px;padding:0 14px;border-radius:12px;font-weight:600;font-size:14px;color:var(--text2)}
+.lado span.it b{font-weight:700;color:var(--text)}
+.lado span.it.on{background:var(--text);color:#fff} .lado span.it.on b{color:#fff}
+.lado span.it .r{color:var(--rojo)}
+.cont{padding:24px 32px 32px;display:flex;flex-direction:column;gap:14px;background:#fff}
+.hola{display:flex;align-items:flex-start;gap:20px}
+.hola h1{font-size:26px;font-weight:800;letter-spacing:-.01em}
+.hola p{color:var(--text2);font-size:14px;margin-top:4px}
+.hola .busca{margin-left:auto;height:42px;width:300px;border:1px solid #C9CED6;border-radius:999px;display:flex;align-items:center;padding:0 16px;color:var(--text3);font-size:14px}
+.nums{display:grid;grid-template-columns:1.6fr 1fr 1fr 1fr;gap:12px}
+.num{border:1px solid var(--line);border-radius:16px;padding:12px 16px;display:flex;gap:26px}
+.num small{display:block;font-size:12.5px;color:var(--text2)}
+.num b{font-size:24px;font-weight:800}
+.num b.r{color:var(--rojo)} .num b.a{color:var(--azul)}
+.box{border:1px solid var(--line);border-radius:18px}
+.box-c{display:flex;align-items:center;gap:10px;min-height:56px;padding:0 18px}
+.box-c b{font-size:16px} .box-c .der{margin-left:auto;display:flex;gap:10px;align-items:center;color:var(--text2);font-size:13px}
+.box-d{padding:0 18px 14px}
+.chf{display:flex;gap:6px;flex-wrap:wrap;padding:2px 0 8px}
+.chf span{height:34px;padding:0 14px;border-radius:999px;border:1px solid var(--line);display:inline-flex;align-items:center;font-weight:600;font-size:13px}
+.chf span.on{background:var(--text);border-color:var(--text);color:#fff}
+.tk{display:flex;align-items:center;gap:12px;padding:11px 10px;border-top:1px solid var(--line);border-radius:0}
+.tk.hl{background:var(--azul-bg);border-radius:12px;border-top-color:transparent}
+.tk .tag{width:96px;flex:none;text-align:center}
+.tk .tx b{font-size:14.5px}
+.tk .acc{display:flex;gap:8px;align-items:center;flex:none}
+.wa{background:#0F6642;border-color:#0F6642;color:#fff}
+.mas2{display:flex;align-items:center;gap:10px;padding:10px 10px 0;color:var(--text2);font-size:13px}
+.per{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;padding:4px 0 6px}
+.per div{border:1px solid var(--line);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:5px;align-items:flex-start}
+.per small{color:var(--text2);font-size:12.5px}
+.seg3{display:flex;gap:4px}
+.seg3 span{height:30px;padding:0 12px;border-radius:999px;border:1px solid var(--line);display:grid;place-items:center;font-size:12.5px;font-weight:600}
+.seg3 span.on{border-color:var(--accent);color:var(--accent);background:var(--acc-bg)}
+.fon{width:390px;background:#fff;border-radius:28px;box-shadow:0 18px 50px rgba(15,23,42,.14);overflow:hidden;display:flex;flex-direction:column}
+.fon .tb{height:56px;display:flex;align-items:center;padding:0 16px;font-weight:800;letter-spacing:.18em;font-size:14px;border-bottom:1px solid var(--line)}
+.fon .bd{padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.navb{margin-top:auto;display:grid;grid-template-columns:repeat(5,1fr);border-top:1px solid var(--line);padding:8px 6px 14px}
+.navb span{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11px;color:var(--text2);font-weight:600}
+.navb span::before{content:"";width:26px;height:22px;border-radius:8px;background:var(--surface-2)}
+.navb span.on{color:var(--accent)} .navb span.on::before{background:var(--accent)}
+.fk{border:1px solid var(--line);border-radius:16px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.fk small{color:var(--text2);font-size:12.5px}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="abajo" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+  <symbol id="arriba" viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></symbol>
+</svg>
+<div class="lienzo" style="flex-direction:column">
+
+<!-- A · Legal -->
+<div class="col" id="A">
+  <div class="et">A · PC · Mi trabajo de Legal</div>
+  <div class="pag">
+    <div class="barra"><span class="logo">AIRTEK<small>Empresas</small></span><nav><span>Inicio</span><span class="on">Mi trabajo <i>23</i></span><span>Clientes</span><span>Aliados</span><span>Gerencia</span></nav><span class="av">RG</span></div>
+    <div class="mt">
+      <div class="lado"><span class="t">MI TRABAJO</span><span class="it on">Todo<b>23</b></span><span class="it">Contratos<b>17</b></span><span class="it">Vencimientos<b>4</b></span><span class="it">Mis notas<b>2</b></span></div>
+      <div class="cont">
+        <div class="hola"><div><h1>Hola, Reina</h1><p>Primero los contratos ISP. Cada tarea abre el expediente donde se hace.</p></div><span class="busca">Buscar por RIF o nombre</span></div>
+        <div class="nums"><div class="num"><span><small>Por elaborar contrato</small><b>11</b></span><span><small>Más de 5 días</small><b class="r">3</b></span></div><div class="num"><span><small>Enviados a firmar</small><b>4</b></span></div><div class="num"><span><small>Firmados sin subir</small><b>2</b></span></div><div class="num"><span><small>Vencen en 60 días</small><b>4</b></span></div></div>
+        <div class="box">
+          <div class="box-c"><span class="dot r"></span><b>Por elaborar contrato · 11</b><span class="der"><span class="btn">Uno tras otro, del más viejo</span><svg class="flecha"><use href="#arriba"/></svg></span></div>
+          <div class="box-d">
+            <div class="chf"><span class="on">Todos 11</span><span>ISP 3</span><span>Corporativo 4</span><span>VGT 1</span><span>PYME 3</span></div>
+            <div class="tk"><span class="chip azul tag">ISP</span><span class="tx"><b>Redes Ejemplo, C.A.</b><small>Documentos completos desde el 03/11 · Líder: Ana Pérez</small></span><span class="acc"><span class="chip rojo">7 días</span><span class="btn pri">Abrir expediente</span></span></div>
+            <div class="tk"><span class="chip azul tag">ISP</span><span class="tx"><b>Fibra Modelo, C.A.</b><small>Documentos completos desde el 06/11 · Falta propuesta comercial</small></span><span class="acc"><span class="chip ambar">4 días</span><span class="btn pri">Abrir expediente</span></span></div>
+            <div class="tk"><span class="chip azul tag">ISP</span><span class="tx"><b>Telecom Muestra, C.A.</b><small>Llegó hoy por correo</small></span><span class="acc"><span class="chip">Nuevo</span><span class="btn pri">Abrir expediente</span></span></div>
+            <div class="tk"><span class="chip tag">Corporativo</span><span class="tx"><b>Seguros Ejemplo, C.A.</b><small>Dedicado · documentos completos desde el 02/11</small></span><span class="acc"><span class="chip rojo">8 días</span><span class="btn pri">Abrir expediente</span></span></div>
+            <div class="tk"><span class="chip morado tag">VGT</span><span class="tx"><b>Internet Modelo, C.A.</b><small>Adendum N.º 2 · Solicitud Sector Norte · 6 postes</small></span><span class="acc"><span class="chip ambar">2 días</span><span class="btn pri">Abrir expediente</span></span></div>
+            <div class="mas2">Y 6 más (corporativo y PYME)<span class="btn">Ver todos</span></div>
+          </div>
+        </div>
+        <div class="box"><div class="box-c"><span class="dot a"></span><b>Enviado a firmar · 4</b><span class="der">El más viejo: 12 días<svg class="flecha"><use href="#abajo"/></svg></span></div></div>
+        <div class="box"><div class="box-c"><span class="dot a"></span><b>Firmado, falta subir · 2</b><span class="der"><svg class="flecha"><use href="#abajo"/></svg></span></div></div>
+        <div class="box"><div class="box-c"><b>Vencen en 60 días · 4</b><span class="der">Contratos de dedicados<svg class="flecha"><use href="#abajo"/></svg></span></div></div>
+      </div>
+    </div>
+  </div>
+  <p class="nota" style="max-width:1300px">Igual a la maqueta TrabajoReina. Se van de arriba: el título grande "Mi trabajo", las pastillas de vencidos, el aviso "Qué cambió", el buscador en su propia fila y las tarjetas grandes de la izquierda. "Revisar documentos en lote" queda solo para el administrador, dentro de su menú.</p>
+</div>
+
+<!-- B · Analista -->
+<div class="col" id="B">
+  <div class="et">B · PC · Mi trabajo de la analista (Canales)</div>
+  <div class="pag">
+    <div class="mt">
+      <div class="lado"><span class="t">MI TRABAJO</span><span class="it on">Todo<b>31</b></span><span class="it">Cartas y proformas<b>12</b></span><span class="it">Sin IP<b>6</b></span><span class="it">Cambios por emitir<b>5</b></span><span class="it">Pago<b>6</b></span><span class="it">Mis notas<b>2</b></span><span class="t" style="margin-top:12px">MI EQUIPO · CANALES</span><span class="it">Todo el equipo<b>54</b></span></div>
+      <div class="cont">
+        <div class="hola"><div><h1>Hola, Emmanuel</h1><p>Lo más urgente arriba. Las cartas se envían desde aquí mismo.</p></div><span class="busca">Buscar por RIF, nombre o código</span></div>
+        <div class="nums"><div class="num"><span><small>Cartas por enviar</small><b>12</b></span><span><small>Descargadas sin confirmar</small><b class="a">3</b></span><span><small>Más de 3 días</small><b class="r">4</b></span></div><div class="num"><span><small>Esperan la IP</small><b>6</b></span></div><div class="num"><span><small>Cambios por emitir</small><b>5</b></span></div><div class="num"><span><small>Pago por revisar</small><b>6</b></span></div></div>
+        <div class="box">
+          <div class="box-c"><span class="dot r"></span><b>Cartas y proformas · 12</b><span class="der"><svg class="flecha"><use href="#arriba"/></svg></span></div>
+          <div class="box-d">
+            <div class="tk hl"><span class="tx"><b>Tienda Modelo, C.A.</b><small>Descargaste la carta ayer 15:20. ¿Ya la enviaste?</small></span><span class="acc"><span class="lnk">Por confirmar</span><span class="btn pri">Ya la envié</span></span></div>
+            <div class="tk"><span class="tx"><b>Comercial Ejemplo, C.A.</b><small>IP lista · Representante 0412 000 0000</small></span><span class="acc"><span class="chip rojo">5 días</span><span class="btn wa">Enviar por WhatsApp</span></span></div>
+            <div class="tk"><span class="tx"><b>Farmacia Muestra, C.A.</b><small>IP lista · Sin número: descárgala y envíala tú</small></span><span class="acc"><span class="chip ambar">2 días</span><span class="btn pri">Descargar</span></span></div>
+            <div class="tk"><span class="tx"><b>Juan Ejemplo</b><small>IP lista · TAD 0424 000 0000</small></span><span class="acc"><span class="chip">Hoy</span><span class="btn wa">Enviar por WhatsApp</span></span></div>
+            <div class="mas2">Y 8 más<span class="btn">Ver todas</span></div>
+          </div>
+        </div>
+        <div class="box">
+          <div class="box-c"><span class="dot a"></span><b>Esperan la IP · 6</b><span class="der"><svg class="flecha"><use href="#arriba"/></svg></span></div>
+          <div class="box-d">
+            <div class="tk" style="border-top:0"><span class="tx"><b>Posada Ejemplo, C.A.</b><small>Instalado el 06/11 · Posible IP del pool: 156.255.0.11</small></span><span class="acc"><span class="btn">Escribir IP</span><span class="btn pri">Usar 156.255.0.11</span></span></div>
+            <div class="tk"><span class="tx"><b>Distribuidora Prueba, C.A.</b><small>Instalado el 05/11 · Sin sugerencia</small></span><span class="acc"><span class="btn pri">Escribir IP</span></span></div>
+          </div>
+        </div>
+        <div class="box"><div class="box-c"><span class="dot a"></span><b>Cambios por emitir · 5</b><span class="der">Cambios de categoría a emitir en el sistema<svg class="flecha"><use href="#abajo"/></svg></span></div></div>
+        <div class="box"><div class="box-c"><span class="dot a"></span><b>Pago por revisar · 6</b><span class="der">Clientes con varios servicios<svg class="flecha"><use href="#abajo"/></svg></span></div></div>
+      </div>
+    </div>
+  </div>
+  <p class="nota" style="max-width:1300px">Igual a la maqueta TrabajoAnalista. "Todo el equipo" está en el menú de la izquierda (no como pestañas arriba).</p>
+</div>
+
+<!-- C · Coordinadora -->
+<div class="col" id="C">
+  <div class="et">C · PC · Coordinadora de Canales, en "Mi equipo"</div>
+  <div class="pag">
+    <div class="mt">
+      <div class="lado"><span class="t">MI TRABAJO</span><span class="it">Lo mío<b>8</b></span><span class="t" style="margin-top:12px">MI EQUIPO · CANALES</span><span class="it on">Mi equipo<b>46</b></span><span class="it">Cartas y proformas<b>18</b></span><span class="it">Sin IP<b>6</b></span><span class="it">Cambios por emitir<b>9</b></span><span class="it">Pago<b>8</b></span><span class="it">Órdenes sin dueño<b class="r">5</b></span></div>
+      <div class="cont">
+        <div class="hola"><div><h1>Mi equipo · Canales de atención</h1><p>Coordinadora: ves lo de todos y puedes pasar una tarea a otra persona.</p></div><span class="busca">Buscar por RIF, nombre o código</span></div>
+        <div class="per">
+          <div><b>Emmanuel A.</b><span class="chip rojo">4 vencidas</span><small>12 cartas · 3 sin confirmar · 2 IP</small><span class="lnk">Ver su trabajo</span></div>
+          <div><b>Luis E.</b><span class="chip rojo">1 vencida</span><small>9 cartas · 4 cambios por emitir</small><span class="lnk">Ver su trabajo</span></div>
+          <div><b>Marta R.</b><span class="chip verde">Al día</span><small>6 cartas · 2 pagos</small><span class="lnk">Ver su trabajo</span></div>
+          <div><b>Yo</b><span class="chip ambar">2 hoy</span><small>5 órdenes sin dueño · 3 pagos</small><span class="lnk">Ver lo mío</span></div>
+        </div>
+        <div class="box">
+          <div class="box-c"><span class="dot r"></span><b>Cartas y proformas del equipo · 18</b><span class="der"><span class="seg3"><span class="on">Por persona</span><span>Por días</span></span><svg class="flecha"><use href="#arriba"/></svg></span></div>
+          <div class="box-d">
+            <div class="tk" style="border-top:0"><span class="tx"><b>Comercial Ejemplo, C.A.</b><small>Emmanuel A. · IP lista · con número</small></span><span class="acc"><span class="chip rojo">5 días</span><span class="btn">Pasar a otra persona</span><span class="btn wa">Enviar yo</span></span></div>
+            <div class="tk"><span class="tx"><b>Tienda Modelo, C.A.</b><small>Emmanuel A. · descargada ayer, sin confirmar</small></span><span class="acc"><span class="chip azul">Por confirmar</span><span class="btn">Recordarle</span></span></div>
+            <div class="tk"><span class="tx"><b>Farmacia Muestra, C.A.</b><small>Luis E. · sin número del cliente</small></span><span class="acc"><span class="chip ambar">3 días</span><span class="btn">Pasar a otra persona</span><span class="btn">Descargar</span></span></div>
+            <div class="mas2">Y 15 más<span class="btn">Ver todas</span></div>
+          </div>
+        </div>
+        <div class="box">
+          <div class="box-c"><span class="dot r"></span><b>Órdenes de Canales sin dueño · 5</b><span class="der"><svg class="flecha"><use href="#arriba"/></svg></span></div>
+          <div class="box-d"><div class="tk" style="border-top:0"><span class="tx"><b>Juan Ejemplo</b><small>Orden de Odoo con código de vendedor de Canales · instalada el 06/11</small></span><span class="acc"><span class="chip ambar">Falta elegir</span><span class="btn pri">Elegir dueño</span></span></div></div>
+        </div>
+        <div class="box"><div class="box-c"><span class="dot a"></span><b>Cambios por emitir · 9</b><span class="der">Luis E. 4 · Emmanuel A. 3 · Marta R. 2<svg class="flecha"><use href="#abajo"/></svg></span></div></div>
+        <div class="box"><div class="box-c"><span class="dot a"></span><b>Pago por revisar · 8</b><span class="der"><svg class="flecha"><use href="#abajo"/></svg></span></div></div>
+      </div>
+    </div>
+  </div>
+  <p class="nota" style="max-width:1300px">Igual a la maqueta Coordinadora. "Lo mío" (menú) muestra su propio trabajo con la pantalla de la analista.</p>
+</div>
+
+<!-- D · Líder -->
+<div class="col" id="D">
+  <div class="et">D · PC · Mi trabajo del líder (mismo diseño)</div>
+  <div class="pag">
+    <div class="mt">
+      <div class="lado"><span class="t">MIS VENTAS</span><span class="it on">Todo<b>14</b></span><span class="it">Devueltos o pedidos<b class="r">3</b></span><span class="it">Conseguir documentos<b>5</b></span><span class="it">Hacer firmar<b>2</b></span><span class="it">Por instalar<b>2</b></span><span class="it">Gestiones<b>2</b></span><span class="it">Mis notas<b>1</b></span></div>
+      <div class="cont">
+        <div class="hola"><div><h1>Hola, Ana</h1><p>Primero lo devuelto: hay que pedírselo al cliente. Corte de noviembre, límite el 18.</p></div><span class="busca">Buscar por RIF o nombre</span></div>
+        <div class="nums"><div class="num"><span><small>Devueltos o pedidos</small><b class="r">3</b></span><span><small>Faltan para comisionar</small><b>6</b></span></div><div class="num"><span><small>Órdenes de más de 24 h</small><b>2</b></span></div><div class="num"><span><small>Para el cierre</small><b>7 días</b></span></div><div class="num"><span><small>Comisionan</small><b>4</b></span></div></div>
+        <div class="box">
+          <div class="box-c"><span class="dot r"></span><b>Devueltos o pedidos · 3</b><span class="der"><svg class="flecha"><use href="#arriba"/></svg></span></div>
+          <div class="box-d">
+            <div class="tk" style="border-top:0"><span class="tx"><b>Comercial Ejemplo, C.A.</b><small>Devuelto: acta de asamblea · falta la página de la junta</small></span><span class="acc"><span class="chip rojo">Vence hoy</span><span class="btn pri">Subir otra</span></span></div>
+            <div class="tk"><span class="tx"><b>Tienda Modelo, C.A.</b><small>Pedido: RIF personal del representante 2</small></span><span class="acc"><span class="chip ambar">2 días</span><span class="btn pri">Pedir al cliente</span></span></div>
+          </div>
+        </div>
+        <div class="box"><div class="box-c"><span class="dot a"></span><b>Conseguir documentos · 5</b><span class="der">Faltan o sin gestionar<svg class="flecha"><use href="#abajo"/></svg></span></div></div>
+        <div class="box"><div class="box-c"><span class="dot a"></span><b>Hacer firmar · 2</b><span class="der">Contratos y planillas<svg class="flecha"><use href="#abajo"/></svg></span></div></div>
+        <div class="box"><div class="box-c"><span class="dot a"></span><b>Por instalar · 2</b><span class="der">Órdenes de más de 24 horas<svg class="flecha"><use href="#abajo"/></svg></span></div></div>
+        <div class="box"><div class="box-c"><b>Gestiones asignadas · 2</b><span class="der">Metas con plazo<svg class="flecha"><use href="#abajo"/></svg></span></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- E · Administrador -->
+<div class="col" id="E">
+  <div class="et">E · PC · Mi trabajo del administrador (mismo diseño)</div>
+  <div class="pag">
+    <div class="mt">
+      <div class="lado"><span class="t">MI TRABAJO</span><span class="it on">Todo<b>27</b></span><span class="it">Revisar documentos<b>9</b></span><span class="it">Por decidir<b class="r">8</b></span><span class="it">Aliados<b>3</b></span><span class="it">Alertas y cargas<b>7</b></span><span class="it">Mis notas<b>0</b></span><span class="t" style="margin-top:12px">EL EQUIPO</span><span class="it">Ver el trabajo de…<b>›</b></span></div>
+      <div class="cont">
+        <div class="hola"><div><h1>Hola, Marcos</h1><p>9 expedientes esperan tu revisión. Lo de aliados también llega aquí.</p></div><span class="busca">Buscar por RIF o nombre</span></div>
+        <div class="nums"><div class="num"><span><small>Documentos por revisar</small><b class="a">9</b></span><span><small>Más de 2 días</small><b class="r">3</b></span></div><div class="num"><span><small>Por decidir</small><b class="r">8</b></span></div><div class="num"><span><small>De aliados</small><b>3</b></span></div><div class="num"><span><small>Alertas y cargas</small><b>7</b></span></div></div>
+        <div class="box">
+          <div class="box-c"><span class="dot r"></span><b>Revisar documentos · 9</b><span class="der"><span class="btn">Uno por uno</span><span class="btn pri">Revisar en lote</span><svg class="flecha"><use href="#arriba"/></svg></span></div>
+          <div class="box-d">
+            <div class="tk" style="border-top:0"><span class="tx"><b>Redes Ejemplo, C.A.</b><small>3 por revisar · la IA propone aprobar 2 y devolver 1</small></span><span class="acc"><span class="chip rojo">3 días</span><span class="btn pri">Revisar aquí</span></span></div>
+            <div class="tk"><span class="tx"><b>Joyería Modelo, C.A.</b><small>Aliado Inversiones Ejemplo · el correo no se parece al nombre</small></span><span class="acc"><span class="chip morado">Aliado</span><span class="btn pri">Revisar aquí</span></span></div>
+          </div>
+        </div>
+        <div class="box"><div class="box-c"><span class="dot r"></span><b>Por decidir · 8</b><span class="der">Corte, comisiones y sin registro<svg class="flecha"><use href="#abajo"/></svg></span></div></div>
+        <div class="box"><div class="box-c"><span class="dot a"></span><b>Aliados · 3</b><span class="der">Permisos y bloqueos<svg class="flecha"><use href="#abajo"/></svg></span></div></div>
+        <div class="box"><div class="box-c"><span class="dot a"></span><b>Alertas y cargas · 7</b><span class="der">Cargas raras y órdenes atrasadas<svg class="flecha"><use href="#abajo"/></svg></span></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- F · teléfono -->
+<div class="col" id="F">
+  <div class="et">F · Teléfono · Mi trabajo (analista)</div>
+  <div class="fon" style="height:820px">
+    <div class="tb">AIRTEK</div>
+    <div class="bd">
+      <h2 style="font-size:22px">Hola, Emmanuel</h2>
+      <div class="chf"><span class="on">Todo 31</span><span>Cartas 12</span><span>IP 6</span><span>Pago 6</span></div>
+      <div class="box">
+        <div class="box-c"><span class="dot r"></span><b style="font-size:15px">Cartas y proformas · 12</b></div>
+        <div class="box-d" style="display:flex;flex-direction:column;gap:12px">
+          <div><b>Tienda Modelo, C.A.</b><small class="nota" style="display:block;font-size:12.5px">Descargada ayer. ¿Ya la enviaste?</small><span class="btn pri" style="margin-top:6px">Ya la envié</span></div>
+          <div style="border-top:1px solid var(--line);padding-top:10px"><b>Comercial Ejemplo, C.A.</b><small class="nota" style="display:block;font-size:12.5px">5 días · con número</small><span class="btn wa" style="margin-top:6px">Enviar por WhatsApp</span></div>
+        </div>
+      </div>
+      <div class="box"><div class="box-c"><span class="dot a"></span><b style="font-size:15px">Esperan la IP · 6</b><span class="der"><svg class="flecha"><use href="#abajo"/></svg></span></div></div>
+      <div class="box"><div class="box-c"><span class="dot a"></span><b style="font-size:15px">Cambios por emitir · 5</b><span class="der"><svg class="flecha"><use href="#abajo"/></svg></span></div></div>
+      <div class="box"><div class="box-c"><span class="dot a"></span><b style="font-size:15px">Pago por revisar · 6</b><span class="der"><svg class="flecha"><use href="#abajo"/></svg></span></div></div>
+    </div>
+    <div class="navb"><span>Inicio</span><span class="on">Mi trabajo</span><span>Clientes</span><span>Comisiones</span><span>Más</span></div>
+  </div>
+  <p class="nota" style="max-width:390px">En teléfono el menú de la izquierda pasa a chips arriba; el resto igual. Mismo patrón para todos los roles.</p>
+</div>
+
+</div>
+</body>
+</html>
