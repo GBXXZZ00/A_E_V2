@@ -73,7 +73,8 @@
     abogado: 'tus contratos por elaborar salen por tipo de cliente (ISP, corporativo, VGT, PYME); cada uno abre el expediente.',
     lider: 'cada tarea abre el cliente o la comisión; lo devuelto o pedido va primero.', analista: 'cartas, IP y cambios te llevan a su módulo; las tareas sueltas son tus notas y se marcan hechas aquí.' };
   function queCambio(){
-    const z = $('queCambio'); if(!z || !yo || D.persona) { if(z) z.classList.add('hidden'); return; }
+    const z = $('queCambio'); if(z) z.classList.add('hidden'); if(z) return;   // Lote 12/11: sin el aviso "Qué cambió" (maqueta)
+    if(!z || !yo || D.persona) { if(z) z.classList.add('hidden'); return; }
     const r = D.senior && D.rol !== 'admin' ? 'senior' : D.vista === 'coord' ? 'analista' : D.vista; const k = 'ae_quecambio_0511:' + yo.id;
     let visto = false; try { visto = localStorage.getItem(k) === '1'; } catch (e) {}
     if(visto || !CAMBIO[r]){ z.classList.add('hidden'); return; }
@@ -89,17 +90,19 @@
   }
   function pintarConDatos(D0){
     const gs = B.grupos(D); const notas = (D.notas || []).filter((x) => !x.hecha);
-    const validos = gs.map((g) => g.id).concat(['notas', D.equipo && D.equipo.length && !D.persona ? 'equipo' : '']).filter(Boolean);
+    const validos = gs.map((g) => g.id).concat(['notas', D.equipo && D.equipo.length && !D.persona ? 'equipo' : '', D.vista === 'coord' ? 'sindueno' : '']).filter(Boolean);
     if(sel && validos.indexOf(sel) < 0) sel = '';
     const it = D.items || []; const venc = it.filter((f) => color(f) === 'venc').length; const hoy = it.filter((f) => color(f) === 'hoy').length;
-    $('saludo').textContent = 'Mi trabajo'; $('frase').textContent = frase(gs);
+    const pn = String((D.persona ? D.persona.nombre : (yo && yo.nombre) || D.nombre || '')).trim().split(/\s+/)[0];
+    $('saludo').textContent = D.persona ? 'Trabajo de ' + D.persona.nombre : canales() && D.vista === 'coord' && modoC === 'equipo' && sel === '' ? 'Mi equipo · Canales de atención' : (pn ? 'Hola, ' + pn : 'Mi trabajo');
+    $('frase').textContent = canales() && D.vista === 'coord' && modoC === 'equipo' && sel === '' ? 'Coordinadora: ves lo de todos y puedes pasar una tarea a otra persona.' : D.vista === 'abogado' ? 'Primero los contratos ISP. Cada tarea abre el expediente donde se hace.' : canales() ? 'Lo más urgente arriba. Las cartas se envían desde aquí mismo.' : frase(gs);
     $('pildoras').innerHTML = '<span class="mt-pill r">' + plural(venc, 'vencido', 'vencidos') + '</span><span class="mt-pill a">' + (hoy === 1 ? '1 vence hoy' : hoy + ' vencen hoy') + '</span><span class="mt-pill g">' + it.length + ' en total</span>';
     const bp = $('bandaPersona'); bp.classList.toggle('hidden', !D.persona);
     if(D.persona) bp.innerHTML = '<b>Estás viendo el buzón de ' + esc(D.persona.nombre) + ' tal como lo ve</b><p>Solo consulta: no puedes hacer nada desde aquí. <button type="button" class="enlace" data-tr="volver">Volver a mi trabajo</button></p>';
-    const zp = $('zonaPersona'); const ps = D.personas || []; zp.classList.toggle('hidden', !ps.length);
+    const zp = $('zonaPersona'); const ps = D.personas || []; zp.classList.toggle('hidden', !ps.length || canales());
     if(ps.length) $('persona').innerHTML = '<option value="">' + (D.rol === 'admin' || D.senior ? 'Mi trabajo' : 'Todos los analistas') + '</option>' +
       ps.map((p) => '<option value="' + esc(p.id) + '"' + (p.id === persona ? ' selected' : '') + '>' + esc(p.nombre + ' (' + ({ lider: 'líder', abogado: 'Legal', analista: 'analista' }[p.rol] || p.rol) + ')') + '</option>').join('');
-    $('btnLote').classList.toggle('hidden', !(D.rol === 'admin' || D.rol === 'abogado') || !!D.persona);
+    $('btnLote').classList.toggle('hidden', D.rol !== 'admin' || !!D.persona);
     pintarNums(B.grupos(D0)); pintarIndice(gs, notas); pintarCuerpo(gs, notas);
     if(busca && !(D.items || []).length) $('cuerpo').innerHTML = vacio('Nada con "' + busca + '"', 'Prueba con otra parte del nombre o con el RIF sin letras.');
   }
@@ -119,27 +122,28 @@
     z.classList.toggle('hidden', !l);
     if(l) z.innerHTML = l.map((x) => (x[3] ? '<button type="button" class="bz-num ' + x[2] + '" data-grupo="' + x[3] + '">' : '<div class="bz-num ' + x[2] + '">') + '<b>' + esc(x[0]) + '</b><small>' + esc(x[1]) + '</small>' + (x[3] ? '</button>' : '</div>')).join('');
   }
+  // Lote 12/11 (maqueta mi-trabajo): menú simple a la izquierda con su número; en teléfono pasa a chips
   function pintarIndice(gs, notas){
     const partes = new Set(gs.map((g) => g.parte)); const dos = partes.size > 1; let ult = '';
-    let h = '<button type="button" class="bz-md' + (sel === '' ? ' on' : '') + '" data-grupo="" aria-pressed="' + (sel === '') + '">Todo<span>' + (D.items || []).length + '</span></button>';
+    const it = (attr, on, t, n, rojo) => '<button type="button" class="bz-mi' + (on ? ' on' : '') + '" ' + attr + ' aria-pressed="' + on + '"><span>' + esc(t) + '</span><b' + (rojo ? ' class="r"' : '') + '>' + esc(n) + '</b></button>';
+    const parte = (t) => '<span class="bz-parte">' + esc(t) + '</span>';
+    const coordEq = canales() && D.vista === 'coord';
+    let h = parte(canales() ? 'Mi trabajo' : dos ? '' : 'Mi trabajo');
+    if(coordEq){
+      h += it('data-cn-modo="mio"', modoC === 'mio' && sel === '', 'Lo mío', CN && CN.equipo ? CN.equipo.filter((f) => f.analista_id === yo.id).length : '…') + parte('Mi equipo · Canales');
+      h += it('data-cn-modo="equipo"', modoC === 'equipo' && sel === '', 'Mi equipo', (D.items || []).length);
+    } else h += it('data-grupo=""', sel === '' && !verEq, 'Todo', (D.items || []).length);
     gs.forEach((g) => {
-      if(dos && g.parte !== ult){ h += '<span class="bz-parte">' + (g.parte === 'ventas' ? 'Mis ventas' : 'Mi rol') + '</span>'; ult = g.parte; }
-      const viejo = g.items.length ? g.items.reduce((a, f) => (String(f.desde) < String(a.desde) ? f : a), g.items[0]) : null;
-      const nuevos = g.items.filter((f) => B.diasDesde(f.desde, D.hoy) === 0).length;
-      h += '<button type="button" class="bz-cd' + (sel === g.id ? ' on' : '') + '" data-grupo="' + g.id + '" aria-pressed="' + (sel === g.id) + '">' + B.icono(g.icono, g.tono) +
-        '<span class="bz-cd-t"><b>' + esc(g.titulo) + '</b><small>' + esc(g.sub) + '</small></span><span class="bz-cd-n">' + g.items.length + '</span>' +
-        '<span class="bz-cd-f">' + (g.venc ? '<span class="mt-pill r">' + plural(g.venc, 'vencido', 'vencidos') + '</span>' : '') + (g.hoy ? '<span class="mt-pill a">' + g.hoy + ' hoy</span>' : '') +
-          '<span>' + esc(viejo ? 'Más viejo: ' + plural(B.diasDesde(viejo.desde, D.hoy), 'día', 'días') : 'Nada pendiente') + '</span>' + (nuevos ? '<b>' + esc(plural(nuevos, 'nuevo hoy', 'nuevos hoy')) + '</b>' : '') + '</span></button>';
+      if(dos && g.parte !== ult){ h += parte(g.parte === 'ventas' ? 'Mis ventas' : 'Mi rol'); ult = g.parte; }
+      h += it('data-grupo="' + g.id + '"', sel === g.id, g.titulo, g.items.length, g.venc > 0);
     });
-    if(!D.persona){
-      const prox = notas.filter((x) => x.recordar).sort((a, b) => (a.recordar < b.recordar ? -1 : 1))[0];
-      h += '<button type="button" class="bz-cd' + (sel === 'notas' ? ' on' : '') + '" data-grupo="notas" aria-pressed="' + (sel === 'notas') + '">' + B.icono('nota', 'v') +
-        '<span class="bz-cd-t"><b>Mis notas</b><small>Lo que tú anotas</small></span><span class="bz-cd-n">' + notas.length + '</span>' +
-        '<span class="bz-cd-f"><span>' + esc(prox ? 'Recordar el ' + fecha(prox.recordar).replace(/ de \d{4}$/, '') : notas.length ? 'Sin recordatorio' : 'Sin notas') + '</span></span></button>';
-    }
-    if(D.equipo && D.equipo.length && !D.persona) h += '<button type="button" class="bz-md' + (sel === 'equipo' ? ' on' : '') + '" data-grupo="equipo" aria-pressed="' + (sel === 'equipo') + '">El equipo<span>' + plural(D.equipo.length, 'persona', 'personas') + '</span></button>';
+    if(coordEq && CN && CN.sin_dueno) h += it('data-grupo="sindueno"', sel === 'sindueno', 'Órdenes sin dueño', CN.sin_dueno.length, CN.sin_dueno.length > 0);
+    if(!D.persona) h += it('data-grupo="notas"', sel === 'notas', 'Mis notas', notas.length);
+    if(canales() && D.vista === 'analista' && CN && CN.equipo) h += parte('Mi equipo · Canales') + it('data-cn-eq="1"', verEq && sel === '', 'Todo el equipo', CN.equipo.length);
+    if(D.equipo && D.equipo.length && !D.persona) h += parte('El equipo') + it('data-grupo="equipo"', sel === 'equipo', 'Ver el trabajo de…', D.equipo.length);
     $('tarjetas').innerHTML = h;
   }
+
 
   // Lote 05/11 D1: el botón dice adónde lleva (la revisión de documentos se hace aquí mismo)
   function destino(f){
@@ -201,6 +205,7 @@
     else if(sel === 'equipo') h = seccion('El equipo', 'Toca para ver su buzón tal como lo ve (solo consulta)', equipoHtml());
     else if(D.vista === 'abogado' && (sel === '' || sel === 'con')) h = tableroLegal(gs);
     else if(canales() && sel === '') h = tableroCanales();
+    else if(sel === 'sindueno'){ const sd = filtrar((CN && CN.sin_dueno) || []); h = seccion('Órdenes sin dueño · ' + sd.length, 'No comisionan hasta elegir de quién son', sd.length ? sd.map((f) => '<div class="cn-fila"><div class="cn-tx"><b>' + esc(f.titulo || '') + '</b><small>' + esc(f.detalle || '') + '</small></div><span class="chip ambar">Falta elegir</span><span class="cn-acc"><button type="button" class="btn btn-chico" data-cn-hacer="' + esc(kDe(f)) + '">Elegir dueño</button></span></div>').join('') : '<p class="nota-chica bz-nada">Todas las órdenes tienen dueño.</p>'); }
     else if(sel){ const g = gs.find((x) => x.id === sel); h = seccion(g.titulo, subGrupo(g), listaGrupo(g), accionesGrupo(g)); }
     else {
       const urg = (D.items || []).slice().sort((a, b) => (String(a.vence || '9') < String(b.vence || '9') ? -1 : 1)).slice(0, 4);
@@ -254,7 +259,7 @@
       chip = '<span class="chip ' + (dd > 3 ? 'rojo' : dd > 1 ? 'ambar' : '') + '">' + (dd === 0 ? 'Hoy' : plural(dd, 'día', 'días')) + '</span>';
       if(coord) btns += '<button type="button" class="btn btn-chico btn-2" data-cn-pasar="' + esc(k) + '">Pasar a otra persona</button>';
       btns += falta ? '<button type="button" class="btn btn-chico' + (coord ? ' btn-2' : '') + '" data-cn-hacer="' + esc(k) + '">Escribir IP</button>'
-        : e.tel ? '<button type="button" class="btn btn-chico" data-cn-wa="' + esc(k) + '">' + (coord ? 'Enviar yo' : 'Enviar por WhatsApp') + '</button>'
+        : e.tel ? '<button type="button" class="btn btn-chico wa" data-cn-wa="' + esc(k) + '">' + (coord ? 'Enviar yo' : 'Enviar por WhatsApp') + '</button>'
         : '<button type="button" class="btn btn-chico btn-2" data-cn-pdf="' + esc(k) + '">Descargar</button>';
     }
     return '<div class="cn-fila"><div class="cn-tx"><b>' + esc(f.titulo || '') + '</b><small>' + esc(sub) + '</small></div>' + chip + '<span class="cn-acc">' + btns + '</span></div>';
@@ -279,22 +284,14 @@
     const desc = cartas.filter((f) => exDe(f).descargada); const viejas = cartas.filter((f) => diasD(f) > 3);
     const ips = its.filter((f) => f.tipo === 'sin_ip' || f.tipo === 'ip_confirmar'); const emi = its.filter((f) => f.tipo === 'cambio_emitir'); const pago = its.filter((f) => f.tipo === 'revisar_pago');
     let h = '';
-    if(D.vista === 'coord'){
-      const nMio = filtrar(CN.equipo || []).filter((f) => f.analista_id === yo.id).length;
-      h += '<div class="cn-modo" role="tablist" aria-label="Qué ver"><button type="button" role="tab" aria-selected="' + (modoC === 'mio') + '" class="' + (modoC === 'mio' ? 'on' : '') + '" data-cn-modo="mio">Lo mío <b>' + nMio + '</b></button>' +
-        '<button type="button" role="tab" aria-selected="' + (modoC === 'equipo') + '" class="' + (modoC === 'equipo' ? 'on' : '') + '" data-cn-modo="equipo">Mi equipo <b>' + filtrar(CN.equipo || []).length + '</b></button></div>';
-    } else if(CN.equipo){
-      h += '<div class="cn-modo" role="tablist" aria-label="Qué ver"><button type="button" role="tab" aria-selected="' + !verEq + '" class="' + (!verEq ? 'on' : '') + '" data-cn-eq="0">Lo mío <b>' + (D.items || []).length + '</b></button>' +
-        '<button type="button" role="tab" aria-selected="' + verEq + '" class="' + (verEq ? 'on' : '') + '" data-cn-eq="1">Todo el equipo <b>' + filtrar(CN.equipo).length + '</b></button></div>';
-    }
     const tile = (n, t, c, g) => (g ? '<button type="button" class="bz-num ' + c + '" data-grupo="' + g + '">' : '<div class="bz-num ' + c + '">') + '<b>' + n + '</b><small>' + esc(t) + '</small>' + (g ? '</button>' : '</div>');
-    h += '<div class="cn-tiles">' + tile(cartas.length, 'Cartas por enviar', 'a', 'carta') + tile(desc.length, 'Descargadas sin confirmar', 'b', '') + tile(viejas.length, 'Más de 3 días', 'r', '') +
+    if(!coord) h += '<div class="cn-tiles">' + tile(cartas.length, 'Cartas por enviar', 'a', 'carta') + tile(desc.length, 'Descargadas sin confirmar', 'b', '') + tile(viejas.length, 'Más de 3 días', 'r', '') +
       tile(ips.length, 'Esperan la IP', '', 'ip') + tile(emi.length, 'Cambios por emitir', 'b', 'emi') + tile(pago.length, 'Pago por revisar', 'r', 'pago') + '</div>';
     if(coord){
       const carga = (CN.carga || []).map((p) => { const det = [plural(p.cartas, 'carta', 'cartas'), p.ip ? p.ip + ' IP' : '', p.emi ? plural(p.emi, 'cambio por emitir', 'cambios por emitir') : '', p.pago ? plural(p.pago, 'pago', 'pagos') : ''].filter(Boolean).join(' · ');
         return '<div class="cn-per"><b>' + esc(p.id === yo.id ? 'Yo' : corto(p.nombre)) + '</b><span class="chip ' + (p.venc ? 'rojo' : p.hoy ? 'ambar' : 'verde') + '">' + esc(p.venc ? plural(p.venc, 'vencida', 'vencidas') : p.hoy ? p.hoy + ' hoy' : 'Al día') + '</span>' +
           '<small>' + esc(det) + '</small>' + (p.id === yo.id ? '' : '<button type="button" class="enlace" data-persona="' + esc(p.id) + '">Ver su trabajo</button>') + '</div>'; }).join('');
-      h += seccion('Mi equipo · Canales de atención', 'Ves lo de todos y puedes pasar una tarea a otra persona' + (CN.sin_asignar ? ' · ' + plural(CN.sin_asignar, 'tarea sin asignar', 'tareas sin asignar') : ''), '<div class="cn-team">' + carga + '</div>');
+      h += '<div class="cn-team">' + carga + '</div>' + (CN.sin_asignar ? '<p class="nota-chica" style="margin:0">' + esc(plural(CN.sin_asignar, 'tarea sin asignar', 'tareas sin asignar')) + ': pásalas con "Pasar a otra persona".</p>' : '');
     }
     // Cartas y proformas (primero las descargadas sin confirmar, luego las más viejas)
     let lc;
@@ -350,7 +347,7 @@
     const its = D.items || []; const k = D.kpis || {};
     const ven = gs.find((g) => g.id === 'ven') || { items: [], tipos: ['contrato_vence'] };
     // Lote 05/11 D4: "Por elaborar contrato" por tipo de cliente, prioridad ISP, corporativo, VGT, PYME, con filtros arriba
-    const TIPOS_C = [['isp', 'Dedicado ISP', 'Prioridad 1'], ['corp', 'Dedicado corporativo', 'Prioridad 2'], ['vgt', 'VGT', 'Prioridad 3 · por solicitud'], ['pyme', 'PYME', 'Prioridad 4']];
+    const TIPOS_C = [['isp', 'ISP', 'Prioridad 1'], ['corp', 'Corporativo', 'Prioridad 2'], ['vgt', 'VGT', 'Prioridad 3 · por solicitud'], ['pyme', 'PYME', 'Prioridad 4']];
     const tipoDe = (f) => { if(f.tipo === 'elaborar_vgt') return 'vgt'; const s = String(f.seg || ''); return /ISP/.test(s) ? 'isp' : /corporativo/i.test(s) ? 'corp' : /VGT/.test(s) ? 'vgt' : 'pyme'; };
     const elab = its.filter((f) => f.tipo === 'elaborar_contrato' || f.tipo === 'elaborar_vgt').sort((a, b) => (String(a.desde) < String(b.desde) ? -1 : 1));
     const filtros = '<div class="bz-fl" role="group" aria-label="Filtrar por tipo de cliente"><button type="button" class="' + (!filtroC ? 'on' : '') + '" data-filtro-c="" aria-pressed="' + !filtroC + '">Todos <b>' + elab.length + '</b></button>' +
@@ -456,11 +453,11 @@
   document.addEventListener('click', (ev) => {
     const t = ev.target; let b;
     if(t.closest('#vistaLote')) return;
-    if((b = t.closest('[data-grupo]')) && (b.closest('#tarjetas') || b.closest('#nums') || b.classList.contains('bz-ver'))){ sel = sel === b.dataset.grupo && b.closest('#tarjetas') ? '' : b.dataset.grupo; cuantos = 40; guardarUrl(); pintar(); if(b.classList.contains('bz-ver') || b.closest('#nums')) $('cuerpo').scrollIntoView({ block: 'start' }); return; }
+    if((b = t.closest('[data-grupo]')) && (b.closest('#tarjetas') || b.closest('#nums') || b.closest('.cn-tiles') || b.classList.contains('bz-ver'))){ sel = b.dataset.grupo; if(sel === '') verEq = false; cuantos = 40; guardarUrl(); pintar(); if(b.classList.contains('bz-ver') || b.closest('#nums')) $('cuerpo').scrollIntoView({ block: 'start' }); return; }
     if((b = t.closest('[data-hacer]'))){ const f = buscar(b.dataset.hacer); if(f) hacer(f); return; }
     if((b = t.closest('[data-cn-wa],[data-cn-pdf],[data-cn-ya],[data-cn-rec],[data-cn-pasar],[data-cn-ip],[data-cn-hacer]'))){ cnAccion(b); return; }
-    if((b = t.closest('[data-cn-modo]'))){ modoC = b.dataset.cnModo; pintar(); return; }
-    if((b = t.closest('[data-cn-eq]'))){ verEq = b.dataset.cnEq === '1'; pintar(); return; }
+    if((b = t.closest('[data-cn-modo]'))){ modoC = b.dataset.cnModo; sel = ''; guardarUrl(); pintar(); return; }
+    if((b = t.closest('[data-cn-eq]'))){ verEq = b.dataset.cnEq === '1'; sel = ''; guardarUrl(); pintar(); return; }
     if((b = t.closest('[data-cn-por]'))){ cartasPor = b.dataset.cnPor; pintar(); return; }
     if((b = t.closest('[data-gest-est]'))){ gestionEstado(b); return; }
     if((b = t.closest('[data-filtro-c]'))){ filtroC = b.dataset.filtroC; pintar(); return; }

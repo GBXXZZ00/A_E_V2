@@ -2550,3 +2550,110 @@ button.bz-ck.on::after{left:17px;top:13px}
   .cn-modo button{flex:1}
 }
 @media (hover:hover) and (pointer:fine){ .cn-modo button:hover:not(.on){color:var(--text)} .cn-sw button:hover:not(.on){border-color:var(--text3)} }
+
+/* Lote 12/11 · Ficha, pestaña Documentos (maqueta claude/maquetas/lote-12nov/ficha-documentos.html) */
+details.doc-sec{display:block;margin-top:12px;padding:0;font-size:14px;font-weight:400;line-height:normal;align-items:initial;gap:0}
+.doc-sec > summary{gap:10px}
+.doc-dot{width:8px;height:8px;border-radius:50%;flex:none;background:#D99012}
+.doc-dot.v{background:var(--verde)}
+.doc-sec-c{padding:2px 16px 16px}
+.doc-sec-c > .fd-sum{margin-top:4px}
+.doc-sec .casilla.doc{margin:0;width:100%;padding:11px 0;border-radius:0}
+.doc-sec .casilla.doc .ico{width:36px;height:36px;border-radius:11px}
+.doc-sec .doc.rev .ico{background:var(--azul-bg);color:var(--azul)}
+.doc-sec .casilla .mini{height:36px;padding:0 14px;font-size:13px;display:inline-flex;align-items:center}
+.mini.sub{border:1.5px dashed #A9B6DE;color:var(--accent);background:#F7F9FE}
+.doc-sec .sec{margin:18px 0 2px}
+#tab-documentos > .rp-linea,#tab-documentos > .rp{margin-top:4px}
+@media (max-width:720px){ .doc-sec .casilla.doc .mini{display:none} .doc-sec-c{padding:2px 14px 14px} }
+.ctr-fila{display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--line)}
+.doc-sec-c > .ctr-fila:first-child,.doc-sec-c > .al-banda + .ctr-fila{border-top:0}
+.ctr-fila .tx{flex:1;min-width:0}
+.ctr-fila .tx b{display:block;font-size:15px;font-weight:600}
+.ctr-fila .tx small{display:block;font-size:12.5px;color:var(--text2);margin-top:2px}
+.ctr-chips{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.ctr-fila .mini{height:36px;display:inline-flex;align-items:center}
+.ctr-hoja .ctr-t{border:0;padding:0;margin:0;box-shadow:none}
+.ctr-hoja .ctr-cab b{display:none}
+@media (max-width:720px){ .ctr-fila{flex-wrap:wrap} .ctr-chips{order:3;flex-basis:100%;justify-content:flex-start} }
+
+/* Lote 12/11 · Mi trabajo (maqueta claude/maquetas/lote-12nov/mi-trabajo.html) */
+.mt-pag .bz-cols{grid-template-columns:230px minmax(0,1fr);gap:0;margin-top:0;align-items:stretch}
+.mt-pag .bz-idx{gap:2px;padding:18px 14px;border-right:1px solid var(--line);background:#FBFBFC;min-height:calc(100vh - 160px);top:72px;align-self:start}
+.bz-mi{display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;min-height:40px;padding:0 14px;border-radius:12px;font:inherit;font-weight:600;font-size:14px;color:var(--text2);background:none;text-align:left}
+.bz-mi b{font-weight:700;color:var(--text)} .bz-mi b.r{color:var(--rojo)}
+.bz-mi.on{background:var(--text);color:#fff} .bz-mi.on b{color:#fff}
+@media (hover:hover) and (pointer:fine){ .bz-mi:not(.on):hover{background:var(--surface-2);color:var(--text)} }
+.bz-mi:active{transform:scale(.97)}
+.mt-pag .bz-parte{padding:12px 14px 6px}
+.mt-pag .bz-parte:empty{display:none}
+.bz-col2{min-width:0;padding:6px 0 24px 32px;display:flex;flex-direction:column;gap:14px}
+.mt-pag .mt-cab{align-items:flex-start;flex-wrap:nowrap}
+.mt-pag .mt-cab .titulo{font-size:26px;font-weight:800;letter-spacing:-.01em}
+.mt-pag .mt-cab .sub{margin-top:4px}
+.mt-pag .bz-busca{margin:0 0 0 auto;width:300px;max-width:100%;flex:none}
+.mt-pag .bz-busca .campo{margin-top:0;height:42px;border-radius:999px;padding:0 16px}
+.mt-pag .mt-res,#queCambio{display:none!important}
+.mt-pag .mt-herr:not(:has(:not(.hidden))){display:none}
+.mt-pag .bz-nums{margin:0;gap:12px}
+.bz-num{flex-direction:column-reverse;justify-content:flex-end;border-radius:16px;padding:12px 16px}
+.bz-num small{font-weight:500}
+.mt-pag .bz-sec{border-radius:18px;padding:4px 18px 12px}
+.mt-pag .bz-sh b{font-size:16px}
+.mt-pag .bz-pl{border-radius:18px}
+.mt-pag .bz-pl > summary{min-height:56px;padding:0 18px;font-size:16px}
+@media (max-width:900px){
+  .mt-pag .bz-cols{grid-template-columns:minmax(0,1fr)}
+  .mt-pag .bz-idx{position:static;min-height:0;flex-direction:row;flex-wrap:wrap;gap:6px;padding:0 0 12px;border-right:0;background:none}
+  .mt-pag .bz-parte{display:none}
+  .bz-mi{width:auto;min-height:40px;border:1px solid var(--line);border-radius:999px;padding:0 14px;gap:6px;color:var(--text)}
+  .bz-col2{padding:0}
+  .mt-pag .mt-cab{flex-wrap:wrap}
+  .mt-pag .bz-busca{margin:0;width:100%}
+  .mt-pag .bz-nums{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:900px){ .mt-pag .bz-cols{display:flex;flex-direction:column;gap:12px} .bz-col2{display:contents} .mt-pag .mt-cab{order:1} .mt-pag .bz-idx{order:2} .bz-col2 > :not(.mt-cab){order:3} }
+.mt-pag .bz-fl button{min-height:36px;border-width:1px} .mt-pag .bz-fl button.on{background:var(--text);border-color:var(--text);color:#fff}
+.btn.wa{background:#0F6642;border-color:#0F6642;color:#fff}
+.cn-pl .lg-sub{margin-left:auto;font-size:13px;color:var(--text2);font-weight:500}
+.cn-pl > summary b{flex:none}
+.mt-pag .cn-team{padding:0}
+
+/* Lote 12/11 · Comisiones (maqueta claude/maquetas/lote-12nov/comisiones.html) */
+.cx-panel .cx-rot{width:64px;flex:none;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text2)}
+.cx-panel .cx-eq,.cx-panel .cx-chip,.cx-filtros button,.cx-mas > summary{min-height:36px;height:36px;font-size:13.5px}
+.cx-buscar{margin-left:auto;width:300px;max-width:100%}
+.cx-buscar .campo{height:40px;border-radius:999px}
+.cx-fl-ver{gap:8px}
+.cx-ver{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.cx-ver::after{content:"";width:1px;height:24px;background:var(--line);margin-left:4px}
+.cx-filtros{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0;padding:0;border:0;overflow:visible}
+.cx-filtros button{padding:0 14px;border:1px solid var(--line);border-radius:999px;background:#fff;font-weight:600;color:var(--text);white-space:nowrap}
+.cx-filtros button em{font-style:normal;color:var(--text3);margin-left:4px}
+.cx-filtros button.on{background:var(--text);border-color:var(--text);color:#fff} .cx-filtros button.on em{color:#C8CCD2}
+.cx-mas{position:relative}
+.cx-mas > summary{display:inline-flex;align-items:center;gap:6px;padding:0 14px;border:1px solid var(--line);border-radius:999px;font-weight:600;cursor:pointer;list-style:none;white-space:nowrap}
+.cx-mas > summary::-webkit-details-marker{display:none}
+.cx-mas > summary::after{content:"⌄";color:var(--text2)}
+.cx-menu{position:absolute;z-index:20;top:44px;left:0;min-width:240px;background:#fff;border:1px solid var(--line);border-radius:16px;box-shadow:0 18px 40px rgba(15,23,42,.14);padding:6px;display:flex;flex-direction:column;gap:2px}
+.cx-menu button{border:0!important;border-radius:10px!important;justify-content:space-between;display:flex;align-items:center;width:100%;text-align:left}
+.cx-fl-ver .acc-corte{margin-left:auto;display:flex;gap:8px}
+.cx-fl-ver .acc-corte .btn{min-height:36px;height:36px}
+.cx-fecha .campo{height:36px;min-height:36px}
+.cx-tg{grid-template-columns:90px minmax(180px,2fr) 110px minmax(170px,1.6fr) minmax(150px,1.3fr) 20px}
+.cx-tg .cx-et{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px}
+.cx-tg .cx-et .chip{height:22px;font-size:11.5px;padding:0 8px}
+.cx-lf-o{font-size:14px;color:var(--text)}
+.cx-grupo .grupo-cuerpo .cx-sec{background:var(--surface-2);padding:8px 14px}
+.cx-grupo .grupo-cuerpo .cx-sec.rojo{background:var(--rojo-bg)} .cx-grupo .grupo-cuerpo .cx-sec.verde{background:var(--verde-bg)}
+.cx-3p i.no{background:#D99012}
+@media (max-width:900px){
+  .cx-buscar{margin-left:0;width:100%;order:-1}
+  .cx-panel .cx-rot{display:none}
+  .cx-ver::after{display:none}
+  .cx-tg.cx-lf-cab{display:none}
+  .cx-tg{grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"c k" "p f";gap:6px 10px;border:1px solid var(--line);border-radius:16px;margin:8px 0;padding:12px 14px}
+  .cx-tg .cx-lf-c{grid-area:c} .cx-tg .cx-lf-k{grid-area:k} .cx-tg .cx-lf-p{grid-area:p} .cx-tg .cx-lf-f{grid-area:f;text-align:right}
+  .cx-tg .cx-lf-o,.cx-tg > .i{display:none}
+  .cx-fl-ver .acc-corte{margin-left:0}
+}

@@ -281,7 +281,7 @@
       const req = o.req !== undefined ? o.req : esRequerido(cas, num);
       if(!puedeSubir) return '<div class="casilla doc" data-casilla="' + k + '"><span class="ico">' + ic('doc') + '</span><span class="tx"><b>' + esc(nombre) + '</b><small>' + esc(o.sub || 'Lo sube Legal') + '</small></span></div>';
       return '<button type="button" class="casilla doc falta" data-casilla="' + k + '" data-subir="' + k + '" data-suelta="1"><span class="ico mas" aria-hidden="true">+</span><span class="tx"><b>' + esc(nombre) + '</b><small>' + esc(o.sub || (req ? 'Toca o suelta el archivo aquí' : 'Opcional')) + '</small></span>' +
-        (req ? '<span class="chip rojo">Falta</span>' : '') + '</button>';
+        (req ? '<span class="chip rojo">Falta</span>' : '') + '<span class="mini sub">Subir</span></button>';
     }
     const mk = F.puedo.revisar ? marcaDe(d.id) : null;
     if(mk){
@@ -300,13 +300,13 @@
     }
     const ok = d.estado === 'aprobado';
     return '<button type="button" class="casilla doc ' + (ok ? 'ok' : 'rev') + '" data-casilla="' + k + '" data-ver="' + d.id + '"><span class="ico" aria-hidden="true">' + (ok ? ic('check') : ic('reloj')) + '</span><span class="tx"><b>' + esc(nombre) + '</b><small' + (d.vence_en && d.vence_en < F.hoy ? ' style="color:var(--rojo)"' : '') + '>' + esc(subCasilla(d)) + '</small></span>' +
-      '<span class="chip ' + (ok ? 'verde">Aprobado' : 'ambar">Por revisar') + '</span></button>';
+      '<span class="chip ' + (ok ? 'verde">Bien' : F.puedo.revisar ? 'azul">Por revisar' : 'azul">En revisión') + '</span><span class="mini' + (!ok && F.puedo.revisar ? ' pri' : '') + '">' + (!ok && F.puedo.revisar ? 'Revisar' : 'Ver') + '</span></button>';
   }
   // Teléfono y correo son casillas como las demás: cuentan para pasar a revisión
   function datoHtml(nombre, valor, clave, obligatorio){
     const falta = !String(valor || '').trim();
     return '<button type="button" class="casilla doc dato ' + (falta ? (obligatorio ? 'falta' : '') : 'ok') + '" data-campo="' + clave + '"><span class="ico' + (falta ? ' mas' : '') + '" aria-hidden="true">' + (falta ? ic('lapiz') : ic('check')) + '</span>' +
-      '<span class="tx"><b>' + nombre + '</b><small>' + esc(falta ? (obligatorio ? 'Toca para escribirlo' : 'Opcional') : valor) + '</small></span>' + (falta && obligatorio ? '<span class="chip rojo">Falta</span>' : falta ? '' : ic('lapiz', 'ch')) + '</button>';
+      '<span class="tx"><b>' + nombre + '</b><small>' + esc(falta ? (obligatorio ? 'Toca para escribirlo' : 'Opcional') : valor) + '</small></span>' + (falta && obligatorio ? '<span class="chip rojo">Falta</span><span class="mini sub">Escribir</span>' : falta ? '<span class="mini">Escribir</span>' : '<span class="chip verde">Bien</span><span class="mini">Editar</span>') + '</button>';
   }
   // Contacto del representante: una sola casilla con el teléfono y el correo
   function contactoHtml(r, n, obligatorio){
@@ -316,7 +316,7 @@
     const falta = obligatorio && !lleno;
     const sub = lleno ? tel + ' · ' + co : algo ? algo + (obligatorio ? '. Falta el ' + (tel ? 'correo' : 'teléfono') : '') : obligatorio ? 'Toca para escribir el teléfono y el correo' : pres ? 'Opcional: contrato presencial' : 'Opcional';
     return '<button type="button" class="casilla doc dato ' + (falta ? 'falta' : algo ? 'ok' : '') + '" data-campo="rep:' + n + '"><span class="ico' + (algo && !falta ? '' : ' mas') + '" aria-hidden="true">' + (algo && !falta ? ic('check') : ic('lapiz')) + '</span>' +
-      '<span class="tx"><b>Contacto</b><small>' + esc(sub) + '</small></span>' + (falta ? '<span class="chip rojo">Falta</span>' : algo ? ic('lapiz', 'ch') : '') + '</button>';
+      '<span class="tx"><b>Contacto</b><small>' + esc(sub) + '</small></span>' + (falta ? '<span class="chip rojo">Falta</span><span class="mini sub">Escribir</span>' : algo ? '<span class="chip verde">Bien</span><span class="mini">Editar</span>' : '<span class="mini">Escribir</span>') + '</button>';
   }
   // Lote urgente 20/10: un representante agregado sin ningún dato ni archivo no se pide y se puede quitar
   const repConAlgo = (n) => { const r = (F.representantes || []).find((x) => x.orden === n) || {};
@@ -349,8 +349,9 @@
     const pedirM = c.estatus === 'grandes_negocios' ? 'pedir' : 'recordar';
     // Lote 28/10: arriba, qué falta en una línea y el botón para pedirlo; abajo, la zona para soltar varios archivos
     const falN = fal.map((x) => x.t + (x.e === 'devuelto' ? ' (devuelta)' : ''));
-    let h = presencialHtml() + suspHtml() +
-      (fal.length ? '<div class="fd-sum" data-faltan="' + fal.length + '"><span><b>' + (fal.length === 1 ? 'Falta 1:' : 'Faltan ' + fal.length + ':') + '</b> ' + esc(C.lista(falN)) + '</span><button type="button" class="btn btn-chico" data-paso="pedir:' + pedirM + '">Pedir lo que falta</button></div>'
+    let h = presencialHtml() + suspHtml() + panelRevision();
+    // Lote 12/11 (maqueta ficha-documentos): lo que antes iba arriba ahora va dentro del Expediente
+    const arribaExp = (fal.length ? '<div class="fd-sum" data-faltan="' + fal.length + '"><span><b>' + (fal.length === 1 ? 'Falta 1:' : 'Faltan ' + fal.length + ':') + '</b> ' + esc(C.lista(falN)) + '</span><button type="button" class="btn btn-chico" data-paso="pedir:' + pedirM + '">Pedir lo que falta</button></div>'
         : '<div class="fd-sum ok" data-faltan="0"><span><b>No falta nada.</b> ' + esc(plural(aprobados, 'documento aprobado', 'documentos aprobados')) + (nr ? ', ' + esc(plural(nr, 'por revisar', 'por revisar')) : '') + '</span></div>') +
       '<div class="acc">' +
         (F.puedo.revisar && nr ? '<button type="button" class="btn btn-chico" id="revisarTodo">Revisar ' + nr + '</button>' : '') +
@@ -358,15 +359,16 @@
       (selMode ? '<div class="al-banda azul sel-barra" role="status"><b>' + (selDocs.size ? plural(selDocs.size, 'documento elegido', 'documentos elegidos') : 'Toca los documentos que quieres aprobar') + '</b><p>Quedan marcados para aprobar; se aprueban al cerrar la revisión.</p>' +
         '<p style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap"><button type="button" class="btn btn-chico" id="aprobarSel"' + (selDocs.size ? '' : ' disabled') + '>Aprobar ' + (selDocs.size || '') + '</button><button type="button" class="btn btn-chico btn-2" id="selTodos">Elegir todos</button></p></div>' : '') +
       (c.aprobado_por_subir ? '<div class="al-banda ambar" role="note"><b>Aprobado, documentos por subir</b><p>Legal ya lo aprobó. Sube lo que falta: no cambia su aprobación ni su comisión.</p></div>' : '') +
-      quePedir() + bloqueIA() + panelRevision() + barraRevision() +
+      quePedir() + bloqueIA() + barraRevision() +
       '<button type="button" class="fd-drop" id="subirVarios">' + ic('subir') + '<span><span class="solo-pc">Arrastra aquí varios archivos y marca qué trae cada uno</span><span class="solo-tel">Toca para subir varios archivos y marca qué trae cada uno</span></span></button>' +
       '<p class="nota-chica' + (colaDe(id) ? '' : ' hidden') + '" id="estadoSubida" role="status"><span class="cargando-linea"><i></i><span id="textoSubida">' + esc(textoCola()) + '</span></span></p>' + driveHtml();
     // Lote 10/11 J: el expediente es una sección plegable (abierta si hay algo que hacer), seguida de Contratos y VGT
     const pendExp = fal.length > 0 || nr > 0 || selMode;
-    h += seccionDoc('exp', 'Expediente del cliente', fal.length ? ['ambar', fal.length === 1 ? 'Falta 1' : 'Faltan ' + fal.length] : nr ? ['azul', plural(nr, 'por revisar', 'por revisar')] : ['verde', 'Completo'], casillasHtml(false), pendExp) +
+    h += seccionDoc('exp', 'Expediente del cliente', fal.length ? ['ambar', fal.length === 1 ? 'Falta 1' : 'Faltan ' + fal.length] : nr ? ['azul', plural(nr, 'por revisar', 'por revisar')] : ['verde', 'Completo'], arribaExp + casillasHtml(false), pendExp) +
       seccionContratos() + seccionVgt() + historialRevisiones();
     $('tab-documentos').innerHTML = h;
     if(hojaAbierta() === 'hojaVgtSol' && vgtSolId) pintarVgtSol();
+    if(hojaAbierta() === 'hojaCtr' && ctrAbierto >= 0) pintarContrato();
   }
   // Las casillas del expediente, en su orden. emb: dentro de otra hoja (la de comisión), sin agregar representantes ni actas
   // Lote urgente 20/10: el interruptor de contrato presencial va arriba de Documentos (y en la hoja de comisión)
@@ -482,17 +484,46 @@
   const secAb = {};   // qué sección dejó abierta la persona (se recuerda mientras la ficha está abierta)
   function seccionDoc(k, titulo, chipEst, cuerpo, abiertaPorDefecto){
     const ab = secAb[k] !== undefined ? secAb[k] : !!abiertaPorDefecto;
-    return '<details class="doc-sec' + (chipEst && /rojo|ambar/.test(chipEst[0]) ? ' falta' : chipEst && chipEst[0] === 'verde' ? ' listo' : '') + '" data-sec="' + k + '"' + (ab ? ' open' : '') + '><summary><b>' + esc(titulo) + '</b>' +
+    return '<details class="doc-sec' + (chipEst && /rojo|ambar/.test(chipEst[0]) ? ' falta' : chipEst && chipEst[0] === 'verde' ? ' listo' : '') + '" data-sec="' + k + '"' + (ab ? ' open' : '') + '><summary>' + (chipEst && /rojo|ambar|verde/.test(chipEst[0]) ? '<span class="doc-dot ' + (chipEst[0] === 'verde' ? 'v' : 'a') + '" aria-hidden="true"></span>' : '') + '<b>' + esc(titulo) + '</b>' +
       (chipEst ? '<span class="chip ' + chipEst[0] + '">' + esc(chipEst[1]) + '</span>' : '') + ic('abajo') + '</summary><div class="doc-sec-c">' + cuerpo + '</div></details>';
   }
   const U = (u) => String(u || '').toUpperCase();
+  // Lote 12/11 (maqueta ficha-documentos, panel C): un contrato por fila con su estado y "Abrir"; lo que se edita va en su hoja
+  let ctrCuerpos = []; let ctrAbierto = -1; let ctrBanda = '';
+  function filasContratos(html){
+    const t = document.createElement('template'); t.innerHTML = html; ctrCuerpos = []; ctrBanda = '';
+    let out = '';
+    Array.prototype.forEach.call(t.content.childNodes, (n) => {
+      if(n.nodeType !== 1){ return; }
+      if(n.classList.contains('al-banda')){ ctrBanda = n.outerHTML; return; }
+      if(!n.classList.contains('ctr-t')){ out += n.outerHTML; return; }
+      const cab = n.querySelector('.ctr-cab'); const tit = cab && cab.querySelector('b') ? cab.querySelector('b').textContent : 'Contrato';
+      const chips = cab ? Array.prototype.map.call(cab.querySelectorAll('.chip'), (x) => x.outerHTML).join('') : '';
+      const val = (r) => { const f = Array.prototype.find.call(n.querySelectorAll('.datos .dato-f, .datos > div'), (x) => (x.firstElementChild || {}).textContent === r); return f && f.lastElementChild ? f.lastElementChild.textContent.trim() : ''; };
+      const fi = val('Firmado'); const ve = val('Vence');
+      const sub = [fi && fi !== 'Sin fecha' ? 'Firmado ' + fi : 'Sin firmar', ve && ve !== 'Sin fecha' ? 'vence ' + ve : ''].filter(Boolean).join(' · ');
+      const i = ctrCuerpos.length; ctrCuerpos.push({ titulo: tit, html: n.outerHTML });
+      out += '<div class="ctr-fila"><span class="tx"><b>' + esc(tit) + '</b><small>' + esc(sub) + '</small></span><span class="ctr-chips">' + chips + '</span><button type="button" class="mini" data-ctr-abrir="' + i + '">Abrir</button></div>';
+    });
+    return out;
+  }
+  function abrirContrato(i){
+    const k = ctrCuerpos[i]; if(!k) return; ctrAbierto = i; let h = $('hojaCtr');
+    if(!h){ h = document.createElement('section'); h.id = 'hojaCtr'; h.className = 'hoja lado ctr-hoja'; h.setAttribute('role', 'dialog'); h.setAttribute('aria-modal', 'true'); h.setAttribute('aria-labelledby', 'tCtr'); h.setAttribute('aria-hidden', 'true'); document.body.appendChild(h); C.prepararHojas(); }
+    pintarContrato(); if(hojaAbierta() !== 'hojaCtr') abrirHoja('hojaCtr');
+  }
+  function pintarContrato(){
+    const h = $('hojaCtr'); const k = ctrCuerpos[ctrAbierto]; if(!h || !k) return;
+    h.innerHTML = '<div class="cab"><div><h2 id="tCtr">' + esc(k.titulo) + '</h2><p class="sub-hoja">' + esc(F.cliente.nombre) + '</p></div><button type="button" class="cerrar" data-cierra="1" aria-label="Cerrar">' + ic('x') + '</button></div>' +
+      '<div class="hoja-cuerpo">' + ctrBanda + k.html + '</div>';
+  }
   function seccionContratos(){
     const c = F.cliente; const D = c.dedicado;
     const hayCtr = !c.es_natural || !!D || (F.documentos || []).some((d) => d.casilla.indexOf('contrato_') === 0);
     if(!hayCtr || !window.FichaDedicado) return '';
     const est = c.contrato_pend ? ['ambar', c.contrato_pend === 'sin_archivo' ? 'Falta subir el firmado' : 'Falta vencimiento'] : c.estatus === 'contrato_firmado' ? ['verde', 'Firmado'] : ['', ((C.ESTATUS || {})[c.estatus] || {}).t || 'Sin contrato'];
     const puedeC = !!(F.puedo && F.puedo.contrato);
-    return seccionDoc('ctr', 'Contratos', est, window.FichaDedicado.contratos(F, yo) +
+    return seccionDoc('ctr', 'Contratos', est, filasContratos(window.FichaDedicado.contratos(F, yo)) +
       (puedeC ? '<div class="acc" style="margin-top:10px"><button type="button" class="btn btn-chico btn-2" data-ctr-mas="adendum">' + ic('mas') + 'Adendum</button><button type="button" class="btn btn-chico btn-2" data-ctr-mas="otro">' + ic('mas') + 'Otro contrato</button></div>' : ''), !!c.contrato_pend);
   }
   // Franja del documento contractual de una solicitud: verde firmado, ámbar falta, rojo en uso sin contrato
@@ -1848,7 +1879,7 @@
     if((b = t.closest('[data-hilo]'))){ hiloF = b.dataset.hilo; pintarHilo(); return; }
     if((b = t.closest('#hojaFicha [data-vgt-subir]'))){ fuera = null; const p = b.dataset.vgtSubir.split(':'); destino = { casilla: 'otro', numero: 0, vgt: { sol: Number(p[0]), tipo: p[1], otra: p[2] === 'otra' } }; const inp = $('archivo'); inp.value = ''; inp.click(); return; }
     if(t.closest('#hojaFicha #vgtNueva')){ abrirNuevaSol(); return; }
-    if((b = t.closest('#hojaFicha [data-subir]'))){ fuera = null; const p = b.dataset.subir.split(':'); elegirPara(p[0], Number(p[1])); return; }
+    if((b = t.closest('#hojaFicha [data-subir], #hojaCtr [data-subir]'))){ fuera = null; const p = b.dataset.subir.split(':'); elegirPara(p[0], Number(p[1])); return; }
     if((b = t.closest('#hojaFicha [data-ip]'))){ fuera = null; abrirCampo('ip:' + b.dataset.ip); return; }
     if((b = t.closest('#hojaFicha [data-enviar]'))){ abrirEnviar(b.dataset.enviar); return; }
     if((b = t.closest('#hojaEnviar [data-env-tipo]')) && env){ env.tipo = b.dataset.envTipo; Array.prototype.forEach.call($('hojaEnviar').querySelectorAll('[data-env-tipo]'), (x) => { const on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-checked', String(on)); }); return; }
@@ -1864,6 +1895,7 @@
     if((b = t.closest('#hojaVgtSol [data-ver]'))){ abrirVer(Number(b.dataset.ver)); return; }
     if((b = t.closest('#hojaVgtSol [data-vg-firma]'))){ Array.prototype.forEach.call(b.parentNode.querySelectorAll('[data-vg-firma]'), (x) => { const on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-checked', String(on)); }); return; }
     if((b = t.closest('#hojaVgtSol [data-vgt-tramo]')) && window.FichaDedicado && window.FichaDedicado.abrirTramo){ window.FichaDedicado.abrirTramo(b.dataset.vgtTramo, b.dataset.tpaso || undefined); return; }
+    if((b = t.closest('#hojaFicha [data-ctr-abrir]'))){ abrirContrato(Number(b.dataset.ctrAbrir)); return; }
     if((b = t.closest('#hojaFicha [data-ctr-mas]'))){ elegirPara('otro', 0); toast(b.dataset.ctrMas === 'adendum' ? 'Al subirlo, ponle de título "Adendum al contrato"' : 'Al subirlo, ponle de título el nombre del contrato'); return; }
     if(t.closest('#agregarActa')){ actaExtra = Math.min(ACTAS.length, actaExtra + 1); pintarDocumentos(); const cs = document.querySelectorAll('[data-grupo="empresa"] [data-casilla^="acta_asamblea"]'); if(cs.length) cs[cs.length - 1].scrollIntoView({ block: 'center' }); return; }
     if((b = t.closest('[data-ver]')) && !t.closest('#docsCom')){ abrirVer(Number(b.dataset.ver)); return; }   // en la hoja de comisión lo maneja comisiones.js
@@ -1882,7 +1914,7 @@
     if((b = t.closest('#hojaFicha [data-lider-cambiar]')) && F && window.Gestion){ window.Gestion.lider(F, b.dataset.liderCambiar, () => cargar()); return; }
     if((b = t.closest('#hojaFicha [data-suspender]')) && F && window.Gestion){ window.Gestion.suspender(F, b.dataset.suspender === '1', () => cargar()); return; }
     // Firma Digital o Física del contrato PYME (Física = contrato presencial)
-    if((b = t.closest('#hojaFicha [data-firma-cli]')) && F){ if(b.classList.contains('on')) return; const fis = b.dataset.valor === 'fisica';
+    if((b = t.closest('#hojaFicha [data-firma-cli], #hojaCtr [data-firma-cli]')) && F){ if(b.classList.contains('on')) return; const fis = b.dataset.valor === 'fisica';
       accion('cliente_marca', { p_cliente: id, p_marca: 'contrato_presencial', p_valor: fis }, fis ? 'Firma física: no se piden correos ni teléfono' : 'Firma digital', b); return; }
     if(t.closest('#revisarTodo')){ abrirRevision(); return; }
     // Lote 05/11 parte C

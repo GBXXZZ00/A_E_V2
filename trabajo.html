@@ -10,51 +10,54 @@
 <link rel="expect" href="#navListo" blocking="render">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="assets/img/icon-192.png">
-<link rel="stylesheet" href="assets/css/base.css?v=85">
-<link rel="stylesheet" href="assets/css/modulos.css?v=85">
-<link rel="stylesheet" href="assets/css/app.css?v=85">
+<link rel="stylesheet" href="assets/css/base.css?v=86">
+<link rel="stylesheet" href="assets/css/modulos.css?v=86">
+<link rel="stylesheet" href="assets/css/app.css?v=86">
 </head>
 <body>
-<header class="barra" id="barra"><a class="marca" href="inicio.html" aria-label="Inicio"><img class="logo" src="assets/img/logo.svg?v=85" alt="Airtek" width="96" height="12"><span>Empresas</span></a></header>
-<main class="pagina">
-  <div class="mt-cab">
-    <div><h1 class="titulo" id="saludo">Mi trabajo</h1><p class="sub" id="frase">&nbsp;</p></div>
-    <div class="mt-res" id="pildoras"></div>
-  </div>
-  <div class="al-banda azul hidden bz-persona" id="bandaPersona" role="status"></div>
-  <div class="mt-herr">
-    <button type="button" class="btn btn-chico btn-2 hidden" id="btnLote" data-tr="lote">Revisar documentos en lote</button>
-    <div class="selector-corte hidden" id="zonaPersona"><label class="solo-lector" for="persona">Ver el trabajo de</label><select id="persona" aria-label="Ver el trabajo de"></select></div>
-  </div>
-  <div class="al-banda azul hidden mt-cola-barra" id="barraCola" role="status"></div>
-  <div class="al-banda azul hidden bz-cambio" id="queCambio" role="status"></div>
-  <div class="bz-busca" id="zonaBusca"><label class="rotulo" for="bzBuscar">Buscar por RIF o nombre</label><input class="campo" id="bzBuscar" type="search" autocomplete="off" enterkeyhint="search"></div>
-  <section class="bz-nums hidden" id="nums" aria-label="Números del día"></section>
+<header class="barra" id="barra"><a class="marca" href="inicio.html" aria-label="Inicio"><img class="logo" src="assets/img/logo.svg?v=86" alt="Airtek" width="96" height="12"><span>Empresas</span></a></header>
+<main class="pagina mt-pag">
+  <!-- Lote 12/11 (maqueta claude/maquetas/lote-12nov/mi-trabajo.html): menú a la izquierda; a la derecha "Hola", el buscador y el trabajo -->
   <div class="bz-cols" id="vistaBuzon">
     <nav class="bz-idx" id="tarjetas" aria-label="Grupos de trabajo"></nav>
-    <section class="bz-der" id="cuerpo" aria-live="polite"></section>
+    <section class="bz-col2">
+      <div class="mt-cab">
+        <div><h1 class="titulo" id="saludo">Mi trabajo</h1><p class="sub" id="frase">&nbsp;</p></div>
+        <div class="bz-busca" id="zonaBusca"><label class="solo-lector" for="bzBuscar">Buscar por RIF o nombre</label><input class="campo" id="bzBuscar" type="search" autocomplete="off" enterkeyhint="search" placeholder="Buscar por RIF o nombre"></div>
+      </div>
+      <div class="mt-res hidden" id="pildoras"></div>
+      <div class="al-banda azul hidden bz-persona" id="bandaPersona" role="status"></div>
+      <div class="mt-herr">
+        <button type="button" class="btn btn-chico btn-2 hidden" id="btnLote" data-tr="lote">Revisar documentos en lote</button>
+        <div class="selector-corte hidden" id="zonaPersona"><label class="solo-lector" for="persona">Ver el trabajo de</label><select id="persona" aria-label="Ver el trabajo de"></select></div>
+      </div>
+      <div class="al-banda azul hidden mt-cola-barra" id="barraCola" role="status"></div>
+      <div class="al-banda azul hidden bz-cambio" id="queCambio" role="status"></div>
+      <section class="bz-nums hidden" id="nums" aria-label="Números del día"></section>
+      <section class="bz-der" id="cuerpo" aria-live="polite"></section>
+    </section>
   </div>
   <section class="hidden" id="vistaLote" aria-label="Revisar documentos en lote"></section>
   <div class="bz-aviso hidden" id="bzAviso" role="status" aria-live="polite"></div>
 </main>
 <script src="assets/vendor/supabase.js?v=1"></script>
-<script src="assets/js/practica.js?v=85"></script>
-<script src="assets/js/supabase-client.js?v=85"></script>
-<script src="assets/js/comun.js?v=85"></script>
-<script src="assets/js/sesion.js?v=85"></script>
-<script src="assets/js/armazon.js?v=85"></script>
-<script src="assets/js/contacto.js?v=85"></script>
+<script src="assets/js/practica.js?v=86"></script>
+<script src="assets/js/supabase-client.js?v=86"></script>
+<script src="assets/js/comun.js?v=86"></script>
+<script src="assets/js/sesion.js?v=86"></script>
+<script src="assets/js/armazon.js?v=86"></script>
+<script src="assets/js/contacto.js?v=86"></script>
 <i id="navListo" hidden></i>
-<script src="assets/js/archivos.js?v=85"></script>
-<script src="assets/js/marca.js?v=85"></script>
-<script src="assets/js/documentos.js?v=85"></script>
-<script src="assets/js/pedir.js?v=85"></script>
-<script src="assets/js/ficha.js?v=85"></script>
-<script src="assets/js/dedicado-ficha.js?v=85"></script>
-<script src="assets/js/cliente-gestion.js?v=85"></script>
-<script src="assets/js/gestiones.js?v=85"></script>
-<script src="assets/js/buzon.js?v=85"></script>
-<script src="assets/js/revision-lote.js?v=85"></script>
-<script src="assets/js/trabajo.js?v=85"></script>
+<script src="assets/js/archivos.js?v=86"></script>
+<script src="assets/js/marca.js?v=86"></script>
+<script src="assets/js/documentos.js?v=86"></script>
+<script src="assets/js/pedir.js?v=86"></script>
+<script src="assets/js/ficha.js?v=86"></script>
+<script src="assets/js/dedicado-ficha.js?v=86"></script>
+<script src="assets/js/cliente-gestion.js?v=86"></script>
+<script src="assets/js/gestiones.js?v=86"></script>
+<script src="assets/js/buzon.js?v=86"></script>
+<script src="assets/js/revision-lote.js?v=86"></script>
+<script src="assets/js/trabajo.js?v=86"></script>
 </body>
 </html>

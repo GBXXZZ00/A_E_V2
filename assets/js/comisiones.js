@@ -169,12 +169,16 @@
       (d.puedo && d.puedo.subir_nuevo ? '<button type="button" class="cx-al azul" data-abrir="nuevo"><span class="big">Subir documentos de un cliente nuevo</span><span class="s">Buscas su orden de Odoo o lo subes con el posible nombre</span>' +
         '<span class="pill">' + plural(pend, 'pendiente por instalar', 'pendientes por instalar') + '</span></button>' : '');
   }
+  let masAbierto = false;
   function pintarFiltros(){
     if(seg !== 'inst'){ $('filtros').innerHTML = ''; const ay0 = $('ayudaFiltro'); if(ay0) ay0.innerHTML = seg === 'cartas' ? '<p class="ayuda-filtro cx-todas" role="note">Las tres pestañas quedan marcadas: se ve todo lo que falta por enviar, también los cambios de categoría. <button type="button" class="enlace" data-seg="inst">Quitar filtro</button></p>' : ''; return; }
-    $('filtros').innerHTML = FILTROS.filter((f) => (OPCIONALES.indexOf(f.id) < 0 || filtro === f.id || Number(conteo(f.id)) > 0) && !(f.id === 'asignar' && esLider())).map((f) => {
-      const n = conteo(f.id);
-      return '<button type="button" role="tab" data-filtro="' + f.id + '" class="' + (f.id === filtro ? 'on' : '') + '" aria-selected="' + (f.id === filtro) + '">' + esc(f.t) + (n === '' ? '' : ' <em>' + esc(n) + '</em>') + '</button>';
-    }).join('');
+    // Lote 12/11 (maqueta comisiones): los 4 más usados como chips; el resto en "Más filtros"
+    const vis = FILTROS.filter((f) => (OPCIONALES.indexOf(f.id) < 0 || filtro === f.id || Number(conteo(f.id)) > 0) && !(f.id === 'asignar' && esLider()));
+    const btn = (f) => { const n = conteo(f.id); return '<button type="button" role="tab" data-filtro="' + f.id + '" class="' + (f.id === filtro ? 'on' : '') + '" aria-selected="' + (f.id === filtro) + '">' + esc(f.t) + (n === '' ? '' : ' <em>' + esc(n) + '</em>') + '</button>'; };
+    const PRIN = ['todos', 'falta', 'comisionan', 'carta'];
+    const otros = vis.filter((f) => PRIN.indexOf(f.id) < 0); const act = otros.find((f) => f.id === filtro);
+    $('filtros').innerHTML = vis.filter((f) => PRIN.indexOf(f.id) >= 0).map(btn).join('') + (act ? btn(act) : '') +
+      (otros.length ? '<details class="cx-mas"' + (masAbierto ? ' open' : '') + '><summary>Más filtros</summary><div class="cx-menu">' + otros.filter((f) => f !== act).map(btn).join('') + '</div></details>' : '');
     const ay = $('ayudaFiltro'); if(ay) ay.innerHTML = ayudaFiltro();
   }
   // Qué le falta a la fila, en chips
@@ -248,6 +252,27 @@
     return '<button type="button" class="cx-fila corta" data-com="' + esc(f.instalacion_id) + '" data-cliente="' + esc(f.cliente_id) + '" data-carta="1"><span class="cx-c"><b>' + esc(f.nombre) + '</b><small>' + esc(sub) + '</small></span>' +
       '<span class="chip ' + c[0] + '">' + esc(c[1]) + '</span></button>';
   }
+  // Lote 12/11 (maqueta comisiones, A): fila de tabla dentro de cada dueño; lo raro (aliado, movida, dueño, motivo) va en chips pequeños bajo el cliente
+  function filaTabla(f){
+    const att = f.pend ? 'data-exp="' + esc(f.cliente_id) + '"' : 'data-com="' + esc(f.instalacion_id) + '" data-cliente="' + esc(f.cliente_id) + '"';
+    const pt = (ok) => '<i class="' + (ok ? 'ok' : 'no') + '" aria-hidden="true"></i>';
+    const texto = f.pend ? 'Sin instalar' : f.cumple ? (f.excepcion ? 'Comisiona por excepción' : 'Comisiona') : 'Falta ' + window.Comun.lista([!f.legal_ok ? 'legal' : '', !f.pago_ok ? 'pago' : '', !f.orden_ok ? 'orden' : ''].filter(Boolean));
+    const c = f.pend ? ['', 'Se envía al instalar'] : (etiquetaCarta(f) || ['', 'Sin registro']);
+    const et = [];
+    if(!f.pend){
+      if(f.equipo === 'aliados') et.push(['morado', 'Aliado · ' + aliadoDe(f)]);
+      if(!f.lider && !f.dueno) et.push(['ambar', 'Falta elegir dueño']);
+      if(!f.orden_ok && f.motivo) et.push([/parec/i.test(f.motivo) ? 'azul' : '', f.motivo]);
+      if(f.movida) et.push(['ambar', 'Movida a mano']);
+      if(f.por_subir && f.legal_ok) et.push(['ambar', 'Archivos por subir']);
+    } else et.push(['', f.docs ? (f.enviado ? 'Enviado a revisión' : 'Documentos subidos') : 'Sin documentos']);
+    return '<button type="button" class="cx-lf cx-tg cx-fila2" ' + att + ' aria-label="' + esc((f.nombre || 'Sin nombre') + '. Toca para abrir su hoja') + '"><span class="cx-lf-f"><b>' + esc(f.pend ? 'Sin instalar' : diaMes(f.instalada_en)) + '</b><small>' + esc(f.pend ? '' : hace(f.instalada_en)) + '</small></span>' +
+      '<span class="cx-lf-c"><b>' + esc(f.nombre || 'Sin nombre') + '</b><small>' + esc([f.doc || '', [f.sucursal, f.codigo ? String(f.codigo).replace(/^0+/, '') : ''].filter(Boolean).join('-')].filter(Boolean).join(' · ')) + '</small>' +
+        (et.length ? '<span class="cx-et">' + et.map((x) => '<span class="chip ' + x[0] + '">' + esc(x[1]) + '</span>').join('') + '</span>' : '') + '</span>' +
+      '<span class="cx-lf-o">' + (f.pend ? '' : f.orden ? esc(ordenCorta(f.orden)) : '<span class="tx-rojo">Sin orden</span>') + '</span>' +
+      '<span class="cx-lf-p">' + (f.pend ? '' : '<span class="cx-3p" title="Legal · Pago · Orden">' + pt(f.legal_ok) + pt(f.pago_ok) + pt(f.orden_ok) + '</span>') + '<small>' + esc(texto) + '</small></span>' +
+      '<span class="cx-lf-k"><span class="chip ' + c[0] + '">' + esc(c[1].replace(/^Carta y proforma por enviar/, 'Por enviar').replace(/^Carta enviada por Canales/, 'Enviada').replace(/^Carta: /, '')) + '</span></span>' + ic('derecha') + '</button>';
+  }
   // Lote 10/11 D: "Lista por fecha": todo seguido, la instalación más nueva primero, con su dueño en una etiqueta
   function listaFecha(filas){
     const l = filas.slice().sort((a, b) => (a.pend - b.pend) || fechaDe(b).localeCompare(fechaDe(a)) || String(a.nombre).localeCompare(String(b.nombre)));
@@ -316,9 +341,9 @@
     if(cartas) cuerpo = ver.map(filaCarta).join('');
     else {
       const lim = d && d.limite ? diaMes(d.limite + 'T12:00:00') : '';
-      const sec = (cls, t, l) => l.length ? '<div class="cx-sec ' + cls + '">' + esc(t) + ' · ' + l.length + '</div>' + l.map(filaNueva).join('') : '';
+      const sec = (cls, t, l) => l.length ? '<div class="cx-sec ' + cls + '">' + esc(t) + ' · ' + l.length + '</div>' + l.map(filaTabla).join('') : '';
       const ant = ver.filter((f) => !f.pend && f.origen === 'anterior' && !f.cumple); const est = ver.filter((f) => !f.pend && f.origen !== 'anterior' && !f.cumple);
-      cuerpo = sec('rojo', (d && d.corte ? 'Corte de ' + mes(menosMeses(d.corte, 1) + 'T12:00:00Z') : 'Corte anterior') + ': si no cumplen al ' + lim + ' se pierden', ant) + sec('', 'Instaladas en este corte', est) +
+      cuerpo = '<div class="cx-lf cx-lf-cab cx-tg" aria-hidden="true"><span>Instalado</span><span>Cliente</span><span>Orden</span><span>Legal · Pago · Orden</span><span>Carta</span><span></span></div>' + sec('rojo', (d && d.corte ? 'Corte de ' + mes(menosMeses(d.corte, 1) + 'T12:00:00Z') : 'Corte anterior') + ': si no cumplen al ' + lim + ' se pierden', ant) + sec('', 'Instaladas en este corte', est) +
         sec('verde', 'Cumplieron', ver.filter((f) => f.cumple)) + sec('gris', 'Por instalar', ver.filter((f) => f.pend));
     }
     cuerpo += todo ? '' : '<button type="button" class="fila mas" data-mas="' + esc(k) + '">Ver ' + (filas.length - TOPE) + ' más</button>';
