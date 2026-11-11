@@ -1,6 +1,15 @@
 # Traspaso (se actualiza al cerrar cada sesión)
 
-Actualizado: 11/11/2026, LOTE 11/11 HECHO. Publicado: `?v=85`.
+Actualizado: 12/11/2026, LOTE 12/11 HECHO (ficha, Comisiones y Mi trabajo según maquetas). Publicado: `?v=86`.
+
+## LOTE 12/11: pantallas iguales a las maquetas aprobadas (`claude/maquetas/lote-12nov/`)
+Forma de trabajar desde aquí: maqueta con los estilos reales de la app (base.css) y datos inventados, el administrador la aprueba, se monta y se compara la captura con la maqueta antes de publicar.
+- **Ficha · Documentos** (ficha-documentos.html, aprobada): arreglado el descuadre (la clase `falta` de las secciones las ponía en fila: `details.doc-sec{display:block}`). Arriba solo la línea de revisión; el resumen, Revisar, IA, zona para soltar y Drive van dentro del Expediente. Casillas con etiqueta (Bien, Falta, Por revisar/En revisión, Devuelta) y un botón (Subir, Ver, Revisar, Editar, Escribir); en teléfono la fila es el botón. Contratos: una fila por contrato con "Abrir" y la hoja `#hojaCtrVer` con lo de antes (firma, fechas, archivo, Editar). El Expediente abre solo si falta algo, hay por revisar, pedidos o "aprobado, por subir".
+- **Mi trabajo** (mi-trabajo.html, aprobada): menú simple a la izquierda (en teléfono chips), "Hola, …" con el buscador al lado; sin "Qué cambió" ni pastillas; "Revisar en lote" solo administrador; Canales: "Todo el equipo", "Lo mío / Mi equipo" y "Órdenes sin dueño" en el menú; coordinadora sin selector (entra por "Ver su trabajo").
+- **Comisiones** (comisiones.html, aprobada): panel con Equipo + buscador, Persona/Aliado, Ver + fechas + 4 filtros y "Más filtros" (resto) + Bajar Excel y Días para el pago. Cada dueño es una tabla (fecha, cliente, orden, Legal·Pago·Orden, carta), con chips chicos solo para lo raro.
+- Pruebas: ayudantes `irFiltro`, `abrirCtr`, `cerrarCtr` en simulador.js; 57 de 57 pasan.
+- **Pendiente**: maqueta 4 de Aliados (bandeja del administrador y pantalla del aliado en PC, formulario por pasos), luego montarla.
+
 
 ## LOTE 11/11 (pedido en el chat, aprobado "haz todo de una vez"): HECHO (v85)
 Referencia de comisiones al empezar y al terminar: septiembre 46/41, octubre 83/75, noviembre 55/4, con la misma huella md5 de `privado.comision_filas3` en los 3 cortes.
