@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hoja de Legal</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="base.css">
+<style>
+/* Maqueta 12/11 · Lo que ve Legal al tocar su tarea: la hoja del cliente puesta en su paso. Datos inventados. */
+.paso{border:1px solid var(--line);border-radius:18px;padding:14px 16px;display:flex;flex-direction:column;gap:12px}
+.paso .k{display:flex;align-items:center;gap:8px}
+.paso .k b{font-size:15px;margin-right:auto}
+.est4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.est4 span{height:40px;border-radius:12px;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;gap:6px;font-weight:600;font-size:12.5px;color:var(--text2);text-align:center;padding:0 4px;white-space:nowrap}
+.est4 span.hecho{background:var(--verde-bg);border-color:#A9D9C2;color:var(--verde)}
+.est4 span.on{background:var(--text);border-color:var(--text);color:#fff}
+.tel .est4 span{font-size:11.5px;height:44px;white-space:normal;line-height:1.15}
+.acc2{display:flex;gap:8px}
+.acc2 .btn.g{flex:1}
+.btn.peligro{border-color:#E8B4AE;color:var(--rojo)}
+.obs{background:#FFFBF2;border:1px solid #F1D9A6;border-radius:14px;padding:10px 12px;font-size:13px;line-height:1.4}
+.obs b{display:block;font-size:13.5px}
+.ro{font-size:12px;color:var(--text2);margin-left:auto}
+.mt{width:760px;background:#fff;border-radius:20px;box-shadow:0 18px 50px rgba(15,23,42,.10);padding:22px 24px;display:flex;flex-direction:column;gap:12px}
+.mt h2{font-size:22px;font-weight:800}
+.gr{border:1px solid var(--line);border-radius:18px;padding:12px 16px}
+.gr .t{display:flex;align-items:center;gap:8px;min-height:36px}
+.gr .t b{font-size:15px} .gr .t small{color:var(--text2);font-size:12.5px;margin-left:auto}
+.it{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid var(--line)}
+.it .tx b{font-size:14px}
+.cj{width:20px;height:20px;border:1.5px solid #C9CED6;border-radius:6px;flex:none}
+.hh{width:440px;background:#fff;border-radius:24px 0 0 24px;box-shadow:0 18px 50px rgba(15,23,42,.14);padding:22px 24px 0;display:flex;flex-direction:column;gap:12px}
+.hh h3{font-size:19px;font-weight:700} .hh .sub{font-size:13px;color:var(--text2);margin-top:3px}
+.hh .pie3{display:flex;gap:10px;justify-content:flex-end;padding:14px 0 18px;border-top:1px solid var(--line);margin-top:4px}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="ok" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="doc" viewBox="0 0 24 24"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/></symbol>
+  <symbol id="ab" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+</svg>
+<div class="lienzo">
+
+<!-- A · PC, documentos recibidos -->
+<div class="col" id="A">
+  <div class="et">A · PC · Reina toca "Abrir" en Mi trabajo: la hoja del cliente sale en su paso</div>
+  <div class="hoja">
+    <div class="cab"><span class="avatar">C</span><div><h2>Comercial Ejemplo, C.A.</h2><p class="sub">J-00000000-0 · Líder: Lucía Ejemplo · PYME</p></div><span class="cerrar"><svg width="22" height="22"><use href="#x"/></svg></span></div>
+    <div class="chips"><span class="chip punto azul">Documentos recibidos</span><span class="chip">PYME</span></div>
+    <div class="tabs"><span>Datos</span><span class="on">Documentos</span><span>Hilo</span></div>
+    <div class="cuerpo">
+      <div class="paso">
+        <div class="k"><b>Tu paso: elaborar el contrato</b><span class="chip ambar">Hace 3 días</span></div>
+        <div class="est4"><span class="on">Recibidos</span><span>En curso</span><span>Por firmar</span><span>Firmado</span></div>
+        <div class="acc2"><span class="btn g pri">Empecé el contrato</span><span class="btn g peligro">Hay un problema</span></div>
+        <p class="nota">Tocar un estatus lo cambia (pide confirmar). Cada cambio queda en la bitácora y en el hilo, y la tarea se mueve sola en tu Mi trabajo.</p>
+      </div>
+      <div class="sec">
+        <div class="sec-c"><b>Expediente</b><span class="ro">Revisado por el administrador el 10/11</span><svg class="flecha" viewBox="0 0 24 24"><use href="#ab"/></svg></div>
+        <div class="sec-d">
+          <div class="fila" style="border-top:0"><span class="ic ok"><svg><use href="#ok"/></svg></span><span class="tx"><b>RIF de la empresa</b><small>Vigente hasta 03/2027</small></span><span class="btn">Ver</span></div>
+          <div class="fila"><span class="ic ok"><svg><use href="#ok"/></svg></span><span class="tx"><b>Acta constitutiva</b><small>Junta vigente hasta 10/2030</small></span><span class="btn">Ver</span></div>
+          <div class="fila"><span class="ic ok"><svg><use href="#ok"/></svg></span><span class="tx"><b>Cédula del representante</b><small>María Ejemplo · vigente</small></span><span class="btn">Ver</span></div>
+          <div class="fila"><span class="ic ok"><svg><use href="#ok"/></svg></span><span class="tx"><b>RIF del representante</b><small>María Ejemplo</small></span><span class="btn">Ver</span></div>
+          <div class="fila"><span class="ic op"><svg><use href="#doc"/></svg></span><span class="tx"><b>Los 6 puntos de la revisión</b><small>Razón social, junta, firmantes, domicilio, correo y teléfono: todos bien</small></span><span class="btn">Ver</span></div>
+          <p class="nota" style="margin-top:8px">Solo para leer: aquí no hay Revisar ni Aprobar. Si algo no cuadra, "Hay un problema".</p>
+        </div>
+      </div>
+      <div class="sec">
+        <div class="sec-c"><b>Contratos</b><span class="chip ambar" style="margin-left:auto">Falta el contrato</span></div>
+        <div class="sec-d"><div class="drop">Arrastra aquí el contrato o toca para elegirlo</div></div>
+      </div>
+    </div>
+  </div>
+  <p class="nota">Se abre directo en Documentos con su paso arriba. Lo que tú ves (Revisar, Aprobar, IA) a ella no le sale.</p>
+</div>
+
+<!-- B · los otros pasos -->
+<div class="col" id="B">
+  <div class="et">B · Cómo cambia "Tu paso" en cada estatus</div>
+  <div class="paso" style="width:560px;background:#fff">
+    <div class="k"><b>Tu paso: terminar y enviar a firmar</b><span class="chip">Desde hoy</span></div>
+    <div class="est4"><span class="hecho">Recibidos</span><span class="on">En curso</span><span>Por firmar</span><span>Firmado</span></div>
+    <div class="acc2"><span class="btn g pri">Lo envié a firmar</span><span class="btn g peligro">Hay un problema</span></div>
+  </div>
+  <div class="paso" style="width:560px;background:#fff">
+    <div class="k"><b>Tu paso: esperar la firma y subirla</b><span class="chip ambar">Enviado hace 4 días</span></div>
+    <div class="est4"><span class="hecho">Recibidos</span><span class="hecho">En curso</span><span class="on">Por firmar</span><span>Firmado</span></div>
+    <div class="acc2"><span class="btn g pri">Subir firmado</span><span class="btn g">Recordar al cliente</span></div>
+  </div>
+  <div class="paso" style="width:560px;background:#fff">
+    <div class="k"><b>Listo: contrato firmado</b><span class="chip verde">Vence 11/11/2027</span></div>
+    <div class="est4"><span class="hecho">Recibidos</span><span class="hecho">En curso</span><span class="hecho">Por firmar</span><span class="on">Firmado</span></div>
+    <div class="fila" style="border-top:0;padding:2px 0"><span class="ic ok"><svg><use href="#ok"/></svg></span><span class="tx"><b>contrato-firmado.pdf</b><small>Firmado 11/11/2026 · digital</small></span><span class="btn">Ver</span><span class="btn">Reemplazar</span></div>
+  </div>
+  <div class="paso" style="width:560px;background:#fff">
+    <div class="k"><b>Detenido: Hay un problema</b><span class="chip ambar">Documentos pendientes</span></div>
+    <div class="obs"><b>Lo que avisaste el 11/11</b>La cédula del representante está vencida. Se le pidió al líder.</div>
+    <p class="nota">Cuando el líder sube lo que falta y el administrador lo aprueba, vuelve solo a "Recibidos" y te sale otra vez en Por elaborar.</p>
+  </div>
+  <div class="hh">
+    <div style="display:flex;align-items:flex-start;gap:10px"><div><span class="et">Comercial Ejemplo, C.A.</span><h3 style="margin-top:4px">Subir el contrato firmado</h3><p class="sub">Al guardar pasa a Contrato firmado</p></div><span class="cerrar"><svg width="22" height="22"><use href="#x"/></svg></span></div>
+    <div class="drop">Arrastra aquí el contrato firmado o toca para elegirlo</div>
+    <div class="dos"><div><label>N.º de contrato</label><div class="campo vacio">Ej.: 0124</div></div><div><label>Tipo de firma</label><div class="seg"><span class="on">Digital</span><span>Física</span></div></div></div>
+    <div class="dos"><div><label>Fecha de firma</label><div class="campo">11/11/2026</div></div><div><label>Vence</label><div class="campo">11/11/2027</div></div></div>
+    <div class="pie3"><span class="btn g">Cancelar</span><span class="btn g pri">Guardar firmado</span></div>
+  </div>
+  <p class="nota" style="max-width:560px">"Lo envié a firmar" pide solo el tipo de firma (Digital o Física). "Subir firmado" pide archivo, fecha y vencimiento, que son obligatorios.</p>
+</div>
+
+<!-- C · teléfono -->
+<div class="col tel" id="C">
+  <div class="et">C · Teléfono · la misma hoja sube desde abajo</div>
+  <div class="hoja">
+    <div class="cab"><span class="avatar">C</span><div><h2 style="font-size:18px">Comercial Ejemplo, C.A.</h2><p class="sub">J-00000000-0 · PYME</p></div><span class="cerrar"><svg width="22" height="22"><use href="#x"/></svg></span></div>
+    <div class="chips"><span class="chip punto azul">Documentos recibidos</span></div>
+    <div class="tabs"><span>Datos</span><span class="on">Documentos</span><span>Hilo</span></div>
+    <div class="cuerpo">
+      <div class="paso">
+        <div class="k"><b>Tu paso: elaborar el contrato</b></div>
+        <div class="est4"><span class="on">Recibidos</span><span>En curso</span><span>Por firmar</span><span>Firmado</span></div>
+        <span class="btn ancho pri">Empecé el contrato</span>
+        <span class="btn ancho peligro" style="height:44px">Hay un problema</span>
+      </div>
+      <div class="sec"><div class="sec-c"><b>Expediente</b><span class="chip verde" style="margin-left:auto">4 de 4 bien</span><svg class="flecha" viewBox="0 0 24 24"><use href="#ab"/></svg></div>
+        <div class="sec-d">
+          <div class="fila" style="border-top:0"><span class="ic ok"><svg><use href="#ok"/></svg></span><span class="tx"><b>RIF de la empresa</b><small>Toca para ver</small></span></div>
+          <div class="fila"><span class="ic ok"><svg><use href="#ok"/></svg></span><span class="tx"><b>Acta constitutiva</b><small>Toca para ver</small></span></div>
+        </div></div>
+      <div class="sec"><div class="sec-c"><b>Contratos</b><span class="chip ambar" style="margin-left:auto">Falta</span></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- D · Mi trabajo -->
+<div class="col" id="D">
+  <div class="et">D · Mi trabajo de Legal: cada fila con su botón y las secciones abiertas</div>
+  <div class="mt">
+    <h2>Hola, Reina</h2>
+    <div class="gr"><div class="t"><b>Por elaborar contrato · 2</b><small>Primero los ISP</small></div>
+      <div class="it"><span class="chip azul">ISP</span><span class="cj"></span><span class="tx"><b>Redes Ejemplo, C.A.</b><small>Recibidos hace 5 días</small></span><span class="chip rojo">5 días</span><span class="btn pri">Abrir</span></div>
+      <div class="it"><span class="chip">PYME</span><span class="cj"></span><span class="tx"><b>Comercial Ejemplo, C.A.</b><small>Recibidos hace 3 días</small></span><span class="chip ambar">3 días</span><span class="btn pri">Abrir</span></div>
+    </div>
+    <div class="gr"><div class="t"><b>En curso · 1</b><small>Los que empezaste</small></div>
+      <div class="it"><span class="chip">Corporativo</span><span class="cj"></span><span class="tx"><b>Servicios Modelo, C.A.</b><small>Desde ayer</small></span><span class="btn">Abrir</span></div>
+    </div>
+    <div class="gr"><div class="t"><b>Enviado a firmar · 1</b><small>El más viejo: 4 días</small></div>
+      <div class="it"><span class="chip">PYME</span><span class="cj"></span><span class="tx"><b>Tienda Modelo, C.A.</b><small>Digital · enviado el 07/11</small></span><span class="btn">Subir firmado</span></div>
+    </div>
+    <div class="gr"><div class="t"><b>Vencen en 60 días · 0</b><small>Nada aquí</small></div></div>
+  </div>
+  <p class="nota" style="max-width:760px">"Hay un problema" se mueve adentro de la hoja (paso A) para no repetirlo en cada fila. Cuando tú entras a ver el trabajo de Reina, cada fila trae "Ver" y abre la misma hoja solo para mirar.</p>
+</div>
+
+</div>
+</body>
+</html>
