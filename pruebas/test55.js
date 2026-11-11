@@ -30,6 +30,7 @@ const pdf = (n) => ({ name: n, mimeType: 'application/pdf', buffer: Buffer.from(
     await p.fill('#busca', 'J-41887766'); await p.waitForFunction(() => /No encontramos/.test(document.getElementById('lista').textContent), null, { timeout: 8000 });
     ok(nombre + ': "No encontramos" por RIF ofrece registrarlo', (await p.locator('#lista [data-ded-nuevo]').count()) === 1);
     await p.click('#lista [data-ded-nuevo]'); await p.waitForSelector('#hojaDedNuevo.ver #formDedNuevo');
+    await p.waitForFunction(() => document.querySelectorAll('#dnLider option').length > 1, null, { timeout: 8000 }).catch(() => {});
     ok(nombre + ': la hoja trae el RIF buscado y la lista de líderes', (await p.inputValue('#dnRif')) === 'J-41887766' && (await p.locator('#dnLider option').count()) > 1);
     // RIF que ya existe: avisa y enlaza
     await p.fill('#dnRif', 'J-591000011'); await p.waitForFunction(() => /Ya existe/.test(document.getElementById('dnRifNota').textContent), null, { timeout: 8000 });
@@ -83,7 +84,9 @@ const pdf = (n) => ({ name: n, mimeType: 'application/pdf', buffer: Buffer.from(
     await p.waitForFunction(() => /Planilla de tendido 2/.test(document.getElementById('hojaVgtSol').textContent), null, { timeout: 15000 }).catch(() => {});
     ok(nombre + ': la segunda planilla queda en su propia casilla', /Planilla de tendido 2/.test(await p.textContent('#hojaVgtSol')) && llamo(mundo, 'vgt_casilla').pop()[2].p_otra === true);
     // Contrato o adendum firmado: archivo, N.º, fecha de firma y vencimiento
+    const antesDr = llamo(mundo, 'documentos_registrar').length;
     { const [fc] = await Promise.all([p.waitForEvent('filechooser'), p.locator('#hojaVgtSol [data-vgt-subir="12:contrato"]').first().click()]); await fc.setFiles(pdf('contrato-firmado.pdf')); }
+    for(let i = 0; i < 60 && llamo(mundo, 'documentos_registrar').length === antesDr; i++) await p.waitForTimeout(250);
     await p.waitForFunction(() => /firmado/.test(document.getElementById('hojaVgtSol').textContent) && !!document.querySelector('#hojaVgtSol [data-ver]'), null, { timeout: 15000 }).catch(() => {});
     ok(nombre + ': el contrato firmado se sube en su casilla de la solicitud', llamo(mundo, 'vgt_casilla').some((l) => l[2].p_tipo === 'contrato' && l[2].p_contrato === 12));
     await p.fill('#vgNum', '1234'); await p.fill('#vgFirma', '2026-10-01'); await p.fill('#vgVence', '2027-10-01'); await p.click('#hojaVgtSol [data-vg-firma="digital"]'); await p.click('#vgGuardar');

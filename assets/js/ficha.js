@@ -45,11 +45,12 @@
   const liderCorto = () => primerNombre(F.cliente.lider) || 'el líder';
 
   // ---------- Carga ----------
+  let cargaN = 0;   // solo vale la respuesta de la última carga pedida (una más vieja no pisa datos nuevos)
   async function cargar(primera){
-    const mio = id; if(!mio) return;
+    const mio = id; if(!mio) return; const n = ++cargaN;
     try {
       const [r, rv, ga] = await Promise.all([rpc('cliente_ficha', { p_cliente: mio }), leerRevision(mio), rpc('cliente_gestiones', { p_cliente: mio }).catch(() => [])]);
-      if(mio !== id) return;   // ya se abrió otro cliente: esta respuesta no es de él
+      if(mio !== id || n !== cargaN) return;   // ya se abrió otro cliente o hay una carga más nueva: esta respuesta no es de él
       F = r; rev = rv; F.gesActivas = ga || [];
       F.puedo = Object.assign({ marcar_rep: !!(F.puedo || {}).revisar }, F.puedo || {});   // Lote 05/11 C4: Firma este / Ya no aplica
       // Un provisional que ya se unió: se abre el cliente real
@@ -546,6 +547,9 @@
     const docFila = (x, nom) => x.id ? casillaHtml('otro', x.numero, { nombre: nom, req: true }) : '';
     const props = ds.filter((x) => x.tipo === 'propuesta'); const plans = ds.filter((x) => x.tipo === 'planilla');
     const arch = s.archivo && s.archivo.id ? s.archivo : null;
+    // Si se estaba escribiendo en el formulario de esta misma solicitud (por ejemplo, mientras sube el archivo), no se borra
+    const previo = h.dataset.sol === String(s.id) && $('vgNum') ? { vgNum: $('vgNum').value, vgFirma: $('vgFirma').value, vgVence: $('vgVence').value, firma: (h.querySelector('[data-vg-firma].on') || { dataset: {} }).dataset.vgFirma } : null;
+    h.dataset.sol = String(s.id);
     h.innerHTML = cabHoja('tVgtSol', s.proyecto || 'Solicitud de VGT', d.titulo + (s.postes ? ' · ' + s.postes + ' postes' : '')) +
       '<div class="vgt-franja ' + fr[0] + '" style="margin-top:0">' + esc(fr[1]) + '</div>' +
       '<div class="sec">Estado y datos</div><div class="datos">' + [['Uso', s.en_uso || 'Sin dato'], ['Proyecto o tramo', s.proyecto || ''], ['Municipio', s.municipio || ''], ['Estado', s.estado_geo || ''], ['Postes', s.postes == null ? '' : String(s.postes)], ['Recibida', s.fecha || ''], ['ODT', s.odt || 'Sin ODT']]
@@ -566,6 +570,8 @@
         '<div class="error" id="eVgDoc" role="alert"></div><div class="acciones"><button type="submit" class="btn btn-ancho" id="vgGuardar">Guardar</button></div></form>'
         : '<div class="datos">' + [['N.º', s.numero], ['Firmado', s.firmado_en ? fecha(s.firmado_en) : ''], ['Vence', s.vence_en ? fecha(s.vence_en) : '']].map((x) => '<div class="dato-f"><span>' + x[0] + '</span><b>' + esc(x[1] || 'Sin dato') + '</b></div>').join('') + '</div>') +
       '<p class="nota-chica">Todo queda en la bitácora y en el hilo.</p>';
+    if(previo && $('vgNum')){ ['vgNum', 'vgFirma', 'vgVence'].forEach((k) => { if(previo[k]) $(k).value = previo[k]; });
+      if(previo.firma) Array.prototype.forEach.call(h.querySelectorAll('[data-vg-firma]'), (x) => { const on = x.dataset.vgFirma === previo.firma; x.classList.toggle('on', on); x.setAttribute('aria-checked', String(on)); }); }
   }
   async function guardarVgtDoc(e){
     e.preventDefault(); const er = $('eVgDoc'); er.textContent = '';
