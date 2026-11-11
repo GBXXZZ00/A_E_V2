@@ -2509,3 +2509,10 @@ button.bz-ck.on::after{left:17px;top:13px}
 .vgt-drop.sobre{border-color:var(--accent);background:var(--azul-bg)}
 .vgt-form{margin-top:12px}
 #hojaVgtSol .sec{margin-top:16px}
+
+/* Lote 10/11 I: en teléfono las tarjetas de Comisiones se deslizan de lado (maqueta 7), sin mover la página */
+@media (max-width:560px){
+  .cx-segs,.cx-alertas{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;gap:10px;padding-bottom:4px;scrollbar-width:none}
+  .cx-segs::-webkit-scrollbar,.cx-alertas::-webkit-scrollbar{display:none}
+  .cx-segs > *,.cx-alertas > *{flex:0 0 78%;scroll-snap-align:start}
+}

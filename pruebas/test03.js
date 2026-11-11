@@ -26,6 +26,7 @@ const { ok, cerrar } = marcador();
     await p.click('#filtros [data-filtro="ultimo"]');
     ok(nombre + ': filtro Del corte anterior', (await p.locator('[data-com]').count()) === 1 && p.url().includes('f=ultimo'));
     await p.click('#alertas [data-abrir="por_instalar"]'); await p.waitForSelector('#hojaPorInst.ver');
+    await p.waitForFunction(() => /hora/i.test(document.querySelector('#hojaPorInst').textContent), null, { timeout: 5000 }).catch(() => {});
     ok(nombre + ': Por instalar sale como hoja encima, con las órdenes en horas', /hora/i.test(await p.textContent('#hojaPorInst')));
     await p.keyboard.press('Escape'); await p.waitForFunction(() => !window.Comun.hojaAbierta());
     await p.click('#filtros [data-filtro="legal"]');
