@@ -203,6 +203,7 @@
         regimen_firma: 'puso el régimen de firma en ' + (d.valor === 'conjunta' ? 'Conjunta' : d.valor === 'individual' ? 'Individual' : 'Sin definir'),
         ip: 'actualizó la IP' + (d.codigo ? ' del servicio ' + d.codigo : ''), es_top: d.valor === 'true' ? 'lo marcó como Cliente TOP' : 'le quitó la marca de Cliente TOP', es_isp: d.valor === 'true' ? 'lo marcó como proveedor de internet' : 'le quitó la marca de proveedor de internet',
         dedicado_creado: 'entró como cliente dedicado desde el archivo de la analista',
+        trabajo_pasado: 'pasó una tarea a ' + esc(d.a || 'otra persona') + (d.que ? ': ' + esc(d.que) : ''), provisional_unido: d.revertido ? 'deshizo la unión con el cliente ' + esc(d.revertido) : 'unió aquí el cliente ' + esc(d.provisional || ''),
         legal_aprobado: 'aprobó Legal a mano', legal_quitado: 'le quitó el check de Legal',
         contrato_presencial: d.valor === 'true' ? 'lo marcó como contrato presencial' : 'le quitó la marca de contrato presencial',
         exc_pagada: d.valor === 'true' ? 'lo marcó como excepción pagada con documentos por subir' : 'le quitó la marca de excepción pagada',
@@ -420,7 +421,8 @@
   let vgtExtra = 0;
   function grupoVgt(conSol){
     const V = (F.cliente.dedicado || {}).vgt; if(!V) return '';
-    const R = V.requisitos || []; const hoy = F.hoy || new Date().toISOString().slice(0, 10);
+    // Lote 11/11: la propuesta vieja a nivel de cliente (casilla 68) ya no se muestra; la propuesta va en cada solicitud
+    const R = (V.requisitos || []).filter((r) => Number(r.numero) !== 68); const hoy = F.hoy || new Date().toISOString().slice(0, 10);
     const asam = R.filter((r) => r.clave === 'asamblea'); const conAsam = asam.filter((r) => docDe('otro', r.numero));
     const libres = asam.filter((r) => !docDe('otro', r.numero));
     const verAsam = conAsam.concat(libres.slice(0, (conAsam.length ? 0 : 1) + vgtExtra));

@@ -265,6 +265,8 @@ function gestionJson(m, x, det){
     responsables: x.responsables.map((r) => ({ id: r, nombre: (m.personas.find((p) => p.id === r) || {}).nombre })), total: x.clientes.length, hechos: x.clientes.filter(cumple).length, estados: est,
     clientes: det ? x.clientes.map((c) => { const k = m.datos.clientes.find((z) => z.id === c.cliente_id) || {}; return Object.assign({ nombre: k.nombre, lider: k.lider, cumple: false }, c); }) : null };
 }
+// Lote 11/11 H2: la coordinadora puede pasar una tarea de Canales a otra persona
+function asignar(m, l){ const z = (m.datos && m.datos.asig) || {}; return l.map((p) => (p.para === 'analista' && z[p.tipo + '|' + p.clave] ? Object.assign({}, p, { analista_id: z[p.tipo + '|' + p.clave] }) : p)); }
 function pendientesBase(m){
   if(m.datos.pendientes) return m.datos.pendientes.concat(pendDecidir(m));
   const cli = (n) => m.datos.clientes.find((c) => c.nombre === n || c.nombre === n + ', C.A.') || m.datos.clientes[0];
@@ -273,7 +275,7 @@ function pendientesBase(m){
   const faro = cli('Vidrios El Faro'); const yun = cli('Tornillos El Yunque');
   m.datos.pendientes = [
     { tipo: 'por_enviar', clave: 'i1', cliente_id: faro.id, titulo: faro.nombre, detalle: 'Proforma y carta por enviar del servicio 824-99100001', para: 'analista', lider_id: lucia.id, analista_id: elena.id, desde: dia(-5) + 'T12:00:00Z', vence: dia(-2), ref: {} },
-    { tipo: 'sin_ip', clave: 'i2', cliente_id: yun.id, titulo: yun.nombre, detalle: 'Falta la IP del servicio 824-99100004', para: 'analista', lider_id: lucia.id, analista_id: elena.id, desde: new Date().toISOString(), vence: dia(3), ref: {} },
+    { tipo: 'sin_ip', clave: 'i2', cliente_id: yun.id, titulo: yun.nombre, detalle: 'Falta la IP del servicio 824-99100004', para: 'analista', lider_id: lucia.id, analista_id: elena.id, desde: new Date().toISOString(), vence: dia(3), ref: { servicio: ((yun.servicios || [])[0] || {}).id || null } },
     { tipo: 'cambio_emitir', clave: 'c7', cliente_id: null, titulo: 'Panaderia Inventada Uno', detalle: 'Cambio de categoría a PYME-1GB', para: 'analista', lider_id: lucia.id, analista_id: elena.id, desde: dia(0) + 'T08:00:00Z', vence: dia(0), ref: { cambio: 7 } },
     { tipo: 'certificar', clave: 'i3', cliente_id: faro.id, titulo: faro.nombre, detalle: 'falta Legal', para: 'senior', lider_id: lucia.id, analista_id: elena.id, desde: dia(-3) + 'T12:00:00Z', vence: dia(4), ref: {} },
     { tipo: 'docs_faltan', clave: String(yun.id), cliente_id: yun.id, titulo: yun.nombre, detalle: 'Faltan 2 documentos', para: 'lider', lider_id: lucia.id, analista_id: elena.id, desde: dia(-40) + 'T12:00:00Z', vence: dia(-10), ref: {} },
@@ -1113,7 +1115,7 @@ const RPC = {
     const vista = quien !== yo ? (quien.rol === 'analista' ? (quien.senior ? 'admin' : quien.coordinador ? 'coord' : 'analista') : quien.rol) : jefe ? 'admin' : coord ? 'coord' : yo.rol;
     // Lote 05/11 D5: lo pedido (requerimientos abiertos) le sale al líder en "Devueltos o pedidos"
     const pedidos = []; m.datos.clientes.forEach((c) => { faltantes(c); (c.requerimientos || []).filter((z) => z.estado === 'abierto').forEach((z) => pedidos.push({ tipo: 'pedido', clave: String(z.id), cliente_id: c.id, titulo: c.nombre, detalle: 'Falta: ' + z.texto, lider_id: c.lider_id, analista_id: null, para: 'lider', desde: z.en, vence: null, ref: { casilla: z.casilla, numero: z.numero } })); });
-    const base = pendientesBase(m).concat(m.datos.extra || []).concat(buzonMundo(m)).concat(pedidos);
+    const base = asignar(m, pendientesBase(m).concat(m.datos.extra || []).concat(buzonMundo(m)).concat(pedidos));
     const g = gestionesDe(m);
     let items = base.filter((p) => (p.para === 'vende' && p.lider_id === quien.id) || (vista === 'admin' ? ['admin', 'senior'].includes(p.para) : vista === 'coord' ? p.para === 'analista' : vista === 'analista' ? p.para === 'analista' && (p.analista_id === quien.id || (!p.analista_id && p.tipo === 'carta_enviar'))
       : vista === 'abogado' ? p.para === 'abogado' : p.para === 'lider' && p.lider_id === quien.id));
@@ -1137,6 +1139,38 @@ const RPC = {
       gestiones: g.filter((x) => x.estado === 'activa' && (vista === 'admin' || vista === 'coord' || x.responsables.includes(quien.id))).map((x) => gestionJson(m, x, false)),
       equipo, personas: jefe || coord ? m.personas.filter((p) => p.activo && p.id !== yo.id && (p.rol === 'analista' || (jefe && ['lider', 'abogado'].includes(p.rol)))).map((p) => ({ id: p.id, nombre: p.nombre, rol: p.rol })) : [],
       kpis: vista === 'lider' ? { instalaciones: 3, comisionan: 2, falta: 1, migraciones: 1 } : vista === 'admin' ? { instalaciones: 10, comisionan: 7, migraciones: 2, negativos: 1 } : vista === 'abogado' ? { recibidos: 2, por_firmar: 1, firmados: 1, sin_archivo: 1 } : { emitidos: 3, dias_emitir: 1.5, bienvenidas: 4, yo: 1 } }; },
+  // Lote 11/11 H2/H3: datos de Canales, pasar una tarea a otra persona y recordarle
+  trabajo_canales(m, yo){
+    if(!['admin', 'analista'].includes(yo.rol)) return error('No tienes permiso para hacer esto');
+    const h = hoy(); const nom = (id) => (m.personas.find((p) => p.id === id) || {}).nombre || null;
+    const eq = asignar(m, pendientesBase(m).concat(m.datos.extra || []).concat(buzonMundo(m))).filter((p) => p.para === 'analista');
+    const extra = {}; eq.forEach((p) => { const sid = (p.ref || {}).servicio; if(!sid) return;
+      for(const c of m.datos.clientes){ const sv = (c.servicios || []).find((x) => x.id === Number(sid)); if(!sv) continue;
+        const rp = (c.representantes || []).find((x) => String(x.telefono || '').replace(/\D/g, '').length >= 10);
+        const tel = rp ? { t: rp.telefono, de: 'Representante' } : String(c.telefono || '').replace(/\D/g, '').length >= 10 ? { t: c.telefono, de: 'Proham' } : String(sv.telefono || '').replace(/\D/g, '').length >= 10 ? { t: sv.telefono, de: 'TAD' } : null;
+        extra[String(sid)] = { tel, descargada: (m.descargas || []).includes(Number(sid)) ? { en: new Date().toISOString(), por: yo.nombre } : null, instalada: sv.fecha_instalacion || p.desde || null }; break; } });
+    const an = m.personas.filter((p) => p.activo !== false && p.rol === 'analista');
+    const nIp = eq.filter((p) => p.tipo === 'sin_ip').length;
+    const pool = (m.datos.ipReporte || []).filter((x) => !x.cuadro && x.libre).slice(0, Math.max(1, nIp)).map((x) => ({ fila: x.id, ip: x.ip }));
+    const jefe = esSenior(yo); const coord = !!yo.coordinador;
+    return { hoy: h, coord, jefe, extra, pool, analistas: an.map((p) => ({ id: p.id, nombre: p.nombre })),
+      equipo: eq.map((p) => Object.assign({}, p, { lider: nom(p.lider_id), analista: nom(p.analista_id) })),
+      carga: an.map((p) => { const l = eq.filter((x) => x.analista_id === p.id); return { id: p.id, nombre: p.nombre, n: l.length, venc: l.filter((x) => x.vence < h).length, hoy: l.filter((x) => x.vence === h).length,
+        cartas: l.filter((x) => ['carta_enviar', 'por_enviar'].includes(x.tipo)).length, ip: l.filter((x) => ['sin_ip', 'ip_confirmar'].includes(x.tipo)).length, emi: l.filter((x) => x.tipo === 'cambio_emitir').length, pago: l.filter((x) => x.tipo === 'revisar_pago').length }; }),
+      sin_asignar: eq.filter((x) => !x.analista_id).length,
+      sin_dueno: coord || jefe ? pendientesBase(m).concat(m.datos.extra || []).filter((p) => p.tipo === 'por_asignar') : [] };
+  },
+  trabajo_pasar(m, yo, a){
+    if(!(yo.rol === 'admin' || esSenior(yo) || yo.coordinador)) return error('Solo la coordinadora o el administrador pueden pasar tareas');
+    const p = m.personas.find((x) => x.id === a.p_analista && x.rol === 'analista'); if(!p) return error('Elige a una persona de Canales');
+    (m.datos.asig = m.datos.asig || {})[a.p_tipo + '|' + a.p_clave] = p.id; (m.bitacora = m.bitacora || []).push({ accion: 'trabajo_pasado', registro: a.p_tipo + ':' + a.p_clave });
+    return { analista: p.nombre };
+  },
+  trabajo_recordar(m, yo, a){
+    if(!(yo.rol === 'admin' || esSenior(yo) || yo.coordinador)) return error('Solo la coordinadora o el administrador pueden enviar recordatorios');
+    const z = (m.datos.asig || {})[a.p_tipo + '|' + a.p_clave]; if(!z) return error('Nadie tiene esa tarea todavía. Pásala a una persona primero');
+    (m.bitacora = m.bitacora || []).push({ accion: 'trabajo_recordado', registro: a.p_tipo + ':' + a.p_clave }); return { a: (m.personas.find((x) => x.id === z) || {}).nombre };
+  },
   mi_trabajo_personas(m, yo){ if(!esSenior(yo) && !yo.coordinador) return error('No tienes permiso para hacer esto');
     return m.personas.filter((p) => p.activo && ['lider', 'analista', 'abogado', 'admin'].includes(p.rol)).map((p) => ({ id: p.id, nombre: p.nombre, rol: p.rol, rol_txt: p.rol === 'lider' ? 'Líder' : p.rol === 'abogado' ? 'Legal' : p.rol === 'admin' ? 'Administrador' : 'Analista' })); },
   gestiones_lista(m, yo){ return { puedo_crear: esSenior(yo) || !!yo.coordinador, gestiones: gestionesDe(m).map((x) => gestionJson(m, x, false)) }; },

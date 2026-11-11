@@ -2516,3 +2516,37 @@ button.bz-ck.on::after{left:17px;top:13px}
   .cx-segs::-webkit-scrollbar,.cx-alertas::-webkit-scrollbar{display:none}
   .cx-segs > *,.cx-alertas > *{flex:0 0 78%;scroll-snap-align:start}
 }
+
+/* Lote 11/11 H2/H3: Mi trabajo de Canales (analista y coordinadora) */
+.cn-modo{display:inline-flex;gap:4px;background:var(--surface-2);border-radius:999px;padding:4px;margin:4px 0 12px}
+.cn-modo button{border:0;background:transparent;border-radius:999px;padding:0 16px;min-height:40px;font:inherit;font-size:14px;font-weight:600;color:var(--text2);white-space:nowrap}
+.cn-modo button b{margin-left:4px;color:var(--text3)}
+.cn-modo button.on{background:#fff;color:var(--text);box-shadow:0 1px 2px rgba(15,23,42,.08)}
+.cn-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-bottom:14px}
+.cn-tiles .bz-num{min-width:0}
+.cn-team{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;padding:8px 0}
+.cn-per{display:flex;flex-direction:column;align-items:flex-start;gap:6px;border:1px solid var(--line);border-radius:12px;padding:12px 14px;min-width:0}
+.cn-per b{font-size:15px}
+.cn-per small{font-size:12.5px;color:var(--text2)}
+.cn-per .enlace{min-height:32px}
+.cn-fila{display:flex;align-items:center;gap:12px;padding:11px 0;border-top:1px solid var(--line);min-width:0}
+.cn-tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.cn-tx b{font-size:14.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cn-tx small{font-size:12.5px;color:var(--text2)}
+.cn-fila>.chip{flex:none}
+.cn-acc{display:flex;gap:8px;flex:none}
+.cn-acc .btn{white-space:nowrap}
+.cn-sw{display:inline-flex;gap:4px}
+.cn-sw button{border:1px solid var(--line);background:#fff;border-radius:999px;padding:0 12px;min-height:34px;font:inherit;font-size:13px;font-weight:600;color:var(--text2);white-space:nowrap}
+.cn-sw button.on{border-color:var(--accent);color:var(--accent);background:var(--azul-bg)}
+.cn-pl{margin-top:12px}
+@media (max-width:720px){
+  .cn-fila{flex-wrap:wrap}
+  .cn-tx{flex-basis:calc(100% - 90px)}
+  .cn-acc{flex-basis:100%;flex-wrap:wrap}
+  .cn-acc .btn{flex:1 1 auto;min-height:44px}
+  .cn-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .cn-modo{display:flex}
+  .cn-modo button{flex:1}
+}
+@media (hover:hover) and (pointer:fine){ .cn-modo button:hover:not(.on){color:var(--text)} .cn-sw button:hover:not(.on){border-color:var(--text3)} }

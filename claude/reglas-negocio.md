@@ -217,3 +217,9 @@ Se comparan el **Estado** del TAD (manda siempre), la instalación (I), la últi
 - Fechas que contradicen el Estado (Habilitado con S después de A, Suspendido con A después de S, Suspendido sin S): manda el Estado y el servicio sale en "fechas por revisar" (`churn_revisar`, solo administrador). Si el TAD no trae S, se usa el cambio de estado que guardó la app.
 - Retirado del TAD: baja definitiva (como antes).
 - Dónde vive: `privado.churn_clase` (la regla), `privado.srv_base` (la pérdida que usan Clientes y Gerencia), `privado.srv_churn` (la clase por servicio). `churn_visible` sigue en `no` hasta revisar con el administrador los números del primer TAD con fechas.
+
+## Decisiones del 11/11
+- La propuesta comercial VGT va solo por solicitud. La vieja a nivel de cliente (casilla 68) ya no se muestra.
+- Una solicitud VGT "en uso" sin el contrato o adendum firmado y subido avisa una vez al administrador y a Legal.
+- Duplicados por RIF mal escrito: vale el RIF completo (con dígito verificador). Se unen solo si la comisión no cambia (prueba con rollback contra la referencia). Si la venta y la aprobación legal están en el otro, decide el administrador.
+- Canales: la coordinadora puede pasar una tarea a otra persona y recordarle. Queda en la bitácora y en el hilo, y le llega un aviso.

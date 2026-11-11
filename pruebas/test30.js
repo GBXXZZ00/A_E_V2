@@ -80,7 +80,8 @@ const dia = (n) => { const d = new Date(Date.now() - 4 * 3600e3); d.setUTCDate(d
     const c3 = await contexto(nav, dispositivo, mundo); const r = await entrar(c3.ctx, 'pedro', '204871'); r.on('pageerror', (e) => errores.push(e.message));
     await r.goto(H + 'trabajo.html'); await r.waitForSelector('#tarjetas .bz-cd');
     ok(nombre + ': el coordinador ve Cartas y proformas, IP, Apoyo con pago y Emitir en Proham, con filtro por analista', (await r.textContent('#tarjetas')).includes('Cartas y proformas') && (await r.textContent('#tarjetas')).includes('Cambios por emitir') && !(await r.locator('#zonaPersona').evaluate((x) => x.classList.contains('hidden'))));
-    ok(nombre + ': números arriba para Canales', (await r.locator('#nums .bz-num').count()) === 4);
+    await r.waitForSelector('.cn-tiles .bz-num');   // Lote 11/11 H2: los números de Canales van dentro del tablero (6, como la maqueta)
+    ok(nombre + ': números arriba para Canales', (await r.locator('.cn-tiles .bz-num').count()) === 6 && (await r.locator('#nums').isHidden()));
     await r.screenshot({ path: 'capturas/30-' + nombre + '-coord.png', fullPage: true });
     await c3.ctx.close();
 

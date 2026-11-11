@@ -11,6 +11,8 @@
   let abierto = null;        // el ítem que se abrió con Ir: al volver se mira si se resolvió
   const tachados = {};       // resueltos en esta visita: se ven tachados hasta recargar la página
   let avisoT = null; let filtroC = '';
+  // Lote 11/11 H2/H3: datos de Canales (teléfono, descargadas, IP del pool, equipo) y modos de la coordinadora
+  let CN = null; let modoC = 'equipo'; let cartasPor = 'persona'; let verEq = false;
 
   function leerUrl(){ const u = new URLSearchParams(location.search); sel = (u.get('g') || '').slice(0, 10); persona = (u.get('p') || '').slice(0, 40); vista = u.get('v') === 'lote' ? 'lote' : 'buzon'; }
   function guardarUrl(){ const u = new URLSearchParams(); if(vista === 'lote') u.set('v', 'lote'); else { if(sel) u.set('g', sel); if(persona) u.set('p', persona); } const s = u.toString(); history.replaceState(history.state, '', location.pathname + (s ? '?' + s : '')); }
@@ -21,6 +23,7 @@
     try {
       const r = await rpc('mi_trabajo', { p_persona: persona || null }); if(mio !== pedido) return;
       D = r; cache.guardar(clave, r); revisarAbierto(); pintar(); if(cola) seguirCola();
+      if((r.vista === 'analista' || r.vista === 'coord') && !r.persona) rpc('trabajo_canales').then((x) => { if(mio !== pedido) return; CN = x; pintar(); }).catch((e) => { if(mio !== pedido) return; CN = { error: e.message }; pintar(); });
     } catch (e) {
       if(mio !== pedido) return;
       if(!D) $('cuerpo').innerHTML = '<div class="vacio" role="alert"><b>No se pudo cargar tu trabajo</b><p>' + esc(e.message) + '</p><button type="button" class="btn btn-chico" data-tr="reintentar">Reintentar</button></div>';
@@ -107,6 +110,7 @@
     let l = null;
     if(D.vista === 'lider') l = [[(D.items || []).filter((f) => f.tipo === 'devuelto').length, 'Documentos devueltos', 'r', D.vende ? 'dev' : 'doc'], [(D.items || []).filter((f) => f.tipo === 'orden_atrasada').length, 'Órdenes de más de 24 horas', 'a', D.vende ? 'inst' : 'ins'],
       [dias === null ? 'Sin fecha' : plural(dias, 'día', 'días'), 'Para el cierre del corte' + (D.limite ? ' (' + fecha(D.limite).replace(/ de \d{4}$/, '') + ')' : ''), '', ''], [n('falta'), 'Faltan para comisionar', 'b', D.vende ? 'falta' : '']];
+    else if(canales() && sel === '') l = null;
     else if(D.vista === 'analista' || D.vista === 'coord') l = [[n('carta'), 'Cartas y proformas por enviar', 'a', 'carta'], [n('ip'), 'IP por escribir', '', 'ip'], [n('pago'), 'Del corte sin pago', 'r', 'pago'], [n('emi'), 'Cambios por emitir', 'b', 'emi']];
     // Lote 05/11 D8: los mismos números que Inicio (salen de la misma lista)
     else if(D.vista === 'abogado'){ const t = (x) => (D.items || []).filter((f) => f.tipo === x).length; l = [[t('elaborar_contrato') + t('elaborar_vgt'), 'Por elaborar contrato', 'r', ''], [t('seguir_firma'), 'Enviados a firmar', '', ''], [t('contrato_archivo'), 'Firmados, falta subir', 'a', ''], [t('contrato_vence'), 'Vencen pronto', 'a', 'ven']]; }
@@ -196,6 +200,7 @@
     if(sel === 'notas') h = notasHtml();
     else if(sel === 'equipo') h = seccion('El equipo', 'Toca para ver su buzón tal como lo ve (solo consulta)', equipoHtml());
     else if(D.vista === 'abogado' && (sel === '' || sel === 'con')) h = tableroLegal(gs);
+    else if(canales() && sel === '') h = tableroCanales();
     else if(sel){ const g = gs.find((x) => x.id === sel); h = seccion(g.titulo, subGrupo(g), listaGrupo(g), accionesGrupo(g)); }
     else {
       const urg = (D.items || []).slice().sort((a, b) => (String(a.vence || '9') < String(b.vence || '9') ? -1 : 1)).slice(0, 4);
@@ -213,6 +218,132 @@
     const eq = (D.equipo || []).slice(0, max || 40);
     return '<div class="bz-team">' + eq.map((e) => '<button type="button" class="bz-tm" data-persona="' + esc(e.id) + '"><b>' + esc(e.nombre) + ' · ' + esc(e.rol) + '</b><small' + (e.venc ? ' class="mal"' : '') + '>' +
       esc(plural(e.n, 'pendiente', 'pendientes') + (e.venc ? ' · ' + plural(e.venc, 'vencido', 'vencidos') : '') + (e.hoy ? ' · ' + e.hoy + ' hoy' : '')) + '</small></button>').join('') + '</div>';
+  }
+
+  // ---------- Lote 11/11 H2 (coordinadora, maqueta Coordinadora) y H3 (analista, maqueta TrabajoAnalista) ----------
+  const canales = () => !!D && (D.vista === 'analista' || D.vista === 'coord') && !D.persona;
+  const esCartaT = (f) => f.tipo === 'carta_enviar' || f.tipo === 'por_enviar';
+  const sidDe = (f) => String((f.ref || {}).servicio || '');
+  const exDe = (f) => ((CN && CN.extra) || {})[sidDe(f)] || {};
+  const diasD = (f) => B.diasDesde(f.desde, D.hoy) || 0;
+  const corto = (t) => { const x = String(t || '').trim().split(/\s+/); return x.length > 1 ? x[0] + ' ' + x[1].charAt(0) + '.' : x[0] || ''; };
+  const fCorta = (t) => { const d = new Date(t); return isNaN(d) ? '' : String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0'); };
+  const hora = (t) => { const d = new Date(t); return isNaN(d) ? '' : String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); };
+  const cuando = (t) => { const d = B.diasDesde(t, D.hoy); return d === 0 ? 'hoy ' + hora(t) : d === 1 ? 'ayer ' + hora(t) : 'el ' + fCorta(t); };
+  function filtrar(l){ if(!busca) return l; const q = C.normalizeStr(busca); const qd = busca.replace(/\D/g, '');
+    return l.filter((f) => C.normalizeStr((f.titulo || '') + ' ' + (f.detalle || '')).indexOf(q) >= 0 || (qd.length >= 4 && String(f.doc || '').replace(/\D/g, '').indexOf(qd) >= 0)); }
+  // La lista que se ve: la analista, lo suyo o todo el equipo; la coordinadora, lo suyo o su equipo
+  function listaCanales(){
+    const eq = filtrar((CN && CN.equipo) || []);
+    if(D.vista === 'coord') return modoC === 'mio' ? eq.filter((f) => f.analista_id === yo.id) : eq;
+    return verEq && CN && CN.equipo ? eq : (D.items || []);
+  }
+  const buscarCn = (k) => (D.items || []).concat((CN && CN.equipo) || [], (CN && CN.sin_dueno) || []).find((f) => kDe(f) === k);
+  function cartaFila(f, coord){
+    const e = exDe(f); const k = kDe(f); const dd = diasD(f); const falta = (f.ref || {}).carta === 'falta_ip';
+    const dueno = coord ? (f.analista ? corto(f.analista) : 'Sin asignar') : '';
+    let sub; let chip; let btns = '';
+    if(e.descargada){
+      sub = coord ? (dueno + ' · descargada ' + cuando(e.descargada.en) + ', sin confirmar') : 'Descargaste la carta ' + cuando(e.descargada.en) + '. ¿Ya la enviaste?';
+      chip = '<span class="chip azul">Por confirmar</span>';
+      btns = coord && f.analista_id && f.analista_id !== yo.id ? '<button type="button" class="btn btn-chico btn-2" data-cn-rec="' + esc(k) + '">Recordarle</button>'
+        : '<button type="button" class="btn btn-chico" data-cn-ya="' + esc(k) + '">Ya la envié</button>';
+    } else {
+      const tel = e.tel ? e.tel.de + ' ' + window.Documentos.telFmt(e.tel.t) : '';
+      sub = [dueno, falta ? 'Falta la IP' : 'IP lista', falta ? '' : (tel || (coord ? 'sin número del cliente' : 'Sin número: descárgala y envíala tú'))].filter(Boolean).join(' · ');
+      chip = '<span class="chip ' + (dd > 3 ? 'rojo' : dd > 1 ? 'ambar' : '') + '">' + (dd === 0 ? 'Hoy' : plural(dd, 'día', 'días')) + '</span>';
+      if(coord) btns += '<button type="button" class="btn btn-chico btn-2" data-cn-pasar="' + esc(k) + '">Pasar a otra persona</button>';
+      btns += falta ? '<button type="button" class="btn btn-chico' + (coord ? ' btn-2' : '') + '" data-cn-hacer="' + esc(k) + '">Escribir IP</button>'
+        : e.tel ? '<button type="button" class="btn btn-chico" data-cn-wa="' + esc(k) + '">' + (coord ? 'Enviar yo' : 'Enviar por WhatsApp') + '</button>'
+        : '<button type="button" class="btn btn-chico btn-2" data-cn-pdf="' + esc(k) + '">Descargar</button>';
+    }
+    return '<div class="cn-fila"><div class="cn-tx"><b>' + esc(f.titulo || '') + '</b><small>' + esc(sub) + '</small></div>' + chip + '<span class="cn-acc">' + btns + '</span></div>';
+  }
+  function ipFila(f, ip){
+    const e = exDe(f); const k = kDe(f);
+    const sub = (e.instalada ? 'Instalado el ' + fCorta(e.instalada) : 'Sin fecha de instalación') + ' · ' + (ip ? 'Posible IP del pool: ' + ip.ip : 'Sin sugerencia');
+    return '<div class="cn-fila"><div class="cn-tx"><b>' + esc(f.titulo || '') + '</b><small>' + esc(sub) + '</small></div><span class="cn-acc"><button type="button" class="btn btn-chico btn-2" data-cn-hacer="' + esc(k) + '">Escribir IP</button>' +
+      (ip && sidDe(f) ? '<button type="button" class="btn btn-chico" data-cn-ip="' + esc(k) + '" data-fila="' + esc(ip.fila) + '">Usar ' + esc(ip.ip) + '</button>' : '') + '</span></div>';
+  }
+  function plegado(t, l, sub){
+    return '<details class="bz-pl cn-pl"><summary><b>' + esc(t) + ' · ' + l.length + '</b>' + (sub ? '<span class="lg-sub">' + esc(sub) + '</span>' : '') + '</summary>' +
+      (l.length ? l.slice(0, 30).map((f) => itemHtml(f)).join('') : '<p class="nota-chica bz-nada">Nada aquí.</p>') + '</details>';
+  }
+  const porPersona = (l) => { const m = {}; l.forEach((f) => { const n = f.analista ? corto(f.analista) : 'Sin asignar'; m[n] = (m[n] || 0) + 1; }); return Object.keys(m).sort((a, b) => m[b] - m[a]).map((n) => n + ' ' + m[n]).join(' · '); };
+  function tableroCanales(){
+    const coord = D.vista === 'coord' && modoC === 'equipo';
+    if(!CN) return '<div aria-busy="true">' + C.esqueleto(4) + '</div>';
+    if(CN.error) return '<div class="vacio" role="alert"><b>No se pudo cargar el detalle de Canales</b><p>' + esc(CN.error) + '</p><button type="button" class="btn btn-chico" data-tr="reintentar">Reintentar</button></div>';
+    const its = listaCanales();
+    const cartas = its.filter(esCartaT).sort((a, b) => (!!exDe(b).descargada - !!exDe(a).descargada) || (diasD(b) - diasD(a)));
+    const desc = cartas.filter((f) => exDe(f).descargada); const viejas = cartas.filter((f) => diasD(f) > 3);
+    const ips = its.filter((f) => f.tipo === 'sin_ip' || f.tipo === 'ip_confirmar'); const emi = its.filter((f) => f.tipo === 'cambio_emitir'); const pago = its.filter((f) => f.tipo === 'revisar_pago');
+    let h = '';
+    if(D.vista === 'coord'){
+      const nMio = filtrar(CN.equipo || []).filter((f) => f.analista_id === yo.id).length;
+      h += '<div class="cn-modo" role="tablist" aria-label="Qué ver"><button type="button" role="tab" aria-selected="' + (modoC === 'mio') + '" class="' + (modoC === 'mio' ? 'on' : '') + '" data-cn-modo="mio">Lo mío <b>' + nMio + '</b></button>' +
+        '<button type="button" role="tab" aria-selected="' + (modoC === 'equipo') + '" class="' + (modoC === 'equipo' ? 'on' : '') + '" data-cn-modo="equipo">Mi equipo <b>' + filtrar(CN.equipo || []).length + '</b></button></div>';
+    } else if(CN.equipo){
+      h += '<div class="cn-modo" role="tablist" aria-label="Qué ver"><button type="button" role="tab" aria-selected="' + !verEq + '" class="' + (!verEq ? 'on' : '') + '" data-cn-eq="0">Lo mío <b>' + (D.items || []).length + '</b></button>' +
+        '<button type="button" role="tab" aria-selected="' + verEq + '" class="' + (verEq ? 'on' : '') + '" data-cn-eq="1">Todo el equipo <b>' + filtrar(CN.equipo).length + '</b></button></div>';
+    }
+    const tile = (n, t, c, g) => (g ? '<button type="button" class="bz-num ' + c + '" data-grupo="' + g + '">' : '<div class="bz-num ' + c + '">') + '<b>' + n + '</b><small>' + esc(t) + '</small>' + (g ? '</button>' : '</div>');
+    h += '<div class="cn-tiles">' + tile(cartas.length, 'Cartas por enviar', 'a', 'carta') + tile(desc.length, 'Descargadas sin confirmar', 'b', '') + tile(viejas.length, 'Más de 3 días', 'r', '') +
+      tile(ips.length, 'Esperan la IP', '', 'ip') + tile(emi.length, 'Cambios por emitir', 'b', 'emi') + tile(pago.length, 'Pago por revisar', 'r', 'pago') + '</div>';
+    if(coord){
+      const carga = (CN.carga || []).map((p) => { const det = [plural(p.cartas, 'carta', 'cartas'), p.ip ? p.ip + ' IP' : '', p.emi ? plural(p.emi, 'cambio por emitir', 'cambios por emitir') : '', p.pago ? plural(p.pago, 'pago', 'pagos') : ''].filter(Boolean).join(' · ');
+        return '<div class="cn-per"><b>' + esc(p.id === yo.id ? 'Yo' : corto(p.nombre)) + '</b><span class="chip ' + (p.venc ? 'rojo' : p.hoy ? 'ambar' : 'verde') + '">' + esc(p.venc ? plural(p.venc, 'vencida', 'vencidas') : p.hoy ? p.hoy + ' hoy' : 'Al día') + '</span>' +
+          '<small>' + esc(det) + '</small>' + (p.id === yo.id ? '' : '<button type="button" class="enlace" data-persona="' + esc(p.id) + '">Ver su trabajo</button>') + '</div>'; }).join('');
+      h += seccion('Mi equipo · Canales de atención', 'Ves lo de todos y puedes pasar una tarea a otra persona' + (CN.sin_asignar ? ' · ' + plural(CN.sin_asignar, 'tarea sin asignar', 'tareas sin asignar') : ''), '<div class="cn-team">' + carga + '</div>');
+    }
+    // Cartas y proformas (primero las descargadas sin confirmar, luego las más viejas)
+    let lc;
+    if(coord && cartasPor === 'persona'){ const m = {}; cartas.forEach((f) => { const n = f.analista || 'Sin asignar'; (m[n] = m[n] || []).push(f); });
+      lc = Object.keys(m).sort((a, b) => (a === 'Sin asignar') - (b === 'Sin asignar') || a.localeCompare(b)).map((n) => '<div class="bz-grp">' + esc(n) + ' · ' + m[n].length + '</div>' + m[n].slice(0, 6).map((f) => cartaFila(f, true)).join('')).join(''); }
+    else lc = cartas.slice(0, coord ? 12 : 6).map((f) => cartaFila(f, coord)).join('');
+    const masC = cartas.length > (coord ? 12 : 6) && !(coord && cartasPor === 'persona') ? '<button type="button" class="enlace bz-ver" data-grupo="carta">Y ' + (cartas.length - (coord ? 12 : 6)) + ' más · Ver todas</button>' : '';
+    const sw = coord ? '<span class="bz-sh-acc cn-sw" role="group" aria-label="Ordenar"><button type="button" class="' + (cartasPor === 'persona' ? 'on' : '') + '" aria-pressed="' + (cartasPor === 'persona') + '" data-cn-por="persona">Por persona</button><button type="button" class="' + (cartasPor === 'dias' ? 'on' : '') + '" aria-pressed="' + (cartasPor === 'dias') + '" data-cn-por="dias">Por días</button></span>' : '';
+    h += seccion((coord ? 'Cartas y proformas del equipo · ' : 'Cartas y proformas · ') + cartas.length, coord ? '' : 'Las cartas se envían desde aquí mismo', (cartas.length ? lc : '<p class="nota-chica bz-nada">Ninguna carta por enviar.</p>') + masC, sw);
+    if(coord){ const sd = filtrar(CN.sin_dueno || []);
+      h += seccion('Órdenes sin dueño · ' + sd.length, 'No comisionan hasta elegir de quién son', sd.length ? sd.slice(0, 8).map((f) => '<div class="cn-fila"><div class="cn-tx"><b>' + esc(f.titulo || '') + '</b><small>' + esc(f.detalle || '') + '</small></div><span class="chip ambar">Falta elegir</span><span class="cn-acc"><button type="button" class="btn btn-chico" data-cn-hacer="' + esc(kDe(f)) + '">Elegir dueño</button></span></div>').join('') : '<p class="nota-chica bz-nada">Todas las órdenes tienen dueño.</p>'); }
+    // Esperan la IP: a cada una, la siguiente IP libre del pool
+    const pool = (CN.pool || []).slice(); const ipsO = ips.slice().sort((a, b) => String(exDe(a).instalada || '') < String(exDe(b).instalada || '') ? -1 : 1);
+    h += seccion('Esperan la IP · ' + ips.length, 'Sin IP no sale la carta. La sugerencia hay que confirmarla en el sistema técnico', ips.length ? ipsO.slice(0, 8).map((f) => ipFila(f, f.tipo === 'sin_ip' ? pool.shift() : null)).join('') : '<p class="nota-chica bz-nada">Ninguna espera IP.</p>');
+    h += plegado('Cambios por emitir', emi, coord ? porPersona(emi) : 'Cambios de categoría a emitir en el sistema') + plegado('Pago por revisar', pago, 'Clientes con varios servicios');
+    return h;
+  }
+  async function fichaDe(f){ return rpc('cliente_ficha', { p_cliente: f.cliente_id }); }
+  async function cnAccion(b){
+    const f = buscarCn(b.dataset.cnWa || b.dataset.cnPdf || b.dataset.cnYa || b.dataset.cnRec || b.dataset.cnPasar || b.dataset.cnIp || b.dataset.cnHacer); if(!f) return;
+    if(b.dataset.cnHacer){ hacer(f); return; }
+    if(b.dataset.cnPasar){ abrirPasar(f); return; }
+    const sid = Number(sidDe(f)); b.disabled = true;
+    try {
+      if(b.dataset.cnYa){ await rpc('carta_marcar_enviada', { p_servicio: sid, p_que: 'ambas', p_canal: 'whatsapp', p_fecha: D.hoy }); aviso('Marcada como enviada. Queda tu nombre en el hilo', null, true); }
+      else if(b.dataset.cnRec){ const r = await rpc('trabajo_recordar', { p_tipo: f.tipo, p_clave: f.clave }); aviso('Le llegó el recordatorio a ' + (r && r.a ? r.a : 'la persona'), null, true); b.disabled = false; return; }
+      else if(b.dataset.cnIp){ await rpc('ip_usar', { p_servicio: sid, p_fila: Number(b.dataset.fila) }); aviso('IP guardada. Queda en la bitácora', null, true); }
+      else if(b.dataset.cnWa){ const F = await fichaDe(f); const r = await window.Ficha.cartaWhatsapp(F, sid, null); if(!r){ b.disabled = false; return; } }
+      else if(b.dataset.cnPdf){ const F = await fichaDe(f); window.Ficha.cartaPdf(F, sid, 'proforma');
+        if(((F.servicios || []).find((x) => Number(x.id) === sid) || {}).carta) setTimeout(() => window.Ficha.cartaPdf(F, sid, 'bienvenida'), 600);
+        await rpc('carta_descargada', { p_servicio: sid }); aviso('Descargada. Cuando la envíes, toca "Ya la envié"', null, true); }
+      cache.borrarTodo(); await cargar();
+    } catch (e) { toast(e.message || 'No se pudo. Revisa tu conexión e intenta de nuevo', 'error'); if(document.contains(b)) b.disabled = false; }
+  }
+  // Pasar a otra persona: hoja chica con la gente de Canales
+  let pasando = null;
+  function abrirPasar(f){
+    pasando = f; let h = $('hojaPasar');
+    if(!h){ h = document.createElement('section'); h.id = 'hojaPasar'; h.className = 'hoja'; h.setAttribute('role', 'dialog'); h.setAttribute('aria-modal', 'true'); h.setAttribute('aria-labelledby', 'tPasar'); h.setAttribute('aria-hidden', 'true'); document.body.appendChild(h); C.prepararHojas(); }
+    const an = (CN && CN.analistas) || [];
+    h.innerHTML = '<div class="cab"><div><h2 id="tPasar">Pasar a otra persona</h2><p class="sub-hoja">' + esc(f.titulo || '') + '</p></div><button type="button" class="cerrar" data-cierra="1" aria-label="Cerrar">' + C.ic('x') + '</button></div>' + '<form id="formPasar" novalidate><p class="nota-chica">Ahora la tiene: <b>' + esc(f.analista || 'nadie') + '</b>. A quien elijas le llega un aviso.</p>' +
+      '<label class="rotulo" for="psQuien">Pasar a</label><select class="campo" id="psQuien">' + an.map((a) => '<option value="' + esc(a.id) + '"' + (a.id === f.analista_id ? ' disabled' : '') + '>' + esc(a.nombre) + (a.id === yo.id ? ' (yo)' : '') + '</option>').join('') + '</select>' +
+      '<div class="error" id="ePasar" role="alert"></div><div class="acciones"><button type="submit" class="btn btn-ancho" id="psOk">Pasar</button></div></form>';
+    C.abrirHoja('hojaPasar');
+  }
+  async function pasar(e){
+    e.preventDefault(); if(!pasando) return; const b = $('psOk'); const er = $('ePasar'); er.textContent = ''; b.disabled = true;
+    try { const r = await rpc('trabajo_pasar', { p_tipo: pasando.tipo, p_clave: pasando.clave, p_analista: $('psQuien').value }); C.cerrarHoja(); aviso('Ahora la tiene ' + (r && r.analista ? r.analista : 'esa persona') + '. Le llegó un aviso', null, true); pasando = null; await cargar(); }
+    catch (x) { er.textContent = x.message || 'No se pudo. Intenta de nuevo'; b.disabled = false; }
   }
   // Legal: por elaborar por tipo de cliente, luego enviado a firmar, firmado sin subir y vencimientos
   function tableroLegal(gs){
@@ -327,6 +458,10 @@
     if(t.closest('#vistaLote')) return;
     if((b = t.closest('[data-grupo]')) && (b.closest('#tarjetas') || b.closest('#nums') || b.classList.contains('bz-ver'))){ sel = sel === b.dataset.grupo && b.closest('#tarjetas') ? '' : b.dataset.grupo; cuantos = 40; guardarUrl(); pintar(); if(b.classList.contains('bz-ver') || b.closest('#nums')) $('cuerpo').scrollIntoView({ block: 'start' }); return; }
     if((b = t.closest('[data-hacer]'))){ const f = buscar(b.dataset.hacer); if(f) hacer(f); return; }
+    if((b = t.closest('[data-cn-wa],[data-cn-pdf],[data-cn-ya],[data-cn-rec],[data-cn-pasar],[data-cn-ip],[data-cn-hacer]'))){ cnAccion(b); return; }
+    if((b = t.closest('[data-cn-modo]'))){ modoC = b.dataset.cnModo; pintar(); return; }
+    if((b = t.closest('[data-cn-eq]'))){ verEq = b.dataset.cnEq === '1'; pintar(); return; }
+    if((b = t.closest('[data-cn-por]'))){ cartasPor = b.dataset.cnPor; pintar(); return; }
     if((b = t.closest('[data-gest-est]'))){ gestionEstado(b); return; }
     if((b = t.closest('[data-filtro-c]'))){ filtroC = b.dataset.filtroC; pintar(); return; }
     // Lote 05/11 D6: Marcar hecho pide confirmar (segundo toque) y queda en la bitácora
@@ -348,7 +483,7 @@
       else if(a === 'seguir' && cola){ const f = (D.items || []).find((x) => x.tipo === cola.tipo && x.clave === b.dataset.clave); $('barraCola').classList.add('hidden'); if(f){ cola.hechos.push(f.clave); hacer(f); } }
     }
   });
-  document.addEventListener('submit', (e) => { if(e.target.id === 'formNotaP'){ e.preventDefault(); guardarNota(e.target); } });
+  document.addEventListener('submit', (e) => { if(e.target.id === 'formNotaP'){ e.preventDefault(); guardarNota(e.target); } if(e.target.id === 'formPasar') pasar(e); });
   let buscaT = null;
   $('bzBuscar').addEventListener('input', () => { clearTimeout(buscaT); buscaT = setTimeout(() => { busca = $('bzBuscar').value.trim(); if(D) pintar(); }, 200); });
   $('persona').addEventListener('change', () => { persona = $('persona').value; sel = ''; guardarUrl(); D = null; cargar(); });
