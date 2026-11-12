@@ -25,7 +25,7 @@ async function cerrarHojas(p){ for(let i = 0; i < 5 && await p.evaluate(() => !!
     const eq = await a.textContent('#equipos');
     ok(nombre + ': Comisiones separa por equipo (Ventas corporativas, Canales, Aliados)', /corporativas/i.test(eq) && /Canales/i.test(eq) && /Aliado/i.test(eq));
     ok(nombre + ': arriba las tarjetas Instalaciones, Cambios de categoría y Cartas y proformas', /Instalaciones/.test(await a.textContent('#segs')) && /Cambios de categor/.test(await a.textContent('#segs')) && /Cartas y proformas/.test(await a.textContent('#segs')));
-    ok(nombre + ': el aviso de Por instalar habla en horas', /hora/i.test(await a.textContent('#alertas')));
+    ok(nombre + ': el aviso de Por instalar habla en horas', /\d+ h sin instalar/.test(await a.textContent('#alertas')));
     ok(nombre + ': Comisiones sin desborde', await sinDesborde(a));
     await a.goto(H + 'comisiones.html?v=resumen'); await a.waitForSelector('.cr-rank, .cr-podio, [data-cr]', { timeout: 15000 }).catch(() => {});
     const res = await a.textContent('main');

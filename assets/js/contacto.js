@@ -7,6 +7,19 @@
   const { esc, ic, rpc, toast, primerNombre, enlaceWa, enlaceCorreo, casilla, fecha } = window.Comun;
   const ROL = { admin: 'administrador', lider: 'líder', analista: 'analista', abogado: 'Legal' };
 
+  // Lote 12/11 B (maqueta 8d): "le faltan todos los documentos", hasta 3 por su nombre ("el RIF y la cédula del representante") o "le faltan 5 documentos"
+  const ART = { rif_empresa: 'el RIF', acta_constitutiva: 'el acta constitutiva', cedula: 'la cédula del representante', rif_personal: 'el RIF del representante', acta_asamblea: 'el acta de asamblea' };
+  function faltanTx(det){
+    const l = det.lista || []; const n = Number(det.faltan) || l.length;
+    if(det.todos) return 'le faltan todos los documentos';
+    if(l.length && l.length <= 3){
+      const ks = l.map((x) => x.k);
+      let nombres = l.map((x) => ART[x.k] || ('el ' + String(x.t || 'documento')));
+      if(ks.indexOf('cedula') >= 0 && ks.indexOf('rif_personal') >= 0 && l.length === 2) nombres = ['el RIF y la cédula del representante'];
+      return (l.length === 1 ? 'le falta ' : 'le faltan ') + window.Comun.lista(nombres);
+    }
+    return n > 1 ? 'le faltan ' + n + ' documentos' : 'le falta un documento';
+  }
   // Mensaje ya escrito: siempre se puede cambiar en WhatsApp antes de enviarlo
   function mensaje(d, p){
     const n = primerNombre(p.nombre) || ''; const c = d.cliente || 'el cliente'; const det = d.detalle || {};
@@ -14,7 +27,7 @@
     const dev = (det.devueltos || []).map((x) => casilla(x.casilla, x.numero).toLowerCase() + (x.motivo ? ' (' + x.motivo + ')' : '')).join(', ');
     const t = {
       docs_revisar: '¿me revisas los documentos de ' + c + '? Ya están en la app.',
-      docs_faltan: 'a ' + c + ' le ' + (det.faltan > 1 ? 'faltan ' + det.faltan + ' documentos' : 'falta un documento') + ' en la app. ¿Me ayudas a conseguirlos?',
+      docs_faltan: 'a ' + c + ' ' + faltanTx(det) + ' en la app. ¿Me ayudas a conseguirlos?',
       devuelto: 'a ' + c + ' le devolvieron ' + (dev || 'documentos') + '. Hay que subirlos de nuevo.',
       contrato: '¿cómo va el contrato de ' + c + '?',
       firma: 'el contrato de ' + c + ' está listo para firmar. ¿Cuándo lo firman?',
@@ -31,7 +44,8 @@
       com_general: 'te escribo por la comisión de ' + c + '.',
       aliado: 'te escribo por ' + c + '.'
     }[d.motivo];
-    const legal = /^com_legal_/.test(d.motivo) ? 'a ' + c + ' le falta Legal para comisionar.' + cierra : '';
+    const legal = d.motivo === 'com_legal_docs_faltan' ? 'a ' + c + ' ' + faltanTx(det) + ' en la app. ¿Me ayudas a conseguirlos?' + cierra
+      : /^com_legal_/.test(d.motivo) ? 'a ' + c + ' le falta Legal para comisionar.' + cierra : '';
     return 'Hola ' + n + ', ' + (t || legal || 'te escribo por ' + c + '.');
   }
   function enlace(d, p){

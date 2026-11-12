@@ -77,18 +77,25 @@
   const duenoDe = (f) => f.lider || f.dueno || 'Por asignar';
   const aliadoDe = (f) => (f.equipo === 'aliados' ? f.lider || f.dueno || capital(f.instalador || '') || 'Aliado' : '');
   const grupoDe = (f) => (f.equipo === 'aliados' ? 'Aliados comerciales' : duenoDe(f));
-  const fechaDe = (f) => String(f.instalada_en || '').slice(0, 10);
-  function pasaExtra(f){
-    if(persona && f.equipo !== 'aliados' && duenoDe(f) !== persona) return false;
-    if(aliado && aliadoDe(f) !== aliado) return false;
-    if((desde || hasta) && f.pend) return false;
+  // Lote 12/11 B: los pendientes por instalar usan la fecha de la orden
+  const fechaDe = (f) => String((f.pend ? f.desde : f.instalada_en) || '').slice(0, 10);
+  function pasaFechas(f){
     if(desde && fechaDe(f) < desde) return false;
     if(hasta && fechaDe(f) > hasta) return false;
     return true;
   }
+  // Todo se suma siempre: equipo, persona o aliado, fechas y búsqueda (la pastilla la pone pasa())
+  function pasaExtra(f, sinPersona, sinFechas){
+    if(!sinPersona && persona && f.equipo !== 'aliados' && duenoDe(f) !== persona) return false;
+    if(!sinPersona && aliado && aliadoDe(f) !== aliado) return false;
+    if(!sinFechas && !pasaFechas(f)) return false;
+    return coincide(f);
+  }
+  // La base de la lista de un equipo; cada número de la pantalla cuenta sobre esta misma base
+  const baseEq = (e, sinPersona, sinFechas) => filasInst(e).concat(pendInst(e)).filter((f) => pasaExtra(f, sinPersona, sinFechas));
   const cartaPend = (f) => f.carta && ['por_enviar', 'falta_ip', 'lider'].indexOf(f.carta.k) >= 0;
   const todasCorte = () => d.filas.concat(d.aliados || []);
-  const porAsignar = () => (d ? d.filas.filter((f) => !f.orden_ok).length : 0);
+  const porAsignar = () => (d ? Number(conteo('asignar')) || 0 : 0);
   function pasa(f){
     if(f.pend) return filtro === 'todos' || filtro === 'pendientes';
     if(filtro === 'pendientes') return false;
@@ -105,13 +112,13 @@
   function filasVista(){
     if(seg === 'cambios') return d.filas.filter((f) => f.migracion);
     if(seg === 'cartas') return todasCorte().filter((f) => f.origen === 'corte' && cartaPend(f));
-    if(filtro === 'asignar') return d.filas.filter((f) => !f.orden_ok);
-    return filasInst(equipo).concat(pendInst(equipo)).filter(pasaExtra);
+    return baseEq(equipo);
   }
-  function conteo(id){
+  // Cuenta igual que la lista: misma base y la pastilla id
+  function conteo(id, e, sinPersona, sinFechas){
     if(!d) return '';
-    if(id === 'eventos') return (d.eventos || []).length;
-    const g = filtro; filtro = id; const n = (id === 'asignar' ? d.filas.filter((f) => !f.orden_ok) : filasInst(equipo).concat(pendInst(equipo)).filter(pasaExtra)).filter(pasa).length; filtro = g; return n;
+    if(id === 'eventos') return (d.eventos || []).filter(coincide).length;
+    const g = filtro; filtro = id; const n = baseEq(e || equipo, sinPersona, sinFechas).filter(pasa).length; filtro = g; return n;
   }
 
   function pintarCorte(){
@@ -142,36 +149,37 @@
   }
   function pintarEquipos(){
     const vs = equiposVisibles(); if(equipo !== 'todos' && !vs.some((x) => x[0] === equipo)) equipo = 'todos';
-    const todos = seg === 'cartas'; const cnt = (e) => todos ? todasCorte().filter((f) => f.origen === 'corte' && cartaPend(f) && (e === 'todos' || deEquipo(f, e))).length : filasInst(e).length;
+    const todos = seg === 'cartas'; const cnt = (e) => todos ? todasCorte().filter((f) => f.origen === 'corte' && cartaPend(f) && (e === 'todos' || deEquipo(f, e))).length : conteo(filtro, e, e !== equipo);
     const op = [['todos', 'Todos']].concat(vs.map((x) => [x[0], x[0] === 'aliados' ? 'Aliado comercial' : x[1]]));
+    // Lote 12/11 B: "Aliado: todos" ya no ocupa su fila: es una pastilla al lado de "Aliado comercial" cuando ese equipo está elegido
+    const alisEq = equipo === 'aliados' && seg === 'inst' ? Array.from(new Set(filasInst('aliados').map(aliadoDe).filter(Boolean))).sort((a, b) => a.localeCompare(b)) : [];
+    if(aliado && alisEq.indexOf(aliado) < 0) aliado = '';
+    const pillAl = alisEq.length ? '<label class="solo-lector" for="cxAliado">Aliado</label><select class="cx-sel cx-al-pill" id="cxAliado"><option value="">Aliado: todos</option>' + alisEq.map((n) => '<option value="' + esc(n) + '"' + (aliado === n ? ' selected' : '') + '>' + esc(n) + '</option>').join('') + '</select>' : '';
     $('equipos').innerHTML = seg === 'cambios' ? '' : op.map((x) => { const on = x[0] === equipo;
-      return '<button type="button" role="tab" class="cx-eq' + (on ? ' on' : '') + '" data-equipo="' + x[0] + '" aria-selected="' + on + '">' + esc(x[1]) + ' <span class="cnt">' + cnt(x[0]) + '</span></button>'; }).join('');
+      return '<button type="button" role="tab" class="cx-eq' + (on ? ' on' : '') + '" data-equipo="' + x[0] + '" aria-selected="' + on + '">' + esc(x[1]) + ' <span class="cnt">' + cnt(x[0]) + '</span></button>' + (x[0] === 'aliados' && on ? pillAl : ''); }).join('');
     $('equipos').classList.toggle('todas', todos);
     // Persona: solo al elegir un equipo (y no en aliados), con la gente de ese equipo; aliado: cuando hay filas de aliados
     const base = seg === 'cambios' ? [] : filasInst(equipo);
     const nombres = equipo !== 'todos' && equipo !== 'aliados' ? Array.from(new Set(base.map(duenoDe))).sort((a, b) => a.localeCompare(b)) : [];
     if(persona && nombres.indexOf(persona) < 0) persona = '';
-    const alis = Array.from(new Set((equipo === 'todos' || equipo === 'aliados' ? base : []).map(aliadoDe).filter(Boolean))).sort((a, b) => a.localeCompare(b));
-    if(aliado && alis.indexOf(aliado) < 0) aliado = '';
-    $('cxPersona').innerHTML = nombres.length > 1 ? '<span class="cx-rot">Persona</span><div class="cx-chips">' + [['', 'Todas', base.length]].concat(nombres.map((n) => [n, n, base.filter((f) => duenoDe(f) === n).length])).map((x) =>
-        '<button type="button" class="cx-chip' + (persona === x[0] ? ' on' : '') + '" data-persona="' + esc(x[0]) + '" aria-pressed="' + (persona === x[0]) + '">' + esc(x[1]) + ' <span>' + x[2] + '</span></button>').join('') + '</div>'
-      : alis.length ? '<span class="cx-rot">Aliado</span><label class="solo-lector" for="cxAliado">Aliado</label><select class="campo cx-sel" id="cxAliado"><option value="">Aliado: todos</option>' + alis.map((n) => '<option value="' + esc(n) + '"' + (aliado === n ? ' selected' : '') + '>' + esc(n) + '</option>').join('') + '</select>' : '';
+    // Los números de cada persona cuentan con las fechas, la búsqueda y la pastilla elegida
+    const enPersona = nombres.length > 1 ? baseEq(equipo, true).filter(pasa) : [];
+    $('cxPersona').innerHTML = nombres.length > 1 ? '<span class="cx-rot">Persona</span><div class="cx-chips">' + [['', 'Todas', enPersona.length]].concat(nombres.map((n) => [n, n, enPersona.filter((f) => duenoDe(f) === n).length])).map((x) =>
+        '<button type="button" class="cx-chip' + (persona === x[0] ? ' on' : '') + '" data-persona="' + esc(x[0]) + '" aria-pressed="' + (persona === x[0]) + '">' + esc(x[1]) + ' <span>' + x[2] + '</span></button>').join('') + '</div>' : '';
+    $('cxPersona').hidden = !(nombres.length > 1);
     $('cxVer').innerHTML = seg === 'inst' ? '<span class="cx-rot">Ver</span><div class="cx-chips"><button type="button" class="cx-chip' + (vista === 'dueno' ? ' on' : '') + '" data-vista="dueno" aria-pressed="' + (vista === 'dueno') + '">Agrupado por dueño</button>' +
       '<button type="button" class="cx-chip' + (vista === 'fecha' ? ' on' : '') + '" data-vista="fecha" aria-pressed="' + (vista === 'fecha') + '">Lista por fecha</button></div>' +
       '<label class="cx-fecha"><span>Desde</span><input class="campo" type="date" id="cxDesde" value="' + esc(desde) + '"></label><label class="cx-fecha"><span>Hasta</span><input class="campo" type="date" id="cxHasta" value="' + esc(hasta) + '"></label>' +
       (desde || hasta ? '<button type="button" class="enlace" data-sin-fechas="1">Quitar fechas</button>' : '') : '';
   }
-  // Avisos del corte en curso: Por instalar, Por asignar y el botón azul para subir un cliente nuevo
+  // Lote 12/11 B (maqueta 1): sin las tarjetas grandes; una línea de avisos (solo si hay algo) y "+ Cliente nuevo" en la fila del título
   function pintarAlertas(){
-    const z = $('alertas'); const enCurso = d.corte === d.actual;
+    const z = $('alertas'); const enCurso = d.corte === d.actual; const nv = $('cxNuevo');
+    if(nv) nv.innerHTML = d.puedo && d.puedo.subir_nuevo && seg === 'inst' ? '<button type="button" class="hc-b cx-nuevo" data-abrir="nuevo">' + ic('mas') + 'Cliente nuevo</button>' : '';
     if(!enCurso || seg !== 'inst' || !['admin', 'analista', 'lider'].includes(yo.rol)){ z.innerHTML = ''; return; }
-    const pi = d.pi || {}; const n = porAsignar(); const pend = (d.pendientes || []).length;
-    z.innerHTML = '<button type="button" class="cx-al' + (pi.mas24 ? ' w' : '') + '" data-abrir="por_instalar"><span class="h">Por instalar</span><span class="big">' + plural(pi.mas24 || 0, 'orden', 'órdenes') + '</span>' +
-        '<span class="s">Del corte, pasan de ' + (d.horas_alerta || 24) + ' horas sin instalar</span><span class="go">Ver órdenes</span></button>' +
-      (yo.rol !== 'lider' ? '<button type="button" class="cx-al' + (n ? '' : ' ok') + '" data-filtro="asignar"><span class="h">Por asignar</span><span class="big">' + plural(n, 'instalación', 'instalaciones') + '</span>' +
-        '<span class="s">' + (n ? 'Sin dueño: no comisionan hasta asignarlas' : 'Todas tienen dueño') + '</span><span class="go">' + (n ? 'Asignar dueño' : 'Ver clientes sin líder') + '</span></button>' : '') +
-      (d.puedo && d.puedo.subir_nuevo ? '<button type="button" class="cx-al azul" data-abrir="nuevo"><span class="big">Subir documentos de un cliente nuevo</span><span class="s">Buscas su orden de Odoo o lo subes con el posible nombre</span>' +
-        '<span class="pill">' + plural(pend, 'pendiente por instalar', 'pendientes por instalar') + '</span></button>' : '');
+    const pi = d.pi || {}; const n = yo.rol !== 'lider' ? porAsignar() : 0; const h = d.horas_alerta || 24;
+    z.innerHTML = (pi.mas24 ? '<button type="button" class="av-l" data-abrir="por_instalar"><i class="pt" aria-hidden="true"></i><span><b>' + plural(pi.mas24, 'orden', 'órdenes') + '</b> ' + (pi.mas24 === 1 ? 'pasa' : 'pasan') + ' de ' + h + ' h sin instalar</span><span class="av-e">Ver órdenes</span></button>' : '') +
+      (n ? '<button type="button" class="av-l r" data-filtro="asignar"><i class="pt" aria-hidden="true"></i><span><b>' + plural(n, 'instalación', 'instalaciones') + '</b> sin dueño <small>· no comisionan</small></span><span class="av-e">Asignar dueño</span></button>' : '');
   }
   let masAbierto = false;
   function pintarFiltros(){
@@ -307,8 +315,9 @@
       return;
     }
     const base = filasVista(); const filas = base.filter((f) => (seg !== 'inst' || pasa(f)) && coincide(f));
+    const vf = !filas.length && seg === 'inst' && (desde || hasta) ? vacioFechas() : '';
     if(!filas.length){
-      $('lista').innerHTML = (busca && base.length ? vacio('Sin resultados', 'Nadie coincide con "' + busca + '". Revisa cómo está escrito o busca por código o número de orden.')
+      $('lista').innerHTML = vf ? vf + bandejasExtra() : (busca ? vacio('Sin resultados', 'Nadie coincide con "' + busca + '". Revisa cómo está escrito o busca por código o número de orden.')
         : seg === 'cartas' ? vacio('Todo enviado', 'No quedan cartas de bienvenida y proformas por enviar en este corte.')
         : seg === 'cambios' ? vacio('Sin cambios de categoría', 'Las migraciones a PYME confirmadas en el corte salen aquí.')
         : base.length ? vacio('Nada en este filtro', 'Prueba con otro filtro o mira todas.') : vacio('Sin instalaciones en este equipo', 'Cuando se instale un servicio que comisiona aparecerá aquí.')) +
@@ -336,7 +345,7 @@
     const inst = filas.filter((f) => !f.pend);
     const pills = cartas ? '<span class="p w">' + plural(filas.length, 'por enviar', 'por enviar') + '</span>'
       : '<span class="p g">' + plural(inst.length, 'instalada', 'instaladas') + '</span><span class="p ok">' + inst.filter((f) => f.cumple).length + ' ' + (inst.filter((f) => f.cumple).length === 1 ? 'comisiona' : 'comisionan') + '</span>' +
-        (inst.some((f) => !f.legal_ok) ? '<span class="p w">' + inst.filter((f) => !f.legal_ok).length + ' falta legal</span>' : '') +
+        (inst.some((f) => !f.legal_ok) ? '<span class="p w">' + inst.filter((f) => !f.legal_ok).length + (inst.filter((f) => !f.legal_ok).length === 1 ? ' falta Legal' : ' faltan Legal') + '</span>' : '') +
         (inst.some(cartaPend) ? '<span class="p w">' + inst.filter(cartaPend).length + ' por enviar</span>' : '') +
         (filas.length > inst.length ? '<span class="p g">' + (filas.length - inst.length) + ' por instalar</span>' : '');
     const todo = completos[k] || filas.length <= TOPE; const ver = todo ? filas : filas.slice(0, TOPE);
@@ -361,11 +370,34 @@
     asignar: 'Por asignar: no se sabe de quién es la instalación (la orden no tiene código de vendedor o la creó otra persona). No comisiona hasta que el Analista Senior le pone dueño.',
     pendientes: 'Pendientes por instalar: clientes con documentos subidos que todavía no tienen la instalación. Pasan solos al corte cuando el TAD la trae.'
   };
+  // Lote 12/11 B (maqueta 6a): "Mostrando … · Quitar todo" cuando hay filtros puestos
+  const NADA = { comisionan: 'que comisione', legal: 'sin Legal', pago: 'sin pago', falta: 'pendiente', carta: 'con la carta por enviar', ultimo: 'del corte anterior', pendientes: 'pendiente por instalar', asignar: 'sin dueño', subir: 'con archivos por subir' };
+  const ddmm = (x) => x ? x.slice(8, 10) + '/' + x.slice(5, 7) : '';
+  function mostrando(){
+    if(!d || seg !== 'inst') return '';
+    const ch = [];
+    if(filtro !== 'todos'){ const f = FILTROS.find((x) => x.id === filtro); if(f) ch.push(f.t); }
+    if(desde || hasta) ch.push(desde && hasta ? ddmm(desde) + ' al ' + ddmm(hasta) : desde ? 'Desde ' + ddmm(desde) : 'Hasta ' + ddmm(hasta));
+    if(equipo !== 'todos'){ const e = EQUIPOS.find((x) => x[0] === equipo); if(e) ch.push(e[0] === 'aliados' ? 'Aliado comercial' : e[1]); }
+    if(persona) ch.push(persona); if(aliado) ch.push(aliado);
+    if(busca) ch.push('"' + busca + '"');
+    return ch.length ? '<div class="cx-mostrando"><span>Mostrando</span>' + ch.map((x) => '<span class="chip cx-mch">' + esc(x) + '</span>').join('') + '<button type="button" class="enlace" data-quitar-todo="1">Quitar todo</button></div>' : '';
+  }
+  // Sin resultados con fechas: dice cuántos hay en todo el corte y deja verlos sin fechas
+  function vacioFechas(){
+    const n = baseEq(equipo, false, true).filter(pasa).length; if(!n) return '';
+    const ds = NADA[filtro] ? ' ' + NADA[filtro] : '';
+    const MESL = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+    const larga = (x) => Number(x.slice(8, 10)) + ' de ' + MESL[Number(x.slice(5, 7)) - 1];
+    const rango = desde && hasta ? 'entre el ' + (desde.slice(5, 7) === hasta.slice(5, 7) ? Number(desde.slice(8, 10)) : larga(desde)) + ' y el ' + larga(hasta) : desde ? 'desde el ' + larga(desde) : 'hasta el ' + larga(hasta);
+    return '<div class="cx-vacio-g" role="status"><b>Nada' + esc(ds) + ' en estas fechas</b><p>' + esc('Hay ' + n + ds + ' en todo el corte, pero ' + (n === 1 ? 'no entra' : 'ninguna entra') + ' ' + rango + '.') + '</p>' +
+      '<button type="button" class="hc-b s ch" data-sin-fechas="1">Ver ' + (n === 1 ? 'la' : 'las ' + n) + ' sin fechas</button></div>';
+  }
   function ayudaFiltro(){
     // Lote 3: los clientes con excepción pagada en un corte anterior no están en este corte; se gestionan en Clientes
     const xp = filtro === 'subir' && d && d.exc_pagada ? ' <a class="enlace" href="clientes.html?f=por_subir">' + plural(d.exc_pagada, 'cliente', 'clientes') + ' con excepción pagada también ' + (d.exc_pagada === 1 ? 'tiene' : 'tienen') + ' archivos por subir. Ver en Clientes</a>' : '';
     const sl = filtro === 'asignar' && yo.rol !== 'lider' ? ' <button type="button" class="enlace" data-abrir="sin_lider">Clientes instalados sin líder</button>' : '';
-    return AYUDA[filtro] || xp || sl ? '<p class="ayuda-filtro" role="note">' + esc(AYUDA[filtro] || '') + xp + sl + '</p>' : '';
+    return mostrando() + (AYUDA[filtro] || xp || sl ? '<p class="ayuda-filtro" role="note">' + esc(AYUDA[filtro] || '') + xp + sl + '</p>' : '');
   }
   // Migraciones del corte que no comisionan aquí: cambios a residencial (indicador negativo) e histórico pagado fuera de la app
   let MIG = null;
@@ -646,9 +678,15 @@
     const c = F.cliente; const fal = F.faltantes || []; const ok = !!c.legal_ok_en; const lc = c.legal_como;
     const pr = (F.documentos || []).filter((x) => x.estado === 'por_revisar').length;
     const est = (window.Comun.ESTATUS[c.estatus] || {}).t || c.estatus || '';
-    const chip = !ok ? (fal.length ? plural(fal.length, 'falta', 'faltan') : 'Falta Legal') : lc === 'revision' ? 'En revisión' : lc === 'excepcion' ? 'Aprobado a mano' : 'Cumple';
+    // Lote 12/11 B (maqueta 6b): "Faltan todos los documentos" si no hay ninguno; hasta 3 por su nombre; si no, cuántos
+    const docsF = fal.filter((x) => !x.dato); const todos = !!docsF.length && !(F.documentos || []).length;
+    const NOM = { cedula: 'cédula del representante', rif_personal: 'RIF del representante', rif_empresa: 'RIF de la empresa', acta_constitutiva: 'acta constitutiva' };
+    let noms = docsF.map((x) => NOM[x.k] || x.t || 'documento');
+    if(docsF.length === 2 && docsF.some((x) => x.k === 'cedula') && docsF.some((x) => x.k === 'rif_personal')) noms = ['RIF y cédula del representante'];
+    const docsTx = todos ? 'Faltan todos los documentos' : docsF.length && docsF.length <= 3 ? (docsF.length === 1 ? 'Falta ' : 'Faltan ' + docsF.length + ': ') + capital(window.Comun.lista(noms)) : docsF.length ? 'Faltan ' + docsF.length + ' documentos' : fal.length ? (fal.length === 1 ? 'Falta 1 dato' : 'Faltan ' + fal.length + ' datos') : 'Completo';
+    const chip = !ok ? (todos ? 'Faltan todos' : fal.length ? (fal.length === 1 ? 'Falta 1' : 'Faltan ' + fal.length) : 'Falta Legal') : lc === 'revision' ? 'En revisión' : lc === 'excepcion' ? 'Aprobado a mano' : 'Cumple';
     let h = filaChq(ok ? 'ok' : 'no', 'Legal', ok ? (lc === 'revision' ? 'Pasó a revisión el ' + fecha(c.legal_ok_en) + '. Cuenta como listo' : lc === 'excepcion' ? 'Aprobado a mano el ' + fecha(c.legal_ok_en) : 'Cumplió el ' + fecha(c.legal_ok_en)) : 'Estatus: ' + est) +
-      filaChq(fal.length ? 'no' : pr ? 'rv' : 'ok', 'Documentos', (fal.length ? plural(fal.length, 'falta', 'faltan') + ' en el expediente' : 'Completo') + (pr ? ' · ' + pr + ' por revisar' : ''));
+      filaChq(fal.length ? 'no' : pr ? 'rv' : 'ok', 'Documentos', docsTx + (pr ? ' · ' + pr + ' por revisar' : ''));
     if(!c.es_natural){
       const fis = !!c.presencial; const dis = F.puedo.presencial ? '' : ' disabled';
       h += '<span class="rotulo" id="rFirma">Firma del contrato</span><div class="tres" role="radiogroup" aria-labelledby="rFirma">' +
@@ -1098,6 +1136,7 @@
     const pe = e.target.closest('[data-persona]'); if(pe && d){ persona = pe.dataset.persona; verFecha = 50; guardarUrl(); pintar(); return; }
     const vi = e.target.closest('[data-vista]'); if(vi && d){ vista = vi.dataset.vista; verFecha = 50; guardarUrl(); pintar(); return; }
     if(e.target.closest('[data-sin-fechas]') && d){ desde = ''; hasta = ''; guardarUrl(); pintar(); return; }
+    if(e.target.closest('[data-quitar-todo]') && d){ filtro = 'todos'; equipo = 'todos'; persona = ''; aliado = ''; desde = ''; hasta = ''; busca = ''; if($('busca')) $('busca').value = ''; verFecha = 50; guardarUrl(); pintar(); return; }
     if(e.target.closest('[data-mas-fecha]') && d){ verFecha += 50; pintarLista(); return; }
     const ab = e.target.closest('[data-abrir]'); if(ab){ abrirExtra(ab.dataset.abrir); return; }
     const t = e.target; let b;
@@ -1268,7 +1307,7 @@
   document.addEventListener('keydown', (e) => { if(e.key === 'Enter' && e.target.id === 'asigBusca'){ e.preventDefault(); if(A) buscarOrdenes(e.target.value.trim()); } });
   let tBusca = null;
   if(SOLO) return;
-  $('busca').addEventListener('input', () => { clearTimeout(tBusca); tBusca = setTimeout(() => { busca = $('busca').value.trim(); guardarUrl(); if(d) pintarLista(); }, 140); });
+  $('busca').addEventListener('input', () => { clearTimeout(tBusca); tBusca = setTimeout(() => { busca = $('busca').value.trim(); guardarUrl(); if(d){ pintarEquipos(); pintarAlertas(); pintarFiltros(); pintarLista(); } }, 140); });
   $('corte').addEventListener('change', () => { corte = $('corte').value; d = null; cargar(); });
 
   window.Armazon.arrancar(['admin', 'abogado', 'lider', 'analista'], { activo: 'comisiones' }, (p) => {

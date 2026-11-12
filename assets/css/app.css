@@ -2864,3 +2864,26 @@ main.al-en-inicio #ayuda{display:none}
 .hc-tarj #pagoConfirma > span{font-weight:600}
 .hc-enl{align-self:flex-start;font-weight:700;font-size:13px}
 #hojaIp .ip-dos .campo{height:46px;border-radius:12px;padding:0 14px;font-size:14.5px}
+/* Lote 12/11 B, parte 2 (maqueta comisiones-hoja.html, 1 y 6a): arriba de Comisiones sin tarjetas grandes */
+.cx-nuevo-z:empty{display:none}
+.cx .cabeza .cx-nuevo-z{order:3}
+.cx-nuevo .i{width:16px;height:16px;stroke-width:2.4}
+.cx-alertas{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
+.av-l{display:flex;align-items:center;gap:10px;min-height:44px;padding:0 8px 0 14px;border-radius:14px;background:var(--surface-2);font-size:13.5px;color:var(--text);text-align:left;transition:transform 120ms var(--ease-out)}
+.av-l:active{transform:scale(.97)}
+.av-l .pt{width:8px;height:8px;border-radius:50%;background:#C98A12;flex:none}
+.av-l.r .pt{background:var(--rojo)}
+.av-l b{font-weight:800}
+.av-l small{color:var(--text2);font-size:12.5px}
+.av-l .av-e{display:inline-flex;align-items:center;height:32px;padding:0 10px;border-radius:var(--pill);background:#fff;color:var(--accent);font-weight:700;font-size:13px;white-space:nowrap}
+@media (max-width:899px){ .cx-alertas{display:flex;flex-direction:column} .av-l{width:100%;padding:8px 8px 8px 14px} .av-l > span:nth-child(2){flex:1;min-width:0} }
+@media (prefers-reduced-motion:reduce){ .av-l{transition:none} }
+.cx-panel{border-radius:18px;padding:16px 18px;gap:12px}
+.cx-panel .cx-eq,.cx-panel .cx-chip{min-height:38px;border-width:1.5px;font-size:13.5px}
+.cx-al-pill{min-height:38px;height:38px;border:1.5px solid var(--accent);border-radius:var(--pill);padding:0 14px;background:var(--acc-bg,#E8ECF9);color:var(--accent);font:inherit;font-size:13.5px;font-weight:600;max-width:240px}
+.cx-mostrando{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:14px;font-size:13px;color:var(--text2)}
+.cx-mostrando .cx-mch{height:28px;background:var(--acc-bg,#E8ECF9);color:var(--accent);font-weight:600}
+.cx-mostrando .enlace{font-weight:700;font-size:13px}
+.cx-vacio-g{margin-top:14px;border:1px dashed var(--line);border-radius:18px;padding:28px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px}
+.cx-vacio-g b{font-size:16px}
+.cx-vacio-g p{font-size:13.5px;color:var(--text2);max-width:420px}

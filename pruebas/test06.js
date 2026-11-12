@@ -55,7 +55,7 @@ const cerrarHojas = async (p) => { for(let i = 0; i < 4; i++){ if(await p.evalua
     await cerrarHojas(p);
     await p.waitForFunction(() => { const e = document.querySelector('#filtros [data-filtro="asignar"]'); return !e || /\b0\b/.test(e.textContent); });
     await p.click('#filtros [data-filtro="todos"]');
-    ok(nombre + ': sin pendientes el filtro se va y el aviso queda en cero', (await p.locator('#filtros [data-filtro="asignar"]').count()) === 0 && /0 instalaciones/.test(await p.textContent('#alertas')));
+    ok(nombre + ': sin pendientes el filtro y el aviso se van', (await p.locator('#filtros [data-filtro="asignar"]').count()) === 0 && (await p.locator('#alertas [data-filtro="asignar"]').count()) === 0);
 
     // Buscador y marca Natural
     await p.fill('#busca', 'kiosco'); await p.waitForFunction(() => document.querySelectorAll('#lista [data-com]').length === 1);

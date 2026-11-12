@@ -1091,7 +1091,11 @@ const RPC = {
     const lid = (c && m.personas.find((p) => p.id === c.lider_id)) || m.personas.find((p) => p.rol === 'lider');
     const paso = yo.rol === 'aliado' || a.p_falta === 'pago' || (c && ['documentos_recibidos', 'documentos_en_revision'].includes(c.estatus)) ? 'admin' : 'lider';
     const dest = paso === 'admin' ? adm : lid; const propio = !!dest && dest.id === yo.id;
-    return { paso, motivo: paso === 'admin' ? (a.p_caso === 'comision' ? 'com_pago' : 'docs_revisar') : a.p_caso === 'cambio' ? 'cambio_listo' : 'general', propio, cliente: c ? c.nombre : 'Cliente', detalle: {},
+    // Lote 12/11 B: con documentos pendientes manda faltan, todos y la lista con nombres
+    const docsF = paso === 'lider' && c && ['documentos_pendientes', 'documentos_solicitados'].includes(c.estatus);
+    const fl = docsF ? faltantes(c).filter((x) => !x.dato && x.e !== 'opcional') : [];
+    return { paso, motivo: paso === 'admin' ? (a.p_caso === 'comision' ? 'com_pago' : 'docs_revisar') : a.p_caso === 'cambio' ? 'cambio_listo' : docsF ? 'docs_faltan' : 'general', propio, cliente: c ? c.nombre : 'Cliente',
+      detalle: docsF ? { faltan: fl.length, todos: !(c.documentos || []).length, total: fl.length, lista: fl.map((x) => ({ k: x.k, t: x.t, n: x.n })) } : {},
       destinos: propio || !dest ? [] : [{ id: dest.id, nombre: dest.nombre, rol: dest.rol, whatsapp: dest.whatsapp === undefined ? '04141234567' : dest.whatsapp, correo: dest.correo || null }] };
   },
   contacto_anotar2(){ return null; },
