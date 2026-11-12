@@ -81,8 +81,14 @@ Decidido por el administrador (12/11): no se identifica todo junto; cada documen
 - Combinados: en una casilla vacía, enlace "Viene en otro archivo" que muestra los archivos ya subidos de esa solicitud con "Está aquí". El mismo archivo queda en las dos casillas sin subirlo de nuevo (revisar en el servidor cómo enlazar un archivo a otra casilla; la revisión ya trata archivos con varias casillas). La casilla queda en azul "Viene en el mismo archivo de …" con "Quitar".
 - El resumen de Aliados (vista Resumen que ya existe, `Resumen.enModulo`) usa el mismo mes que la lista; la fila de números de la maqueta 9 no debe repetir lo que ya muestra el Resumen.
 
-### Parte 5c. Flujo del aliado (lámina `aliado-pantallas.html`, 12/11)
+### Parte 5c. Flujo del aliado (lámina `aliado-pantallas.html`, corregida 12/11 10:48)
 - Un solo drawer "Nuevo cliente" con tres secciones en orden: 1 El cliente (Empresa/Persona; al elegir aparece la casilla del RIF), 2 Contacto, 3 Documentos. Mientras lee el RIF ya se puede escribir el contacto. Documentos se abre cuando el RIF dice "disponible". Pie: Guardar lo que llevo · Enviar solicitud.
-- Resultados en pantalla completa con color (como hoy `al-res`). En todo caso negativo (cartera, en gestión, no procede, revisión del administrador, te falta algo, no se pudo leer) hay "Escribir al administrador de contratos".
-- En gestión por otro: dos textos, "Lo atiende un ejecutivo de la oficina" o "Lo está gestionando otro aliado", sin nombres. El servidor (`aliado_rif`) debe decir cuál de los dos es.
-- Referir: el servicio siempre es Internet PYME (fijo); teléfono de contacto y coordenadas (opcional); nota con "Escribir al administrador de contratos".
+- Documentos de una empresa: RIF de la empresa, acta constitutiva, cédula y RIF del representante. El acta de asamblea NO va de entrada: solo aparece su casilla cuando la revisión la pide (domicilio, junta, razón social), y ahí está "Pedir excepción".
+- Resultados: **recuadro grande centrado** (no pantalla completa), con la solicitud difuminada detrás y una franja de color arriba. Reemplaza la pantalla completa `al-res`.
+- Revisando: "Revisando tu solicitud" con tres puntos animados, el paso en curso con puntos y una franja que corre, y el aviso "No salgas de aquí hasta que termine".
+- ¡Puedes instalar!: sin fecha ni calendario. Texto: "Cuando llegue la orden de instalación con tu nombre, pasa sola a Instalada y te avisamos." Botones: Volver al inicio · Ver la solicitud. (Marcar instalación con fecha existe hoy: no se borra la función; queda dentro de Ver la solicitud hasta que el administrador decida quitarla.)
+- Cartera: "Este cliente ya está carterizado"; sin "No guardamos sus documentos". Botones: Referir cliente, Escribir al administrador de contratos, Volver al inicio.
+- En gestión por otro: un solo texto "Este cliente ya está siendo gestionado", sin decir quién (no hace falta que el servidor distinga).
+- Excepción negada: no es "No procede" (si faltan documentos nunca es No procede): vuelve a "La excepción no se aprobó" con Subir el acta.
+- En todo caso negativo: "Escribir al administrador de contratos".
+- Referir: servicio Internet PYME fijo; teléfono de contacto y coordenadas (opcional); nota con "Escribir al administrador de contratos".
