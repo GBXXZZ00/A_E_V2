@@ -31,7 +31,7 @@ function mundoAliados(m, ALIADO, CANALES){
       if(solo && ['lider', 'analista', 'abogado'].indexOf(yo.rol) < 0) return err('No tienes acceso a esta solicitud');
       const bit = yo.rol === 'aliado' ? undefined : [{ accion: 'aliado_decision', en: hoy, por: 'Marcos Rivas', despues: { texto: 'Aceptada mientras renueva.' } }];
       if(s.etiqueta === 'analizando'){ A.analizar++; if(A.analizar >= 2){ s.etiqueta = 'lista'; s.ia = { estado: 'lista', veredicto: 'apto', total: 4, avance: 4, puntos: [], marcas: [] }; } }
-      const docs = (A.docs[s.id] || []).map((d, i) => ({ id: 500 + i, casilla: d.casilla, numero: d.numero, estado: 'por_revisar', archivos: [{ id: 700 + i, nombre: 'x.pdf', lectura: 'ok' }] }));
+      const docs = (A.docs[s.id] || []).map((d, i) => ({ id: 500 + i, casilla: d.casilla, numero: d.numero, estado: 'por_revisar', archivos: [{ id: 700 + i, nombre: d.casilla + '.pdf', lectura: 'ok', tipos: [(A.tipoDe && A.tipoDe[d.casilla]) || d.casilla] }] }));
       if(s.id === 31) return Object.assign({}, s, { es_admin: yo.rol === 'admin', solo_ver: solo, bitacora: bit, docs: [{ id: 81, casilla: 'acta_constitutiva', numero: 0, archivos: [{ id: 1, lectura: 'ok' }] }, { id: 82, casilla: 'cedula', numero: 1, archivos: [{ id: 2, lectura: 'ok' }] }],
         ia: { estado: 'lista', veredicto: 'no_apto', total: 3, avance: 3, marcas: [{ documento: 81, propuesta: 'problema', nota: 'La junta venció en 2023. Busca el acta de asamblea que la ratificó.' }, { documento: 82, propuesta: 'bien', nota: 'Vigente.' }],
           puntos: [{ id: 'falta_rif_personal_1', titulo: 'Falta RIF personal', estado: 'bloquea', detalle: 'No está en el expediente.' }, { id: 'falta_correo_empresa_0', titulo: 'Falta correo de la empresa', estado: 'bloquea', detalle: 'Hay que escribirlo en el expediente.' }] },
@@ -60,6 +60,12 @@ function mundoAliados(m, ALIADO, CANALES){
     ajuste_guardar(m, yo, a){ if(yo.rol !== 'admin') return err('No tienes permiso para hacer esto'); const v = String(a.p_valor || '').replace(/\D/g, '');
       if(v.length < 10) return err('Escribe el número con su código, por ejemplo 0414 1234567'); A.ajustes = { whatsapp_admin: '58' + v.replace(/^0/, '') }; return null; }
   });
+  // Lote 12/11 B: el mismo archivo en otra casilla (combinados) y Quitar
+  RPC.solicitud_casilla_enlazar = (m, yo, a) => { const s = A.sols.find((x) => x.id === Number(a.p_sol)); if(!s) return { __error: { code: 'P0001', message: 'No se encontró la solicitud' } };
+    (A.enlaces = A.enlaces || []).push([a.p_casilla, a.p_numero, a.p_archivo, !!a.p_quitar]);
+    const l = (A.docs[s.id] = A.docs[s.id] || []); const i = l.findIndex((d) => d.casilla === a.p_casilla && Number(d.numero) === Number(a.p_numero));
+    if(a.p_quitar){ if(i >= 0) l.splice(i, 1); } else if(i < 0) l.push({ casilla: a.p_casilla, numero: Number(a.p_numero) });
+    return { ok: true }; };
   const registrar = RPC.documentos_registrar;
   RPC.documentos_registrar = (m, yo, a) => { if(yo.rol !== 'aliado') return registrar(m, yo, a); const s = A.sols.find((x) => x.cliente_id === a.p_cliente); (A.docs[s.id] = A.docs[s.id] || []).push(a.p_items[0].casillas[0]); return 1; };
 }

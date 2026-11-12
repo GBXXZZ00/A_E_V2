@@ -274,10 +274,10 @@ function pendientesBase(m){
   const dia = (n) => { const d = new Date(hoy() + 'T12:00:00'); d.setDate(d.getDate() + n); return d.toISOString().slice(0, 10); };
   const faro = cli('Vidrios El Faro'); const yun = cli('Tornillos El Yunque');
   m.datos.pendientes = [
-    { tipo: 'por_enviar', clave: 'i1', cliente_id: faro.id, titulo: faro.nombre, detalle: 'Proforma y carta por enviar del servicio 824-99100001', para: 'analista', lider_id: lucia.id, analista_id: elena.id, desde: dia(-5) + 'T12:00:00Z', vence: dia(-2), ref: {} },
-    { tipo: 'sin_ip', clave: 'i2', cliente_id: yun.id, titulo: yun.nombre, detalle: 'Falta la IP del servicio 824-99100004', para: 'analista', lider_id: lucia.id, analista_id: elena.id, desde: new Date().toISOString(), vence: dia(3), ref: { servicio: ((yun.servicios || [])[0] || {}).id || null } },
+    { tipo: 'por_enviar', clave: 'i1', cliente_id: faro.id, titulo: faro.nombre, detalle: 'Proforma y carta por enviar del servicio 824-99100001', para: 'analista', lider_id: lucia.id, analista_id: elena.id, desde: dia(-5) + 'T12:00:00Z', vence: dia(-2), ref: { instalacion: ((faro.instalaciones || [])[0] || {}).id || null } },
+    { tipo: 'sin_ip', clave: 'i2', cliente_id: yun.id, titulo: yun.nombre, detalle: 'Falta la IP del servicio 824-99100004', para: 'analista', lider_id: lucia.id, analista_id: elena.id, desde: new Date().toISOString(), vence: dia(3), ref: { servicio: ((yun.servicios || [])[0] || {}).id || null, instalacion: ((yun.instalaciones || [])[0] || {}).id || null } },
     { tipo: 'cambio_emitir', clave: 'c7', cliente_id: null, titulo: 'Panaderia Inventada Uno', detalle: 'Cambio de categoría a PYME-1GB', para: 'analista', lider_id: lucia.id, analista_id: elena.id, desde: dia(0) + 'T08:00:00Z', vence: dia(0), ref: { cambio: 7 } },
-    { tipo: 'certificar', clave: 'i3', cliente_id: faro.id, titulo: faro.nombre, detalle: 'falta Legal', para: 'senior', lider_id: lucia.id, analista_id: elena.id, desde: dia(-3) + 'T12:00:00Z', vence: dia(4), ref: {} },
+    { tipo: 'certificar', clave: 'i3', cliente_id: faro.id, titulo: faro.nombre, detalle: 'falta Legal', para: 'senior', lider_id: lucia.id, analista_id: elena.id, desde: dia(-3) + 'T12:00:00Z', vence: dia(4), ref: { instalacion: ((faro.instalaciones || [])[0] || {}).id || null } },
     { tipo: 'docs_faltan', clave: String(yun.id), cliente_id: yun.id, titulo: yun.nombre, detalle: 'Faltan 2 documentos', para: 'lider', lider_id: lucia.id, analista_id: elena.id, desde: dia(-40) + 'T12:00:00Z', vence: dia(-10), ref: {} },
     { tipo: 'por_firmar', clave: String(faro.id), cliente_id: faro.id, titulo: faro.nombre, detalle: 'Contrato por firmar', para: 'lider', lider_id: lucia.id, analista_id: elena.id, desde: dia(-2) + 'T12:00:00Z', vence: dia(28), ref: {} }
   ];
@@ -1098,7 +1098,11 @@ const RPC = {
     const lid = (c && m.personas.find((p) => p.id === c.lider_id)) || m.personas.find((p) => p.rol === 'lider');
     const paso = yo.rol === 'aliado' || a.p_falta === 'pago' || (c && ['documentos_recibidos', 'documentos_en_revision'].includes(c.estatus)) ? 'admin' : 'lider';
     const dest = paso === 'admin' ? adm : lid; const propio = !!dest && dest.id === yo.id;
-    return { paso, motivo: paso === 'admin' ? (a.p_caso === 'comision' ? 'com_pago' : 'docs_revisar') : a.p_caso === 'cambio' ? 'cambio_listo' : 'general', propio, cliente: c ? c.nombre : 'Cliente', detalle: {},
+    // Lote 12/11 B: con documentos pendientes manda faltan, todos y la lista con nombres
+    const docsF = paso === 'lider' && c && ['documentos_pendientes', 'documentos_solicitados'].includes(c.estatus);
+    const fl = docsF ? faltantes(c).filter((x) => !x.dato && x.e !== 'opcional') : [];
+    return { paso, motivo: paso === 'admin' ? (a.p_caso === 'comision' ? 'com_pago' : 'docs_revisar') : a.p_caso === 'cambio' ? 'cambio_listo' : docsF ? 'docs_faltan' : 'general', propio, cliente: c ? c.nombre : 'Cliente',
+      detalle: docsF ? { faltan: fl.length, todos: !(c.documentos || []).length, total: fl.length, lista: fl.map((x) => ({ k: x.k, t: x.t, n: x.n })) } : {},
       destinos: propio || !dest ? [] : [{ id: dest.id, nombre: dest.nombre, rol: dest.rol, whatsapp: dest.whatsapp === undefined ? '04141234567' : dest.whatsapp, correo: dest.correo || null }] };
   },
   contacto_anotar2(){ return null; },
@@ -1780,6 +1784,16 @@ const RPC = {
   ip_usar(m, yo, a){ if(!['admin', 'analista'].includes(yo.rol)) return error('No tienes permiso para hacer esto'); const f = (m.datos.ipReporte || []).find((x) => x.id === Number(a.p_fila)); if(!f) return error('Esa fila del reporte ya no está');
     for(const c of m.datos.clientes){ const sv = c.servicios.find((x) => x.id === Number(a.p_servicio)); if(sv){ sv.ip = f.ip; sv.ip_mano = true; f.cuadro = true; (m.bitacora = m.bitacora || []).push({ accion: 'servicio_ip', registro: sv.id }); return null; } } return error('Ese servicio no existe'); },
   orden_horas_guardar(m, yo, a){ if(yo.rol !== 'admin') return error('No tienes permiso para hacer esto'); const n = Number(a.p_horas); if(!Number.isInteger(n) || n < 1 || n > 720) return error('Escribe entre 1 y 720 horas'); m.horasAlerta = n; return n; },
+  // Lote 12/11 B: busca el RIF sin crear nada (como public.cliente_rif_buscar)
+  cliente_rif_buscar(m, yo, a){
+    if(!['admin', 'analista', 'lider'].includes(yo.rol)) return error('No tienes permiso para hacer esto');
+    const num = String(a.p_rif || '').replace(/\D/g, '').replace(/^0+/, ''); if(!/^[1-9]\d{4,9}$/.test(num)) return error('Escribe un RIF o cédula válido');
+    const ya = m.datos.clientes.find((c) => c.doc_numero === num);
+    if(ya){ if(yo.rol === 'lider' && ya.lider_id !== yo.id) return { estado: 'otro' }; return { estado: 'existe', cliente_id: ya.id, nombre: ya.nombre, estatus: ya.estatus }; }
+    const nom = String(a.p_nombre || '').trim(); const clave = norm(nom.split(' ').slice(0, 2).join(' '));
+    const par = m.datos.clientes.filter((c) => c.provisional && !c.unido_a && clave.length >= 4 && norm(c.nombre).indexOf(clave) >= 0).slice(0, 3);
+    return { estado: 'nuevo', parecidos: par.map((c) => ({ id: c.id, nombre: c.nombre, lider: c.lider || 'Por asignar' })) };
+  },
   cliente_nuevo(m, yo, a){
     if(!['admin', 'analista', 'lider'].includes(yo.rol)) return error('No tienes permiso para hacer esto');
     const num = String(a.p_rif || '').replace(/\D/g, '').replace(/^0+/, ''); const nom = String(a.p_nombre || '').trim().replace(/\s+/g, ' ');
@@ -1787,7 +1801,7 @@ const RPC = {
     if(!nom) return error('Escribe el posible nombre del cliente');
     const tipo = (/^[VEJGPC]/i.exec(String(a.p_rif || '').trim()) || ['J'])[0].toUpperCase();
     const ya = m.datos.clientes.find((c) => c.doc_numero === num);
-    if(ya){ if(yo.rol === 'lider' && ya.lider_id !== yo.id) return error('Ese RIF ya es un cliente de ' + (ya.lider || 'otro líder') + '. Pídele al administrador que lo revise'); return { cliente_id: ya.id, nombre: ya.nombre, existe: true }; }
+    if(ya){ if(yo.rol === 'lider' && ya.lider_id !== yo.id) return error('Ese RIF ya es de otro líder. Pídele al administrador que lo revise.'); return { cliente_id: ya.id, nombre: ya.nombre, existe: true }; }
     const clave = norm(nom.split(' ').slice(0, 2).join(' '));
     if(a.p_parecido === null || a.p_parecido === undefined){
       const par = m.datos.clientes.filter((c) => c.provisional && !c.unido_a && clave.length >= 4 && norm(c.nombre).indexOf(clave) >= 0).slice(0, 3);
@@ -2099,7 +2113,7 @@ function mundoAliados(m, ALIADO, CANALES){
       if(solo && ['lider', 'analista', 'abogado'].indexOf(yo.rol) < 0) return err('No tienes acceso a esta solicitud');
       const bit = yo.rol === 'aliado' ? undefined : [{ accion: 'aliado_decision', en: hoy, por: 'Marcos Rivas', despues: { texto: 'Aceptada mientras renueva.' } }];
       if(s.etiqueta === 'analizando'){ A.analizar++; if(A.analizar >= 2){ s.etiqueta = 'lista'; s.ia = { estado: 'lista', veredicto: 'apto', total: 4, avance: 4, puntos: [], marcas: [] }; } }
-      const docs = (A.docs[s.id] || []).map((d, i) => ({ id: 500 + i, casilla: d.casilla, numero: d.numero, estado: 'por_revisar', archivos: [{ id: 700 + i, nombre: 'x.pdf', lectura: 'ok' }] }));
+      const docs = (A.docs[s.id] || []).map((d, i) => ({ id: 500 + i, casilla: d.casilla, numero: d.numero, estado: 'por_revisar', archivos: [{ id: 700 + i, nombre: d.casilla + '.pdf', lectura: 'ok', tipos: [(A.tipoDe && A.tipoDe[d.casilla]) || d.casilla] }] }));
       if(s.id === 31) return Object.assign({}, s, { es_admin: yo.rol === 'admin', solo_ver: solo, bitacora: bit, docs: [{ id: 81, casilla: 'acta_constitutiva', numero: 0, archivos: [{ id: 1, lectura: 'ok' }] }, { id: 82, casilla: 'cedula', numero: 1, archivos: [{ id: 2, lectura: 'ok' }] }],
         ia: { estado: 'lista', veredicto: 'no_apto', total: 3, avance: 3, marcas: [{ documento: 81, propuesta: 'problema', nota: 'La junta venció en 2023. Busca el acta de asamblea que la ratificó.' }, { documento: 82, propuesta: 'bien', nota: 'Vigente.' }],
           puntos: [{ id: 'falta_rif_personal_1', titulo: 'Falta RIF personal', estado: 'bloquea', detalle: 'No está en el expediente.' }, { id: 'falta_correo_empresa_0', titulo: 'Falta correo de la empresa', estado: 'bloquea', detalle: 'Hay que escribirlo en el expediente.' }] },
@@ -2128,6 +2142,12 @@ function mundoAliados(m, ALIADO, CANALES){
     ajuste_guardar(m, yo, a){ if(yo.rol !== 'admin') return err('No tienes permiso para hacer esto'); const v = String(a.p_valor || '').replace(/\D/g, '');
       if(v.length < 10) return err('Escribe el número con su código, por ejemplo 0414 1234567'); A.ajustes = { whatsapp_admin: '58' + v.replace(/^0/, '') }; return null; }
   });
+  // Lote 12/11 B: el mismo archivo en otra casilla (combinados) y Quitar
+  RPC.solicitud_casilla_enlazar = (m, yo, a) => { const s = A.sols.find((x) => x.id === Number(a.p_sol)); if(!s) return { __error: { code: 'P0001', message: 'No se encontró la solicitud' } };
+    (A.enlaces = A.enlaces || []).push([a.p_casilla, a.p_numero, a.p_archivo, !!a.p_quitar]);
+    const l = (A.docs[s.id] = A.docs[s.id] || []); const i = l.findIndex((d) => d.casilla === a.p_casilla && Number(d.numero) === Number(a.p_numero));
+    if(a.p_quitar){ if(i >= 0) l.splice(i, 1); } else if(i < 0) l.push({ casilla: a.p_casilla, numero: Number(a.p_numero) });
+    return { ok: true }; };
   const registrar = RPC.documentos_registrar;
   RPC.documentos_registrar = (m, yo, a) => { if(yo.rol !== 'aliado') return registrar(m, yo, a); const s = A.sols.find((x) => x.cliente_id === a.p_cliente); (A.docs[s.id] = A.docs[s.id] || []).push(a.p_items[0].casillas[0]); return 1; };
 }

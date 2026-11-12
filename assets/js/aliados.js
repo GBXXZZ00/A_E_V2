@@ -487,141 +487,116 @@
   let destino = null;   // { fn(file) }
   function elegir(fn){ destino = fn; const i = $('alArchivo'); i.value = ''; i.click(); }
 
-  // ---------- Nueva solicitud ----------
+  // ---------- Nueva solicitud (lote 12/11 B, lámina aliado-pantallas.html) ----------
+  // Un solo drawer con tres secciones en orden: 1 El cliente (Empresa/Persona y su RIF), 2 Contacto (se puede escribir mientras se lee el RIF)
+  // y 3 Documentos (se abre cuando el RIF dice "disponible"). Cada documento va en su casilla; si uno trae varios, "Viene en otro archivo".
   let N = null;
-  const CAS_EMP = [['rif_empresa', 0, 'RIF de la empresa', 'Se lee primero: te dice al momento si el cliente está disponible'], ['acta_constitutiva', 0, 'Acta constitutiva', ''], ['cedula', 1, 'Cédula del representante', ''], ['rif_personal', 1, 'RIF del representante', '']];
-  const CAS_NAT = [['rif_personal', 1, 'RIF personal', 'Se lee primero: te dice al momento si el cliente está disponible'], ['cedula', 1, 'Cédula', '']];
+  const CAS_EMP = [['rif_empresa', 0, 'RIF de la empresa'], ['acta_constitutiva', 0, 'Acta constitutiva'], ['cedula', 1, 'Cédula del representante'], ['rif_personal', 1, 'RIF del representante']];
+  const CAS_NAT = [['rif_personal', 1, 'RIF personal'], ['cedula', 1, 'Cédula']];
+  const NOM_TIPO = { rif_empresa: 'un RIF de empresa', rif_personal: 'un RIF personal', cedula: 'una cédula', acta_constitutiva: 'un acta constitutiva', acta_asamblea: 'un acta de asamblea', conatel: 'una habilitación de Conatel', contrato: 'un contrato', poliza: 'una póliza' };
   function casillasN(){
     if(N.tipo === 'natural') return CAS_NAT;
     const l = CAS_EMP.slice();
-    for(let i = 1; i <= N.asambleas; i++) l.push(['acta_asamblea', i, 'Acta de asamblea' + (i > 1 ? ' ' + i : ''), i === 1 ? 'Si hubo cambios de junta, domicilio o nombre' : '']);
-    for(let r = 2; r <= N.reps; r++){ l.push(['cedula', r, 'Cédula del representante ' + r, '']); l.push(['rif_personal', r, 'RIF del representante ' + r, '']); }
+    for(let r = 2; r <= N.reps; r++){ l.push(['cedula', r, 'Cédula del representante ' + r]); l.push(['rif_personal', r, 'RIF del representante ' + r]); }
     return l;
   }
   async function abrirNueva(){
-    N = { paso: 1, id: null, tipo: 'empresa', rif: null, cliente: null, nombre: '', estado: null, msg: '', cas: {}, reps: 1, asambleas: 0, c: { correo: '', tel: '', correoEmp: '' }, err: {} };
-    const h = hoja('hojaNueva'); h.innerHTML = cab('hojaNueva', 'Nuevo cliente', 'Primero vemos si puedes venderle') + '<div class="hoja-cuerpo" id="cNueva">' + esqueleto(3) + '</div><div class="hoja-pie" id="pNueva"></div>';
+    N = { id: null, tipo: null, rif: null, cliente: null, nombre: '', estado: null, msg: '', cas: {}, reps: 1, c: { correo: '', tel: '', correoEmp: '' }, err: {}, otro: null };
+    const h = hoja('hojaNueva'); h.classList.add('al-dw');
+    h.innerHTML = cab('hojaNueva', 'Nuevo cliente', 'Empieza por el RIF: con eso sabemos si está disponible') + '<div class="hoja-cuerpo" id="cNueva">' + esqueleto(3) + '</div><div class="hoja-pie" id="pNueva"></div>';
     abrirHoja('hojaNueva');
     try { const r = await rpc('solicitud_crear', { p_tipo: 'empresa' }); N.id = r.id; N.codigo = r.codigo; pintarNueva(); }
     catch (e) { $('cNueva').innerHTML = errorCaja('No se pudo empezar la solicitud', e.message); }
   }
-  function bandaRif(){
-    const e = N.estado; const nom = esc(N.nombre || '');
-    if(!e) return '<div class="al-banda"><b>Empieza por el ' + (N.tipo === 'empresa' ? 'RIF de la empresa' : 'RIF personal') + '</b><p>Con eso te decimos al momento si el cliente está disponible. Después subes lo demás.</p></div>';
-    if(e === 'leyendo') return '<div class="al-banda azul" role="status"><b>Leyendo el RIF y revisando la cartera…</b><p>Tarda unos segundos.</p><span class="al-barra corre" aria-hidden="true"><i></i></span></div>';
-    if(e === 'libre') return '<div class="al-banda verde" role="status"><b>Cliente disponible: ' + nom + '</b><p>' + esc(rifFmt(N.rif)) + '. Sube lo demás: cada documento se empieza a leer apenas sube.</p></div>';
-    if(e === 'cartera') return '<div class="al-banda" role="status"><b>Cliente en cartera</b><p>' + (nom || 'Este cliente') + ' ya es de la oficina. Sus archivos no se guardaron: solo se leyó el RIF. Refiérelo y se paga con dos residenciales si se instala.</p><button type="button" class="btn btn-chico" data-acc="referirSol" data-id="' + N.id + '">Referir cliente</button></div>';
-    if(e === 'otro') return '<div class="al-banda" role="status"><b>En gestión por otro</b><p>Otra persona ya está gestionando ' + (nom ? nom.replace(/\.$/, '') : 'este cliente') + '. Sus archivos no se guardaron: solo se leyó el RIF. No se puede instalar ni referir por ahora.</p></div>';
-    if(e === 'repetida') return '<div class="al-banda ambar" role="alert"><b>Ya tienes una solicitud de este cliente</b><p>Es la ' + esc(N.repetida) + '. Síguela desde ahí.</p><button type="button" class="btn btn-chico" data-sol="' + esc(N.repetidaId) + '">Abrir ' + esc(N.repetida) + '</button></div>';
-    return '<div class="al-banda ambar" role="alert"><b>' + esc(e === 'no_es_rif' ? 'Ese archivo no es un RIF' : e === 'ilegible' ? 'No pudimos leer el RIF' : 'No se pudo leer el RIF') + '</b><p>' + esc(N.msg || 'Sube una foto más clara, con buena luz y sin cortes.') + '</p></div>';
-  }
-  function chipCas(st){
-    if(!st) return '<span class="chip">Falta</span>';
-    if(st.estado === 'subiendo') return '<span class="chip punto azul">Subiendo…</span>';
-    if(st.estado === 'error') return '<span class="chip punto rojo">No se subió</span>';
-    if(st.lectura === 'ok') return '<span class="chip punto verde">Leído</span>';
-    if(st.lectura === 'ilegible' || st.lectura === 'formato') return '<span class="chip punto ambar">No se lee</span>';
-    return '<span class="chip punto azul">Leyendo</span>';
-  }
-  // Lote 10/11 E1-E4: formulario por pasos (RIF y contacto → Documentos → Contacto → Enviar) con la barra "Te falta" fija abajo
-  const PASOS_N = ['¿Está disponible?', 'Completa el expediente'];   // Lote 12/11 (maqueta aliado-flujo): dos momentos
-  const camposN = () => N.tipo === 'empresa' ? [['tel', 'Teléfono del representante', 'tel', ''], ['correo', 'Correo del representante', 'email', ''], ['correoEmp', 'Correo de la empresa', 'email', 'Si no tiene, déjalo vacío.']] : [['tel', 'Teléfono', 'tel', ''], ['correo', 'Correo', 'email', '']];
   const okMail = (v) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(v || '').trim()); const okTel = (v) => String(v || '').replace(/\D/g, '').length >= 10;
   function faltaContacto(){
-    const f = []; if(!okTel(N.c.tel)) f.push(N.tipo === 'empresa' ? 'teléfono del representante' : 'teléfono');
-    if(!okMail(N.c.correo)) f.push(N.tipo === 'empresa' ? 'correo del representante' : 'correo');
+    const f = []; if(!okTel(N.c.tel)) f.push(N.tipo === 'natural' ? 'teléfono' : 'teléfono del representante');
+    if(!okMail(N.c.correo)) f.push(N.tipo === 'natural' ? 'correo' : 'correo del representante');
     return f;
   }
-  const docsN = () => casillasN().filter((c) => c[0] !== 'acta_asamblea');
-  const faltaDocs = () => docsN().slice(1).filter((c) => !(N.cas[c[0] + ':' + c[1]] && N.cas[c[0] + ':' + c[1]].estado === 'listo')).map((c) => c[2].replace(/^./, (x) => x.toLowerCase()));
-  function faltanPaso(p){
-    if(p === 1) return N.estado === 'libre' ? [] : [N.tipo === 'empresa' ? 'RIF de la empresa' : 'RIF personal'];
-    return faltaDocs().concat(faltaContacto());
+  const kDe = (c) => c[0] + ':' + c[1];
+  const casListo = (k) => !!N.cas[k] && (N.cas[k].estado === 'listo' || N.cas[k].estado === 'enlazado');
+  const faltaDocs = () => casillasN().slice(1).filter((c) => !casListo(kDe(c))).map((c) => c[2].replace(/^./, (x) => x.toLowerCase()));
+  function faltanN(){ return (N.estado === 'libre' ? [] : ['RIF']).concat(faltaDocs()).concat(faltaContacto()); }
+  // Cómo va una casilla: subiendo con %, leyendo, corresponde, parece otra cosa, o viene en otro archivo
+  function estadoCas(c, i){
+    const k = kDe(c); const st = N.cas[k];
+    if(i === 0 && N.estado === 'libre') return { cls: 'ok', tx: (N.nombre ? N.nombre + ' · ' : '') + rifFmt(N.rif) + ' · disponible', ver: 'ok' };
+    if(!st) return { cls: '', tx: 'Suelta aquí o elígelo' };
+    if(st.estado === 'subiendo') return { cls: '', tx: 'Subiendo' + (st.pct ? ' ' + st.pct + ' %' : ''), barra: st.pct || 0, giro: true };
+    if(st.estado === 'error') return { cls: 'mal', tx: st.error || 'No se subió. Intenta de nuevo' };
+    if(st.estado === 'enlazado') return { cls: 'az', tx: 'Viene en el archivo de ' + (st.deNombre || 'otro documento').replace(/^./, (x) => x.toLowerCase()) };
+    if(!st.lectura) return { cls: '', tx: 'Leyendo', barra: -1, giro: true };
+    if(st.lectura === 'ilegible' || st.lectura === 'formato') return { cls: 'w', tx: 'No se lee bien. Toma la foto de frente y con luz, o sube el PDF.', cambiar: true };
+    const tipos = st.tipos || []; const quiere = c[0] === 'rif_personal' && N.tipo === 'natural' ? 'rif_personal' : c[0];
+    if(tipos.length && tipos.indexOf(quiere) < 0 && !(quiere === 'rif_personal' && tipos.indexOf('rif_empresa') >= 0 && N.tipo === 'natural'))
+      return { cls: 'w', tx: 'Esto parece ' + (NOM_TIPO[tipos[0]] || 'otro documento') + ', no ' + (NOM_TIPO[quiere] || 'lo que va aquí') + '. ¿Lo cambias?', cambiar: true };
+    return { cls: 'ok', tx: 'Leído · corresponde' };
   }
-  function faltanN(){ return faltanPaso(4).concat(N.estado === 'libre' ? [] : ['RIF']); }
   function filaCasN(c, i){
-    const bloq = N.estado === 'cartera' || N.estado === 'otro' || N.estado === 'repetida'; const libre = N.estado === 'libre';
-    const k = c[0] + ':' + c[1]; const st = N.cas[k]; const off = bloq || (i > 0 && !libre) || (i === 0 && (N.estado === 'leyendo' || libre)) || (st && st.estado === 'subiendo');
-    const leyendo = st && st.estado === 'listo' && !st.lectura;
-    return '<div class="al-cas" data-casn="' + k + '"><div class="tx"><b>' + esc(c[2]) + '</b>' + (c[3] ? '<small>' + esc(c[3]) + '</small>' : '') + (st && st.error ? '<small class="mal">' + esc(st.error) + '</small>' : '') +
-      ((st && st.estado === 'subiendo') || leyendo ? '<span class="al-barra corre" aria-hidden="true"><i></i></span>' : '') + '</div>' +
-      (i === 0 && N.estado && N.estado !== 'ilegible' && N.estado !== 'no_es_rif' && N.estado !== 'error' ? (libre ? chipCas(st) : '<span class="chip punto azul">' + (N.estado === 'leyendo' ? 'Leyendo' : 'Leído') + '</span>') : chipCas(st)) +
-      '<button type="button" class="btn btn-chico ' + (st ? 'btn-2' : '') + '" data-subirn="' + k + '"' + (off ? ' disabled' : '') + '>' + (st && st.estado === 'subiendo' ? 'Subiendo…' : st || (i === 0 && N.estado && N.estado !== 'ilegible' && N.estado !== 'no_es_rif' && N.estado !== 'error') ? 'Subir de nuevo' : 'Subir') + '</button></div>';
+    const k = kDe(c); const st = N.cas[k] || {}; const e = estadoCas(c, i);
+    const vacia = !N.cas[k] && !(i === 0 && N.estado === 'libre');
+    const otros = vacia ? Object.keys(N.cas).filter((x) => x !== k && N.cas[x].estado === 'listo' && N.cas[x].archivo) : [];
+    let acc = '';
+    if(st.estado === 'enlazado') acc = '<button type="button" class="enlace" data-quitarn="' + k + '">Quitar</button>';
+    else if(i === 0 && N.estado === 'libre') acc = '';
+    else if(st.estado === 'subiendo' || (st.estado === 'listo' && !st.lectura)) acc = '';
+    else if(vacia) acc = (otros.length ? '<button type="button" class="enlace" data-otron="' + k + '">Viene en otro archivo</button>' : '') + '<button type="button" class="hc-b s ch" data-subirn="' + k + '">Subir</button>';
+    else acc = '<button type="button" class="hc-b s ch" data-subirn="' + k + '">' + (e.cambiar ? 'Cambiar archivo' : 'Cambiar') + '</button>';
+    let h = '<div class="al-cas2' + (e.cls === 'mal' ? ' mal' : e.cls === 'w' ? ' w' : '') + '" data-casn="' + k + '"><span class="e ' + e.cls + '" aria-hidden="true">' + (e.cls === 'ok' ? ic('check') : '') + '</span>' +
+      '<span class="tx"><b>' + esc(c[2]) + '</b><small class="' + e.cls + '">' + (e.giro ? '<i class="sd-giro" aria-hidden="true"></i>' : '') + esc(e.tx) + '</small>' +
+      (e.barra !== undefined ? '<span class="sd-barra2' + (e.barra < 0 ? ' ind' : '') + '"><span class="sd-pista"><i style="transform:scaleX(' + (e.barra < 0 ? 1 : e.barra / 100) + ')"></i></span></span>' : '') + '</span>' +
+      '<span class="acc">' + acc + '</span></div>';
+    if(N.otro === k && otros.length) h += '<div class="al-otro">' + otros.map((x) => { const cx = casillasN().find((y) => kDe(y) === x) || ['', '', x];
+      return '<div class="al-otro-f"><span class="tx"><b>' + esc(cx[2]) + '</b><small>' + esc((N.cas[x].archivo || {}).nombre || '') + '</small></span><button type="button" class="hc-b ch" data-enlazarn="' + k + '" data-de="' + x + '">Está aquí</button></div>'; }).join('') + '</div>';
+    return h;
+  }
+  // El RIF: zona para soltar, leyendo, disponible o con su error en la misma casilla
+  function casRif(){
+    const c = casillasN()[0]; const e = N.estado; const nomR = N.tipo === 'natural' ? 'RIF personal' : 'RIF de la empresa';
+    if(!e) return '<div class="al-zona" data-casn="' + kDe(c) + '"><span class="ic">' + ic('subir') + '</span><span class="tx"><b>Suelta aquí el ' + esc(nomR) + '</b><small>Foto o PDF. Te decimos al momento si está disponible.</small></span><button type="button" class="hc-b s ch" data-subirn="' + kDe(c) + '">Elegir archivo</button></div>';
+    if(e === 'leyendo') return '<div class="al-cas2" data-casn="' + kDe(c) + '"><span class="e" aria-hidden="true"></span><span class="tx"><b>' + esc(nomR) + '</b><small>' + esc(N.archivoRif ? N.archivoRif.name : '') + '</small></span><span class="al-lee"><span class="sd-barra2 ind"><span class="sd-pista"><i></i></span><small><i class="sd-giro" aria-hidden="true"></i>Leyendo el RIF</small></span></span></div>';
+    if(e === 'libre') return '<div class="al-cas2" data-casn="' + kDe(c) + '"><span class="e ok" aria-hidden="true">' + ic('check') + '</span><span class="tx"><b>' + esc(nomR) + '</b><small class="ok">' + esc((N.nombre ? N.nombre + ' · ' : '') + rifFmt(N.rif) + ' · disponible') + '</small></span><span class="acc"><button type="button" class="enlace" data-subirn="' + kDe(c) + '">Cambiar</button></span></div>';
+    if(e === 'cartera' || e === 'otro') return '<div class="al-cas2" data-casn="' + kDe(c) + '"><span class="e" aria-hidden="true"></span><span class="tx"><b>' + esc(nomR) + '</b><small>' + esc(e === 'cartera' ? 'Este cliente ya está carterizado' : 'Este cliente ya está siendo gestionado') + '</small></span></div>';
+    if(e === 'repetida') return '<div class="al-cas2 w" data-casn="' + kDe(c) + '"><span class="e w" aria-hidden="true"></span><span class="tx"><b>Ya tienes una solicitud de este cliente</b><small class="w">Es la ' + esc(N.repetida) + '. Síguela desde ahí.</small></span><span class="acc"><button type="button" class="hc-b s ch" data-sol="' + esc(N.repetidaId) + '">Abrir ' + esc(N.repetida) + '</button></span></div>';
+    const noEs = e === 'no_es_rif';
+    return '<div class="al-cas2 ' + (noEs ? 'mal' : 'w') + '" data-casn="' + kDe(c) + '"><span class="e ' + (noEs ? 'mal' : 'w') + '" aria-hidden="true"></span><span class="tx"><b>' + esc(nomR) + '</b><small class="' + (noEs ? 'mal' : 'w') + '">' +
+      esc(noEs ? 'Esto no parece el RIF. Sube la foto o el PDF del ' + nomR + '.' : (N.msg || 'No se lee bien. Toma la foto de frente y con luz, o sube el PDF.')) + '</small></span><span class="acc"><button type="button" class="hc-b s ch" data-subirn="' + kDe(c) + '">' + (noEs ? 'Cambiar archivo' : 'Intentar de nuevo') + '</button></span></div>' +
+      (noEs ? '' : '<p class="al-ayuda">¿Sigue fallando? <button type="button" class="enlace" data-res="whats">Escribir al administrador de contratos</button></p>');
   }
   function pintarNueva(){
     if(!N || !$('cNueva')) return;
-    const libre = N.estado === 'libre'; const l = casillasN(); const p = Math.min(N.paso || 1, 2); N.paso = p;
-    const barra = '<div class="al-prog" aria-hidden="true">' + PASOS_N.map((x, i) => '<i class="' + (i < p ? 'on' : '') + '"></i>').join('') + '</div><p class="al-paso-n">Paso ' + p + ' de 2 · ' + PASOS_N[p - 1] + '</p>';
-    const campos = '<div class="al-contacto">' + camposN().map((c) => '<label class="rotulo arriba" for="n_' + c[0] + '">' + esc(c[1]) + '</label><input class="campo" id="n_' + c[0] + '" data-campon="' + c[0] + '" type="' + c[2] + '" inputmode="' + (c[2] === 'tel' ? 'tel' : 'email') + '" autocomplete="off" maxlength="120" value="' + esc(N.c[c[0]]) + '"' + (N.err[c[0]] ? ' aria-invalid="true"' : '') + ' aria-describedby="e_' + c[0] + '">' + (c[3] ? '<small class="ayuda-campo">' + esc(c[3]) + '</small>' : '') + '<div class="error" id="e_' + c[0] + '" role="alert">' + esc(N.err[c[0]] || '') + '</div>').join('') + '</div>';
-    let h = barra;
-    if(p === 1){
-      h += '<h2 class="al-tit">Nuevo cliente</h2><p class="nota" style="margin-top:0">Primero vemos si puedes venderle.</p><span class="solo-lector" id="rTipoN">El cliente es</span><div class="al-seg" role="radiogroup" aria-labelledby="rTipoN">' +
-        [['empresa', 'Empresa'], ['natural', 'Persona natural']].map((x) => '<button type="button" role="radio" aria-checked="' + (N.tipo === x[0]) + '" class="' + (N.tipo === x[0] ? 'on' : '') + '" data-tipon="' + x[0] + '"' + (N.estado && N.estado !== 'ilegible' && N.estado !== 'no_es_rif' && N.estado !== 'error' ? ' disabled' : '') + '>' + x[1] + '</button>').join('') + '</div>' +
-        bandaRif() + '<div class="al-casillas">' + filaCasN(l[0], 0) + '</div>' +
-        (libre ? '<div class="al-banda verde" role="status"><b>' + esc(N.nombre || 'El cliente') + ' está disponible.</b><p>Puedes venderle. Sigue con los documentos.</p></div>' : '');
-    } else {
-      h += (libre ? '<div class="al-banda verde" role="status"><b>' + esc(N.nombre || 'El cliente') + ' está disponible.</b></div>' : '') +
-        '<div class="al-soltar" id="alSoltar"><b>Arrastra aquí todos los documentos juntos</b><small>La app pone cada uno en su casilla. También puedes soltar uno sobre su casilla.</small></div>' +
-        '<div class="al-casillas">' + l.map((c, i) => filaCasN(c, i)).join('') + '</div>' +
-        (N.tipo === 'empresa' ? '<div class="al-acc"><button type="button" class="btn btn-chico btn-2" data-acc="masAsamblea"' + (N.asambleas >= 4 ? ' disabled' : '') + '>Agregar acta de asamblea</button><button type="button" class="btn btn-chico btn-2" data-acc="masRep"' + (N.reps >= 4 ? ' disabled' : '') + '>Agregar representante</button></div>' +
-          '<p class="nota">Fotos completas y derechas. Que se lean fechas y nombres. El acta de asamblea solo si cambió la junta, la dirección o el nombre.</p>' : '') +
-        '<div class="sec">Contacto para la firma</div>' + campos;
-    }
-    if(false){
-    } else if(false){
-      h += '<h2 class="al-tit">Contacto</h2><p class="nota">A estos datos le escribimos al cliente para la firma.</p>' + campos;
-    } else if(false){
-      const ok = (b) => '<span class="al-ok' + (b ? '' : ' no') + '" aria-hidden="true">' + (b ? ic('check') : '!') + '</span>';
-      const nd = docsN().length; const listos = docsN().filter((c) => N.cas[c[0] + ':' + c[1]] && N.cas[c[0] + ':' + c[1]].estado === 'listo').length;
-      const leidos = docsN().filter((c) => (N.cas[c[0] + ':' + c[1]] || {}).lectura === 'ok').length;
-      h += '<h2 class="al-tit">Revisa y envía</h2><div class="al-casillas">' +
-        '<div class="al-cas"><div class="tx"><b>' + (N.tipo === 'empresa' ? 'Empresa' : 'Cliente') + '</b><small>' + esc(N.nombre || '') + '</small></div>' + ok(libre) + '<button type="button" class="enlace" data-ir-paso="1">Cambiar</button></div>' +
-        '<div class="al-cas"><div class="tx"><b>Documentos</b><small>' + esc(listos + ' de ' + nd + ' subidos' + (leidos ? ' · ' + leidos + ' leídos' : '')) + '</small></div>' + ok(listos === nd) + '<button type="button" class="enlace" data-ir-paso="2">Cambiar</button></div>' +
-        '<div class="al-cas"><div class="tx"><b>Contacto</b><small>' + esc(faltaContacto().length ? 'Falta ' + faltaContacto().join(' y ') : (N.tipo === 'empresa' ? 'Teléfono y ' + (N.c.correoEmp ? '2 correos' : 'correo') : 'Teléfono y correo')) + '</small></div>' + ok(!faltaContacto().length) + '<button type="button" class="enlace" data-ir-paso="3">Cambiar</button></div></div>' +
-        '<p class="nota">Al enviar revisamos firmantes, junta y actas. Te avisamos con una pantalla y una notificación.</p>';
-    }
+    const libre = N.estado === 'libre'; const l = casillasN(); const t = N.tipo;
+    const bloq = N.estado === 'cartera' || N.estado === 'otro' || N.estado === 'repetida';
+    // Cabecera: el nombre cuando ya está disponible
+    const cb = $('thojaNueva'); const sb = cb && cb.parentNode.querySelector('small');
+    if(cb){ cb.textContent = libre && N.nombre ? N.nombre : 'Nuevo cliente'; sb.textContent = libre ? rifFmt(N.rif) + ' · Es tuyo mientras completas la solicitud' : N.estado === 'leyendo' ? 'Leyendo el RIF…' : N.estado && N.estado !== 'libre' ? 'Revisa el archivo' : 'Empieza por el RIF: con eso sabemos si está disponible'; }
+    const num = (n, hecho) => '<i class="' + (hecho ? 'h' : '') + '">' + (hecho ? ic('check') : n) + '</i>';
+    let h = '<section class="al-sec"><h3>' + num(1, libre) + 'El cliente</h3>' + (t ? '' : '<p class="al-q">¿Qué cliente es?</p>') +
+      '<div class="al-seg2" role="radiogroup" aria-label="Qué cliente es">' + [['empresa', 'Empresa'], ['natural', 'Persona']].map((x) => '<button type="button" role="radio" aria-checked="' + (t === x[0]) + '" class="' + (t === x[0] ? 'on' : '') + '" data-tipon="' + x[0] + '"' + (N.estado && ['ilegible', 'no_es_rif', 'error'].indexOf(N.estado) < 0 ? ' disabled' : '') + '>' + x[1] + '</button>').join('') + '</div>' +
+      (t ? casRif() : '') + '</section>';
+    // 2 Contacto: se puede escribir mientras se lee el RIF
+    const campos = [['tel', t === 'natural' ? 'Teléfono' : 'Teléfono del representante', 'tel'], ['correo', t === 'natural' ? 'Correo' : 'Correo del representante', 'email']];
+    const okC = !faltaContacto().length;
+    h += '<section class="al-sec' + (t && !bloq ? '' : ' bloq') + '"><h3>' + num(2, t && okC) + 'Contacto</h3>' + (t && !bloq ? (N.estado === 'leyendo' ? '<p class="al-ayuda">Mientras leemos, adelanta el contacto.</p>' : '') +
+      '<div class="al-dos">' + campos.map((c) => '<div><label class="rotulo" for="n_' + c[0] + '">' + esc(c[1]) + '</label><input class="campo" id="n_' + c[0] + '" data-campon="' + c[0] + '" type="' + c[2] + '" inputmode="' + (c[2] === 'tel' ? 'tel' : 'email') + '" autocomplete="off" maxlength="120" value="' + esc(N.c[c[0]]) + '"' + (N.err[c[0]] ? ' aria-invalid="true"' : '') + ' aria-describedby="e_' + c[0] + '"><div class="error" id="e_' + c[0] + '" role="alert">' + esc(N.err[c[0]] || '') + '</div></div>').join('') + '</div>' +
+      (t === 'empresa' ? '<label class="rotulo arriba" for="n_correoEmp">Correo de la empresa <span class="al-opc">(opcional)</span></label><input class="campo" id="n_correoEmp" data-campon="correoEmp" type="email" inputmode="email" autocomplete="off" maxlength="120" value="' + esc(N.c.correoEmp) + '"><div class="error" id="e_correoEmp" role="alert">' + esc(N.err.correoEmp || '') + '</div>' : '') : '') + '</section>';
+    // 3 Documentos: se abren cuando el RIF dice "disponible"
+    h += '<section class="al-sec' + (libre ? '' : ' bloq') + '"><h3>' + num(3, libre && !faltaDocs().length) + 'Documentos</h3>' +
+      (libre ? '<div class="al-tarj">' + l.map((c, i) => filaCasN(c, i)).join('') + '</div>' + (t === 'empresa' ? '<button type="button" class="enlace al-mas" data-acc="masRep"' + (N.reps >= 4 ? ' disabled' : '') + '>Agregar otro representante</button>' : '')
+        : '<p class="al-ayuda">Se abren cuando el RIF diga que el cliente está disponible.</p>') + '</section>';
+    // Al repintar (llega una lectura) no se pierde el campo que se está escribiendo
+    const ae = document.activeElement; const fid = ae && ae.id && $('cNueva').contains(ae) ? ae.id : null; const pos = fid && typeof ae.selectionStart === 'number' ? ae.selectionStart : null;
     $('cNueva').innerHTML = h;
+    if(fid && $(fid)){ $(fid).focus(); if(pos !== null) try { $(fid).setSelectionRange(pos, pos); } catch (e) { /* email no tiene cursor */ } }
     pintarPieNueva();
   }
   function pintarPieNueva(){
     const p = $('pNueva'); if(!p || !N) return;
-    if(N.estado === 'cartera' || N.estado === 'otro' || N.estado === 'repetida'){ p.className = 'hoja-pie col'; p.innerHTML = '<button type="button" class="btn btn-2" data-cierra="1">Cerrar</button>'; return; }
-    const paso = Math.min(N.paso || 1, 2); const f = faltanPaso(paso);
+    if(N.estado === 'cartera' || N.estado === 'otro' || N.estado === 'repetida'){ p.className = 'hoja-pie al-pie2'; p.innerHTML = '<button type="button" class="hc-b s" data-cierra="1">Cerrar</button>'; return; }
     const subiendo = Object.keys(N.cas).some((k) => N.cas[k].estado === 'subiendo');
-    p.className = 'hoja-pie col al-pie';
-    p.innerHTML = (f.length ? '<p class="al-falta"><b>Te falta:</b> ' + esc(f.slice(0, 3).join(', ') + (f.length > 3 ? ' y ' + (f.length - 3) + ' más' : '')) + '</p>' : '<p class="al-falta ok">' + (paso === 2 ? 'Todo completo' : 'Disponible') + '</p>') +
-      '<div class="al-pie-b">' + (paso > 1 ? '<button type="button" class="btn btn-2" data-acc="atrasN">Atrás</button>' : '') +
-      (paso < 2 ? '<button type="button" class="btn' + (f.length || subiendo ? ' btn-2 al-gris-b' : '') + '" data-acc="sigN">Seguir</button>'
-        : '<button type="button" class="btn" data-acc="enviarN"' + (faltanN().length || subiendo || N.enviando ? ' disabled' : '') + '>' + (N.enviando ? 'Enviando…' : 'Enviar solicitud') + '</button>') + '</div>';
-  }
-  // Siguiente: valida el paso (errores debajo del campo) y avanza
-  function siguienteN(){
-    const p = N.paso || 1;
-    if(p === 1 && N.estado !== 'libre'){ pintarNueva(); toast('Primero sube el ' + (N.tipo === 'empresa' ? 'RIF de la empresa' : 'RIF personal'), 'error'); return; }
-    if(p === 3){
-      N.err = {};
-      if(!okTel(N.c.tel)) N.err.tel = 'Escribe el teléfono con su código, por ejemplo 0414 1234567.';
-      if(!okMail(N.c.correo)) N.err.correo = 'Escribe un correo válido.';
-      if(N.tipo === 'empresa' && String(N.c.correoEmp || '').trim() && !okMail(N.c.correoEmp)) N.err.correoEmp = 'Escribe un correo válido o déjalo vacío.';
-      if(p === 1 && N.estado !== 'libre'){ pintarNueva(); toast('Primero sube el ' + (N.tipo === 'empresa' ? 'RIF de la empresa' : 'RIF personal'), 'error'); return; }
-      if(Object.keys(N.err).length){ pintarNueva(); const k = Object.keys(N.err)[0]; const el = $('n_' + k); if(el) el.focus(); return; }
-    }
-    if(p === 2 && faltaDocs().length){ toast('Te falta: ' + faltaDocs().join(', '), 'error'); return; }
-    N.paso = Math.min(2, p + 1); pintarNueva(); const c = $('cNueva'); if(c) c.scrollTop = 0;
-  }
-  // Varios archivos a la vez: cada uno va a su casilla por el nombre; si no se reconoce, a la primera que falte
-  function casillaPorNombre(nombre, libres){
-    const n = normalizeStr(nombre || '');
-    const quiere = /constitut|registro|acta ?const/.test(n) ? 'acta_constitutiva' : /asamblea/.test(n) ? 'acta_asamblea' : /cedula|\bci\b|c\.i/.test(n) ? 'cedula' : /rif/.test(n) ? (/person|repre|natural|\bv\d/.test(n) ? 'rif_personal' : 'rif_empresa') : null;
-    return libres.find((k) => quiere && k.indexOf(quiere + ':') === 0) || (quiere === 'rif_empresa' ? libres.find((k) => k.indexOf('rif_personal:') === 0) : null) || libres[0] || null;
-  }
-  function soltarVarios(files, casilla){
-    if(!N || N.estado !== 'libre') return;
-    const l = Array.prototype.slice.call(files || []);
-    if(casilla && l.length === 1){ subirN(casilla, l[0]); return; }
-    const libres = docsN().slice(1).map((c) => c[0] + ':' + c[1]).filter((k) => !N.cas[k] || N.cas[k].estado === 'error');
-    let n = 0; l.forEach((f) => { const k = casillaPorNombre(f.name, libres); if(!k) return; libres.splice(libres.indexOf(k), 1); n++; subirN(k, f); });
-    if(n < l.length) toast(plural(l.length - n, 'archivo no tuvo casilla libre', 'archivos no tuvieron casilla libre') + '. Súbelos en su casilla', 'error');
+    p.className = 'hoja-pie al-pie2';
+    p.innerHTML = '<button type="button" class="hc-b s" data-acc="guardarN">Guardar lo que llevo</button><button type="button" class="hc-b" data-acc="enviarN"' + (faltanN().length || subiendo || N.enviando ? ' disabled' : '') + '>' + (N.enviando ? 'Enviando…' : 'Enviar solicitud') + '</button>';
   }
   async function leerRif(file){
     try { validar(file); } catch (e) { N.estado = 'error'; N.msg = e.message; pintarNueva(); return; }
@@ -632,88 +607,124 @@
       r = await fetch(db.supabaseUrl + '/functions/v1/aliado_rif', { method: 'POST', headers: { Authorization: 'Bearer ' + tk, apikey: db.supabaseKey }, body: fd });
       try { d = await r.json(); } catch (e) {}
     } catch (e) { N.estado = 'error'; N.msg = e.message && /sesión/.test(e.message) ? e.message : 'Sin conexión. Revisa el internet e intenta de nuevo.'; pintarNueva(); return; }
+    if(!N) return;
     if(!r.ok){ N.estado = 'error'; N.msg = String(d.error || 'No se pudo leer el RIF. Intenta de nuevo.'); pintarNueva(); return; }
     N.estado = d.estado; N.nombre = d.nombre || ''; N.rif = d.rif || null;
     if(d.estado === 'repetida'){ N.repetida = d.codigo; N.repetidaId = d.id; }
-    if(d.estado === 'no_es_rif') N.msg = 'Sube la foto o el PDF del RIF' + (N.tipo === 'empresa' ? ' de la empresa' : '') + '.';
-    if(d.estado === 'libre'){ N.cliente = d.cliente; subirN(CAS_PRIMERA(), file); }
+    if(d.estado === 'libre'){ N.cliente = d.cliente; subirN(kDe(casillasN()[0]), file); }
     pintarNueva(); invalidar();
     if(d.estado === 'cartera' || d.estado === 'otro') mostrarRes({ id: N.id, etiqueta: d.estado, cliente: N.nombre });
   }
-  const CAS_PRIMERA = () => (N.tipo === 'empresa' ? 'rif_empresa:0' : 'rif_personal:1');
   async function subirN(k, file){
-    const [cas, num] = k.split(':'); N.cas[k] = { estado: 'subiendo' }; pintarNueva();
-    try { await subir(N.cliente, file, cas, Number(num)); N.cas[k] = { estado: 'listo', lectura: null }; vigilarN(); }
-    catch (e) { N.cas[k] = { estado: 'error', error: e.message }; toast(e.message, 'error'); }
+    const [cas, num] = k.split(':'); N.cas[k] = { estado: 'subiendo', pct: 0 }; pintarNueva();
+    // El avance se ve con la barra: sube hasta 90 % mientras llega y termina al registrarse
+    // Solo se mueve la barra de esa casilla (sin repintar todo: no se pierde lo que se está escribiendo)
+    const mio = N.cas[k]; const tm = setInterval(() => { if(N && N.cas[k] === mio && mio.pct < 90){ mio.pct += 10; const z = document.querySelector('#hojaNueva [data-casn="' + k + '"]');
+      if(z){ const i = z.querySelector('.sd-pista i'); if(i) i.style.transform = 'scaleX(' + (mio.pct / 100) + ')'; const sm = z.querySelector('.tx small'); if(sm) sm.lastChild.textContent = 'Subiendo ' + mio.pct + ' %'; } } else clearInterval(tm); }, 400);
+    try { await subir(N.cliente, file, cas, Number(num)); clearInterval(tm); if(!N) return; N.cas[k] = { estado: 'listo', lectura: null, nombre: file.name }; vigilarN(); }
+    catch (e) { clearInterval(tm); if(!N) return; N.cas[k] = { estado: 'error', error: e.message }; toast(e.message, 'error'); }
     pintarNueva();
   }
   let sondeoN = null;
-  // Cada documento se lee apenas sube: la casilla pasa de Leyendo a Leído
+  // Cada documento se lee apenas sube: la casilla pasa de Leyendo a "corresponde" o "Esto parece X"
   function vigilarN(){
     clearTimeout(sondeoN);
     sondeoN = setTimeout(async () => {
       if(!N || hojaAbierta() !== 'hojaNueva') return;
       try {
         const d = await rpc('solicitud_estado', { p_sol: N.id });
-        (d.docs || []).forEach((x) => { const k = x.casilla + ':' + x.numero; const a = (x.archivos || [])[0]; if(N.cas[k] && N.cas[k].estado === 'listo' && a) N.cas[k].lectura = a.lectura; });
+        (d.docs || []).forEach((x) => { const k = x.casilla + ':' + x.numero; const a = (x.archivos || [])[0];
+          if(N.cas[k] && N.cas[k].estado === 'listo' && a){ N.cas[k].lectura = a.lectura; N.cas[k].tipos = a.tipos || []; N.cas[k].archivo = { id: a.id, nombre: a.nombre }; } });
         pintarNueva();
       } catch (e) {}
-      if(Object.keys(N.cas).some((k) => N.cas[k].estado === 'listo' && !N.cas[k].lectura)) vigilarN();
+      if(N && Object.keys(N.cas).some((k) => N.cas[k].estado === 'listo' && (!N.cas[k].lectura || !N.cas[k].archivo))) vigilarN();
     }, 4000);
+  }
+  // Combinados: el mismo archivo queda también en otra casilla, sin subirlo de nuevo
+  async function enlazarN(k, de, quitar){
+    const [cas, num] = k.split(':'); const st = quitar ? N.cas[k] : N.cas[de]; const arch = st && (st.archivo || {}).id; if(!arch) return;
+    try {
+      await rpc('solicitud_casilla_enlazar', { p_sol: N.id, p_archivo: arch, p_casilla: cas, p_numero: Number(num), p_quitar: !!quitar });
+      if(quitar) delete N.cas[k];
+      else { const cx = casillasN().find((y) => kDe(y) === de); N.cas[k] = { estado: 'enlazado', archivo: st.archivo, de, deNombre: cx ? cx[2] : '' }; }
+      N.otro = null; pintarNueva();
+    } catch (e) { toast(e.message, 'error'); }
   }
   async function guardarContacto(sol, c, tipo){
     return rpc('solicitud_contacto', { p_sol: sol, p_correo: c.correo || null, p_telefono: c.tel || null, p_correo_empresa: tipo === 'empresa' ? (c.correoEmp || null) : null });
   }
+  async function guardarN(b){
+    if(!N) return;
+    if(!N.cliente){ cerrarHoja(true); toast('Guardado. Sigue cuando quieras desde Inicio'); invalidar(); cargar(); return; }
+    b.disabled = true;
+    try { if(N.c.tel || N.c.correo || N.c.correoEmp) await guardarContacto(N.id, N.c, N.tipo); toast('Guardado. Sigue cuando quieras desde Inicio'); N = null; cerrarHoja(true); invalidar(); cargar(); }
+    catch (e) { toast(e.message, 'error'); if(document.contains(b)) b.disabled = false; }
+  }
   async function enviarN(){
     N.err = {};
-    const mail = /^[^@\s]+@[^@\s]+\.[^@\s]+$/; const tel = (v) => String(v || '').replace(/\D/g, '').length >= 10;
-    if(!mail.test(N.c.correo.trim())) N.err.correo = 'Escribe un correo válido.';
-    if(!tel(N.c.tel)) N.err.tel = 'Escribe el teléfono con su código, por ejemplo 0414 1234567.';
+    if(!okMail(N.c.correo)) N.err.correo = 'Escribe un correo válido.';
+    if(!okTel(N.c.tel)) N.err.tel = 'Escribe el teléfono con su código, por ejemplo 0414 1234567.';
     // Lote 10/11 A4: el correo de la empresa es opcional para aliados (si se escribe, debe ser válido)
-    if(N.tipo === 'empresa' && N.c.correoEmp.trim() && !mail.test(N.c.correoEmp.trim())) N.err.correoEmp = 'Escribe un correo válido o déjalo vacío.';
-    if(Object.keys(N.err).length){ N.paso = 3; pintarNueva(); const k = Object.keys(N.err)[0]; const el = $('n_' + k); if(el) el.focus(); return; }
+    if(N.tipo === 'empresa' && N.c.correoEmp.trim() && !okMail(N.c.correoEmp)) N.err.correoEmp = 'Escribe un correo válido o déjalo vacío.';
+    if(Object.keys(N.err).length){ pintarNueva(); const k = Object.keys(N.err)[0]; const el = $('n_' + k); if(el) el.focus(); return; }
     N.enviando = true; pintarPieNueva();
     try { await guardarContacto(N.id, N.c, N.tipo); await rpc('solicitud_enviar', { p_sol: N.id }); }
     catch (e) { N.enviando = false; pintarPieNueva(); toast(e.message, 'error'); return; }
-    const id = N.id; N = null; cerrarHoja(true); invalidar(); cargar(); toast('Recibido, en revisión. El resultado llega a Mis solicitudes'); resPara = id; abrirSol(id);
+    // Revisando: el recuadro sale encima con la solicitud difuminada detrás; al terminar cambia solo
+    const id = N.id; N = null; cerrarHoja(true); invalidar(); cargar(); resPara = id; abrirSol(id);
   }
 
   // ---------- Lote 10/11 E6: pantalla de resultado a pantalla completa (como una venta en Artesanos) ----------
   const RES_ESTADOS = ['lista', 'listaobs', 'recaudos', 'revision', 'excepcion', 'noprocede', 'instalada'];
-  const WA_ADM = ['whats', 'Escribir al administrador por WhatsApp', 'wa'];
+  const WA_ADM = ['whats', 'Escribir al administrador de contratos', 'wa'];
+  // Lote 12/11 B (lámina aliado-pantallas): los textos de cada caso
   function resDe(d){
-    const nom = d.cliente || 'Tu cliente'; const pts = (est) => ((d.ia && d.ia.puntos) || []).filter((p) => p.estado === est && !(est === 'bloquea' && false));
+    const nom = d.cliente || 'Tu cliente'; const pts = (est) => ((d.ia && d.ia.puntos) || []).filter((p) => p.estado === est);
+    const acta = (l) => l.some((p) => /acta/i.test((p.titulo || '') + ' ' + (p.detalle || '')));
     switch(d.etiqueta){
-      case 'cartera': return { tono: 'gris', ico: 'casa', t: 'Este cliente ya es de la oficina', x: nom + ' ya tiene servicio con Airtek. No guardamos sus documentos, solo leímos el RIF.', chip: 'Si lo conseguiste tú, se te paga si se instala', b: [['referirSol', 'Referir cliente', 'neg'], ['inicio', 'Volver al inicio', '']] };
-      case 'otro': return { tono: 'gris', ico: 'candado', t: 'No disponible por ahora', x: 'Otra persona ya está gestionando este cliente. No se puede instalar ni referir mientras tanto.', b: [['nueva', 'Nueva solicitud', 'neg'], ['inicio', 'Volver al inicio', '']] };
-      case 'analizando': return { tono: 'azul', ico: 'reloj', t: 'Revisando tu solicitud', x: 'Puedes cerrar la app. Te avisamos con una notificación.', pasos: true, b: [['solicitudes', 'Ir a Mis solicitudes', ''], WA_ADM] };
-      case 'lista': return { tono: 'verde', ico: 'check', t: '¡Puedes instalar!', x: nom + ' pasó la revisión. Marca cuándo vas a instalar para reservar el cliente.', b: [['form:curso', 'Marcar instalación', 'pri'], ['ver', 'Ver la solicitud', '']] };
-      case 'listaobs': return { tono: 'verde', ico: 'check', t: 'Puedes instalar, con observaciones', x: 'Estas notas no te frenan. Súbelas cuando puedas.', notas: pts('aviso'), b: [['form:curso', 'Marcar instalación', 'pri'], ['ver', 'Ver la solicitud y subir', '']] };
-      case 'recaudos': return { tono: 'ambar', ico: 'subir', t: 'Te falta algo para poder instalar', x: 'Corrige esto y toca Revisar de nuevo.', notas: pts('bloquea'), b: [['ver', 'Subir ahora', 'pri'], ['form:excepcion', 'Pedir excepción', ''], WA_ADM] };
+      case 'cartera': return { tono: 'gris', ico: 'casa', t: 'Este cliente ya está carterizado', x: nom + ' ya es cliente de Airtek y tiene su ejecutivo. Si lo conseguiste tú, puedes referirlo.', chip: 'Si se instala por tu referido, se te paga', b: [['referirSol', 'Referir cliente', 'pri'], WA_ADM, ['inicio', 'Volver al inicio', '']] };
+      case 'otro': return { tono: 'gris', ico: 'candado', t: 'Este cliente ya está siendo gestionado', x: 'No se puede instalar ni referir mientras tanto. Si esa gestión se cierra, el cliente vuelve a quedar libre.', chip: 'Si crees que es un error, escríbenos', b: [WA_ADM, ['nueva', 'Nueva solicitud', ''], ['inicio', 'Volver al inicio', '']] };
+      case 'analizando': return { tono: 'azul', ico: 'reloj', t: 'Revisando tu solicitud', puntos: true, x: 'Estamos leyendo los documentos. Tarda unos segundos.', noSalgas: true, pasos: true, b: [] };
+      case 'lista': return { tono: 'verde', ico: 'check', t: '¡Puedes instalar!', x: nom + ' pasó la revisión. Cuando llegue la orden de instalación con tu nombre, pasa sola a Instalada y te avisamos.', b: [['inicio', 'Volver al inicio', 'pri'], ['ver', 'Ver la solicitud', '']] };
+      case 'listaobs': return { tono: 'verde', ico: 'check', t: 'Puedes instalar, con observaciones', x: 'Estas notas no te frenan. Súbelas cuando puedas. Cuando llegue la orden con tu nombre, pasa sola a Instalada.', notas: pts('aviso'), b: [['inicio', 'Volver al inicio', 'pri'], ['ver', 'Ver la solicitud y subir', '']] };
+      case 'recaudos': {
+        const l = pts('bloquea');
+        // Si faltan documentos nunca es "No procede": si la excepción se negó, vuelve aquí
+        if(d.excepcion && d.respuesta) return { tono: 'rojo', ico: 'x', t: 'La excepción no se aprobó', x: 'Hace falta el acta. Cuando la tengas, súbela y toca Revisar de nuevo.', resp: d.respuesta, b: [['ver', 'Subir el acta', 'pri'], WA_ADM] };
+        return { tono: 'ambar', ico: 'subir', t: 'Te falta algo para instalar', x: 'Sube lo que falta y toca Revisar de nuevo. Si no existe, pide una excepción.', notas: l, b: [['ver', acta(l) ? 'Subir el acta' : 'Subir lo que falta', 'pri'], ['form:excepcion', 'Pedir excepción', ''], WA_ADM] };
+      }
       case 'revision': return { tono: 'morado', ico: 'lupa', t: 'Lo está revisando el administrador', x: 'Un punto necesita una persona. Te avisamos apenas responda.', notas: pts('mano'), b: [WA_ADM, ['ver', 'Ver la solicitud', '']] };
-      case 'excepcion': return { tono: 'morado', ico: 'lupa', t: 'Pediste una excepción', x: 'El administrador la revisa. Te avisamos apenas responda.', b: [WA_ADM, ['ver', 'Ver la solicitud', '']] };
-      case 'noprocede': return { tono: 'rojo', ico: 'x', t: 'No procede', x: d.respuesta || 'El administrador cerró esta solicitud. El cliente quedó libre.', b: [['ver', 'Ver la solicitud', 'pri']] };
+      case 'excepcion': return { tono: 'morado', ico: 'lupa', t: 'Pediste una excepción', x: 'El administrador de contratos la revisa. Te avisamos apenas responda.', b: [WA_ADM, ['ver', 'Ver la solicitud', '']] };
+      case 'noprocede': return { tono: 'rojo', ico: 'x', t: 'No procede', x: d.respuesta || 'El administrador cerró esta solicitud. El cliente quedó libre.', b: [WA_ADM, ['ver', 'Ver la solicitud', '']] };
       case 'instalada': return { tono: 'verde', ico: 'usuarios', t: 'Instalación confirmada', x: 'Llegó la orden con tu nombre. ' + nom + ' ya está en tu cartera.', chip: d.pagada_en ? 'Pago registrado el ' + fecha(d.pagada_en) : '', b: [['ver', 'Ver la solicitud', 'pri']] };
+      case 'referido': return { tono: 'verde', ico: 'check', t: 'Referido enviado', x: 'El administrador lo revisa. Si se instala, se te paga y lo ves en Pagos.', b: [['inicio', 'Volver al inicio', 'pri'], ['referidos', 'Ver mis referidos', '']] };
       default: return null;
     }
   }
   let resId = null; let resPara = null;
+  // Recuadro grande centrado (600 px en PC, 350 en teléfono), todo del color del estado, con lo de atrás difuminado
   function mostrarRes(d){
     if(modo !== 'aliado' && modo !== 'canales') return;
     const r = resDe(d); if(!r) return;
+    let v = $('alResVelo'); if(!v){ v = document.createElement('div'); v.id = 'alResVelo'; v.className = 'al-res-velo'; document.body.appendChild(v); }
     let z = $('alRes'); if(!z){ z = document.createElement('section'); z.id = 'alRes'; z.setAttribute('role', 'dialog'); z.setAttribute('aria-modal', 'true'); z.setAttribute('aria-labelledby', 'alResT'); document.body.appendChild(z); }
-    resId = d.id; z.className = 'al-res ' + r.tono;
+    resId = d.id; z.className = 'al-res2 t-' + r.tono;
     const p = r.pasos ? PASOS(d) : null;
-    const paso = (i, t) => '<div class="al-rp ' + (p.n > i ? 'hecho' : p.n === i ? 'activo' : '') + '"><i aria-hidden="true">' + (p.n > i ? ic('check') : p.n === i ? '…' : (i - 1)) + '</i>' + esc(t) + '</div>';
-    z.innerHTML = '<div class="al-res-cab"><b>AIRTEK</b><button type="button" class="enlace" data-res="cerrar">Cerrar</button></div><div class="al-res-c"><span class="al-res-ico" aria-hidden="true">' + ic(r.ico) + '</span>' +
-      '<h2 id="alResT">' + esc(r.t) + '</h2><p>' + esc(r.x) + '</p>' + (r.chip ? '<span class="chip">' + esc(r.chip) + '</span>' : '') +
-      (p ? '<div class="al-res-caja">' + paso(2, 'Documentos leídos' + (p.total ? ' (' + p.av + ' de ' + p.total + ')' : '')) + paso(3, 'Revisando firmantes, junta y actas') + paso(4, 'Armando el resultado') + '</div>' : '') +
-      (r.notas && r.notas.length ? '<div class="al-res-caja">' + r.notas.map((n) => '<p class="al-res-n"><i aria-hidden="true"></i>' + esc(n.titulo + (n.detalle ? ': ' + n.detalle : '')) + '</p>').join('') + '</div>' : '') + '</div>' +
-      '<div class="al-res-pie">' + r.b.map((x) => '<button type="button" class="btn btn-ancho ' + (x[2] === 'pri' ? '' : x[2] === 'neg' ? 'al-neg' : x[2] === 'wa' ? 'al-wa' : 'btn-2') + '" data-res="' + x[0] + '">' + esc(x[1]) + '</button>').join('') + '</div>';
-    z.classList.add('ver'); document.documentElement.classList.add('con-res');
+    const paso = (i, t) => '<div class="al-rp2 ' + (p.n > i ? 'hecho' : p.n === i ? 'activo' : '') + '"><i aria-hidden="true">' + (p.n > i ? ic('check') : p.n === i ? '<span class="al-pts"><b></b><b></b><b></b></span>' : (i - 1)) + '</i>' + esc(t) + '</div>';
+    const frac = p ? Math.min(1, (p.n - 1 + (p.n === 2 && p.total ? p.av / p.total : 0)) / 3) : 0;
+    z.innerHTML = '<button type="button" class="cerrar al-res-x" data-res="cerrar" aria-label="Cerrar">' + ic('x') + '</button><div class="al-res-c2"><span class="al-res-ic" aria-hidden="true">' + ic(r.ico) + '</span>' +
+      '<h2 id="alResT">' + esc(r.t) + (r.puntos ? ' <span class="al-pts" aria-hidden="true"><b></b><b></b><b></b></span>' : '') + '</h2><p>' + esc(r.x) + '</p>' +
+      (r.noSalgas ? '<span class="al-nosalgas">' + ic('info') + 'No salgas de aquí hasta que termine</span>' : '') +
+      (r.chip ? '<span class="al-res-chip">' + esc(r.chip) + '</span>' : '') +
+      (p ? '<div class="al-res-caja">' + paso(2, 'Documentos leídos' + (p.total ? ' (' + p.av + ' de ' + p.total + ')' : '')) + paso(3, 'Revisando firmantes y actas') + paso(4, 'Armando el resultado') +
+        '<span class="sd-barra2 al-res-barra"><span class="sd-pista"><i style="transform:scaleX(' + frac.toFixed(3) + ')"></i></span></span></div>' : '') +
+      (r.notas && r.notas.length ? '<div class="al-res-caja">' + r.notas.map((n) => '<p class="al-res-n">' + esc(n.titulo + (n.detalle ? '. ' + n.detalle : '')) + '</p>').join('') + '</div>' : '') +
+      (r.resp ? '<div class="al-res-caja"><p class="al-res-n"><b>Respuesta del administrador:</b> ' + esc(r.resp) + '</p></div>' : '') +
+      (r.b.length ? '<div class="al-res-acc">' + r.b.map((x) => '<button type="button" class="hc-b an ' + (x[2] === 'pri' ? '' : x[2] === 'wa' ? 'wa2' : 's') + '" data-res="' + x[0] + '">' + (x[2] === 'wa' ? ic('wa') : '') + esc(x[1]) + '</button>').join('') + '</div>' : '') + '</div>';
+    z.classList.add('ver'); v.classList.add('ver'); document.documentElement.classList.add('con-res');
     marcarVisto(d.id, d.etiqueta);
   }
-  function cerrarRes(){ const z = $('alRes'); if(z) z.classList.remove('ver'); document.documentElement.classList.remove('con-res'); resId = null; }
+  function cerrarRes(){ const z = $('alRes'); if(z) z.classList.remove('ver'); const v = $('alResVelo'); if(v) v.classList.remove('ver'); document.documentElement.classList.remove('con-res'); resId = null; }
   const K_VISTO = 'ae_al_vistos';
   function vistos(){ try { return JSON.parse(localStorage.getItem(K_VISTO) || 'null'); } catch (e) { return null; } }
   function marcarVisto(id, et){ try { const v = vistos() || {}; v[id] = et; localStorage.setItem(K_VISTO, JSON.stringify(v)); } catch (e) {} }
@@ -882,10 +893,14 @@
       cuerpo = '<label class="rotulo" for="fMotivo">Motivo</label><select class="campo" id="fMotivo"><option value="desistio">El cliente desistió</option><option value="factibilidad">No hubo factibilidad</option><option value="tecnico">Problema técnico en la instalación</option><option value="otro">Otro</option></select>' +
         '<label class="rotulo arriba" for="fTexto">Qué pasó (si elegiste Otro)</label><textarea class="campo al-area" id="fTexto" maxlength="500" aria-describedby="eForm"></textarea><div class="error" id="eForm" role="alert"></div><p class="nota">El cliente queda libre para otros.</p>';
     } else if(tipo === 'referir'){
-      const can = modo === 'canales'; t = can ? 'Cargar referido' : 'Referir cliente'; s = x.cliente || 'Pásalo a la oficina'; boton = can ? 'Cargar' : 'Referir';
-      const c = (id, l, tp, v, dis) => '<label class="rotulo arriba" for="' + id + '">' + esc(l) + '</label><input class="campo" id="' + id + '" type="' + tp + '" maxlength="120" value="' + esc(v || '') + '"' + (dis ? ' disabled' : '') + '>';
-      cuerpo = c('fRif', 'RIF del cliente', 'text', x.rif ? rifFmt(x.rif) : '', !!x.sol) + (can ? c('fNombre', 'Nombre', 'text') + c('fApellido', 'Apellido', 'text') + c('fTel', 'Teléfono', 'tel') + c('fCoord', 'Coordenadas', 'text') : c('fTel', 'Teléfono de contacto (opcional)', 'tel')) +
-        '<div class="error" id="eForm" role="alert"></div><p class="nota">El referido le llega al administrador para aceptarlo. Se paga con dos residenciales cuando el cliente se instala.</p>';
+      const can = modo === 'canales'; t = can ? 'Cargar referido' : 'Referir cliente'; s = can ? x.cliente || 'Pásalo a la oficina' : 'Pásalo a la oficina'; boton = can ? 'Cargar' : 'Referir';
+      const c = (id, l, tp, v, dis) => '<label class="rotulo arriba" for="' + id + '">' + l + '</label><input class="campo" id="' + id + '" type="' + tp + '" maxlength="120" value="' + esc(v || '') + '"' + (dis ? ' disabled' : '') + '>';
+      // Lote 12/11 B (lámina, caso 2): el cliente, el servicio (Internet PYME), teléfono y coordenadas opcionales
+      cuerpo = (x.sol && x.cliente ? '<div class="al-cli-r"><span class="e ok" aria-hidden="true">' + ic('check') + '</span><span><b>' + esc(x.cliente) + '</b><small>' + esc(x.rif ? rifFmt(x.rif) : '') + '</small></span></div><input type="hidden" id="fRif" value="' + esc(x.rif ? rifFmt(x.rif) : '') + '">' : c('fRif', 'RIF del cliente', 'text', x.rif ? rifFmt(x.rif) : '', !!x.sol)) +
+        (can ? c('fNombre', 'Nombre', 'text') + c('fApellido', 'Apellido', 'text') + c('fTel', 'Teléfono', 'tel') + c('fCoord', 'Coordenadas', 'text')
+          : '<label class="rotulo arriba" for="fServ">Servicio</label><input class="campo" id="fServ" value="Internet PYME" disabled>' + c('fTel', 'Teléfono de contacto', 'tel') + c('fCoord', 'Coordenadas <span class="al-opc">(opcional)</span>', 'text')) +
+        '<div class="error" id="eForm" role="alert"></div><p class="nota">El administrador lo acepta y se paga con dos residenciales cuando se instala. ¿Dudas? <button type="button" class="enlace" data-res="whats">Escribir al administrador de contratos</button></p>';
+      if(!can) boton = 'Enviar referido';
     } else if(tipo === 'ref'){
       const r = (fuente().referidos || []).find((y) => y.id === x.id); if(!r) return;
       t = r.cliente || 'Referido'; s = [rifFmt(r.rif), r.codigo, r.aliado].join(' · '); boton = r.etiqueta === 'referido' && modo === 'admin' ? 'Aceptar referido' : '';
@@ -929,8 +944,8 @@
         const can = modo === 'canales';
         if(!x.sol && !/^[VEJGPC][-\s]?\d/i.test(valor('fRif'))) return err('Escribe el RIF con su letra, por ejemplo J-12345678-9.');
         if(can && (valor('fNombre').length < 2 || valor('fApellido').length < 2 || valor('fTel').replace(/\D/g, '').length < 10)) return err('Escribe nombre, apellido y teléfono.');
-        await rpc('referido_crear', { p_rif: x.sol ? null : valor('fRif'), p_nombre: can ? valor('fNombre') : null, p_apellido: can ? valor('fApellido') : null, p_telefono: valor('fTel') || null, p_coordenadas: can ? valor('fCoord') || null : null, p_solicitud: x.sol || null });
-        toast('Referido enviado al administrador');
+        await rpc('referido_crear', { p_rif: x.sol ? null : valor('fRif'), p_nombre: can ? valor('fNombre') : null, p_apellido: can ? valor('fApellido') : null, p_telefono: valor('fTel') || null, p_coordenadas: valor('fCoord') || null, p_solicitud: x.sol || null });
+        if(modo === 'aliado') setTimeout(() => mostrarRes({ id: x.sol || 0, etiqueta: 'referido' }), 350); else toast('Referido enviado al administrador');
       }
       else if(tipo === 'ref'){
         if(rechazar){ const m = valor('fTexto'); if(m.length < 5) return err('Escribe por qué no se acepta (al menos 5 letras).'); await rpc('referido_decidir', { p_ref: x.id, p_aceptar: false, p_lider: null, p_texto: m }); toast('Referido no aceptado'); }
@@ -967,14 +982,16 @@
     if((b = t.closest('[data-res]'))){ const r = b.dataset.res; const rid = resId;
       if(r === 'cerrar' || r === 'ver'){ cerrarRes(); return; }
       cerrarRes();
-      if(r === 'inicio' || r === 'solicitudes' || r === 'nueva'){ while(hojaAbierta()) cerrarHoja(true); tab = r === 'solicitudes' ? 'solicitudes' : 'inicio'; pintarTabs(); pintar(); if(r === 'nueva') abrirNueva(); return; }
+      if(r === 'inicio' || r === 'solicitudes' || r === 'nueva' || r === 'referidos'){ while(hojaAbierta()) cerrarHoja(true); tab = r === 'solicitudes' ? 'solicitudes' : r === 'referidos' ? 'referidos' : 'inicio'; pintarTabs(); cargar(); if(r === 'nueva') abrirNueva(); return; }
       if(r === 'referirSol'){ abrirForm('referir', { sol: rid, rif: N && N.rif, cliente: N && N.nombre }); return; }
       if(r === 'whats'){ const d = SOL && SOL.d; window.open(enlaceWa(ajustes.whatsapp_admin || '', 'Hola, sobre la solicitud ' + (d ? d.codigo + ' de ' + d.cliente : '') + ':'), '_blank', 'noopener'); return; }
       if(r.indexOf('form:') === 0){ abrirForm(r.slice(5), {}); return; }
       return; }
     if((b = t.closest('[data-ircard]'))){ chipSol = b.dataset.ircard; tab = 'solicitudes'; mostrar = POR_PAGINA; pintarTabs(); pintar(); return; }
     if((b = t.closest('[data-chipsol]'))){ chipSol = b.dataset.chipsol; mostrar = POR_PAGINA; pintar(); return; }
-    if((b = t.closest('[data-ir-paso]')) && N){ N.paso = Number(b.dataset.irPaso); pintarNueva(); return; }
+    if((b = t.closest('[data-otron]')) && N){ N.otro = N.otro === b.dataset.otron ? null : b.dataset.otron; pintarNueva(); return; }
+    if((b = t.closest('[data-enlazarn]')) && N){ b.disabled = true; enlazarN(b.dataset.enlazarn, b.dataset.de, false); return; }
+    if((b = t.closest('[data-quitarn]')) && N){ b.disabled = true; enlazarN(b.dataset.quitarn, null, true); return; }
     if((b = t.closest('[data-tipon]'))){ if(!N || b.disabled) return; const tp = b.dataset.tipon; try { await rpc('solicitud_crear', { p_tipo: tp }); N.tipo = tp; N.cas = {}; N.estado = null; pintarNueva(); } catch (e) { toast(e.message, 'error'); } return; }
     if((b = t.closest('[data-subirn]'))){ if(b.disabled) return; const k = b.dataset.subirn; elegir((f) => (k === casillasN()[0][0] + ':' + casillasN()[0][1] && N.estado !== 'libre' ? leerRif(f) : subirN(k, f))); return; }
     if((b = t.closest('[data-subirs]'))){ const k = b.dataset.subirs.split(':'); const d = SOL.d; elegir(async (f) => { b.disabled = true; b.textContent = 'Subiendo…'; try { await subir(d.cliente_id, f, k[0], Number(k[1])); toast('Subido. Cuando termines, toca Revisar de nuevo'); } catch (e) { toast(e.message, 'error'); } cargarSol(); }); return; }
@@ -990,8 +1007,7 @@
     else if(a === 'masAsamblea'){ N.asambleas = Math.min(4, N.asambleas + 1); pintarNueva(); }
     else if(a === 'masRep'){ N.reps = Math.min(4, N.reps + 1); pintarNueva(); }
     else if(a === 'enviarN') enviarN();
-    else if(a === 'sigN') siguienteN();
-    else if(a === 'atrasN'){ N.paso = Math.max(1, (N.paso || 1) - 1); pintarNueva(); }
+    else if(a === 'guardarN') guardarN(b);
     else if(a === 'guardarForm') guardarForm(b, false);
     else if(a === 'rechazarRef') guardarForm(b, true);
     else if(a === 'whats'){ const d = SOL && SOL.d; window.open(enlaceWa(ajustes.whatsapp_admin || '', 'Hola, sobre la solicitud ' + (d ? d.codigo + ' de ' + d.cliente : '') + ':'), '_blank', 'noopener'); }
@@ -1016,11 +1032,19 @@
     if(el.id === 'fTexto' && $('eForm')) $('eForm').textContent = '';
   });
   document.addEventListener('change', (ev) => { const el = ev.target; if(el.dataset && el.dataset.enlazar) enlazar(el); });
-  // Lote 10/11 E9: arrastrar todos los documentos juntos (o uno sobre su casilla) en el paso Documentos
-  document.addEventListener('dragover', (ev) => { const z = ev.target.closest && ev.target.closest('#alSoltar, [data-casn]'); if(z && N && N.paso === 2){ ev.preventDefault(); z.classList.add('sobre'); } });
-  document.addEventListener('dragleave', (ev) => { const z = ev.target.closest && ev.target.closest('#alSoltar, [data-casn]'); if(z) z.classList.remove('sobre'); });
-  document.addEventListener('drop', (ev) => { const z = ev.target.closest && ev.target.closest('#alSoltar, [data-casn]'); if(!z || !N || N.paso !== 2) return; ev.preventDefault(); z.classList.remove('sobre');
-    const fs = ev.dataTransfer && ev.dataTransfer.files; if(fs && fs.length) soltarVarios(fs, z.dataset.casn && z.dataset.casn !== casillasN()[0][0] + ':' + casillasN()[0][1] ? z.dataset.casn : null); });
+  // Lote 12/11 B: se arrastra en todo el drawer; cada archivo va a la casilla donde se suelta (sin adivinar por el nombre).
+  // Antes de que el RIF diga "disponible", lo que se suelta se lee como el RIF.
+  const sinSobre = () => Array.prototype.forEach.call(document.querySelectorAll('#hojaNueva .sobre'), (x) => x.classList.remove('sobre'));
+  document.addEventListener('dragover', (ev) => { const d = ev.target.closest && ev.target.closest('#hojaNueva'); if(!d || !N || !N.tipo || !N.id) return; ev.preventDefault(); sinSobre();
+    const z = ev.target.closest('[data-casn]'); if(z && (N.estado === 'libre' || z.dataset.casn === kDe(casillasN()[0]))) z.classList.add('sobre'); });
+  document.addEventListener('dragleave', (ev) => { const d = $('hojaNueva'); if(d && !d.contains(ev.relatedTarget)) sinSobre(); });
+  document.addEventListener('drop', (ev) => { const d = ev.target.closest && ev.target.closest('#hojaNueva'); if(!d || !N || !N.tipo || !N.id) return; ev.preventDefault(); sinSobre();
+    const f = ev.dataTransfer && ev.dataTransfer.files && ev.dataTransfer.files[0]; if(!f) return;
+    const z = ev.target.closest('[data-casn]'); const k0 = kDe(casillasN()[0]);
+    if(N.estado !== 'libre'){ if(['leyendo', 'cartera', 'otro', 'repetida'].indexOf(N.estado) < 0) leerRif(f); return; }
+    if(!z || z.dataset.casn === k0){ toast('Suéltalo sobre la casilla que le toca', 'error'); return; }
+    const st = N.cas[z.dataset.casn]; if(st && (st.estado === 'subiendo' || st.estado === 'enlazado')) return;
+    subirN(z.dataset.casn, f); });
   let tBuscaAl = null;
   $('buscaAl').addEventListener('input', () => { clearTimeout(tBuscaAl); tBuscaAl = setTimeout(() => { buscaAl = $('buscaAl').value.trim().slice(0, 60); pintarRegistro(); }, 160); });
   $('alArchivo').addEventListener('change', () => { const f = ($('alArchivo').files || [])[0]; const fn = destino; destino = null; if(f && fn) fn(f); });
