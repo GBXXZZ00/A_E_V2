@@ -15,6 +15,7 @@ const CSS = `
 .zz-bar{width:180px;height:8px;border-radius:99px;background:rgba(31,69,196,.15);overflow:hidden;position:relative}
 .zz-bar i{position:absolute;inset:0;background:#1F45C4;border-radius:99px;transform-origin:left}
 .zz-c{display:grid;grid-template-columns:380px 1fr;min-height:0;border-top:1px solid var(--line)}
+.zz-tabs{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0 14px}.zz-tabs span{height:38px;padding:0 14px;border-radius:99px;border:1.5px solid var(--line);display:inline-flex;align-items:center;gap:8px;font-weight:600;font-size:13.5px;background:#fff}.zz-tabs span i{font-style:normal;font-size:11.5px;padding:1px 7px;border-radius:99px;background:var(--surface-2,#F5F6F7)}.zz-tabs span.on{background:var(--text);border-color:var(--text);color:#fff}.zz-tabs span.on i{background:rgba(255,255,255,.18)}
 .zz-l{border-right:1px solid var(--line);overflow:auto;padding:8px 12px 14px}
 .zz-gr{display:flex;align-items:center;justify-content:space-between;padding:14px 10px 6px;font-size:11.5px;font-weight:800;letter-spacing:.06em;color:var(--text3,#69717C);text-transform:uppercase}
 .zz-d{display:flex;align-items:center;gap:12px;padding:12px 12px;border-radius:14px;margin-bottom:2px}
@@ -76,7 +77,7 @@ const IA = { mal: '<div class="zz-ia mal"><span class="tx"><b>La IA encontró 1 
   lee: '<div class="zz-ia lee"><span class="tx"><b>La IA está leyendo<span class="zz-pt"><i></i><i></i><i></i></span></b>3 de 4 documentos. Puedes empezar a mirar; lo que encuentre aparece aquí.</span><span class="zz-bar"><i style="transform:scaleX(.72)"></i></span></div>',
   no: '<div class="zz-ia no"><span class="tx"><b>Estás revisando tú</b>La IA no ha leído estos documentos. Si quieres su ayuda, pásaselos (unos US$ 0,16).</span><button class="btn btn-chico btn-2">Que la revise la IA</button></div>' };
 const dt = '<div class="zz-dt"><div><label>Fecha del acta</label><input class="campo" type="date" value="2012-03-14"></div><div><label>También trae</label><span class="sub" style="height:auto">Acta de asamblea 1</span></div><button class="mini" style="margin-left:auto">Reemplazar archivo</button></div>';
-const rv = (o) => '<div class="zz-ov"><div class="zz-rv"><div class="zz-cab"><div><h2>' + (o.tit || 'Revisar expediente') + '</h2><small>Vidrios El Faro, C.A. · J-59100001-1 · Lucía Ferrer · ' + (o.sub || 'subió 4 documentos ayer') + '</small></div><div class="der"><button class="cerrar" aria-label="Cerrar"><svg class="i" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div></div>' + o.ia +
+const rv = (o) => '<div class="zz-ov"><div class="zz-rv"><div class="zz-cab"><div><h2>' + (o.tit || 'Revisar expediente') + '</h2><small>Vidrios El Faro, C.A. · J-59100001-1 · Lucía Ferrer · ' + (o.sub || 'subió 4 documentos ayer') + '</small></div><div class="der"><a class="mini" href="#" style="display:inline-flex;align-items:center;gap:6px"><svg class="i" viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M3 6a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>Abrir carpeta en Drive</a><button class="cerrar" aria-label="Cerrar"><svg class="i" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div></div>' + o.ia +
   '<div class="zz-c"><div class="zz-l">' + o.lista + '</div><div class="zz-v"><div class="zz-vh"><div><h3>' + o.vt + '</h3><small>' + o.vs + '</small></div><div class="der">' + o.dec + '</div></div>' + (o.nota || '<div></div>') + (o.pdf) + (o.dt === undefined ? dt : o.dt) + '</div></div>' +
   '<div class="zz-pie"><span class="zres">' + o.res + '</span>' + o.btn + '</div></div></div>';
 const DEC = (s) => '<button class="btn btn-chico zz-btnr' + (s === 'd' ? ' on' : '') + '">Devolver</button><button class="btn btn-chico ' + (s === 'b' ? 'zz-btnv' : 'btn-2') + '">' + (s === 'b' ? 'Bien ✓' : 'Bien') + '</button>';
@@ -118,6 +119,16 @@ const DEC = (s) => '<button class="btn btn-chico zz-btnr' + (s === 'd' ? ' on' :
   await tomar(p, '07-ia-leyendo');
   await poner(rv({ ia: IA.no, lista: lista({ sel: 'ced', ced: 'Sin leer', cedE: 'n', rifp: 'Sin leer', rifpE: 'n', acta: 'Sin leer', actaE: 'n', asa: 'Sin leer' }), vt: 'Cédula', vs: 'Representante 1 · subida ayer por Lucía', dec: DEC(''), pdf: pdf('Cedula', '1 / 1'), dt: '', res: 'Faltan 4 por decidir', btn: '<button class="btn" disabled>Aprobar expediente</button>' }));
   await tomar(p, '08-sin-ia');
+  // Clientes: pestañas por estatus legal
+  await poner('');
+  await p.goto(H + 'clientes.html'); await p.waitForTimeout(1800); await p.addStyleTag({ content: CSS });
+  await p.evaluate(() => {
+    const f = Array.from(document.querySelectorAll('button')).find((b) => b.textContent.trim() === 'Filtros'); if(!f) return;
+    const fila = f.parentElement;
+    const T = [['Todos', 30, 1], ['Sin gestionar', 2], ['Faltan documentos', 16], ['En revisión', 1], ['Para contrato', 3], ['Contrato en curso', 1], ['Por firmar', 2], ['Firmado', 9]];
+    fila.insertAdjacentHTML('beforebegin', '<div class="zz-tabs" role="tablist" aria-label="Estatus legal">' + T.map((t) => '<span class="' + (t[2] ? 'on' : '') + '">' + t[0] + ' <i>' + t[1] + '</i></span>').join('') + '</div>');
+  });
+  await tomar(p, '20-clientes-pestanas');
   await ctx.close();
   // Abogada
   const c2 = await contexto(nav, PC, mundo);
@@ -138,5 +149,25 @@ const DEC = (s) => '<button class="btn btn-chico zz-btnr' + (s === 'd' ? ' on' :
   await l.screenshot({ path: OUT + '11-abogada-documentos.png' }); console.log('ok 11');
   await pon(rvA({ lista: listaA({ sel: 'acta', acta: 'Tiene un problema', actaE: 'd' }), vt: 'Acta constitutiva', vs: 'Solo lectura · página 2', dec: decA('p'), nota: '<div class="zz-mot"><p>¿Qué problema tiene?</p><div class="ops"><span>Está vencido</span><span>Ilegible</span><span class="on">Datos no coinciden</span><span>Falta un acta</span><span>Otro</span></div><div class="nt">El objeto de la empresa no incluye telecomunicaciones</div></div>', pdf: pdf('Acta constitutiva', '2 / 9'), res: '<b style="color:#A32117">1 con problema</b> · nada se envía hasta terminar', btn: '<button class="btn">Terminar y enviar a Marcos</button>' }));
   await l.screenshot({ path: OUT + '12-abogada-problema.png' }); console.log('ok 12');
+  // Mi trabajo de la abogada: el filtro por tipo arriba vale para todas las secciones
+  const hoy = (n) => { const x = new Date(); x.setDate(x.getDate() + n); return x.toISOString().slice(0, 10); };
+  mundo.datos.extra = [
+    { tipo: 'elaborar_contrato', clave: 'e1', cliente_id: cli[0].id, titulo: cli[0].nombre, detalle: 'PYME · en Documentos recibidos', seg: 'PYME', para: 'abogado', vence: hoy(-2), desde: hoy(-5) + 'T12:00:00Z', ref: {} },
+    { tipo: 'elaborar_contrato', clave: 'e2', cliente_id: cli[1].id, titulo: cli[1].nombre, detalle: 'Dedicado ISP · en Documentos recibidos', seg: 'Dedicado ISP', para: 'abogado', vence: hoy(1), desde: hoy(-1) + 'T12:00:00Z', ref: {} },
+    { tipo: 'seguir_firma', clave: 'f1', cliente_id: cli[2].id, titulo: cli[2].nombre, detalle: 'Dedicado corporativo · enviado a firmar hace 4 días', seg: 'Dedicado corporativo', para: 'abogado', vence: hoy(0), desde: hoy(-4) + 'T12:00:00Z', ref: {} },
+    { tipo: 'seguir_firma', clave: 'f2', cliente_id: cli[3].id, titulo: cli[3].nombre, detalle: 'PYME · enviado a firmar hace 2 días', seg: 'PYME', para: 'abogado', vence: hoy(2), desde: hoy(-2) + 'T12:00:00Z', ref: {} },
+    { tipo: 'contrato_archivo', clave: 'a1', cliente_id: cli[4].id, titulo: cli[4].nombre, detalle: 'Dedicado ISP · firmado, falta subir el archivo', seg: 'Dedicado ISP', para: 'abogado', vence: hoy(0), desde: hoy(-1) + 'T12:00:00Z', ref: {} }];
+  await l.goto(H + 'trabajo.html'); await l.waitForSelector('#cuerpo [data-hacer]', { timeout: 15000 }).catch(() => {}); await l.waitForTimeout(900); await l.addStyleTag({ content: CSS });
+  await l.evaluate(() => {
+    const cu = document.querySelector('#cuerpo'); if(!cu) return;
+    const chipsViejos = Array.from(cu.querySelectorAll('button, span')).filter((b) => /^(Todos|ISP|Corporativo|VGT|PYME)\s*\d*$/.test(b.textContent.trim()));
+    const fila = chipsViejos.length ? chipsViejos[0].parentElement : null; if(fila) fila.remove();
+    const primera = cu.querySelector('section, details, .bz-sec, .sec') || cu.firstElementChild;
+    const T = [['Todos', 5, 1], ['ISP', 2], ['Corporativo', 1], ['VGT', 0], ['PYME', 2]];
+    primera.insertAdjacentHTML('beforebegin', '<div class="zz-tabs" role="tablist" aria-label="Tipo de cliente" style="margin-top:0">' + T.map((t) => '<span class="' + (t[2] ? 'on' : '') + '">' + t[0] + ' <i>' + t[1] + '</i></span>').join('') + '<span style="border:0;background:none;color:var(--text2);font-weight:500">Vale para todas las secciones de abajo</span></div>');
+    cu.querySelectorAll('details').forEach((d) => d.open = true);
+  });
+  await l.waitForTimeout(400); await l.screenshot({ path: OUT + '21-abogada-mi-trabajo.png' }); console.log('ok 21');
+  await l.setViewportSize({ width: 1366, height: 1300 }); await l.screenshot({ path: OUT + '21b-abogada-mi-trabajo-larga.png' }); await l.setViewportSize({ width: 1366, height: 768 });
   await nav.close();
 })();

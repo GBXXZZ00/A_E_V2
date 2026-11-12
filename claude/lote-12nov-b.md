@@ -11,7 +11,7 @@ El administrador aprobó todo el lote el 12/11/2026. Ejecútalo completo, por pa
 5. Al terminar cada parte: pruebas del módulo, capturas comparadas, y se publica esa parte (el administrador pidió ver en vivo parte por parte). Batería completa y revisión propia al final del lote.
 6. Comisiones: referencia antes y después de cada parte que toque Comisiones (ver más abajo).
 
-Maquetas (en `claude/maquetas/lote-12nov-b/`):
+Maquetas (en `claude/maquetas/lote-12nov-b/`, y para las partes 6 y 7 en `claude/maquetas/revision-nueva/`):
 - `comisiones-hoja.html`: secciones 1 a 10 (Comisiones arriba y filtros, drawer de comisión, hoja de IP, cliente nuevo con OCR, teléfono, ajustes, estados de la carta, Actualizar datos, Aliados administrador, casillas del aliado).
 - `aliado-flujo.html`: el flujo general del aliado y su inicio en PC.
 - `aliado-pantallas.html`: **la referencia del aliado**: pantalla completa de PC caso por caso (8 casos) y la versión de teléfono. Manda sobre `aliado-flujo.html` y sobre la sección 9 y 10 de `comisiones-hoja.html` si hay diferencia.
@@ -113,5 +113,43 @@ Decidido por el administrador (12/11): no se identifica todo junto; cada documen
 - Referir: servicio Internet PYME fijo; teléfono de contacto y coordenadas (opcional); nota con "Escribir al administrador de contratos".
 
 ---
-## Siguiente (en diseño, NO es parte del lote 12/11 B): revisión de documentos
-Lámina del proceso actual: `claude/maquetas/revision-actual/` (capturas reales). Propuesta en discusión: `claude/maquetas/revision-nueva/` (un botón, una pantalla de revisión con lista y documento al lado, un cierre; Legal aprobado al aprobar; IA automática; abogada usa la misma pantalla para "Hay un problema"; aprobar varios clientes en Mi trabajo). No ejecutar hasta que el administrador la apruebe.
+## Parte 6. Revisión de documentos (aprobada el 12/11, maqueta `claude/maquetas/revision-nueva/`)
+Referencia visual: `revision-nueva/index.html` (capturas montadas sobre la app real) y su guion `montar-maqueta.js`, que pinta cada estado encima de la app del simulador. **Para comparar: corre el guion, corre la app nueva con los mismos datos y compara captura con captura.** El CSS que usa el guion (clases `zz-*`) es la referencia exacta de medidas: 1300 x 724 la pantalla de revisión, lista 380 px, filas de 12 px de relleno y 15 px de título, botones Devolver/Bien arriba del documento, pie con resumen y botón principal.
+Proceso actual documentado (para saber qué se reemplaza): `claude/maquetas/revision-actual/`.
+
+**Quién revisa lo decide el administrador.** La IA NO corre sola.
+- Ficha, pestaña Documentos: una sola banda arriba (la `#paso` de hoy) con "N documentos por revisar", una línea de estado y dos botones: **Que la revise la IA** (secundario, solo si la IA no ha leído) y **Revisar**. Mientras la IA lee: "Se los pasaste a la IA. Está leyendo: 3 de 4" con barra. Al terminar: "La IA ya los leyó: 3 cuadran y 1 tiene algo que mirar".
+- Se quitan de la ficha: el recuadro `.rp-linea` (N por revisar · Ver los 6 puntos), la fila `Revisar N · Aprobar seleccionados`, la tarjeta `.ia-bloque`, el panel de 6 puntos `.rp` con su "Cerrar revisión", la barra `#barraRev` con el otro "Cerrar revisión" y el visor `hojaVer` de un documento por hoja. El "Revisar" de cada casilla abre la pantalla nueva ya parada en ese documento.
+- Todo lo demás de la ficha queda igual (pestañas, Expediente, Contratos, VGT, casillas, Agregar representante/acta, Otros documentos, Drive).
+
+**Pantalla de revisión** (una hoja grande centrada con la ficha difuminada detrás):
+- Cabecera: "Revisar expediente", cliente · RIF · líder · cuándo subió; a la derecha **Abrir carpeta en Drive** y cerrar.
+- Franja de la IA (una sola): ámbar "La IA encontró N cosas" + resumen + "Ver en el acta"; verde "La IA revisó todo y cuadra"; azul "La IA está leyendo" con puntos animados y barra; gris "Estás revisando tú" con **Que la revise la IA** y su costo.
+- Izquierda, la lista agrupada como la ficha: **Representante 1, Representante 2…** (cada uno: Cédula, RIF personal, **Teléfono y correo**) y **Empresa** (RIF, Acta constitutiva, Actas de asamblea, Correo de la empresa). Cada fila: punto de estado (verde Bien, rojo Devolver, ámbar la IA vio algo, vacío sin decidir, gris ya aprobado antes) + nombre + una línea. Lo aprobado en una revisión anterior sale gris "Aprobado antes" y no se vuelve a decidir.
+- En la cabecera de cada representante: chip **Firma este** o botón **Marcar que firma**; en su detalle, **No está en la junta** y **Ya no aplica** (las mismas funciones de hoy, `marcar_rep`).
+- Derecha, el documento elegido: título, nota de la IA en una línea (ámbar si hay algo, verde si cuadra), **Devolver** y **Bien** arriba a la derecha; debajo el visor y abajo sus datos (fecha del acta, también trae, vencimiento si aplica, Reemplazar archivo).
+- Teléfono y correo: se ven como datos con Editar y se revisan igual (Bien o Devolver con motivos: el número no es del representante, no contesta, el correo rebota, el correo no es de él, otro).
+- Devolver: los motivos salen arriba del documento (no en la lista) con su nota; "Falta un acta" trae el texto de la IA. **Nada se envía al marcar**: se aplica todo al terminar.
+- Pie: resumen ("3 bien · 1 se devuelve · falta 1 · nada se envía hasta terminar") y un solo botón: **Aprobar expediente** (verde, cuando todo es Bien) o **Terminar y avisar a [líder]** (cuando hay algo devuelto). Deshabilitado mientras falte decidir algo.
+- Excepción: el "Aprobar igual (excepción)" de un punto de la IA queda en la franja con motivo (mismo `ia_excepcion`).
+- Terminar y avisar: hoja chica con qué se aprueba, qué se devuelve, en qué estatus queda y el mensaje editable; **Solo guardar** o **Guardar y enviar por WhatsApp**. Reemplaza `hojaCerrarRev` y `revision_puntos_aplicar`: un solo cierre.
+- Estatus: al abrir la revisión, Documentos en revisión; al aprobar, **Documentos recibidos + Legal aprobado** (sin el panel de 6 puntos; los puntos de la IA, si la hubo, quedan guardados como hoy). Al devolver, Documentos pendientes. Final aprobado: "Expediente aprobado" con **Avisar a [líder]** y **Siguiente cliente**.
+- Teclado: flechas arriba/abajo cambian de documento; B = Bien; D = Devolver.
+
+**El visor** (importante, el administrador revisa por aquí):
+- PDF en el visor del navegador (iframe con el blob, como hoy) ocupando todo el alto disponible; abre en la página que diga la IA (`#page=N`, usar `pagina_inicio` o la página del punto). Imágenes ajustadas al ancho con zoom.
+- Mientras miras uno, se baja en segundo plano el siguiente (`drive_archivo`) para que al tocar Bien ya esté listo. Esqueleto mientras carga; error claro con Reintentar y "Abrir archivo".
+- No se dibujan recuadros sobre el documento (la IA no da posición, solo página).
+
+**Mi trabajo, Revisar en lote**: se aprueba por cliente, no por documento; solo se pueden marcar los clientes donde la IA dice que cuadra; los demás se abren con Revisar.
+
+**Abogada**:
+- Ficha: "Tu paso" igual, con el botón principal **Ver documentos y empezar** (abre la misma pantalla en solo lectura).
+- En la pantalla: lista de documentos aprobados, en cada uno **Tiene un problema** (marca, no envía); pie con **Hay un problema** (lo que no es de un documento: pedir otro o solo avisar) y **Empecé el contrato** (pasa a **Contrato en curso**). Con algo marcado, el pie dice **Terminar y enviar a [administrador]**: un solo aviso con todo, el contrato se detiene y el cliente vuelve a Documentos pendientes (mismo `legal_observar`).
+- A la abogada no le sale "por revisar" en el expediente.
+
+**No se pierde**: motivos de devolución, Pedir otro documento (en la lista "¿Falta algo que no está?" con `requerimiento_crear`), fecha del acta, también trae, Reemplazar archivo, excepción con motivo, mensaje al líder, bitácora por documento, historial de revisiones, Comparar IA y Legal, Drive.
+
+## Parte 7. Clientes por estatus legal y Mi trabajo de la abogada (aprobada el 12/11)
+- Clientes: fila de pestañas arriba de la lista (encima de "Filtros"): Todos, Sin gestionar, Faltan documentos, En revisión, Para contrato (Documentos recibidos), Contrato en curso, Por firmar, Firmado, cada una con su número según la tarjeta elegida (PYME, Dedicado corporativo, Dedicado ISP). Un toque filtra; se recuerda en la dirección. Para el administrador y para la abogada. Maqueta: `revision-nueva/img/20-clientes-pestanas.jpg`.
+- Mi trabajo de la abogada: los chips Todos, ISP, Corporativo, VGT, PYME suben arriba de todas las secciones y filtran todas (Por elaborar, En curso, Enviado a firmar, Firmado falta subir, Vencen). Cada fila de cada sección lleva su etiqueta de tipo (hoy solo la lleva Por elaborar y a veces dice PYME en un ISP: revisar `tipoDe`). Los pendientes por firmar se ven en "Enviado a firmar". Maqueta: `revision-nueva/img/21b-abogada-mi-trabajo-larga.jpg`.
