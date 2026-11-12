@@ -111,3 +111,7 @@ Decidido por el administrador (12/11): no se identifica todo junto; cada documen
 - Excepción negada: no es "No procede" (si faltan documentos nunca es No procede): vuelve a "La excepción no se aprobó" con Subir el acta.
 - En todo caso negativo: "Escribir al administrador de contratos".
 - Referir: servicio Internet PYME fijo; teléfono de contacto y coordenadas (opcional); nota con "Escribir al administrador de contratos".
+
+---
+## Siguiente (en diseño, NO es parte del lote 12/11 B): revisión de documentos
+Lámina del proceso actual: `claude/maquetas/revision-actual/` (capturas reales). Propuesta en discusión: `claude/maquetas/revision-nueva/` (un botón, una pantalla de revisión con lista y documento al lado, un cierre; Legal aprobado al aprobar; IA automática; abogada usa la misma pantalla para "Hay un problema"; aprobar varios clientes en Mi trabajo). No ejecutar hasta que el administrador la apruebe.
