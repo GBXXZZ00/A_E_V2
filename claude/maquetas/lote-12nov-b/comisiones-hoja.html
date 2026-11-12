@@ -558,7 +558,7 @@ button{font:inherit;color:inherit;border:0;background:none;padding:0;cursor:poin
     <div class="h-cab"><div><h2>Nuevo cliente</h2><p class="sub">Paso 2 de 2 · Completa el expediente</p></div><button class="cerrar" aria-label="Cerrar"><svg class="i"><use href="#x"/></svg></button></div>
     <div class="dos-c">
       <div class="col">
-        <div class="zona" style="padding:30px 16px"><span class="ic"><svg class="i" style="width:22px;height:22px"><use href="#sub"/></svg></span><b>Arrastra todos los documentos juntos</b><small>La app pone cada uno en su casilla. También puedes soltar uno sobre su casilla.</small><button class="btn s chico" style="margin-top:8px">Elegir archivos</button></div>
+        <div class="banda azul"><b>Suelta cada archivo en su casilla</b>Si uno trae varios documentos, usa "Viene en otro archivo" en la casilla que falta.</div>
         <div class="campo-l"><label>Teléfono de contacto</label><div class="campo lleno">0414 000 0000</div></div>
         <div class="campo-l"><label>Correo</label><div class="campo lleno">cliente@ejemplo.com</div></div>
       </div>
@@ -573,40 +573,44 @@ button{font:inherit;color:inherit;border:0;background:none;padding:0;cursor:poin
     <div class="pie" style="justify-content:flex-end"><button class="btn s" style="flex:none;min-width:180px">Guardar lo que llevo</button><button class="btn" style="flex:none;min-width:180px;opacity:.45">Enviar</button></div>
   </div>
   <div class="col" style="width:300px">
-    <p class="nota"><b>Paso 1:</b> además de escribir el RIF, se puede soltar el archivo del RIF. El OCR lee el número y revisa solo si está disponible. Ese archivo ya queda en su casilla en el paso 2.</p>
-    <p class="nota"><b>Arrastrar en toda la hoja:</b> si sueltas sobre cualquier parte, entra a la zona general. Al pasar un archivo por encima, se marca la casilla que lo recibe.</p>
+    <p class="nota"><b>Paso 1:</b> la casilla del RIF acepta soltar el archivo; se lee y revisa disponibilidad como hoy.</p>
+    <p class="nota"><b>Arrastrar:</b> al pasar un archivo por encima de una casilla, se marca la que lo recibe (sección 10).</p>
     <p class="nota"><b>En teléfono</b> queda igual que hoy (una columna), con "Elegir archivos" grande.</p>
   </div>
   </div>
 </section>
 
 
-<!-- ================= 10. ALIADO: SUBIR TODO JUNTO ================= -->
+<!-- ================= 10. ALIADO: UNA CASILLA POR DOCUMENTO ================= -->
 <section class="col">
-  <span class="et">10 · Aliado: suelta todo junto y ve cómo se analiza cada uno</span>
-  <h2 class="sec-t">Primero el RIF, después el resto, reconocidos por lo que dicen, no por el nombre</h2>
-  <p class="sec-s">Como en Actualizar datos: una fila por archivo con su barra. La app lee cada archivo y decide qué es; el nombre del archivo no importa.</p>
+  <span class="et">10 · Aliado: cada documento en su casilla, y combinados en un toque</span>
+  <h2 class="sec-t">Cada casilla recibe su archivo y muestra cómo se analiza</h2>
+  <p class="sec-s">Sin adivinar por el nombre. Se suelta o se elige el archivo en su casilla; la casilla muestra la barra, después "Leyendo" y al final si corresponde.</p>
   <div class="fila-l" style="margin-top:8px">
   <div class="form-a" style="width:760px">
-    <div class="h-cab"><div><h2>Nuevo cliente</h2><p class="sub">Suelta todos los documentos del cliente</p></div><button class="cerrar" aria-label="Cerrar"><svg class="i"><use href="#x"/></svg></button></div>
+    <div class="h-cab"><div><h2>Nuevo cliente</h2><p class="sub">Paso 2 de 2 · Completa el expediente</p></div><button class="cerrar" aria-label="Cerrar"><svg class="i"><use href="#x"/></svg></button></div>
     <div class="h-cuerpo">
-      <div class="banda verde"><b>RIF encontrado: Comercial Ejemplo, C.A. · J-40123456-7</b>Está disponible. Seguimos con los demás archivos.</div>
-      <div class="up" style="width:100%">
-        <div class="up-f"><span><b>IMG_20261112_0931.jpg</b><small>Es el RIF de la empresa · va en su casilla</small></span><div><div class="barra ok"><i></i></div><div class="pc-t" style="color:var(--verde);font-weight:700">Listo</div></div></div>
-        <div class="up-f"><span><b>documentos juan.pdf</b><small>Trae 2: cédula (pág. 1) y RIF del representante (pág. 2)</small></span><div><div class="barra ok"><i></i></div><div class="pc-t" style="color:var(--verde);font-weight:700">Listo · va en 2 casillas</div></div></div>
-        <div class="up-f"><span><b>escaneo003.pdf</b><small>18 páginas</small></span><div><div class="barra ind"><i></i></div><div class="pc-t"><span class="giro"></span>Leyendo: parece un acta</div></div></div>
-        <div class="up-f"><span><b>WhatsApp Image 2026-11-12.jpeg</b><small>En espera</small></span><div><div class="barra"><i style="transform:scaleX(.08)"></i></div><div class="pc-t">Va después</div></div></div>
-        <div class="up-f" style="background:#FFFBF2"><span><b>foto.png</b><small class="mal" style="color:var(--ambar);font-weight:600">No pudimos saber qué es</small></span><div style="display:flex;gap:6px;flex-wrap:wrap"><span class="pl" style="height:32px;font-size:12.5px">Acta</span><span class="pl" style="height:32px;font-size:12.5px">Cédula</span><span class="pl" style="height:32px;font-size:12.5px">Otro</span></div></div>
+      <div class="tarj">
+        <div class="cas"><span class="e ok"></span><span class="tx"><b>RIF de la empresa</b><small style="color:var(--verde);font-weight:600">Leído · J-40123456-7 · corresponde</small></span><button class="enlace">Ver</button></div>
+        <div class="cas" style="display:grid;grid-template-columns:22px 1fr 200px;gap:12px"><span class="e"></span><span class="tx"><b>Acta constitutiva</b><small>escaneo003.pdf</small></span><div><div class="barra"><i style="transform:scaleX(.55)"></i></div><div class="pc-t"><span class="giro"></span>Subiendo · 55 %</div></div></div>
+        <div class="cas" style="display:grid;grid-template-columns:22px 1fr 200px;gap:12px"><span class="e"></span><span class="tx"><b>Cédula del representante</b><small>documentos juan.pdf</small></span><div><div class="barra ind"><i></i></div><div class="pc-t"><span class="giro"></span>Leyendo</div></div></div>
+        <div class="cas" style="background:#F7F9FE"><span class="e ok" style="background:var(--azul);border-color:var(--azul)"></span><span class="tx"><b>RIF del representante</b><small style="color:var(--azul);font-weight:600">Viene en el mismo archivo de la cédula</small></span><button class="enlace">Quitar</button></div>
+        <div class="cas" style="background:#FFFBF2"><span class="e" style="border-color:#C98A12"></span><span class="tx"><b>Acta de asamblea</b><small style="color:var(--ambar);font-weight:600">Esto parece una cédula, no un acta. ¿Lo cambias?</small></span><button class="btn s chico">Cambiar archivo</button></div>
+        <div class="cas"><span class="e"></span><span class="tx"><b>Registro mercantil</b><small>Suelta el archivo aquí o elígelo</small></span><span class="bts" style="display:flex;gap:8px"><button class="enlace">Viene en otro archivo</button><button class="btn s chico">Subir</button></span></div>
       </div>
-      <p class="nota">Abajo siguen las casillas como hoy: se van marcando solas a medida que cada archivo queda listo.</p>
+      <div class="tarj" style="border-color:#B9C4E8">
+        <div class="f" style="background:#F7F9FE"><span class="tx"><b>¿En qué archivo viene el registro mercantil?</b><small>Elige uno que ya subiste</small></span></div>
+        <div class="f"><span class="tx"><b>escaneo003.pdf</b><small>Acta constitutiva</small></span><button class="btn chico">Está aquí</button></div>
+        <div class="f"><span class="tx"><b>documentos juan.pdf</b><small>Cédula del representante</small></span><button class="btn s chico">Está aquí</button></div>
+      </div>
     </div>
   </div>
   <div class="col" style="width:330px">
-    <p class="et">Cómo lo identifica</p>
-    <p class="nota"><b>1. Busca el RIF primero.</b> Lee todos los archivos con el OCR (gratis y rápido) y el primero que sea un RIF de empresa se revisa contra la cartera. Si el cliente no está disponible, se para ahí y no sube nada más.</p>
-    <p class="nota"><b>2. Lo demás, por lo que dice.</b> El OCR reconoce RIF y cédulas. Las actas, registros y lo dudoso pasan a la IA, que ya dice qué documento es y en qué páginas está. Es la misma lectura que hoy se hace después de subir; solo cambia el orden, así que no gasta más.</p>
-    <p class="nota"><b>3. Combinados.</b> Si un PDF trae varios (cédula y RIF, o el acta con las cédulas), no se corta: el mismo archivo queda en cada casilla que cubre, con sus páginas.</p>
-    <p class="nota"><b>4. Si no se sabe qué es,</b> pregunta con botones. Ya no lo mete en la primera casilla libre, como hace hoy.</p>
+    <p class="et">Cómo funciona</p>
+    <p class="nota"><b>Una casilla, un documento.</b> Cada casilla acepta soltar o elegir su archivo. Se quita la zona general que adivinaba por el nombre y lo ponía en la primera casilla libre.</p>
+    <p class="nota"><b>Se ve el análisis:</b> barra mientras sube, "Leyendo" mientras el OCR o la IA lo leen, y al final verde si corresponde o ámbar si parece otro documento (eso ya lo calcula la app hoy; ahora se muestra en la casilla).</p>
+    <p class="nota"><b>Combinados:</b> en la casilla que falta, "Viene en otro archivo" y eliges uno de los que ya subiste. El mismo archivo queda en las dos casillas, sin subirlo de nuevo. La revisión lo lee como combinado, como ya hace.</p>
+    <p class="nota"><b>Paso 1:</b> la casilla del RIF también acepta soltar el archivo.</p>
   </div>
   </div>
 </section>

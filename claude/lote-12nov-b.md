@@ -74,10 +74,9 @@ Reglas para todo el lote:
 - Lista agrupada por semana.
 - Formulario en PC: 920 px, dos columnas (zona de soltar y contacto a la izquierda, casillas a la derecha). Arrastrar funciona en toda la hoja, también en el paso 1 (soltar el RIF: OCR y revisión de disponibilidad; el archivo queda en su casilla). Hoy `dragover/drop` solo aceptan en paso 2. En teléfono, una columna como hoy.
 
-### Parte 5b. Aliado: soltar todo junto (maqueta 10)
-- El aliado suelta todos los archivos juntos, también en el paso 1. Una fila por archivo con barra, como en Actualizar datos: Subiendo, Leyendo, "Es el RIF de la empresa · va en su casilla", En espera, Listo.
-- **Primero el RIF:** se leen los archivos con el OCR (`ocr_leer`, gratis) hasta encontrar un RIF de empresa (o personal si es persona); ese pasa por `aliado_rif` (disponibilidad). Si no está disponible (cartera, otro, repetida) se para y no se sube lo demás.
-- **Lo demás se reconoce por el contenido, no por el nombre:** el OCR reconoce RIF, cédula y póliza; actas, registros, combinados y dudosos pasan a la IA (`ia_revisar` ya devuelve `documentos` con tipo y páginas). Es la misma lectura de hoy, adelantada: no debe gastar más. El nombre (`casillaPorNombre`) queda solo como pista mientras lee.
-- **Combinados:** el mismo archivo queda en cada casilla que cubre, con sus páginas ("Trae 2: cédula (pág. 1) y RIF del representante (pág. 2)"). No se corta el PDF.
-- **Si no se sabe qué es:** pregunta con botones de casilla. Se quita el comportamiento de hoy de meterlo en la primera casilla libre.
-- Revisar en el servidor si `ia_revisar` puede leer un archivo antes de tener casilla (modo identificar) o si hace falta una casilla temporal "por clasificar".
+### Parte 5b. Aliado: una casilla por documento y combinados (maqueta 10)
+Decidido por el administrador (12/11): no se identifica todo junto; cada documento va en su casilla (separa responsabilidades y evita retrabajo).
+- Se quita la zona general "Arrastra todos los documentos juntos" y `casillaPorNombre` (adivinaba por el nombre y metía lo desconocido en la primera casilla libre). Cada casilla acepta soltar o elegir su archivo, también la del RIF en el paso 1.
+- Cada casilla muestra su análisis: barra con % al subir, "Leyendo" mientras se lee (`vigilarN`), y al final verde "corresponde" o ámbar "Esto parece X, no Y. ¿Lo cambias?" con "Cambiar archivo" (usar la lectura que ya llega en `solicitud_estado`).
+- Combinados: en una casilla vacía, enlace "Viene en otro archivo" que muestra los archivos ya subidos de esa solicitud con "Está aquí". El mismo archivo queda en las dos casillas sin subirlo de nuevo (revisar en el servidor cómo enlazar un archivo a otra casilla; la revisión ya trata archivos con varias casillas). La casilla queda en azul "Viene en el mismo archivo de …" con "Quitar".
+- El resumen de Aliados (vista Resumen que ya existe, `Resumen.enModulo`) usa el mismo mes que la lista; la fila de números de la maqueta 9 no debe repetir lo que ya muestra el Resumen.
