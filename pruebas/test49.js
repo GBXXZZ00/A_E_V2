@@ -57,7 +57,7 @@ const cerrarHojas = async (p) => { for(let i = 0; i < 5 && await p.evaluate(() =
     const zl = await p.textContent('#hojaPorInst');
     ok(nombre + ': la orden vieja sale en Viejas, sin cliente en la app', /Sin cliente en la app/.test(zl) && /Panadería Inventada/.test(zl));
     await p.locator('#hojaPorInst .pi-t', { hasText: 'Panadería Inventada' }).locator('[data-pi-subir]').click(); await p.waitForSelector('#hojaNuevo.ver #nvRif');
-    ok(nombre + ': el panel abre con la orden, el RIF con su etiqueta arriba y el posible nombre', /9001/.test(await p.textContent('#hojaNuevo .nv-orden')) && (await p.textContent('label[for="nvRif"]')) === 'RIF' && (await p.inputValue('#nvNom')) === 'Panadería Inventada');
+    ok(nombre + ': el panel abre con la orden, el RIF con su etiqueta arriba y el posible nombre', /9001/.test(await p.textContent('#hojaNuevo .nv-ord')) && (await p.textContent('label[for="nvRif"]')) === 'RIF' && (await p.inputValue('#nvNom')) === 'Panadería Inventada');
     await p.fill('#nvRif', '12'); await p.click('[data-nv-seguir]');
     ok(nombre + ': RIF corto: error debajo del campo', /letra y los números/.test(await p.textContent('#eNvRif')));
     await p.fill('#nvRif', 'J-41888777-1'); await p.click('[data-nv-seguir]'); await p.waitForSelector('#docsNuevo [data-casilla]');

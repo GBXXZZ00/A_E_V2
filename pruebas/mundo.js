@@ -1777,6 +1777,16 @@ const RPC = {
   ip_usar(m, yo, a){ if(!['admin', 'analista'].includes(yo.rol)) return error('No tienes permiso para hacer esto'); const f = (m.datos.ipReporte || []).find((x) => x.id === Number(a.p_fila)); if(!f) return error('Esa fila del reporte ya no está');
     for(const c of m.datos.clientes){ const sv = c.servicios.find((x) => x.id === Number(a.p_servicio)); if(sv){ sv.ip = f.ip; sv.ip_mano = true; f.cuadro = true; (m.bitacora = m.bitacora || []).push({ accion: 'servicio_ip', registro: sv.id }); return null; } } return error('Ese servicio no existe'); },
   orden_horas_guardar(m, yo, a){ if(yo.rol !== 'admin') return error('No tienes permiso para hacer esto'); const n = Number(a.p_horas); if(!Number.isInteger(n) || n < 1 || n > 720) return error('Escribe entre 1 y 720 horas'); m.horasAlerta = n; return n; },
+  // Lote 12/11 B: busca el RIF sin crear nada (como public.cliente_rif_buscar)
+  cliente_rif_buscar(m, yo, a){
+    if(!['admin', 'analista', 'lider'].includes(yo.rol)) return error('No tienes permiso para hacer esto');
+    const num = String(a.p_rif || '').replace(/\D/g, '').replace(/^0+/, ''); if(!/^[1-9]\d{4,9}$/.test(num)) return error('Escribe un RIF o cédula válido');
+    const ya = m.datos.clientes.find((c) => c.doc_numero === num);
+    if(ya){ if(yo.rol === 'lider' && ya.lider_id !== yo.id) return { estado: 'otro' }; return { estado: 'existe', cliente_id: ya.id, nombre: ya.nombre, estatus: ya.estatus }; }
+    const nom = String(a.p_nombre || '').trim(); const clave = norm(nom.split(' ').slice(0, 2).join(' '));
+    const par = m.datos.clientes.filter((c) => c.provisional && !c.unido_a && clave.length >= 4 && norm(c.nombre).indexOf(clave) >= 0).slice(0, 3);
+    return { estado: 'nuevo', parecidos: par.map((c) => ({ id: c.id, nombre: c.nombre, lider: c.lider || 'Por asignar' })) };
+  },
   cliente_nuevo(m, yo, a){
     if(!['admin', 'analista', 'lider'].includes(yo.rol)) return error('No tienes permiso para hacer esto');
     const num = String(a.p_rif || '').replace(/\D/g, '').replace(/^0+/, ''); const nom = String(a.p_nombre || '').trim().replace(/\s+/g, ' ');
@@ -1784,7 +1794,7 @@ const RPC = {
     if(!nom) return error('Escribe el posible nombre del cliente');
     const tipo = (/^[VEJGPC]/i.exec(String(a.p_rif || '').trim()) || ['J'])[0].toUpperCase();
     const ya = m.datos.clientes.find((c) => c.doc_numero === num);
-    if(ya){ if(yo.rol === 'lider' && ya.lider_id !== yo.id) return error('Ese RIF ya es un cliente de ' + (ya.lider || 'otro líder') + '. Pídele al administrador que lo revise'); return { cliente_id: ya.id, nombre: ya.nombre, existe: true }; }
+    if(ya){ if(yo.rol === 'lider' && ya.lider_id !== yo.id) return error('Ese RIF ya es de otro líder. Pídele al administrador que lo revise.'); return { cliente_id: ya.id, nombre: ya.nombre, existe: true }; }
     const clave = norm(nom.split(' ').slice(0, 2).join(' '));
     if(a.p_parecido === null || a.p_parecido === undefined){
       const par = m.datos.clientes.filter((c) => c.provisional && !c.unido_a && clave.length >= 4 && norm(c.nombre).indexOf(clave) >= 0).slice(0, 3);

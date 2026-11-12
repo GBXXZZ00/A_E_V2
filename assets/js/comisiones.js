@@ -458,7 +458,7 @@
   // Por instalar y Subir documentos de un cliente nuevo viven en por-instalar.js; al terminar se recarga la lista
   function abrirExtra(cual){
     if(cual === 'por_instalar' && window.PorInstalar) window.PorInstalar.abrir({ yo, alCambiar: tras });
-    else if(cual === 'nuevo' && window.ClienteNuevo) window.ClienteNuevo.abrir({ yo, alCambiar: tras });
+    else if(cual === 'nuevo' && window.ClienteNuevo) window.ClienteNuevo.abrir({ yo, alCambiar: tras, alPendientes: () => { filtro = 'pendientes'; seg = 'inst'; desde = ''; hasta = ''; guardarUrl(); if(d) pintar(); } });
     else if(cual === 'sin_lider' && window.PorInstalar) window.PorInstalar.sinLider({ yo });
   }
   // Columnas del Excel del corte (para planta externa). Para cambiar el orden basta mover las líneas.
