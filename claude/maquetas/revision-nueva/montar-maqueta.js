@@ -122,12 +122,14 @@ const DEC = (s) => '<button class="btn btn-chico zz-btnr' + (s === 'd' ? ' on' :
   // Clientes: pestañas por estatus legal
   await poner('');
   await p.goto(H + 'clientes.html'); await p.waitForTimeout(1800); await p.addStyleTag({ content: CSS });
-  await p.evaluate(() => {
+  const cuenta = {}; (mundo.datos.clientes || []).forEach((c) => { cuenta[c.estatus] = (cuenta[c.estatus] || 0) + 1; });
+  await p.evaluate((cu) => {
     const f = Array.from(document.querySelectorAll('button')).find((b) => b.textContent.trim() === 'Filtros'); if(!f) return;
-    const fila = f.parentElement;
-    const T = [['Todos', 30, 1], ['Sin gestionar', 2], ['Faltan documentos', 16], ['En revisión', 1], ['Para contrato', 3], ['Contrato en curso', 1], ['Por firmar', 2], ['Firmado', 9]];
-    fila.insertAdjacentHTML('beforebegin', '<div class="zz-tabs" role="tablist" aria-label="Estatus legal">' + T.map((t) => '<span class="' + (t[2] ? 'on' : '') + '">' + t[0] + ' <i>' + t[1] + '</i></span>').join('') + '</div>');
-  });
+    const E = window.Comun.ESTATUS; const tot = Object.values(cu).reduce((a, b) => a + b, 0);
+    const col = { gris: '#8A929C', azul: '#1F45C4', rojo: '#A32117', ambar: '#C98A12', verde: '#0F6642', morado: '#5B3AA6' };
+    const tabs = '<span class="on">Todos <i>' + tot + '</i></span>' + Object.keys(E).map((k) => '<span><b style="width:8px;height:8px;border-radius:50%;background:' + (col[E[k].c] || '#8A929C') + ';display:inline-block"></b>' + E[k].t + ' <i>' + (cu[k] || 0) + '</i></span>').join('');
+    f.parentElement.insertAdjacentHTML('beforebegin', '<p style="margin:14px 0 6px;font-size:12px;font-weight:700;letter-spacing:.06em;color:var(--text2);text-transform:uppercase">Estatus legal</p><div class="zz-tabs" role="tablist" aria-label="Estatus legal" style="margin-top:0">' + tabs + '</div>');
+  }, cuenta);
   await tomar(p, '20-clientes-pestanas');
   await ctx.close();
   // Abogada
