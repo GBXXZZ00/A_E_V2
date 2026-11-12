@@ -1038,5 +1038,8 @@
     if(window.Resumen && (modo === 'admin' || modo === 'equipo')) window.Resumen.enModulo({ modulo: 'aliados', yo: p });   // lote 27/10
     const s = Number(new URLSearchParams(location.search).get('s')) || 0;
     if(s){ resPara = modo === 'aliado' ? s : null; abrirSol(s); }
+    // Lote 12/11 B: desde Mi trabajo, el referido abre su hoja cuando cargó la lista
+    const rf = Number(new URLSearchParams(location.search).get('ref')) || 0;
+    if(rf){ let n = 0; const t = setInterval(() => { n++; if((fuente().referidos || []).some((y) => y.id === rf)){ clearInterval(t); abrirForm('ref', { id: rf }); } else if(n > 40) clearInterval(t); }, 250); }
   }, (p) => { yo = p; });
 })();

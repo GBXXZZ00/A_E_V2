@@ -407,12 +407,19 @@
     abierto = { k: kDe(f), f };
     if(f.tipo === 'gestion'){ window.Gestiones.abrir(ref.gestion, { cliente: f.cliente_id, alCerrar: cargar }); return; }
     if(ref.cambio){ location.href = 'migraciones.html?f=' + ({ cambio_emitir: 'por_emitir', sin_registro: 'sin_registro', cambio_revisar: 'por_revisar', planilla: 'por_revisar' }[f.tipo] || '') + '&c=' + encodeURIComponent(ref.cambio); return; }
-    if(f.tipo === 'cerrar_corte' || ((f.tipo === 'certificar' || f.tipo === 'sin_cliente' || f.tipo === 'sin_servicio' || f.tipo === 'por_asignar') && !f.cliente_id)){ location.href = 'comisiones.html'; return; }
+    // Lote 12/11 B, parte 1: las tareas de comisión abren el mismo drawer de Comisiones; las que no tienen cliente caen en su sitio exacto
+    const corteQ = ref.corte && /^\d{4}-\d{2}/.test(ref.corte) ? '&c=' + String(ref.corte).slice(0, 7) : '';
+    if(f.tipo === 'cerrar_corte'){ location.href = 'comisiones.html?cierre=1'; return; }
+    if(f.tipo === 'por_asignar' && !f.cliente_id){ location.href = 'comisiones.html?f=asignar' + corteQ; return; }
+    if((f.tipo === 'certificar' || f.tipo === 'sin_cliente' || f.tipo === 'sin_servicio') && !f.cliente_id){ location.href = 'comisiones.html?f=' + (f.tipo === 'certificar' ? 'falta' : 'asignar') + corteQ; return; }
+    const inst = Number(ref.instalacion) || (['carta_enviar', 'venta_falta'].indexOf(f.tipo) >= 0 && /^\d+$/.test(String(f.clave)) ? Number(f.clave) : 0);
+    const deCom = ['carta_enviar', 'por_enviar', 'sin_ip', 'revisar_pago', 'certificar', 'por_asignar'].indexOf(f.tipo) >= 0 || (f.tipo === 'venta_falta' && ref.legal !== false);
+    if(deCom && inst && f.cliente_id && window.ComHoja){ window.ComHoja.abrir(inst, f.cliente_id, { yo, carta: esCartaT(f) || f.tipo === 'sin_ip', ip: f.tipo === 'sin_ip', alCerrar: alCerrarFicha }); return; }
     if(f.tipo === 'aliado_permisos'){ location.href = 'aliados.html'; return; }
     if(f.tipo === 'aliado_sin_permiso'){ location.href = 'aliados.html?t=sinp'; return; }
     if(f.tipo === 'alerta_carga'){ location.href = ref.no_aparece ? 'clientes.html' : 'actualizar.html'; return; }
     if(f.tipo === 'ordenes_atrasadas' || ((f.tipo === 'orden_atrasada' || f.tipo === 'por_instalar') && !f.cliente_id)){ location.href = 'comisiones.html?t=por_instalar'; return; }
-    if(f.tipo === 'referido' && !f.cliente_id){ location.href = 'aliados.html'; return; }
+    if(f.tipo === 'referido' && !f.cliente_id){ location.href = 'aliados.html' + (/^\d+$/.test(String(f.clave)) ? '?ref=' + f.clave : ''); return; }
     if(!f.cliente_id){ location.href = 'comisiones.html'; return; }
     const o = { yo, alCerrar: alCerrarFicha };
     if(f.tipo === 'carta_enviar' && ref.servicio){ o.tab = 'datos'; o.enviar = ref.servicio; }

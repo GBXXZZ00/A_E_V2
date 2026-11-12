@@ -5,6 +5,9 @@
   'use strict';
   const { $, esc, ic, rpc, toast, cache, esqueleto, vacio, fecha, mes, capital, plural, chipEstatus, docFmt, abrirHoja, cerrarHoja, hojaAbierta, casilla, MOTIVOS, primerNombre, dia, hora, normalizeStr } = window.Comun;
   const S = window.Sesion;
+  // Lote 12/11 B, parte 1: fuera de comisiones.html (Mi trabajo) solo se monta la hoja de la comisión (window.ComHoja)
+  const SOLO = !document.getElementById('lista');
+  let alCerrarSolo = null;
   const FILTROS = [
     { id: 'todos', t: 'Todas' }, { id: 'comisionan', t: 'Comisionan' }, { id: 'legal', t: 'Falta legal' }, { id: 'pago', t: 'Sin pago' },
     { id: 'falta', t: 'Les falta algo' }, { id: 'carta', t: 'Carta por enviar' }, { id: 'ultimo', t: 'Del corte anterior' }, { id: 'pendientes', t: 'Pendientes por instalar' }, { id: 'asignar', t: 'Por asignar' }, { id: 'subir', t: 'Archivos por subir' }, { id: 'eventos', t: 'Eventos' }
@@ -29,6 +32,7 @@
     const t = u.get('t') || '';
     seg = t === 'cartas' || t === 'cambios' ? t : 'inst';
     if(t === 'por_asignar' || t === 'sin_lider') filtro = 'asignar';
+    pedirCierre = u.get('cierre') === '1';
     pedidoInicial = ['instalar', 'sin_instalar', 'por_instalar'].indexOf(t) >= 0 ? 'por_instalar' : t === 'nuevo' ? 'nuevo' : '';
     const c = u.get('c'); corte = /^\d{4}-(0[1-9]|1[0-2])/.test(c || '') ? c.slice(0, 7) + '-01' : '';
   }
@@ -553,6 +557,7 @@
   }
 
   async function cargar(){
+    if(SOLO) return cargarSolo();
     const mio = ++pedido; const clave = 'comisiones4:' + (corte || 'actual');
     const guardado = cache.leer(clave);
     if(guardado && guardado.rol === yo.rol){ d = guardado; pintar(); }
@@ -564,6 +569,8 @@
       pintar(); guardarUrl(); if(K && K.F) pintarComision();
       // Lote 10/11 D11: el aviso "Descargaste la carta de X" abre su hoja para marcarla
       if(cartaUrl){ const f = todasCorte().find((x) => String(x.instalacion_id) === cartaUrl); cartaUrl = ''; if(f) abrirComision(f.instalacion_id, f.cliente_id, true); }
+      // Lote 12/11 B: desde Mi trabajo, "Cerrar el corte" cae en el cierre
+      if(pedirCierre){ pedirCierre = false; if((d.puedo || {}).certificar && !d.certificado) abrirCertificar(); }
       cargarMig(mio);
     } catch (e) {
       if(mio !== pedido) return;
@@ -571,6 +578,17 @@
       toast(e.message, 'error');
     }
   }
+
+  // Fuera de Comisiones: los datos del corte en curso, sin pintar la lista
+  async function cargarSolo(){
+    const clave = 'comisiones4:actual'; const g = cache.leer(clave);
+    if(g && yo && g.rol === yo.rol && !d){ d = g; }
+    try { const r = await rpc('comisiones_lista', { p_corte: null }); d = r; d.filas = d.filas || []; d.aliados = d.aliados || []; d.pendientes = d.pendientes || []; cache.guardar(clave, d); }
+    catch (e) { if(!d) toast(e.message, 'error'); }
+    if(K && K.F && document.querySelector('#hojaComision.ver')) pintarComision();
+  }
+  let pedirCierre = false;
+  window.ComHoja = { abrir(inst, cliente, o){ o = o || {}; if(o.yo) yo = o.yo; alCerrarSolo = o.alCerrar || null; abrirComision(inst, cliente, !!o.carta); if(SOLO) cargarSolo(); } };
 
   // ---------- Hoja corta de comisión: solo lo que decide la comisión, con gestión ----------
   let K = null;   // { inst, cliente, F }
@@ -581,12 +599,12 @@
     h.setAttribute('role', 'dialog'); h.setAttribute('aria-modal', 'true'); h.setAttribute('aria-labelledby', 'tCom'); h.setAttribute('aria-hidden', 'true');
     h.innerHTML = '<div class="asa" aria-hidden="true"></div><div class="ficha-cab" id="cabCom"></div><div class="ficha-cuerpo" id="cuerpoCom"></div>';
     document.body.appendChild(h); window.Comun.prepararHojas();
-    h.addEventListener('hoja-cerrada', () => { K = null; profAbierto = false; });
+    h.addEventListener('hoja-cerrada', () => { K = null; profAbierto = false; if(SOLO && alCerrarSolo){ const f = alCerrarSolo; setTimeout(f, 0); } });
     h.addEventListener('toggle', (e) => { if(e.target.classList && e.target.classList.contains('prof')) profAbierto = e.target.open; }, true);
   }
   function abrirComision(inst, cliente, carta){
     montarHoja();
-    const f = d.filas.concat(d.aliados || []).find((x) => String(x.instalacion_id) === String(inst)) || (d.eventos || []).find((x) => String(x.instalacion_id) === String(inst)) || {};
+    const f = !d ? {} : d.filas.concat(d.aliados || []).find((x) => String(x.instalacion_id) === String(inst)) || (d.eventos || []).find((x) => String(x.instalacion_id) === String(inst)) || {};
     K = { inst: Number(inst), cliente: Number(cliente), F: null, carta: !!carta }; profAbierto = false;
     $('cabCom').innerHTML = '<div class="f-cab"><div class="tx"><h2 class="nom" id="tCom">' + esc(f.nombre || 'Cliente') + '</h2><p class="dat">' + esc([f.sucursal && f.codigo ? f.sucursal + '-' + f.codigo : f.codigo, f.instalada_en ? 'Instalado el ' + fecha(f.instalada_en) : ''].filter(Boolean).join(' · ')) + '</p></div>' +
       '<button type="button" class="cerrar" data-cierra="1" aria-label="Cerrar">' + ic('x') + '</button></div>' +
@@ -870,7 +888,7 @@
   // ---------- Hojas pequeñas: orden y dueño, excepción y certificar ----------
   function hojaChica(idHoja, idTitulo){
     let h = $(idHoja);
-    if(!h){ h = document.createElement('section'); h.id = idHoja; h.className = 'hoja'; h.setAttribute('role', 'dialog'); h.setAttribute('aria-modal', 'true'); h.setAttribute('aria-labelledby', idTitulo); h.setAttribute('aria-hidden', 'true'); document.body.appendChild(h); window.Comun.prepararHojas(); }
+    if(!h){ h = document.createElement('section'); h.id = idHoja; h.className = 'hoja hoja-com'; h.setAttribute('role', 'dialog'); h.setAttribute('aria-modal', 'true'); h.setAttribute('aria-labelledby', idTitulo); h.setAttribute('aria-hidden', 'true'); document.body.appendChild(h); window.Comun.prepararHojas(); }
     return h;
   }
   const cabHoja = (idTitulo, titulo, sub) => '<div class="cab"><div><h2 id="' + idTitulo + '">' + esc(titulo) + '</h2>' + (sub ? '<p class="sub-hoja">' + esc(sub) + '</p>' : '') + '</div><button type="button" class="cerrar" data-cierra="1" aria-label="Cerrar">' + ic('x') + '</button></div>';
@@ -878,7 +896,7 @@
   let A = null;   // { inst, ordenes, tocado }
   function abrirAsignar(){
     if(!K || !K.F) return;
-    const f = d.filas.find((x) => Number(x.instalacion_id) === K.inst) || {}; const i = (K.F.comision || []).find((x) => Number(x.id) === K.inst) || {};
+    const f = (d ? d.filas : []).find((x) => Number(x.instalacion_id) === K.inst) || {}; const i = (K.F.comision || []).find((x) => Number(x.id) === K.inst) || {};
     A = { inst: K.inst, ordenes: null, tocado: false, actual: f.orden_id || null };
     const duenos = d.duenos || []; const mio = normalizeStr(i.dueno);
     hojaChica('hojaAsignar', 'tAsig').innerHTML = cabHoja('tAsig', 'Orden y dueño', K.F.cliente.nombre) + '<form id="formAsig" novalidate>' +
@@ -964,7 +982,7 @@
     if(!K || !K.F) return;
     hojaChica('hojaExc', 'tExc').innerHTML = cabHoja('tExc', 'Excepción de comisión', K.F.cliente.nombre) + '<form id="formExc" novalidate>' +
       '<label class="rotulo" for="excMotivo">Motivo</label><textarea class="area corta" id="excMotivo" maxlength="500" data-foco></textarea>' +
-      '<p class="nota-chica">Comisiona en ' + esc(nombreCorte(d.corte)) + ' aunque le falte Legal o el pago. El líder verá el motivo.</p>' +
+      '<p class="nota-chica">Comisiona en ' + esc(nombreCorte(d ? d.corte : ((K.F.comision || []).find((x) => Number(x.id) === K.inst) || {}).corte)) + ' aunque le falte Legal o el pago. El líder verá el motivo.</p>' +
       '<div class="error" id="eExc" role="alert"></div><div class="acciones"><button type="submit" class="btn btn-ancho" id="excGuardar">Dar excepción</button></div></form>';
     abrirHoja('hojaExc');
   }
@@ -998,7 +1016,9 @@
   function alExpediente(o){ if(!K) return; window.Ficha.abrir(K.cliente, Object.assign({ yo, alCerrar: tras }, o || {})); }
   function tras(){ cache.borrarTodo(); if(K) cargarComision(); cargar(); }
 
+  const enHojaCom = (t) => !!(t && t.closest && t.closest('#hojaComision, .hoja-com'));
   document.addEventListener('click', (e) => {
+    if(SOLO && !enHojaCom(e.target)) return;
     const f = e.target.closest('#filtros [data-filtro], #alertas [data-filtro]');
     if(f){ if(f.closest('#alertas') && !porAsignar()){ abrirExtra('sin_lider'); return; }
       filtro = filtro === f.dataset.filtro && f.closest('#alertas') ? 'todos' : f.dataset.filtro; seg = 'inst'; guardarUrl(); if(d) pintar(); else pintarFiltros(); return; }
@@ -1092,7 +1112,7 @@
       rpc('corte_descertificar', { p_corte: d.corte }).then(() => { toast('Certificación quitada'); cache.borrarTodo(); cargar(); }).catch((err) => { toast(err.message, 'error'); if(document.contains(b)) b.disabled = false; }); return; }
     if(t.closest('#asigCambiar') && K){ abrirAsignar(); return; }
     if((b = t.closest('#asigConfirmar')) && K && K.F){
-      const f = d.filas.find((x) => Number(x.instalacion_id) === K.inst) || {}; const i = (K.F.comision || []).find((x) => Number(x.id) === K.inst) || {};
+      const f = (d ? d.filas : []).find((x) => Number(x.instalacion_id) === K.inst) || {}; const i = (K.F.comision || []).find((x) => Number(x.id) === K.inst) || {};
       if(!f.orden_id || !i.dueno){ abrirAsignar(); return; }
       asignar(f.orden_id, i.dueno, b); return; }
     if(t.closest('#asigBuscar') && A){ buscarOrdenes($('asigBusca').value.trim()); return; }
@@ -1126,6 +1146,7 @@
   // Mientras se sube desde aquí, la casilla dice "Subiendo"
   document.addEventListener('ficha-subida', () => { if(K && K.F && document.querySelector('#hojaComision.ver')) pintarComision(); });
   document.addEventListener('submit', (e) => {
+    if(SOLO && !enHojaCom(e.target)) return;
     if(e.target.id === 'formMarcar'){ e.preventDefault(); guardarMarcarCarta(e.target); return; }
     if(e.target.id === 'formAsig' && A && K){ e.preventDefault(); const er = $('eAsig'); er.textContent = '';
       const m = document.querySelector('#asigOrdenes input:checked'); const dueno = $('asigDueno').value;
@@ -1159,7 +1180,7 @@
     if(e.target.id === 'formExc' && K){ e.preventDefault(); const er = $('eExc'); er.textContent = ''; const m = $('excMotivo').value.trim(); const b = $('excGuardar');
       if(m.length < 5){ er.textContent = 'Escribe el motivo de la excepción'; $('excMotivo').focus(); return; }
       b.disabled = true; b.textContent = 'Guardando…';
-      rpc('instalacion_excepcion', { p_instalacion: K.inst, p_corte: d.corte, p_motivo: m }).then(() => { toast('Excepción guardada'); if(hojaAbierta() === 'hojaExc') cerrarHoja(); tras(); })
+      rpc('instalacion_excepcion', { p_instalacion: K.inst, p_corte: d ? d.corte : null, p_motivo: m }).then(() => { toast('Excepción guardada'); if(hojaAbierta() === 'hojaExc') cerrarHoja(); tras(); })
         .catch((err) => { er.textContent = err.message; b.disabled = false; b.textContent = 'Dar excepción'; }); }
   });
   document.addEventListener('change', (e) => {
@@ -1175,6 +1196,7 @@
   });
   document.addEventListener('keydown', (e) => { if(e.key === 'Enter' && e.target.id === 'asigBusca'){ e.preventDefault(); if(A) buscarOrdenes(e.target.value.trim()); } });
   let tBusca = null;
+  if(SOLO) return;
   $('busca').addEventListener('input', () => { clearTimeout(tBusca); tBusca = setTimeout(() => { busca = $('busca').value.trim(); guardarUrl(); if(d) pintarLista(); }, 140); });
   $('corte').addEventListener('change', () => { corte = $('corte').value; d = null; cargar(); });
 
