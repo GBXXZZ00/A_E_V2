@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Maqueta 12/11 B · Comisiones: hoja, IP y cliente nuevo</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<style>
+/* Maqueta 12/11 B. Mismos colores, letra y medidas de la app (assets/css). Datos inventados. */
+:root{--bg:#fff;--line:#E3E6EA;--text:#111315;--text2:#5B636E;--text3:#69717C;--surface-2:#F5F6F7;--surface-3:#ECEEF1;--accent:#1B3A9E;--acc-bg:#E8ECF9;
+  --rojo-bg:#FCEDEB;--rojo:#A32117;--ambar-bg:#FBF1DC;--ambar:#754B00;--azul-bg:#E8EEFF;--azul:#1F45C4;--verde-bg:#E7F5EE;--verde:#0F6642;--wa:#128C4B;--pill:999px;
+  --ease-out:cubic-bezier(0.23,1,0.32,1)}
+*{box-sizing:border-box}
+body{margin:0;background:#EEF0F2;font-family:Inter,system-ui,sans-serif;color:var(--text);font-size:14px;-webkit-font-smoothing:antialiased}
+h1,h2,h3,p{margin:0}
+button{font:inherit;color:inherit;border:0;background:none;padding:0;cursor:pointer}
+.lienzo{padding:36px 40px 80px;display:flex;flex-direction:column;gap:56px;width:max-content}
+.fila-l{display:flex;gap:36px;align-items:flex-start}
+.col{display:flex;flex-direction:column;gap:12px}
+.et{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text2)}
+.nota{font-size:12.5px;color:var(--text2);line-height:1.5;max-width:600px}
+.nota b{color:var(--text)}
+.sec-t{font-size:22px;font-weight:800;letter-spacing:-.02em}
+.sec-s{font-size:14px;color:var(--text2);margin-top:4px;max-width:760px}
+.chip{display:inline-flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:var(--pill);font-size:12px;font-weight:600;white-space:nowrap;background:var(--surface-2);color:var(--text2)}
+.rojo{background:var(--rojo-bg);color:var(--rojo)} .ambar{background:var(--ambar-bg);color:var(--ambar)} .azul{background:var(--azul-bg);color:var(--azul)} .verde{background:var(--verde-bg);color:var(--verde)}
+.i{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+/* botones */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:44px;padding:0 18px;border-radius:var(--pill);background:var(--accent);color:#fff;font-weight:700;font-size:14px;white-space:nowrap;transition:transform 120ms var(--ease-out)}
+.btn:active{transform:scale(.97)}
+.btn.s{background:#fff;color:var(--text);border:1.5px solid var(--line)}
+.btn.chico{height:38px;padding:0 14px;font-size:13px}
+.btn.ancho{width:100%}
+.btn.wa{background:var(--wa);height:50px;font-size:15px}
+.btn.osc{background:var(--text)}
+.enlace{color:var(--accent);font-weight:700;font-size:13px}
+/* ===== 1. arriba de Comisiones ===== */
+.pc{width:1180px;background:#fff;border-radius:18px;box-shadow:0 10px 40px rgba(15,23,42,.08);padding:26px 32px 28px}
+.t-row{display:flex;align-items:center;gap:16px}
+.t-row h1{font-size:26px;font-weight:800;letter-spacing:-.02em}
+.t-row .sub{font-size:14px;color:var(--text2);margin-top:2px}
+.t-row .der{margin-left:auto;display:flex;gap:10px}
+.avisos{display:flex;gap:10px;margin-top:16px;flex-wrap:wrap}
+.av-l{display:flex;align-items:center;gap:10px;height:44px;padding:0 8px 0 14px;border-radius:14px;background:var(--surface-2);font-size:13.5px}
+.av-l .pt{width:8px;height:8px;border-radius:50%;background:#C98A12;flex:none}
+.av-l.r .pt{background:var(--rojo)}
+.av-l b{font-weight:800}
+.av-l small{color:var(--text2);font-size:12.5px}
+.av-l .enlace{padding:0 10px;height:32px;display:inline-flex;align-items:center;border-radius:var(--pill);background:#fff}
+.panel{margin-top:16px;border:1px solid var(--line);border-radius:18px;padding:16px 18px;display:flex;flex-direction:column;gap:12px}
+.p-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.p-row .lb{width:62px;font-size:11px;font-weight:700;letter-spacing:.06em;color:var(--text2)}
+.pl{display:inline-flex;align-items:center;gap:8px;height:38px;padding:0 14px;border-radius:var(--pill);border:1.5px solid var(--line);font-weight:600;font-size:13.5px;white-space:nowrap}
+.pl i{font-style:normal;font-size:11.5px;padding:1px 7px;border-radius:var(--pill);background:var(--surface-2)}
+.pl.on{background:var(--text);border-color:var(--text);color:#fff}
+.pl.on i{background:rgba(255,255,255,.18)}
+.busca{flex:1;min-width:260px;height:40px;border:1.5px solid var(--line);border-radius:var(--pill);display:flex;align-items:center;gap:8px;padding:0 14px;color:var(--text3)}
+.sel{height:38px;padding:0 12px 0 14px;border:1.5px solid var(--line);border-radius:var(--pill);display:inline-flex;align-items:center;gap:8px;font-weight:600;font-size:13.5px}
+.fecha{height:38px;padding:0 12px;border:1.5px solid var(--line);border-radius:12px;display:inline-flex;align-items:center;font-size:13.5px}
+.p-row .der{margin-left:auto;display:flex;gap:8px}
+.vs{width:1px;height:24px;background:var(--line);margin:0 4px}
+/* antes */
+.antes{width:1180px;background:#fff;border-radius:18px;padding:18px 22px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;opacity:.75}
+.antes div{border-radius:16px;padding:14px 16px;border:1px solid var(--line);font-size:12.5px;color:var(--text2)}
+.antes b{display:block;font-size:20px;color:var(--text);margin:2px 0}
+.antes .a1{background:#FBF1DC;border-color:#F0D9A8} .antes .a3{background:var(--accent);color:#cfd8f5} .antes .a3 b{color:#fff;font-size:16px}
+/* ===== hojas ===== */
+.hoja{width:600px;background:#fff;border-radius:24px 0 0 24px;box-shadow:0 18px 50px rgba(15,23,42,.14);overflow:hidden;display:flex;flex-direction:column}
+.hoja.chica{width:520px;border-radius:24px}
+.tel .hoja{width:390px;border-radius:28px}
+.h-cab{display:flex;align-items:flex-start;gap:12px;padding:22px 24px 0}
+.h-cab h2{font-size:20px;font-weight:800;letter-spacing:-.01em}
+.h-cab .sub{font-size:13px;color:var(--text2);margin-top:3px}
+.cerrar{margin-left:auto;width:40px;height:40px;border-radius:50%;background:var(--surface-2);display:grid;place-items:center;flex:none}
+.atras{width:40px;height:40px;border-radius:50%;background:var(--surface-2);display:grid;place-items:center;flex:none}
+.h-top{display:flex;gap:8px;padding:14px 24px 0}
+.h-cuerpo{padding:16px 24px 24px;display:flex;flex-direction:column;gap:12px}
+.tel .h-cab,.tel .h-top{padding-left:18px;padding-right:18px}
+.tel .h-cuerpo{padding:14px 18px 22px}
+/* estado arriba */
+.est{border-radius:16px;padding:14px 16px;background:var(--ambar-bg)}
+.est b{display:block;font-size:15px;color:var(--ambar)}
+.est small{display:block;font-size:13px;color:var(--text);margin-top:3px}
+.datos{display:grid;grid-template-columns:1.1fr 1fr .8fr .9fr 1fr;border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.datos div{padding:10px 12px;border-left:1px solid var(--line)}
+.datos div:first-child{border-left:0}
+.datos span{display:block;font-size:11.5px;color:var(--text2)}
+.datos b{display:block;font-size:13.5px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tel .datos{grid-template-columns:1fr 1fr}
+.tel .datos div{border-left:0;border-top:1px solid var(--line)}
+.tel .datos div:nth-child(-n+2){border-top:0}
+.tel .datos div:nth-child(2n){border-left:1px solid var(--line)}
+.tel .datos div:last-child{grid-column:1/-1;border-left:0}
+/* bloques plegables */
+.blq{border:1px solid var(--line);border-radius:18px;background:#fff}
+.blq.falta{border:1.5px solid #D9A23A;background:#FFFBF2}
+.blq-c{display:flex;align-items:center;gap:10px;min-height:56px;padding:0 16px;font-weight:800;font-size:15px}
+.blq-c .pt{width:9px;height:9px;border-radius:50%;background:var(--verde);flex:none}
+.blq.falta .blq-c .pt{background:#C98A12}
+.blq-c .chip{margin-left:auto}
+.blq-z{padding:0 16px 16px;display:flex;flex-direction:column;gap:10px}
+.tarj{background:#fff;border:1px solid var(--line);border-radius:14px}
+.f{display:flex;align-items:center;gap:12px;padding:12px 14px;border-top:1px solid var(--line)}
+.f:first-child{border-top:0}
+.f .tx{flex:1;min-width:0}
+.f b{display:block;font-size:14px}
+.f small{display:block;font-size:12.5px;color:var(--text2);margin-top:2px}
+.f small.mal{color:var(--ambar);font-weight:600}
+.f .ic{width:32px;height:32px;border-radius:10px;background:var(--surface-2);display:grid;place-items:center;color:var(--text2);flex:none}
+.f .ic.ok{background:var(--verde-bg);color:var(--verde)}
+.f .ic.w{background:var(--ambar-bg);color:var(--ambar)}
+.f .bts{display:flex;gap:8px;flex:none}
+.tres{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.tres .btn{width:100%;padding:0 8px}
+.ayuda{font-size:12.5px;color:var(--text2);text-align:center}
+.mas{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--text2)}
+.mas .q{width:18px;height:18px;border-radius:50%;border:1.5px solid var(--text3);display:grid;place-items:center;font-size:11px;font-weight:700;color:var(--text3)}
+/* hoja IP */
+.aviso-c{display:flex;gap:10px;align-items:flex-start;background:var(--azul-bg);color:var(--azul);border-radius:14px;padding:12px 14px;font-size:13px;font-weight:600}
+.grp-t{display:flex;align-items:baseline;gap:8px;margin-top:6px}
+.grp-t h3{font-size:14px;font-weight:800}
+.grp-t small{font-size:12.5px;color:var(--text2)}
+.ipf{display:flex;align-items:center;gap:12px;padding:14px;border-top:1px solid var(--line)}
+.ipf:first-child{border-top:0}
+.ipf .tx{flex:1;min-width:0}
+.ipf .v4{font-size:17px;font-weight:800;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+.ipf .v6{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px;color:var(--text2);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ipf .chip{margin-left:8px;vertical-align:2px}
+.vacio-c{border:1px dashed var(--line);border-radius:14px;padding:14px;font-size:13px;color:var(--text2)}
+.campo-l{display:flex;flex-direction:column;gap:6px}
+.campo-l label{font-size:13px;font-weight:700}
+.campo{height:46px;border:1.5px solid var(--line);border-radius:12px;padding:0 14px;display:flex;align-items:center;font-size:14.5px;color:var(--text3);font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.campo.lleno{color:var(--text);font-family:Inter,system-ui,sans-serif}
+.dos{display:grid;grid-template-columns:1fr 1.4fr;gap:10px}
+.tel .dos{grid-template-columns:1fr}
+.pie{border-top:1px solid var(--line);padding:14px 24px 20px;display:flex;gap:10px}
+.pie .btn{flex:1}
+.tel .pie{padding:12px 18px 18px}
+/* cliente nuevo */
+.zona{border:2px dashed #B9C4E8;background:#F7F9FE;border-radius:18px;padding:26px 18px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:6px}
+.zona .ic{width:48px;height:48px;border-radius:14px;background:var(--acc-bg);color:var(--accent);display:grid;place-items:center}
+.zona b{font-size:16px}
+.zona small{font-size:13px;color:var(--text2);max-width:340px}
+.leido{display:flex;gap:12px;align-items:center;border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.leido .pdf{width:38px;height:46px;border-radius:8px;background:var(--rojo-bg);color:var(--rojo);display:grid;place-items:center;font-size:10px;font-weight:800;flex:none}
+.pasos{display:flex;gap:6px;align-items:center;font-size:12.5px;color:var(--text2);font-weight:600}
+.pasos i{font-style:normal;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;background:var(--surface-2);font-size:11.5px}
+.pasos .on i{background:var(--accent);color:#fff}
+.pasos .on{color:var(--text)}
+.pasos .ok i{background:var(--verde);color:#fff}
+.pasos .ln{width:24px;height:1.5px;background:var(--line)}
+.banda{border-radius:14px;padding:12px 14px;font-size:13px}
+.banda b{display:block;font-size:14px}
+/* telefono */
+.tel{background:#fff;border-radius:36px;padding:10px;box-shadow:0 18px 50px rgba(15,23,42,.14)}
+.tel .hoja{box-shadow:none}
+.tel .tres{grid-template-columns:1fr 1fr 1fr}
+.tel .tres .btn{height:44px;font-size:12.5px}
+.capa{position:relative}
+.capa .velo{position:absolute;inset:0;background:rgba(17,19,21,.28);border-radius:24px 0 0 24px}
+@media (prefers-reduced-motion:reduce){.btn{transition:none}}
+.est .acc-e{display:flex;align-items:center;gap:10px;margin-top:10px;padding-top:10px;border-top:1px solid rgba(117,75,0,.15)}
+.est .acc-e span{flex:1;font-size:12.5px;color:var(--text2)}
+.resumen-f{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2);flex-wrap:wrap}
+.resumen-f .chip{background:var(--acc-bg);color:var(--accent);height:28px}
+.vacio-g{border:1px dashed var(--line);border-radius:18px;padding:28px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:8px}
+.vacio-g b{font-size:16px}
+.vacio-g p{font-size:13.5px;color:var(--text2);max-width:420px}
+.fin{display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;padding:10px 0 4px}
+.fin .ok{width:56px;height:56px;border-radius:50%;background:var(--verde-bg);color:var(--verde);display:grid;place-items:center}
+.fin h3{font-size:19px;font-weight:800}
+.fin p{font-size:13.5px;color:var(--text2);max-width:380px}
+.lin{display:flex;flex-direction:column;gap:0;border:1px solid var(--line);border-radius:14px;text-align:left;width:100%}
+.lin div{display:flex;gap:12px;padding:12px 14px;border-top:1px solid var(--line);font-size:13.5px}
+.lin div:first-child{border-top:0}
+.lin i{font-style:normal;width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:11.5px;font-weight:700;background:var(--surface-2);flex:none}
+.lin i.h{background:var(--verde);color:#fff}
+.lin small{display:block;color:var(--text2);font-size:12.5px;margin-top:2px}
+.est-c{display:grid;grid-template-columns:repeat(3,420px);gap:24px}
+.est-c .blq{background:#fff}
+.est-c .cab-e{font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px}
+.env{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:14px;background:var(--verde-bg)}
+.env.az{background:var(--azul-bg)}
+.env .ck{width:26px;height:26px;border-radius:50%;background:var(--verde);color:#fff;display:grid;place-items:center;flex:none}
+.env.az .ck{background:var(--azul)}
+.env b{display:block;font-size:13.5px}
+.env small{display:block;font-size:12.5px;color:var(--text2)}
+.banda.ambar b,.banda.azul b{font-size:13.5px}
+.up{border:1px solid var(--line);border-radius:18px;background:#fff;width:640px;overflow:hidden}
+.up-z{margin:16px;border:2px dashed #B9C4E8;background:#F7F9FE;border-radius:16px;padding:16px;display:flex;align-items:center;gap:12px}
+.up-z b{font-size:14.5px;display:block}.up-z small{font-size:12.5px;color:var(--text2)}
+.up-f{display:grid;grid-template-columns:1fr 200px;gap:6px 16px;align-items:center;padding:14px 16px;border-top:1px solid var(--line)}
+.up-f b{font-size:14px;display:block}.up-f small{font-size:12.5px;color:var(--text2);display:block}
+.barra{height:8px;border-radius:99px;background:var(--surface-3);overflow:hidden;position:relative}
+.barra i{position:absolute;inset:0;background:var(--accent);transform-origin:left;border-radius:99px}
+.barra.ind i{width:40%;animation:corre 1.1s var(--ease-out) infinite}
+.barra.ok i{background:var(--verde)}
+@keyframes corre{from{transform:translateX(-100%)}to{transform:translateX(260%)}}
+@media (prefers-reduced-motion:reduce){.barra.ind i{animation:none;opacity:.6}}
+.pasos3{display:flex;gap:6px;font-size:12px;font-weight:600;color:var(--text3)}
+.pasos3 span{display:flex;align-items:center;gap:4px}.pasos3 .h{color:var(--verde)}.pasos3 .a{color:var(--accent)}
+.pc-t{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--text2);margin-top:6px}
+.giro{width:14px;height:14px;border-radius:50%;border:2px solid var(--acc-bg);border-top-color:var(--accent);animation:gira .8s linear infinite;flex:none}
+@keyframes gira{to{transform:rotate(360deg)}}
+.hist{width:640px;border:1px solid var(--line);border-radius:18px;background:#fff;overflow:hidden}
+.hd{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--surface-2);font-size:13px;font-weight:800}
+.hd small{font-weight:500;color:var(--text2)}.hd .chip{margin-left:auto}
+.hr{display:grid;grid-template-columns:56px 1fr auto 130px;gap:12px;align-items:center;padding:11px 16px;border-top:1px solid var(--line);font-size:13px}
+.hr .h{color:var(--text2);font-variant-numeric:tabular-nums}.hr small{display:block;color:var(--text2);font-size:12px}.hr .n{text-align:right;color:var(--text2);font-size:12.5px}
+.sem{display:flex;align-items:center;gap:10px;padding:14px 16px;border-top:1px solid var(--line);font-size:13.5px;font-weight:700}
+.sem small{font-weight:500;color:var(--text2)}.sem .i{margin-left:auto}
+.toast{display:flex;align-items:center;gap:12px;background:var(--text);color:#fff;border-radius:14px;padding:12px 16px;font-size:13.5px;width:420px}
+.toast .enlace{color:#AFC0FF;margin-left:auto}
+.wa-m{width:420px;background:#E7F7EE;border-radius:14px;padding:12px 14px;font-size:13.5px;line-height:1.5}
+.kpi{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:10px;margin-top:14px}
+.kpi div{border:1px solid var(--line);border-radius:14px;padding:12px 14px}
+.kpi div:first-child{background:var(--acc-bg);border-color:transparent}
+.kpi span{display:block;font-size:12px;color:var(--text2)}.kpi b{display:block;font-size:22px;font-weight:800;margin-top:2px}.kpi small{font-size:12px;color:var(--text2)}
+.mes{display:inline-flex;align-items:center;gap:6px;height:38px;padding:0 6px;border:1.5px solid var(--line);border-radius:var(--pill);font-weight:700;font-size:13.5px}
+.mes button{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;color:var(--text2)}
+.al-l{border:1px solid var(--line);border-radius:16px;margin-top:12px;overflow:hidden}
+.al-r{display:grid;grid-template-columns:70px 1.4fr 1fr 150px 90px;gap:12px;align-items:center;padding:11px 16px;border-top:1px solid var(--line);font-size:13px}
+.al-r:first-child{border-top:0}
+.al-r small{display:block;color:var(--text2);font-size:12px}
+.al-s{padding:9px 16px;background:var(--surface-2);font-size:12px;font-weight:700;color:var(--text2)}
+.form-a{width:920px;background:#fff;border-radius:24px 0 0 24px;box-shadow:0 18px 50px rgba(15,23,42,.14);overflow:hidden;position:relative}
+.dos-c{display:grid;grid-template-columns:330px 1fr;gap:20px;padding:18px 24px 22px}
+.cas{display:flex;align-items:center;gap:12px;padding:12px 14px;border-top:1px solid var(--line);font-size:13.5px}
+.cas:first-child{border-top:0}
+.cas .tx{flex:1}.cas small{display:block;color:var(--text2);font-size:12px}
+.cas .e{width:22px;height:22px;border-radius:50%;flex:none;border:2px solid var(--line)}
+.cas .e.ok{background:var(--verde);border-color:var(--verde)}
+.cas.sobre{background:#F0F4FF;outline:2px dashed var(--accent);outline-offset:-4px}
+.velo-d{position:absolute;inset:0;background:rgba(27,58,158,.08);border:3px dashed var(--accent);border-radius:24px 0 0 24px;display:grid;place-items:center}
+.velo-d div{background:#fff;border-radius:18px;padding:18px 26px;text-align:center;box-shadow:0 10px 30px rgba(15,23,42,.12)}
+.velo-d b{font-size:17px;display:block}.velo-d small{color:var(--text2);font-size:13px}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="chev" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></symbol>
+  <symbol id="atr" viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></symbol>
+  <symbol id="ok" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+  <symbol id="doc" viewBox="0 0 24 24"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/></symbol>
+  <symbol id="red" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3.5 3 14.5 0 18M12 3c-3 3.5-3 14.5 0 18"/></symbol>
+  <symbol id="tel" viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 005 5L15 13l5 2v4a1 1 0 01-1 1A16 16 0 014 5a1 1 0 011-1z"/></symbol>
+  <symbol id="wa" viewBox="0 0 24 24"><path d="M4 20l1.3-4A8 8 0 1112 20a8 8 0 01-4-1.1z"/></symbol>
+  <symbol id="sub" viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5M5 20h14"/></symbol>
+  <symbol id="bus" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></symbol>
+  <symbol id="mas" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></symbol>
+  <symbol id="xls" viewBox="0 0 24 24"><path d="M7 3h7l5 5v13H7z"/><path d="M10 12l4 5M14 12l-4 5"/></symbol>
+  <symbol id="rel" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+</svg>
+
+<div class="lienzo">
+
+<!-- ================= 1. ARRIBA DE COMISIONES ================= -->
+<section class="col">
+  <span class="et">1 · Arriba de Comisiones</span>
+  <h2 class="sec-t">Sin tarjetas grandes: una línea de avisos y el botón de cliente nuevo arriba</h2>
+  <p class="sec-s">Por instalar y Por asignar ya están en Mi trabajo y como filtros aquí. Quedan como una línea corta que lleva al mismo lugar. Se ve solo si hay algo.</p>
+
+  <p class="et" style="margin-top:8px">Antes</p>
+  <div class="antes"><div class="a1">Por instalar<b>8 órdenes</b>Del corte, pasan de 24 horas sin instalar</div><div>Por asignar<b>17 instalaciones</b>Sin dueño: no comisionan hasta asignarlas</div><div class="a3"><b>Subir documentos de un cliente nuevo</b>0 pendientes por instalar</div></div>
+
+  <p class="et" style="margin-top:8px">Propuesta</p>
+  <div class="pc">
+    <div class="t-row">
+      <div><h1>Comisiones</h1><p class="sub">Corte de noviembre · límite el 30 de noviembre</p></div>
+      <div class="der"><button class="btn"><svg class="i"><use href="#mas"/></svg>Cliente nuevo</button></div>
+    </div>
+    <div class="avisos">
+      <div class="av-l"><span class="pt"></span><span><b>8 órdenes</b> pasan de 24 h sin instalar</span><button class="enlace">Ver órdenes</button></div>
+      <div class="av-l r"><span class="pt"></span><span><b>17 instalaciones</b> sin dueño <small>· no comisionan</small></span><button class="enlace">Asignar dueño</button></div>
+    </div>
+    <div class="panel">
+      <div class="p-row"><span class="lb">EQUIPO</span>
+        <span class="pl on">Todos <i>71</i></span><span class="pl">Ventas corporativas <i>56</i></span><span class="pl">Canales de atención <i>4</i></span><span class="pl">Aliado comercial <i>11</i></span>
+        <span class="busca"><svg class="i"><use href="#bus"/></svg>Cliente, código u orden</span></div>
+      <div class="p-row"><span class="lb">VER</span>
+        <span class="pl on">Agrupado por dueño</span><span class="pl">Lista por fecha</span><span class="vs"></span>
+        <span style="font-size:13px;color:var(--text2)">Desde</span><span class="fecha">10/11/2026</span><span style="font-size:13px;color:var(--text2)">Hasta</span><span class="fecha">12/11/2026</span><button class="enlace" style="margin-left:4px">Quitar fechas</button></div>
+      <div class="p-row" style="flex-wrap:nowrap"><span class="lb"></span>
+        <span class="pl on">Todas <i>10</i></span><span class="pl">Comisionan <i>0</i></span><span class="pl">Les falta algo <i>10</i></span><span class="pl">Carta por enviar <i>9</i></span><span class="pl">Más filtros <svg class="i" style="width:14px;height:14px"><use href="#chev"/></svg></span>
+        <span class="der"><button class="btn s chico"><svg class="i"><use href="#xls"/></svg>Bajar Excel</button><button class="btn s chico"><svg class="i"><use href="#rel"/></svg>Días para el pago</button></span></div>
+    </div>
+  </div>
+  <p class="nota"><b>Aliado:</b> el selector grande "Aliado: todos" se va de su fila propia. Aparece como pastilla al lado de "Aliado comercial" solo cuando tocas ese equipo. <b>Ningún filtro ni botón se pierde:</b> Pendientes por instalar y Por asignar siguen en "Más filtros".</p>
+</section>
+
+<!-- ================= 2. HOJA DE COMISIÓN EN PC ================= -->
+<section class="col">
+  <span class="et">2 · Hoja de la comisión en PC (600 px, antes 440)</span>
+  <h2 class="sec-t">Más ancha, con aire, y la IP sale a su propia hoja</h2>
+  <p class="sec-s">Lo que falta va abierto y en ámbar; lo listo, plegado en verde. En la carta queda una sola fila para la IP.</p>
+  <div class="fila-l" style="margin-top:8px">
+
+  <div class="hoja">
+    <div class="h-cab"><div><h2>Inversiones Proham, C.A.</h2><p class="sub">J-41234567-8 · Código 170431 · Líder María Pérez · instalada 10/11 · corte de noviembre</p></div><button class="cerrar" aria-label="Cerrar"><svg class="i"><use href="#x"/></svg></button></div>
+    <div class="h-top"><button class="btn s chico">Ver expediente completo</button></div>
+    <div class="h-cuerpo">
+      <div class="est"><b>Todavía no cumple</b><small>Le falta el pago de la instalación. La carta está por enviar.</small><div class="acc-e"><span>¿Le escribes a María para que lo resuelva?</span><button class="btn s chico"><svg class="i"><use href="#wa"/></svg>Escribirle a María</button></div></div>
+
+      <div class="blq"><div class="blq-c"><span class="pt"></span>Legal y documentos<span class="chip verde">Cumple</span><svg class="i"><use href="#chev"/></svg></div></div>
+
+      <div class="blq falta"><div class="blq-c"><span class="pt"></span>Pago<span class="chip rojo">Debe</span><svg class="i" style="transform:rotate(180deg)"><use href="#chev"/></svg></div>
+        <div class="blq-z"><div class="tarj">
+          <div class="f"><span class="ic w"><svg class="i"><use href="#info"/></svg></span><span class="tx"><b>Qué dice el TAD</b><small>Con deuda, carga del 11 de noviembre</small></span></div>
+          <div class="f"><span class="tx"><b>Si ya pagó</b><small>Queda fijo y con tu nombre</small></span><button class="btn chico">Marcar pagada</button></div>
+        </div><button class="enlace" style="align-self:flex-start">Agregar nota del pago</button></div></div>
+
+      <div class="blq falta"><div class="blq-c"><span class="pt"></span>Carta y proforma<span class="chip ambar">Por enviar · falta la IP</span><svg class="i" style="transform:rotate(180deg)"><use href="#chev"/></svg></div>
+        <div class="blq-z">
+          <div class="tarj">
+            <div class="f"><span class="ic"><svg class="i"><use href="#doc"/></svg></span><span class="tx"><b>Proforma de instalación</b><small>Plan 50 Mbps · contrato 170431</small></span><button class="enlace">Ver PDF</button></div>
+            <div class="f"><span class="ic"><svg class="i"><use href="#doc"/></svg></span><span class="tx"><b>Carta de bienvenida</b><small>Con los datos de la líder y la IP</small></span><button class="enlace">Ver PDF</button></div>
+            <div class="f"><span class="ic w"><svg class="i"><use href="#red"/></svg></span><span class="tx"><b>IP del servicio</b><small class="mal">Falta. La carta dirá "Pendiente por asignar"</small></span><span class="bts"><button class="btn s chico">Escribir IP</button><button class="btn chico">Ver sugeridas (3)</button></span></div>
+            <div class="f"><span class="ic"><svg class="i"><use href="#wa"/></svg></span><span class="tx"><b>Se envía a</b><small>0424 696 1090 · Proham</small></span><button class="btn s chico">Cambiar</button></div>
+          </div>
+          <button class="btn wa ancho"><svg class="i"><use href="#wa"/></svg>Enviar carta y proforma por WhatsApp</button>
+          <div class="tres"><button class="btn s chico">Descargar PDF</button><button class="btn s chico">Por correo</button><button class="btn s chico">Ya la envié</button></div>
+        </div></div>
+
+      <div class="blq"><div class="blq-c"><span class="pt"></span>Cliente y orden de Odoo<span class="chip verde">S04812</span><svg class="i"><use href="#chev"/></svg></div></div>
+      <div class="blq"><div class="blq-c"><span class="pt" style="background:var(--text3)"></span>Corte y comisión<span class="chip">Noviembre · límite el 18</span><svg class="i"><use href="#chev"/></svg></div></div>
+      <div class="blq"><div class="blq-c"><span class="pt" style="background:var(--text3)"></span>Hilo<span class="chip">Sin registros</span><svg class="i"><use href="#chev"/></svg></div></div>
+    </div>
+  </div>
+
+  <div class="col" style="width:330px;padding-top:10px">
+    <p class="et">Qué cambia</p>
+    <p class="nota"><b>Ancho:</b> 600 px, igual que la ficha. La IPv6 y los botones ya no se parten.</p>
+    <p class="nota"><b>Sin recuadro de datos:</b> la línea de abajo del nombre ya dice RIF, código, líder, fecha y corte. El estatus legal vive en su bloque y la orden en el suyo.</p><p class="nota"><b>Bloques iguales:</b> todos con punto (verde listo, ámbar falta, gris informativo), título en una línea, pastilla y flecha en el mismo sitio. Corte e Hilo ya no se corren a la izquierda.</p>
+    <p class="nota"><b>IP:</b> una fila con "Escribir IP" (afuera, como pediste) y "Ver sugeridas (3)", que abre la hoja de la sección 3.</p>
+    <p class="nota"><b>Envío:</b> WhatsApp es el principal. Debajo, tres botones del mismo ancho en una sola fila. "Ya enviada (marcar)" pasa a llamarse "Ya la envié" y abre la misma hoja de siempre.</p>
+    <p class="nota"><b>Notas:</b> salen los 3 textos de ayuda. Solo queda una línea cuando la envió el líder y falta Canales (sección 7).</p>
+    <p class="nota"><b>Se mantiene todo:</b> Aprobar o Quitar Legal, Pedir al cliente, Subir varios, Marcar o Quitar pago, nota del pago, Paso 2 de WhatsApp, Agregar número, Confirmar orden, Cambiar dueño, corte, evento, excepción, No comisiona y Corregir corte.</p>
+  </div>
+  </div>
+</section>
+
+<!-- ================= 3. HOJA DE IP ================= -->
+<section class="col">
+  <span class="et">3 · Hoja aparte: IP del servicio</span>
+  <h2 class="sec-t">Elegir la IP es su propia decisión, en su propia hoja</h2>
+  <p class="sec-s">Se abre encima de la hoja de comisión. Al usar una IP se cierra, sale el aviso "IP guardada" y la carta ya la trae.</p>
+  <div class="fila-l" style="margin-top:8px">
+  <div class="hoja chica">
+    <div class="h-cab"><button class="atras" aria-label="Volver"><svg class="i"><use href="#atr"/></svg></button><div><h2>IP del servicio</h2><p class="sub">Inversiones Proham · contrato 170431</p></div><button class="cerrar" aria-label="Cerrar"><svg class="i"><use href="#x"/></svg></button></div>
+    <div class="h-cuerpo">
+      <div class="aviso-c"><svg class="i" style="margin-top:1px"><use href="#info"/></svg><span>Confírmala en el sistema técnico antes de usarla.</span></div>
+      <div class="grp-t"><h3>Libres del pool</h3><small>en orden, según el reporte de IP</small></div>
+      <div class="tarj">
+        <div class="ipf"><div class="tx"><div class="v4">156.255.157.167<span class="chip azul">Siguiente</span></div><div class="v6">2803:d700:df00:2000::34d9/128</div></div><button class="btn chico">Usar</button></div>
+        <div class="ipf"><div class="tx"><div class="v4">156.255.157.168</div><div class="v6">2803:d700:df00:2000::34d7/128</div></div><button class="btn s chico">Usar</button></div>
+        <div class="ipf"><div class="tx"><div class="v4">156.255.157.169</div><div class="v6">2803:d700:df00:2000::34d6/128</div></div><button class="btn s chico">Usar</button></div>
+      </div>
+      <div class="grp-t"><h3>Parecidos en el reporte</h3><small>por ONT, código o nombre</small></div>
+      <div class="vacio-c">No hay nada parecido para este cliente.</div>
+      <div class="grp-t"><h3>¿No es ninguna?</h3></div>
+      <div class="dos">
+        <div class="campo-l"><label>IPv4</label><div class="campo">000.000.000.000</div></div>
+        <div class="campo-l"><label>IPv6 <span style="font-weight:500;color:var(--text2)">(opcional)</span></label><div class="campo">2803:…/128</div></div>
+      </div>
+    </div>
+    <div class="pie"><button class="btn osc">Guardar la IP escrita</button></div>
+  </div>
+  <div class="col" style="width:330px;padding-top:10px">
+    <p class="et">Qué cambia</p>
+    <p class="nota"><b>Lectura:</b> la IPv4 en grande y la IPv6 en una sola línea debajo, con letra de ancho fijo para compararlas.</p>
+    <p class="nota"><b>La primera</b> lleva la marca "Siguiente" y su botón en color; las otras, en blanco.</p>
+    <p class="nota"><b>Parecidos:</b> si hay, salen como filas iguales con su motivo (misma ONT, mismo código en otra sucursal). Si no hay, una línea gris.</p>
+    <p class="nota"><b>Escribir también va adentro,</b> al final, por si no es ninguna. "Escribir IP" de afuera abre esta misma hoja con el cursor en el campo.</p>
+  </div>
+  </div>
+</section>
+
+<!-- ================= 4. CLIENTE NUEVO CON EL RIF ================= -->
+<section class="col">
+  <span class="et">4 · Cliente nuevo leyendo el RIF</span>
+  <h2 class="sec-t">Sueltas el RIF y la app hace el resto</h2>
+  <p class="sec-s">Sirve para adelantar el expediente de un cliente que todavía no está instalado. Hoy se escribe RIF y nombre a mano; la propuesta usa la lectura con OCR que ya existe en Cambios.</p>
+  <div class="fila-l" style="margin-top:8px">
+  <div class="hoja chica">
+    <div class="h-cab"><div><h2>Cliente nuevo</h2><p class="sub">Queda "Pendiente por instalar" hasta que el TAD traiga la instalación</p></div><button class="cerrar" aria-label="Cerrar"><svg class="i"><use href="#x"/></svg></button></div>
+    <div class="h-cuerpo">
+      <div class="pasos"><span class="on"><i>1</i></span><span class="on">El RIF</span><span class="ln"></span><span><i>2</i></span><span>Documentos</span></div>
+      <div class="zona"><span class="ic"><svg class="i" style="width:22px;height:22px"><use href="#sub"/></svg></span><b>Suelta aquí el RIF de la empresa</b><small>PDF o foto. Leemos el número y la razón social, y buscamos si ya está en la app.</small><button class="btn s chico" style="margin-top:8px">Elegir archivo</button></div>
+      <button class="enlace" style="align-self:center">No tengo el RIF: escribir los datos</button>
+    </div>
+  </div>
+
+  <div class="hoja chica">
+    <div class="h-cab"><div><h2>Cliente nuevo</h2><p class="sub">Queda "Pendiente por instalar" hasta que el TAD traiga la instalación</p></div><button class="cerrar" aria-label="Cerrar"><svg class="i"><use href="#x"/></svg></button></div>
+    <div class="h-cuerpo">
+      <div class="pasos"><span class="on"><i>1</i></span><span class="on">El RIF</span><span class="ln"></span><span><i>2</i></span><span>Documentos</span></div>
+      <div class="leido"><span class="pdf">PDF</span><span style="flex:1"><b style="font-size:14px">rif-empresa.pdf</b><small style="display:block;font-size:12.5px;color:var(--text2)">Leído del RIF · revisa y corrige si hace falta</small></span><button class="enlace">Cambiar</button></div>
+      <div class="dos">
+        <div class="campo-l"><label>RIF</label><div class="campo lleno">J-41234567-8</div></div>
+        <div class="campo-l"><label>Razón social</label><div class="campo lleno">Inversiones Ejemplo, C.A.</div></div>
+      </div>
+      <div class="banda verde"><b>No está en la app</b>Se crea al continuar y el RIF queda subido en su casilla.</div>
+      <div class="tarj"><div class="f"><span class="ic"><svg class="i"><use href="#doc"/></svg></span><span class="tx"><b>Orden S04877 · Luis Gómez</b><small>Sugerida por el nombre · creada el 11 nov</small></span><span class="bts"><button class="btn s chico">Otra</button><button class="btn chico">Es esta</button></span></div></div>
+    </div>
+    <div class="pie"><button class="btn">Continuar a los documentos</button></div>
+  </div>
+
+  <div class="col" style="width:300px;padding-top:10px">
+    <p class="et">Cómo funciona</p>
+    <p class="nota"><b>1.</b> Sueltas el RIF. El OCR (gratis, sin IA) lee el número y la razón social. Si la lectura es dudosa, sale en ámbar para corregir.</p>
+    <p class="nota"><b>2.</b> Con el RIF busca en la app: si ya existe, dice "Ya está: abrir su expediente"; si hay un provisional parecido, pregunta "¿Es este?" como hoy.</p>
+    <p class="nota"><b>3.</b> Propone la orden de Odoo por el nombre. Es opcional: si no hay, se une sola después.</p>
+    <p class="nota"><b>4.</b> Sigue a los documentos con el RIF ya puesto en su casilla.</p>
+    <p class="nota"><b>Sale</b> el botón Jurídico o Natural: la regla dice que ya no se distingue. Si el archivo es una cédula, se lee como cédula.</p>
+  </div>
+  </div>
+</section>
+
+
+<!-- ================= 6. AJUSTES DE ESTA RONDA ================= -->
+<section class="col">
+  <span class="et">6 · Ajustes de esta ronda</span>
+  <h2 class="sec-t">Filtros que se suman, mensajes claros y cierre de Cliente nuevo</h2>
+  <div class="fila-l" style="margin-top:8px">
+
+  <div class="col" style="width:600px">
+    <p class="et">a · Lista con filtros puestos y sin resultados</p>
+    <div class="pc" style="width:600px;padding:20px">
+      <div class="resumen-f">Mostrando <span class="chip">Por asignar</span><span class="chip">10/11 al 12/11</span><span class="chip">Ventas corporativas</span><button class="enlace">Quitar todo</button></div>
+      <div class="vacio-g" style="margin-top:14px"><b>Nada sin dueño en estas fechas</b><p>Hay 17 sin dueño en todo el corte, pero ninguna se instaló entre el 10 y el 12 de noviembre.</p><button class="btn s chico">Ver las 17 sin fechas</button></div>
+    </div>
+    <p class="nota">Todo se suma siempre: equipo, persona o aliado, fechas, búsqueda y la pastilla. El número de cada pastilla cuenta con esos mismos filtros, así lo que dice el número es lo que ves. Pendientes por instalar usa la fecha de la orden.</p>
+
+    <p class="et" style="margin-top:14px">b · Documentos: cuando no hay ninguno</p>
+    <div class="tarj" style="width:600px">
+      <div class="f"><span class="ic" style="border:2px solid var(--rojo);background:#fff;width:22px;height:22px;border-radius:50%"></span><span class="tx"><b>Documentos</b><small>Faltan todos los documentos</small></span><span class="chip rojo">Faltan todos</span></div>
+      <div class="f"><span class="ic" style="border:2px solid var(--rojo);background:#fff;width:22px;height:22px;border-radius:50%"></span><span class="tx"><b>Documentos</b><small>Faltan 2: RIF y cédula del representante</small></span><span class="chip rojo">Faltan 2</span></div>
+    </div>
+    <p class="nota">Si no hay ninguno: "Faltan todos los documentos". Si faltan pocos (hasta 3), los nombra. En la lista, "1 falta" o "2 faltan" bien escrito.</p>
+  </div>
+
+  <div class="col">
+    <p class="et">c · Cliente nuevo: pantalla al enviar</p>
+    <div class="hoja chica">
+      <div class="h-cab"><div><h2>Cliente nuevo</h2><p class="sub">Inversiones Ejemplo, C.A. · J-41234567-8</p></div><button class="cerrar" aria-label="Cerrar"><svg class="i"><use href="#x"/></svg></button></div>
+      <div class="h-cuerpo">
+        <div class="fin"><span class="ok"><svg class="i" style="width:26px;height:26px"><use href="#ok"/></svg></span><h3>Enviado a revisión</h3><p>Los 9 documentos quedaron en la bandeja del administrador. Te avisamos si devuelve alguno.</p></div>
+        <div class="lin">
+          <div><i class="h"><svg class="i" style="width:12px;height:12px"><use href="#ok"/></svg></i><span><b>Documentos subidos</b><small>Hoy, 9:42 a. m.</small></span></div>
+          <div><i>2</i><span><b>Revisión del administrador</b><small>Si falta algo, te llega en Mi trabajo</small></span></div>
+          <div><i>3</i><span><b>Instalación</b><small>Cuando el TAD la traiga, se une sola y entra a Comisiones</small></span></div>
+        </div>
+      </div>
+      <div class="pie"><button class="btn s">Subir otro cliente</button><button class="btn">Ver mis pendientes</button></div>
+    </div>
+  </div>
+  </div>
+</section>
+
+
+<!-- ================= 7. CARTA: TODOS LOS ESTADOS ================= -->
+<section class="col">
+  <span class="et">7 · Carta y proforma: todos los estados</span>
+  <h2 class="sec-t">Mismo orden siempre: quién la envió, los documentos y la acción</h2>
+  <p class="sec-s">Un solo recuadro con proforma, carta, IP y número. Las notas largas salen. Cuando ya está enviada, todo pasa a blanco y nada grita.</p>
+  <div class="est-c" style="margin-top:8px"><div><p class="cab-e">Enviada por Canales</p><div class="blq"><div class="blq-c"><span class="pt"></span>Carta y proforma<span class="chip verde">Enviada</span><svg class="i" style="transform:rotate(180deg)"><use href="#chev"/></svg></div><div class="blq-z"><div class="env"><span class="ck"><svg class="i" style="width:14px;height:14px"><use href="#ok"/></svg></span><span><b>Enviada por Ana Torres</b><small>12 nov, 12:00 · WhatsApp · carta y proforma</small></span></div><div class="tarj"><div class="f"><span class="tx"><b>Proforma de instalación</b><small>ORO-EMP · contrato 240118</small></span><button class="enlace">Ver PDF</button></div>
+            <div class="f"><span class="tx"><b>Carta de bienvenida</b><small>Con los datos del líder y la IP</small></span><button class="enlace">Ver PDF</button></div><div class="f"><span class="tx"><b>IP del servicio</b><small>156.255.157.172 · 2803:d700:df00:2000::34d3/128</small></span><button class="btn s chico">Cambiar</button></div><div class="f"><span class="tx"><b>Se envía a</b><small>0424 607 5660 · Pérez Ramírez</small></span><button class="btn s chico">Cambiar</button></div></div><div class="tres"><button class="btn s chico">Volver a enviar</button><button class="btn s chico">Descargar PDF</button><button class="btn s chico">Por correo</button></div></div></div></div><div><p class="cab-e">La envió el líder, falta Canales</p><div class="blq falta"><div class="blq-c"><span class="pt"></span>Carta y proforma<span class="chip azul">Falta Canales</span><svg class="i" style="transform:rotate(180deg)"><use href="#chev"/></svg></div><div class="blq-z"><div class="env az"><span class="ck"><svg class="i" style="width:14px;height:14px"><use href="#ok"/></svg></span><span><b>La envió Carla (líder)</b><small>11 nov · WhatsApp · Canales igual debe enviarla</small></span></div><div class="tarj"><div class="f"><span class="tx"><b>Proforma de instalación</b><small>ORO-EMP · contrato 240118</small></span><button class="enlace">Ver PDF</button></div>
+            <div class="f"><span class="tx"><b>Carta de bienvenida</b><small>Con los datos del líder y la IP</small></span><button class="enlace">Ver PDF</button></div><div class="f"><span class="tx"><b>IP del servicio</b><small>156.255.157.172 · 2803:d700:df00:2000::34d3/128</small></span><button class="btn s chico">Cambiar</button></div><div class="f"><span class="tx"><b>Se envía a</b><small>0424 607 5660 · Pérez Ramírez</small></span><button class="btn s chico">Cambiar</button></div></div><button class="btn wa ancho"><svg class="i"><use href="#wa"/></svg>Enviar carta y proforma por WhatsApp</button><div class="tres"><button class="btn s chico">Descargar PDF</button><button class="btn s chico">Por correo</button><button class="btn s chico">Ya la envié</button></div></div></div></div><div><p class="cab-e">Descargada, sin confirmar</p><div class="blq falta"><div class="blq-c"><span class="pt"></span>Carta y proforma<span class="chip azul">Descargada</span><svg class="i" style="transform:rotate(180deg)"><use href="#chev"/></svg></div><div class="blq-z"><div class="banda azul"><b>La descargó Ana el 11 nov</b>¿Ya la enviaste? Márcala para que no salga como pendiente.<div style="display:flex;gap:8px;margin-top:10px"><button class="btn chico">Ya la envié</button><button class="btn s chico">Todavía no</button></div></div><div class="tarj"><div class="f"><span class="tx"><b>Proforma de instalación</b><small>ORO-EMP · contrato 240118</small></span><button class="enlace">Ver PDF</button></div>
+            <div class="f"><span class="tx"><b>Carta de bienvenida</b><small>Con los datos del líder y la IP</small></span><button class="enlace">Ver PDF</button></div><div class="f"><span class="tx"><b>IP del servicio</b><small>156.255.157.172 · 2803:d700:df00:2000::34d3/128</small></span><button class="btn s chico">Cambiar</button></div><div class="f"><span class="tx"><b>Se envía a</b><small>0424 607 5660 · Pérez Ramírez</small></span><button class="btn s chico">Cambiar</button></div></div><button class="btn wa ancho"><svg class="i"><use href="#wa"/></svg>Enviar carta y proforma por WhatsApp</button></div></div></div><div><p class="cab-e">Sin número del cliente</p><div class="blq falta"><div class="blq-c"><span class="pt"></span>Carta y proforma<span class="chip rojo">Por enviar · 3 días</span><svg class="i" style="transform:rotate(180deg)"><use href="#chev"/></svg></div><div class="blq-z"><div class="tarj"><div class="f"><span class="tx"><b>Proforma de instalación</b><small>ORO-EMP · contrato 240118</small></span><button class="enlace">Ver PDF</button></div>
+            <div class="f"><span class="tx"><b>Carta de bienvenida</b><small>Con los datos del líder y la IP</small></span><button class="enlace">Ver PDF</button></div><div class="f"><span class="tx"><b>IP del servicio</b><small>156.255.157.172 · 2803:d700:df00:2000::34d3/128</small></span><button class="btn s chico">Cambiar</button></div><div class="f"><span class="tx"><b>Se envía a</b><small class="mal">Sin número del cliente ni del representante</small></span><button class="btn chico">Agregar número</button></div></div><button class="btn ancho">Descargar carta y proforma</button><div class="tres" style="grid-template-columns:1fr 1fr"><button class="btn s chico">Por correo</button><button class="btn s chico">Ya la envié</button></div></div></div></div><div><p class="cab-e">Sin dueño todavía</p><div class="blq falta"><div class="blq-c"><span class="pt"></span>Carta y proforma<span class="chip ambar">Solo proforma</span><svg class="i" style="transform:rotate(180deg)"><use href="#chev"/></svg></div><div class="blq-z"><div class="tarj"><div class="f"><span class="tx"><b>Proforma de instalación</b><small>ORO-EMP · contrato 240118</small></span><button class="enlace">Ver PDF</button></div><div class="f"><span class="tx"><b>Carta de bienvenida</b><small class="mal">Sale cuando la instalación tenga dueño</small></span></div><div class="f"><span class="tx"><b>IP del servicio</b><small>156.255.157.172 · 2803:d700:df00:2000::34d3/128</small></span><button class="btn s chico">Cambiar</button></div><div class="f"><span class="tx"><b>Se envía a</b><small>0424 607 5660 · Pérez Ramírez</small></span><button class="btn s chico">Cambiar</button></div></div><button class="btn wa ancho"><svg class="i"><use href="#wa"/></svg>Enviar la proforma por WhatsApp</button><div class="tres"><button class="btn s chico">Descargar PDF</button><button class="btn s chico">Por correo</button><button class="btn s chico">Ya la envié</button></div></div></div></div><div><p class="cab-e">Cliente de aliado, vista del líder</p><div class="blq"><div class="blq-c"><span class="pt"></span>Carta y proforma<span class="chip ">Lo envía Canales</span><svg class="i" style="transform:rotate(180deg)"><use href="#chev"/></svg></div><div class="blq-z"><div class="tarj"><div class="f"><span class="tx"><b>Proforma de instalación</b><small>ORO-EMP · contrato 240118</small></span><button class="enlace">Ver PDF</button></div>
+            <div class="f"><span class="tx"><b>Carta de bienvenida</b><small>Con los datos del líder y la IP</small></span><button class="enlace">Ver PDF</button></div></div><p class="ayuda" style="text-align:left">Es un cliente de aliado: la carta y la proforma las envía Canales de atención.</p></div></div></div></div>
+  <p class="nota" style="max-width:1300px"><b>Arreglos incluidos:</b> la nota "Ya enviada es para…" salía aunque el botón ya no estaba (se quita). "Volver a enviar" deja de ser el botón grande azul y queda igual a los otros dos. La nota "Canales debe enviarla siempre" solo aparece, corta, cuando la envió el líder. "Ya enviada (marcar)" se llama "Ya la envié" y abre la misma hoja de siempre (qué, cuándo y por dónde).</p>
+</section>
+
+
+<!-- ================= 8. ACTUALIZAR, CARTA DESCARGADA Y MENSAJE ================= -->
+<section class="col">
+  <span class="et">8 · Actualizar datos, carta descargada y mensaje al líder</span>
+  <h2 class="sec-t">Que se vea que sube, historial por día y menos preguntas</h2>
+  <div class="fila-l" style="margin-top:8px">
+  <div class="col">
+    <p class="et">a · Subiendo archivos</p>
+    <div class="up">
+      <div class="up-z"><span class="giro" style="width:22px;height:22px;border-width:3px"></span><span><b>Subiendo 2 archivos</b><small>Puedes seguir usando la app. Si cierras la pestaña, se pausa.</small></span></div>
+      <div class="up-f"><span><b>TAD</b><small>TAD_12-11.xlsx · 4.812 servicios</small></span><div><div class="barra"><i style="transform:scaleX(.62)"></i></div><div class="pc-t"><span class="giro"></span>Subiendo · 62 %</div></div></div>
+      <div class="up-f"><span><b>Reporte de IP</b><small>IP_noviembre.xlsx</small></span><div><div class="barra ind"><i></i></div><div class="pc-t"><span class="giro"></span>Leyendo el archivo</div></div></div>
+      <div class="up-f"><span><b>Órdenes de Odoo</b><small>odoo.xlsx · 312 filas</small></span><div><div class="barra ok"><i></i></div><div class="pc-t" style="color:var(--verde);font-weight:700">Listo · cruzado</div></div></div>
+    </div>
+    <p class="nota">Cada archivo tiene su barra: se llena con el %, y mientras lee (sin % todavía) una franja corre de lado a lado. La zona de soltar cambia a "Subiendo 2 archivos" con un círculo girando. Al terminar, la barra se pone verde.</p>
+
+    <p class="et" style="margin-top:14px">b · Historial agrupado</p>
+    <div class="hist">
+      <div class="hd">Hoy <small>jueves 12 nov</small><span class="chip verde">3 cargas</span></div>
+      <div class="hr"><span class="h">9:40</span><span><b>TAD</b><small>TAD_12-11.xlsx · Gualfredo</small></span><span class="chip verde">Bien</span><span class="n">4.812 servicios</span></div>
+      <div class="hr"><span class="h">9:41</span><span><b>Reporte de IP</b><small>IP_noviembre.xlsx · Gualfredo</small></span><span class="chip verde">Bien</span><span class="n">1.204 IP</span></div>
+      <div class="hr"><span class="h">9:43</span><span><b>Órdenes de Odoo</b><small>odoo.xlsx · Gualfredo</small></span><span class="chip ambar">Filas sin leer</span><span class="n">312 filas</span></div>
+      <div class="hd">Ayer <small>miércoles 11 nov</small><span class="chip">2 cargas</span></div>
+      <div class="hr"><span class="h">8:15</span><span><b>TAD</b><small>TAD_11-11.xlsx · Ana</small></span><span class="chip ambar">Sin fechas</span><span class="n">4.790 servicios</span></div>
+      <div class="sem">Lunes 9 y martes 10 nov <small>· 5 cargas</small><svg class="i"><use href="#chev"/></svg></div>
+      <div class="sem">Semana del 2 al 8 nov <small>· 14 cargas, 1 no terminó</small><span class="chip rojo" style="margin-left:auto">1 no terminó</span><svg class="i" style="margin-left:6px"><use href="#chev"/></svg></div>
+      <div class="sem">Semana del 26 oct al 1 nov <small>· 11 cargas</small><svg class="i"><use href="#chev"/></svg></div>
+    </div>
+    <p class="nota">Hoy y ayer abiertos, por día. Lo de esta semana, plegado por día. Las semanas anteriores, plegadas por semana, con aviso si alguna carga falló.</p>
+  </div>
+
+  <div class="col">
+    <p class="et">c · Descargó la carta: "Ya la envié" en un toque</p>
+    <div class="hoja chica" style="width:420px">
+      <div class="h-cab"><div><h2>¿La vas a enviar por WhatsApp?</h2><p class="sub">Pérez Ramírez</p></div><button class="cerrar" aria-label="Cerrar"><svg class="i"><use href="#x"/></svg></button></div>
+      <div class="h-cuerpo">
+        <button class="btn wa ancho"><svg class="i"><use href="#wa"/></svg>Enviar por WhatsApp</button>
+        <button class="btn s ancho">Ya la envié</button>
+        <button class="btn s ancho">Solo descargar</button>
+      </div>
+    </div>
+    <div class="toast"><svg class="i"><use href="#ok"/></svg>Marcada como enviada hoy<button class="enlace">Cambiar</button></div>
+    <p class="nota" style="max-width:420px">"Ya la envié" marca carta y proforma con la fecha de hoy, sin preguntar más. Si fue otro día o solo una, "Cambiar" en el aviso abre la hoja de siempre (qué, cuándo y por dónde).</p>
+
+    <p class="et" style="margin-top:14px">d · Mensaje al líder</p>
+    <div class="wa-m">Hola Carla, a <b>Pérez Ramírez</b> le faltan <b>todos los documentos</b> en la app. ¿Me ayudas a conseguirlos? Cierra el corte el 18 de noviembre.</div>
+    <div class="wa-m">Hola Carla, a <b>Pérez Ramírez</b> le faltan <b>el RIF y la cédula del representante</b> en la app. ¿Me ayudas a conseguirlos?</div>
+    <p class="nota" style="max-width:420px">Si no tiene ninguno: "todos los documentos". Si faltan hasta 3, los nombra. Si son más: "faltan 5 documentos". Igual en el seguimiento desde Comisiones.</p>
+  </div>
+  </div>
+</section>
+
+
+<!-- ================= 9. ALIADOS (ADMINISTRADOR) ================= -->
+<section class="col">
+  <span class="et">9 · Aliados: tu vista y el formulario</span>
+  <h2 class="sec-t">El mes manda, y el formulario se agranda y acepta arrastrar</h2>
+  <p class="sec-s">Hoy Solicitudes mezcla todos los meses y "Por mes" es otra pestaña. Propuesta: el mismo período de Comisiones arriba, y todo lo de abajo cuenta con ese mes.</p>
+  <div class="pc" style="width:1100px;margin-top:8px">
+    <div class="t-row"><div><h1>Aliados comerciales</h1><p class="sub">Solicitudes, instalaciones y pagos de los aliados</p></div>
+      <div class="der"><span class="mes"><button aria-label="Mes anterior"><svg class="i"><use href="#atr"/></svg></button>Noviembre 2026<button aria-label="Mes siguiente"><svg class="i" style="transform:rotate(180deg)"><use href="#atr"/></svg></button></span><span class="sel">Aliado: todos <svg class="i" style="width:14px;height:14px"><use href="#chev"/></svg></span></div></div>
+    <div class="kpi">
+      <div><span>Esperan tu decisión</span><b>4</b><small>excepciones y revisiones</small></div>
+      <div><span>Solicitudes del mes</span><b>23</b><small>18 aprobadas · 3 negadas</small></div>
+      <div><span>Instaladas</span><b>11</b><small>9 con permiso</small></div>
+      <div><span>Sin autorización</span><b>2</b><small>por revisar</small></div>
+    </div>
+    <div class="p-row" style="margin-top:14px"><span class="pl on">Esperan tu decisión <i>4</i></span><span class="pl">En curso <i>7</i></span><span class="pl">Sin enviar <i>3</i></span><span class="pl">Instaladas <i>11</i></span><span class="pl">Todas <i>23</i></span><span class="pl">Más filtros <svg class="i" style="width:14px;height:14px"><use href="#chev"/></svg></span><span class="busca" style="min-width:220px"><svg class="i"><use href="#bus"/></svg>Cliente, RIF o aliado</span></div>
+    <div class="al-l">
+      <div class="al-s">ESTA SEMANA · 9 al 12 nov</div>
+      <div class="al-r"><span style="color:var(--text2)">12 nov</span><span><b>Comercial Ejemplo, C.A.</b><small>J-40123456-7</small></span><span>Aliado Norte<small>aliado</small></span><span class="chip morado" style="background:#F0EBFA;color:#5B3AA6">Excepción solicitada</span><button class="btn chico">Decidir</button></div>
+      <div class="al-r"><span style="color:var(--text2)">11 nov</span><span><b>Farmacia Modelo</b><small>J-31234567-0</small></span><span>Red Norte<small>aliado</small></span><span class="chip azul">En revisión</span><button class="btn s chico">Abrir</button></div>
+      <div class="al-s">SEMANA ANTERIOR · 2 al 8 nov</div>
+      <div class="al-r"><span style="color:var(--text2)">6 nov</span><span><b>Inversiones Prueba</b><small>J-50123456-1</small></span><span>Aliado Norte<small>aliado</small></span><span class="chip verde">Instalada</span><button class="btn s chico">Abrir</button></div>
+    </div>
+    <p class="nota" style="margin-top:10px">Pestañas arriba como hoy (Solicitudes, Por mes, Sin autorización, Pagos, Aliados y usuarios); el mes elegido aplica a todas. Las solicitudes van agrupadas por semana.</p>
+  </div>
+
+  <p class="et" style="margin-top:18px">Formulario de la solicitud en PC (920 px, antes 520)</p>
+  <div class="fila-l">
+  <div class="form-a">
+    <div class="h-cab"><div><h2>Nuevo cliente</h2><p class="sub">Paso 2 de 2 · Completa el expediente</p></div><button class="cerrar" aria-label="Cerrar"><svg class="i"><use href="#x"/></svg></button></div>
+    <div class="dos-c">
+      <div class="col">
+        <div class="zona" style="padding:30px 16px"><span class="ic"><svg class="i" style="width:22px;height:22px"><use href="#sub"/></svg></span><b>Arrastra todos los documentos juntos</b><small>La app pone cada uno en su casilla. También puedes soltar uno sobre su casilla.</small><button class="btn s chico" style="margin-top:8px">Elegir archivos</button></div>
+        <div class="campo-l"><label>Teléfono de contacto</label><div class="campo lleno">0414 000 0000</div></div>
+        <div class="campo-l"><label>Correo</label><div class="campo lleno">cliente@ejemplo.com</div></div>
+      </div>
+      <div class="tarj">
+        <div class="cas"><span class="e ok"></span><span class="tx"><b>RIF de la empresa</b><small>Leído · J-40123456-7</small></span><button class="enlace">Ver</button></div>
+        <div class="cas sobre"><span class="e"></span><span class="tx"><b>Registro mercantil</b><small>Suelta aquí</small></span><button class="btn s chico">Subir</button></div>
+        <div class="cas"><span class="e"></span><span class="tx"><b>Cédula del representante</b><small>Falta</small></span><button class="btn s chico">Subir</button></div>
+        <div class="cas"><span class="e"></span><span class="tx"><b>RIF del representante</b><small>Falta</small></span><button class="btn s chico">Subir</button></div>
+        <div class="cas"><span class="e"></span><span class="tx"><b>Acta de asamblea</b><small>Falta</small></span><button class="btn s chico">Subir</button></div>
+      </div>
+    </div>
+    <div class="pie" style="justify-content:flex-end"><button class="btn s" style="flex:none;min-width:180px">Guardar lo que llevo</button><button class="btn" style="flex:none;min-width:180px;opacity:.45">Enviar</button></div>
+  </div>
+  <div class="col" style="width:300px">
+    <p class="nota"><b>Paso 1:</b> además de escribir el RIF, se puede soltar el archivo del RIF. El OCR lee el número y revisa solo si está disponible. Ese archivo ya queda en su casilla en el paso 2.</p>
+    <p class="nota"><b>Arrastrar en toda la hoja:</b> si sueltas sobre cualquier parte, entra a la zona general. Al pasar un archivo por encima, se marca la casilla que lo recibe.</p>
+    <p class="nota"><b>En teléfono</b> queda igual que hoy (una columna), con "Elegir archivos" grande.</p>
+  </div>
+  </div>
+</section>
+
+<!-- ================= 5. TELÉFONO ================= -->
+<section class="col">
+  <span class="et">5 · En teléfono (390 px)</span>
+  <h2 class="sec-t">Mismo orden, a pantalla completa y cómodo con el pulgar</h2>
+  <div class="fila-l" style="margin-top:8px">
+  <div class="tel"><div class="hoja">
+    <div class="h-cab"><div><h2>Inversiones Proham, C.A.</h2><p class="sub">005-170431 · Instalado el 10 nov</p></div><button class="cerrar" aria-label="Cerrar"><svg class="i"><use href="#x"/></svg></button></div>
+    <div class="h-cuerpo">
+      <div class="blq falta"><div class="blq-c"><span class="pt"></span>Carta y proforma<span class="chip ambar">Falta la IP</span></div>
+        <div class="blq-z">
+          <div class="tarj">
+            <div class="f"><span class="tx"><b>Proforma</b><small>Plan 50 Mbps</small></span><button class="enlace">Ver PDF</button></div>
+            <div class="f"><span class="tx"><b>Carta de bienvenida</b><small>Con los datos de la líder</small></span><button class="enlace">Ver PDF</button></div>
+            <div class="f" style="flex-wrap:wrap"><span class="tx" style="flex-basis:100%"><b>IP del servicio</b><small class="mal">Falta. La carta dirá "Pendiente"</small></span><span class="bts" style="width:100%"><button class="btn s chico" style="flex:1;height:44px">Escribir IP</button><button class="btn chico" style="flex:1;height:44px">Ver sugeridas (3)</button></span></div>
+            <div class="f"><span class="tx"><b>Se envía a</b><small>0424 696 1090 · Proham</small></span><button class="btn s chico" style="height:44px">Cambiar</button></div>
+          </div>
+          <button class="btn wa ancho"><svg class="i"><use href="#wa"/></svg>Enviar por WhatsApp</button>
+          <div class="tres"><button class="btn s">Descargar</button><button class="btn s">Correo</button><button class="btn s">Ya la envié</button></div>
+        </div></div>
+      <div class="blq"><div class="blq-c"><span class="pt"></span>Legal y documentos<span class="chip verde">Cumple</span></div></div>
+    </div>
+  </div></div>
+
+  <div class="tel"><div class="hoja">
+    <div class="h-cab"><button class="atras" aria-label="Volver"><svg class="i"><use href="#atr"/></svg></button><div><h2>IP del servicio</h2><p class="sub">Proham · contrato 170431</p></div></div>
+    <div class="h-cuerpo">
+      <div class="aviso-c"><svg class="i" style="margin-top:1px"><use href="#info"/></svg><span>Confírmala en el sistema técnico.</span></div>
+      <div class="grp-t"><h3>Libres del pool</h3></div>
+      <div class="tarj">
+        <div class="ipf"><div class="tx"><div class="v4">156.255.157.167</div><div class="v6">2803:d700:df00:2000::34d9/128</div></div><button class="btn chico" style="height:44px">Usar</button></div>
+        <div class="ipf"><div class="tx"><div class="v4">156.255.157.168</div><div class="v6">2803:d700:df00:2000::34d7/128</div></div><button class="btn s chico" style="height:44px">Usar</button></div>
+        <div class="ipf"><div class="tx"><div class="v4">156.255.157.169</div><div class="v6">2803:d700:df00:2000::34d6/128</div></div><button class="btn s chico" style="height:44px">Usar</button></div>
+      </div>
+      <div class="grp-t"><h3>¿No es ninguna?</h3></div>
+      <div class="campo-l"><label>IPv4</label><div class="campo">000.000.000.000</div></div>
+    </div>
+    <div class="pie"><button class="btn osc">Guardar la IP escrita</button></div>
+  </div></div>
+
+  <div class="tel"><div class="hoja">
+    <div class="h-cab"><div><h2>Cliente nuevo</h2><p class="sub">Pendiente por instalar hasta que llegue al TAD</p></div><button class="cerrar" aria-label="Cerrar"><svg class="i"><use href="#x"/></svg></button></div>
+    <div class="h-cuerpo">
+      <div class="zona"><span class="ic"><svg class="i" style="width:22px;height:22px"><use href="#sub"/></svg></span><b>Sube el RIF de la empresa</b><small>Foto o PDF. Leemos el número y la razón social.</small><button class="btn chico" style="margin-top:8px;height:44px">Tomar foto o elegir</button></div>
+      <button class="enlace" style="align-self:center;min-height:44px">No tengo el RIF: escribir los datos</button>
+    </div>
+  </div></div>
+  </div>
+</section>
+
+</div>
+</body>
+</html>
