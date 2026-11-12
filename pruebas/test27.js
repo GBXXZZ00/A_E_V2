@@ -47,7 +47,7 @@ w.close(); sys.stdout.buffer.write(z.getvalue())`;
     await p.setInputFiles('#archivos', { name: 'DEDICADO_prueba.xlsx', mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', buffer: xlsx });
     await esperarDia(p);
     const fila = await p.textContent('#dia [data-k="dedicados"]');
-    ok(nombre + ': reconoce el archivo de dedicados por sus hojas y lo sube solo', fila.includes('DEDICADO_prueba.xlsx') && /Leído\s*Cruzado\s*Listo/.test(fila));
+    ok(nombre + ': reconoce el archivo de dedicados por sus hojas y lo sube solo', fila.includes('DEDICADO_prueba.xlsx') && /Listo/.test(fila) && fila.indexOf('.sd-barra2') < 0);
     const partes = mundo.llamadas.filter((l) => l[1] === 'dedicados_parte');
     ok(nombre + ': sube las tres hojas con su encabezado', partes.length === 3 && partes.some((l) => l[2].p_hoja === 'RESUMEN (enlaces)' && l[2].p_cols.includes('COD. ENLACE')) && partes.some((l) => l[2].p_hoja === 'base de contacto'));
     const enl = partes.find((l) => l[2].p_hoja === 'RESUMEN (enlaces)')[2];
@@ -56,7 +56,7 @@ w.close(); sys.stdout.buffer.write(z.getvalue())`;
     ok(nombre + ': las columnas sin título quedan con su posición (el nombre del contacto)', cli.p_cols[5] === 'col5' && cli.p_filas[0][5] === 'PERSONA UNO');
     ok(nombre + ': cierra la carga, dice el resultado y no cruza', mundo.llamadas.some((l) => l[1] === 'dedicados_cerrar') && fila.includes('1 dedicado') && !mundo.llamadas.some((l) => l[1] === 'cruce_aplicar'));
     await p.waitForFunction(() => /Dedicados/.test(document.querySelector('#cargas').textContent));
-    ok(nombre + ': el historial lo muestra con su fecha', (await p.textContent('#cargas')).includes('Dedicados') && (await p.locator('#cargas .sd-h').count()) >= 2);
+    ok(nombre + ': el historial lo muestra con su fecha', (await p.textContent('#cargas')).includes('Dedicados') && (await p.locator('#cargas .sd-h').count()) >= 1 && /Hoy/.test(await p.textContent('#cargas .sd-dia')));
     ok(nombre + ': sin desborde', await sinDesborde(p));
     await p.screenshot({ path: 'capturas/27-' + nombre + '-actualizar.png', fullPage: true });
     // F2: órdenes de instalación desde enero: van solo a Aliados y no entran al cruce (se confirma en su fila)

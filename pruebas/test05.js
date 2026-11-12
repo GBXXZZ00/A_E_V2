@@ -62,7 +62,7 @@ function xlsx(filas){
     ok(nombre + ': el Excel se lee con sus tildes y sin valores dañados', od.length === 2 && od[0].tema === 'Instalación ñandú' && od[0].cliente === 'Comercio de Prueba 1' && !('tema' in od[1]) && !('fejec' in od[0]));
     ok(nombre + ': las columnas se guardan con nombre limpio', cr[0][2].p_filas[0].razon_social === 'Comercio de Prueba 1' && cr[0][2].p_filas[0].cod === '700001' && cr[2][2].p_filas[0].feccump.startsWith('2026-09-03'));
     ok(nombre + ': el resultado dice qué entró, en la fila de cada archivo', /900 clientes nuevos/.test(z) && /2 filas no se pudieron leer/.test(z) && /2 filas guardadas/.test(z), z.slice(0, 900));
-    ok(nombre + ': el cruce corre solo al terminar (sin Cruzar ahora) y las filas quedan Leído, Cruzado y Listo', mundo.cruceAplicado === true && !(await p.locator('#cruzarAhora, #aplicarCruce').count()) && /Leído\s*Cruzado\s*Listo/.test(await p.textContent('#dia [data-k="odoo"]')));
+    ok(nombre + ': el cruce corre solo al terminar (sin Cruzar ahora) y las filas quedan con la barra verde "Listo · cruzado"', mundo.cruceAplicado === true && !(await p.locator('#cruzarAhora, #aplicarCruce').count()) && /Listo · cruzado/.test(await p.textContent('#dia [data-k="odoo"]')));
     await p.click('#detCruce summary'); const cz = await p.textContent('#cruce');
     ok(nombre + ': Ver detalle del cruce dice qué cambió', cz.includes('9 clientes reciben su líder') && cz.includes('Comisiones de octubre') && cz.includes('3 quedan pendientes por asignar'));
     await p.waitForFunction(() => document.querySelectorAll('#cargas .sd-h:not(.sd-hcab)').length === 4);

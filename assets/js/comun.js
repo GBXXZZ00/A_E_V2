@@ -17,7 +17,8 @@
   }
 
   let zona = null;
-  function toast(texto, tipo){
+  // Lote 12/11 B: un aviso puede traer una acción ("Cambiar")
+  function toast(texto, tipo, accion){
     if(!zona){
       zona = document.createElement('div');
       zona.className = 'toast-zona';
@@ -27,9 +28,11 @@
     t.className = 'toast' + (tipo === 'error' ? ' error' : '');
     t.setAttribute('role', tipo === 'error' ? 'alert' : 'status');
     t.textContent = texto;
+    if(accion && accion.t && typeof accion.fn === 'function'){ const b = document.createElement('button'); b.type = 'button'; b.className = 'toast-acc'; b.textContent = accion.t;
+      b.addEventListener('click', () => { t.remove(); accion.fn(); }); t.classList.add('con-acc'); t.appendChild(b); }
     zona.appendChild(t);
     requestAnimationFrame(() => t.classList.add('ver'));
-    setTimeout(() => { t.classList.remove('ver'); setTimeout(() => t.remove(), 220); }, tipo === 'error' ? 4600 : 3000);
+    setTimeout(() => { t.classList.remove('ver'); setTimeout(() => t.remove(), 220); }, tipo === 'error' ? 4600 : accion ? 6000 : 3000);
   }
 
   // Mensaje claro para la persona a partir de un error técnico

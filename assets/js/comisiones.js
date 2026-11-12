@@ -1057,10 +1057,10 @@
   // Lote 10/11 D11: al descargar, "¿La vas a enviar por WhatsApp?"
   function abrirDescargada(sid){
     const tels = window.Ficha.telefonosCarta ? window.Ficha.telefonosCarta(K.F, sid) : [];
+    // Lote 12/11 B (maqueta 8c): tres botones; "Ya la envié" marca carta y proforma con la fecha de hoy sin preguntar
     hojaChica('hojaDescargada', 'tDesc').innerHTML = cabHoja('tDesc', '¿La vas a enviar por WhatsApp?', K.F.cliente.nombre) +
-      '<p class="nota" style="margin-top:0">Si la mandas con este botón queda anotada sola y no te sale como pendiente.</p><div class="acciones col">' +
-      (tels.length ? '<button type="button" class="btn btn-ancho cp-wa" id="descWa">' + ic('wa') + 'Enviar por WhatsApp</button>' : '') +
-      '<button type="button" class="btn btn-ancho btn-2" id="descOtro">Ya la envié por otro lado</button><button type="button" class="btn btn-ancho btn-2 cx-solo" id="descSolo">Solo descargar</button></div>';
+      '<div class="desc-acc">' + (tels.length ? '<button type="button" class="hc-b wa an" id="descWa">' + ic('wa') + 'Enviar por WhatsApp</button>' : '') +
+      '<button type="button" class="hc-b s an" id="descOtro">Ya la envié</button><button type="button" class="hc-b s an" id="descSolo">Solo descargar</button></div>';
     abrirHoja('hojaDescargada');
   }
   // Lote 05/11 E3: "Ya enviada (marcar)": qué, cuándo y por dónde; queda quién lo marcó
@@ -1159,7 +1159,9 @@
     if(t.closest('#cartaMarcarYa') && iK()){ abrirMarcarCarta(); return; }
     if((t.closest('#cartaCambiarNum') || t.closest('#cartaAgregarNum')) && iK()){ window.Ficha.enviarDesde(K.F, iK().servicio_id, tras); return; }
     if(t.closest('#descWa') && iK()){ cerrarHoja(); const wa = $('cartaWa'); if(wa) wa.click(); return; }
-    if(t.closest('#descOtro') && iK()){ cerrarHoja(); abrirMarcarCarta(); return; }
+    if((b = t.closest('#descOtro')) && iK()){ b.disabled = true; const sid = iK().servicio_id; const h = new Date(); const hoyL = h.getFullYear() + '-' + String(h.getMonth() + 1).padStart(2, '0') + '-' + String(h.getDate()).padStart(2, '0');
+      rpc('carta_marcar_enviada', { p_servicio: sid, p_que: 'ambas', p_canal: 'otro', p_fecha: hoyL }).then(() => { if(hojaAbierta() === 'hojaDescargada') cerrarHoja(); toast('Marcada como enviada hoy', null, { t: 'Cambiar', fn: () => { if(K && K.F) abrirMarcarCarta(); } }); tras(); })
+        .catch((err) => { toast(err.message, 'error'); if(document.contains(b)) b.disabled = false; }); return; }
     if(t.closest('#descSolo')){ cerrarHoja(); toast('Descargada. Si la envías, márcala: a las 2 horas te lo recordamos'); tras(); return; }
     if(t.closest('#provNo') && K){ alExpediente({ tab: 'datos' }); toast('Escribe el RIF correcto en Datos: si ya existe, se une a ese cliente'); return; }
     if(t.closest('#cartaOtra') && iK()){ window.Ficha.cartaOtra(K.F, iK().servicio_id, tras); return; }

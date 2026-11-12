@@ -1,7 +1,7 @@
 // Actualizar datos: recibe varios archivos, reconoce cada uno por sus columnas y los carga por lotes.
 (function(){
   'use strict';
-  const { $, esc, rpc, toast, normalizeStr, fecha, fechaDia, hora, plural, capital, esqueleto, cache } = window.Comun;
+  const { $, esc, ic, rpc, toast, normalizeStr, fecha, fechaDia, hora, plural, capital, esqueleto, cache } = window.Comun;
   const S = window.Sesion;
   const LOTE = 400;
   const COLUMNAS = { s: 'sucursal', c: 'cliente', t: 'tipo', d: 'documento', f: 'fecha_instalacion', n: 'nombre', e: 'equipo', p: 'plan', es: 'estado', ca: 'categoria', cx: 'cxcpendiente', te: 'telefono', di: 'direccion' };
@@ -278,6 +278,8 @@
   const hoyIso = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/Caracas' });
   const pill = (t, c) => '<span class="chip ' + (c || '') + '">' + esc(t) + '</span>';
   const pasos = (l, c, k) => '<span class="sd-pasos">' + pill('Leído', l) + pill('Cruzado', c) + pill('Listo', k) + '</span>';
+  // Lote 12/11 B (maqueta 8a): cada archivo con su barra: se llena con el %, corre de lado mientras lee sin % y queda verde al terminar
+  const barra = (pct, cls, txt, giro) => '<span class="sd-barra2' + (cls || '') + '"><span class="sd-pista"><i style="transform:scaleX(' + Math.max(0, Math.min(1, pct || 0)).toFixed(3) + ')"></i></span><small>' + (giro ? '<i class="sd-giro" aria-hidden="true"></i>' : '') + esc(txt) + '</small></span>';
   function cargaHoy(fuente){
     const g = ((estadoAct && estadoAct.historial) || []).find((x) => x.fecha === hoyIso());
     return g ? g.cargas.find((c) => c.fuente === fuente && !(c.resumen || {}).solo_aliados) || null : null;
@@ -301,20 +303,21 @@
     const i = lista.indexOf(a); const base = { k, nombre: nombre || (a.tipo ? TIPOS[a.tipo].nombre : 'Sin reconocer'), archivo: a.nombre };
     if(a.error) return Object.assign(base, { clase: 'rojo', avance: pill(a.tipo ? 'Leído' : 'No se reconoce', a.tipo ? 'verde' : 'rojo') + (a.tipo ? pill('No se cruzó', 'rojo') : ''), titulo: a.error,
       detalle: esc(a.tipo ? 'Descárgalo otra vez del sistema con todas las columnas y suéltalo aquí.' : 'Revisa que sea el archivo correcto (TAD, IP, Odoo, Instalaciones o Dedicados) y suéltalo otra vez.'), acciones: '<button type="button" class="btn btn-chico btn-2" data-quitar="' + i + '">Quitar</button>' });
-    if(a.leyendo) return Object.assign(base, { avance: pill(a.espera ? 'En espera' : 'Leyendo' + (a.avance ? ' ' + a.avance + ' %' : ''), ''), titulo: a.espera ? 'Va después del anterior' : 'Leyendo el archivo', detalle: esc('Los más pesados pueden tardar un par de minutos.') });
-    if(a.pregunta) return Object.assign(base, { clase: 'ambar', avance: pasos('verde', '', ''), titulo: 'Va solo a Aliados (fechas de antes del 21/08)',
+    if(a.leyendo) return Object.assign(base, { avance: barra((a.avance || 0) / 100, a.avance || a.espera ? '' : ' ind', a.espera ? 'En espera' : 'Leyendo el archivo' + (a.avance ? ' · ' + a.avance + ' %' : ''), !a.espera), titulo: a.espera ? 'Va después del anterior' : 'Leyendo el archivo', detalle: esc('Los más pesados pueden tardar un par de minutos.') });
+    if(a.pregunta) return Object.assign(base, { clase: 'ambar', avance: barra(1, ' ok', 'Leído'), titulo: 'Va solo a Aliados (fechas de antes del 21/08)',
       detalle: esc('Es el histórico de instalaciones por mes. No entra al cruce ni toca comisiones.'), acciones: '<button type="button" class="btn btn-chico" data-ok-para="' + i + '">Así está bien</button><button type="button" class="btn btn-chico btn-2" data-para="' + i + '">Usarlo para comisiones</button>' });
     if(a.estado === 'fallo') return Object.assign(base, { clase: 'rojo', avance: pasos('verde', 'rojo', '').replace('>Cruzado<', '>Se detuvo<'), titulo: 'La carga se detuvo', detalle: esc((a.falla || '') + ' Vuelve a intentarlo: no se duplica nada.'), acciones: '<button type="button" class="btn btn-chico" data-reintentar="1">Reintentar</button>' });
-    if(a.estado === 'subiendo') return Object.assign(base, { avance: pill('Leído', 'verde') + pill((a.fase ? a.fase + ' ' : 'Subiendo ') + Math.round((a.hecho || 0) * 100 / Math.max(1, a.fase ? (a.totalIdx || (a.indice || []).length) : (a.datos || []).length)) + ' %', 'ambar'), titulo: 'Subiendo', detalle: esc('No cierres esta pantalla hasta que termine.') });
+    if(a.estado === 'subiendo'){ const pc = Math.round((a.hecho || 0) * 100 / Math.max(1, a.fase ? (a.totalIdx || (a.indice || []).length) : (a.datos || []).length));
+      return Object.assign(base, { avance: barra(pc / 100, '', (a.fase || 'Subiendo') + ' · ' + pc + ' %', true), titulo: 'Subiendo', detalle: esc('No cierres esta pantalla hasta que termine.') }); }
     if(a.estado === 'lista'){
       const crudo = CRUDOS.indexOf(a.tipo) >= 0 && !a.soloAliados; const t = String(a.resultado || '').split(' · ');
-      if(crudo && cruzando) return Object.assign(base, { avance: pill('Leído', 'verde') + pill('Cruzando', 'ambar'), titulo: t[0], detalle: esc('Uniendo órdenes, instalaciones y líderes.') });
+      if(crudo && cruzando) return Object.assign(base, { avance: barra(1, ' ind', 'Cruzando', true), titulo: t[0], detalle: esc('Uniendo órdenes, instalaciones y líderes.') });
       if(crudo && cruceFallo) return Object.assign(base, { clase: 'rojo', avance: pill('Leído', 'verde') + pill('No se cruzó', 'rojo'), titulo: 'No se pudo cruzar', detalle: esc(cruceFallo + '. Vuelve a intentarlo.'), acciones: '<button type="button" class="btn btn-chico" data-recruzar="1">Cruzar otra vez</button>' });
       if(a.tipo === 'tad' && a.sinFechas) return Object.assign(base, { clase: 'rojo', avance: pill('Leído', 'verde') + pill('Cruzado', 'verde') + pill('Sin fechas', 'rojo'), titulo: t[0], detalle: (t.length > 1 ? esc(t.slice(1).join(' · ')) + '. ' : '') + avisoSinFechas(a.colsFechas).replace(/^<small[^>]*>|<\/small>$/g, '') });
-      return Object.assign(base, { avance: pasos('verde', 'verde', 'verde'), titulo: t[0], detalle: esc(t.slice(1).join(' · ') || (a.soloAliados ? 'Solo para aliados, no toca comisiones' : '')) });
+      return Object.assign(base, { listo: true, avance: barra(1, ' ok', a.soloAliados ? 'Listo · solo aliados' : crudo ? 'Listo · cruzado' : 'Listo'), titulo: t[0], detalle: esc(t.slice(1).join(' · ') || (a.soloAliados ? 'Solo para aliados, no toca comisiones' : '')) });
     }
     // Leído, esperando su turno
-    return Object.assign(base, { avance: pasos('verde', '', ''), titulo: detalleTexto(a), detalle: esc('Se sube y se cruza solo.') });
+    return Object.assign(base, { avance: barra(0, '', 'Leído · en espera'), titulo: detalleTexto(a), detalle: esc('Se sube y se cruza solo.') });
   }
   function detalleTexto(a){
     if(a.tipo === 'tad') return num(a.datos.length) + ' servicios de ' + num(a.clientes) + ' clientes' + (a.fuera ? ' · ' + num(a.fuera) + ' residenciales quedan fuera' : '');
@@ -342,7 +345,7 @@
         acciones: t ? '<button type="button" class="btn btn-chico" data-solo-indice="' + lista.indexOf(t) + '">Seguir solo con el índice</button>' : '' });
     }
     if(!idxEstado) return Object.assign(base, { avance: pill('Sin datos', ''), titulo: 'Una vez por semana', detalle: '' });
-    return Object.assign(base, { avance: idxEstado.toca ? pill('Toca hoy', 'ambar') : pasos('verde', 'verde', 'verde'), titulo: idxEstado.toca ? 'Toca hoy: se actualiza solo al subir el TAD' : 'Al día',
+    return Object.assign(base, { avance: idxEstado.toca ? pill('Toca hoy', 'ambar') : barra(1, ' ok', 'Al día'), titulo: idxEstado.toca ? 'Toca hoy: se actualiza solo al subir el TAD' : 'Al día',
       detalle: esc(idxEstado.ultima ? 'Último: ' + fecha(idxEstado.ultima) + '. Sirve para saber si un RIF ya es cliente residencial.' : 'Nunca se ha cargado.') });
   }
   function filaSinArchivo(k, nombre){
@@ -351,7 +354,7 @@
     if(c){
       const n = numerosCarga(c); const pend = CRUDOS.indexOf(k) >= 0 && !!(estadoAct && estadoAct.cruce_pendiente);
       if(k === 'tad' && (c.resumen || {}).con_fechas === 0) return Object.assign(base, { clase: 'rojo', archivo: c.archivo, avance: pill('Leído', 'verde') + pill('Cruzado', 'verde') + pill('Sin fechas', 'rojo'), titulo: n[0], detalle: esc('No trajo fechas de suspensión ni de activación. Pide el TAD con esas columnas.') });
-      return Object.assign(base, { archivo: c.archivo, avance: pasos('verde', pend ? (cruzando ? 'ambar' : '') : 'verde', pend ? '' : 'verde'), titulo: n[0], detalle: esc(pend && cruzando ? 'Cruzando…' : n[1]) });
+      return Object.assign(base, { listo: !pend, archivo: c.archivo, avance: pend ? barra(1, cruzando ? ' ind' : '', cruzando ? 'Cruzando' : 'Leído · falta cruzar', cruzando) : barra(1, ' ok', CRUDOS.indexOf(k) >= 0 ? 'Listo · cruzado' : 'Listo'), titulo: n[0], detalle: esc(pend && cruzando ? 'Cruzando…' : n[1]) });
     }
     const diaria = f && f.frecuencia === 'diaria';
     if(diaria && !f.al_dia) return Object.assign(base, { clase: 'falta', archivo: f.ultima ? 'Último: ' + fecha(f.ultima).replace(/ de \d{4}$/, '') : 'Nunca se ha subido', avance: pill('Sin subir', ''), titulo: 'Falta el de hoy', detalle: esc(FREC.diaria) });
@@ -359,7 +362,9 @@
   }
   function pintar(){
     const z = $('zona');
-    z.innerHTML = '<button type="button" class="soltar sd-soltar" id="soltar">' + ICO + '<span><b>Suelta aquí el TAD, Clientes Empresariales (IP), Odoo, Órdenes de instalación y Dedicados</b>Puedes soltarlos todos a la vez. No importa el orden. También el mapa de red (KMZ).</span><span class="btn btn-2 btn-chico sd-elegir">Elegir archivos</span></button>' +
+    const act = lista.filter((a) => a.leyendo || a.estado === 'subiendo').length;
+    z.innerHTML = (act ? '<button type="button" class="soltar sd-soltar sd-subiendo" id="soltar"><i class="sd-giro g" aria-hidden="true"></i><span><b>' + esc(act === 1 ? 'Subiendo 1 archivo' : 'Subiendo ' + act + ' archivos') + '</b>Puedes seguir usando la app. Si cierras la pestaña, se pausa.</span></button>'
+      : '<button type="button" class="soltar sd-soltar" id="soltar">' + ICO + '<span><b>Suelta aquí el TAD, Clientes Empresariales (IP), Odoo, Órdenes de instalación y Dedicados</b>Puedes soltarlos todos a la vez. No importa el orden. También el mapa de red (KMZ).</span><span class="btn btn-2 btn-chico sd-elegir">Elegir archivos</span></button>') +
       (corto ? '<div class="al-banda ambar" role="alert" style="margin-top:14px"><b>El TAD parece incompleto</b><p>' + esc(corto.texto) + '. Si estás seguro de que está completo, cárgalo igual.</p>' +
         '<p style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap"><button type="button" class="btn btn-chico btn-2" id="limpiar">Quitar todos</button><button type="button" class="btn btn-chico" id="cargarCorto">Cargar igual</button></p></div>' : '');
     const usados = new Set(); const filas = [];
@@ -372,7 +377,7 @@
     // Lo demás que se soltó (cambios de categoría, base anterior, instalaciones para aliados, archivos que no se reconocen)
     lista.filter((a) => !usados.has(a)).forEach((a) => filas.push(filaArchivo(a, a.tipo || 'otro')));
     const req = filas.filter((f) => ['tad', 'odoo', 'instalaciones'].indexOf(f.k) >= 0 || (f.k === 'ip' && cargaHoy('ip')));
-    const listos = req.filter((f) => /sd-pasos/.test(f.avance) && (f.avance.match(/chip verde/g) || []).length === 3).length;
+    const listos = req.filter((f) => f.listo).length;
     const chip = $('hoyChip'); if(chip){ chip.textContent = 'Hoy, ' + hoyIso().slice(8, 10) + '/' + hoyIso().slice(5, 7) + ' · ' + listos + ' de ' + req.length + ' listos'; chip.className = 'chip ' + (listos === req.length ? 'verde' : 'ambar'); }
     const d = $('dia');
     d.innerHTML = '<div class="sd-cab" aria-hidden="true"><span>Archivo</span><span>Avance</span><span>Resultado</span></div>' + filas.map(filaHtml).join('');
@@ -618,9 +623,31 @@
       const fila = (c) => { const e = estadoH(c); const n = numerosCarga(c);
         return '<div class="sd-h"><span class="sd-hf">' + esc(fecha(c.en).replace(/ de \d{4}$/, '') + ' ' + hora(c.en)) + '</span><span class="sd-ha"><b>' + esc(FUENTES[c.fuente] || c.fuente) + '</b><small>' + esc((c.archivo || '') + (c.por ? ' · ' + c.por : '')) + '</small></span>' +
           '<span class="sd-he"><span class="chip ' + e[0] + '">' + esc(e[1]) + '</span></span><span class="sd-hn">' + esc(n[0]) + '</span></div>'; };
-      const vis = verTodoHist ? todas : todas.slice(0, 15);
-      $('cargas').innerHTML = todas.length ? '<div class="sd-hist"><div class="sd-h sd-hcab" aria-hidden="true"><span>Fecha</span><span>Archivo</span><span>Estado</span><span>Números</span></div>' + vis.map(fila).join('') + '</div>' +
-          (todas.length > vis.length ? '<button type="button" class="enlace" id="verMasHist" style="margin-top:10px">Ver más (' + (todas.length - vis.length) + ')</button>' : '')
+      // Lote 12/11 B (maqueta 8b): Hoy y Ayer abiertos por día; el resto de la semana plegado por día; semanas anteriores plegadas por semana con aviso si una carga no terminó
+      const DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado']; const MC = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+      const loc = (x) => { const t = new Date(x); return isNaN(t) ? null : new Date(t.getFullYear(), t.getMonth(), t.getDate()); };
+      const clave = (t) => t.getFullYear() + '-' + String(t.getMonth() + 1).padStart(2, '0') + '-' + String(t.getDate()).padStart(2, '0');
+      const hoyD = loc(new Date()); const ayerD = new Date(hoyD); ayerD.setDate(ayerD.getDate() - 1);
+      const lunes = (t) => { const x = new Date(t); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; };
+      const lunHoy = lunes(hoyD);
+      const nCargas = (l) => plural(l.length, 'carga', 'cargas'); const fallas = (l) => l.filter((c) => c.estado === 'fallo').length;
+      const filaH = (c) => { const e = estadoH(c); const n = numerosCarga(c);
+        return '<div class="sd-h"><span class="sd-hf">' + esc(hora(c.en)) + '</span><span class="sd-ha"><b>' + esc(FUENTES[c.fuente] || c.fuente) + '</b><small>' + esc((c.archivo || '') + (c.por ? ' · ' + c.por : '')) + '</small></span>' +
+          '<span class="sd-he"><span class="chip ' + e[0] + '">' + esc(e[1]) + '</span></span><span class="sd-hn">' + esc(n[0]) + '</span></div>'; };
+      const porDia = {}; todas.forEach((c) => { const t = loc(c.en); if(!t) return; const k = clave(t); (porDia[k] = porDia[k] || { t, l: [] }).l.push(c); });
+      const dias = Object.keys(porDia).sort().reverse().map((k) => porDia[k]);
+      const nomDia = (t) => DIAS[t.getDay()] + ' ' + t.getDate() + ' ' + MC[t.getMonth()];
+      const avisoF = (l) => fallas(l) ? '<span class="chip rojo">' + plural(fallas(l), 'no terminó', 'no terminaron') + '</span>' : '';
+      let hh = '';
+      dias.filter((g) => g.t >= ayerD).forEach((g) => { const hoyEs = g.t.getTime() === hoyD.getTime();
+        hh += '<div class="sd-hgr"><div class="sd-dia"><b>' + (hoyEs ? 'Hoy' : 'Ayer') + '</b><small>' + esc(nomDia(g.t)) + '</small>' + (fallas(g.l) ? avisoF(g.l) : '<span class="' + (hoyEs ? 'chip verde' : 'sd-n') + '">' + nCargas(g.l) + '</span>') + '</div>' + g.l.map(filaH).join('') + '</div>'; });
+      dias.filter((g) => g.t < ayerD && g.t >= lunHoy).forEach((g) => {
+        hh += '<details class="sd-pl"><summary><b>' + esc(capital(nomDia(g.t))) + '</b><small>· ' + nCargas(g.l) + '</small>' + avisoF(g.l) + ic('abajo') + '</summary>' + g.l.map(filaH).join('') + '</details>'; });
+      const sem = {}; dias.filter((g) => g.t < lunHoy && g.t < ayerD).forEach((g) => { const L = lunes(g.t); const k = clave(L); (sem[k] = sem[k] || { L, l: [] }).l = sem[k].l.concat(g.l); });
+      Object.keys(sem).sort().reverse().forEach((k) => { const w = sem[k]; const D = new Date(w.L); D.setDate(D.getDate() + 6);
+        const tit = 'Semana del ' + w.L.getDate() + (w.L.getMonth() !== D.getMonth() ? ' ' + MC[w.L.getMonth()] : '') + ' al ' + D.getDate() + ' ' + MC[D.getMonth()];
+        hh += '<details class="sd-pl"><summary><b>' + esc(tit) + '</b><small>· ' + nCargas(w.l) + (fallas(w.l) ? ', ' + plural(fallas(w.l), 'no terminó', 'no terminaron') : '') + '</small>' + avisoF(w.l) + ic('abajo') + '</summary>' + w.l.map(filaH).join('') + '</details>'; });
+      $('cargas').innerHTML = todas.length ? '<div class="sd-hist sd-hist2">' + hh + '</div>'
         : '<div class="vacio"><b>Aún no hay cargas</b><p>Cuando subas el primer archivo aparecerá aquí con su fecha y quién lo subió.</p></div>';
     } catch (e) {
       $('cargas').innerHTML = '<div class="vacio" role="alert"><b>No se pudo ver el historial</b><p>' + esc(e.message) + '</p><button type="button" class="btn btn-chico" id="reintentarCargas">Reintentar</button></div>';
