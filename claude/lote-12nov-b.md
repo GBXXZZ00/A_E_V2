@@ -1,5 +1,23 @@
 # Lote 12/11 B: Comisiones, Mi trabajo, Cliente nuevo, Actualizar y Aliados
 
+## ENCARGO PARA CLAUDE CODE (leer primero)
+El administrador aprobó todo el lote el 12/11/2026. Ejecútalo completo, por partes, sin volver a preguntar lo ya decidido aquí.
+
+**El diseño es lo más importante de este lote.** En lotes anteriores las maquetas se veían bien y la app quedó distinta y fea. Esta vez no:
+1. **Antes de tocar una pantalla, abre su maqueta en el navegador** (`python3 -m http.server 8765` y `http://localhost:8765/claude/maquetas/lote-12nov-b/…`) y saca su captura. Esa captura es la meta.
+2. **Copia las medidas de la maqueta, no las inventes:** anchos (drawer 600, hoja IP 520, formulario aliado 760 a 920), rellenos (16 a 26 px), radios (14, 18, 24, 28), tamaños de letra (13 a 15 px cuerpo, 17 a 26 títulos), alturas de botón (38 chico, 44 normal, 48 a 50 principal), colores de `:root`. Si una clase de app.css ya existe y da otra medida, gana la maqueta (cámbiala con un selector específico de esa pantalla, sin romper otras).
+3. **Compara lado a lado** captura de la app (1366x768 y 390x844) contra captura de la maqueta, pantalla por pantalla y estado por estado (vacío, cargando, error, listo). Si algo no coincide (alineación, espacio, botón que salta a dos líneas, texto que no es el de la maqueta), se corrige antes de seguir. Los textos de la maqueta son los textos finales.
+4. **No se pierde ningún botón ni función** (lista en cada parte). Si algo cambia de sitio, se anota aquí.
+5. Al terminar cada parte: pruebas del módulo, capturas comparadas, y se publica esa parte (el administrador pidió ver en vivo parte por parte). Batería completa y revisión propia al final del lote.
+6. Comisiones: referencia antes y después de cada parte que toque Comisiones (ver más abajo).
+
+Maquetas (en `claude/maquetas/lote-12nov-b/`):
+- `comisiones-hoja.html`: secciones 1 a 10 (Comisiones arriba y filtros, drawer de comisión, hoja de IP, cliente nuevo con OCR, teléfono, ajustes, estados de la carta, Actualizar datos, Aliados administrador, casillas del aliado).
+- `aliado-flujo.html`: el flujo general del aliado y su inicio en PC.
+- `aliado-pantallas.html`: **la referencia del aliado**: pantalla completa de PC caso por caso (8 casos) y la versión de teléfono. Manda sobre `aliado-flujo.html` y sobre la sección 9 y 10 de `comisiones-hoja.html` si hay diferencia.
+
+Decisión por defecto (el administrador no la contestó; si dice otra cosa, se cambia): cuando un líder sube en Cliente nuevo el RIF de un cliente de otro líder, el mensaje es "Ese RIF ya es de otro líder. Pídele al administrador que lo revise.", **sin el nombre** del otro líder.
+
 Aprobado por el administrador el 12/11/2026 ("vamos a darle"). Maqueta: `claude/maquetas/lote-12nov-b/comisiones-hoja.html` (secciones 1 a 9). La maqueta manda: cada parte se monta, se saca captura en PC (1366x768) y en iPhone y se compara con su sección antes de publicar.
 
 Reglas para todo el lote:
@@ -84,7 +102,8 @@ Decidido por el administrador (12/11): no se identifica todo junto; cada documen
 ### Parte 5c. Flujo del aliado (lámina `aliado-pantallas.html`, corregida 12/11 10:48)
 - Un solo drawer "Nuevo cliente" con tres secciones en orden: 1 El cliente (Empresa/Persona; al elegir aparece la casilla del RIF), 2 Contacto, 3 Documentos. Mientras lee el RIF ya se puede escribir el contacto. Documentos se abre cuando el RIF dice "disponible". Pie: Guardar lo que llevo · Enviar solicitud.
 - Documentos de una empresa: RIF de la empresa, acta constitutiva, cédula y RIF del representante. El acta de asamblea NO va de entrada: solo aparece su casilla cuando la revisión la pide (domicilio, junta, razón social), y ahí está "Pedir excepción".
-- Resultados: **recuadro grande centrado** (no pantalla completa), con la solicitud difuminada detrás y una franja de color arriba. Reemplaza la pantalla completa `al-res`.
+- Resultados: **recuadro grande centrado** (600 px en PC, 350 en teléfono, radio 28/24), **todo el recuadro del color del estado** (fondo verde, gris, ámbar, azul, morado o rojo claro; icono en círculo blanco; cajas internas blancas), con la solicitud difuminada detrás (blur y velo). Reemplaza la pantalla completa `al-res`.
+- Teléfono: el alta es una hoja que sube desde abajo hasta casi arriba; pie con Enviar solicitud arriba y Guardar lo que llevo debajo, ambos a todo el ancho y 48 px; en el inicio, "Nuevo cliente" fijo abajo sobre la barra de navegación.
 - Revisando: "Revisando tu solicitud" con tres puntos animados, el paso en curso con puntos y una franja que corre, y el aviso "No salgas de aquí hasta que termine".
 - ¡Puedes instalar!: sin fecha ni calendario. Texto: "Cuando llegue la orden de instalación con tu nombre, pasa sola a Instalada y te avisamos." Botones: Volver al inicio · Ver la solicitud. (Marcar instalación con fecha existe hoy: no se borra la función; queda dentro de Ver la solicitud hasta que el administrador decida quitarla.)
 - Cartera: "Este cliente ya está carterizado"; sin "No guardamos sus documentos". Botones: Referir cliente, Escribir al administrador de contratos, Volver al inicio.

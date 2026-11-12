@@ -2,6 +2,9 @@
 
 Actualizado: 12/11/2026, LOTE 12/11 HECHO (ficha, Comisiones y Mi trabajo según maquetas). Publicado: `?v=86`.
 
+## SIGUIENTE: LOTE 12/11 B (aprobado, por hacer)
+Todo está en `claude/lote-12nov-b.md` (empieza por "ENCARGO PARA CLAUDE CODE") y las maquetas en `claude/maquetas/lote-12nov-b/`. Partes: 1 drawer de Comisiones y Mi trabajo, 2 arriba de Comisiones, filtros y mensajes, 3 Cliente nuevo con OCR, 4 Actualizar datos y carta descargada, 5 Aliados (vista del administrador, casillas, flujo del aliado en drawer único y resultados en recuadro). Publicar parte por parte. El diseño se copia de la maqueta y se compara con capturas antes de publicar.
+
 ## LOTE 12/11: pantallas iguales a las maquetas aprobadas (`claude/maquetas/lote-12nov/`)
 Forma de trabajar desde aquí: maqueta con los estilos reales de la app (base.css) y datos inventados, el administrador la aprueba, se monta y se compara la captura con la maqueta antes de publicar.
 - **Ficha · Documentos** (ficha-documentos.html, aprobada): arreglado el descuadre (la clase `falta` de las secciones las ponía en fila: `details.doc-sec{display:block}`). Arriba solo la línea de revisión; el resumen, Revisar, IA, zona para soltar y Drive van dentro del Expediente. Casillas con etiqueta (Bien, Falta, Por revisar/En revisión, Devuelta) y un botón (Subir, Ver, Revisar, Editar, Escribir); en teléfono la fila es el botón. Contratos: una fila por contrato con "Abrir" y la hoja `#hojaCtrVer` con lo de antes (firma, fechas, archivo, Editar). El Expediente abre solo si falta algo, hay por revisar, pedidos o "aprobado, por subir".
