@@ -80,3 +80,9 @@ Decidido por el administrador (12/11): no se identifica todo junto; cada documen
 - Cada casilla muestra su análisis: barra con % al subir, "Leyendo" mientras se lee (`vigilarN`), y al final verde "corresponde" o ámbar "Esto parece X, no Y. ¿Lo cambias?" con "Cambiar archivo" (usar la lectura que ya llega en `solicitud_estado`).
 - Combinados: en una casilla vacía, enlace "Viene en otro archivo" que muestra los archivos ya subidos de esa solicitud con "Está aquí". El mismo archivo queda en las dos casillas sin subirlo de nuevo (revisar en el servidor cómo enlazar un archivo a otra casilla; la revisión ya trata archivos con varias casillas). La casilla queda en azul "Viene en el mismo archivo de …" con "Quitar".
 - El resumen de Aliados (vista Resumen que ya existe, `Resumen.enModulo`) usa el mismo mes que la lista; la fila de números de la maqueta 9 no debe repetir lo que ya muestra el Resumen.
+
+### Parte 5c. Flujo del aliado (lámina `aliado-pantallas.html`, 12/11)
+- Un solo drawer "Nuevo cliente" con tres secciones en orden: 1 El cliente (Empresa/Persona; al elegir aparece la casilla del RIF), 2 Contacto, 3 Documentos. Mientras lee el RIF ya se puede escribir el contacto. Documentos se abre cuando el RIF dice "disponible". Pie: Guardar lo que llevo · Enviar solicitud.
+- Resultados en pantalla completa con color (como hoy `al-res`). En todo caso negativo (cartera, en gestión, no procede, revisión del administrador, te falta algo, no se pudo leer) hay "Escribir al administrador de contratos".
+- En gestión por otro: dos textos, "Lo atiende un ejecutivo de la oficina" o "Lo está gestionando otro aliado", sin nombres. El servidor (`aliado_rif`) debe decir cuál de los dos es.
+- Referir: el servicio siempre es Internet PYME (fijo); teléfono de contacto y coordenadas (opcional); nota con "Escribir al administrador de contratos".
