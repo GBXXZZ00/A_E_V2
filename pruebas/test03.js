@@ -42,8 +42,8 @@ const { ok, cerrar } = marcador();
     await p.locator('.grupo.abierto [data-com]').filter({ hasText: 'Vidrios El Faro' }).click(); await p.waitForSelector('#hojaComision.ver [data-plg-btn="pago"]');
     const hc = await p.textContent('#hojaComision');
     ok(nombre + ': la fila abre la hoja de comisión, sin salir', p.url().includes('comisiones.html') && hc.includes('Legal') && hc.includes('Pago'));
-    // Lote 28/10: resumen arriba (Legal, Pago, Orden); lo que falta primero y abierto, lo listo plegado
-    ok(nombre + ': resumen arriba con Legal, Pago y Orden', /Legal/.test(await p.textContent('#hojaComision .hc-res')) && /Orden/.test(await p.textContent('#hojaComision .hc-res')));
+    // Lote 12/11 B: aviso de estado arriba que dice qué le falta (sin recuadro de datos ni contactar en la cabecera)
+    ok(nombre + ': aviso de estado arriba con lo que le falta', /Todavía no cumple|Último corte|Cumple/.test(await p.textContent('#hojaComision .hc-res')) && (await p.locator('#hojaComision .datos-com, #cabCom .ct-zona').count()) === 0);
     ok(nombre + ': plegables Cliente y orden, Legal, Pago, Carta, Corte y comisión e Hilo (sin Más acciones)', await p.evaluate(() => ['legal', 'carta', 'pago', 'orden', 'corte', 'hilo'].every((id) => document.querySelector('[data-plg-btn="' + id + '"]')) && !document.querySelector('[data-plg-btn="ajustes"]')));
     // Lote 10/11 D10: todo cerrado al abrir; Legal se abre al tocarlo
     ok(nombre + ': Legal empieza cerrado y se abre al tocarlo', (await p.getAttribute('[data-plg-btn="legal"]', 'aria-expanded')) === 'false' && (await p.click('[data-plg-btn="legal"]'), await p.getAttribute('[data-plg-btn="legal"]', 'aria-expanded')) === 'true');

@@ -588,14 +588,14 @@
     if(K && K.F && document.querySelector('#hojaComision.ver')) pintarComision();
   }
   let pedirCierre = false;
-  window.ComHoja = { abrir(inst, cliente, o){ o = o || {}; if(o.yo) yo = o.yo; alCerrarSolo = o.alCerrar || null; abrirComision(inst, cliente, !!o.carta); if(SOLO) cargarSolo(); } };
+  window.ComHoja = { abrir(inst, cliente, o){ o = o || {}; if(o.yo) yo = o.yo; alCerrarSolo = o.alCerrar || null; abrirComision(inst, cliente, !!o.carta); if(K) K.ip = !!o.ip; if(SOLO) cargarSolo(); } };
 
   // ---------- Hoja corta de comisión: solo lo que decide la comisión, con gestión ----------
   let K = null;   // { inst, cliente, F }
   let profAbierto = false; // Proforma y carta plegada hasta que se abra
   function montarHoja(){
     if($('hojaComision')) return;
-    const h = document.createElement('section'); h.id = 'hojaComision'; h.className = 'hoja lado corta';
+    const h = document.createElement('section'); h.id = 'hojaComision'; h.className = 'hoja lado';
     h.setAttribute('role', 'dialog'); h.setAttribute('aria-modal', 'true'); h.setAttribute('aria-labelledby', 'tCom'); h.setAttribute('aria-hidden', 'true');
     h.innerHTML = '<div class="asa" aria-hidden="true"></div><div class="ficha-cab" id="cabCom"></div><div class="ficha-cuerpo" id="cuerpoCom"></div>';
     document.body.appendChild(h); window.Comun.prepararHojas();
@@ -610,9 +610,8 @@
       '<button type="button" class="cerrar" data-cierra="1" aria-label="Cerrar">' + ic('x') + '</button></div>' +
       // Lote A: contactar a quien tiene lo que falta para comisionar
       // Lote 05/11 E3: arriba a la vista "Ver expediente completo" y "Contactar a la líder"
-      '<div class="hc-top"><button type="button" class="btn btn-chico btn-2" id="abrirExp">Ver expediente completo</button>' +
-      (window.Contacto && f.instalacion_id && 'orden_ok' in f ? window.Contacto.boton('comision', f.instalacion_id, !f.orden_ok ? 'orden' : !f.legal_ok ? 'legal' : !f.pago_ok ? 'pago' : '') : '') + '</div>';
-    if(window.Contacto) window.Contacto.llenar($('cabCom'));
+      // Lote 12/11 B: debajo solo "Ver expediente completo"; "Escribirle a…" va dentro del aviso de estado
+      '<div class="hc-top"><button type="button" class="hc-b s ch" id="abrirExp">Ver expediente completo</button></div>';
     $('cuerpoCom').innerHTML = '<div class="sk-bloque"><span class="sk" style="height:64px;border-radius:16px"></span><span class="sk" style="height:150px;border-radius:16px"></span><span class="sk" style="height:90px;border-radius:16px"></span></div>';
     if(hojaAbierta() !== 'hojaComision') abrirHoja('hojaComision'); else $('cuerpoCom').scrollTop = 0;
     cargarComision();
@@ -626,11 +625,13 @@
   // Arriba el estado y los datos clave; tres bloques plegables con su mini chequeo y su estado en la cabecera; abajo los ajustes.
   const filaChq = (est, nombre, sub) => '<div class="chk"><i class="' + est + '">' + (est === 'ok' ? ic('check') : est === 'rv' ? ic('reloj') : '') + '</i><span>' + nombre + '<small>' + esc(sub) + '</small></span></div>';
   // Lote 28/10: lo que falta va primero, abierto y en ámbar; lo listo, plegado y en verde
-  function plegable(id, titulo, chip, cls, cuerpo, extra){
+  // Lote 12/11 B: todos los bloques iguales: punto (verde listo, ámbar falta, gris informativo), título, pastilla y flecha
+  function plegable(id, titulo, chip, cls, cuerpo, extra, estado){
     K.ab = K.ab || {}; const ab = !!K.ab[id]; const zid = id === 'legal' ? 'docsCom' : 'plg-' + id;
-    const est = cls === 'verde' ? ' hc-listo' : cls === 'ambar' || cls === 'rojo' ? ' hc-falta' : '';
+    const e = estado || (cls === 'verde' ? 'listo' : cls === 'ambar' || cls === 'rojo' ? 'falta' : 'info');
+    const est = e === 'listo' ? ' hc-listo' : e === 'falta' ? ' hc-falta' : ' hc-info';
     return '<section class="req plg-com' + est + '" data-plg="' + id + '"><button type="button" class="plegado" data-plg-btn="' + id + '"' + (extra || '') + ' aria-expanded="' + ab + '" aria-controls="' + zid + '">' +
-      '<span class="plg-tx">' + (est ? '<i class="pt" aria-hidden="true"></i>' : '') + titulo + '</span>' + (chip ? '<span class="m ' + cls + '">' + esc(chip) + '</span>' : '') + ic('abajo') + '</button>' +
+      '<i class="pt" aria-hidden="true"></i><span class="plg-tx">' + titulo + '</span>' + (chip ? '<span class="m chip ' + (cls || 'gris') + '">' + esc(chip) + '</span>' : '') + ic('abajo') + '</button>' +
       '<div id="' + zid + '" class="plg-z"' + (ab ? '' : ' hidden') + '>' + cuerpo + '</div></section>';
   }
   function datosClave(F, i){
@@ -665,17 +666,21 @@
     if(!i || !i.comisiona) return '';
     const ok = !!i.pago_ok_en; const rv = ok ? null : i.revisar_motivo;
     const tad = i.tad_deuda === false ? 'Sin deuda' : i.tad_deuda === true ? 'Con deuda' : 'Sin dato del TAD';
-    let h = filaChq(i.tad_deuda === false ? 'ok' : i.tad_deuda ? 'no' : 'rv', 'Qué dice el TAD', tad + (i.tad_visto ? ', carga del ' + fecha(i.tad_visto) : '')) +
-      filaChq(ok ? 'ok' : rv ? 'rv' : 'no', 'Pago de la instalación', ok ? (i.pago_manual ? 'Marcado a mano el ' : 'Lo dio el TAD el ') + fecha(i.pago_ok_en) + '. Queda fijo' : rv ? 'Revisar a mano' : 'Debe la instalación');
-    if(rv) h += '<div class="al-banda ambar" role="note"><b>' + (rv === 'factura_mes' ? 'Revisar pago: factura nueva del mes' : 'Revisar pago') + '</b><p>' +
-      (rv === 'factura_mes' ? 'Se instaló del 20 en adelante y el TAD de este mes trae la factura nueva del mes, que no es la instalación. Si ya pagó, márcalo a mano.' : 'El cliente tiene más de un servicio; el TAD no puede decidir. Marca el pago a mano.') + '</p></div>';
-    else if(!ok && i.tad_deuda === false) h += '<p class="nota-chica">El TAD da el pago solo si se cargó al menos ' + plural(Number(i.pago_dias) || 3, 'día', 'días') + ' después de instalar.</p>';
+    // Lote 12/11 B (maqueta 2): un recuadro con lo que dice el TAD y la acción; la nota se abre con un enlace
+    let h = rv ? '<div class="al-banda ambar" role="note"><b>' + (rv === 'factura_mes' ? 'Revisar pago: factura nueva del mes' : 'Revisar pago') + '</b><p>' +
+      (rv === 'factura_mes' ? 'Se instaló del 20 en adelante y el TAD de este mes trae la factura nueva del mes, que no es la instalación. Si ya pagó, márcalo a mano.' : 'El cliente tiene más de un servicio; el TAD no puede decidir. Marca el pago a mano.') + '</p></div>' : '';
+    const sub2 = ok ? (i.pago_manual ? 'Marcado a mano el ' : 'Lo dio el TAD el ') + fecha(i.pago_ok_en) + '. Queda fijo' : rv ? 'Revisar a mano' : !ok && i.tad_deuda === false ? 'El TAD da el pago si se cargó ' + plural(Number(i.pago_dias) || 3, 'día', 'días') + ' después de instalar' : 'Queda fijo y con tu nombre';
+    h += '<div class="hc-tarj">' + filaHc('info', i.tad_deuda !== false, 'Qué dice el TAD', tad + (i.tad_visto ? ', carga del ' + fecha(i.tad_visto) : '')) +
+      (F.puedo.pago ? '<div class="hc-fl chk"><span class="tx"><b>' + (ok ? 'Pagada' : 'Si ya pagó') + '</b><small>' + esc(sub2) + '</small></span><button type="button" class="hc-b ch' + (ok ? ' s' : '') + '" id="pagoCom" data-pagada="' + (ok ? '0' : '1') + '">' + (ok ? 'Quitar pago' : 'Marcar pagada') + '</button></div>'
+        : '<div class="hc-fl"><span class="tx"><b>' + (ok ? 'Pagada' : 'Debe la instalación') + '</b><small>' + esc(ok ? sub2 : 'Lo marca el Analista Senior o el administrador.') + '</small></span></div>') + '</div>';
     if(F.puedo.pago){
-      h += '<div class="chk"><span>' + (ok ? '¿Fue un error?' : 'Si ya pagó') + '</span><button type="button" class="mini' + (ok ? '' : ' pri') + '" id="pagoCom" data-pagada="' + (ok ? '0' : '1') + '">' + (ok ? 'Quitar pago' : 'Marcar pagada') + '</button></div>' +
-        '<label class="rotulo arriba" for="pagoNota">Nota del pago</label><textarea class="area corta" id="pagoNota" maxlength="500">' + esc(i.pago_nota || '') + '</textarea>' +
-        '<div class="error" id="ePagoNota" role="alert"></div><div class="acc"><button type="button" class="btn btn-chico btn-2" id="pagoNotaGuardar">Guardar nota</button></div>';
-    } else h += (ok ? '' : '<p class="nota-chica">Lo marca el Analista Senior o el administrador.</p>') + (i.pago_nota ? '<p>Nota: ' + esc(i.pago_nota) + '</p>' : '');
-    return plegable('pago', 'Pago', ok ? 'Pagada' : rv ? 'Revisar pago' : 'Debe', ok ? 'verde' : rv ? 'ambar' : 'rojo', h);
+      const abierta = !!K.notaPago;
+      h += (i.pago_nota && !abierta ? '<p class="hc-nota">Nota: ' + esc(i.pago_nota) + '</p>' : '') +
+        '<button type="button" class="enlace hc-enl" id="pagoNotaAbrir"' + (abierta ? ' hidden' : '') + '>' + (i.pago_nota ? 'Cambiar la nota del pago' : 'Agregar nota del pago') + '</button>' +
+        '<div id="pagoNotaZona"' + (abierta ? '' : ' hidden') + '><label class="rotulo arriba" for="pagoNota">Nota del pago</label><textarea class="area corta" id="pagoNota" maxlength="500">' + esc(i.pago_nota || '') + '</textarea>' +
+        '<div class="error" id="ePagoNota" role="alert"></div><div class="acc"><button type="button" class="hc-b s ch" id="pagoNotaGuardar">Guardar nota</button></div></div>';
+    } else if(i.pago_nota) h += '<p class="hc-nota">Nota: ' + esc(i.pago_nota) + '</p>';
+    return plegable('pago', 'Pago', ok ? 'Pagada' : rv ? 'Revisar pago' : 'Debe', ok ? 'verde' : rv ? 'ambar' : 'rojo', h).replace('class="req plg-com', 'class="req plg-com cp');
   }
   // 3. Carta de bienvenida y proforma (lote 28/10): un solo envío; Canales siempre la envía, el líder es respaldo; la IP va aquí
   function cartaDe(i, sv){
@@ -684,44 +689,60 @@
     const b = sv && sv.bienvenida_envio; if(!b) return { k: 'por_enviar', dias: 0 };
     return { k: 'enviada', canales: { por: b.por, en: b.en, canal: b.canal } };
   }
+  // Lote 12/11 B (maqueta 2, 5 y 7): mismo orden en todos los estados: quién la envió, un recuadro (proforma, carta, IP, se envía a) y la acción
+  const MESC = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+  const diaCorto = (x) => { const t = new Date(x); return isNaN(t) ? '' : t.getDate() + ' ' + MESC[t.getMonth()]; };
+  const filaHc = (icono, mal, titulo, sub, der, subMal) => '<div class="hc-fl">' + (icono ? '<span class="hc-ic' + (mal ? ' w' : '') + '">' + ic(icono) + '</span>' : '') +
+    '<span class="tx"><b>' + titulo + '</b><small' + (subMal ? ' class="mal"' : '') + '>' + esc(sub) + '</small></span>' + (der || '') + '</div>';
+  const envHc = (x, quien, az, extra) => '<div class="hc-env' + (az ? ' az' : '') + '"><span class="ck">' + ic('check') + '</span><span><b>' + esc(quien) + '</b><small>' +
+    esc([x.en ? diaCorto(x.en) + (az ? '' : ', ' + hora(x.en)) : '', x.canal ? (x.canal === 'whatsapp' ? 'WhatsApp' : x.canal === 'correo' ? 'correo' : x.canal) : '', extra || 'carta y proforma'].filter(Boolean).join(' · ')) + '</small></span></div>';
   function bloqueCarta(F, i){
     if(!i || !F.puedo.enviar) return '';
     const sv = i.servicio_id && (F.servicios || []).find((x) => Number(x.id) === Number(i.servicio_id));
-    if(!sv) return plegable('carta', 'Carta de bienvenida y proforma', 'Sin servicio', 'gris', '<p>Todavía no tiene un servicio enlazado. Sale cuando el TAD traiga el servicio de esta instalación.</p>');
+    if(!sv) return plegable('carta', 'Carta y proforma', 'Sin servicio', 'gris', '<p class="hc-nota">Todavía no tiene un servicio enlazado. Sale cuando el TAD traiga el servicio de esta instalación.</p>');
     const k = cartaDe(i, sv); const dias = Number(k.dias) || 0; const sinIp = !sv.ip && !sv.ip6;
-    const soloVe = yo.rol === 'lider' && i.es_aliado;
-    const chip = k.k === 'enviada' ? 'Enviada por Canales' : k.k === 'lider' ? 'Enviada por el líder · falta Canales' : sinIp ? 'Por enviar · falta la IP' : 'Por enviar · ' + plural(dias, 'día', 'días');
-    const cls = k.k === 'enviada' || (k.k === 'lider' && yo.rol === 'lider') ? 'verde' : k.k === 'lider' ? 'azul' : dias > 2 ? 'rojo' : 'ambar';
-    const env = (x, quien, extra) => x ? '<div class="cp-env' + (extra ? ' ' + extra : '') + '"><i>' + ic('check') + '</i><span><b>' + quien + '</b><small>' + esc([x.por, x.en ? fecha(x.en) + ', ' + hora(x.en) : '', x.canal ? 'por ' + (x.canal === 'whatsapp' ? 'WhatsApp' : x.canal) : '', 'carta y proforma'].filter(Boolean).join(' · ')) + '</small></span></div>' : '';
-    let h = '<p class="nota-chica">Canales de atención debe enviarla siempre. Si el líder la envía, queda marcado, pero no reemplaza el envío de Canales.</p>' +
-      env(k.canales, 'Envío de Canales de atención (obligatorio)') + env(k.lider, 'Envío del líder (respaldo)', 'lid') +
-      '<div class="cp-doc"><span><b>Proforma de instalación</b><small>' + esc(sv.plan || 'Servicio de internet') + ' · contrato ' + esc(String(sv.codigo || '').replace(/^0+/, '')) + '</small></span><button type="button" class="enlace" data-cp-pdf="proforma">Ver PDF</button></div>' +
-      ((sv.carta || {}).puede ? '<div class="cp-doc"><span><b>Carta de bienvenida</b><small>Con los datos del líder y la IP</small></span><button type="button" class="enlace" data-cp-pdf="bienvenida">Ver PDF</button></div>'
-        : '<p class="nota-chica">La carta sale cuando la instalación tenga dueño. Por ahora va solo la proforma.</p>') +
-      '<div class="chk"><span>IP del servicio<small>' + esc(sinIp ? 'Falta: la carta dirá "Pendiente por asignar"' : [sv.ip, sv.ip6].filter(Boolean).join(' · ')) + '</small></span>' + (F.puedo.ip ? '<button type="button" class="mini" id="profIp">' + (sinIp ? 'Escribir IP' : 'Cambiar') + '</button>' : '') + '</div>' +
-      (sinIp && F.puedo.ip ? '<div class="ip-par" id="ipPar" data-servicio="' + esc(sv.id) + '"><span class="cargando-linea"><i></i>Buscando lo más parecido en el reporte de IP</span></div>' : '');
-    if(soloVe) h += '<p class="nota-chica">Es un cliente de aliado: la carta y proforma la envía Canales de atención.</p>';
-    else {
-      // Lote 10/11 D11: con número, WhatsApp es el principal (anota solo el envío); sin número, Descargar en color y se marca a mano
-      const tels = window.Ficha.telefonosCarta ? window.Ficha.telefonosCarta(F, sv.id) : [];
-      const p2 = K.paso2 && Number(K.paso2.servicio) === Number(sv.id) ? K.paso2 : null;
-      if(k.descargada && k.k !== 'enviada') h += '<div class="al-banda azul" role="note"><b>Descargada · por confirmar</b><p>' + esc((k.descargada.por ? 'La descargó ' + k.descargada.por + ' el ' : 'Se descargó el ') + fecha(k.descargada.en) + '. Si ya la enviaste, márcala.') + '</p><p style="margin-top:8px"><button type="button" class="btn btn-chico" id="cartaMarcarYa">Ya la envié</button></p></div>';
-      if(tels.length){
-        h += '<div class="chk"><span>Se envía a<small>' + esc(tels[0].t) + '</small></span><button type="button" class="mini" id="cartaCambiarNum">Cambiar</button></div>' +
-          (p2 && p2.paso2 ? '<a class="btn btn-ancho cp-paso2" href="' + esc(p2.enlace) + '" target="_blank" rel="noopener">' + ic('wa') + 'Paso 2: abrir el chat de ' + esc(p2.telefono) + '</a>' : '') +
-          '<button type="button" class="btn btn-ancho cp-wa" id="cartaWa">' + ic('wa') + (k.k === 'enviada' ? 'Volver a enviar por WhatsApp' : 'Enviar carta y proforma por WhatsApp') + '</button>' +
-          '<p class="nota-chica">Un toque: abre el chat con los dos PDF y el mensaje. Queda anotado solo.</p>' +
-          '<div class="acc" style="margin-top:8px"><button type="button" class="btn btn-chico btn-2" id="cartaPdfs">Descargar los PDF</button><button type="button" class="btn btn-chico btn-2" id="cartaOtra">Enviar por correo</button>' +
-          (k.k === 'enviada' ? '' : '<button type="button" class="btn btn-chico btn-2" id="cartaMarcar">Ya enviada (marcar)</button>') + '</div>';
-      } else {
-        h += '<div class="al-banda ambar" role="note"><p>Sin número del cliente ni del representante. Envíala tú y márcala.</p></div>' +
-          '<button type="button" class="btn btn-ancho" id="cartaPdfs">Descargar carta y proforma</button>' +
-          '<div class="acc" style="margin-top:8px"><button type="button" class="btn btn-chico btn-2" id="cartaAgregarNum">Agregar número</button><button type="button" class="btn btn-chico btn-2" id="cartaOtra">Enviar por correo</button>' +
-          (k.k === 'enviada' ? '' : '<button type="button" class="btn btn-chico btn-2" id="cartaMarcar">Ya enviada (marcar)</button>') + '</div>';
-      }
-      h += '<p class="nota-chica">"Ya enviada" es para cuando se envió por fuera: eliges qué se envió, cuándo y por dónde. Queda quién lo marcó.</p>';
+    const soloVe = yo.rol === 'lider' && i.es_aliado; const conCarta = !!(sv.carta || {}).puede;
+    const desc = k.descargada && k.k !== 'enviada' && !K.descNo;
+    const liderVe = k.k === 'lider' && yo.rol === 'lider';
+    const chip = soloVe ? 'Lo envía Canales' : k.k === 'enviada' ? 'Enviada' : liderVe ? 'Enviada' : k.k === 'lider' ? 'Falta Canales' : desc ? 'Descargada' : !conCarta ? 'Solo proforma' : sinIp ? 'Por enviar · falta la IP' : 'Por enviar · ' + plural(dias, 'día', 'días');
+    const cls = soloVe ? 'gris' : k.k === 'enviada' || liderVe ? 'verde' : k.k === 'lider' || desc ? 'azul' : !conCarta || sinIp || dias <= 2 ? 'ambar' : 'rojo';
+    const estado = soloVe ? 'info' : k.k === 'enviada' || liderVe ? 'listo' : 'falta';
+    const cod = String(sv.codigo || '').replace(/^0+/, '');
+    const pdfs = filaHc('doc', false, 'Proforma de instalación', (sv.plan || 'Servicio de internet') + ' · contrato ' + cod, '<button type="button" class="enlace" data-cp-pdf="proforma">Ver PDF</button>') +
+      (conCarta ? filaHc('doc', false, 'Carta de bienvenida', 'Con los datos del líder y la IP', '<button type="button" class="enlace" data-cp-pdf="bienvenida">Ver PDF</button>')
+        : filaHc('doc', true, 'Carta de bienvenida', 'Sale cuando la instalación tenga dueño', '', true));
+    if(soloVe) return plegable('carta', 'Carta y proforma', chip, cls, '<div class="hc-tarj">' + pdfs + '</div><p class="hc-nota">Es un cliente de aliado: la carta y la proforma las envía Canales de atención.</p>', '', estado).replace('class="req plg-com', 'class="req plg-com cp');
+    const tels = window.Ficha.telefonosCarta ? window.Ficha.telefonosCarta(F, sv.id) : [];
+    const p2 = K.paso2 && Number(K.paso2.servicio) === Number(sv.id) ? K.paso2 : null;
+    // 1. Quién la envió
+    let h = '';
+    if(k.k === 'enviada' && k.canales) h += envHc(k.canales, 'Enviada por ' + (k.canales.por || 'Canales de atención'));
+    if(k.lider) h += envHc(k.lider, 'La envió ' + (k.lider.por ? primerNombre(k.lider.por) : 'el líder') + ' (líder)', true, k.k === 'enviada' || liderVe ? '' : 'Canales igual debe enviarla');
+    if(desc) h += '<div class="hc-banda azul" role="note"><b>' + esc((k.descargada.por ? 'La descargó ' + primerNombre(k.descargada.por) + ' el ' : 'Se descargó el ') + diaCorto(k.descargada.en)) + '</b>¿Ya la enviaste? Márcala para que no salga como pendiente.' +
+      '<span class="hc-dos"><button type="button" class="hc-b ch" id="cartaMarcarYa">Ya la envié</button><button type="button" class="hc-b s ch" id="cartaTodavia">Todavía no</button></span></div>';
+    // 2. El recuadro: proforma, carta, IP y a quién se envía
+    const ipBtns = !F.puedo.ip ? '' : sinIp ? '<span class="bts"><button type="button" class="hc-b s ch" id="profIp">Escribir IP</button><button type="button" class="hc-b ch" id="ipSug" data-servicio="' + esc(sv.id) + '">Ver sugeridas</button></span>'
+      : '<button type="button" class="hc-b s ch" id="profIp">Cambiar</button>';
+    h += '<div class="hc-tarj">' + pdfs +
+      filaHc('red', sinIp, 'IP del servicio', sinIp ? 'Falta. La carta dirá "Pendiente por asignar"' : [sv.ip, sv.ip6].filter(Boolean).join(' · '), ipBtns, sinIp) +
+      (tels.length ? filaHc('wa', false, 'Se envía a', tels[0].t, '<button type="button" class="hc-b s ch" id="cartaCambiarNum">Cambiar</button>')
+        : filaHc('wa', true, 'Se envía a', 'Sin número del cliente ni del representante', '<button type="button" class="hc-b ch" id="cartaAgregarNum">Agregar número</button>', true)) + '</div>';
+    // 3. La acción
+    const yaEnviada = k.k === 'enviada' || liderVe;
+    const tx = conCarta ? 'Enviar carta y proforma por WhatsApp' : 'Enviar la proforma por WhatsApp';
+    if(p2 && p2.paso2) h += '<a class="hc-b wa an cp-paso2" href="' + esc(p2.enlace) + '" target="_blank" rel="noopener">' + ic('wa') + 'Paso 2: abrir el chat de ' + esc(p2.telefono) + '</a>';
+    if(yaEnviada){
+      h += '<div class="hc-tres' + (tels.length ? '' : ' dos') + '">' + (tels.length ? '<button type="button" class="hc-b s ch" id="cartaWa">Volver a enviar</button>' : '') +
+        '<button type="button" class="hc-b s ch" id="cartaPdfs">Descargar PDF</button><button type="button" class="hc-b s ch" id="cartaOtra">Por correo</button></div>';
+    } else if(tels.length){
+      h += '<button type="button" class="hc-b wa an cp-wa" id="cartaWa">' + ic('wa') + tx + '</button>' +
+        '<div class="hc-tres' + (desc ? ' dos' : '') + '"><button type="button" class="hc-b s ch" id="cartaPdfs">Descargar PDF</button><button type="button" class="hc-b s ch" id="cartaOtra">Por correo</button>' +
+        (desc ? '' : '<button type="button" class="hc-b s ch" id="cartaMarcar">Ya la envié</button>') + '</div>';
+    } else {
+      h += '<button type="button" class="hc-b an" id="cartaPdfs">' + (conCarta ? 'Descargar carta y proforma' : 'Descargar la proforma') + '</button>' +
+        '<div class="hc-tres dos"><button type="button" class="hc-b s ch" id="cartaOtra">Por correo</button>' + (desc ? '' : '<button type="button" class="hc-b s ch" id="cartaMarcar">Ya la envié</button>') + '</div>';
     }
-    return plegable('carta', 'Carta de bienvenida y proforma', chip, cls, h).replace('class="req plg-com', 'class="req plg-com cp');
+    return plegable('carta', 'Carta y proforma', chip, cls, h, '', estado).replace('class="req plg-com', 'class="req plg-com cp');
   }
   // 4. Orden de Odoo y dueño
   function bloqueOrden(F, i, f, P){
@@ -763,9 +784,10 @@
         (i.correccion ? '' : '<div class="acc"><button type="button" class="btn btn-chico btn-2" data-corregir="no_se_pago">No se pagó</button><button type="button" class="btn btn-chico btn-2" data-corregir="se_pago">Se pagó allá</button></div>') + '</div>';
     }
     // Lote 10/11 D8: ya no hay "Más acciones": corte, evento, excepción y No comisiona viven en "Corte y comisión"; la nota, en el Hilo
-    const est = i.anulada ? ['No comisiona', 'rojo'] : i.estado === 'cumple' ? ['Entra en ' + mes(i.corte_pago || i.corte), 'verde'] : i.estado === 'perdida' ? ['Se perdió', 'rojo'] : i.movida ? ['Movida a mano', 'ambar'] : i.corte ? ['Corte de ' + mes(i.corte), ''] : ['', ''];
+    const limD = String(fecha((K.F.corte || {}).limite || (K.F.corte || {}).fin || '')).split(' de ')[0];
+    const est = i.anulada ? ['No comisiona', 'rojo'] : i.estado === 'cumple' ? ['Entra en ' + mes(i.corte_pago || i.corte), 'verde'] : i.estado === 'perdida' ? ['Se perdió', 'rojo'] : i.movida ? ['Movida a mano', 'ambar'] : i.corte ? [capital(mes(i.corte)) + (limD ? ' · límite el ' + limD : ''), ''] : ['', ''];
     const cab = i.comisiona && i.corte ? '<div class="hc-corte"><b>Corte de ' + esc(mes(i.corte)) + '</b><small>' + esc(['Límite el ' + fecha((K.F.corte || {}).limite || (K.F.corte || {}).fin || '').split(' de ')[0], i.dueno ? 'cuenta para ' + i.dueno : ''].filter(Boolean).join(' · ')) + '</small></div>' : '';
-    return plegable('corte', 'Corte y comisión', est[0], est[1], cab + h);
+    return plegable('corte', 'Corte y comisión', est[0], est[1], cab + h, '', 'info');
   }
   function pintarComision(){
     const F = K.F; const c = F.cliente; const i = (F.comision || []).find((x) => Number(x.id) === K.inst) || (F.comision || [])[0];
@@ -784,13 +806,16 @@
       : perdida ? 'Era del corte de ' + mes(i.corte) + '.' : (falta.length ? 'Le falta ' + window.Comun.lista(falta) + '. ' : '') + 'Corte de ' + mes(F.corte.etiqueta) + ', límite el ' + fecha(F.corte.limite || F.corte.fin).split(' de ')[0] + '. ' + (F.corte.dias < 0 ? 'El corte sigue abierto hasta que se cierre.' : F.corte.dias === 0 ? 'Es hoy.' : (F.corte.dias === 1 ? 'Falta ' : 'Faltan ') + plural(F.corte.dias, 'día', 'días') + '.');
     // Lote 28/10: resumen arriba (Legal, Pago, Orden); lo que falta primero y abierto; lo listo plegado
     const lOk = !!c.legal_ok_en; const pOk = !!(i && i.pago_ok_en); const oOk = !!(i && i.orden_ok);
-    const marca = (t, okx) => '<span class="chip ' + (okx ? 'verde' : 'ambar') + '">' + t + '</span>';
-    const faltan = [lOk, pOk, oOk].filter((x) => !x).length;
-    let h = '<div class="hc-res ' + (ok ? 'ok' : ultimo || perdida || anulada ? 'mal' : '') + '"><div class="l1"><b>' + esc(ok ? 'Comisiona' : anulada ? 'No comisiona' : !i || !i.comisiona ? 'No comisiona' : 'Aún no comisiona') + '</b>' +
-      (i && i.comisiona && !anulada ? '<span class="hc-m">' + marca('Legal', lOk) + marca('Pago', pOk) + marca('Orden', oOk) + '</span>' : '') + '</div>' +
-      '<small>' + esc(i && i.comisiona && !ok && !anulada && !perdida ? 'Faltan ' + faltan + ' de 3. ' + sub : tituloEstado + '. ' + sub) + '</small></div>';
     const k0 = i && i.servicio_id ? cartaDe(i, (F.servicios || []).find((x) => Number(x.id) === Number(i.servicio_id))) : null;
     const cartaFalta = !!k0 && ['por_enviar', 'falta_ip'].indexOf(k0.k) >= 0 || (k0 && k0.k === 'lider' && yo.rol !== 'lider');
+    // Lote 12/11 B (maqueta 2): un aviso de estado del color del caso; si hay algo que pedirle a la líder, "¿Le escribes a…?" va aquí dentro
+    const pend = i && i.comisiona && !ok && !anulada && !perdida;
+    const faltaTx = !pend ? '' : [!lOk ? 'Legal' : '', !pOk ? 'el pago de la instalación' : '', !oOk ? 'la orden de Odoo' : ''].filter(Boolean);
+    const subEst = pend && !sinAsignar ? (faltaTx.length ? 'Le falta ' + window.Comun.lista(faltaTx) + '.' : 'Tiene Legal, pago y orden de Odoo.') + (cartaFalta && F.puedo.enviar ? ' La carta está por enviar.' : '') : sub;
+    const ctFalta = !oOk ? 'orden' : !lOk ? 'legal' : !pOk ? 'pago' : '';
+    const ct = pend && faltaTx.length && window.Contacto && K.inst ? window.Contacto.boton('comision', K.inst, ctFalta, '', 'linea') : '';
+    let h = '<div class="hc-res ' + (ok ? 'ok' : ultimo || perdida || anulada ? 'mal' : !i || !i.comisiona ? 'gris' : 'pend') + '"><b>' + esc(tituloEstado) + '</b>' +
+      '<small>' + esc(subEst) + '</small>' + ct + '</div>';
     // Lote 10/11 D10: todas las secciones cerradas al abrir (desde la lista de cartas, la carta abierta); siempre en el mismo orden
     if(!K.abInit){ K.abInit = true; K.ab = K.ab || {}; K.ab.carta = !!K.carta && cartaFalta; }
     h += bloqueOrden(F, i, f, P) + bloqueLegal(F) + bloquePago(F, i) + bloqueCarta(F, i);
@@ -799,12 +824,15 @@
     if(sig.length) h += '<button type="button" class="btn btn-ancho hc-sig" data-com="' + esc(sig[0].instalacion_id) + '" data-cliente="' + esc(sig[0].cliente_id) + '" data-carta="1">Siguiente por enviar (' + sig.length + ') ' + ic('derecha') + '</button>';
     h += bloqueAjustes(F, i, f, P);
     const mov = (F.hilo || []).slice(0, 6);
-    h += plegable('hilo', 'Hilo', mov.length ? 'Último: ' + diaMes(mov[0].en || mov[0].creado_en || '') : 'Sin registros', '', (mov.length ? '<div class="hilo" style="padding:4px 0 0">' + mov.map(window.Ficha.lineaHilo).join('') + '</div>' : '<p>Todavía no hay movimientos.</p>') +
+    h += plegable('hilo', 'Hilo', mov.length ? 'Último: ' + diaMes(mov[0].en || mov[0].creado_en || '') : 'Sin registros', 'gris', (mov.length ? '<div class="hilo" style="padding:4px 0 0">' + mov.map(window.Ficha.lineaHilo).join('') + '</div>' : '<p>Todavía no hay movimientos.</p>') +
       ((F.hilo || []).length > 6 ? '<button type="button" class="enlace" id="verHilo">Ver todo el hilo</button>' : '') +
-      '<div class="acc" style="margin-top:10px"><button type="button" class="btn btn-chico btn-2" id="verHiloNota">Escribir una nota</button></div>');
+      '<div class="acc" style="margin-top:10px"><button type="button" class="hc-b s ch" id="verHiloNota">Escribir una nota</button></div>', '', 'info');
     $('cuerpoCom').innerHTML = h;
-    if($('ipPar')) cargarParecidos($('ipPar'));
+    if(window.Contacto) window.Contacto.llenar($('cuerpoCom'));
+    if($('ipSug')) contarSugeridas($('ipSug'));
+    if(K.ip){ K.ip = false; if($('profIp')) abrirIp(true); }
     // La línea de datos de arriba: RIF · Código · Líder · instalada · corte
+    if($('tCom') && c.nombre) $('tCom').textContent = c.nombre;
     const dt = $('cabCom') && $('cabCom').querySelector('.dat');
     if(dt && i) dt.textContent = [docFmt(c.doc_tipo, c.doc_numero), i.codigo ? 'Código ' + String(i.codigo).replace(/^0+/, '') : '', (i.es_aliado ? 'Aliado ' : 'Líder ') + (i.dueno || capital(i.instalador || '') || 'por asignar'), i.instalada_en ? 'instalada ' + diaMes(i.instalada_en) : '', i.corte ? 'corte de ' + mes(i.corte) : ''].filter(Boolean).join(' · ');
   }
@@ -930,25 +958,63 @@
   }
   // Lote 05/11 E4: la IP que no cuadró: la app propone lo más parecido (misma ONT, mismo código en otra sucursal, nombre); nunca la pone sola
   let parecidos = null;
-  async function cargarParecidos(z, todos){
-    const sid = Number(z.dataset.servicio);
-    try { if(!parecidos || parecidos.sid !== sid) parecidos = Object.assign({ sid }, await rpc('ip_parecidos', { p_servicio: sid })); }
-    catch (e) { z.innerHTML = '<p class="nota-chica">No se pudo buscar en el reporte de IP: ' + esc(e.message) + '</p>'; return; }
-    const l = parecidos.filas || [];
-    // Lote 10/11 A3: las siguientes IP libres del pool, en orden; el analista la confirma en el sistema técnico y la elige con un toque
-    const pool = parecidos.pool || [];
-    const poolHtml = pool.length ? '<div class="estado azul chico"><small><b>Posible IP, confírmala en el sistema técnico.</b> Son las siguientes libres del pool, en orden.</small></div>' +
-      pool.map((x) => '<div class="ip-op"><span><b>' + esc([x.ip, x.ip6].filter(Boolean).join(' · ')) + '</b><small>Libre en el reporte de IP</small></span><button type="button" class="btn btn-chico" data-ip-fila="' + esc(x.id) + '">Usar esta IP</button></div>').join('') : '';
-    if(parecidos.sin_reporte || !l.length){ z.innerHTML = poolHtml + '<p class="nota-chica">' + (parecidos.sin_reporte ? 'Todavía no se ha subido el reporte de IP.' : 'No cuadró en el reporte de IP y no hay nada parecido por ONT, código o nombre. Si no es ninguna del pool, escríbela.') + '</p>'; return; }
-    const fila = (x) => '<div class="ip-op"><span><b>' + esc([x.nombre || 'Sin nombre', x.sucursal ? 'sucursal ' + x.sucursal : '', x.ip || x.ip6].filter(Boolean).join(' · ')) + '</b><small>' + esc(x.por + (x.ont ? ' · ONT ' + x.ont : '') + (x.codigo ? ' · código ' + x.codigo : '')) + '</small></span>' +
-      '<button type="button" class="btn btn-chico" data-ip-fila="' + esc(x.id) + '">Usar esta IP</button></div>';
-    z.innerHTML = poolHtml + '<div class="estado ambar chico"><small>No cuadró en el reporte de IP por sucursal, código y ONT. Lo más parecido:</small></div>' + (todos ? l : l.slice(0, 1)).map(fila).join('') +
-      (!todos && l.length > 1 ? '<button type="button" class="enlace" id="ipOtros">Ver otros parecidos (' + (l.length - 1) + ')</button>' : '');
+  // Lote 12/11 B (maqueta 3): la IP es su propia hoja, encima de la comisión: libres del pool, parecidos en el reporte y escribirla
+  async function leerParecidos(sid){
+    if(!parecidos || parecidos.sid !== sid) parecidos = Object.assign({ sid }, await rpc('ip_parecidos', { p_servicio: sid }));
+    return parecidos;
+  }
+  async function contarSugeridas(b){
+    const sid = Number(b.dataset.servicio);
+    try { const r = await leerParecidos(sid); const n = (r.pool || []).length + (r.filas || []).length;
+      if(document.contains(b)){ if(n) b.textContent = 'Ver sugeridas (' + n + ')'; else b.remove(); } }
+    catch (e) { /* sin red: el botón queda y la hoja dice el error */ }
+  }
+  function servicioK(){ const i = K && K.F && (K.F.comision || []).find((x) => Number(x.id) === K.inst); return i && i.servicio_id ? (K.F.servicios || []).find((x) => Number(x.id) === Number(i.servicio_id)) : null; }
+  function abrirIp(foco){
+    const sv = servicioK(); if(!sv) return;
+    const h = hojaChica('hojaIp', 'tIp'); h.classList.add('hoja-ip');
+    h.innerHTML = '<div class="cab ip-cab"><button type="button" class="hc-redondo" data-cierra="1" aria-label="Volver">' + ic('volver') + '</button><div><h2 id="tIp">IP del servicio</h2><p class="sub-hoja">' + esc(K.F.cliente.nombre + ' · contrato ' + String(sv.codigo || '').replace(/^0+/, '')) + '</p></div>' +
+      '<button type="button" class="cerrar" data-cierra="1" aria-label="Cerrar">' + ic('x') + '</button></div>' +
+      '<div class="ip-cuerpo"><div class="ip-aviso">' + ic('info') + '<span>Confírmala en el sistema técnico antes de usarla.</span></div>' +
+      '<div id="ipZona" data-servicio="' + esc(sv.id) + '"><div class="sk-bloque"><span class="sk" style="height:64px;border-radius:14px"></span><span class="sk" style="height:64px;border-radius:14px"></span><span class="sk" style="height:48px;border-radius:14px"></span></div></div>' +
+      '<form id="formIp" novalidate><div class="ip-grp"><h3>¿No es ninguna?</h3></div><div class="ip-dos">' +
+        '<div><label class="rotulo" for="ipV4">IPv4</label><input class="campo ip-mono" id="ipV4" inputmode="decimal" autocapitalize="none" autocomplete="off" spellcheck="false" maxlength="18" value="' + esc(sv.ip || '') + '" aria-describedby="eIp"></div>' +
+        '<div><label class="rotulo" for="ipV6">IPv6 <span class="ip-opc">(opcional)</span></label><input class="campo ip-mono" id="ipV6" autocapitalize="none" autocomplete="off" spellcheck="false" maxlength="43" value="' + esc(sv.ip6 || '') + '"></div></div>' +
+        '<div class="error" id="eIp" role="alert"></div></form></div>' +
+      '<div class="ip-pie"><button type="submit" form="formIp" class="hc-b osc an" id="ipGuardar">Guardar la IP escrita</button></div>';
+    abrirHoja('hojaIp'); pintarIp(false);
+    if(foco) setTimeout(() => { const x = $('ipV4'); if(x) x.focus(); }, 320);
+  }
+  async function pintarIp(todos){
+    const z = $('ipZona'); if(!z) return; const sid = Number(z.dataset.servicio);
+    let r; try { r = await leerParecidos(sid); }
+    catch (e) { if($('ipZona')) $('ipZona').innerHTML = '<div class="ip-vacio" role="alert">No se pudo buscar en el reporte de IP: ' + esc(e.message) + ' <button type="button" class="enlace" id="ipReintentar">Reintentar</button></div>'; return; }
+    if(!$('ipZona')) return;
+    const pool = r.pool || []; const l = r.filas || [];
+    const uso = (x, pri) => '<button type="button" class="hc-b ch' + (pri ? '' : ' s') + '" data-ip-fila="' + esc(x.id) + '">Usar</button>';
+    let h = '<div class="ip-grp"><h3>Libres del pool</h3><small>en orden, según el reporte de IP</small></div>' +
+      (r.sin_reporte ? '<div class="ip-vacio">Todavía no se ha subido el reporte de IP.</div>' : !pool.length ? '<div class="ip-vacio">No quedan IP libres en el reporte.</div>'
+        : '<div class="hc-tarj">' + pool.map((x, n) => '<div class="ipf"><div class="tx"><div class="v4">' + esc(x.ip || 'Sin IPv4') + (n === 0 ? '<span class="chip azul">Siguiente</span>' : '') + '</div>' + (x.ip6 ? '<div class="v6">' + esc(x.ip6) + '</div>' : '') + '</div>' + uso(x, n === 0) + '</div>').join('') + '</div>');
+    h += '<div class="ip-grp"><h3>Parecidos en el reporte</h3><small>por ONT, código o nombre</small></div>';
+    if(r.sin_reporte || !l.length) h += '<div class="ip-vacio">No hay nada parecido para este cliente.</div>';
+    else h += '<div class="hc-tarj">' + (todos ? l : l.slice(0, 3)).map((x) => '<div class="ipf"><div class="tx"><div class="v4 chico">' + esc(x.ip || x.ip6 || '') + '</div><div class="v6 tx-n">' +
+        esc([x.nombre || 'Sin nombre', x.por, x.ont ? 'ONT ' + x.ont : '', x.codigo ? 'código ' + x.codigo : '', x.sucursal ? 'sucursal ' + x.sucursal : ''].filter(Boolean).join(' · ')) + '</div></div>' + uso(x, false) + '</div>').join('') + '</div>' +
+      (!todos && l.length > 3 ? '<button type="button" class="enlace ip-otros" id="ipOtros">Ver otros parecidos (' + (l.length - 3) + ')</button>' : '');
+    $('ipZona').innerHTML = h;
   }
   async function usarIp(b){
     b.disabled = true;
-    try { await rpc('ip_usar', { p_servicio: parecidos.sid, p_fila: Number(b.dataset.ipFila) }); parecidos = null; toast('IP guardada. Queda en la bitácora'); tras(); }
+    try { await rpc('ip_usar', { p_servicio: parecidos.sid, p_fila: Number(b.dataset.ipFila) }); parecidos = null; if(hojaAbierta() === 'hojaIp') cerrarHoja(); toast('IP guardada. La carta ya la trae'); tras(); }
     catch (e) { toast(e.message, 'error'); b.disabled = false; }
+  }
+  async function guardarIpEscrita(){
+    const z = $('ipZona'); const er = $('eIp'); const b = $('ipGuardar'); if(!z) return; er.textContent = '';
+    const v4 = $('ipV4').value.trim(); const v6 = $('ipV6').value.trim();
+    if(!v4 && !v6){ er.textContent = 'Escribe la IPv4 o la IPv6'; $('ipV4').focus(); return; }
+    if(v4 && !/^\d{1,3}(\.\d{1,3}){3}(\/\d{1,2})?$/.test(v4)){ er.textContent = 'La IPv4 va así: 156.255.157.10'; $('ipV4').focus(); return; }
+    b.disabled = true; b.textContent = 'Guardando…';
+    try { await rpc('servicio_ip', { p_servicio: Number(z.dataset.servicio), p_ip: v4, p_ip6: v6 }); parecidos = null; if(hojaAbierta() === 'hojaIp') cerrarHoja(); toast('IP guardada. La carta ya la trae'); tras(); }
+    catch (e) { er.textContent = e.message; b.disabled = false; b.textContent = 'Guardar la IP escrita'; }
   }
   // Lote 10/11 D11: al descargar, "¿La vas a enviar por WhatsApp?"
   function abrirDescargada(sid){
@@ -964,7 +1030,7 @@
   function abrirMarcarCarta(){
     if(!K || !K.F || !instK()) return; const hoyS = new Date().toISOString().slice(0, 10);
     const radio = (n, v, t, on) => '<label class="mc-op"><input type="radio" name="' + n + '" value="' + v + '"' + (on ? ' checked' : '') + '> ' + t + '</label>';
-    hojaChica('hojaMarcarCarta', 'tMarcar').innerHTML = cabHoja('tMarcar', 'Ya enviada (marcar)', K.F.cliente.nombre) + '<form id="formMarcar" novalidate>' +
+    hojaChica('hojaMarcarCarta', 'tMarcar').innerHTML = cabHoja('tMarcar', 'Ya la envié', K.F.cliente.nombre) + '<form id="formMarcar" novalidate>' +
       '<fieldset class="mc"><legend class="rotulo">Qué se envió</legend>' + radio('mcQue', 'ambas', 'Las dos', true) + radio('mcQue', 'carta', 'Solo carta') + radio('mcQue', 'proforma', 'Solo proforma') + '</fieldset>' +
       '<label class="rotulo arriba" for="mcFecha">Cuándo se envió</label><input class="campo" id="mcFecha" type="date" max="' + hoyS + '" value="' + hoyS + '">' +
       '<fieldset class="mc"><legend class="rotulo">Por dónde</legend>' + radio('mcCanal', 'whatsapp', 'WhatsApp', true) + radio('mcCanal', 'correo', 'Correo') + radio('mcCanal', 'persona', 'En persona') + radio('mcCanal', 'otro', 'Otro') + '</fieldset>' +
@@ -1043,7 +1109,11 @@
         .catch((e) => { toast('No se pudo abrir WhatsApp. Intenta de nuevo', 'error'); if(document.contains(b)) b.disabled = false; }); return; }
     if(t.closest('#cartaMarcar') && iK()){ abrirMarcarCarta(); return; }
     if((b = t.closest('[data-ip-fila]'))){ usarIp(b); return; }
-    if(t.closest('#ipOtros') && $('ipPar')){ cargarParecidos($('ipPar'), true); return; }
+    if(t.closest('#ipOtros') && $('ipZona')){ pintarIp(true); return; }
+    if(t.closest('#ipReintentar') && $('ipZona')){ parecidos = null; pintarIp(false); return; }
+    if(t.closest('#ipSug') && K && K.F){ abrirIp(false); return; }
+    if(t.closest('#cartaTodavia') && K){ K.descNo = true; pintarComision(); return; }
+    if(t.closest('#pagoNotaAbrir') && K){ K.notaPago = true; const z = $('pagoNotaZona'); if(z){ z.hidden = false; t.closest('#pagoNotaAbrir').hidden = true; $('pagoNota').focus(); } return; }
     if(t.closest('#cartaPdfs') && iK()){ const sid = iK().servicio_id; window.Ficha.cartaPdf(K.F, sid, 'proforma'); if(((K.F.servicios || []).find((x) => Number(x.id) === Number(sid)) || {}).carta) setTimeout(() => window.Ficha.cartaPdf(K.F, sid, 'bienvenida'), 600);
       // Lote 10/11 D11: queda anotada la descarga (a las 2 horas, si no se marcó, llega el aviso) y se pregunta si se va a enviar por WhatsApp
       rpc('carta_descargada', { p_servicio: sid }).then(() => { cache.borrarTodo(); }).catch(() => {}); abrirDescargada(sid); return; }
@@ -1069,7 +1139,7 @@
       rpc('cliente_marca', { p_cliente: K.F.cliente.id, p_marca: 'contrato_presencial', p_valor: fis }).then(() => { toast(fis ? 'Firma física: no se piden correos ni teléfono' : 'Firma digital'); tras(); })
         .catch((err) => { toast(err.message, 'error'); Array.prototype.forEach.call(document.querySelectorAll('[data-firma]'), (x) => { x.disabled = false; }); }); return; }
     if((b = t.closest('#pagoNotaGuardar')) && K){ const n = $('pagoNota').value.trim(); $('ePagoNota').textContent = ''; b.disabled = true; b.textContent = 'Guardando…';
-      rpc('instalacion_pago_nota', { p_instalacion: K.inst, p_nota: n }).then(() => { toast('Nota guardada'); tras(); })
+      rpc('instalacion_pago_nota', { p_instalacion: K.inst, p_nota: n }).then(() => { toast('Nota guardada'); if(K) K.notaPago = false; tras(); })
         .catch((err) => { $('ePagoNota').textContent = err.message; if(document.contains(b)){ b.disabled = false; b.textContent = 'Guardar nota'; } }); return; }
     if(t.closest('#ncAbrir') && K){ abrirMotivo('nc'); return; }
     if(t.closest('#pagoDiasAbrir')){ abrirPagoDias(); return; }
@@ -1094,7 +1164,7 @@
     if(t.closest('#bajarExcel') && d){ bajarExcel(); return; }
     if(t.closest('#profBajar') && K && K.F){ bajarProforma(); return; }
     if(t.closest('#profEnviar') && K && K.F){ const i = (K.F.comision || []).find((x) => Number(x.id) === K.inst); if(i && i.servicio_id) window.Ficha.enviarDesde(K.F, i.servicio_id, tras); return; }
-    if(t.closest('#profIp') && K && K.F){ const i = (K.F.comision || []).find((x) => Number(x.id) === K.inst); if(i && i.servicio_id) window.Ficha.editarCampo(K.F, 'ip:' + i.servicio_id, tras); return; }
+    if(t.closest('#profIp') && K && K.F){ abrirIp(true); return; }
     if((b = t.closest('[data-evento]')) && K && K.F){ if(b.classList.contains('on')) return; const v = b.dataset.evento;
       Array.prototype.forEach.call(document.querySelectorAll('[data-evento]'), (x) => { x.disabled = true; });
       rpc('instalacion_evento', { p_instalacion: K.inst, p_evento: v !== 'no', p_comisiona: v === 'si_com' }).then(() => { toast(v === 'no' ? 'Quitada la marca de evento' : v === 'si_com' ? 'Evento: comisiona' : 'Evento: no comisiona'); tras(); })
@@ -1148,6 +1218,7 @@
   document.addEventListener('submit', (e) => {
     if(SOLO && !enHojaCom(e.target)) return;
     if(e.target.id === 'formMarcar'){ e.preventDefault(); guardarMarcarCarta(e.target); return; }
+    if(e.target.id === 'formIp'){ e.preventDefault(); guardarIpEscrita(); return; }
     if(e.target.id === 'formAsig' && A && K){ e.preventDefault(); const er = $('eAsig'); er.textContent = '';
       const m = document.querySelector('#asigOrdenes input:checked'); const dueno = $('asigDueno').value;
       if(!m){ er.textContent = 'Elige la orden o marca Sin orden de Odoo'; return; }

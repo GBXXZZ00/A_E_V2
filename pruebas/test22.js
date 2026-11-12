@@ -67,14 +67,16 @@ async function cerrarHojas(p){ for(let i = 0; i < 4 && await p.evaluate(() => !!
     ok(nombre + ': el plegable trae la proforma, la carta, la IP y un solo botón de WhatsApp', prof.includes('Carta de bienvenida') && prof.includes('Proforma') && (await p.locator('#cartaWa').count()) === 1 && (await p.locator('#cartaOtra').count()) === 1);
     ok(nombre + ': sin IP dice que falta, con el enlace Escribir', /Falta/.test(prof) && (await p.textContent('#profIp')).includes('Escribir'));
     await p.screenshot({ path: 'capturas/22-' + nombre + '-hoja-proforma.png' });
-    await enHoja(p, '#profIp'); await p.click('#profIp'); await p.waitForSelector('#hojaCampo.ver #cIp');
-    await p.fill('#cIp', '190.124.30.15'); await p.click('#guardarCampo');
+    // Lote 12/11 B: "Escribir IP" abre la hoja de la IP encima, con el cursor en el campo
+    await enHoja(p, '#profIp'); await p.click('#profIp'); await p.waitForSelector('#hojaIp.ver #ipV4');
+    ok(nombre + ': la hoja de la IP sale encima de la comisión', (await p.evaluate(() => window.Comun.hojasAbiertas().join())) === 'hojaComision,hojaIp' && /Confírmala en el sistema técnico/.test(await p.textContent('#hojaIp')));
+    await p.fill('#ipV4', '190.124.30.15'); await p.click('#ipGuardar');
     await p.waitForFunction(() => !/falta la IP/.test(document.querySelector('[data-plg-btn="carta"]').textContent));
     ok(nombre + ': la IP escrita en la hoja de comisión se guarda y quita el Falta IP', mundo.llamadas.some((l) => l[1] === 'servicio_ip' && l[2].p_ip === '190.124.30.15'));
     await plegables(p, 'carta'); await enHoja(p, '#cartaOtra'); await p.click('#cartaOtra'); await p.waitForSelector('#hojaEnviar.ver');
     ok(nombre + ': Enviar por correo u otro abre la hoja de envío encima, sin abrir el expediente', (await p.evaluate(() => window.Comun.hojasAbiertas().join())) === 'hojaComision,hojaEnviar');
     await p.click('#envManual'); await p.click('#envManual');
-    await p.waitForFunction(() => /Enviada por Canales/.test(document.querySelector('[data-plg-btn="carta"]').textContent));
+    await p.waitForFunction(() => /Enviada/.test(document.querySelector('[data-plg-btn="carta"]').textContent));
     const prof2 = await p.textContent('#plg-carta');
     ok(nombre + ': queda anotado quién la envió y cuándo, y se puede volver a enviar', /Elena/.test(prof2) && (await p.textContent('#cartaWa')).includes('Volver a enviar') && mundo.llamadas.some((l) => l[1] === 'carta_enviar'));
     await cerrarHojas(p);

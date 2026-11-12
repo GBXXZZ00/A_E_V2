@@ -31,7 +31,8 @@ function cargaTad(m, yo, cl, conDeuda){
       return bs.length > 0 && bs.every((b) => b.getAttribute('aria-expanded') === 'false') && bs.some((b) => b.dataset.plgBtn === 'corte'); }));
     ok(nombre + ': la cabecera de Pago dice que debe', /Debe|Revisar pago/.test(await p.textContent('[data-plg-btn="pago"]')));
     await plegables(p, 'pago');
-    ok(nombre + ': al tocarlo se abre', (await p.getAttribute('[data-plg-btn="pago"]', 'aria-expanded')) === 'true' && await p.isVisible('#pagoNota'));
+    ok(nombre + ': al tocarlo se abre', (await p.getAttribute('[data-plg-btn="pago"]', 'aria-expanded')) === 'true' && await p.isVisible('#pagoNotaAbrir'));
+    await p.click('#pagoNotaAbrir');
     // Nota del pago
     await enHoja(p, '#pagoNota'); await p.fill('#pagoNota', 'Pagó en efectivo en la oficina'); await enHoja(p, '#pagoNotaGuardar'); await p.click('#pagoNotaGuardar');
     await p.waitForFunction(() => Array.from(document.querySelectorAll('.toast')).some((t) => /[Nn]ota/.test(t.textContent)));

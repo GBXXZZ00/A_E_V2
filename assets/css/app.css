@@ -1857,21 +1857,8 @@ button.gtj:active{transform:scale(.97)}
 @media (prefers-reduced-motion:reduce){ .cr-num,.cr-p,.cr-rf,.cr-col,.cr-lin,.cr-hb,.cr-eq{transition:none} }
 
 /* Hoja de comisión (comisiones-28oct, pantallas 9 y 10) */
-.hc-res{margin-top:6px;padding:12px 14px;border-radius:16px;background:var(--surface-2)}
-.hc-res.ok{background:var(--verde-bg)}
-.hc-res.mal{background:var(--rojo-bg)}
-.hc-res .l1{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.hc-res b{flex:1;min-width:0;font-size:15px}
-.hc-res small{display:block;margin-top:4px;font-size:12.5px;color:var(--text2)}
 .hc-m{display:flex;gap:6px}
 .hc-m .chip{height:24px;padding:0 9px}
-#hojaComision .plg-com{margin-top:10px;border-radius:18px}
-#hojaComision .plg-com .plegado{margin-top:0;min-height:52px;font-size:14.5px;color:var(--text);background:#fff;border:1px solid var(--line)}
-#hojaComision .plg-com.hc-falta{border:1.5px solid #D9A23A;background:#FFFBF2}
-#hojaComision .plg-com.hc-falta .plegado{border:0;background:transparent}
-#hojaComision .plg-com.hc-falta .plg-z{padding:0 14px 14px}
-#hojaComision .plg-com .pt{display:inline-block;width:9px;height:9px;margin-right:9px;border-radius:50%;background:#11734B;vertical-align:1px}
-#hojaComision .plg-com.hc-falta .pt{background:#C98A12}
 .cp-env{display:flex;align-items:center;gap:10px;margin-top:8px;padding:10px 12px;border:1px solid var(--line);border-radius:14px;background:#fff}
 .cp-env i{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;flex:none;border-radius:50%;background:var(--verde-bg);color:var(--verde)}
 .cp-env.lid i{background:var(--azul-bg);color:var(--azul)}
@@ -1892,9 +1879,6 @@ button.gtj:active{transform:scale(.97)}
 .bar i.c-w{background:#E0A93B} .bar i.c-b{background:#C0271B} .bar i.c-gris{background:#B7BDC6} .bar i.c-ok{background:#11734B} .bar i.c-azul{background:#2B5CFF}
 .cr-p .av{color:var(--text)} .cr-p.uno .av{color:var(--azul)}
 .cr-lin b{white-space:nowrap}
-#hojaComision .plg-com:not(.hc-falta){padding:0;background:none}
-#hojaComision .plg-com .plg-tx{white-space:normal;line-height:1.25}
-#hojaComision .plg-com:not(.hc-falta) > .plg-z{padding:4px 14px 12px}
 #hojaPorInst .hoja-cab small,#hojaNuevo .hoja-cab small,#hojaSinLider .hoja-cab small{white-space:normal}
 
 /* Clientes (clientes-28oct, pantallas 1 a 3): estatus legal en 5 grupos, gestiones activas, prioridad y otros líderes */
@@ -2390,7 +2374,7 @@ button.bz-ck.on::after{left:17px;top:13px}
 #hojaComision .plg-com .plegado{border:0;background:transparent}
 #hojaComision .plg-com .plg-z{padding:0 14px 14px}
 #hojaComision .plg-com.hc-falta{border:1.5px solid #E2A84A;background:#fff}
-#hojaComision .plg-com.hc-listo{border:1.5px solid #A9D9C2;background:#fff}
+#hojaComision .plg-com.hc-listo{border:1px solid var(--line);background:#fff}
 #hojaComision .plg-com.hc-listo .pt{background:var(--verde)}
 @media (max-width:760px){
   .cx-panel{padding:12px}
@@ -2762,3 +2746,121 @@ main.al-en-inicio #ayuda{display:none}
 .al-tl b{display:block;font-size:14px}
 .al-tl small{display:block;color:var(--text2);font-size:12.5px;margin-top:1px}
 .al-tl li:not(.v):not(.a):not(.r) b{color:var(--text2)}
+
+/* Lote 12/11 B, parte 1 (maqueta lote-12nov-b/comisiones-hoja.html, secciones 2, 3, 5 y 7): hoja de la comisión a 600 px y hoja de la IP */
+.hc-b{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:44px;padding:0 18px;border:0;border-radius:var(--pill);background:var(--accent);color:#fff;font:inherit;font-weight:700;font-size:14px;white-space:nowrap;text-decoration:none;cursor:pointer;transition:transform 120ms var(--ease-out)}
+.hc-b:active{transform:scale(.97)}
+.hc-b:disabled{opacity:.55;cursor:default}
+.hc-b.s{background:#fff;color:var(--text);border:1.5px solid var(--line)}
+.hc-b.ch{height:38px;padding:0 14px;font-size:13px}
+.hc-b.an{width:100%}
+.hc-b.wa{background:#128C4B;height:50px;font-size:15px}
+.hc-b.osc{background:var(--text)}
+.hc-b .i{width:16px;height:16px}
+@media (hover:hover) and (pointer:fine){ .hc-b:hover{opacity:.9} .hc-b.s:hover{background:var(--surface-2);opacity:1} }
+@media (max-width:899px){ .hc-b.ch{height:44px} }
+@media (prefers-reduced-motion:reduce){ .hc-b{transition:none} }
+#hojaComision .ficha-cab{padding:22px 24px 0}
+#hojaComision .ficha-cab .nom{font-size:20px;font-weight:800;letter-spacing:-.01em}
+#hojaComision .ficha-cab .dat{font-size:13px;color:var(--text2);margin-top:3px}
+#hojaComision .ficha-cab .cerrar{width:40px;height:40px;margin:0;background:var(--surface-2);flex:none}
+#hojaComision .hc-top{display:flex;gap:8px;padding:14px 0 0}
+#hojaComision .ficha-cuerpo{padding:16px 24px 24px}
+@media (max-width:899px){ #hojaComision .ficha-cab{padding:14px 18px 0} #hojaComision .ficha-cuerpo{padding:14px 18px 22px} }
+.hc-res{padding:14px 16px;border-radius:16px;background:var(--ambar-bg)}
+.hc-res b{display:block;font-size:15px;font-weight:700;color:var(--ambar)}
+.hc-res small{display:block;font-size:13px;color:var(--text);margin-top:3px}
+.hc-res.ok{background:var(--verde-bg)} .hc-res.ok b{color:var(--verde)}
+.hc-res.mal{background:var(--rojo-bg)} .hc-res.mal b{color:var(--rojo)}
+.hc-res.gris{background:var(--surface-2)} .hc-res.gris b{color:var(--text)}
+.hc-res .ct-zona{margin:10px 0 0;padding-top:10px;border-top:1px solid rgba(117,75,0,.15);display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.hc-res .ct-zona:empty{display:none}
+.hc-res .ct-preg{flex:1;min-width:180px;font-size:12.5px;color:var(--text2)}
+.hc-res .ct-zona .nota-chica{margin:0}
+.hc-res .ct-lista{flex-basis:100%}
+#hojaComision .plg-com{margin-top:12px;padding:0;border:1px solid var(--line);border-radius:18px;background:#fff}
+#hojaComision .plg-com.hc-falta{border:1.5px solid #D9A23A;background:#FFFBF2}
+#hojaComision .plg-com > .plegado{display:flex;align-items:center;gap:10px;min-height:56px;margin:0;padding:0 16px;border:0;border-radius:18px;background:transparent;font-size:15px;font-weight:800;color:var(--text)}
+#hojaComision .plg-com > .plegado .plg-tx{flex:0 1 auto;min-width:0;font-size:15px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#hojaComision .plg-com > .plegado .m{margin-left:auto;flex:none;height:24px;padding:0 9px;font-size:12px;font-weight:600}
+#hojaComision .plg-com > .plegado .i{margin-left:0;flex:none}
+#hojaComision .plg-com > .plegado .plg-tx + .i{margin-left:auto}
+#hojaComision .plg-com .pt{display:block;width:9px;height:9px;flex:none;border-radius:50%;background:var(--verde)}
+#hojaComision .plg-com.hc-falta .pt{background:#C98A12}
+#hojaComision .plg-com.hc-info .pt{background:var(--text3)}
+#hojaComision .plg-com > .plg-z{padding:0 16px 16px}
+#hojaComision .plg-com > .plg-z > :first-child{margin-top:0}
+#hojaComision .cp .plg-z{display:flex;flex-direction:column;gap:10px}
+#hojaComision .cp .plg-z[hidden]{display:none}
+.hc-tarj{background:#fff;border:1px solid var(--line);border-radius:14px}
+.hc-fl{display:flex;align-items:center;gap:12px;padding:12px 14px;border-top:1px solid var(--line)}
+.hc-fl:first-child{border-top:0}
+.hc-fl .tx{flex:1;min-width:0}
+.hc-fl b{display:block;font-size:14px}
+.hc-fl small{display:block;font-size:12.5px;color:var(--text2);margin-top:2px;overflow-wrap:anywhere}
+.hc-fl small.mal{color:var(--ambar);font-weight:600}
+.hc-fl .enlace{font-weight:700;font-size:13px;flex:none}
+.hc-fl .bts{display:flex;gap:8px;flex:none}
+.hc-ic{display:grid;place-items:center;width:32px;height:32px;flex:none;border-radius:10px;background:var(--surface-2);color:var(--text2)}
+.hc-ic.w{background:var(--ambar-bg);color:var(--ambar)}
+.hc-ic .i{width:16px;height:16px}
+.hc-tres{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.hc-tres.dos{grid-template-columns:1fr 1fr}
+.hc-tres .hc-b{width:100%;padding:0 8px;min-width:0}
+.hc-env{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:14px;background:var(--verde-bg)}
+.hc-env.az{background:var(--azul-bg)}
+.hc-env .ck{display:grid;place-items:center;width:26px;height:26px;flex:none;border-radius:50%;background:var(--verde);color:#fff}
+.hc-env.az .ck{background:var(--azul)}
+.hc-env .ck .i{width:14px;height:14px;stroke-width:3}
+.hc-env b{display:block;font-size:13.5px}
+.hc-env small{display:block;font-size:12.5px;color:var(--text2)}
+.hc-banda{border-radius:14px;padding:12px 14px;font-size:13px}
+.hc-banda.azul{background:var(--azul-bg)}
+.hc-banda b{display:block;font-size:13.5px}
+.hc-dos{display:flex;gap:8px;margin-top:10px}
+.hc-nota{font-size:12.5px;color:var(--text2)}
+#hojaComision .plg-z .cp-wa{margin-top:0}
+@media (max-width:899px){
+  .hc-fl{flex-wrap:wrap}
+  .hc-fl .bts{width:100%}
+  .hc-fl .bts .hc-b{flex:1}
+  .hc-tres .hc-b{height:44px;font-size:12.5px}
+}
+/* Hoja de la IP (520 px en PC, encima de la comisión) */
+#hojaIp{display:flex;flex-direction:column;padding:0;overflow:hidden}
+@media (min-width:900px){ #hojaIp{width:520px;border-radius:24px} }
+#hojaIp .ip-cab{display:flex;align-items:flex-start;gap:12px;margin:0;padding:22px 24px 0;justify-content:flex-start}
+#hojaIp .ip-cab > div{flex:1;min-width:0}
+#hojaIp .ip-cab h2{font-size:20px;font-weight:800;letter-spacing:-.01em}
+#hojaIp .ip-cab .sub-hoja{font-size:13px;margin-top:3px}
+#hojaIp .ip-cab .cerrar{width:40px;height:40px;margin:0;background:var(--surface-2)}
+.hc-redondo{display:grid;place-items:center;width:40px;height:40px;flex:none;border-radius:50%;background:var(--surface-2);color:var(--text)}
+.hc-redondo .i{width:16px;height:16px}
+#hojaIp .ip-cuerpo{flex:1;min-height:0;overflow:auto;padding:16px 24px 24px;display:flex;flex-direction:column;gap:12px}
+.ip-aviso{display:flex;gap:10px;align-items:flex-start;background:var(--azul-bg);color:var(--azul);border-radius:14px;padding:12px 14px;font-size:13px;font-weight:600}
+.ip-aviso .i{width:16px;height:16px;flex:none;margin-top:1px}
+#ipZona{display:flex;flex-direction:column;gap:12px}
+.ip-grp{display:flex;align-items:baseline;gap:8px;margin-top:6px;flex-wrap:wrap}
+.ip-grp h3{font-size:14px;font-weight:800}
+.ip-grp small{font-size:12.5px;color:var(--text2)}
+.ipf{display:flex;align-items:center;gap:12px;padding:14px;border-top:1px solid var(--line)}
+.ipf:first-child{border-top:0}
+.ipf .tx{flex:1;min-width:0}
+.ipf .v4{font-size:17px;font-weight:800;letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+.ipf .v4.chico{font-size:15px}
+.ipf .v4 .chip{margin-left:8px;vertical-align:2px;height:24px;font-size:12px}
+.ipf .v6{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px;color:var(--text2);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ipf .v6.tx-n{font-family:inherit;white-space:normal}
+.ip-vacio{border:1px dashed var(--line);border-radius:14px;padding:14px;font-size:13px;color:var(--text2)}
+.ip-otros{align-self:flex-start}
+.ip-dos{display:grid;grid-template-columns:1fr 1.4fr;gap:10px;margin-top:12px}
+.ip-dos .rotulo{margin-top:0}
+.ip-mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.ip-opc{font-weight:500;color:var(--text2)}
+#hojaIp .ip-pie{flex:none;border-top:1px solid var(--line);padding:14px 24px 20px}
+@media (max-width:899px){ #hojaIp .ip-cab{padding:14px 18px 0} #hojaIp .ip-cuerpo{padding:14px 18px 22px} .ip-dos{grid-template-columns:1fr} #hojaIp .ip-pie{padding:12px 18px calc(18px + var(--safe-b))} .ipf .hc-b{height:44px} }
+.hc-tarj .chk{margin:0;min-height:0;padding:12px 14px;box-shadow:none;border-top:1px solid var(--line);font-weight:400}
+.hc-tarj .chk:first-child{border-top:0}
+.hc-tarj #pagoConfirma > span{font-weight:600}
+.hc-enl{align-self:flex-start;font-weight:700;font-size:13px}
+#hojaIp .ip-dos .campo{height:46px;border-radius:12px;padding:0 14px;font-size:14.5px}

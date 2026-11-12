@@ -1,8 +1,13 @@
 # Traspaso (se actualiza al cerrar cada sesión)
 
-Actualizado: 12/11/2026, LOTE 12/11 HECHO (ficha, Comisiones y Mi trabajo según maquetas). Publicado: `?v=86`.
+Actualizado: 12/11/2026, lote 12/11 B parte 1 publicada (`?v=92`).
 
-## SIGUIENTE: LOTE 12/11 B (aprobado, por hacer)
+## LOTE 12/11 B (en curso, se publica parte por parte)
+- **Parte 1 HECHA (v92)**: drawer de la comisión a 600 px como la maqueta 2, 3, 5 y 7: cabecera con la línea RIF · código · líder · instalada · corte y solo "Ver expediente completo"; aviso de estado (ámbar, verde, rojo o gris) con "¿Le escribes a X…?" y "Escribirle a X" (`Contacto.boton(..., 'linea')`, mismo destino y registro); todos los bloques con punto, pastilla y flecha (Corte e Hilo en gris); Pago en un recuadro con "Agregar nota del pago"; "Carta y proforma" siempre en el mismo orden (quién la envió, recuadro con Proforma, Carta, IP y Se envía a, y la acción), WhatsApp verde y debajo Descargar PDF · Por correo · Ya la envié; descargada con "Ya la envié / Todavía no"; enviada en blanco con Volver a enviar; sin las 3 notas. Hoja nueva `#hojaIp` (520 px): pool con "Siguiente" y "Usar", parecidos, "¿No es ninguna?" y "Guardar la IP escrita" (`servicio_ip`). Mi trabajo: `comisiones.js` se carga también en trabajo.html y expone `window.ComHoja.abrir(inst, cliente, {yo, carta, ip, alCerrar})`; carta_enviar, por_enviar, sin_ip, revisar_pago, certificar, por_asignar y venta_falta (con Legal) abren ese drawer (usa `ref.instalacion`); sin cliente: cerrar_corte → `comisiones.html?cierre=1`, por_asignar → `?f=asignar&c=`, certificar → `?f=falta&c=`, referido → `aliados.html?ref=`. test59 nueva; test03, 22 y 43 ajustadas al diseño nuevo. Comisiones no se tocaron en el cálculo.
+- Referencia al empezar el lote: septiembre 46/41 (`9be38f4e…`), octubre 83/75 (`f3f145a0…`), noviembre 62/4 (corte abierto, entraron instalaciones reales).
+- **Sigue: parte 2** (arriba de Comisiones, filtros que se suman, mensajes). Luego 3 a 7 según `claude/lote-12nov-b.md`.
+
+## LOTE 12/11 B: plan original
 Todo está en `claude/lote-12nov-b.md` (empieza por "ENCARGO PARA CLAUDE CODE") y las maquetas en `claude/maquetas/lote-12nov-b/`. Partes: 1 drawer de Comisiones y Mi trabajo, 2 arriba de Comisiones, filtros y mensajes, 3 Cliente nuevo con OCR, 4 Actualizar datos y carta descargada, 5 Aliados (vista del administrador, casillas, flujo del aliado en drawer único y resultados en recuadro), 6 Revisión de documentos nueva (una pantalla, el administrador decide si revisa la IA, un solo cierre, abogada en la misma pantalla), 7 Clientes con pestañas por estatus legal y Mi trabajo de la abogada filtrado por tipo. Publicar parte por parte. El diseño se copia de la maqueta y se compara con capturas antes de publicar.
 
 ## LOTE 12/11: pantallas iguales a las maquetas aprobadas (`claude/maquetas/lote-12nov/`)

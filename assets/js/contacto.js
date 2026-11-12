@@ -44,7 +44,8 @@
 
   // Marca donde va el botón: se llena sola al pintar la hoja
   // estado: el estatus que ve la pantalla; si cambia, se vuelve a preguntar (no se usa lo guardado)
-  const boton = (caso, id, falta, estado) => id ? '<div class="ct-zona" data-ct-caso="' + esc(caso) + '" data-ct-id="' + esc(id) + '"' + (falta ? ' data-ct-falta="' + esc(falta) + '"' : '') + (estado ? ' data-ct-estado="' + esc(estado) + '"' : '') + '></div>' : '';
+  // Lote 12/11 B: forma "linea" = "¿Le escribes a X para que lo resuelva?" con "Escribirle a X" (dentro del aviso de estado de la comisión)
+  const boton = (caso, id, falta, estado, forma) => id ? '<div class="ct-zona' + (forma === 'linea' ? ' ct-linea' : '') + '" data-ct-caso="' + esc(caso) + '" data-ct-id="' + esc(id) + '"' + (falta ? ' data-ct-falta="' + esc(falta) + '"' : '') + (estado ? ' data-ct-estado="' + esc(estado) + '"' : '') + '></div>' : '';
   const DATOS = new WeakMap(); const MEMO = new Map();
   async function llenar(raiz){
     const zonas = (raiz || document).querySelectorAll('.ct-zona[data-ct-id]:not([data-ct-listo])');
@@ -61,7 +62,13 @@
       if(d.propio || !(d.destinos || []).length){ z.innerHTML = ''; continue; }
       const conDato = d.destinos.filter((p) => p.whatsapp || p.correo);
       if(!conDato.length){ z.innerHTML = '<p class="nota-chica">Para contactar a ' + esc(quien(d.destinos[0])) + ' falta su WhatsApp en Usuarios.</p>'; continue; }
-      if(d.destinos.length === 1){
+      const linea = z.classList.contains('ct-linea');
+      if(d.destinos.length === 1 && linea){
+        const p = d.destinos[0]; const e = enlace(d, p); const n = esc(primerNombre(p.nombre));
+        z.innerHTML = '<span class="ct-preg">¿Le escribes a ' + n + ' para que lo resuelva?</span><a class="hc-b s ch ct-btn" href="' + esc(e.url) + '" target="_blank" rel="noopener" data-ct-para="' + esc(p.id) + '" data-ct-medio="' + e.medio + '">' + ic(e.medio === 'whatsapp' ? 'wa' : 'correo') + '<span>Escribirle a ' + n + '</span></a>';
+      } else if(linea){
+        z.innerHTML = '<span class="ct-preg">¿Le escribes para que lo resuelva?</span><button type="button" class="hc-b s ch ct-btn" data-ct-elegir="1" aria-expanded="false">' + ic(conDato.some((p) => p.whatsapp) ? 'wa' : 'correo') + '<span>Escribir</span></button><div class="ct-lista hidden"></div>';
+      } else if(d.destinos.length === 1){
         const p = d.destinos[0]; const e = enlace(d, p);
         z.innerHTML = '<a class="btn btn-2 btn-chico ct-btn" href="' + esc(e.url) + '" target="_blank" rel="noopener" data-ct-para="' + esc(p.id) + '" data-ct-medio="' + e.medio + '">' + ic(e.medio === 'whatsapp' ? 'wa' : 'correo') + '<span>Contactar a ' + esc(primerNombre(p.nombre)) + '</span></a>';
       } else {
