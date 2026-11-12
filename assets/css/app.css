@@ -3097,3 +3097,34 @@ main.al-en-inicio #ayuda{display:none}
 @media (prefers-reduced-motion:reduce){ .al-pts b{animation:none;opacity:.7} .al-res2,.al-res-velo{transition:none} }
 .al-dw .error:empty{display:none}
 .al-cas2 .acc .enlace,.al-ayuda .enlace{text-decoration:none}
+/* Lote 12/11 B, parte 5a (maqueta comisiones-hoja.html 9): Aliados del administrador por mes */
+.al-mesbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.al-mes{display:inline-flex;align-items:center;gap:6px;height:38px;padding:0 6px;border:1.5px solid var(--line);border-radius:var(--pill);font-weight:700;font-size:13.5px;background:#fff}
+.al-mes b{min-width:120px;text-align:center}
+.al-mes button{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;color:var(--text2)}
+.al-mes button:disabled{opacity:.35}
+.al-mes .i{width:16px;height:16px}
+.al-sel{height:38px;padding:0 12px 0 14px;border:1.5px solid var(--line);border-radius:var(--pill);font:inherit;font-weight:600;font-size:13.5px;background:#fff;max-width:220px}
+.al-kpis{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:10px;margin-top:14px}
+.al-kpi{display:flex;flex-direction:column;align-items:flex-start;text-align:left;border:1px solid var(--line);border-radius:14px;padding:12px 14px;background:#fff;transition:transform 120ms var(--ease-out)}
+.al-kpi:active{transform:scale(.98)}
+.al-kpi.prin{background:var(--acc-bg,#E8ECF9);border-color:transparent}
+.al-kpi span{font-size:12px;color:var(--text2)} .al-kpi b{font-size:22px;font-weight:800;margin-top:2px} .al-kpi small{font-size:12px;color:var(--text2)}
+.al-l{border:1px solid var(--line);border-radius:16px;margin-top:12px;overflow:hidden;background:#fff}
+.al-s{padding:9px 16px;background:var(--surface-2);font-size:12px;font-weight:700;color:var(--text2);letter-spacing:.04em;text-transform:uppercase}
+.al-r{display:grid;grid-template-columns:70px minmax(0,1.4fr) minmax(0,1fr) 150px auto;gap:12px;align-items:center;padding:11px 16px;border-top:1px solid var(--line);font-size:13px}
+.al-s + .al-r{border-top:0}
+.al-r small{display:block;color:var(--text2);font-size:12px}
+.al-r .f{color:var(--text2)} .al-r b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.al-r .e .chip{max-width:150px;overflow:hidden;text-overflow:ellipsis}
+.al-r .b{display:flex;align-items:center;gap:10px;justify-content:flex-end}
+.al-r .b .enlace{font-size:12.5px;font-weight:700}
+.al-enl{display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+@media (max-width:899px){
+  .al-kpis{grid-template-columns:1fr 1fr}
+  .al-r{grid-template-columns:1fr auto;gap:4px 10px}
+  .al-r .f{grid-column:1 / -1;font-size:12px} .al-r .c{grid-column:1} .al-r .e{grid-column:2;grid-row:2}
+  .al-r .a{grid-column:1} .al-r .b{grid-column:1 / -1;justify-content:flex-start} .al-r .b .hc-b{height:44px}
+}
+@media (prefers-reduced-motion:reduce){ .al-kpi{transition:none} }
+#zonaRegistro .al-busca{margin-top:14px}

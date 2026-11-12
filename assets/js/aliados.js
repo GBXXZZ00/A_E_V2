@@ -62,12 +62,18 @@
   };
   const tabs = () => TABS[modo] || [];
 
+  // Lote 12/11 B (maqueta 9): el administrador elige el mes (como Comisiones) y el aliado; aplica a Solicitudes, Por mes, Sin autorización y Pagos
+  const mesHoy = () => { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); };
+  let mesAl = mesHoy(); let aliadoF = '';
   function leerUrl(){
     const u = new URLSearchParams(location.search); const t = u.get('t');
     tab = tabs().some((x) => x[0] === t) ? t : tabs()[0][0];
+    if(/^\d{4}-(0[1-9]|1[0-2])$/.test(u.get('m') || '')) mesAl = u.get('m');
+    aliadoF = (u.get('al') || '').slice(0, 80);
   }
   function guardarUrl(){
     const u = new URLSearchParams(); if(tab !== tabs()[0][0]) u.set('t', tab);
+    if(modo === 'admin'){ if(mesAl !== mesHoy()) u.set('m', mesAl); if(aliadoF) u.set('al', aliadoF); }
     const s = u.toString(); history.replaceState(history.state, '', location.pathname + (s ? '?' + s : ''));
   }
 
@@ -99,9 +105,14 @@
     if(modo === 'admin'){
       $('filtros').innerHTML = '';
       $('titulo').textContent = tab === 'registro' ? 'Aliados comerciales' : (tabs().find((x) => x[0] === tab) || ['', 'Aliados'])[1];
-      $('ayuda').textContent = AYUDA[tab] || '';
+      $('ayuda').textContent = tab === 'registro' ? 'Solicitudes, instalaciones y pagos de los aliados' : AYUDA[tab] || '';
       $('zonaRegistro').classList.toggle('hidden', tab !== 'registro');
-      $('accionCab').innerHTML = '<span class="al-enl">' + tabs().filter((x) => x[0] !== tab).map((x) => { const c = cuenta(x[0]);
+      const conMes = ['registro', 'mes', 'sinp', 'pagos'].indexOf(tab) >= 0;
+      const alis = Array.from(new Set(((R && R.solicitudes) || []).concat((R && R.referidos) || []).map((x) => String(x.aliado || '').trim()).filter(Boolean))).sort((a, b) => a.localeCompare(b));
+      $('accionCab').innerHTML = conMes ? '<div class="al-mesbar"><div class="al-mes"><button type="button" data-mesal="-1" aria-label="Mes anterior">' + ic('izquierda') + '</button><b>' + esc(window.Comun.capital(nomMes(mesAl + '-15'))) + '</b>' +
+          '<button type="button" data-mesal="1" aria-label="Mes siguiente"' + (mesAl >= mesHoy() ? ' disabled' : '') + '>' + ic('derecha') + '</button></div>' +
+          '<label class="solo-lector" for="alAliadoF">Aliado</label><select class="al-sel" id="alAliadoF"><option value="">Aliado: todos</option>' + alis.map((n) => '<option value="' + esc(n) + '"' + (aliadoF === n ? ' selected' : '') + '>' + esc(n) + '</option>').join('') + '</select></div>' : '';
+      $('filtros').innerHTML = '<span class="al-enl">' + tabs().filter((x) => x[0] !== tab).map((x) => { const c = cuenta(x[0]);
         return '<button type="button" class="enlace" data-tab="' + x[0] + '">' + esc(x[0] === 'registro' ? 'Volver a solicitudes' : x[1]) + (c ? ' (' + c + ')' : '') + '</button>'; }).join('') +
         (tab === 'registro' && R && R.puedo && R.puedo.prueba ? '<button type="button" class="btn btn-chico btn-2" data-acc="nueva">Solicitud de prueba</button>' : '') + '</span>';
       return;
@@ -279,7 +290,7 @@
   }
   // Sin autorización: instalaciones de aliados sin solicitud aprobada, las que faltan por revisar primero
   function pintarSinp(){
-    const sp = (R.sin_permiso || []).slice().sort((x, y) => Number(!!x.revisado_en) - Number(!!y.revisado_en) || String(y.instalada_en || '').localeCompare(String(x.instalada_en || '')));
+    const sp = (R.sin_permiso || []).filter((p) => modo !== 'admin' || ((!aliadoF || String(p.aliado || '').trim() === aliadoF) && String(p.instalada_en || '').slice(0, 7) === mesAl)).sort((x, y) => Number(!!x.revisado_en) - Number(!!y.revisado_en) || String(y.instalada_en || '').localeCompare(String(x.instalada_en || '')));
     const pend = sp.filter((p) => !p.revisado_en).length;
     $('cuentaLista').textContent = plural(sp.length, 'instalación', 'instalaciones') + (pend ? ' · ' + plural(pend, 'por revisar', 'por revisar') : '');
     $('lista').innerHTML = paginar(sp, filaSinp, ['Ninguna', 'Todo lo que instalaron los aliados tenía permiso.']);
@@ -287,23 +298,37 @@
   function pintarRegistro(){
     if(!R || (tab !== 'registro' && tab !== 'sinp')) return;   // el buscador espera un momento: no repinta otra pestaña
     if(tab === 'sinp') return pintarSinp();
-    const todos = itemsAl(); const P = R.puedo || {};
+    const todosT = itemsAl(); const P = R.puedo || {};
+    // El administrador ve el mes elegido y el aliado elegido; lo que espera su decisión sale aunque sea de otro mes
+    const fechaAlta = (i) => String(i.x.creada_en || i.x.creado_en || i.fecha || '').slice(0, 7);
+    // Con algo escrito en el buscador se busca en todos los meses (también lo de la app vieja)
+    const todos = modo !== 'admin' ? todosT : todosT.filter((i) => (!aliadoF || i.aliado === aliadoF) && (buscaAl ? true : chipAl === 'viejas' ? i.t === 'vieja' : i.t !== 'vieja' && (paraTi(i) || fechaAlta(i) === mesAl)));
     const chips = CHIPS_AL.filter((c) => (c[0] !== 'para_ti' || P.decidir) && (c[0] !== 'mio' || modo !== 'admin'));
     if(!chips.some((c) => c[0] === chipAl)) chipAl = 'todo';
     if(modo === 'admin' && !chipIni){ chipIni = true; if(P.decidir && todos.filter(paraTi).length) chipAl = 'para_ti'; }
     const pend = todos.filter(paraTi).length;
-    $('avisoAl').innerHTML = P.decidir && pend && chipAl !== 'para_ti' ? '<button type="button" class="franja ambar" data-chipal="para_ti">' + ic('alerta') + '<span><b>' + plural(pend, 'espera tu decisión', 'esperan tu decisión') + '</b>Excepciones, revisiones y referidos. Si ya lo resolviste por fuera, márcalo Revisado.</span>' + ic('derecha') + '</button>' : '';
+    if(modo === 'admin'){
+      // Números del mes (maqueta 9): sin repetir lo que ya dice el Resumen
+      const sm = todos.filter((i) => i.t === 'sol' && fechaAlta(i) === mesAl);
+      const apro = sm.filter((i) => ['lista', 'listaobs', 'curso', 'instalada'].indexOf(i.k) >= 0).length; const neg = sm.filter((i) => i.k === 'noprocede').length;
+      const inst = sm.filter((i) => i.k === 'instalada').length;
+      const sp = (R.sin_permiso || []).filter((x) => (!aliadoF || String(x.aliado || '').trim() === aliadoF) && String(x.instalada_en || '').slice(0, 7) === mesAl);
+      const spPend = sp.filter((x) => !x.revisado_en).length;
+      const k = (cls, t, n, sub, dato) => '<button type="button" class="al-kpi' + cls + '"' + dato + '><span>' + esc(t) + '</span><b>' + n + '</b><small>' + esc(sub) + '</small></button>';
+      $('avisoAl').innerHTML = '<div class="al-kpis">' + k(' prin', 'Esperan tu decisión', pend, 'excepciones y revisiones', ' data-chipal="para_ti"') + k('', 'Solicitudes del mes', sm.length, plural(apro, 'aprobada', 'aprobadas') + ' · ' + plural(neg, 'negada', 'negadas'), ' data-chipal="todo"') +
+        k('', 'Instaladas', inst + sp.length, inst + ' con permiso', ' data-chipal="instaladas"') + k('', 'Sin autorización', sp.length, spPend + ' por revisar', ' data-tab="sinp"') + '</div>';
+    } else $('avisoAl').innerHTML = P.decidir && pend && chipAl !== 'para_ti' ? '<button type="button" class="franja ambar" data-chipal="para_ti">' + ic('alerta') + '<span><b>' + plural(pend, 'espera tu decisión', 'esperan tu decisión') + '</b>Excepciones, revisiones y referidos. Si ya lo resolviste por fuera, márcalo Revisado.</span>' + ic('derecha') + '</button>' : '';
     $('vistaAl').innerHTML = '<div class="tres dos" role="radiogroup" aria-label="Cómo ver el registro">' + [['general', 'Todo junto'], ['aliado', 'Por aliado']].map((x) =>
       '<button type="button" role="radio" data-vistaal="' + x[0] + '" aria-checked="' + (verAl === x[0]) + '" class="' + (verAl === x[0] ? 'on' : '') + '">' + x[1] + '</button>').join('') + '</div>';
     // Lote 12/11 (maqueta aliados, A): Esperan tu decisión, En curso, Sin enviar y Todas; el resto en "Más filtros"
-    const PRIN = modo === 'admin' ? ['para_ti', 'encurso', 'sin', 'todo'] : chips.map((c) => c[0]).filter((k) => k === 'todo' || k === chipAl || todos.filter(chips.find((c) => c[0] === k)[2]).length);
+    const PRIN = modo === 'admin' ? ['para_ti', 'encurso', 'sin', 'instaladas', 'todo'] : chips.map((c) => c[0]).filter((k) => k === 'todo' || k === chipAl || todos.filter(chips.find((c) => c[0] === k)[2]).length);
     const btnC = (c) => { const n = todos.filter(c[2]).length; return '<button type="button" data-chipal="' + c[0] + '" class="' + (c[0] === chipAl ? 'on' : '') + '" aria-pressed="' + (c[0] === chipAl) + '">' + esc(c[0] === 'todo' ? 'Todas' : c[1]) + ' <em>' + n + '</em></button>'; };
     const otrosC = chips.filter((c) => PRIN.indexOf(c[0]) < 0 && (todos.filter(c[2]).length || c[0] === chipAl));
     $('chipsAl').innerHTML = PRIN.map((k) => chips.find((c) => c[0] === k)).filter(Boolean).map(btnC).join('') + (otrosC.some((c) => c[0] === chipAl) ? btnC(chips.find((c) => c[0] === chipAl)) : '') +
       (otrosC.length ? '<details class="cx-mas"><summary>Más filtros</summary><div class="cx-menu">' + otrosC.filter((c) => c[0] !== chipAl).map(btnC).join('') + '</div></details>' : '');
     const f = chips.find((c) => c[0] === chipAl)[2]; const b = window.Comun.normalizeStr(buscaAl); const dg = buscaAl.replace(/\D/g, '');
     const lista = todos.filter(f).filter((i) => !b || window.Comun.normalizeStr(i.cliente).indexOf(b) >= 0 || window.Comun.normalizeStr(i.aliado).indexOf(b) >= 0 || (dg.length >= 4 && String(i.rif).replace(/\D/g, '').indexOf(dg) >= 0));
-    if(verAl === 'general') return pintarGeneral(lista, todos);
+    if(verAl === 'general') return modo === 'admin' ? pintarSemanas(lista) : pintarGeneral(lista, todos);
     // Grupos por aliado, ordenados por el registro más reciente
     const g = {}; lista.forEach((i) => { (g[i.aliado] = g[i.aliado] || []).push(i); });
     const ultimo = (l) => l.reduce((a, i) => (i.fecha && i.fecha > a ? i.fecha : a), '');
@@ -351,6 +376,29 @@
     });
     $('lista').innerHTML = h || vacio(buscaAl ? 'Sin resultados' : 'Nada en esta etiqueta', buscaAl ? 'Nadie coincide con "' + buscaAl + '".' : 'Prueba con otra etiqueta o mira todo.');
   }
+  // Lote 12/11 B (maqueta 9): la lista del administrador agrupada por semana; cada fila con su acción (Decidir o Abrir)
+  function pintarSemanas(lista){
+    const MC = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+    const loc = (x) => { const t = new Date(x); return isNaN(t) ? null : new Date(t.getFullYear(), t.getMonth(), t.getDate()); };
+    const lunes = (t) => { const x = new Date(t); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return x; };
+    const hoyL = lunes(loc(new Date())); const antL = new Date(hoyL); antL.setDate(antL.getDate() - 7);
+    const g = {}; const sinF = [];
+    lista.slice().sort((x, y) => String(y.x.creada_en || y.x.creado_en || y.fecha || '').localeCompare(String(x.x.creada_en || x.x.creado_en || x.fecha || ''))).forEach((i) => {
+      const t = loc(i.x.creada_en || i.x.creado_en || i.fecha); if(!t){ sinF.push(i); return; } const L = lunes(t); const k = L.getTime(); (g[k] = g[k] || { L, l: [] }).l.push(i); });
+    $('cuentaLista').textContent = plural(lista.length, 'registro', 'registros');
+    const P = R.puedo || {};
+    const fila = (i) => { const f = loc(i.x.creada_en || i.x.creado_en || i.fecha); const dec = P.decidir && paraTi(i);
+      const dato = 'data-' + (i.t === 'vieja' ? 'vieja' : i.t) + '="' + esc(i.id) + '"';
+      return '<div class="al-r"><span class="f">' + esc(f ? f.getDate() + ' ' + MC[f.getMonth()] : '') + '</span><span class="c"><b>' + esc(i.cliente) + '</b><small>' + esc(i.rif || '') + '</small></span>' +
+        '<span class="a"><b>' + esc(i.aliado) + '</b><small>' + esc(i.t === 'ref' ? 'referido' : 'aliado') + (i.tu ? ' · tu cliente' : '') + '</small></span><span class="e">' + chipItem(i) + '</span>' +
+        '<span class="b"><button type="button" class="hc-b ch' + (dec ? '' : ' s') + '" ' + dato + '>' + (dec ? 'Decidir' : 'Abrir') + '</button>' +
+        (dec ? '<button type="button" class="enlace" data-revisado="' + esc(i.t + ':' + i.id) + '" data-nombre="' + esc(i.cliente) + '">Revisado</button>' : '') + '</span></div>'; };
+    const tit = (L) => { const D = new Date(L); D.setDate(D.getDate() + 6); const r = L.getDate() + (L.getMonth() !== D.getMonth() ? ' ' + MC[L.getMonth()] : '') + ' al ' + D.getDate() + ' ' + MC[D.getMonth()];
+      return L.getTime() === hoyL.getTime() ? 'Esta semana · ' + r : L.getTime() === antL.getTime() ? 'Semana anterior · ' + r : 'Semana del ' + r; };
+    const ks = Object.keys(g).sort((a, b) => Number(b) - Number(a));
+    let h = ks.map((k) => '<div class="al-s">' + esc(tit(g[k].L)) + '</div>' + g[k].l.map(fila).join('')).join('') + (sinF.length ? '<div class="al-s">Sin fecha</div>' + sinF.map(fila).join('') : '');
+    $('lista').innerHTML = h ? '<div class="al-l">' + h + '</div>' : vacio(buscaAl ? 'Sin resultados' : 'Nada en ' + nomMes(mesAl + '-15'), buscaAl ? 'Nadie coincide con "' + buscaAl + '".' : 'Prueba con otro mes, otra pastilla o "Aliado: todos".');
+  }
   const VIEJA = { instalado: 'Instalado', instalado_sin_cliente: 'Instalado sin cliente', pendiente_por_instalacion: 'Pendiente por instalación', consulta: 'Consulta' };
 
   // ---------- Pagos ----------
@@ -360,7 +408,8 @@
     catch (e) { if(mio !== pedido) return; $('lista').innerHTML = errorCaja('No se pudieron cargar los pagos', e.message); }
   }
   function pintarPagos(){
-    const ins = pagos.instalaciones || []; const rf = pagos.referidos || [];
+    const deAl = (x) => modo !== 'admin' || !aliadoF || String(x.aliado || '').trim() === aliadoF;
+    const ins = (pagos.instalaciones || []).filter(deAl); const rf = (pagos.referidos || []).filter(deAl);
     $('cuentaLista').textContent = plural(ins.length + rf.length, 'pago pendiente', 'pagos pendientes');
     $('lista').innerHTML =
       '<div class="h2 al-h2">Instalaciones PYME por pagar <em>' + ins.length + '</em>' + (ins.length ? '<button type="button" class="btn btn-chico btn-2" data-acc="excel">Descargar Excel</button>' : '') + '</div>' +
@@ -400,6 +449,8 @@
     try { const d = await rpc('aliados_por_mes', {}); if(mio !== pedido) return; porMes = d; cache.guardar('aliados:mes', d); pintarMes(); }
     catch (e) { if(mio !== pedido) return; if(!porMes) $('lista').innerHTML = errorCaja('No se pudieron cargar las instalaciones por mes', e.message); toast(e.message, 'error'); }
   }
+  // Al cambiar de mes, Por mes abre ese mes
+  function abiertoMesAl(){ Object.keys(abiertoMes).forEach((k) => { delete abiertoMes[k]; }); }
   function pintarMes(){
     const ms = porMes.meses || []; const tot = porMes.total || 0;
     $('cuentaLista').textContent = plural(tot, 'instalación de aliados', 'instalaciones de aliados') + ' desde enero';
@@ -412,10 +463,10 @@
       '<div class="ik"><small>Más instalaciones</small><b>' + (top[lider] || 0) + '</b><span>' + esc(lider || '') + '</span></div>' +
       '<div class="ik"><small>Sin permiso</small><b>' + sinPermiso + '</b><span>sin solicitud aprobada</span></div></div>';
     h += ms.map((m, i) => {
-      const ab = abiertoMes[m.mes] !== undefined ? abiertoMes[m.mes] : i === 0;
+      const ab = abiertoMes[m.mes] !== undefined ? abiertoMes[m.mes] : modo === 'admin' ? String(m.mes).slice(0, 7) === mesAl : i === 0;
       return '<div class="grupo' + (ab ? ' abierto' : '') + '"><button type="button" class="grupo-cab" data-mes="' + esc(m.mes) + '" aria-expanded="' + ab + '"><span class="tx"><b>' + esc(window.Comun.capital(nomMes(m.mes))) + '</b><small>' +
         esc((m.aliados || []).slice(0, 4).map((a) => a.aliado + ' ' + a.n).join(' · ') + ((m.aliados || []).length > 4 ? ' y ' + ((m.aliados || []).length - 4) + ' más' : '')) + '</small></span><span class="num">' + m.total + '</span>' + ic('abajo') + '</button>' +
-        '<div class="grupo-cuerpo">' + (m.filas || []).map((f) => '<div class="fila"><span class="tx"><b>' + esc(f.cliente || 'Sin nombre') + '</b><small>' + esc([f.aliado, f.codigo, fecha(f.dia), f.categoria].filter(Boolean).join(' · ')) + '</small></span>' +
+        '<div class="grupo-cuerpo">' + (m.filas || []).filter((f) => !aliadoF || String(f.aliado || '').trim() === aliadoF).map((f) => '<div class="fila"><span class="tx"><b>' + esc(f.cliente || 'Sin nombre') + '</b><small>' + esc([f.aliado, f.codigo, fecha(f.dia), f.categoria].filter(Boolean).join(' · ')) + '</small></span>' +
           (f.con_permiso ? '<span class="m verde">Con permiso</span>' : '<span class="m ambar">Sin permiso</span>') + '</div>').join('') + '</div></div>';
     }).join('');
     const sol = (porMes.cargas || []).filter((c) => c.solo_aliados);
@@ -973,6 +1024,8 @@
     if((b = t.closest('[data-vistaal]'))){ verAl = b.dataset.vistaal; try { localStorage.setItem('ae_aliados_vista', verAl); } catch (x) {} pintarRegistro(); return; }
     if((b = t.closest('[data-mes]'))){ const k = b.dataset.mes; abiertoMes[k] = !b.parentNode.classList.contains('abierto'); b.parentNode.classList.toggle('abierto', abiertoMes[k]); b.setAttribute('aria-expanded', String(abiertoMes[k])); return; }
     if((b = t.closest('[data-chipal]'))){ chipAl = b.dataset.chipal; pintarRegistro(); return; }
+    if((b = t.closest('[data-mesal]'))){ if(b.disabled) return; const [a, m] = mesAl.split('-').map(Number); const d = new Date(a, m - 1 + Number(b.dataset.mesal), 1);
+      mesAl = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0'); guardarUrl(); pintarTabs(); if(tab === 'mes'){ abiertoMesAl(); pintar(); } else if(tab === 'pagos') pintar(); else pintarRegistro(); return; }
     if((b = t.closest('[data-masal]'))){ masAl[b.dataset.masal] = true; pintarRegistro(); return; }
     if((b = t.closest('[data-grupoal]'))){ const k = b.dataset.grupoal; abiertosAl[k] = !b.parentNode.classList.contains('abierto');
       if(abiertosAl[k]){ const v = visto() || {}; v[k] = new Date().toISOString(); guardarVisto(v); }
@@ -1031,7 +1084,8 @@
     if(el.dataset && el.dataset.campon && N){ N.c[el.dataset.campon] = el.value; if(N.err[el.dataset.campon]){ delete N.err[el.dataset.campon]; const e = $('e_' + el.dataset.campon); if(e) e.textContent = ''; el.removeAttribute('aria-invalid'); } pintarPieNueva(); }
     if(el.id === 'fTexto' && $('eForm')) $('eForm').textContent = '';
   });
-  document.addEventListener('change', (ev) => { const el = ev.target; if(el.dataset && el.dataset.enlazar) enlazar(el); });
+  document.addEventListener('change', (ev) => { const el = ev.target; if(el.dataset && el.dataset.enlazar) enlazar(el);
+    if(el.id === 'alAliadoF'){ aliadoF = el.value; guardarUrl(); if(tab === 'registro' || tab === 'sinp') pintarRegistro(); else pintar(); } });
   // Lote 12/11 B: se arrastra en todo el drawer; cada archivo va a la casilla donde se suelta (sin adivinar por el nombre).
   // Antes de que el RIF diga "disponible", lo que se suelta se lee como el RIF.
   const sinSobre = () => Array.prototype.forEach.call(document.querySelectorAll('#hojaNueva .sobre'), (x) => x.classList.remove('sobre'));
