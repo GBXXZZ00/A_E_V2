@@ -63,6 +63,7 @@ const CSS = `
 .zz-rk{display:flex;flex-direction:column;gap:8px}
 .zz-rk .f{display:grid;grid-template-columns:22px 130px 1fr 190px;gap:10px;align-items:center;font-size:13.5px}
 .zz-rk .f .n{color:var(--text2);font-weight:700}.zz-rk .f .r{white-space:nowrap;text-align:right;font-size:12.5px;color:var(--text2)}.zz-rk .f .r b{color:var(--text)}
+.zz-mov{font-size:11.5px;font-weight:800;margin-left:4px;color:var(--text2)}.zz-mov.up{color:#0F6642}.zz-mov.dn{color:#A32117}
 .zz-rk .f.yo{background:#E8ECF9;border-radius:10px;padding:6px 8px;margin:0 -8px}
 .zz-pi{display:flex;flex-direction:column;gap:10px}
 .zz-pi .f{display:grid;grid-template-columns:130px 1fr 34px;gap:10px;align-items:center;font-size:13.5px}.zz-pi .f b{text-align:right}
@@ -121,19 +122,23 @@ const RES = '<div class="zz-r">' +
   '</div>';
 
 const flechaL = (up, t) => '<span class="zz-d ' + (up ? 'up' : 'dn') + '">' + (up ? '↑' : '↓') + ' ' + t + '</span>';
+const RANK_L = '<div class="zz-box"><span class="zz-tabs2"><span class="on">Este corte</span><span>Octubre</span></span><h3>Ranking del corte</h3><p class="sub">Líderes de Ventas corporativas, por instaladas. Contra octubre al mismo día</p><div class="zz-rk">' +
+  [['1', 'Rosa Paredes', 7, 2, '↑ 1', 'up'], ['2', 'Tomás Guerra', 6, 1, '↓ 1', 'dn'], ['3', 'Lucía Ferrer', 5, 1, '↑ 1', 'up', 1], ['4', 'Ana Ríos', 4, 0, '↓ 1', 'dn'], ['5', 'Carla Méndez', 3, 0, '=', ''], ['6', 'Nora Díaz', 2, 0, '↑ 1', 'up'], ['7', 'Luis Pérez', 1, 0, '↓ 1', 'dn']].map((r) =>
+    '<div class="f zz-rkl' + (r[6] ? ' yo' : '') + '"><span class="n">' + r[0] + '</span><span>' + r[1] + (r[6] ? ' <b style="color:#1B3A9E">(tú)</b>' : '') + ' <span class="zz-mov ' + r[5] + '">' + r[4] + '</span></span><span class="zz-bar bb"><i style="flex:' + r[3] + ';background:#0F6642"></i><i style="flex:' + (r[2] - r[3]) + ';background:#8FD1AE"></i><i style="flex:' + (7 - r[2]) + '"></i></span><span class="r"><b>' + r[2] + ' instaladas</b> · ' + r[3] + ' comisiona' + (r[3] === 1 ? '' : 'n') + '</span></div>').join('') +
+  '</div><div class="zz-ley"><span><i style="background:#0F6642"></i>Comisiona</span><span><i style="background:#8FD1AE"></i>Instalada, falta legal o pago</span><span>↑ ↓ puestos contra octubre</span></div></div>';
 const RES_LIDER = '<div class="zz-r">' +
   '<div class="zz-gan"><div class="t">Tu posición en el corte <span style="font-weight:500;color:var(--text2)">· Ventas corporativas, por instaladas</span></div><div><small>Vas</small><b style="font-size:26px">3.º de 7</b><span>Te falta 1 instalada para pasar al 2.º</span></div><div><small>Octubre</small><b>Quedaste 4.º</b><span>6 instaladas · 5 comisionaron</span></div><div><small>Cierra el corte</small><b>18/11</b><span>Faltan 5 días</span></div></div>' +
   '<div class="zz-k"><div class="zz-kc"><span class="l">Tus instaladas del corte</span><span class="v">5</span>' + flechaL(true, '25 %') + '<span class="x">4 en octubre al día 26 del corte</span></div>' +
   '<div class="zz-kc"><span class="l">Ya comisionan</span><span class="v">1 <small>de 5</small></span><div class="zz-mini"><i style="width:20%"></i></div><span class="x">4 todavía sin legal o pago</span></div>' +
   '<div class="zz-kc"><span class="l">Deben documentos</span><span class="v" style="color:#754B00">3</span><span class="x">Toca para verlos en la lista</span></div>' +
   '<div class="zz-kc"><span class="l">Deben el pago</span><span class="v" style="color:#A32117">2</span><span class="x">Toca para verlos en la lista</span></div></div>' +
-  '<div class="zz-g3"><div class="zz-box"><span class="zz-tabs2"><span class="on">Ritmo del corte</span><span>Cortes cerrados</span></span><h3>Tus instaladas por corte</h3><p class="sub">Día a día, contra tus cortes anteriores</p>' +
+  '<div class="zz-g2">' + RANK_L + '<div class="zz-box"><span class="zz-tabs2"><span class="on">Ritmo del corte</span><span>Cortes cerrados</span></span><h3>Tus instaladas por corte</h3><p class="sub">Día a día, contra tus cortes anteriores</p>' +
     '<svg viewBox="0 0 420 190" style="width:100%;height:auto;display:block" role="img" aria-label="Tu ritmo del corte"><g stroke="#ECEEF1">' + [20, 60, 100, 140].map((y) => '<line x1="30" x2="410" y1="' + y + '" y2="' + y + '"/>').join('') + '</g>' +
     '<g font-size="10" fill="#69717C">' + [['8', 20], ['6', 50], ['4', 80], ['2', 110], ['0', 140]].map((t) => '<text x="4" y="' + (t[1] + 3) + '">' + t[0] + '</text>').join('') + '<text x="30" y="160">día 1</text><text x="250" y="160">hoy, día 26</text><text x="380" y="160">día 31</text></g>' +
     '<polyline fill="none" stroke="#B8BEC6" stroke-width="2" stroke-dasharray="4 4" points="30,140 90,125 150,110 210,95 270,80 330,65 410,55"/>' +
     '<polyline fill="none" stroke="#69717C" stroke-width="2" points="30,140 90,140 150,125 210,110 270,80 330,65 410,50"/>' +
     '<polyline fill="none" stroke="#1F45C4" stroke-width="3.5" points="30,140 90,125 150,110 210,95 270,65"/><circle cx="270" cy="65" r="5" fill="#1F45C4"/><text x="278" y="62" font-size="12" font-weight="800" fill="#1F45C4">5 · ↑ 25 %</text></svg>' +
-    '<div class="zz-ley"><span><i style="background:#1F45C4"></i>Noviembre (en curso)</span><span><i style="background:#69717C"></i>Octubre</span><span><i style="background:#B8BEC6"></i>Tu promedio de 3 cortes</span></div></div>' +
+    '<div class="zz-ley"><span><i style="background:#1F45C4"></i>Noviembre (en curso)</span><span><i style="background:#69717C"></i>Octubre</span><span><i style="background:#B8BEC6"></i>Tu promedio de 3 cortes</span></div></div></div><div class="zz-g2">' +
   '<div class="zz-box"><h3>Tus órdenes por instalar</h3><p class="sub">Del corte. A los 10 días se dan por perdidas</p><div class="zz-pi">' +
     [['Al día', 'menos de 1 día', 1, '#B8BEC6'], ['Atrasadas', '1 a 3 días', 1, '#E0A93B'], ['Muy atrasadas', '4 a 9 días', 0, '#E5776B']].map((r) => '<div class="f"><span><b style="text-align:left;display:block">' + r[0] + '</b><small style="color:var(--text2)">' + r[1] + '</small></span><span class="zz-bar"><i style="flex:' + r[2] + ';background:' + r[3] + '"></i><i style="flex:' + (3 - r[2]) + '"></i></span><b>' + r[2] + '</b></div>').join('') +
     '<div class="perd"><span>Perdidas · 10 días o más, o de antes del corte</span><span>1 ›</span></div></div></div>' +
