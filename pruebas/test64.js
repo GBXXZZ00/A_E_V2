@@ -65,9 +65,10 @@ const ABOGADA = { id: '77777777-7777-4777-8777-777777777777', usuario: 'sara', p
     const cierre = llamo(m, 'revision_cerrar').slice(-1)[0][2];
     ok(nombre + ': aprueba en un solo cierre, sin mensaje', cierre.p_mensaje === null && cierre.p_enviado === false && !cli().documentos.some((d) => d.estado === 'por_revisar'));
     ok(nombre + ': sale Expediente aprobado con Avisar y Siguiente cliente', /Expediente aprobado/.test(await p.textContent('#hojaRvOk')) && /wa\.me\/584145550134/.test(await p.getAttribute('#rvAvisar', 'href')) && (await p.locator('#rvSiguiente').count()) === 1);
-    ok(nombre + ': la pantalla de revisión se cerró', (await p.locator('#hojaVer.ver, #rvVelo.ver').count()) === 0);
+    ok(nombre + ': la pantalla de revisión se cerró y la ficha queda difuminada detrás', (await p.locator('#hojaVer.ver').count()) === 0 && (await p.locator('#rvVelo.ver').count()) === 1);
     await p.screenshot({ path: 'capturas/64-' + nombre + '-aprobado.png' });
     await p.click('#rvSiguiente'); await p.waitForFunction(() => !window.Comun.hojaAbierta());
+    ok(nombre + ': Siguiente cliente quita el velo', (await p.locator('#rvVelo.ver').count()) === 0);
 
     // ----- La abogada: solo lectura, "Tiene un problema" y "Terminar y enviar" -----
     cli().estatus = 'documentos_recibidos'; cli().legal_ok_en = new Date().toISOString();

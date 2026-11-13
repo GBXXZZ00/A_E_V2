@@ -33,6 +33,9 @@ async function cerrarHojas(p){ for(let i = 0; i < 5 && await p.evaluate(() => !!
     ok(nombre + ': el Resumen se pide por corte', llamo(mundo, 'comisiones_resumen').length >= 1);
 
     // ----- Revisión en lote -----
+    // Lote 12/11 B: en lote solo se marcan los clientes donde la IA dice que todo cuadra
+    { const cq = mundo.datos.clientes.find((c) => !c.unido_a && c.documentos.some((d) => d.estado === 'por_revisar' && (d.archivos || []).length));
+      if(cq) cq.ia = { id: 901, estado: 'lista', avance: 1, total: 1, puntos: [], excepciones: [], marcas: cq.documentos.map((d) => ({ documento: d.id, propuesta: 'bien', nota: 'Cuadra' })) }; }
     await a.goto(H + 'revision.html'); await a.waitForURL(/trabajo\.html\?v=lote/);
     ok(nombre + ': revision.html lleva a la revisión en lote de Mi trabajo', true);
     await a.waitForSelector('#rlFlt .rl-f');
@@ -41,9 +44,9 @@ async function cerrarHojas(p){ for(let i = 0; i < 5 && await p.evaluate(() => !!
     const hayDocs = await a.locator('[data-rl-cli]').count();
     if(hayDocs){
       await a.locator('[data-rl-cli]').first().click();
-      ok(nombre + ': elegir el cliente marca todos sus documentos', /seleccionad/.test(await a.textContent('#rlBar')) && !(await a.locator('[data-rl="aprobar"]').isDisabled()));
+      ok(nombre + ': elegir el cliente lo deja listo para aprobar', /Aprobar 1 cliente/.test(await a.textContent('#rlBar')) && !(await a.locator('[data-rl="aprobar"]').isDisabled()));
       await a.click('[data-rl="aprobar"]'); await a.waitForSelector('#bzAviso:not(.hidden)');
-      ok(nombre + ': Aprobar seleccionados pasa por revision_lote y avisa en la misma pantalla', llamo(mundo, 'revision_lote').length === 1 && /aprobad/.test(await a.textContent('#bzAviso')) && /quedan/.test(await a.textContent('#bzAviso')));
+      ok(nombre + ': Aprobar pasa por revision_lote y avisa en la misma pantalla', llamo(mundo, 'revision_lote').length === 1 && /aprobad/.test(await a.textContent('#bzAviso')) && /quedan/.test(await a.textContent('#bzAviso')));
     } else ok(nombre + ': hay documentos por revisar en el mundo de prueba', false);
     await a.screenshot({ path: 'capturas/lote28-' + nombre + '-revision-lote.png', fullPage: true });
     await a.click('[data-rl="volver"]'); await a.waitForSelector('#tarjetas .bz-mi');
