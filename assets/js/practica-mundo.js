@@ -703,7 +703,11 @@ const RPC = {
     const filas = r.filas.map((x) => Object.assign(x, { _i: info(x) }));
     const p = { tipo: (i) => !(f.tipo || []).length || f.tipo.includes(i.tip), estatus: (i) => !(f.estatus || []).length || f.estatus.includes(i.est), lider: (i) => !(f.lider || []).length || f.lider.includes(i.lid),
       gestion: (i) => !(f.gestion || []).length || i.ges.some((g) => f.gestion.includes(g) || f.gestion.includes(g.split(':')[0])), ctr: (i) => !(f.ctr || []).length || (i.ctr || []).some((k) => f.ctr.includes(k)),
-      vgt: (i) => !(f.vgt || []).length || i.vgt.some((k) => f.vgt.includes(k)) };
+      vgt: (i) => !(f.vgt || []).length || i.vgt.some((k) => f.vgt.includes(k)),
+      fecha: (i) => { const fe = f.fecha; if(!fe || !fe.de) return true; const v = i.fec[fe.de]; return !!v && (!fe.desde || v >= fe.desde) && (!fe.hasta || v <= fe.hasta); } };
+    filas.forEach((x) => { const c = m.datos.clientes.find((k) => k.id === x.id); const d10 = (s) => s ? String(s).slice(0, 10) : null;
+      const ks = (c.dedicado && c.dedicado.contratos) || [];
+      x._i.fec = { entro: d10(c.creado_en), estatus: d10(c.estatus_desde), firmo: d10((ks.find((k) => k.firmado_en) || {}).firmado_en) || (c.estatus === 'contrato_firmado' ? d10(c.estatus_desde) : null), vence: d10((ks.find((k) => k.vence_en) || {}).vence_en) }; });
     const pasa = (i, salvo) => Object.keys(p).every((k) => k === salvo || p[k](i));
     const cuenta = (grupo, valores) => { const o = {}; filas.filter((x) => pasa(x._i, grupo)).forEach((x) => valores(x._i).forEach((v) => { o[v] = (o[v] || 0) + 1; })); return o; };
     const facetas = { tipo: cuenta('tipo', (i) => [i.tip]), estatus: cuenta('estatus', (i) => [i.est]), lider: cuenta('lider', (i) => [i.lid]),

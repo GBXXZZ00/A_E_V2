@@ -3372,3 +3372,22 @@ main.al-en-inicio #ayuda{display:none}
   .rv-panel{position:fixed;left:0;right:0;bottom:0;width:auto;max-height:82dvh;margin:0;border-radius:24px 24px 0 0;border-width:1.5px 0 0;z-index:6;box-shadow:0 -12px 40px rgba(17,19,21,.2)}
   .rv-pacc{padding-bottom:calc(12px + var(--safe-b))}.rv-pacc .hc-b{flex:1;height:48px}
 }
+/* Lote 13/11, parte 6 (maqueta obs-13nov 06b): botón Fecha al lado de Filtros y su desplegable */
+.filtros .clf-dd{flex:none;height:40px;padding:0 14px;border-radius:99px;border:1.5px solid var(--line);background:#fff;color:var(--text);font-weight:600;font-size:13.5px;display:inline-flex;align-items:center;gap:8px}
+.filtros .clf-dd b{font-weight:700}
+.filtros .clf-dd.on{border-color:var(--text);background:#fff;color:var(--text)}
+.filtros .clf-dd .i{width:14px;height:14px}
+.clf-pop{position:fixed;z-index:60;background:#fff;border-radius:16px;box-shadow:0 16px 40px rgba(17,19,21,.16);border:1px solid var(--line);padding:16px;width:380px;display:none;flex-direction:column;gap:10px}
+.clf-pop.ver{display:flex}
+.clf-pop .lbl{font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.05em}
+.clf-pop .ops{display:flex;flex-wrap:wrap;gap:6px}
+.clf-pop .ops button{height:34px;padding:0 12px;border-radius:99px;border:1.5px solid var(--line);display:inline-flex;align-items:center;font-size:13px;font-weight:600;background:#fff;color:var(--text)}
+.clf-pop .ops button.on{background:var(--text);border-color:var(--text);color:#fff}
+.clf-pop .dos{display:grid;grid-template-columns:1fr 1fr;gap:10px}.clf-pop .dos label{font-size:12.5px;font-weight:700;display:block;margin-bottom:4px}.clf-pop .dos .campo{height:40px;width:100%}
+.clf-pop .error:empty{display:none}
+.clf-pop .acc{display:flex;justify-content:flex-end;gap:8px}
+@media (max-width:899px){
+  .clf-pop{left:0;right:0;bottom:0;top:auto;width:auto;border-radius:24px 24px 0 0;padding:20px 16px calc(16px + var(--safe-b));box-shadow:0 -12px 40px rgba(17,19,21,.2)}
+  .clf-pop .ops button{min-height:44px}
+  .clf-pop .acc .hc-b{flex:1;height:48px}
+}

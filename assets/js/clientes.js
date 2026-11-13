@@ -36,6 +36,28 @@
   function leerTarjeta(){ try { const v = localStorage.getItem(K_TARJETA); return TARJETAS.some((t) => t.id === v) ? v : 'pyme'; } catch (e) { return 'pyme'; } }
   function guardarTarjeta(){ if(tarjeta === 'todas') return; try { localStorage.setItem(K_TARJETA, tarjeta); } catch (e) {} }
   let yo = null; let rol = ''; let filtro = DEF; let q = ''; let sel = {}; let filas = []; let total = 0; let conteos = null; let facetas = null; let gestiones = [];
+  // Lote 13/11 parte 6 (maqueta 06b): filtro de Fecha. de: entro, estatus, firmo, vence; queda en la dirección (fd, fde, fha)
+  let fec = { de: '', desde: '', hasta: '' };
+  const FEC_DE = [['entro', 'Entró a la app', 'Entró'], ['estatus', 'Cambió de estatus', 'Cambió de estatus'], ['firmo', 'Firmó el contrato', 'Firmó'], ['vence', 'Vence el contrato', 'Vence']];
+  const FEC_CUANDO = [['mes', 'Este mes'], ['mes_pasado', 'Mes pasado'], ['d30', 'Últimos 30 días'], ['anio', 'Este año'], ['entre', 'Entre fechas']];
+  const isoDia = (d) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  function rangoDe(k){
+    const h = new Date(); const y = h.getFullYear(); const m = h.getMonth();
+    if(k === 'mes') return [isoDia(new Date(y, m, 1)), isoDia(new Date(y, m + 1, 0))];
+    if(k === 'mes_pasado') return [isoDia(new Date(y, m - 1, 1)), isoDia(new Date(y, m, 0))];
+    if(k === 'd30') return [isoDia(new Date(y, m, h.getDate() - 30)), isoDia(h)];
+    if(k === 'anio') return [y + '-01-01', y + '-12-31'];
+    return null;
+  }
+  const cuandoDe = (a, b) => (FEC_CUANDO.find((x) => { const r = rangoDe(x[0]); return r && r[0] === a && r[1] === b; }) || ['entre'])[0];
+  const MESES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+  function fecTexto(){
+    if(!fec.de) return 'Fecha: <b>cualquiera</b>';
+    const k = cuandoDe(fec.desde, fec.hasta); const corto = (FEC_DE.find((x) => x[0] === fec.de) || [])[2] || 'Fecha';
+    const dm = (s) => s ? s.slice(8, 10) + '/' + s.slice(5, 7) : '…';
+    const v = k === 'mes' || k === 'mes_pasado' ? MESES[Number(fec.desde.slice(5, 7)) - 1] + ' ' + fec.desde.slice(0, 4) : k === 'entre' ? dm(fec.desde) + ' a ' + dm(fec.hasta) : (FEC_CUANDO.find((x) => x[0] === k) || [])[1].toLowerCase();
+    return esc(corto) + ': <b>' + esc(v) + '</b>';
+  }
   let pedido = 0; let reloj = null; let cargando = false; let marcado = 0;
   let desde = 0;                  // primera fila de la página que se ve
   let nSus = 0;   // suspendidos: fuera de la lista salvo con el filtro Otros: Suspendidos
@@ -50,6 +72,8 @@
     const viejo = { segmento: 'tipo', estatus: 'estatus', lider: 'lider', vgt: 'vgt' };
     Object.keys(viejo).forEach((k) => { const v = u.get(k); if(v && !sel[viejo[k]]) sel[viejo[k]] = [v.slice(0, 60)]; });
     if(u.get('sus') === '1') sel.otros = ['suspendidos'];
+    const fd = u.get('fd'); const okF = (v) => /^\d{4}-\d{2}-\d{2}$/.test(v || '') ? v : '';
+    fec = FEC_DE.some((x) => x[0] === fd) ? { de: fd, desde: okF(u.get('fde')), hasta: okF(u.get('fha')) } : { de: '', desde: '', hasta: '' };
     if(!sel.tipo && u.get('tipo') === 'Combinado') sel.tipo = ['combinado'];
     // Con un atajo que viene de Inicio o Comisiones (sin tarjeta) se ve en todas, igual que el número que lo trajo
     const s = u.get('s'); tarjeta = TARJETAS.some((t) => t.id === s) ? s : DE_TIPO[u.get('tipo')] || (u.get('f') || u.get('c') ? 'todas' : leerTarjeta());
@@ -62,11 +86,12 @@
     if(filtro !== DEF) u.set('f', filtro);
     if(q) u.set('q', q);
     GR.forEach((x) => { if((sel[x.k] || []).length) u.set(x.u, sel[x.k].join('|')); });
+    if(fec.de){ u.set('fd', fec.de); if(fec.desde) u.set('fde', fec.desde); if(fec.hasta) u.set('fha', fec.hasta); }
     const s = u.toString();
     history.replaceState(history.state, '', location.pathname + (s ? '?' + s : ''));
   }
   const nSel = () => GR.reduce((a, x) => a + (sel[x.k] || []).length, 0);
-  const clave = () => 'clientes5:' + tarjeta + ':' + filtro + ':' + q + ':' + JSON.stringify(sel);
+  const clave = () => 'clientes5:' + tarjeta + ':' + filtro + ':' + q + ':' + JSON.stringify(sel) + (fec.de ? ':' + JSON.stringify(fec) : '');
 
   // Lote 05/11 F1: "+ Registrar dedicado nuevo" solo con la tarjeta de dedicados y para quien puede registrar (no Legal)
   const puedeRegistrar = () => !!yo && ['admin', 'analista', 'lider'].indexOf(yo.rol) >= 0;
@@ -82,7 +107,8 @@
     const lista = atajosDe();
     if(EXTRA[filtro]) lista.unshift({ id: filtro, t: EXTRA[filtro] });
     const n = nSel();
-    $('filtros').innerHTML = '<button type="button" class="bfil" id="abrirFiltros">Filtros' + (n ? '<u>' + n + '</u>' : '') + '</button>' + lista.map((f) => {
+    $('filtros').innerHTML = '<button type="button" class="bfil" id="abrirFiltros">Filtros' + (n ? '<u>' + n + '</u>' : '') + '</button>' +
+      '<button type="button" class="clf-dd' + (fec.de ? ' on' : '') + '" id="abrirFecha" aria-haspopup="dialog" aria-expanded="false">' + fecTexto() + ic('abajo') + '</button>' + lista.map((f) => {
       const c = conteos && conteos[f.id] !== undefined ? '<em>' + esc(conteos[f.id]) + '</em>' : '';
       return '<button type="button" data-filtro="' + f.id + '" class="' + (f.id === filtro && !q ? 'on' : '') + '" aria-pressed="' + (f.id === filtro && !q) + '">' + esc(f.t) + ' ' + c + '</button>';
     }).join('');
@@ -166,7 +192,7 @@
       '<button type="button" class="cli-etq" data-etiquetar="' + esc(c.id) + '" aria-label="Etiqueta de gestión de ' + esc(c.nombre) + '">' + ic('etiqueta') + '</button></div>';
   }
   function pintarLista(){
-    const n = nSel();
+    const n = nSel() + (fec.de ? 1 : 0);
     const T = TARJETAS.find((t) => t.id === tarjeta);
     $('cuentaLista').innerHTML = (q ? plural(total, 'resultado', 'resultados') + ' en todos los clientes' : (verSus() ? plural(total, 'cliente suspendido', 'clientes suspendidos') : plural(total, 'cliente', 'clientes')) + (T ? ' en ' + T.t : ' en todas las tarjetas')) + (n ? '<button type="button" class="enlace" id="quitarFiltros">Quitar filtros</button>' : '');
     if(!filas.length){
@@ -191,8 +217,8 @@
   const conteosTodas = () => !!nTarjetas && (nTarjetas.pyme + nTarjetas.corporativo + nTarjetas.isp) > 0 && filtro !== 'todos' && !verSus();
   function esqueletos(){ let h = ''; for(let i = 0; i < 6; i++) h += '<div class="sk-cli" aria-hidden="true"><span class="sk" style="width:40px;height:40px;border-radius:12px"></span><span class="sk-tx"><span class="sk" style="width:' + (45 + i * 7) + '%;height:14px"></span><span class="sk" style="width:' + (30 + i * 5) + '%;height:11px"></span></span></div>'; return h; }
 
-  async function pedirLista(de, limite){
-    return rpc('clientes_lista3', { p_filtro: filtro === 'revisar_fecha' ? DEF : filtro, p_busca: q, p_limite: limite, p_desde: de, p_f: Object.assign({}, sel, filtro === 'revisar_fecha' ? { ctr: ['sin_vence'] } : {}, { tarjeta: tarjeta === 'todas' ? '' : tarjeta }) });
+  async function pedirLista(de, limite, fecF){
+    return rpc('clientes_lista3', { p_filtro: filtro === 'revisar_fecha' ? DEF : filtro, p_busca: q, p_limite: limite, p_desde: de, p_f: Object.assign({}, sel, filtro === 'revisar_fecha' ? { ctr: ['sin_vence'] } : {}, fecF || (fec.de ? { fecha: fec } : {}), { tarjeta: tarjeta === 'todas' ? '' : tarjeta }) });
   }
   function recibir(d){
     filas = d.filas || [];
@@ -243,7 +269,65 @@
     marcado = id; Array.prototype.forEach.call(document.querySelectorAll('.cli'), (x) => x.classList.toggle('sel', Number(x.dataset.cliente) === id));
     window.Ficha.abrir(id, Object.assign({ yo, alCerrar: refrescar }, o || {}));
   }
-  function limpiar(){ sel = {}; guardarUrl(); pintarSels(); pintarAtajos(); cargar(); }
+  // El desplegable de Fecha: Fecha de, Cuándo, Desde y Hasta; "Ver N clientes" cuenta con el servidor antes de aplicar
+  let FD = null; let fdReloj = null; let fdPed = 0;
+  function abrirFecha(){
+    const k = fec.de ? cuandoDe(fec.desde, fec.hasta) : '';
+    FD = { de: fec.de || 'entro', cuando: k, desde: fec.desde, hasta: fec.hasta, n: null };
+    let z = $('clfPop'); if(!z){ z = document.createElement('div'); z.id = 'clfPop'; z.className = 'clf-pop'; z.setAttribute('role', 'dialog'); z.setAttribute('aria-label', 'Filtrar por fecha'); document.body.appendChild(z); }
+    z.classList.add('ver'); pintarFecha(); const b = $('abrirFecha'); if(b) b.setAttribute('aria-expanded', 'true'); ubicarFecha(); contarFecha();
+  }
+  function ubicarFecha(){
+    const z = $('clfPop'); const b = $('abrirFecha'); if(!z || !b) return;
+    if(!window.matchMedia('(min-width:900px)').matches){ z.style.left = ''; z.style.top = ''; return; }
+    const r = b.getBoundingClientRect(); z.style.left = Math.max(16, Math.min(r.left - 6, window.innerWidth - 396)) + 'px';
+    // Debajo del botón; si no cabe, sube lo justo para verse entero
+    z.style.top = Math.max(12, Math.min(r.bottom + 8, window.innerHeight - z.offsetHeight - 12)) + 'px';
+  }
+  function cerrarFecha(){ const z = $('clfPop'); if(z) z.classList.remove('ver'); FD = null; const b = $('abrirFecha'); if(b) b.setAttribute('aria-expanded', 'false'); }
+  function pintarFecha(){
+    const z = $('clfPop'); if(!z || !FD) return;
+    setTimeout(ubicarFecha, 0);
+    const op = (attr, k, tx, on) => '<button type="button" class="' + (on ? 'on' : '') + '" ' + attr + '="' + k + '" aria-pressed="' + on + '">' + esc(tx) + '</button>';
+    const listo = FD.desde || FD.hasta;
+    z.innerHTML = '<span class="lbl" id="clfDe">Fecha de</span><div class="ops" role="group" aria-labelledby="clfDe">' + FEC_DE.map((x) => op('data-fd', x[0], x[1], FD.de === x[0])).join('') + '</div>' +
+      '<span class="lbl" id="clfCu">Cuándo</span><div class="ops" role="group" aria-labelledby="clfCu">' + FEC_CUANDO.map((x) => op('data-fc', x[0], x[1], FD.cuando === x[0])).join('') + '</div>' +
+      '<div class="dos"><div><label for="clfDesde">Desde</label><input class="campo" type="date" id="clfDesde" value="' + esc(FD.desde || '') + '"></div><div><label for="clfHasta">Hasta</label><input class="campo" type="date" id="clfHasta" value="' + esc(FD.hasta || '') + '"></div></div>' +
+      '<div class="error" id="clfErr" role="alert"></div>' +
+      '<div class="acc"><button type="button" class="hc-b s ch" data-fq="1">Quitar</button><button type="button" class="hc-b ch" data-fv="1"' + (listo ? '' : ' disabled') + '>' + (FD.n === null ? 'Ver clientes' : 'Ver ' + plural(FD.n, 'cliente', 'clientes')) + '</button></div>';
+  }
+  function contarFecha(){
+    clearTimeout(fdReloj); if(!FD || !(FD.desde || FD.hasta)) return;
+    if(FD.desde && FD.hasta && FD.desde > FD.hasta){ $('clfErr').textContent = 'Desde va antes que Hasta'; return; }
+    const mio = ++fdPed;
+    fdReloj = setTimeout(async () => {
+      try { const d = await pedirLista(0, 1, { fecha: { de: FD.de, desde: FD.desde, hasta: FD.hasta } }); if(mio !== fdPed || !FD) return; FD.n = d.total || 0; const b = document.querySelector('#clfPop [data-fv]'); if(b) b.textContent = 'Ver ' + plural(FD.n, 'cliente', 'clientes'); }
+      catch (e) { if(mio === fdPed && $('clfErr')) $('clfErr').textContent = e.message; }
+    }, 250);
+  }
+  function aplicarFecha(quitar){
+    if(!quitar && FD && FD.desde && FD.hasta && FD.desde > FD.hasta){ $('clfErr').textContent = 'Desde va antes que Hasta'; return; }
+    fec = quitar || !FD ? { de: '', desde: '', hasta: '' } : { de: FD.de, desde: FD.desde || '', hasta: FD.hasta || '' };
+    cerrarFecha(); guardarUrl(); pintarAtajos(); cargar();
+  }
+  document.addEventListener('click', (e) => {
+    const t = e.target; let b; const z = $('clfPop');
+    if(t.closest('#abrirFecha')){ if(z && z.classList.contains('ver')) cerrarFecha(); else abrirFecha(); return; }
+    if(!z || !z.classList.contains('ver') || !FD) return;
+    if(!t.closest('#clfPop')){ cerrarFecha(); return; }
+    if((b = t.closest('[data-fd]'))){ FD.de = b.dataset.fd; FD.n = null; pintarFecha(); contarFecha(); return; }
+    if((b = t.closest('[data-fc]'))){ FD.cuando = b.dataset.fc; const r = rangoDe(FD.cuando); if(r){ FD.desde = r[0]; FD.hasta = r[1]; } FD.n = null; pintarFecha(); if(FD.cuando === 'entre') $('clfDesde').focus(); contarFecha(); return; }
+    if(t.closest('[data-fq]')){ aplicarFecha(true); return; }
+    if(t.closest('[data-fv]')){ aplicarFecha(false); return; }
+  });
+  document.addEventListener('change', (e) => {
+    if(!FD || !e.target.closest('#clfPop')) return;
+    if(e.target.id === 'clfDesde') FD.desde = e.target.value; if(e.target.id === 'clfHasta') FD.hasta = e.target.value;
+    FD.cuando = cuandoDe(FD.desde, FD.hasta); FD.n = null; pintarFecha(); contarFecha();
+  });
+  document.addEventListener('keydown', (e) => { if(e.key === 'Escape' && FD){ cerrarFecha(); const b = $('abrirFecha'); if(b) b.focus(); } });
+  window.addEventListener('resize', () => { if(FD) ubicarFecha(); });
+  function limpiar(){ sel = {}; fec = { de: '', desde: '', hasta: '' }; cerrarFecha(); guardarUrl(); pintarSels(); pintarAtajos(); cargar(); }
 
   document.addEventListener('click', (e) => {
     const t = e.target; let b;
