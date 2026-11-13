@@ -1,7 +1,7 @@
 // Lote 05/11, parte C (sin el panel de 6 puntos desde el lote 12/11 B): Devolver y Pedir separados, requerimientos en rojo con
 // el nombre completo y Quitar pedido, representantes Ya no aplica / Volver a contar, documentos extra con Cambiar título,
 // acta que cambia la junta y "Qué pedirle al cliente" para el líder. Datos inventados (mundo.js).
-const { chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar } = require('./simulador');
+const { chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar, rvAbierto, rvLista } = require('./simulador');
 const { ok, cerrar } = marcador();
 const llamo = (m, f) => m.llamadas.filter((l) => l[1] === f);
 const cerrarHojas = async (p) => { for(let i = 0; i < 5 && await p.evaluate(() => !!window.Comun.hojaAbierta()); i++){ await p.keyboard.press('Escape'); await p.waitForTimeout(260); } };
@@ -34,19 +34,27 @@ const cerrarHojas = async (p) => { for(let i = 0; i < 5 && await p.evaluate(() =
     ok(nombre + ': Quitar pedido lo anula', c.requerimientos.every((z) => z.estado === 'anulado'));
     // Devolver o Pedir: la constitutiva solo con 3 motivos
     const dc = c.documentos.find((d) => d.casilla === 'acta_constitutiva');
-    await p.click('[data-ver="' + dc.id + '"]'); await p.waitForSelector('#hojaVer.ver #verDevolver'); await p.click('#verDevolver'); await p.waitForSelector('#verPedir');
+    // Lote 13/11 parte 3: los motivos de la constitutiva en el panel; "Falta un acta" pide el acta y aprueba la constitutiva
+    await p.click('[data-ver="' + dc.id + '"]'); await rvAbierto(p); await p.click('#verDevolver'); await p.waitForSelector('#hojaVer .rv-panel [data-motivo]');
     const mots = await p.$$eval('#hojaVer [data-motivo]', (xs) => xs.map((x) => x.dataset.motivo));
-    ok(nombre + ': la constitutiva solo se devuelve por no ser de la empresa, ilegible, sin datos del Registro o porque falta un acta', mots.length === 4 && ['ilegible', 'no_corresponde', 'sin_registro', 'falta_acta'].every((k) => mots.includes(k)));
-    await p.click('#verPedir'); await p.waitForSelector('#hojaCampo.ver #reqGuardar');
-    ok(nombre + ': Pedir otro documento guarda el origen', /Origen: Acta constitutiva/.test(await p.textContent('#hojaCampo')));
-    await p.click('#reqGuardar'); await p.waitForSelector('.casilla.pedida');
-    ok(nombre + ': pedido desde el documento queda con su origen', c.requerimientos.some((z) => z.estado === 'abierto' && z.origen === dc.id));
-    await p.keyboard.press('Escape'); await p.waitForFunction(() => window.Comun.hojaAbierta() === 'hojaFicha');
+    ok(nombre + ': la constitutiva trae sus 5 motivos', mots.join() === 'ilegible,no_corresponde,sin_registro,falta_acta,otro' && /¿Qué pasa con la constitutiva\?/.test(await p.textContent('#hojaVer .rv-panel')));
+    await p.click('#hojaVer [data-motivo="falta_acta"]'); await p.waitForSelector('#hojaVer [data-rv-acta="junta"]');
+    ok(nombre + ': Falta un acta muestra las actas y el botón dice Pedir el acta', (await p.locator('#hojaVer [data-rv-acta]').count()) === 6 && (await p.locator('#devPedirActa[disabled]').count()) === 1);
+    await p.click('#hojaVer [data-rv-acta="junta"]'); await p.waitForSelector('#devPedirActa:not([disabled])');
+    ok(nombre + ': el aviso dice qué se pide y que la constitutiva queda aprobada', /Se le pide a .+ el acta de ratificación o cambio de junta directiva\. La constitutiva queda aprobada y el expediente espera esa acta\./.test(await p.textContent('#hojaVer .rv-panel .rv-aviso')));
+    await p.click('#devPedirActa'); await p.waitForFunction(() => !document.querySelector('#hojaVer .rv-panel'));
+    ok(nombre + ': pedido desde el documento queda con su origen', c.requerimientos.some((z) => z.estado === 'abierto' && z.origen === dc.id && z.tipo === 'junta'));
+    ok(nombre + ': la constitutiva queda marcada Bien', mundo.llamadas.some((l) => l[1] === 'documento_marcar' && l[2].p_documento === dc.id && l[2].p_accion === 'aprobar'));
+    await p.keyboard.press('Escape'); await p.waitForFunction(() => window.Comun.hojaAbierta() === 'hojaFicha'); await p.waitForSelector('.casilla.pedida');
     // Representantes: Ya no aplica y Volver a contar
-    await p.click('[data-rep-marca="2:ya_no_aplica"]'); await p.waitForSelector('[data-grupo="rep2"].rep-fuera');
-    ok(nombre + ': Ya no aplica queda en gris y no se le pide nada', /Ya no aplica/.test(await p.textContent('[data-grupo="rep2"]')) && /no se le pide nada/.test(await p.textContent('[data-grupo="rep2"]')));
-    await p.click('[data-rep-marca="2:cuenta"]'); await p.waitForFunction(() => !document.querySelector('[data-grupo="rep2"].rep-fuera'));
-    ok(nombre + ': Volver a contar lo devuelve', (c.representantes.find((r) => r.orden === 2) || {}).marca === 'cuenta');
+    // Lote 13/11: se marca desde la revisión, en el menú Más del representante
+    await p.click('#paso [data-paso="revisar"]'); await p.waitForSelector('#hojaVer.ver .rv-c', { state: 'attached' }); await rvLista(p);
+    const ced1 = c.documentos.find((d) => d.casilla === 'cedula' && d.numero === 1);
+    await p.click('#hojaVer [data-rv-ir="d:' + ced1.id + '"]'); await p.click('#rvMas'); await p.click('#rvMasMenu [data-rep-marca="1:ya_no_aplica"]');
+    await p.keyboard.press('Escape'); await p.waitForFunction(() => window.Comun.hojaAbierta() === 'hojaFicha'); await p.waitForSelector('[data-grupo="rep1"].rep-fuera');
+    ok(nombre + ': Ya no aplica queda en gris y no se le pide nada', /Ya no aplica/.test(await p.textContent('[data-grupo="rep1"]')));
+    await p.click('[data-grupo="rep1"] [data-rep-marca="1:cuenta"]'); await p.waitForFunction(() => !document.querySelector('[data-grupo="rep1"].rep-fuera'));
+    ok(nombre + ': Volver a contar lo devuelve', (c.representantes.find((r) => r.orden === 1) || {}).marca === 'cuenta');
     ok(nombre + ': sin desborde', await sinDesborde(p));
     await ctx.close();
     // El líder ve "Qué pedirle al cliente" con Subir esta acta

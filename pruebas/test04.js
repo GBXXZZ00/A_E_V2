@@ -1,5 +1,5 @@
 // Clientes y expediente: la lista se queda, el cliente sale encima; filtros, documentos, revisión, datos y comisión.
-const { chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar } = require('./simulador');
+const { chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar, rvAbierto, rvLista } = require('./simulador');
 const { ok, cerrar } = marcador();
 const PDF = { name: 'cedula.pdf', mimeType: 'application/pdf', buffer: Buffer.from('%PDF-1.4 prueba') };
 const llamo = (m, f) => m.llamadas.filter((l) => l[0] === 'rpc' && l[1] === f);
@@ -126,7 +126,7 @@ const marcarFiltro = async (p, k, v) => { if(!(await p.evaluate(() => !!document
     await q.click('#quitarFiltros'); await q.waitForFunction(() => !location.search.includes('lid='));
     ok(nombre + ': Quitar filtros los limpia (solo queda la tarjeta)', Object.keys(llamo(m, 'clientes_lista3').slice(-1)[0][2].p_f).filter((k) => k !== 'tarjeta').length === 0);
 
-    await q.goto(H + 'cliente.html?id=1001&t=documentos&revisar=1'); await q.waitForSelector('#hojaVer.ver .rv-c #verAprobar');
+    await q.goto(H + 'cliente.html?id=1001&t=documentos&revisar=1'); await rvAbierto(q);
     const selQ = () => q.getAttribute('#hojaVer .rv-d.sel', 'data-rv-ir');
     ok(nombre + ': el enlace viejo lleva a Clientes con el expediente y la revisión encima', q.url().includes('clientes.html') && (await abiertas(q)).join() === 'hojaFicha,hojaVer' && /Revisar expediente/.test(await q.textContent('#hojaVer')));
     await q.screenshot({ path: 'capturas/04-' + nombre + '-revisar.png' });
@@ -142,7 +142,7 @@ const marcarFiltro = async (p, k, v) => { if(!(await p.evaluate(() => !!document
     await q.keyboard.press('Escape'); await q.waitForFunction(() => window.Comun.hojasAbiertas().join() === 'hojaFicha');
     ok(nombre + ': marcar no cambia el estatus ni deja hilo', !(await q.textContent('#cabFicha')).includes('pendientes') && m.datos.clientes.find((c) => c.id === 1001).hilo.every((h) => h.tipo !== 'documento_devuelto'));
     ok(nombre + ': la casilla dice que se devolverá y la banda resume la revisión', (await q.textContent('#tab-documentos')).includes('Para devolver: ilegible') && /1 para aprobar y 1 para devolver/.test(await q.textContent('#paso')));
-    await q.click('#paso [data-paso="revisar"]'); await q.waitForSelector('#hojaVer.ver #rvTerminar');
+    await q.click('#paso [data-paso="revisar"]'); await q.waitForSelector('#hojaVer.ver #rvTerminar', { state: 'attached' }); await rvAbierto(q);
     for(let i = 0; i < 10 && await q.locator('#rvTerminar[disabled]').count(); i++){
       kq = await selQ(); await q.click('#verAprobar'); await q.waitForFunction((k) => document.querySelector('#hojaVer .rv-d.sel').dataset.rvIr !== k || !document.querySelector('#rvTerminar[disabled]'), kq);
     }

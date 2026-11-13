@@ -1,6 +1,6 @@
 // Revisión con IA en la app: módulo Revisión (bandejas, marcar varios, lanzar), el resultado dentro del expediente, excepciones,
 // aprobar contra la IA, Cerrar revisión con IA, comparar con Legal, la bandeja de la abogada y los errores.
-const { chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar } = require('./simulador');
+const { chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar, rvAbierto, rvLista } = require('./simulador');
 const { ok, cerrar } = marcador();
 const llamo = (m, f) => m.llamadas.filter((l) => l[0] === 'rpc' && l[1] === f);
 const abiertas = (p) => p.evaluate(() => window.Comun.hojasAbiertas());
@@ -58,6 +58,8 @@ const ABOGADA = { id: '77777777-7777-4777-8777-777777777777', usuario: 'sara', p
 
     // Aprobar lo que la IA devolvió pide motivo
     const dev = cli(1001).ia.marcas.find((x) => x.propuesta === 'problema').documento;
+    await p.evaluate(() => document.querySelectorAll('#hojaVer details.rv-ia-det').forEach((d) => { d.open = false; }));
+    await rvLista(p);
     await p.click('#hojaVer [data-rv-ir="d:' + dev + '"]'); await p.waitForSelector('#hojaVer.ver #excDoc');
     const antes = llamo(m, 'documento_marcar').length;
     await p.click('#verAprobar'); await p.waitForTimeout(300);

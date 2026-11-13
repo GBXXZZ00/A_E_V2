@@ -3,7 +3,7 @@
 // etiqueta de gestión con un toque desde la fila (cuenta que filtra; Pedir pone Esperando), PYME + Dedicado y contrato pendiente.
 // Hoja: pestañas, cambiar líder y suspender (administrador), cola de subidas, Otro con nombre, Conatel, Aprobar seleccionados,
 // Abrir en Drive, vista ligera primero y aprobar sin esperar al servidor. Revisión: bandeja Contrato por completar.
-const { chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar } = require('./simulador');
+const { chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar, rvAbierto } = require('./simulador');
 const { ok, cerrar } = marcador();
 
 const llamo = (m, f) => m.llamadas.filter((l) => l[0] === 'rpc' && l[1] === f);
@@ -138,7 +138,7 @@ const archivo = (n, mime) => ({ name: n, mimeType: mime || 'application/pdf', bu
       r.documentos.forEach((d) => (d.archivos || []).forEach((x) => { x.url_externa = 'https://drive.google.com/file/d/PRUEBA' + x.id + '/view'; x.drive_id = 'PRUEBA' + x.id; }));
       mundo.lentoDrive = 1500; mundo.lentoRpc = { documento_marcar: 1500 };
       await p.goto(H + 'clientes.html?c=' + r.id + '&t=documentos'); await p.waitForSelector('#hojaFicha.ver #paso [data-paso="revisar"]');
-      await p.click('#paso [data-paso="revisar"]'); await p.waitForSelector('#hojaVer.ver .rv-c');
+      await p.click('#paso [data-paso="revisar"]'); await rvAbierto(p);
       await p.waitForSelector('#visor .visor-mini img', { timeout: 1200 }).catch(() => {});
       ok(nombre + ': primero se ve la miniatura mientras llega el archivo completo', (await p.locator('#visor .visor-mini img').count()) === 1 && mundo.llamadas.some((l) => l[0] === 'drive' && l[2] === 'mini'));
       ok(nombre + ': el visor trae "Abrir en Drive"', (await p.locator('#abrirDrive').count()) === 1);

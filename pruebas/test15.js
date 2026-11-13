@@ -1,5 +1,5 @@
 // Revisión de una sola vez (pantalla nueva, lote 12/11 B): marcar no cambia nada para el líder; "Terminar y avisar" aplica todo junto, deja una sola entrada y arma un solo mensaje.
-const { chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar } = require('./simulador');
+const { chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar, rvAbierto, rvLista } = require('./simulador');
 const { ok, cerrar } = marcador();
 const llamo = (m, f) => m.llamadas.filter((l) => l[0] === 'rpc' && l[1] === f);
 const abiertas = (p) => p.evaluate(() => window.Comun.hojasAbiertas());
@@ -17,7 +17,7 @@ const ABOGADA = { id: '77777777-7777-4777-8777-777777777777', usuario: 'sara', p
     await p.goto(H + 'clientes.html?c=1001&t=documentos'); await p.waitForSelector('#paso [data-paso="revisar"]');
     const hilo0 = cli().hilo.length; const est0 = cli().estatus;
     const sel = () => p.getAttribute('#hojaVer .rv-d.sel', 'data-rv-ir');
-    await p.click('#paso [data-paso="revisar"]'); await p.waitForSelector('#hojaVer.ver .rv-c #verAprobar');
+    await p.click('#paso [data-paso="revisar"]'); await rvAbierto(p);
     let s0 = await sel();
     await p.click('#verAprobar'); await p.waitForFunction((k) => document.querySelector('#hojaVer .rv-d.sel').dataset.rvIr !== k, s0);
     s0 = await sel();
@@ -33,8 +33,8 @@ const ABOGADA = { id: '77777777-7777-4777-8777-777777777777', usuario: 'sara', p
     ok(nombre + ': no desborda', await sinDesborde(p));
 
     // Quitar la marca de devolver y volver a ponerla
-    await p.click('#paso [data-paso="revisar"]'); await p.waitForSelector('#hojaVer.ver .rv-c');
-    await p.click('#hojaVer .rv-d:has(.rv-e.d)'); await p.waitForSelector('#verQuitarMarca');
+    await p.click('#paso [data-paso="revisar"]'); await rvAbierto(p);
+    await rvLista(p); await p.click('#hojaVer .rv-d:has(.rv-e.d)'); await p.waitForSelector('#verQuitarMarca');
     ok(nombre + ': el documento marcado dice qué se devuelve', /Se devuelve: .*Borrosa/.test(await p.textContent('#hojaVer .rv-v')));
     await p.click('#verQuitarMarca'); await p.waitForFunction(() => !document.getElementById('verQuitarMarca'));
     ok(nombre + ': Quitar marca la borra', llamo(m, 'documento_marcar').slice(-1)[0][2].p_accion === 'quitar' && Object.keys(cli().marcas).length === 1);
@@ -60,7 +60,7 @@ const ABOGADA = { id: '77777777-7777-4777-8777-777777777777', usuario: 'sara', p
     await ab.ctx.close();
 
     // ----- Decide el resto y termina: error del servidor -----
-    await p.click('#paso [data-paso="revisar"]'); await p.waitForSelector('#hojaVer.ver .rv-c');
+    await p.click('#paso [data-paso="revisar"]'); await rvAbierto(p);
     for(let i = 0; i < 10 && await p.locator('#rvTerminar[disabled]').count(); i++){
       s0 = await sel(); await p.click('#verAprobar'); await p.waitForFunction((k) => { const x = document.querySelector('#hojaVer .rv-d.sel'); return !x || x.dataset.rvIr !== k || !document.querySelector('#rvTerminar[disabled]'); }, s0);
     }

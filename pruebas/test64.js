@@ -24,7 +24,13 @@ const ABOGADA = { id: '77777777-7777-4777-8777-777777777777', usuario: 'sara', p
     ok(nombre + ': la banda ofrece Revisar y Que la revise la IA', (await p.locator('#paso [data-paso="ia"]').count()) === 1);
 
     // ----- La pantalla -----
-    await p.click('#paso [data-paso="revisar"]'); await p.waitForSelector('#hojaVer.ver .rv-c #verAprobar');
+    await p.click('#paso [data-paso="revisar"]'); await p.waitForSelector('#hojaVer.ver .rv-c #verAprobar', { state: 'attached' });
+    // Lote 13/11 parte 10: en el teléfono la hoja abre con la lista y un toque abre el documento con "← Documentos"
+    const aLista = async () => { if(!pc && await p.locator('#hojaVer [data-rv-lista]:visible').count()){ await p.click('#hojaVer [data-rv-lista]:visible'); await p.waitForSelector('#hojaVer .rv-l .rv-d >> visible=true'); } };
+    if(!pc){ ok('tel: abre con la lista y sin el documento encima', (await p.locator('#hojaVer .rv-l .rv-d:visible').count()) > 0 && !(await p.locator('#hojaVer #verAprobar').isVisible()));
+      await p.click('#hojaVer .rv-d.sel'); await p.waitForSelector('#hojaVer #verAprobar >> visible=true');
+      ok('tel: el documento abre a todo el alto con ← Documentos y Devolver / Bien abajo', (await p.locator('#hojaVer [data-rv-lista]:visible').count()) === 1 && !(await p.locator('#hojaVer .rv-l').isVisible()));
+      await p.screenshot({ path: 'capturas/64-tel-documento.png' }); await aLista(); }
     ok(nombre + ': se abre con la ficha difuminada detrás', (await p.locator('#rvVelo.ver').count()) === 1 && /Revisar expediente/.test(await p.textContent('#hojaVer .rv-cab')));
     const lista = await p.textContent('#hojaVer .rv-l');
     ok(nombre + ': la lista va agrupada como la ficha', /Representante 1/.test(lista) && /Empresa/.test(lista) && /Teléfono y correo/.test(lista));
@@ -40,13 +46,13 @@ const ABOGADA = { id: '77777777-7777-4777-8777-777777777777', usuario: 'sara', p
       await p.keyboard.press('ArrowUp'); await p.waitForFunction((x) => document.querySelector('#hojaVer .rv-d.sel').dataset.rvIr === x, k);
       const n0 = llamo(m, 'documento_marcar').length; k = await sel(); await p.keyboard.press('b'); await cambia(k);
       ok('pc: B marca Bien y pasa al siguiente', llamo(m, 'documento_marcar').length === n0 + 1 && llamo(m, 'documento_marcar').slice(-1)[0][2].p_accion === 'aprobar');
-      await p.keyboard.press('d'); await p.waitForSelector('#hojaVer .rv-mot [data-motivo]');
-      ok('pc: D abre los motivos arriba del documento', (await p.locator('#devConfirmar[disabled]').count()) === 1);
-      await p.click('#devVolver'); await p.waitForFunction(() => !document.querySelector('#hojaVer .rv-mot [data-motivo]'));
+      await p.keyboard.press('d'); await p.waitForSelector('#hojaVer .rv-panel [data-motivo]');
+      ok('pc: D abre los motivos en el panel al lado del documento', (await p.locator('#devConfirmar[disabled]').count()) === 1);
+      await p.click('#devVolver'); await p.waitForFunction(() => !document.querySelector('#hojaVer .rv-panel [data-motivo]'));
     }
 
     // Teléfono y correo: se revisan igual, con sus motivos
-    await p.click('#hojaVer [data-rv-ir="c:1"]'); await p.waitForSelector('#hojaVer [data-rv-cont="dev"]');
+    await aLista(); await p.click('#hojaVer [data-rv-ir="c:1"]'); await p.waitForSelector('#hojaVer [data-rv-cont="dev"]');
     ok(nombre + ': el contacto se ve como datos con Editar', (await p.locator('#hojaVer .rv-v [data-campo="rep:1"]').count()) >= 1);
     await p.click('#hojaVer [data-rv-cont="dev"]'); await p.waitForSelector('#hojaVer [data-rv-cmot="no_contesta"]');
     await p.click('#hojaVer [data-rv-cmot="no_contesta"]');
@@ -55,13 +61,13 @@ const ABOGADA = { id: '77777777-7777-4777-8777-777777777777', usuario: 'sara', p
     ok(nombre + ': Bien en el contacto lo quita del devuelto', true);
 
     // Aprobar todo y Aprobar expediente
-    await p.click('#hojaVer .rv-d:has(.rv-e.n)');
+    await aLista(); await p.click('#hojaVer .rv-d:has(.rv-e.n)');
     for(let i = 0; i < 12 && await p.locator('#rvAprobar[disabled]').count(); i++){
-      if(!(await p.locator('#hojaVer #verAprobar').count())){ await p.click('#hojaVer .rv-d:has(.rv-e.n)'); await p.waitForSelector('#hojaVer #verAprobar'); }
+      if(!(await p.locator('#hojaVer #verAprobar').count())){ await aLista(); await p.click('#hojaVer .rv-d:has(.rv-e.n)'); await p.waitForSelector('#hojaVer #verAprobar'); }
       const k = await sel(); await p.click('#verAprobar'); await p.waitForFunction((x) => { const s = document.querySelector('#hojaVer .rv-d.sel'); return !s || s.dataset.rvIr !== x || !document.querySelector('#rvAprobar[disabled]'); }, k);
     }
     ok(nombre + ': con todo Bien el pie lo dice y ofrece Aprobar expediente', /Todo bien/.test(await p.textContent('#hojaVer .rv-pie')) && !(await p.locator('#rvAprobar').isDisabled()));
-    await p.click('#rvAprobar'); await p.waitForSelector('#hojaRvOk.ver');
+    await aLista(); await p.click('#rvAprobar'); await p.waitForSelector('#hojaRvOk.ver');
     const cierre = llamo(m, 'revision_cerrar').slice(-1)[0][2];
     ok(nombre + ': aprueba en un solo cierre, sin mensaje', cierre.p_mensaje === null && cierre.p_enviado === false && !cli().documentos.some((d) => d.estado === 'por_revisar'));
     ok(nombre + ': sale Expediente aprobado con Avisar y Siguiente cliente', /Expediente aprobado/.test(await p.textContent('#hojaRvOk')) && /wa\.me\/584145550134/.test(await p.getAttribute('#rvAvisar', 'href')) && (await p.locator('#rvSiguiente').count()) === 1);
@@ -74,12 +80,14 @@ const ABOGADA = { id: '77777777-7777-4777-8777-777777777777', usuario: 'sara', p
     cli().estatus = 'documentos_recibidos'; cli().legal_ok_en = new Date().toISOString();
     const ab = await contexto(nav, dispositivo, m); const s = await entrar(ab.ctx, 'sara', '640217'); s.on('pageerror', (e) => errores.push(nombre + ' abogada: ' + e.message));
     await s.goto(H + 'clientes.html?c=1001&t=documentos'); await s.waitForSelector('#hojaFicha [data-rv-leg]');
-    await s.click('#hojaFicha [data-rv-leg]'); await s.waitForSelector('#hojaVer.ver [data-rv-prob]');
+    await s.click('#hojaFicha [data-rv-leg]'); await s.waitForSelector('#hojaVer.ver [data-rv-prob]', { state: 'attached' });
+    if(!pc){ await s.click('#hojaVer .rv-d.sel'); await s.waitForSelector('#hojaVer.ver [data-rv-prob] >> visible=true'); }
     ok(nombre + ': la abogada ve Documentos para el contrato sin Bien ni Devolver', /Documentos para el contrato/.test(await s.textContent('#hojaVer')) && (await s.locator('#hojaVer #verAprobar, #hojaVer #verDevolver').count()) === 0);
     await s.click('#hojaVer [data-rv-prob]'); await s.waitForSelector('#hojaVer [data-rv-pmot="vencido"]'); await s.click('#hojaVer [data-rv-pmot="vencido"]');
     ok(nombre + ': lo marcado cuenta en el pie con Terminar y enviar', /1 con problema/.test(await s.textContent('#hojaVer .rv-pie')) && (await s.locator('#rvLegTerminar').count()) === 1);
     await s.screenshot({ path: 'capturas/64-' + nombre + '-abogada.png' });
     ok(nombre + ': la abogada sin desborde', await sinDesborde(s));
+    if(!pc) await s.click('#hojaVer [data-rv-lista] >> visible=true');
     await s.click('#rvLegTerminar'); await s.waitForFunction(() => !document.querySelector('#hojaVer.ver'));
     const obs = llamo(m, 'legal_observar').slice(-1)[0];
     ok(nombre + ': Terminar y enviar detiene el contrato con el documento y el motivo', obs && obs[2].p_tipo === 'devolver' && obs[2].p_motivo === 'vencido' && Number(obs[2].p_documento) > 0);

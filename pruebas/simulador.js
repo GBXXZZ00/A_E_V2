@@ -226,10 +226,17 @@ async function abrirCtr(p, clase){
   await p.click('#tab-documentos .ctr-fila' + (clase ? '[data-ctr-clase~="' + clase + '"]' : '') + ' [data-ctr-abrir]'); await p.waitForSelector('#hojaCtrVer.ver');
 }
 async function cerrarCtr(p){ if(await p.locator('#hojaCtrVer.ver').count()){ await p.keyboard.press('Escape'); await p.waitForTimeout(300); } }
+// Lote 13/11 parte 10: la pantalla de revisión abre en el teléfono con la lista; esto abre el documento elegido (en PC ya está abierto)
+async function rvAbierto(p, sel){
+  await p.waitForSelector('#hojaVer.ver .rv-c', { state: 'attached', timeout: 15000 });
+  if(await p.locator('#hojaVer .rv-l').isVisible() && !(await p.locator('#hojaVer .rv-v').isVisible())){ await p.click(sel || '#hojaVer .rv-d.sel'); }
+  await p.waitForSelector('#hojaVer .rv-v >> visible=true');
+}
+async function rvLista(p){ if(await p.locator('#hojaVer [data-rv-lista]:visible').count()){ await p.click('#hojaVer [data-rv-lista]:visible'); await p.waitForSelector('#hojaVer .rv-l >> visible=true'); } }
 // Lote 12/11: los filtros poco usados viven en "Más filtros"; esto abre el menú si hace falta y toca el filtro
 async function irFiltro(p, id){
   const sel = '#filtros [data-filtro="' + id + '"]';
   if(!(await p.locator(sel).isVisible().catch(() => false))){ await p.click('#filtros .cx-mas > summary'); await p.waitForSelector(sel); }
   await p.click(sel);
 }
-module.exports = { irFiltro, abrirCtr, cerrarCtr, irContratos, enHoja, chromium, H, TEL, PC, contexto, marcador, pin, sinDesborde, basePersonas, entrar, plegables, esperarDia };
+module.exports = { rvAbierto, rvLista, irFiltro, abrirCtr, cerrarCtr, irContratos, enHoja, chromium, H, TEL, PC, contexto, marcador, pin, sinDesborde, basePersonas, entrar, plegables, esperarDia };

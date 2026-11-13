@@ -1661,7 +1661,7 @@
     soltarBlobs(); rvPre = {};
     const ant = ver && ver.rv ? ver : null;
     ver = { rv: true, leg: esLegal() && !F.puedo.revisar, docId: docId || null, sel: docId ? 'd:' + docId : null, paso: 'ver', motivo: null, archivo: 0, url: {},
-      cont: ant ? ant.cont : {}, prob: ant ? ant.prob : {} };
+      cont: ant ? ant.cont : {}, prob: ant ? ant.prob : {}, telDoc: !!docId };
     if(!ver.sel){ const l = rvItems(); const p = l.find((x) => rvDecidible(x) && !marcaDe(x.d.id)) || l.find((x) => x.d) || l[0]; if(p){ ver.sel = p.k; ver.docId = p.d ? p.d.id : null; } }
     rvPagina(); pintarRv(); abrirHoja('hojaVer'); if(ver.docId) cargarArchivo();
     rvVelo('hojaVer');
@@ -1713,13 +1713,16 @@
   const rvDecidible = (it) => !!(it.d && it.d.estado === 'por_revisar' && !ver.leg);
   function rvSiguiente(desde){
     const l = rvItems(); const i = l.findIndex((x) => x.d && x.d.id === desde);
+    const gr = rvGrupos()['d:' + desde];
+    const mismo = gr && gr.items.find((x) => rvDecidible(x) && !marcaDe(x.d.id) && x.d.id !== desde);
+    if(mismo) return mismo.k;
     const sig = l.slice(i + 1).concat(l.slice(0, Math.max(0, i))).find((x) => rvDecidible(x) && !marcaDe(x.d.id));
     return sig ? sig.k : null;
   }
   function rvPagina(){ ver.pagina = null; const d = docVer(); if(!d) return; const m = marcaDe(d.id); const ia = iaDe(d.id); ver.pagina = (m && m.pagina) || (ia && ia.pagina) || null; }
   function rvIr(k){
     const it = rvItems().find((x) => x.k === k); if(!it) return;
-    ver.sel = k; ver.paso = 'ver'; ver.motivo = null; ver.nota = ''; ver.archivo = 0; ver.url = {}; ver.mini = {}; ver.fallo = {}; ver.docId = it.d ? it.d.id : null; ver.zoom = false;
+    ver.sel = k; ver.paso = 'ver'; ver.motivo = null; ver.nota = ''; ver.dev = null; ver.otro = null; ver.telDoc = true; ver.archivo = 0; ver.url = {}; ver.mini = {}; ver.fallo = {}; ver.docId = it.d ? it.d.id : null; ver.zoom = false;
     rvPagina(); pintarRv(); if(ver.docId) cargarArchivo();
     const l = document.querySelector('#hojaVer .rv-l'); const s0 = document.querySelector('#hojaVer .rv-d.sel'); if(l && s0 && (s0.offsetTop < l.scrollTop || s0.offsetTop > l.scrollTop + l.clientHeight - 60)) l.scrollTop = Math.max(0, s0.offsetTop - 160);
   }
@@ -1729,34 +1732,61 @@
     const a = sig && sig.d.archivos[0]; if(!a || !a.id || rvPre[a.id] || !(a.url_externa || a.drive_id)) return;
     rvPre[a.id] = bajarDeDrive(a).catch(() => '');
   }
+  // Lote 13/11 parte 2: la línea de la IA es una pastilla en la cabecera (entre el título y Abrir carpeta en Drive)
   function rvFranja(){
-    if(ver.leg) return '<div class="rv-ia ok"><span class="tx"><b>Expediente aprobado' + (rvAdmin() ? ' por ' + esc(rvAdmin()) : '') + '</b>Míralos y empieza el contrato. Si algo te impide hacerlo, márcalo en ese documento.</span></div>';
+    if(ver.leg) return '<div class="rv-ia ok"><span class="tx"><b>Expediente aprobado' + (rvAdmin() ? ' por ' + esc(rvAdmin()) : '') + '</b>Míralos y empieza el contrato</span></div>';
     const k = rev && rev.ia; const puede = !!(rev && rev.puede_ia);
-    if(iaActiva()) return '<div class="rv-ia lee"><span class="tx"><b>La IA está leyendo<span class="rv-pts" aria-hidden="true"><i></i><i></i><i></i></span></b>' + esc(Math.floor(k.avance || 0) + ' de ' + (k.total || 0) + ' documentos. Puedes empezar a mirar; lo que encuentre aparece aquí.') + '</span><span class="rv-bar"><i style="transform:scaleX(' + (k.total ? Math.min(1, k.avance / k.total) : 0).toFixed(3) + ')"></i></span></div>';
+    if(iaActiva()) return '<div class="rv-ia lee"><span class="tx"><b>La IA está leyendo<span class="rv-pts" aria-hidden="true"><i></i><i></i><i></i></span></b>' + esc(Math.floor(k.avance || 0) + ' de ' + (k.total || 0)) + '</span><span class="rv-bar"><i style="transform:scaleX(' + (k.total ? Math.min(1, k.avance / k.total) : 0).toFixed(3) + ')"></i></span></div>';
     if(k && k.estado === 'lista'){
       const malos = (k.puntos || []).filter((p) => (p.estado === 'bloquea' || p.estado === 'mano') && !p.excepcion);
-      // Todo lo que vio la IA (avisos, excepciones con Quitar, cada punto con Aprobar igual), plegado bajo la franja
+      // Todo lo que vio la IA (avisos, excepciones con Quitar, cada punto con Aprobar igual) queda dentro de la pastilla
       const vistos = (k.puntos || []).filter((p) => p.estado !== 'ok' || p.excepcion);
-      const det = vistos.length > (malos.length === 1 ? 1 : 0) ? '<details class="rv-ia-det"><summary>Ver todo lo que vio la IA (' + vistos.length + ')</summary><div class="ia-ps">' + vistos.map((p) => puntoIA(p, puede)).join('') + '</div></details>' : '';
-      if(!malos.length) return '<div class="rv-ia ok"><span class="tx"><b>La IA revisó todo y cuadra</b>Documentos vigentes, junta, firmantes y domicilio sin observaciones.</span></div>' + det + avisoViejo(k, puede);
+      const det = vistos.length > (malos.length === 1 ? 1 : 0) || k.cambio ? '<details class="rv-ia-det"><summary>Ver todo lo que vio la IA' + (vistos.length ? ' (' + vistos.length + ')' : '') + '</summary><div class="rv-ia-pop">' + avisoViejo(k, puede) + '<div class="ia-ps">' + vistos.map((p) => puntoIA(p, puede)).join('') + '</div></div></details>' : '';
+      if(!malos.length) return '<div class="rv-ia ok"><span class="tx"><b>La IA ya leyó</b>Todo cuadra</span>' + det + '</div>';
       const p0 = malos[0]; const pg = /p[aá]gina (\d+)/i.exec(String(p0.pagina || ''));
-      return '<div class="rv-ia mal"><span class="tx"><b>' + esc(malos.length === 1 ? 'La IA encontró 1 cosa' : 'La IA encontró ' + malos.length + ' cosas') + '</b>' + esc(p0.titulo + (p0.detalle ? ': ' + p0.detalle : '') + (p0.pagina ? ' (' + p0.pagina + ')' : '')) + (malos.length > 1 ? ' Y ' + (malos.length - 1) + ' más.' : '') + '</span>' +
+      return '<div class="rv-ia mal"><span class="tx" title="' + esc(p0.titulo + (p0.detalle ? ': ' + p0.detalle : '')) + '"><b>' + esc(malos.length === 1 ? 'La IA encontró 1 cosa' : 'La IA encontró ' + malos.length + ' cosas') + '</b>' + esc(p0.titulo) + '</span>' +
         (pg ? '<button type="button" class="mini" data-rv-pagina="' + esc(pg[1]) + '" data-rv-donde="' + esc(String(p0.pagina || '')) + '">Ver en el documento</button>' : '') +
-        (puede && p0.excepcionable && p0.estado === 'bloquea' ? '<button type="button" class="mini" data-exc-ia="' + esc(p0.id) + '">Aprobar igual (excepción)</button>' : '') + '</div>' + det + avisoViejo(k, puede);
+        (puede && p0.excepcionable && p0.estado === 'bloquea' ? '<button type="button" class="mini" data-exc-ia="' + esc(p0.id) + '">Aprobar igual</button>' : '') + det + '</div>';
     }
-    if(k && k.estado === 'error') return '<div class="rv-ia mal"><span class="tx"><b>La IA no pudo terminar</b>' + esc(k.error || '') + '</span>' + (puede ? '<button type="button" class="mini" id="reanudarIA">Reintentar</button>' : '') + '</div>';
+    if(k && k.estado === 'error') return '<div class="rv-ia mal"><span class="tx" title="' + esc(k.error || '') + '"><b>La IA no pudo terminar</b>' + esc(k.error || '') + '</span>' + (puede ? '<button type="button" class="hc-b s ch" id="reanudarIA">Reintentar</button>' : '') + '</div>';
     const n = (rev && (rev.nuevos || rev.archivos)) || 0;
-    return '<div class="rv-ia no"><span class="tx"><b>Estás revisando tú</b>La IA no ha leído estos documentos.' + (puede && n ? ' Si quieres su ayuda, pásaselos (unos US$ ' + (n * 0.04).toFixed(2).replace('.', ',') + ').' : '') + '</span>' + (puede && n ? '<button type="button" class="hc-b s ch" id="mandarIA">Que la revise la IA</button>' : '') + '</div>';
+    return '<div class="rv-ia no"><span class="tx"><b>Estás revisando tú</b>La IA no los ha leído</span>' + (puede && n ? '<button type="button" class="hc-b s ch" id="mandarIA">Que la revise la IA</button>' : '') + '</div>';
+  }
+  // Lote 13/11 parte 5: documentos que vienen en el mismo archivo (las páginas salen de lo que leyó la IA)
+  function rvGrupos(){
+    const m = {}; rvItems().forEach((it) => { if(!it.d) return; (it.d.archivos || []).forEach((a) => { if(a && a.id) (m[a.id] = m[a.id] || []).push(it); }); });
+    const g = {};
+    Object.keys(m).forEach((k) => { const l = m[k]; if(l.length < 2) return;
+      const pg = (it) => { const x = iaDe(it.d.id) || marcaDe(it.d.id) || {}; const n = Number(x.pagina); return n > 0 ? n : null; };
+      const items = l.slice().sort((a, b) => (pg(a) || 999) - (pg(b) || 999));
+      const arch = (l[0].d.archivos || []).find((a) => String(a.id) === k) || {};
+      const grupo = { arch: Number(k), nombre: arch.nombre || 'archivo', items, paginas: {} };
+      items.forEach((it, i) => { const ini = pg(it); const sig = items[i + 1] ? pg(items[i + 1]) : null;
+        grupo.paginas[it.k] = !ini ? '' : sig && sig - 1 > ini ? 'páginas ' + ini + ' a ' + (sig - 1) : sig && sig - 1 === ini ? 'página ' + ini : 'desde la página ' + ini; });
+      items.forEach((it) => { if(!g[it.k]) g[it.k] = grupo; });
+    });
+    return g;
+  }
+  const pagCorta = (s) => String(s || '').replace(/^páginas /, 'p. ').replace(/^página /, 'p. ').replace(/^desde la página /, 'desde p. ');
+  function rvFila(it, grupo){
+    const e = rvEstado(it); const pg = grupo ? grupo.paginas[it.k] : '';
+    return '<button type="button" class="rv-d' + (ver.sel === it.k ? ' sel' : '') + '" data-rv-ir="' + esc(it.k) + '"><span class="rv-e ' + e[0] + '" aria-hidden="true">' + (e[0] === 'b' || e[0] === 'y' ? ic('check') : e[0] === 'd' || e[0] === 'a' ? '!' : '') + '</span><span class="tx"><b>' + esc(it.t) + '</b><small>' + esc(e[1] + (pg ? ' · ' + pg : '')) + '</small></span></button>';
   }
   function rvLista(){
-    const l = rvItems(); let g = ''; let h = '';
+    const l = rvItems(); const G = rvGrupos(); const hecho = {}; let g = ''; let h = '';
     l.forEach((it) => {
+      if(hecho[it.k]) return;
       if(it.g !== g){ g = it.g; const r = it.rep ? (F.representantes || []).find((x) => x.orden === it.rep) || {} : null;
         const firma = it.rep && !F.cliente.es_natural && F.cliente.regimen_firma !== 'conjunta' && firmanteN() === it.rep;
         h += '<div class="rv-gr"><span>' + esc(g) + (r && r.nombre ? '<small>' + esc(r.nombre) + '</small>' : '') + '</span>' +
           (it.rep && !F.cliente.es_natural && !ver.leg ? (firma ? '<span class="chip azul">Firma este</span>' : F.puedo.marcar_rep && F.cliente.regimen_firma !== 'conjunta' ? '<button type="button" class="mini" data-rep-marca="' + it.rep + ':firma">Marcar que firma</button>' : '') : '') + '</div>'; }
-      const e = rvEstado(it);
-      h += '<button type="button" class="rv-d' + (ver.sel === it.k ? ' sel' : '') + '" data-rv-ir="' + esc(it.k) + '"><span class="rv-e ' + e[0] + '" aria-hidden="true">' + (e[0] === 'b' || e[0] === 'y' ? ic('check') : e[0] === 'd' || e[0] === 'a' ? '!' : '') + '</span><span class="tx"><b>' + esc(it.t) + '</b><small>' + esc(e[1]) + '</small></span></button>';
+      const gr = G[it.k];
+      if(gr){
+        gr.items.forEach((x) => { hecho[x.k] = 1; });
+        h += '<div class="rv-pdfg"><div class="ca"><span class="ic" aria-hidden="true">PDF</span><span>' + esc('Un solo archivo con ' + gr.items.length + ' documentos') + '<small>' + esc(gr.nombre) + '</small></span></div>' + gr.items.map((x) => rvFila(x, gr)).join('') + '</div>';
+        return;
+      }
+      h += rvFila(it, null);
     });
     if(F.puedo.revisar && !ver.leg) h += '<button type="button" class="enlace rv-falta" id="rvPedir">¿Falta algo que no está? Pedir otro documento</button>';
     return h;
@@ -1767,49 +1797,140 @@
     if(it.cont){
       const r = (F.representantes || []).find((x) => x.orden === it.cont) || {}; const x = ver.cont[it.cont];
       const dec = ver.leg ? '' : '<button type="button" class="hc-b ch rv-dev' + (x && x.acc === 'dev' ? ' on' : '') + '" data-rv-cont="dev">Devolver</button><button type="button" class="hc-b ch ' + (x && x.acc === 'bien' ? 'rv-bien' : 's') + '" data-rv-cont="bien">' + (x && x.acc === 'bien' ? 'Bien ✓' : 'Bien') + '</button>';
-      return '<div class="rv-vh"><div><h3>Teléfono y correo · ' + esc(it.g) + '</h3><small>Se usan para la firma digital del contrato</small></div><div class="der">' + dec + '</div></div>' +
+      return '<div class="rv-vh">' + rvVolverTel() + '<div><h3>Teléfono y correo · ' + esc(it.g) + '</h3><small>Se usan para la firma digital del contrato</small></div><div class="der">' + dec + '</div></div>' +
         (x && x.acc === 'dev' ? '<div class="rv-mot"><p>¿Qué problema tiene?</p><div class="ops">' + Object.keys(MOT_CONT).map((k) => '<button type="button" class="' + (x.motivo === k ? 'on' : '') + '" data-rv-cmot="' + k + '">' + esc(MOT_CONT[k]) + '</button>').join('') + '</div>' +
           '<label class="solo-lector" for="rvContNota">Nota</label><textarea class="area corta" id="rvContNota" maxlength="300" placeholder="">' + esc(x.nota || '') + '</textarea></div>' : '') +
         '<div class="rv-datos"><div class="rv-dato"><span class="tx"><b>Teléfono</b><small>' + esc(r.telefono || 'Sin teléfono') + '</small></span>' + (ver.leg ? '' : '<button type="button" class="mini" data-campo="rep:' + it.cont + '">Editar</button>') + '</div>' +
         '<div class="rv-dato"><span class="tx"><b>Correo</b><small>' + esc(r.correo || 'Sin correo') + '</small></span>' + (ver.leg ? '' : '<button type="button" class="mini" data-campo="rep:' + it.cont + '">Editar</button>') + '</div></div>';
     }
-    if(it.corrEmp) return '<div class="rv-vh"><div><h3>Correo de la empresa</h3><small>' + esc(F.cliente.correo_empresa || 'Falta') + '</small></div><div class="der">' + (ver.leg ? '' : '<button type="button" class="mini" data-campo="correo_empresa">Editar</button>') + '</div></div>';
+    if(it.corrEmp) return '<div class="rv-vh">' + rvVolverTel() + '<div><h3>Correo de la empresa</h3><small>' + esc(F.cliente.correo_empresa || 'Falta') + '</small></div><div class="der">' + (ver.leg ? '' : '<button type="button" class="mini" data-campo="correo_empresa">Editar</button>') + '</div></div>';
     const d = docVer();
-    if(!d) return '<div class="rv-vh"><div><h3>' + esc(it.t || 'Documento') + '</h3><small>Falta: no lo han subido</small></div></div><div class="rv-vacio">Este documento no está en el expediente. ' + (F.puedo.revisar ? 'Si hace falta, pídelo con "¿Falta algo que no está?".' : '') + '</div>';
-    const mk = marcaDe(d.id); const ia = iaDe(d.id); const dec = rvDecidible(it);
+    const repsV = it.rep && !F.cliente.es_natural && F.puedo.marcar_rep && !ver.leg;
+    if(!d) return '<div class="rv-vh">' + rvVolverTel() + '<div><h3>' + esc((it.t || 'Documento') + (it.rep && !F.cliente.es_natural ? ' · Representante ' + it.rep : '')) + '</h3><small>Falta: no lo han subido</small></div>' +
+      (repsV ? '<div class="der"><span class="rv-masw"><button type="button" class="rv-mas" id="rvMas" aria-expanded="false" aria-controls="rvMasMenu">Más' + ic('abajo') + '</button><div class="rv-masm" id="rvMasMenu" role="menu"><button type="button" data-rep-marca="' + it.rep + ':no_junta">No está en la junta</button><button type="button" data-rep-marca="' + it.rep + ':ya_no_aplica">Ya no aplica</button></div></span></div>' : '') + '</div><div class="rv-vacio">Este documento no está en el expediente. ' + (F.puedo.revisar ? 'Si hace falta, pídelo con "¿Falta algo que no está?".' : '') + '</div>';
+    const mk = marcaDe(d.id); const ia = iaDe(d.id); const dec = rvDecidible(it); const gr = rvGrupos()[it.k];
+    const arch = d.archivos || []; const a = arch[ver.archivo] || arch[0];
     const nota = ia && ia.nota ? '<small class="' + (ia.propuesta === 'aprobar' ? 've' : 'am') + '">La IA: ' + esc(ia.nota) + (ver.pagina ? ' Abre en la página ' + esc(String(ver.pagina)) + '.' : '') + '</small>'
-      : '<small>' + esc('Subido ' + dia(d.subido_en).toLowerCase() + (d.subido_por ? ' por ' + primerNombre(d.subido_por) : '')) + '</small>';
+      : gr ? '<small>' + esc(gr.nombre + (gr.paginas[it.k] ? ' · ' + gr.paginas[it.k] : '')) + '</small>'
+      : '<small>' + esc((arch.length > 1 ? 'En ' + arch.length + ' archivos · subidos ' : 'Subido ') + dia(d.subido_en).toLowerCase() + (d.subido_por ? ' por ' + primerNombre(d.subido_por) : '')) + '</small>';
+    // Cabecera en una sola fila: Vence (o la fecha del acta), Más, Marcar que firma, Devolver y Bien
     let botones = '';
-    if(ver.leg) botones = '<button type="button" class="hc-b ch rv-dev' + (ver.prob[d.id] ? ' on' : '') + '" data-rv-prob="1">Tiene un problema</button>';
-    else if(dec) botones = (it.rep && !F.cliente.es_natural && F.puedo.marcar_rep && F.cliente.regimen_firma !== 'conjunta' && firmanteN() !== it.rep ? '<button type="button" class="hc-b s ch" data-rep-marca="' + it.rep + ':firma">Marcar que firma</button>' : '') +
+    const vence = d.casilla === 'acta_asamblea' && F.puedo.revisar ? '<span class="rv-vence"><label for="fechaActa">Fecha del acta</label><input class="campo" id="fechaActa" type="date" max="' + esc(F.hoy) + '" value="' + esc(d.firmado_en || '') + '"></span>'
+      : dec && ['cedula', 'rif_personal', 'rif_empresa', 'conatel', 'otro'].indexOf(d.casilla) >= 0 ? '<span class="rv-vence"><label for="venceDoc">Vence</label><input class="campo" id="venceDoc" type="date" value="' + esc(d.vence_en || '') + '"></span>' : '';
+    const drv = a && /^https:\/\/drive\.google\.com\//.test(a.url_externa || '') ? a.url_externa : '';
+    const movible = yo && yo.rol === 'admin' && !ver.leg && ['cedula', 'rif_personal', 'rif_empresa', 'acta_constitutiva', 'acta_asamblea', 'conatel', 'otro'].indexOf(d.casilla) >= 0;
+    const reps = it.rep && !F.cliente.es_natural && F.puedo.marcar_rep && !ver.leg;
+    const masItems = (movible ? '<button type="button" data-rv-masop="otro">Es otro documento<small>Lo subieron en la casilla equivocada</small></button>' : '') +
+      (F.puedo.revisar && !(d.casilla.indexOf('contrato_') === 0 && !F.puedo.contrato) ? '<button type="button" id="verReemplazar">Reemplazar archivo</button>' : '') +
+      (drv ? '<a id="abrirDrive" href="' + esc(drv) + '" target="_blank" rel="noopener">Abrir en Drive</a>' : '<a class="hidden" id="abrirCompleto" target="_blank" rel="noopener">Abrir archivo</a>') +
+      (reps ? '<hr><button type="button" data-rep-marca="' + it.rep + ':no_junta">No está en la junta</button><button type="button" data-rep-marca="' + it.rep + ':ya_no_aplica">Ya no aplica</button>' : '');
+    const mas = '<span class="rv-masw"><button type="button" class="rv-mas" id="rvMas" aria-expanded="false" aria-controls="rvMasMenu">Más' + ic('abajo') + '</button><div class="rv-masm" id="rvMasMenu" role="menu">' + masItems + '</div></span>';
+    if(ver.leg) botones = mas + '<button type="button" class="hc-b ch rv-dev' + (ver.prob[d.id] ? ' on' : '') + '" data-rv-prob="1">Tiene un problema</button>';
+    else if(dec) botones = vence + mas + (it.rep && !F.cliente.es_natural && F.puedo.marcar_rep && F.cliente.regimen_firma !== 'conjunta' && firmanteN() !== it.rep ? '<button type="button" class="hc-b s ch" data-rep-marca="' + it.rep + ':firma">Marcar que firma</button>' : '') +
       '<button type="button" class="hc-b ch rv-dev' + ((mk && mk.accion === 'devolver') || ver.paso === 'devolver' ? ' on' : '') + '" id="verDevolver">Devolver</button><button type="button" class="hc-b ch ' + (mk && mk.accion === 'aprobar' ? 'rv-bien' : 's') + '" id="verAprobar">' + (mk && mk.accion === 'aprobar' ? 'Bien ✓' : 'Bien') + '</button>';
-    let mot = '';
-    if(!ver.leg && ver.paso === 'devolver'){
-      const consti = d.casilla === 'acta_constitutiva';
-      const mots = Object.keys(MOTIVOS_DEV).filter((k) => !consti || ['ilegible', 'no_corresponde', 'sin_registro', 'falta_acta'].includes(k));
-      mot = '<div class="rv-mot"><p>¿Por qué lo devuelves?</p><div class="ops" role="radiogroup" aria-label="Motivo">' + mots.map((k) => '<button type="button" role="radio" aria-checked="' + (ver.motivo === k) + '" class="' + (ver.motivo === k ? 'on' : '') + '" data-motivo="' + k + '">' + esc(MOTIVOS_DEV[k]) + '</button>').join('') + '</div>' +
-        '<label class="solo-lector" for="notaDev">Nota para ' + esc(liderCorto()) + '</label><textarea class="area corta" id="notaDev" maxlength="500">' + esc(ver.nota || '') + '</textarea><div class="error" id="eDev" role="alert"></div>' +
-        '<div class="rv-mot-acc"><button type="button" class="enlace rv-mot-ped" id="verPedir">¿Está bien pero falta otro? Pedir otro documento</button><button type="button" class="hc-b s ch" id="devVolver">Cancelar</button><button type="button" class="hc-b ch rv-dev on" id="devConfirmar"' + (ver.motivo ? '' : ' disabled') + '>Marcar para devolver</button></div></div>';
-    } else if(ver.leg && ver.prob[d.id]){
+    else botones = vence + mas;
+    let arriba = '';
+    if(ver.leg && ver.prob[d.id]){
       const pb = ver.prob[d.id];
-      mot = '<div class="rv-mot"><p>¿Qué problema tiene?</p><div class="ops">' + Object.keys(MOT_LEG).map((k) => '<button type="button" class="' + (pb.motivo === k ? 'on' : '') + '" data-rv-pmot="' + k + '">' + esc(MOT_LEG[k]) + '</button>').join('') + '</div>' +
+      arriba = '<div class="rv-mot"><p>¿Qué problema tiene?</p><div class="ops">' + Object.keys(MOT_LEG).map((k) => '<button type="button" class="' + (pb.motivo === k ? 'on' : '') + '" data-rv-pmot="' + k + '">' + esc(MOT_LEG[k]) + '</button>').join('') + '</div>' +
         '<label class="solo-lector" for="rvProbNota">Nota</label><textarea class="area corta" id="rvProbNota" maxlength="300">' + esc(pb.nota || '') + '</textarea></div>';
-    } else if(mk && mk.accion === 'devolver') mot = '<div class="rv-nota">Se devuelve: ' + esc((C.MOTIVOS[mk.motivo] || '') + (mk.nota ? '. ' + mk.nota : '')) + ' <button type="button" class="enlace" id="verQuitarMarca">Quitar marca</button></div>';
-    else if(mk && mk.origen === 'ia' && mk.accion === 'devolver' && rev && rev.puede_cerrar) mot = '';
-    const arch = d.archivos || [];
-    const pags = arch.length > 1 ? '<div class="paginas">' + arch.map((x, n) => '<button type="button" data-archivo="' + n + '" class="' + (n === ver.archivo ? 'on' : '') + '">Archivo ' + (n + 1) + '</button>').join('') + '</div>' : '';
-    const a = arch[ver.archivo] || arch[0];
-    const datos = '<div class="rv-dt">' +
-      (d.casilla === 'acta_asamblea' && F.puedo.revisar ? '<div class="rv-campo"><label for="fechaActa">Fecha del acta</label><input class="campo" id="fechaActa" type="date" max="' + esc(F.hoy) + '" value="' + esc(d.firmado_en || '') + '"><div class="error" id="errFechaActa" role="alert"></div></div>' : '') +
-      ((d.comparte || []).length ? '<div class="rv-campo"><label>También trae</label><span>' + esc(C.lista(d.comparte.map((x) => casilla(x.casilla, x.numero)))) + '</span></div>' : '') +
-      (dec ? '<div class="rv-campo"><label for="venceDoc">Vence</label><input class="campo" id="venceDoc" type="date" value="' + esc(d.vence_en || '') + '"></div>' : d.vence_en ? '<div class="rv-campo"><label>Vence</label><span>' + esc(fecha(d.vence_en, true)) + '</span></div>' : '') +
-      (mk && mk.origen === 'ia' && mk.accion === 'devolver' && rev && rev.puede_cerrar ? '<div class="rv-campo rv-exc"><label for="excDoc">Si lo apruebas igual, el motivo</label><input class="campo" id="excDoc" maxlength="300"></div>' : '') +
-      '<span class="rv-dt-der"><a class="enlace hidden" id="abrirCompleto" target="_blank" rel="noopener">Abrir archivo</a>' +
-      (a && /^https:\/\/drive\.google\.com\//.test(a.url_externa || '') ? '<a class="enlace" id="abrirDrive" href="' + esc(a.url_externa) + '" target="_blank" rel="noopener">Abrir en Drive</a>' : '') +
-      (F.puedo.revisar && !(d.casilla.indexOf('contrato_') === 0 && !F.puedo.contrato) ? '<button type="button" class="mini" id="verReemplazar">Reemplazar archivo</button>' : '') + '</span></div>';
-    const marcasRepD = it.rep && !F.cliente.es_natural && F.puedo.marcar_rep && !ver.leg ? '<div class="rv-rep"><span>¿Este representante ya no aplica?</span><button type="button" class="mini" data-rep-marca="' + it.rep + ':no_junta">No está en la junta</button><button type="button" class="mini" data-rep-marca="' + it.rep + ':ya_no_aplica">Ya no aplica</button></div>' : '';
-    return '<div class="rv-vh"><div><h3>' + esc(it.t + (it.rep && !F.cliente.es_natural ? ' · Representante ' + it.rep : '')) + '</h3>' + nota + '</div><div class="der">' + botones + '</div></div>' + mot +
-      '<div class="rv-visor visor" id="visor" aria-busy="true"><span class="rv-sk" aria-hidden="true"></span><span class="cargando-linea"><i></i>Abriendo el archivo</span></div>' + pags + datos + marcasRepD;
+    } else if(!ver.leg && ver.paso === 'ver' && mk && mk.accion === 'devolver') arriba = '<div class="rv-nota">Se devuelve: ' + esc((C.MOTIVOS[mk.motivo] || '') + (mk.nota ? '. ' + mk.nota : '')) + ' <button type="button" class="enlace" id="verQuitarMarca">Quitar marca</button></div>';
+    if(mk && mk.origen === 'ia' && mk.accion === 'devolver' && rev && rev.puede_cerrar && dec) arriba += '<div class="rv-exc2"><label for="excDoc">Si lo apruebas igual, el motivo</label><input class="campo" id="excDoc" maxlength="300"></div>';
+    // Encima del PDF: los tramos del mismo archivo o los archivos de un documento que vino en varios
+    let tramos = '';
+    if(gr) tramos = '<div class="rv-tramos"><span class="tit">En este archivo:</span>' + gr.items.map((x) => { const e = rvEstado(x)[0];
+      return '<button type="button" class="' + (x.k === it.k ? 'on' : '') + '" data-rv-tramo="' + esc(x.k) + '"><i class="e ' + (e === 'b' || e === 'y' ? 'b' : e === 'd' ? 'd' : 'n') + '" aria-hidden="true">' + (e === 'b' || e === 'y' ? '✓' : e === 'd' ? '!' : '') + '</i>' + esc(x.t) + (gr.paginas[x.k] ? ' <em>' + esc(pagCorta(gr.paginas[x.k])) + '</em>' : '') + '</button>'; }).join('') + '</div>';
+    else if(arch.length > 1) tramos = '<div class="rv-tramos">' + arch.map((x, n) => '<button type="button" data-archivo="' + n + '" class="' + (n === ver.archivo ? 'on' : '') + '">Archivo ' + (n + 1) + ' <em>' + esc(x.nombre || '') + '</em></button>').join('') + '</div>';
+    const panel = !ver.leg && ver.paso === 'devolver' ? rvPanelDev(d, it, gr) : !ver.leg && ver.paso === 'otro' ? rvPanelOtro(d, it) : '';
+    return '<div class="rv-vh">' + rvVolverTel() + '<div><h3>' + esc(it.t + (it.rep && !F.cliente.es_natural ? ' · Representante ' + it.rep : '')) + (gr ? '<span class="rv-pdfpill">' + esc('Mismo PDF que ' + plural(gr.items.length - 1, 'documento más', 'documentos más')) + '</span>' : '') + '</h3>' + nota + '</div><div class="der' + (dec || ver.leg ? ' rv-dec' : '') + '">' + botones + '</div></div>' + arriba +
+      '<div class="rv-cpo"><div class="rv-pdfw">' + tramos + '<div class="rv-visor visor" id="visor" aria-busy="true"><span class="rv-sk" aria-hidden="true"></span><span class="cargando-linea"><i></i>Abriendo el archivo</span></div></div>' + panel + '</div>';
+  }
+  // Teléfono (parte 10): el documento a todo el alto con "← Documentos" para volver a la lista
+  const rvVolverTel = () => '<button type="button" class="rv-volver" data-rv-lista="1">' + ic('izquierda') + 'Documentos</button>';
+  // Lote 13/11 parte 3: Devolver abre un panel a la derecha del PDF con los motivos de ese documento
+  const MOT_DOC = {
+    cedula: ['¿Por qué devuelves la cédula?', [['vencido', 'Está vencida'], ['ilegible', 'Borrosa, cortada o con reflejo', 'No se leen el número o el nombre'], ['no_corresponde', 'Es de otra persona', 'No es el representante'], ['nombre', 'El nombre no coincide', 'Con el acta o con el RIF personal'], ['otro', 'Otro motivo']]],
+    rif_personal: ['¿Por qué devuelves el RIF personal?', [['vencido', 'Está vencido'], ['ilegible', 'Borroso, cortado o incompleto'], ['no_corresponde', 'Es de otra persona'], ['no_coincide', 'No coincide con la cédula', 'Nombre o número distinto'], ['otro', 'Otro motivo']]],
+    rif_empresa: ['¿Por qué devuelves el RIF de la empresa?', [['vencido', 'Está vencido'], ['ilegible', 'Borroso, cortado o incompleto'], ['no_corresponde', 'No es de esta empresa'], ['domicilio', 'El domicilio no coincide con el acta'], ['razon', 'La razón social no coincide'], ['otro', 'Otro motivo']]],
+    acta_constitutiva: ['¿Qué pasa con la constitutiva?', [['ilegible', 'Ilegible o le faltan páginas'], ['no_corresponde', 'No es de esta empresa'], ['sin_registro', 'Sin los datos del Registro', 'Sin sello, tomo o número'], ['falta_acta', 'Falta un acta', 'La constitutiva sirve, pero hace falta otra'], ['otro', 'Otro motivo']]],
+    acta_asamblea: ['¿Por qué devuelves el acta de asamblea?', [['ilegible', 'Ilegible o le faltan páginas'], ['no_corresponde', 'No es de esta empresa'], ['sin_registro', 'Sin los datos del Registro', 'Sin sello, tomo o número'], ['no_nombra', 'No nombra al representante'], ['otro', 'Otro motivo']]]
+  };
+  const motDoc = (cas) => MOT_DOC[cas] || ['¿Por qué lo devuelves?', Object.keys(C.MOTIVOS).map((k) => [k, C.MOTIVOS[k]])];
+  const MOT_SERV = ['vencido', 'ilegible', 'no_corresponde', 'falta_firma', 'otro'];
+  const ACTA_SUB = [['junta', 'Ratificación o cambio de junta directiva', 'el acta de ratificación o cambio de junta directiva'], ['domicilio', 'Cambio de domicilio fiscal', 'el acta de cambio de domicilio fiscal'],
+    ['razon', 'Cambio de razón social', 'el acta de cambio de razón social'], ['prorroga', 'Prórroga de la duración', 'el acta de prórroga de la duración'], ['nombra', 'Acta que nombra al representante', 'el acta que nombra al representante'], ['otro', 'Otra acta (escribe cuál)', '']];
+  const rvOp = (attr, k, t, s, on) => '<button type="button" role="radio" aria-checked="' + !!on + '" class="rv-op' + (on ? ' on' : '') + '" ' + attr + '="' + esc(k) + '"><i aria-hidden="true"></i><span>' + esc(t) + (s ? '<small>' + esc(s) + '</small>' : '') + '</span></button>';
+  function rvPanelDev(d, it, gr){
+    const m = motDoc(d.casilla); const dv = ver.dev || {}; const lid = liderCorto();
+    let h = '<div class="rv-pb"><h4 id="rvPanT">' + esc(m[0]) + '</h4><div class="rv-ops" role="radiogroup" aria-labelledby="rvPanT">';
+    m[1].forEach((o) => {
+      h += rvOp('data-motivo', o[0], o[1], o[2], ver.motivo === o[0]);
+      if(o[0] === 'falta_acta' && ver.motivo === 'falta_acta') h += '<div class="rv-sub" role="radiogroup" aria-label="Qué acta falta">' + ACTA_SUB.map((x) => '<button type="button" role="radio" aria-checked="' + (dv.acta === x[0]) + '" class="' + (dv.acta === x[0] ? 'on' : '') + '" data-rv-acta="' + x[0] + '">' + esc(x[1]) + '</button>').join('') + '</div>' +
+        (dv.acta === 'otro' ? '<label class="lbl" for="rvActaTx">Cuál acta</label><input class="campo" id="rvActaTx" maxlength="120" autocomplete="off" value="' + esc(dv.actaTx || '') + '">' : '');
+    });
+    h += '</div>';
+    if(gr && ver.motivo !== 'falta_acta'){
+      const corto = (x) => ({ cedula: 'la cédula', rif_personal: 'el RIF personal', rif_empresa: 'el RIF', acta_constitutiva: 'el acta constitutiva', acta_asamblea: 'el acta de asamblea', conatel: 'el permiso de Conatel' }[x.cas] || 'el documento');
+      const otros = gr.items.filter((x) => x.k !== it.k).map(corto);
+      h += '<span class="lbl">¿Qué se devuelve?</span><div class="rv-ops" role="radiogroup" aria-label="Qué se devuelve">' + rvOp('data-rv-alcance', 'solo', 'Solo ' + corto(it), capital(C.lista(otros)) + (otros.length === 1 ? ' sigue bien' : ' siguen bien'), dv.alcance !== 'todo') +
+        rvOp('data-rv-alcance', 'todo', 'El archivo completo', 'Se piden de nuevo los ' + gr.items.length + ' documentos', dv.alcance === 'todo') + '</div>';
+    }
+    if(ver.motivo !== 'falta_acta') h += '<label class="lbl" for="notaDev">Nota para ' + esc(lid) + ' (opcional)</label><textarea id="notaDev" maxlength="500">' + esc(ver.nota || '') + '</textarea>';
+    else if(dv.acta) { const x = ACTA_SUB.find((y) => y[0] === dv.acta); h += '<div class="rv-aviso">' + esc('Se le pide a ' + lid + ' ' + (dv.acta === 'otro' ? (dv.actaTx ? 'el acta: ' + dv.actaTx : 'esa acta') : x[2]) + '. La constitutiva queda aprobada y el expediente espera esa acta.') + '</div>'; }
+    h += '<div class="error" id="eDev" role="alert"></div>' + (d.casilla !== 'acta_constitutiva' ? '<button type="button" class="enlace rv-mot-ped" id="verPedir">¿Está bien pero falta otro? Pedir otro documento</button>' : '') + '</div><div class="rv-pacc"><button type="button" class="hc-b s ch" id="devVolver">Cancelar</button>' +
+      (ver.motivo === 'falta_acta' ? '<button type="button" class="hc-b ch rv-dev on" id="devPedirActa"' + (dv.acta ? '' : ' disabled') + '>Pedir el acta</button>' : '<button type="button" class="hc-b ch rv-dev on" id="devConfirmar"' + (ver.motivo ? '' : ' disabled') + '>Marcar para devolver</button>') + '</div>';
+    return '<div class="rv-panel" role="dialog" aria-labelledby="rvPanT">' + h + '</div>';
+  }
+  // Lote 13/11 parte 4: Es otro documento: se mueve a su casilla sin volver a subirlo
+  function rvPanelOtro(d, it){
+    const o = ver.otro || {}; const nat = !!F.cliente.es_natural; const lid = liderCorto();
+    const nA = Math.max(0, ...(F.documentos || []).filter((x) => x.casilla === 'acta_asamblea').map((x) => x.numero)) + 1;
+    const ops = [['rif_empresa', 'RIF de la empresa'], ['acta_constitutiva', 'Acta constitutiva'], ['acta_asamblea', 'Acta de asamblea', 'Queda como Acta de asamblea ' + nA], ['cedula', 'Cédula', 'Elige el representante'], ['rif_personal', 'RIF personal', 'Elige el representante'], ['otro', 'Otro documento', 'Escribe cuál']]
+      .filter((x) => x[0] !== d.casilla && !(nat && ['rif_empresa', 'acta_constitutiva', 'acta_asamblea'].indexOf(x[0]) >= 0));
+    const nR = Math.min(10, Math.max(1, ...(F.representantes || []).map((r) => r.orden), ...(F.documentos || []).filter((x) => x.casilla === 'cedula' || x.casilla === 'rif_personal').map((x) => x.numero)) + 1);
+    let h = '<div class="rv-pb"><h4 id="rvPanT">¿Qué documento es?</h4><p class="s">Lo subieron en la casilla equivocada. Se mueve sin volver a subirlo.</p><div class="rv-ops" role="radiogroup" aria-labelledby="rvPanT">';
+    ops.forEach((x) => {
+      h += rvOp('data-rv-otro', x[0], x[1], x[2], o.cas === x[0]);
+      if(o.cas === x[0] && (x[0] === 'cedula' || x[0] === 'rif_personal')) h += '<div class="rv-sub" role="radiogroup" aria-label="Representante">' + Array.from({ length: nR }, (_, i) => i + 1).map((n) => '<button type="button" role="radio" aria-checked="' + (o.rep === n) + '" class="' + (o.rep === n ? 'on' : '') + '" data-rv-orep="' + n + '">' + (nat ? 'Titular' : 'Representante ' + n) + '</button>').join('') + '</div>';
+      if(o.cas === x[0] && x[0] === 'otro') h += '<label class="lbl" for="rvOtroTx">Cuál documento</label><input class="campo" id="rvOtroTx" maxlength="80" autocomplete="off" value="' + esc(o.tit || '') + '">';
+    });
+    h += '</div>' + (o.ocupada ? '<div class="rv-aviso">' + esc(capital(o.ocupada) + ' ya tiene un archivo. ¿Qué hacemos con el que está?') + '</div>'
+      : '<div class="rv-aviso az">' + esc(it.t + ' queda vacía y entra en lo que se le pide a ' + lid + '.') + '</div>') + '<div class="error" id="eOtro" role="alert"></div></div>' +
+      '<div class="rv-pacc' + (o.ocupada ? ' dos' : '') + '"><button type="button" class="hc-b s ch" id="otroCancelar">Cancelar</button>' + (o.ocupada ? '<button type="button" class="hc-b s ch" data-rv-mover="dos">Dejar los dos</button><button type="button" class="hc-b ch" data-rv-mover="reemplazar">Reemplazar el que está</button>'
+        : '<button type="button" class="hc-b ch" data-rv-mover=""' + (o.cas ? '' : ' disabled') + '>Moverlo</button>') + '</div>';
+    return '<div class="rv-panel az" role="dialog" aria-labelledby="rvPanT">' + h + '</div>';
+  }
+  function rvLeer(){
+    const n = $('notaDev'); if(n) ver.nota = n.value;
+    const a = $('rvActaTx'); if(a) ver.dev = Object.assign(ver.dev || {}, { actaTx: a.value });
+    const o = $('rvOtroTx'); if(o) ver.otro = Object.assign(ver.otro || {}, { tit: o.value });
+  }
+  async function rvMover(b){
+    const d = docVer(); const o = ver.otro || {}; const er = $('eOtro'); if(!d || !o.cas) return;
+    const tx = $('rvOtroTx'); if(tx) o.tit = tx.value.trim();
+    if((o.cas === 'cedula' || o.cas === 'rif_personal') && !o.rep){ er.textContent = 'Elige el representante'; return; }
+    if(o.cas === 'otro' && o.tit.length < 3){ er.textContent = 'Escribe qué documento es'; if(tx) tx.focus(); return; }
+    b.disabled = true; const modo = b.dataset.rvMover || null;
+    let r;
+    try { r = await rpc('documento_reclasificar', { p_documento: d.id, p_casilla: o.cas, p_numero: o.rep || null, p_modo: modo, p_titulo: o.cas === 'otro' ? o.tit : null }); }
+    catch (e) { er.textContent = e.message; b.disabled = false; return; }
+    if(r && r.ocupada){ o.ocupada = r.destino; pintarRv(); return; }
+    try { await recargarRevision(); } catch (e) { toast('Se movió, pero no se pudo actualizar la pantalla. Cierra y abre de nuevo', 'error'); return; }
+    toast('Movido a ' + (r && r.destino ? r.destino : 'su casilla'));
+    ver.otro = null; ver.paso = 'ver'; const k = 'd:' + (r && r.documento); if(rvItems().some((x) => x.k === k)) rvIr(k); else pintarRv();
+    pintarDocumentos(); pintarCab();
+  }
+  // Pedir el acta: la constitutiva queda aprobada y se crea el requerimiento de esa acta (el mismo de "Pedir otro documento")
+  async function rvPedirActa(b){
+    const d = docVer(); const dv = ver.dev || {}; const er = $('eDev'); if(!d || !dv.acta) return;
+    const tx = $('rvActaTx'); if(tx) dv.actaTx = tx.value.trim();
+    if(dv.acta === 'otro' && String(dv.actaTx || '').length < 3){ er.textContent = 'Escribe qué acta falta'; if(tx) tx.focus(); return; }
+    b.disabled = true;
+    try { await rpc('requerimiento_crear', { p_cliente: id, p_tipo: dv.acta, p_texto: dv.acta === 'otro' ? dv.actaTx : null, p_motivo: null, p_origen: d.id }); }
+    catch (e) { er.textContent = e.message; b.disabled = false; return; }
+    toast('Pedida. ' + capital(liderCorto()) + ' la ve en rojo con el mensaje para el cliente');
+    try { await recargarRevision(); } catch (e) { /* la marca y el pedido ya quedaron; la ficha se actualiza al cerrar */ }
+    pintarDocumentos(); pintarCab(); ver.dev = null; revisar('aprobar');
   }
   // Quien aprobó el expediente (para la abogada): el que más documentos aprobó
   function rvAdmin(){ const n = {}; (F.documentos || []).forEach((d) => { if(d.estado === 'aprobado' && d.revisado_por) n[d.revisado_por] = (n[d.revisado_por] || 0) + 1; });
@@ -1835,14 +1956,14 @@
   }
   function pintarRv(){
     const h = $('hojaVer'); if(!h || !F) return;
-    h.className = 'hoja rv-pant' + (h.classList.contains('ver') ? ' ver' : '');
+    h.className = 'hoja rv-pant' + (h.classList.contains('ver') ? ' ver' : '') + (ver.telDoc ? ' rv-doc' : '') + (ver.paso === 'devolver' || ver.paso === 'otro' ? ' rv-con-panel' : '');
     const c = F.cliente; const ult = (F.documentos || []).filter((d) => d.estado === 'por_revisar').map((d) => d.subido_en).sort().pop();
     const npr = porRevisar().length;
     const sub = [c.nombre, rifDe(c), c.lider || 'Sin líder', ver.leg ? (c.legal_ok_en ? 'aprobado el ' + fecha(c.legal_ok_en, true) : '') : npr ? 'subió ' + plural(npr, 'documento', 'documentos') + ' ' + (ult ? dia(ult).toLowerCase() : '') : ''].filter(Boolean).join(' · ');
     const dr = drive && !drive.error && drive.url && /^https:\/\/drive\.google\.com\//.test(drive.url) ? drive.url : '';
-    h.innerHTML = '<div class="rv-cab"><div><h2 id="tVer">' + (ver.leg ? 'Documentos para el contrato' : 'Revisar expediente') + '</h2><small>' + esc(sub) + '</small></div><div class="der">' +
+    h.innerHTML = '<div class="rv-cab"><div class="rv-tit"><h2 id="tVer">' + (ver.leg ? 'Documentos para el contrato' : 'Revisar expediente') + '</h2><small>' + esc(sub) + '</small></div>' + rvFranja() + '<div class="der">' +
       (dr ? '<a class="mini rv-drive" href="' + esc(dr) + '" target="_blank" rel="noopener">' + ic('carpeta') + 'Abrir carpeta en Drive</a>' : '') + '<button type="button" class="cerrar" data-cierra="1" aria-label="Cerrar">' + ic('x') + '</button></div></div>' +
-      rvFranja() + '<div class="rv-c"><div class="rv-l">' + rvLista() + '</div><div class="rv-v">' + rvDetalle() + '</div></div>' + rvPie();
+      '<div class="rv-c"><div class="rv-l">' + rvLista() + '</div><div class="rv-v">' + rvDetalle() + '</div></div>' + rvPie();
     if(ver.docId && ver.url[ver.archivo] !== undefined) mostrarArchivo();
   }
   // Abogada: lo marcado en cada documento se envía en un solo aviso (el contrato se detiene y vuelve a Documentos pendientes)
@@ -1887,7 +2008,9 @@
   }
   // Lote 22/10: fecha de un acta de asamblea (las ordena en el expediente)
   async function guardarFechaActa(b){
-    const d = docVer(); const v = $('fechaActa').value || null; const er = $('errFechaActa'); if(!d) return;
+    const d = docVer(); const v = $('fechaActa').value || null; if(!d) return;
+    // Lote 13/11: en la pantalla de revisión la fecha va en la cabecera y el error sale como aviso
+    const er = $('errFechaActa') || { set textContent(x){ if(x) toast(x, 'error'); } };
     er.textContent = '';
     if(v && v > F.hoy){ er.textContent = 'La fecha no puede ser futura'; $('fechaActa').focus(); return; }
     b.disabled = true;
@@ -1951,11 +2074,24 @@
       if(x){ const m = x.value.trim(); if(m.length < 5){ toast('Escribe el motivo para aprobar lo que la IA devolvió', 'error'); x.focus(); return; } args.p_nota = m; }
     }
     else {
-      ver.nota = $('notaDev').value.trim();
+      ver.nota = ($('notaDev') || { value: ver.nota || '' }).value.trim();
       if(!ver.motivo){ $('eDev').textContent = 'Elige un motivo'; return; }
       if(ver.motivo === 'otro' && !ver.nota){ $('eDev').textContent = 'Escribe el motivo en la nota'; $('notaDev').focus(); return; }
-      args.p_motivo = ver.motivo === 'sin_registro' || ver.motivo === 'falta_acta' ? 'otro' : ver.motivo;
-      args.p_nota = ver.motivo === 'sin_registro' ? 'Sin los datos del Registro' + (ver.nota ? '. ' + ver.nota : '') : ver.motivo === 'falta_acta' ? (ver.nota || 'Falta un acta') : ver.nota || null;
+      if(ver.rv){
+        const o = motDoc(d.casilla)[1].find((x) => x[0] === ver.motivo) || [ver.motivo, MOTIVOS_DEV[ver.motivo] || ''];
+        const serv = MOT_SERV.indexOf(ver.motivo) >= 0;
+        args.p_motivo = serv ? ver.motivo : 'otro';
+        args.p_nota = serv ? ver.nota || null : o[1] + (ver.nota ? '. ' + ver.nota : '');
+        // Dentro de un archivo compartido: "El archivo completo" devuelve también los otros documentos de ese archivo
+        const gr = rvGrupos()['d:' + d.id];
+        if(gr && ver.dev && ver.dev.alcance === 'todo') gr.items.filter((x) => x.d && x.d.id !== d.id).forEach((x) => {
+          const nv = { documento: x.d.id, accion: 'devolver', motivo: args.p_motivo, nota: args.p_nota, vence_en: null, origen: 'manual', por: yo && yo.nombre };
+          if(!rev) rev = { marcas: [], historial: [] }; rev.marcas = marcas().filter((m) => m.documento !== x.d.id).concat([nv]);
+          rpc('documento_marcar', { p_documento: x.d.id, p_accion: 'devolver', p_motivo: args.p_motivo, p_nota: args.p_nota, p_vence: null }).catch((e) => toast('No se guardó la marca de ' + x.t + ': ' + e.message, 'error')); });
+      } else {
+        args.p_motivo = ver.motivo === 'sin_registro' || ver.motivo === 'falta_acta' ? 'otro' : ver.motivo;
+        args.p_nota = ver.motivo === 'sin_registro' ? 'Sin los datos del Registro' + (ver.nota ? '. ' + ver.nota : '') : ver.motivo === 'falta_acta' ? (ver.nota || 'Falta un acta') : ver.nota || null;
+      }
     }
     // Lote 21/10: la marca se ve al instante y se guarda por detrás; nunca espera la vista previa ni el recálculo.
     // Si el servidor la rechaza, se quita y se avisa.
@@ -1974,7 +2110,7 @@
     p.then(() => { guardandoMarcas--; if(!guardandoMarcas && id === cliM) recargarRevision().then(() => { if(F && !encima()) pintarTodo(); }).catch(() => {}); });
     if(!(ver && ver.rv)) toast(accionRev === 'aprobar' ? 'Marcado para aprobar' : 'Marcado para devolver');   // en la pantalla nueva la lista ya lo muestra
     if(!ver || hojaAbierta() !== 'hojaVer'){ pintarTodo(); return; }   // cerraron el visor
-    if(ver.rv){ ver.paso = 'ver'; ver.motivo = null; ver.nota = ''; const sg = rvSiguiente(d.id); if(sg) rvIr(sg); else pintarRv(); pintarDocumentos(); pintarCab(); return; }
+    if(ver.rv){ ver.paso = 'ver'; ver.motivo = null; ver.nota = ''; ver.dev = null; const sg = rvSiguiente(d.id); if(sg) rvIr(sg); else { ver.telDoc = false; pintarRv(); } pintarDocumentos(); pintarCab(); return; }
     const cola = ver.cola; const actual = d.id;
     // Sigue con el próximo que quede sin marcar; si no hay, cierra
     const sig = cola ? cola.slice(cola.indexOf(actual) + 1).find((x) => { const y = (F.documentos || []).find((z) => z.id === x); return y && y.estado === 'por_revisar' && !marcaDe(x); }) : null;
@@ -1984,7 +2120,11 @@
   let guardandoMarcas = 0; let marcasPend = Promise.resolve();
   async function recargarRevision(){
     const [f, r] = await Promise.all([rpc('cliente_ficha', { p_cliente: id }), rpc('revision_estado', { p_cliente: id })]);
-    F = f; rev = r;
+    // Lote 13/11: se conservan los permisos y datos que arma cargar() (antes se perdía "Firma este / Ya no aplica" al recargar)
+    const ant = F; F = f; rev = r;
+    if(ant){ F.gesActivas = ant.gesActivas || []; F.legalObs = ant.legalObs || null; }
+    F.puedo = Object.assign({ marcar_rep: !!(F.puedo || {}).revisar }, F.puedo || {});
+    if(esLegal()) F.puedo.revisar = false;
   }
   async function quitarMarca(b){
     const d = docVer(); if(!d) return; b.disabled = true;
@@ -2160,6 +2300,23 @@
     // Lote 12/11 B, parte 6: la pantalla de revisión
     if(ver && ver.rv && t.closest('#hojaVer')){
       if((b = t.closest('[data-rv-ir]'))){ rvIr(b.dataset.rvIr); return; }
+      // Lote 13/11: Más, paneles de Devolver y Es otro documento, tramos del mismo archivo y teléfono
+      const mm = $('rvMasMenu');
+      if(t.closest('#rvMas')){ const ab = !mm.classList.contains('ver'); mm.classList.toggle('ver', ab); $('rvMas').setAttribute('aria-expanded', String(ab)); return; }
+      document.querySelectorAll('#hojaVer details.rv-ia-det[open]').forEach((x) => { if(!x.contains(t)) x.open = false; });
+      if(mm && mm.classList.contains('ver') && !t.closest('#rvMasMenu')){ mm.classList.remove('ver'); $('rvMas').setAttribute('aria-expanded', 'false'); }
+      if(t.closest('[data-rv-masop="otro"]')){ ver.paso = 'otro'; ver.otro = {}; ver.motivo = null; pintarRv(); return; }
+      if(t.closest('[data-rv-lista]')){ ver.telDoc = false; ver.paso = 'ver'; pintarRv(); return; }
+      if((b = t.closest('[data-rv-tramo]'))){ if(b.dataset.rvTramo !== ver.sel) rvIr(b.dataset.rvTramo); return; }
+      if((b = t.closest('[data-rv-acta]'))){ rvLeer(); ver.dev = Object.assign(ver.dev || {}, { acta: b.dataset.rvActa }); pintarRv(); if(b.dataset.rvActa === 'otro' && $('rvActaTx')) $('rvActaTx').focus(); return; }
+      if((b = t.closest('[data-rv-alcance]'))){ rvLeer(); ver.dev = Object.assign(ver.dev || {}, { alcance: b.dataset.rvAlcance }); pintarRv(); return; }
+      if((b = t.closest('#devPedirActa'))){ rvPedirActa(b); return; }
+      if((b = t.closest('[data-rv-otro]'))){ rvLeer(); ver.otro = Object.assign(ver.otro || {}, { cas: b.dataset.rvOtro, rep: null, ocupada: null }); pintarRv(); if(b.dataset.rvOtro === 'otro' && $('rvOtroTx')) $('rvOtroTx').focus(); return; }
+      if((b = t.closest('[data-rv-orep]'))){ ver.otro = Object.assign(ver.otro || {}, { rep: Number(b.dataset.rvOrep), ocupada: null }); pintarRv(); return; }
+      if((b = t.closest('[data-rv-mover]'))){ rvMover(b); return; }
+      if(t.closest('#otroCancelar')){ ver.paso = 'ver'; ver.otro = null; pintarRv(); return; }
+      if(t.closest('#verDevolver')){ ver.paso = ver.paso === 'devolver' ? 'ver' : 'devolver'; ver.motivo = null; ver.nota = ''; ver.dev = {}; pintarRv(); return; }
+      if((b = t.closest('[data-motivo]'))){ rvLeer(); ver.motivo = b.dataset.motivo; pintarRv(); return; }
       if((b = t.closest('[data-rv-cont]'))){ const it = rvItems().find((x) => x.k === ver.sel); if(!it || !it.cont) return; const a = b.dataset.rvCont; const x = ver.cont[it.cont];
         if(x && x.acc === (a === 'bien' ? 'bien' : 'dev')) delete ver.cont[it.cont]; else ver.cont[it.cont] = a === 'bien' ? { acc: 'bien' } : { acc: 'dev', motivo: null, nota: '' }; pintarRv(); return; }
       if((b = t.closest('[data-rv-cmot]'))){ const it = rvItems().find((x) => x.k === ver.sel); const x = it && ver.cont[it.cont]; if(!x) return; const nt = $('rvContNota'); if(nt) x.nota = nt.value; x.motivo = b.dataset.rvCmot; pintarRv(); return; }

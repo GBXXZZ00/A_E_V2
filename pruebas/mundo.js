@@ -1481,6 +1481,22 @@ const RPC = {
   revision_puntos_aplicar(m, yo, a){ if(!['admin', 'abogado'].includes(yo.rol)) return error('No tienes permiso para hacer esto'); const c = m.datos.clientes.find((x) => x.id === Number(a.p_cliente)); let ped = 0, man = 0, ok = 0;
     Object.keys(c.puntos || {}).forEach((k) => { const p = c.puntos[k]; if(p.decision === 'pedir'){ const tp = ['junta', 'razon', 'domicilio', 'prorroga', 'nombra'].includes(p.documento) ? p.documento : 'otro'; reqPoner(m, c, tp, tp === 'otro' ? p.documento : null, p.nota, null, null, yo); ped++; } else if(p.decision === 'revisar') man++; else ok++; });
     (m.bitacora = m.bitacora || []).push({ accion: 'revision_puntos', registro: c.id, puntos: c.puntos }); c.puntos = {}; return { pedidos: ped, a_mano: man, bien: ok }; },
+  // Lote 13/11 parte 4: Es otro documento (solo el administrador). Destino libre: el documento entero se mueve; ocupado: pregunta
+  documento_reclasificar(m, yo, a){
+    if(yo.rol !== 'admin') return error('No tienes permiso para hacer esto');
+    const c = m.datos.clientes.find((x) => (x.documentos || []).some((d) => d.id === Number(a.p_documento))); if(!c) return error('Ese documento ya no existe');
+    const d = c.documentos.find((x) => x.id === Number(a.p_documento)); const cas = a.p_casilla;
+    let n = ['rif_empresa', 'acta_constitutiva'].includes(cas) ? 0 : cas === 'acta_asamblea' ? Math.max(0, ...c.documentos.filter((x) => x.casilla === 'acta_asamblea').map((x) => x.numero)) + 1 : Number(a.p_numero) || 0;
+    if(cas === 'otro'){ if(String(a.p_titulo || '').trim().length < 3) return error('Escribe qué documento es'); n = 1; while(c.documentos.some((x) => x.casilla === 'otro' && x.numero === n)) n++; }
+    if((cas === 'cedula' || cas === 'rif_personal') && !(n >= 1 && n <= 10)) return error('Elige el representante');
+    const dst = c.documentos.find((x) => x.casilla === cas && x.numero === n && x !== d);
+    const nom = (cas === 'acta_asamblea' ? 'acta de asamblea ' + n : cas === 'otro' ? a.p_titulo : cas.replace('_', ' '));
+    if(dst && (dst.archivos || []).length && !a.p_modo) return { ocupada: true, destino: nom };
+    m.bitacora = m.bitacora || []; m.bitacora.push({ accion: 'documento_reclasificado', registro: d.id, antes: { casilla: d.casilla, numero: d.numero }, despues: { casilla: cas, numero: n, modo: a.p_modo || 'mover' } });
+    if(!dst){ d.casilla = cas; d.numero = n; d.estado = 'por_revisar'; d.titulo = cas === 'otro' ? a.p_titulo : null; if(c.marcas) delete c.marcas[d.id]; return { ok: true, documento: d.id, casilla: cas, numero: n, destino: nom }; }
+    dst.archivos = (a.p_modo === 'dos' ? dst.archivos : []).concat(d.archivos || []); dst.estado = 'por_revisar'; d.archivos = []; d.estado = 'devuelto'; d.motivo = 'otro'; d.nota = 'Se movió a ' + nom;
+    return { ok: true, documento: dst.id, casilla: cas, numero: n, destino: nom };
+  },
   requerimiento_crear(m, yo, a){ if(!['admin', 'abogado'].includes(yo.rol)) return error('No tienes permiso para hacer esto'); const c = m.datos.clientes.find((x) => x.id === Number(a.p_cliente)); if(!c) return error('No encontré ese cliente');
     if(a.p_tipo === 'otro' && String(a.p_texto || '').trim().length < 3) return error('Escribe qué documento falta'); return reqPoner(m, c, a.p_tipo, a.p_texto, a.p_motivo, a.p_origen, a.p_numero, yo); },
   requerimiento_anular(m, yo, a){ if(!['admin', 'abogado'].includes(yo.rol)) return error('No tienes permiso para hacer esto'); for(const c of m.datos.clientes){ const z = (c.requerimientos || []).find((x) => x.id === Number(a.p_id)); if(z){ z.estado = 'anulado'; (m.bitacora = m.bitacora || []).push({ accion: 'requerimiento_anulado', registro: z.id }); return null; } } return error('No encontré ese pedido'); },
