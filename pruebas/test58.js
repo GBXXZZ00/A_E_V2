@@ -12,14 +12,18 @@ const dia = (n) => { const d = new Date(); d.setDate(d.getDate() + n); return d.
     mundo.datos.extra = [{ tipo: 'elaborar_contrato', clave: String(cli[0].id), cliente_id: cli[0].id, titulo: cli[0].nombre, detalle: 'PYME · en Documentos recibidos', para: 'abogado', vence: dia(-2), desde: dia(-5) + 'T12:00:00Z', ref: {} }];
     // Legal: "Hay un problema" en su contrato por elaborar
     const p = await entrar(ctx, 'paula', '615243'); p.on('pageerror', (e) => errores.push(nombre + ': ' + e.message));
-    await p.goto(H + 'trabajo.html'); await p.waitForSelector('#cuerpo [data-hacer]', { timeout: 15000 });
+    await p.goto(H + 'trabajo.html'); await p.waitForSelector('#cuerpo [data-hacer]', { state: 'attached', timeout: 15000 });
+    await p.evaluate(() => document.querySelectorAll('#cuerpo details.lg-pl').forEach((d) => { d.open = true; }));   // lote 12/11 B: las secciones de Legal empiezan plegadas
     // Lote 12/11 (maqueta legal): la fila trae "Abrir" y abre la hoja del cliente con "Tu paso"
     ok(nombre + ': la fila de Legal trae Abrir y ya no "Hay un problema" suelto', /Abrir/.test(await p.locator('#cuerpo [data-hacer]').first().textContent()) && (await p.locator('#cuerpo [data-problema]').count()) === 0);
     await p.locator('#cuerpo [data-hacer]').first().click(); await p.waitForSelector('#hojaFicha .lp', { timeout: 15000 });
     ok(nombre + ': la hoja abre en Documentos con su paso y los 4 estatus', /Tu paso: elaborar el contrato/.test(await p.textContent('#hojaFicha .lp')) && (await p.locator('#hojaFicha .lp [data-lp-est]').count()) === 4);
     ok(nombre + ': a Legal no le sale Revisar ni la revisión del administrador', (await p.locator('#hojaFicha #revisarTodo, #hojaFicha .rp-linea, #hojaFicha .rp').count()) === 0);
     await p.screenshot({ path: 'capturas/lote12nov-legal-paso-' + nombre + '.png' });
-    await p.click('#hojaFicha [data-lp-sig="contrato_en_curso"]'); await p.waitForFunction(() => /terminar y enviar a firmar/.test((document.querySelector('#hojaFicha .lp') || {}).textContent || ''), null, { timeout: 10000 });
+    // Lote 12/11 B: "Ver documentos y empezar" abre la pantalla de revisión de solo lectura con "Empecé el contrato" abajo
+    await p.click('#hojaFicha [data-rv-leg]'); await p.waitForSelector('#hojaVer.ver [data-lp-sig="contrato_en_curso"]');
+    ok(nombre + ': Legal ve los documentos sin Bien ni Devolver', (await p.locator('#hojaVer #verAprobar, #hojaVer #verDevolver').count()) === 0 && /Documentos para el contrato/.test(await p.textContent('#hojaVer')));
+    await p.click('#hojaVer [data-lp-sig="contrato_en_curso"]'); await p.waitForFunction(() => /terminar y enviar a firmar/.test((document.querySelector('#hojaFicha .lp') || {}).textContent || ''), null, { timeout: 10000 });
     ok(nombre + ': "Empecé el contrato" lo pasa a En curso', cli[0].estatus === 'contrato_en_curso');
     await p.click('#hojaFicha .lp [data-problema]'); await p.waitForSelector('#hojaProblema.ver');
     ok(nombre + ': la hoja trae Devolver, Pedir y Solo avisar', (await p.locator('#hojaProblema [data-pb]').count()) === 3);

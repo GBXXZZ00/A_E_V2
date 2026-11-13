@@ -116,7 +116,7 @@ async function contexto(navegador, opciones, mundo){
     }
     const rp = u.match(/\/rest\/v1\/rpc\/([a-z0-9_]+)/);
     if(rp && rp[1] !== 'pin_cambiado'){
-      const yo = quien(req); const args = cuerpo(); m.llamadas.push(['rpc', rp[1], args]);
+      const yo = quien(req); const args = cuerpo(); m.llamadas.push(['rpc', rp[1], args, yo ? yo.usuario : null]);
       if(!yo || !yo.activo) return j({ code: 'P0001', message: 'Tu sesión venció. Entra de nuevo' }, 400);
       if(m.fallaRpc === rp[1] || m.fallaRpc === '*') return j({ message: 'error interno' }, 500);
       if(m.lento) await new Promise((ok) => setTimeout(ok, m.lento));

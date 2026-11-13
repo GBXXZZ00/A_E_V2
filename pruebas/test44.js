@@ -126,17 +126,8 @@ const archivo = (n, mime) => ({ name: n, mimeType: mime || 'application/pdf', bu
     await p.fill('#oNombre', 'Carta de autorización'); await p.fill('#oNota', 'La firmó el gerente'); await p.click('#formOtro button[type="submit"]');
     await p.waitForFunction(() => !window.Ficha.ocupado() && /Carta de autorización/.test(document.getElementById('tab-documentos').textContent), null, { timeout: 8000 });
     ok(nombre + ': el documento Otro se guarda con su nombre y nota', llamo(mundo, 'documentos_registrar').slice(-1)[0][2].p_items[0].titulo === 'Carta de autorización' && (await p.textContent('#tab-documentos [data-grupo="otros"]')).includes('La firmó el gerente'));
-    // Aprobar seleccionados
-    const nRev = c.documentos.filter((d) => d.estado === 'por_revisar').length;
-    if(nRev > 1){
-      await p.click('#elegirAprobar'); await p.waitForSelector('#tab-documentos [data-sel-doc]');
-      const ids = await p.evaluate(() => Array.from(document.querySelectorAll('#tab-documentos [data-sel-doc]')).slice(0, 2).map((x) => Number(x.dataset.selDoc)));
-      for(const x of ids) await p.click('[data-sel-doc="' + x + '"]');
-      ok(nombre + ': Aprobar seleccionados cuenta lo elegido', (await p.textContent('#aprobarSel')).includes('2'));
-      await p.click('#aprobarSel'); await p.waitForFunction(() => !document.querySelector('[data-sel-doc]'));
-      ok(nombre + ': una sola llamada marca los elegidos para aprobar, sin abrirlos', llamo(mundo, 'documentos_marcar_varios').length === 1 && ids.every((x) => (c.marcas || {})[x] && c.marcas[x].accion === 'aprobar'));
-      ok(nombre + ': las casillas dicen que se aprueban al cerrar', (await p.locator('#tab-documentos .doc.marcada').count()) >= 2);
-    } else ok(nombre + ': (sin documentos por revisar para elegir)', true);
+    // Lote 12/11 B: "Aprobar seleccionados" se quitó de la ficha (se aprueba por cliente en Revisar en lote)
+    ok(nombre + ': ya no está Aprobar seleccionados en la ficha', (await p.locator('#elegirAprobar, [data-sel-doc]').count()) === 0);
     ok(nombre + ': documentos sin desborde', await sinDesborde(p));
     await p.screenshot({ path: 'capturas/44-' + nombre + '-documentos.png' });
     await cerrarHojas(p);
@@ -146,14 +137,15 @@ const archivo = (n, mime) => ({ name: n, mimeType: mime || 'application/pdf', bu
     if(r){
       r.documentos.forEach((d) => (d.archivos || []).forEach((x) => { x.url_externa = 'https://drive.google.com/file/d/PRUEBA' + x.id + '/view'; x.drive_id = 'PRUEBA' + x.id; }));
       mundo.lentoDrive = 1500; mundo.lentoRpc = { documento_marcar: 1500 };
-      await p.goto(H + 'clientes.html?c=' + r.id + '&t=documentos'); await p.waitForSelector('#hojaFicha.ver #revisarTodo');
-      await p.click('#revisarTodo'); await p.waitForSelector('#hojaVer.ver');
+      await p.goto(H + 'clientes.html?c=' + r.id + '&t=documentos'); await p.waitForSelector('#hojaFicha.ver #paso [data-paso="revisar"]');
+      await p.click('#paso [data-paso="revisar"]'); await p.waitForSelector('#hojaVer.ver .rv-c');
       await p.waitForSelector('#visor .visor-mini img', { timeout: 1200 }).catch(() => {});
       ok(nombre + ': primero se ve la miniatura mientras llega el archivo completo', (await p.locator('#visor .visor-mini img').count()) === 1 && mundo.llamadas.some((l) => l[0] === 'drive' && l[2] === 'mini'));
       ok(nombre + ': el visor trae "Abrir en Drive"', (await p.locator('#abrirDrive').count()) === 1);
+      const k0 = await p.getAttribute('#hojaVer .rv-d.sel', 'data-rv-ir');
       const t0 = Date.now(); await p.click('#verAprobar');
-      await p.waitForFunction(() => /Documento 2 de/.test(document.querySelector('#hojaVer small').textContent), null, { timeout: 1200 }).catch(() => {});
-      ok(nombre + ': Aprobar pasa al siguiente al instante, sin esperar al servidor ni a la vista previa', (Date.now() - t0) < 1200 && /Documento 2 de/.test(await p.textContent('#hojaVer small')));
+      await p.waitForFunction((k) => document.querySelector('#hojaVer .rv-d.sel').dataset.rvIr !== k, k0, { timeout: 1200 }).catch(() => {});
+      ok(nombre + ': Aprobar pasa al siguiente al instante, sin esperar al servidor ni a la vista previa', (Date.now() - t0) < 1200 && (await p.getAttribute('#hojaVer .rv-d.sel', 'data-rv-ir')) !== k0);
       await p.waitForFunction(() => true); await p.waitForTimeout(1700);
       ok(nombre + ': la marca quedó guardada por detrás', llamo(mundo, 'documento_marcar').length >= 1 && Object.values(r.marcas || {}).some((x) => x.accion === 'aprobar'));
       mundo.lentoDrive = 0; mundo.lentoRpc = null;

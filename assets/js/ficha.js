@@ -124,11 +124,20 @@
     const dev = f.some((x) => x.e === 'devuelto'); const fal = f.some((x) => x.e === 'falta');
     if(c.provisional && F.rol !== 'abogado') return { tono: 'azul', texto: 'Cliente provisional, todavía sin RIF', sub: 'Salió de una orden de Odoo. Sube sus documentos desde ya; al conocer el RIF se une al cliente real o queda como cliente normal', boton: 'Escribir RIF', accion: 'rif' };
     if(c.estatus === 'contrato_firmado') return { tono: 'verde', texto: 'Contrato firmado', sub: 'El expediente está completo' };
-    if(F.puedo.revisar && iaActiva()) return { tono: 'azul', texto: 'La IA está leyendo el expediente', sub: rev.ia.avance + ' de ' + rev.ia.total + ' archivos. El resultado sale en Documentos' };
-    if(F.puedo.revisar && marcas().length){
-      const cierra = rev && rev.puede_cerrar;
-      if(n) return { tono: 'azul', texto: 'Revisión en curso', sub: resumenMarcas() + '. ' + (n === 1 ? 'Queda 1 documento' : 'Quedan ' + n + ' documentos') + ' por revisar', boton: 'Seguir revisando', accion: 'revisar' };
-      return { tono: 'azul', texto: 'Revisión lista para cerrar', sub: resumenMarcas() + '. ' + (cierra ? capital(liderCorto()) + ' no se entera hasta que la cierres' : 'La cierra el administrador'), boton: cierra ? 'Cerrar revisión' : '', accion: 'cerrarrev' };
+    // Lote 12/11 B, parte 6 (maqueta revision-nueva/01): una sola banda: cuántos hay por revisar, en qué va la IA y quién decide
+    const npr = porRevisar().length;
+    const kIA = rev && rev.ia;
+    if(F.puedo.revisar && (npr || iaActiva() || (kIA && kIA.estado === 'error'))){
+      const k = kIA; let sub; let barra = null;
+      if(iaActiva()){ sub = 'Se los pasaste a la IA. Está leyendo: ' + Math.floor(k.avance || 0) + ' de ' + (k.total || 0); barra = k.total ? Math.min(1, k.avance / k.total) : 0; }
+      else if(k && k.estado === 'lista'){ const ps = porRevisar(); const bien = ps.filter((d) => (iaDe(d.id) || {}).propuesta === 'aprobar').length; const mal = ps.filter((d) => iaDe(d.id) && iaDe(d.id).propuesta !== 'aprobar').length;
+        sub = 'La IA ya los leyó: ' + plural(bien, 'cuadra', 'cuadran') + (mal ? ' y ' + mal + (mal === 1 ? ' tiene' : ' tienen') + ' algo que mirar' : '') + (marcas().length ? ' · ' + resumenMarcas() : ''); }
+      else if(k && k.estado === 'error') sub = 'La IA no pudo terminar' + (k.error ? ': ' + k.error : '') + (marcas().length ? ' · ' + resumenMarcas() : '');
+      else if(marcas().length) sub = resumenMarcas() + ' · nada se envía hasta terminar';
+      else sub = 'Nadie los ha revisado todavía. Tú decides: los revisas tú o se los pasas a la IA.';
+      return { tono: 'ambar', texto: npr ? plural(npr, 'documento por revisar', 'documentos por revisar') : 'Lectura de la IA', sub, barra, boton: npr ? 'Revisar' : '', accion: 'revisar',
+        boton2: k && k.estado === 'error' && rev.puede_ia ? 'Reintentar la IA' : rev && rev.puede_ia && !iaActiva() && !(k && k.estado === 'lista') && rev.archivos ? 'Que la revise la IA' : '',
+        accion2: k && k.estado === 'error' ? 'reanudar' : 'ia' };
     }
     if(c.estatus === 'por_firmar') return F.puedo.contrato
       ? { tono: 'morado', texto: 'Falta la firma del cliente', sub: 'Cuando llegue, sube el contrato firmado', boton: 'Subir contrato', accion: 'tab:contrato' }
@@ -161,7 +170,8 @@
         (c.es_top ? '<span class="chip">Cliente TOP</span>' : '') + (c.es_demo ? '<span class="chip">Dato de ejemplo</span>' : '') +
         (c.suspendido_en ? '<span class="chip rojo">Suspendido</span>' : '') + (c.dedicado && c.dedicado.sin_tad ? '<span class="chip azul" title="Registrado a mano. Cuando el TAD traiga este RIF se une solo">Aún no está en el TAD</span>' : '') + etqChip() + '</div>' +
       '<div class="contacto">' + window.Pedir.iconos(clienteContacto()) + '</div>' +
-      (p ? '<div class="paso ' + p.tono + '" id="paso"><span class="tx">' + esc(p.texto) + (sub ? '<small>' + esc(sub) + '</small>' : '') + '</span>' +
+      (p ? '<div class="paso ' + p.tono + '" id="paso"><span class="tx">' + esc(p.texto) + (sub ? '<small>' + esc(sub) + '</small>' : '') + (p.barra !== null && p.barra !== undefined ? '<span class="paso-bar" aria-hidden="true"><i style="transform:scaleX(' + Number(p.barra).toFixed(3) + ')"></i></span>' : '') + '</span>' +
+        (p.boton2 ? '<button type="button" class="btn btn-chico btn-2" data-paso="' + esc(p.accion2) + '">' + esc(p.boton2) + '</button>' : '') +
         (p.boton ? '<button type="button" class="btn btn-chico" data-paso="' + esc(p.accion) + '">' + esc(p.boton) + '</button>' : '') + '</div>' : '') +
       (window.Contacto ? window.Contacto.boton('cliente', c.id, '', c.estatus + ':' + (F.documentos || []).filter((x) => x.estado === 'devuelto').length) : '');   // Lote A: contactar a quien tiene el paso
     if(window.Contacto) window.Contacto.llenar($('cabFicha'));
@@ -347,24 +357,21 @@
       (vacio && quitable ? '<button type="button" class="enlace" data-quitar-rep="' + n + '">Quitar representante</button>' : '') + '</section>';
   }
   function pintarDocumentos(){
-    const c = F.cliente; const fal = F.faltantes || []; const nr = F.puedo.revisar ? sinMarcar().length : porRevisar().length;
+    const c = F.cliente; const fal = F.faltantes || []; const nr = F.puedo.revisar ? sinMarcar().length : esLegal() ? 0 : porRevisar().length;
     const aprobados = (F.documentos || []).filter((d) => d.estado === 'aprobado').length;
     const pedirM = c.estatus === 'grandes_negocios' ? 'pedir' : 'recordar';
     // Lote 28/10: arriba, qué falta en una línea y el botón para pedirlo; abajo, la zona para soltar varios archivos
     const falN = fal.map((x) => x.t + (x.e === 'devuelto' ? ' (devuelta)' : ''));
     const lo = F.legalObs;   // Lote 12/11 (maqueta revision, D): lo que Legal detuvo, con su observación
     let h = presencialHtml() + suspHtml() + (lo ? '<div class="al-banda ambar lg-obs" role="note"><b>' + esc(lo.tipo === 'avisar' ? 'Observación de Legal' : 'Detenido por Legal') + ' el ' + esc(fecha(lo.en, true)) + '</b><p>' + esc((lo.por ? primerNombre(lo.por) + ': ' : '') + '"' + lo.texto + '"') +
-      (lo.tipo === 'avisar' ? '' : esLegal() ? ' Cuando el líder suba lo que falta y el administrador lo apruebe, vuelve a Recibidos y te sale otra vez en Por elaborar.' : ' Cuando el líder suba lo que falta y lo apruebes, vuelve a "Por elaborar".') + '</p></div>' : '') + panelLegal() + panelRevision();
+      (lo.tipo === 'avisar' ? '' : esLegal() ? ' Cuando el líder suba lo que falta y el administrador lo apruebe, vuelve a Recibidos y te sale otra vez en Por elaborar.' : ' Cuando el líder suba lo que falta y lo apruebes, vuelve a "Por elaborar".') + '</p></div>' : '') + panelLegal();
     // Lote 12/11 (maqueta ficha-documentos): lo que antes iba arriba ahora va dentro del Expediente
     const arribaExp = (fal.length ? '<div class="fd-sum" data-faltan="' + fal.length + '"><span><b>' + (fal.length === 1 ? 'Falta 1:' : 'Faltan ' + fal.length + ':') + '</b> ' + esc(C.lista(falN)) + '</span><button type="button" class="btn btn-chico" data-paso="pedir:' + pedirM + '">Pedir lo que falta</button></div>'
         : '<div class="fd-sum ok" data-faltan="0"><span><b>No falta nada.</b> ' + esc(plural(aprobados, 'documento aprobado', 'documentos aprobados')) + (nr ? ', ' + esc(plural(nr, 'por revisar', 'por revisar')) : '') + '</span></div>') +
-      '<div class="acc">' +
-        (F.puedo.revisar && nr ? '<button type="button" class="btn btn-chico" id="revisarTodo">Revisar ' + nr + '</button>' : '') +
-        (F.puedo.revisar && nr > 1 ? '<button type="button" class="btn btn-chico btn-2" id="elegirAprobar" aria-pressed="' + selMode + '">' + (selMode ? 'Cancelar' : 'Aprobar seleccionados') + '</button>' : '') + '</div>' +
-      (selMode ? '<div class="al-banda azul sel-barra" role="status"><b>' + (selDocs.size ? plural(selDocs.size, 'documento elegido', 'documentos elegidos') : 'Toca los documentos que quieres aprobar') + '</b><p>Quedan marcados para aprobar; se aprueban al cerrar la revisión.</p>' +
-        '<p style="margin-top:10px;display:flex;gap:10px;flex-wrap:wrap"><button type="button" class="btn btn-chico" id="aprobarSel"' + (selDocs.size ? '' : ' disabled') + '>Aprobar ' + (selDocs.size || '') + '</button><button type="button" class="btn btn-chico btn-2" id="selTodos">Elegir todos</button></p></div>' : '') +
+      // Lote 12/11 B, parte 6: Revisar va en la banda de arriba y abre la pantalla nueva
+      errorRevision() +
       (c.aprobado_por_subir ? '<div class="al-banda ambar" role="note"><b>Aprobado, documentos por subir</b><p>Legal ya lo aprobó. Sube lo que falta: no cambia su aprobación ni su comisión.</p></div>' : '') +
-      quePedir() + bloqueIA() + barraRevision() +
+      quePedir() +
       '<button type="button" class="fd-drop" id="subirVarios">' + ic('subir') + '<span><span class="solo-pc">Arrastra aquí varios archivos y marca qué trae cada uno</span><span class="solo-tel">Toca para subir varios archivos y marca qué trae cada uno</span></span></button>' +
       '<p class="nota-chica' + (colaDe(id) ? '' : ' hidden') + '" id="estadoSubida" role="status"><span class="cargando-linea"><i></i><span id="textoSubida">' + esc(textoCola()) + '</span></span></p>' + driveHtml();
     // Lote 10/11 J: el expediente es una sección plegable (abierta si hay algo que hacer), seguida de Contratos y VGT
@@ -498,7 +505,7 @@
     const hace = dd === null ? null : [dd > 5 ? 'rojo' : dd > 2 ? 'ambar' : '', (i === 2 ? 'Enviado ' : '') + (dd === 0 ? (i === 2 ? 'hoy' : 'Desde hoy') : (i === 2 ? 'hace ' : 'Hace ') + plural(dd, 'día', 'días'))];
     const tit = ['Tu paso: elaborar el contrato', 'Tu paso: terminar y enviar a firmar', 'Tu paso: esperar la firma y subirla', 'Listo: contrato firmado'][i];
     const prob = '<button type="button" class="btn btn-2 lp-prob" data-problema="1">Hay un problema</button>';
-    const acc = i === 0 ? '<button type="button" class="btn" data-lp-sig="contrato_en_curso">Empecé el contrato</button>' + prob
+    const acc = i === 0 ? '<button type="button" class="btn" data-rv-leg="1">Ver documentos y empezar</button>' + prob
       : i === 1 ? '<button type="button" class="btn" data-lp-sig="por_firmar">Lo envié a firmar</button>' + prob
       : i === 2 ? '<button type="button" class="btn" data-lp-subir="1">Subir firmado</button><button type="button" class="btn btn-2" data-paso="pedir:firma">Recordar al cliente</button>'
       : c.contrato_pend ? '<button type="button" class="btn" data-lp-subir="1">' + (c.contrato_pend === 'sin_archivo' ? 'Subir firmado' : 'Poner el vencimiento') + '</button>' : '';
@@ -520,44 +527,6 @@
 
   // ---------- Lote 12/11 (maqueta revision, B): una sola aprobación: los 6 puntos (propuestos por la IA) y "Aprobar expediente" ----------
   const hojaN = (hid, tid, clase) => { let h = $(hid); if(!h){ h = document.createElement('section'); h.id = hid; h.className = 'hoja ' + (clase || 'lado') + ' hoja-simple'; h.setAttribute('role', 'dialog'); h.setAttribute('aria-modal', 'true'); h.setAttribute('aria-labelledby', tid); h.setAttribute('aria-hidden', 'true'); document.body.appendChild(h); C.prepararHojas(); } return h; };
-  let aprobSel = {};
-  function propIA(pid){
-    const k = rev && rev.ia && rev.ia.estado === 'lista' ? rev.ia : null; if(!k) return null; const q = PUNTOS_REV.find((x) => x[0] === pid) || [];
-    const p = (k.puntos || []).find((x) => x.id === q[2]); if(!p) return null;
-    return p.estado === 'ok' || p.excepcion ? 'bien' : p.estado === 'bloquea' ? 'pedir' : 'revisar';
-  }
-  function abrirAprobExp(){
-    const pts = (rev && rev.puntos) || {}; aprobSel = {};
-    PUNTOS_REV.forEach((q) => { aprobSel[q[0]] = (pts[q[0]] || {}).decision || propIA(q[0]) || 'bien'; });
-    pintarAprobExp(); abrirHoja('hojaAprobExp');
-  }
-  function pintarAprobExp(){
-    const h = hojaN('hojaAprobExp', 'tAprob'); const ms = marcas(); const ap = ms.filter((m) => m.accion !== 'devolver').length; const dv = ms.length - ap;
-    const ia = rev && rev.ia && rev.ia.estado === 'lista' && rev.ia.terminada_en ? fecha(rev.ia.terminada_en, true) : '';
-    const pide = PUNTOS_REV.some((q) => aprobSel[q[0]] === 'pedir');
-    h.innerHTML = cabHoja('tAprob', 'Aprobar expediente', F.cliente.nombre) + '<div class="hoja-cuerpo">' +
-      '<div class="ae-res"><span class="chip verde">' + esc(plural(ap, 'aprobado', 'aprobados')) + '</span><span class="chip' + (dv ? ' rojo' : '') + '">' + esc(plural(dv, 'devuelto', 'devueltos')) + '</span>' + (ia ? '<span class="chip azul">La IA revisó el ' + esc(ia) + '</span>' : '') + '</div>' +
-      '<p class="nota">Confirma cada punto. Ya vienen marcados como los propuso la IA; cambia solo lo que no estés de acuerdo.</p>' +
-      PUNTOS_REV.map((q) => { const v = aprobSel[q[0]]; const pr = propIA(q[0]);
-        return '<div class="ae-pto"><span class="tx"><b>' + esc(q[1]) + '</b>' + (pr ? '<small>La IA propone: ' + esc(pr) + '</small>' : '<small>Sin propuesta de la IA</small>') + '</span><span class="ae-op" role="radiogroup" aria-label="' + esc(q[1]) + '">' +
-          [['bien', 'Bien'], ['pedir', 'Pedir'], ['revisar', 'Revisar']].map((o) => '<button type="button" role="radio" aria-checked="' + (v === o[0]) + '" class="' + (v === o[0] ? 'on ' + o[0] : '') + '" data-ae="' + q[0] + ':' + o[0] + '">' + o[1] + '</button>').join('') + '</span></div>'; }).join('') +
-      '<label class="rotulo arriba" for="aeMsj">Mensaje para ' + esc(liderCorto()) + ' (opcional)</label><textarea class="area corta" id="aeMsj" maxlength="600" placeholder="Ej.: listo, pasa a contrato"></textarea>' +
-      '<div class="error" id="eAe" role="alert"></div>' +
-      '<div class="acciones"><button type="button" class="btn btn-2" data-cierra="1">Cerrar sin aprobar</button><button type="button" class="btn" id="aeOk">' + (pide ? 'Pedir y avisar al líder' : 'Aprobar expediente') + '</button></div></div>';
-  }
-  async function guardarAprobExp(b){
-    const er = $('eAe'); er.textContent = ''; b.disabled = true; const msj = ($('aeMsj') || {}).value || '';
-    try {
-      const pts = (rev && rev.puntos) || {};
-      for(const q of PUNTOS_REV){ const v = aprobSel[q[0]]; if((pts[q[0]] || {}).decision === v) continue;
-        const iaP = rev && rev.ia && rev.ia.estado === 'lista' ? (rev.ia.puntos || []).find((x) => x.id === q[2]) : null;
-        await rpc('revision_punto', { p_cliente: id, p_punto: q[0], p_decision: v, p_documento: v === 'pedir' ? ((iaP && tipoDeFalta(iaP.falta)) || q[3] || 'junta') : null, p_nota: null }); }
-      await rpc('revision_puntos_aplicar', { p_cliente: id });
-      if(marcas().length) await rpc('revision_cerrar', { p_cliente: id, p_mensaje: msj.trim() || null, p_enviado: false });
-      cerrarHoja(); toast(PUNTOS_REV.some((q) => aprobSel[q[0]] === 'pedir') ? 'Pedido. ' + capital(liderCorto()) + ' ya tiene el mensaje para el cliente' : 'Expediente aprobado. Queda en la bitácora y el hilo');
-      C.cache.borrarTodo(); await cargar();
-    } catch (e) { er.textContent = e.message || 'No se pudo. Intenta de nuevo'; b.disabled = false; }
-  }
 
   // ---------- Lote 12/11 (maqueta revision, C): "Hay un problema" de Legal: el contrato se detiene ----------
   let pb = null;
@@ -773,33 +742,7 @@
       (puede && p.excepcionable && p.estado === 'bloquea' ? '<button type="button" class="enlace" data-exc-ia="' + esc(p.id) + '">Conceder excepción</button>' : '') +
       (puede && p.excepcion ? '<button type="button" class="enlace" data-quitar-exc="' + esc(p.id) + '">Quitar excepción</button>' : '') + '</span></div>';
   }
-  function bloqueIA(){
-    if(!F.puedo.revisar || !rev || rev.error) return '';
-    if(F.cliente.legal_ok_en && !sinMarcar().length && !iaActiva() && !(rev.ia && rev.ia.estado === 'lista')) return '';   // Lote 12/11: con Legal dado y nada por revisar, la IA no estorba
-    const k = rev.ia; const puede = !!rev.puede_ia;
-    const boton = (txt) => (puede && rev.archivos && !iaActiva() ? '<button type="button" class="mini' + (k && k.estado === 'lista' ? '' : ' pri') + '" id="mandarIA">' + txt + '</button>' : '');
-    if(!k || k.estado === 'cerrada'){
-      if(!puede) return '';
-      return '<div class="ia-bloque"><div class="ia-cab"><span class="tx"><b>Revisión con IA</b><small>' + (rev.archivos ? plural(rev.archivos, 'archivo', 'archivos') + (rev.nuevos ? ', ' + plural(rev.nuevos, 'sin leer', 'sin leer') : ', todos ya leídos') : 'Todavía no hay documentos') +
-        (k ? '. La última se usó al cerrar la revisión del ' + esc(fecha(k.terminada_en)) : '') + '.</small></span>' + boton('Mandar a revisión con IA') + '</div></div>';
-    }
-    if(iaActiva()){
-      return '<div class="ia-bloque" id="iaLeyendo" aria-busy="true"><div class="ia-cab"><span class="tx"><b>' + (k.nuevos ? 'La IA está leyendo' : 'La IA está actualizando el resultado') + '</b><small>' +
-        (k.nuevos ? esc(k.avance + ' de ' + k.total) + ' archivos. Puedes seguir trabajando: el resultado sale aquí y las propuestas quedan marcadas.' : 'Con los datos de ahora y lo que ya leyó: no cuesta. Tarda unos segundos.') + '</small><span class="carga-barra" aria-hidden="true"><i></i></span></span>' +
-        (k.trabada && puede ? '<button type="button" class="mini" id="reanudarIA">Reanudar</button>' : '') + '</div></div>';
-    }
-    if(k.estado === 'error'){
-      return '<div class="ia-bloque"><div class="estado rojo chico" role="alert"><small>La IA no pudo terminar: ' + esc(k.error || 'error desconocido') + '</small>' + (puede ? '<button type="button" class="mini" id="reanudarIA">Reintentar</button>' : '') + '</div></div>';
-    }
-    const v = VEREDICTO[k.veredicto] || ['', 'Sin veredicto'];
-    const orden = { bloquea: 0, mano: 1, aviso: 2 };
-    const malos = (k.puntos || []).filter((p) => p.estado !== 'ok' || p.excepcion).sort((a, b) => (orden[a.estado] === undefined ? 3 : orden[a.estado]) - (orden[b.estado] === undefined ? 3 : orden[b.estado]));
-    const buenos = (k.puntos || []).filter((p) => p.estado === 'ok' && !p.excepcion);
-    return '<div class="ia-bloque" id="iaResultado"><div class="ia-cab"><span class="tx"><b>Revisión con IA <span class="chip ' + v[0] + '">' + v[1] + '</span></b><small>' + esc(dia(k.terminada_en) + ' ' + hora(k.terminada_en)) + ' · ' + plural(k.total, 'archivo', 'archivos') + ' · ' + esc('US$ ' + Number(k.costo_usd || 0).toFixed(2)) +
-      '. Lo que propone ya está marcado en cada documento: cámbialo si no estás de acuerdo y cierra la revisión.</small></span>' + boton('Revisar de nuevo') + '</div>' + avisoViejo(k, puede) +
-      (malos.length ? '<div class="ia-ps">' + malos.map((p) => puntoIA(p, puede)).join('') + '</div>' : '') +
-      (buenos.length ? '<details class="ia-ok"><summary>' + plural(buenos.length, 'punto del expediente cumple', 'puntos del expediente cumplen') + '</summary><div class="ia-ps">' + buenos.map((p) => puntoIA(p, puede)).join('') + '</div></details>' : '') + '</div>';
-  }
+
   // Mientras la IA lee, se pregunta cada 5 segundos; al terminar se refresca el expediente
   function vigilar(){
     clearTimeout(sondeo); sondeo = null;
@@ -889,14 +832,10 @@
     toast(quitar ? 'Excepción quitada. La IA vuelve a decidir' : 'Excepción anotada. La IA vuelve a decidir');
     pintarTodo(); vigilar();
   }
-  // Barra de la revisión en curso: lo marcado y el botón para cerrarla
-  function barraRevision(){
-    if(!F.puedo.revisar || !rev) return '';
-    if(rev.error) return '<div class="estado ambar chico" role="alert"><small>No se pudo leer la revisión en curso: ' + esc(rev.error) + '</small><button type="button" class="mini" id="revReintentar">Reintentar</button></div>';
-    if(!marcas().length) return '';
-    const quedan = sinMarcar().length;
-    return '<div class="estado azul chico" id="barraRev"><small>Revisión en curso: ' + esc(resumenMarcas()) + (quedan ? '. ' + (quedan === 1 ? 'Queda 1' : 'Quedan ' + quedan) + ' por revisar' : '') + '. ' + esc(capital(liderCorto())) + ' no se entera hasta cerrarla.</small>' +
-      (rev.puede_cerrar ? '<button type="button" class="mini pri" id="abrirCerrarRev">Cerrar revisión</button>' : '') + '</div>';
+  // Si falla leer la revisión en curso, la ficha abre igual y ofrece Reintentar
+  function errorRevision(){
+    if(!F.puedo.revisar || !rev || !rev.error) return '';
+    return '<div class="estado ambar chico" role="alert"><small>No se pudo leer la revisión en curso: ' + esc(rev.error) + '</small><button type="button" class="mini" id="revReintentar">Reintentar</button></div>';
   }
   function historialRevisiones(){
     const hs = (rev && rev.historial) || []; if(!F.puedo.revisar || !hs.length) return '';
@@ -913,67 +852,6 @@
   const reqTexto = (k) => { const x = REQ_TIPOS.find((t) => t[0] === k); return x && k !== 'otro' ? x[1] : String(k || ''); };
   const reqs = () => (F.faltantes || []).filter((x) => x.req);
   const reqDe = (cas, num) => reqs().find((x) => x.k === cas && Number(x.n) === Number(num)) || null;
-  // Puntos del panel en el orden de la oficina: [id, título, punto de la IA, documento que se pide por defecto]
-  const PUNTOS_REV = [['razon_social', 'Razón social', 'razon_social', 'razon'], ['domicilio', 'Domicilio fiscal', 'domicilio', 'domicilio'], ['vigencia', 'Vigencia de la empresa', 'duracion', 'prorroga'],
-    ['junta', 'Junta directiva', 'junta', 'junta'], ['firmantes', 'Firmantes', 'firmantes', 'nombra'], ['contacto', 'Contacto', 'contacto', 'otro']];
-  const tipoDeFalta = (t) => { const n = normalizeStr(t || ''); return /junta/.test(n) ? 'junta' : /razon social|nombre/.test(n) ? 'razon' : /domicilio/.test(n) ? 'domicilio' : /prorroga|duracion/.test(n) ? 'prorroga' : /representante/.test(n) ? 'nombra' : null; };
-  // C1: panel "Revisión del expediente". La IA solo propone (borde punteado, "Propuesta, falta confirmar"); nunca sale como Bien ya marcado.
-  // Lote 10/11 C1: fuera de una revisión el panel es una sola línea "Revisión: N de M marcados · Abrir"; se abre al revisar
-  let rpAbierto = /[?&]revisar=1/.test(location.search); const rpCambiar = {};
-  function panelRevision(){
-    if(!F.puedo.revisar || !rev || rev.error || F.cliente.es_natural) return '';
-    const ptsL = rev.puntos || {}; const marcados = PUNTOS_REV.filter((q) => ptsL[q[0]]).length;
-    if(!rpAbierto){
-      const nrL = sinMarcar().length; const c0 = F.cliente;
-      if(!marcas().length && !nrL && c0.legal_ok_en) return '<div class="rp-linea ok"><span class="pt" aria-hidden="true"></span><b>Legal aprobado el ' + esc(fecha(c0.legal_ok_en, true)) + '</b><small>' + esc(marcados + ' de ' + PUNTOS_REV.length + ' puntos marcados') + '</small><button type="button" class="btn btn-chico btn-2" data-rp-abrir="1">Ver revisión</button></div>';
-      if(marcas().length && !nrL && !marcas().some((m) => m.accion === 'devolver')) return '<div class="rp-linea am"><span class="pt" aria-hidden="true"></span><b>Documentos revisados</b><small>Falta aprobar el expediente</small><button type="button" class="btn btn-chico" data-aprob-exp="1">Aprobar expediente</button></div>';
-      if(nrL) return '<div class="rp-linea"><span class="pt" aria-hidden="true"></span><b>' + esc(plural(nrL, 'documento por revisar', 'documentos por revisar')) + '</b><small>' + esc(marcas().length ? plural(marcas().length, 'ya marcado', 'ya marcados') : 'Ábrelos uno por uno') + '</small><button type="button" class="enlace" data-rp-abrir="1">Ver los 6 puntos</button><button type="button" class="btn btn-chico" data-rp-revisar="1">Revisar</button></div>';
-    }
-    if(!rpAbierto && !marcas().length){
-      const faltan = PUNTOS_REV.filter((q) => !ptsL[q[0]]).map((q) => q[1].toLowerCase());
-      const txt = faltan.length ? 'Falta ' + (faltan.length > 2 ? faltan[0] + ' y ' + (faltan.length - 1) + ' más' : faltan.join(' y ')) : 'Todo marcado';
-      return '<div class="rp-linea' + (faltan.length ? '' : ' ok') + '"><span class="pt" aria-hidden="true"></span><b>Revisión: ' + marcados + ' de ' + PUNTOS_REV.length + ' marcados</b><small>' + esc(txt) + '</small><button type="button" class="btn btn-chico btn-2" data-rp-abrir="1">Abrir</button></div>';
-    }
-    const k = rev.ia && rev.ia.estado === 'lista' ? rev.ia : null;
-    const noLeyo = !!(rev.ia && rev.ia.estado === 'error') || !!(k && (k.puntos || []).some((p) => p.id === 'actas' && p.estado === 'mano'));
-    const pts = rev.puntos || {}; let pend = 0, ped = 0, man = 0;
-    const filas = PUNTOS_REV.map(([pid, t, iaId]) => {
-      const s = pts[pid] || null; const p = k && !noLeyo ? (k.puntos || []).find((x) => x.id === iaId || (iaId === 'junta' && x.id === 'junta')) : null;
-      const prop = p ? (p.estado === 'ok' || p.excepcion ? 'bien' : p.estado === 'bloquea' ? 'pedir' : 'revisar') : null;
-      if(!s) pend++; else if(s.decision === 'pedir') ped++; else if(s.decision === 'revisar') man++;
-      const chip = s ? (s.decision === 'bien' ? ['verde', 'Bien'] : s.decision === 'pedir' ? ['rojo', 'Por pedir'] : ['ambar', 'Revisar a mano']) : prop ? ['azul', 'Propuesta, falta confirmar'] : ['gris', 'Sin marcar'];
-      const cls = (d) => 'rp-op' + (s && s.decision === d ? ' on' : (!s && prop === d ? ' prop' : ''));
-      const extra = s && s.decision === 'pedir' ? 'Se pedirá: ' + reqTexto(s.documento) + (s.nota ? '. ' + s.nota : '') : !s && prop === 'pedir' && p.falta ? 'Propuesta de la IA: pedir ' + p.falta : '';
-      // Marcado: solo su chip (tocarlo deja cambiarlo); sin marcar: los tres botones en una fila
-      const ops = s && !rpCambiar[pid] ? '<button type="button" class="chip ' + chip[0] + ' rp-chip" data-rp-cambiar="' + pid + '" aria-label="' + esc(t + ': ' + chip[1] + '. Cambiar') + '">' + chip[1] + '</button>' : '<div class="rp-ops" role="group" aria-label="' + esc(t) + '"><button type="button" class="' + cls('bien') + '" data-pt="' + pid + ':bien" aria-pressed="' + !!(s && s.decision === 'bien') + '">Bien</button><button type="button" class="' + cls('pedir') + '" data-pt="' + pid + ':pedir" aria-pressed="' + !!(s && s.decision === 'pedir') + '">Pedir</button><button type="button" class="' + cls('revisar') + '" data-pt="' + pid + ':revisar" aria-pressed="' + !!(s && s.decision === 'revisar') + '">Revisar</button></div>';
-      return '<div class="rp-f" data-rp="' + pid + '"><div class="rp-tx"><b>' + esc(t) + '</b><small>' + esc(p ? p.detalle : 'Mira el documento y marca') + '</small>' + (!s && prop ? '<small class="rp-pr">Propuesta de la IA: ' + esc(prop === 'bien' ? 'Bien' : prop === 'pedir' ? 'Pedir' : 'Revisar') + ', falta confirmar</small>' : '') + (extra ? '<small class="rp-x">' + esc(extra) + '</small>' : '') + '</div>' + ops + '</div>';
-    }).join('');
-    const hay = Object.keys(pts).length;
-    return '<section class="rp" aria-labelledby="rpT"><div class="rp-cab"><b id="rpT">Revisión del expediente</b>' + (!marcas().length ? '<button type="button" class="enlace rp-plegar" data-rp-plegar="1">Plegar</button>' : '') + '<small>' + esc(noLeyo ? 'La IA no pudo leer los documentos. Revisa tú y marca cada punto.' : k ? 'La IA leyó los documentos. Sus propuestas salen con borde punteado: confirma con un toque o cambia.' : 'Sin lectura de la IA. Revisas tú y marcas cada punto; funciona igual.') + '</small></div>' + filas +
-      '<div class="rp-pie"><span>' + esc(pend ? (pend === 1 ? 'Falta 1 punto por confirmar' : 'Faltan ' + pend + ' puntos por confirmar') : plural(ped, 'por pedir', 'por pedir') + ' · ' + plural(man, 'a mano', 'a mano')) + '</span>' +
-      '<button type="button" class="btn btn-chico" data-pt-cerrar' + (hay ? '' : ' disabled') + '>Cerrar revisión</button></div></section>';
-  }
-  async function marcarPunto(b){
-    const [pid, dec] = b.dataset.pt.split(':'); const actual = ((rev && rev.puntos) || {})[pid];
-    if(dec === 'pedir' && !(actual && actual.decision === 'pedir')){
-      const iaP = rev.ia && rev.ia.estado === 'lista' ? (rev.ia.puntos || []).find((x) => x.id === (PUNTOS_REV.find((q) => q[0] === pid) || [])[2]) : null;
-      abrirPedir({ punto: pid, tipo: (iaP && tipoDeFalta(iaP.falta)) || (PUNTOS_REV.find((q) => q[0] === pid) || [])[3] || 'junta', texto: pid === 'contacto' ? 'Correo del representante' : '' });
-      return;
-    }
-    const nueva = actual && actual.decision === dec ? null : dec;   // tocar lo mismo otra vez lo desmarca
-    b.disabled = true;
-    try { await rpc('revision_punto', { p_cliente: id, p_punto: pid, p_decision: nueva }); delete rpCambiar[pid]; rev.puntos = Object.assign({}, rev.puntos); if(nueva) rev.puntos[pid] = { decision: nueva }; else delete rev.puntos[pid]; pintarDocumentos(); }
-    catch (e) { toast(e.message, 'error'); b.disabled = false; }
-  }
-  async function cerrarPuntos(b){
-    b.disabled = true;
-    try {
-      const r = await rpc('revision_puntos_aplicar', { p_cliente: id });
-      toast(r.pedidos ? plural(r.pedidos, 'documento pedido', 'documentos pedidos') + '. ' + capital(liderCorto()) + ' ya tiene el mensaje para el cliente' : 'Revisión del expediente cerrada');
-      await cargar();
-      if(marcas().length && rev && rev.puede_cerrar) abrirCerrar();   // los documentos marcados se aprueban o devuelven en el mismo cierre
-    } catch (e) { toast(e.message, 'error'); b.disabled = false; }
-  }
   // C2: Pedir un documento que no está (requerimiento). Desde el panel queda como punto; desde un documento se crea al momento.
   let pedirO = null;
   function abrirPedir(o){ pedirO = Object.assign({ tipo: 'junta', texto: '', nota: '' }, o); pintarPedir(); abrirHoja('hojaCampo'); }
@@ -985,7 +863,7 @@
       (o.tipo === 'otro' ? '<label class="rotulo arriba" for="reqTexto">Cuál documento</label><input class="campo" id="reqTexto" maxlength="120" autocomplete="off" value="' + esc(o.texto) + '">' : '') +
       (o.origenT ? '<p class="nota">Origen: ' + esc(o.origenT) + ' (se guarda en la bitácora)</p>' : '') +
       '<label class="rotulo arriba" for="reqNota">Nota para ' + esc(liderCorto()) + ' (opcional)</label><textarea class="area corta" id="reqNota" maxlength="300">' + esc(o.nota) + '</textarea><div class="error" id="eReq" role="alert"></div>' +
-      '<div class="acciones"><button type="button" class="btn btn-ancho" id="reqGuardar">' + (o.punto ? 'Marcar para pedir' : 'Pedir documento') + '</button></div>';
+      '<div class="acciones"><button type="button" class="btn btn-ancho" id="reqGuardar">' + 'Pedir documento' + '</button></div>';
   }
   function leerPedir(){ if(!pedirO) return; const t = $('reqTexto'); const n = $('reqNota'); if(t) pedirO.texto = t.value; if(n) pedirO.nota = n.value; }
   async function guardarPedir(b){
@@ -993,8 +871,6 @@
     if(o.tipo === 'otro' && String(o.texto).trim().length < 3){ $('eReq').textContent = 'Escribe qué documento falta'; if($('reqTexto')) $('reqTexto').focus(); return; }
     b.disabled = true;
     try {
-      if(o.punto){ await rpc('revision_punto', { p_cliente: id, p_punto: o.punto, p_decision: 'pedir', p_documento: o.tipo === 'otro' ? String(o.texto).trim() : o.tipo, p_nota: String(o.nota).trim() || null });
-        rev.puntos = Object.assign({}, rev.puntos, { [o.punto]: { decision: 'pedir', documento: o.tipo === 'otro' ? String(o.texto).trim() : o.tipo, nota: String(o.nota).trim() } }); cerrarHoja(); pintarDocumentos(); toast('Marcado para pedir al cerrar la revisión'); return; }
       await rpc('requerimiento_crear', { p_cliente: id, p_tipo: o.tipo, p_texto: o.tipo === 'otro' ? String(o.texto).trim() : null, p_motivo: String(o.nota).trim() || null, p_origen: o.origen || null });
       cerrarHoja(); toast('Pedido. ' + capital(liderCorto()) + ' lo ve en rojo con el mensaje para el cliente'); await cargar();
     } catch (e) { $('eReq').textContent = e.message; b.disabled = false; }
@@ -1712,12 +1588,14 @@
   }
 
   // ---------- Ver y revisar un documento ----------
-  function abrirRevision(){ rpAbierto = true; const cola = sinMarcar().map((d) => d.id); if(!cola.length) return; irTab('documentos'); soltarBlobs(); ver = { docId: cola[0], cola, paso: 'ver', motivo: null, archivo: 0, url: {} }; pintarVer(); abrirHoja('hojaVer'); cargarArchivo(); }
-  function abrirVer(docId){ soltarBlobs(); ver = { docId, cola: null, paso: 'ver', motivo: null, archivo: 0, url: {} }; pintarVer(); abrirHoja('hojaVer'); cargarArchivo(); const d = docVer(); if(d) cargarActa(d); }
+  // Lote 12/11 B, parte 6: Revisar abre la pantalla nueva (una sola) parada en el primer documento sin decidir
+  function abrirRevision(docId){ irTab('documentos'); abrirRv(docId || null); }
+  function abrirVer(docId){ if(F.puedo.revisar || esLegal()){ abrirRv(docId); return; } soltarBlobs(); ver = { docId, cola: null, paso: 'ver', motivo: null, archivo: 0, url: {} }; pintarVer(); abrirHoja('hojaVer'); cargarArchivo(); const d = docVer(); if(d) cargarActa(d); }
   // Motivos de devolución: "Sin los datos del Registro" se guarda como otro motivo con esa nota (la base solo tiene los 5 de siempre)
-  const MOTIVOS_DEV = Object.assign({}, C.MOTIVOS, { no_corresponde: 'No es de esta empresa', sin_registro: 'Sin los datos del Registro' });
+  const MOTIVOS_DEV = Object.assign({}, C.MOTIVOS, { no_corresponde: 'No es de esta empresa', sin_registro: 'Sin los datos del Registro', falta_acta: 'Falta un acta' });
   function docVer(){ return (F.documentos || []).find((d) => d.id === ver.docId); }
   function pintarVer(){
+    if(ver && ver.rv) return pintarRv();
     const d = docVer(); const h = $('hojaVer');
     if(!d){ cerrarHoja(); return; }
     const titulo = d.titulo || casilla(d.casilla, d.numero);
@@ -1771,6 +1649,229 @@
       '<section style="margin-top:14px">' + info + '</section></div></div>' + pie;
     if(ver.url[ver.archivo] !== undefined) mostrarArchivo();
   }
+
+  // ---------- Lote 12/11 B, parte 6 (maqueta revision-nueva): la revisión en una sola pantalla ----------
+  // Lista a la izquierda (por representante y empresa), el documento grande a la derecha con Devolver y Bien arriba,
+  // nada se envía al marcar; un solo cierre al final (Aprobar expediente o Terminar y avisar). La abogada usa la misma pantalla para leer.
+  let rvPre = {};   // archivos que se bajan por adelantado (el siguiente de la lista)
+  const MOT_CONT = { no_es: 'El número no es del representante', no_contesta: 'No contesta', rebota: 'El correo rebota', no_suyo: 'El correo no es de él', otro: 'Otro' };
+  const MOT_LEG = { vencido: 'Está vencido', ilegible: 'Ilegible', no_corresponde: 'Datos no coinciden', falta_acta: 'Falta un acta', otro: 'Otro' };
+  function abrirRv(docId){
+    if(!F) return;
+    soltarBlobs(); rvPre = {};
+    const ant = ver && ver.rv ? ver : null;
+    ver = { rv: true, leg: esLegal() && !F.puedo.revisar, docId: docId || null, sel: docId ? 'd:' + docId : null, paso: 'ver', motivo: null, archivo: 0, url: {},
+      cont: ant ? ant.cont : {}, prob: ant ? ant.prob : {} };
+    if(!ver.sel){ const l = rvItems(); const p = l.find((x) => rvDecidible(x) && !marcaDe(x.d.id)) || l.find((x) => x.d) || l[0]; if(p){ ver.sel = p.k; ver.docId = p.d ? p.d.id : null; } }
+    rvPagina(); pintarRv(); abrirHoja('hojaVer'); if(ver.docId) cargarArchivo();
+    rvVelo('hojaVer');
+  }
+  // El velo difuminado va justo debajo de la hoja de arriba, así la ficha también queda difuminada detrás
+  function rvVelo(hid){
+    let v = $('rvVelo'); if(!v){ v = document.createElement('div'); v.id = 'rvVelo'; v.className = 'rv-velo'; document.body.appendChild(v); }
+    const z = Number(($(hid) || {}).style ? $(hid).style.zIndex : 0) || 70; v.style.zIndex = String(z - 1); v.classList.add('ver');
+  }
+  // Todas las filas de la lista, en el orden de la ficha
+  function rvItems(){
+    const out = []; const c = F.cliente; const nat = !!c.es_natural;
+    const reps = (F.representantes || []).filter((r) => !r.marca || r.marca === 'cuenta').map((r) => r.orden);
+    const nR = Math.max(1, ...reps, ...(F.documentos || []).filter((d) => d.casilla === 'cedula' || d.casilla === 'rif_personal').map((d) => d.numero));
+    for(let n = 1; n <= nR; n++){
+      const r = (F.representantes || []).find((x) => x.orden === n) || {};
+      if(n > 1 && !docDe('cedula', n) && !docDe('rif_personal', n) && !r.telefono && !r.correo) continue;
+      const g = nat ? 'Titular' : 'Representante ' + n;
+      out.push({ k: 'd:' + ((docDe('cedula', n) || {}).id || 'cedula:' + n), d: docDe('cedula', n), t: 'Cédula', g, rep: n, cas: 'cedula', num: n });
+      out.push({ k: 'd:' + ((docDe('rif_personal', n) || {}).id || 'rif_personal:' + n), d: docDe('rif_personal', n), t: nat ? 'RIF' : 'RIF personal', g, rep: n, cas: 'rif_personal', num: n });
+      if(!c.presencial || r.telefono || r.correo) out.push({ k: 'c:' + n, cont: n, t: 'Teléfono y correo', g, rep: n });
+    }
+    if(!nat){
+      out.push({ k: 'd:' + ((docDe('rif_empresa', 0) || {}).id || 'rif_empresa:0'), d: docDe('rif_empresa', 0), t: 'RIF de la empresa', g: 'Empresa', cas: 'rif_empresa', num: 0 });
+      out.push({ k: 'd:' + ((docDe('acta_constitutiva', 0) || {}).id || 'acta_constitutiva:0'), d: docDe('acta_constitutiva', 0), t: 'Acta constitutiva', g: 'Empresa', cas: 'acta_constitutiva', num: 0 });
+      (F.documentos || []).filter((d) => d.casilla === 'acta_asamblea').sort((a, b) => a.numero - b.numero).forEach((d) => out.push({ k: 'd:' + d.id, d, t: 'Acta de asamblea ' + d.numero, g: 'Empresa', cas: 'acta_asamblea', num: d.numero }));
+      if(c.correo_empresa || (F.faltantes || []).some((x) => x.k === 'correo_empresa')) out.push({ k: 'e:correo', corrEmp: true, t: 'Correo de la empresa', g: 'Empresa' });
+    }
+    (F.documentos || []).filter((d) => ['conatel', 'otro'].indexOf(d.casilla) >= 0 && d.numero < 60).forEach((d) => out.push({ k: 'd:' + d.id, d, t: d.titulo || casilla(d.casilla, d.numero), g: 'Otros documentos', cas: d.casilla, num: d.numero }));
+    return out;
+  }
+  // Estado de una fila: b bien, d devolver, a la IA vio algo, n sin decidir, y ya aprobado antes
+  function rvEstado(it){
+    if(it.cont){ const x = ver.cont[it.cont]; const r = (F.representantes || []).find((z) => z.orden === it.cont) || {};
+      const sub = [r.telefono, r.correo].filter(Boolean).join(' · ') || 'Sin teléfono ni correo';
+      return x ? (x.acc === 'bien' ? ['b', sub] : ['d', 'Se devuelve: ' + (MOT_CONT[x.motivo] || 'otro').toLowerCase()]) : ['n', sub]; }
+    if(it.corrEmp) return ['y', F.cliente.correo_empresa || 'Falta'];
+    const d = it.d; if(!d) return ['n', 'Falta', true];
+    if(ver.leg){ const pb = ver.prob[d.id]; return pb ? ['d', 'Tiene un problema'] : ['b', d.revisado_por ? 'Aprobado por ' + primerNombre(d.revisado_por) : 'Aprobado']; }
+    const mk = marcaDe(d.id); const ia = iaDe(d.id);
+    if(mk) return mk.accion === 'aprobar' ? ['b', ia && ia.propuesta === 'aprobar' && ia.nota ? 'Cuadra · ' + ia.nota : 'Bien'] : ['d', 'Se devuelve: ' + ((C.MOTIVOS[mk.motivo] || 'devuelto') + (mk.nota && mk.motivo === 'otro' ? ': ' + mk.nota : '')).toLowerCase()];
+    if(d.estado === 'aprobado') return ['y', 'Aprobado antes'];
+    if(d.estado === 'devuelto') return ['y', 'Devuelto: espera el archivo nuevo'];
+    if(iaActiva() && !ia) return ['n', 'Leyendo…'];
+    if(ia && ia.propuesta !== 'aprobar') return ['a', 'La IA: ' + (ia.nota || 'revísalo')];
+    if(ia) return ['n', 'La IA: cuadra' + (ia.nota ? ' · ' + ia.nota : '')];
+    return ['n', rev && rev.ia ? 'Sin decidir' : 'Sin leer'];
+  }
+  const rvDecidible = (it) => !!(it.d && it.d.estado === 'por_revisar' && !ver.leg);
+  function rvSiguiente(desde){
+    const l = rvItems(); const i = l.findIndex((x) => x.d && x.d.id === desde);
+    const sig = l.slice(i + 1).concat(l.slice(0, Math.max(0, i))).find((x) => rvDecidible(x) && !marcaDe(x.d.id));
+    return sig ? sig.k : null;
+  }
+  function rvPagina(){ ver.pagina = null; const d = docVer(); if(!d) return; const m = marcaDe(d.id); const ia = iaDe(d.id); ver.pagina = (m && m.pagina) || (ia && ia.pagina) || null; }
+  function rvIr(k){
+    const it = rvItems().find((x) => x.k === k); if(!it) return;
+    ver.sel = k; ver.paso = 'ver'; ver.motivo = null; ver.nota = ''; ver.archivo = 0; ver.url = {}; ver.mini = {}; ver.fallo = {}; ver.docId = it.d ? it.d.id : null; ver.zoom = false;
+    rvPagina(); pintarRv(); if(ver.docId) cargarArchivo();
+    const l = document.querySelector('#hojaVer .rv-l'); const s0 = document.querySelector('#hojaVer .rv-d.sel'); if(l && s0 && (s0.offsetTop < l.scrollTop || s0.offsetTop > l.scrollTop + l.clientHeight - 60)) l.scrollTop = Math.max(0, s0.offsetTop - 160);
+  }
+  // Mientras se mira uno, se baja el siguiente para que al tocar Bien ya esté listo
+  function rvAdelantar(){
+    const l = rvItems(); const i = l.findIndex((x) => x.k === ver.sel); const sig = l.slice(i + 1).find((x) => x.d && (x.d.archivos || []).length);
+    const a = sig && sig.d.archivos[0]; if(!a || !a.id || rvPre[a.id] || !(a.url_externa || a.drive_id)) return;
+    rvPre[a.id] = bajarDeDrive(a).catch(() => '');
+  }
+  function rvFranja(){
+    if(ver.leg) return '<div class="rv-ia ok"><span class="tx"><b>Expediente aprobado' + (rvAdmin() ? ' por ' + esc(rvAdmin()) : '') + '</b>Míralos y empieza el contrato. Si algo te impide hacerlo, márcalo en ese documento.</span></div>';
+    const k = rev && rev.ia; const puede = !!(rev && rev.puede_ia);
+    if(iaActiva()) return '<div class="rv-ia lee"><span class="tx"><b>La IA está leyendo<span class="rv-pts" aria-hidden="true"><i></i><i></i><i></i></span></b>' + esc(Math.floor(k.avance || 0) + ' de ' + (k.total || 0) + ' documentos. Puedes empezar a mirar; lo que encuentre aparece aquí.') + '</span><span class="rv-bar"><i style="transform:scaleX(' + (k.total ? Math.min(1, k.avance / k.total) : 0).toFixed(3) + ')"></i></span></div>';
+    if(k && k.estado === 'lista'){
+      const malos = (k.puntos || []).filter((p) => (p.estado === 'bloquea' || p.estado === 'mano') && !p.excepcion);
+      // Todo lo que vio la IA (avisos, excepciones con Quitar, cada punto con Aprobar igual), plegado bajo la franja
+      const vistos = (k.puntos || []).filter((p) => p.estado !== 'ok' || p.excepcion);
+      const det = vistos.length > (malos.length === 1 ? 1 : 0) ? '<details class="rv-ia-det"><summary>Ver todo lo que vio la IA (' + vistos.length + ')</summary><div class="ia-ps">' + vistos.map((p) => puntoIA(p, puede)).join('') + '</div></details>' : '';
+      if(!malos.length) return '<div class="rv-ia ok"><span class="tx"><b>La IA revisó todo y cuadra</b>Documentos vigentes, junta, firmantes y domicilio sin observaciones.</span></div>' + det + avisoViejo(k, puede);
+      const p0 = malos[0]; const pg = /p[aá]gina (\d+)/i.exec(String(p0.pagina || ''));
+      return '<div class="rv-ia mal"><span class="tx"><b>' + esc(malos.length === 1 ? 'La IA encontró 1 cosa' : 'La IA encontró ' + malos.length + ' cosas') + '</b>' + esc(p0.titulo + (p0.detalle ? ': ' + p0.detalle : '') + (p0.pagina ? ' (' + p0.pagina + ')' : '')) + (malos.length > 1 ? ' Y ' + (malos.length - 1) + ' más.' : '') + '</span>' +
+        (pg ? '<button type="button" class="mini" data-rv-pagina="' + esc(pg[1]) + '" data-rv-donde="' + esc(String(p0.pagina || '')) + '">Ver en el documento</button>' : '') +
+        (puede && p0.excepcionable && p0.estado === 'bloquea' ? '<button type="button" class="mini" data-exc-ia="' + esc(p0.id) + '">Aprobar igual (excepción)</button>' : '') + '</div>' + det + avisoViejo(k, puede);
+    }
+    if(k && k.estado === 'error') return '<div class="rv-ia mal"><span class="tx"><b>La IA no pudo terminar</b>' + esc(k.error || '') + '</span>' + (puede ? '<button type="button" class="mini" id="reanudarIA">Reintentar</button>' : '') + '</div>';
+    const n = (rev && (rev.nuevos || rev.archivos)) || 0;
+    return '<div class="rv-ia no"><span class="tx"><b>Estás revisando tú</b>La IA no ha leído estos documentos.' + (puede && n ? ' Si quieres su ayuda, pásaselos (unos US$ ' + (n * 0.04).toFixed(2).replace('.', ',') + ').' : '') + '</span>' + (puede && n ? '<button type="button" class="hc-b s ch" id="mandarIA">Que la revise la IA</button>' : '') + '</div>';
+  }
+  function rvLista(){
+    const l = rvItems(); let g = ''; let h = '';
+    l.forEach((it) => {
+      if(it.g !== g){ g = it.g; const r = it.rep ? (F.representantes || []).find((x) => x.orden === it.rep) || {} : null;
+        const firma = it.rep && !F.cliente.es_natural && F.cliente.regimen_firma !== 'conjunta' && firmanteN() === it.rep;
+        h += '<div class="rv-gr"><span>' + esc(g) + (r && r.nombre ? '<small>' + esc(r.nombre) + '</small>' : '') + '</span>' +
+          (it.rep && !F.cliente.es_natural && !ver.leg ? (firma ? '<span class="chip azul">Firma este</span>' : F.puedo.marcar_rep && F.cliente.regimen_firma !== 'conjunta' ? '<button type="button" class="mini" data-rep-marca="' + it.rep + ':firma">Marcar que firma</button>' : '') : '') + '</div>'; }
+      const e = rvEstado(it);
+      h += '<button type="button" class="rv-d' + (ver.sel === it.k ? ' sel' : '') + '" data-rv-ir="' + esc(it.k) + '"><span class="rv-e ' + e[0] + '" aria-hidden="true">' + (e[0] === 'b' || e[0] === 'y' ? ic('check') : e[0] === 'd' || e[0] === 'a' ? '!' : '') + '</span><span class="tx"><b>' + esc(it.t) + '</b><small>' + esc(e[1]) + '</small></span></button>';
+    });
+    if(F.puedo.revisar && !ver.leg) h += '<button type="button" class="enlace rv-falta" id="rvPedir">¿Falta algo que no está? Pedir otro documento</button>';
+    return h;
+  }
+  function rvDetalle(){
+    const it = rvItems().find((x) => x.k === ver.sel) || {};
+    // Teléfono y correo: se ven como datos con Editar y se revisan igual
+    if(it.cont){
+      const r = (F.representantes || []).find((x) => x.orden === it.cont) || {}; const x = ver.cont[it.cont];
+      const dec = ver.leg ? '' : '<button type="button" class="hc-b ch rv-dev' + (x && x.acc === 'dev' ? ' on' : '') + '" data-rv-cont="dev">Devolver</button><button type="button" class="hc-b ch ' + (x && x.acc === 'bien' ? 'rv-bien' : 's') + '" data-rv-cont="bien">' + (x && x.acc === 'bien' ? 'Bien ✓' : 'Bien') + '</button>';
+      return '<div class="rv-vh"><div><h3>Teléfono y correo · ' + esc(it.g) + '</h3><small>Se usan para la firma digital del contrato</small></div><div class="der">' + dec + '</div></div>' +
+        (x && x.acc === 'dev' ? '<div class="rv-mot"><p>¿Qué problema tiene?</p><div class="ops">' + Object.keys(MOT_CONT).map((k) => '<button type="button" class="' + (x.motivo === k ? 'on' : '') + '" data-rv-cmot="' + k + '">' + esc(MOT_CONT[k]) + '</button>').join('') + '</div>' +
+          '<label class="solo-lector" for="rvContNota">Nota</label><textarea class="area corta" id="rvContNota" maxlength="300" placeholder="">' + esc(x.nota || '') + '</textarea></div>' : '') +
+        '<div class="rv-datos"><div class="rv-dato"><span class="tx"><b>Teléfono</b><small>' + esc(r.telefono || 'Sin teléfono') + '</small></span>' + (ver.leg ? '' : '<button type="button" class="mini" data-campo="rep:' + it.cont + '">Editar</button>') + '</div>' +
+        '<div class="rv-dato"><span class="tx"><b>Correo</b><small>' + esc(r.correo || 'Sin correo') + '</small></span>' + (ver.leg ? '' : '<button type="button" class="mini" data-campo="rep:' + it.cont + '">Editar</button>') + '</div></div>';
+    }
+    if(it.corrEmp) return '<div class="rv-vh"><div><h3>Correo de la empresa</h3><small>' + esc(F.cliente.correo_empresa || 'Falta') + '</small></div><div class="der">' + (ver.leg ? '' : '<button type="button" class="mini" data-campo="correo_empresa">Editar</button>') + '</div></div>';
+    const d = docVer();
+    if(!d) return '<div class="rv-vh"><div><h3>' + esc(it.t || 'Documento') + '</h3><small>Falta: no lo han subido</small></div></div><div class="rv-vacio">Este documento no está en el expediente. ' + (F.puedo.revisar ? 'Si hace falta, pídelo con "¿Falta algo que no está?".' : '') + '</div>';
+    const mk = marcaDe(d.id); const ia = iaDe(d.id); const dec = rvDecidible(it);
+    const nota = ia && ia.nota ? '<small class="' + (ia.propuesta === 'aprobar' ? 've' : 'am') + '">La IA: ' + esc(ia.nota) + (ver.pagina ? ' Abre en la página ' + esc(String(ver.pagina)) + '.' : '') + '</small>'
+      : '<small>' + esc('Subido ' + dia(d.subido_en).toLowerCase() + (d.subido_por ? ' por ' + primerNombre(d.subido_por) : '')) + '</small>';
+    let botones = '';
+    if(ver.leg) botones = '<button type="button" class="hc-b ch rv-dev' + (ver.prob[d.id] ? ' on' : '') + '" data-rv-prob="1">Tiene un problema</button>';
+    else if(dec) botones = (it.rep && !F.cliente.es_natural && F.puedo.marcar_rep && F.cliente.regimen_firma !== 'conjunta' && firmanteN() !== it.rep ? '<button type="button" class="hc-b s ch" data-rep-marca="' + it.rep + ':firma">Marcar que firma</button>' : '') +
+      '<button type="button" class="hc-b ch rv-dev' + ((mk && mk.accion === 'devolver') || ver.paso === 'devolver' ? ' on' : '') + '" id="verDevolver">Devolver</button><button type="button" class="hc-b ch ' + (mk && mk.accion === 'aprobar' ? 'rv-bien' : 's') + '" id="verAprobar">' + (mk && mk.accion === 'aprobar' ? 'Bien ✓' : 'Bien') + '</button>';
+    let mot = '';
+    if(!ver.leg && ver.paso === 'devolver'){
+      const consti = d.casilla === 'acta_constitutiva';
+      const mots = Object.keys(MOTIVOS_DEV).filter((k) => !consti || ['ilegible', 'no_corresponde', 'sin_registro', 'falta_acta'].includes(k));
+      mot = '<div class="rv-mot"><p>¿Por qué lo devuelves?</p><div class="ops" role="radiogroup" aria-label="Motivo">' + mots.map((k) => '<button type="button" role="radio" aria-checked="' + (ver.motivo === k) + '" class="' + (ver.motivo === k ? 'on' : '') + '" data-motivo="' + k + '">' + esc(MOTIVOS_DEV[k]) + '</button>').join('') + '</div>' +
+        '<label class="solo-lector" for="notaDev">Nota para ' + esc(liderCorto()) + '</label><textarea class="area corta" id="notaDev" maxlength="500">' + esc(ver.nota || '') + '</textarea><div class="error" id="eDev" role="alert"></div>' +
+        '<div class="rv-mot-acc"><button type="button" class="enlace rv-mot-ped" id="verPedir">¿Está bien pero falta otro? Pedir otro documento</button><button type="button" class="hc-b s ch" id="devVolver">Cancelar</button><button type="button" class="hc-b ch rv-dev on" id="devConfirmar"' + (ver.motivo ? '' : ' disabled') + '>Marcar para devolver</button></div></div>';
+    } else if(ver.leg && ver.prob[d.id]){
+      const pb = ver.prob[d.id];
+      mot = '<div class="rv-mot"><p>¿Qué problema tiene?</p><div class="ops">' + Object.keys(MOT_LEG).map((k) => '<button type="button" class="' + (pb.motivo === k ? 'on' : '') + '" data-rv-pmot="' + k + '">' + esc(MOT_LEG[k]) + '</button>').join('') + '</div>' +
+        '<label class="solo-lector" for="rvProbNota">Nota</label><textarea class="area corta" id="rvProbNota" maxlength="300">' + esc(pb.nota || '') + '</textarea></div>';
+    } else if(mk && mk.accion === 'devolver') mot = '<div class="rv-nota">Se devuelve: ' + esc((C.MOTIVOS[mk.motivo] || '') + (mk.nota ? '. ' + mk.nota : '')) + ' <button type="button" class="enlace" id="verQuitarMarca">Quitar marca</button></div>';
+    else if(mk && mk.origen === 'ia' && mk.accion === 'devolver' && rev && rev.puede_cerrar) mot = '';
+    const arch = d.archivos || [];
+    const pags = arch.length > 1 ? '<div class="paginas">' + arch.map((x, n) => '<button type="button" data-archivo="' + n + '" class="' + (n === ver.archivo ? 'on' : '') + '">Archivo ' + (n + 1) + '</button>').join('') + '</div>' : '';
+    const a = arch[ver.archivo] || arch[0];
+    const datos = '<div class="rv-dt">' +
+      (d.casilla === 'acta_asamblea' && F.puedo.revisar ? '<div class="rv-campo"><label for="fechaActa">Fecha del acta</label><input class="campo" id="fechaActa" type="date" max="' + esc(F.hoy) + '" value="' + esc(d.firmado_en || '') + '"><div class="error" id="errFechaActa" role="alert"></div></div>' : '') +
+      ((d.comparte || []).length ? '<div class="rv-campo"><label>También trae</label><span>' + esc(C.lista(d.comparte.map((x) => casilla(x.casilla, x.numero)))) + '</span></div>' : '') +
+      (dec ? '<div class="rv-campo"><label for="venceDoc">Vence</label><input class="campo" id="venceDoc" type="date" value="' + esc(d.vence_en || '') + '"></div>' : d.vence_en ? '<div class="rv-campo"><label>Vence</label><span>' + esc(fecha(d.vence_en, true)) + '</span></div>' : '') +
+      (mk && mk.origen === 'ia' && mk.accion === 'devolver' && rev && rev.puede_cerrar ? '<div class="rv-campo rv-exc"><label for="excDoc">Si lo apruebas igual, el motivo</label><input class="campo" id="excDoc" maxlength="300"></div>' : '') +
+      '<span class="rv-dt-der"><a class="enlace hidden" id="abrirCompleto" target="_blank" rel="noopener">Abrir archivo</a>' +
+      (a && /^https:\/\/drive\.google\.com\//.test(a.url_externa || '') ? '<a class="enlace" id="abrirDrive" href="' + esc(a.url_externa) + '" target="_blank" rel="noopener">Abrir en Drive</a>' : '') +
+      (F.puedo.revisar && !(d.casilla.indexOf('contrato_') === 0 && !F.puedo.contrato) ? '<button type="button" class="mini" id="verReemplazar">Reemplazar archivo</button>' : '') + '</span></div>';
+    const marcasRepD = it.rep && !F.cliente.es_natural && F.puedo.marcar_rep && !ver.leg ? '<div class="rv-rep"><span>¿Este representante ya no aplica?</span><button type="button" class="mini" data-rep-marca="' + it.rep + ':no_junta">No está en la junta</button><button type="button" class="mini" data-rep-marca="' + it.rep + ':ya_no_aplica">Ya no aplica</button></div>' : '';
+    return '<div class="rv-vh"><div><h3>' + esc(it.t + (it.rep && !F.cliente.es_natural ? ' · Representante ' + it.rep : '')) + '</h3>' + nota + '</div><div class="der">' + botones + '</div></div>' + mot +
+      '<div class="rv-visor visor" id="visor" aria-busy="true"><span class="rv-sk" aria-hidden="true"></span><span class="cargando-linea"><i></i>Abriendo el archivo</span></div>' + pags + datos + marcasRepD;
+  }
+  // Quien aprobó el expediente (para la abogada): el que más documentos aprobó
+  function rvAdmin(){ const n = {}; (F.documentos || []).forEach((d) => { if(d.estado === 'aprobado' && d.revisado_por) n[d.revisado_por] = (n[d.revisado_por] || 0) + 1; });
+    const k = Object.keys(n).sort((a, b) => n[b] - n[a])[0] || F.cliente.legal_por || ''; return primerNombre(k); }
+  function rvPie(){
+    const l = rvItems();
+    if(ver.leg){
+      const np = Object.keys(ver.prob).length;
+      return '<div class="rv-pie"><span class="rv-res">' + (np ? '<b class="rv-rojo">' + plural(np, 'con problema', 'con problema') + '</b> · nada se envía hasta terminar' : 'Todo aprobado · al empezar pasa a Contrato en curso') + '</span>' +
+        (np ? '<button type="button" class="hc-b" id="rvLegTerminar">Terminar y enviar ' + esc(rvAdmin() ? 'a ' + rvAdmin() : 'al administrador') + '</button>'
+          : '<button type="button" class="hc-b s" data-problema="1">Hay un problema</button>' + (F.cliente.estatus === 'documentos_recibidos' ? '<button type="button" class="hc-b" data-lp-sig="contrato_en_curso">Empecé el contrato</button>' : '')) + '</div>';
+    }
+    const dec = l.filter(rvDecidible); const bien = dec.filter((x) => (marcaDe(x.d.id) || {}).accion === 'aprobar').length + Object.keys(ver.cont).filter((n) => ver.cont[n].acc === 'bien').length;
+    const dev = dec.filter((x) => (marcaDe(x.d.id) || {}).accion === 'devolver').length + Object.keys(ver.cont).filter((n) => ver.cont[n].acc === 'dev').length;
+    const faltan = dec.filter((x) => !marcaDe(x.d.id)).length;
+    const res = (bien ? '<b>' + bien + ' bien</b>' : '') + (dev ? (bien ? ' · ' : '') + '<b class="rv-rojo">' + plural(dev, 'se devuelve', 'se devuelven') + '</b>' : '') +
+      (faltan ? (bien || dev ? ' · ' : '') + (faltan === 1 ? 'falta 1 por decidir' : 'faltan ' + faltan + ' por decidir') : '') + (bien || dev ? ' · nada se envía hasta terminar' : !faltan ? 'Nada por decidir' : '');
+    const puede = rev && rev.puede_cerrar; const lid = liderCorto();
+    const btn = !puede ? '<span class="nota-chica">El administrador cierra la revisión</span>' : dev ? '<button type="button" class="hc-b" id="rvTerminar"' + (faltan ? ' disabled' : '') + '>Terminar y avisar a ' + esc(lid) + '</button>'
+      : '<button type="button" class="hc-b rv-aprob" id="rvAprobar"' + (faltan || !bien ? ' disabled' : '') + '>Aprobar expediente</button>';
+    const resT = !faltan && !dev && bien ? '<b>Todo bien</b> · al aprobar pasa a Documentos recibidos y Legal aprobado' : iaActiva() && !bien && !dev ? 'Puedes decidir ya · la IA completa lo que falta' : res.replace(/^falta/, 'Falta');
+    return '<div class="rv-pie"><span class="rv-res">' + resT + '</span>' + btn + '</div>';
+  }
+  function pintarRv(){
+    const h = $('hojaVer'); if(!h || !F) return;
+    h.className = 'hoja rv-pant' + (h.classList.contains('ver') ? ' ver' : '');
+    const c = F.cliente; const ult = (F.documentos || []).filter((d) => d.estado === 'por_revisar').map((d) => d.subido_en).sort().pop();
+    const npr = porRevisar().length;
+    const sub = [c.nombre, rifDe(c), c.lider || 'Sin líder', ver.leg ? (c.legal_ok_en ? 'aprobado el ' + fecha(c.legal_ok_en, true) : '') : npr ? 'subió ' + plural(npr, 'documento', 'documentos') + ' ' + (ult ? dia(ult).toLowerCase() : '') : ''].filter(Boolean).join(' · ');
+    const dr = drive && !drive.error && drive.url && /^https:\/\/drive\.google\.com\//.test(drive.url) ? drive.url : '';
+    h.innerHTML = '<div class="rv-cab"><div><h2 id="tVer">' + (ver.leg ? 'Documentos para el contrato' : 'Revisar expediente') + '</h2><small>' + esc(sub) + '</small></div><div class="der">' +
+      (dr ? '<a class="mini rv-drive" href="' + esc(dr) + '" target="_blank" rel="noopener">' + ic('carpeta') + 'Abrir carpeta en Drive</a>' : '') + '<button type="button" class="cerrar" data-cierra="1" aria-label="Cerrar">' + ic('x') + '</button></div></div>' +
+      rvFranja() + '<div class="rv-c"><div class="rv-l">' + rvLista() + '</div><div class="rv-v">' + rvDetalle() + '</div></div>' + rvPie();
+    if(ver.docId && ver.url[ver.archivo] !== undefined) mostrarArchivo();
+  }
+  // Abogada: lo marcado en cada documento se envía en un solo aviso (el contrato se detiene y vuelve a Documentos pendientes)
+  async function rvLegTerminar(b){
+    const ids = Object.keys(ver.prob); if(!ids.length) return;
+    const falta = ids.find((x) => !ver.prob[x].motivo); if(falta){ toast('Elige qué problema tiene cada documento marcado', 'error'); rvIr('d:' + falta); return; }
+    const nom = (x) => { const d = (F.documentos || []).find((y) => String(y.id) === String(x)); return d ? d.titulo || casilla(d.casilla, d.numero) : 'Documento'; };
+    const texto = ids.map((x) => nom(x) + ': ' + MOT_LEG[ver.prob[x].motivo].toLowerCase() + (ver.prob[x].nota ? '. ' + ver.prob[x].nota : '')).join('\n');
+    b.disabled = true;
+    try {
+      for(const x of ids){ const pb = ver.prob[x];
+        await rpc('legal_observar', { p_cliente: id, p_tipo: 'devolver', p_documento: Number(x), p_motivo: ['vencido', 'ilegible', 'no_corresponde'].indexOf(pb.motivo) >= 0 ? pb.motivo : 'otro', p_texto: texto.length >= 10 ? texto : texto + ' (ver documento)' }); }
+      ver = null; cerrarHoja(); toast('Contrato detenido. Le avisamos al administrador y al líder'); C.cache.borrarTodo(); cargar();
+    } catch (e) { toast(e.message, 'error'); b.disabled = false; }
+  }
+  // Aprobar expediente: un solo cierre, sin mensaje (no hay nada que pedir)
+  async function rvAprobar(b){
+    await marcasPend; b.disabled = true; b.textContent = 'Aprobando…';
+    const lid = liderCorto(); const c = F.cliente; const wa = rev && rev.lider_whatsapp;
+    try { await rpc('revision_cerrar', { p_cliente: id, p_mensaje: null, p_enviado: false }); }
+    catch (e) { toast(e.message, 'error'); b.disabled = false; b.textContent = 'Aprobar expediente'; return; }
+    const msj = saludoHora() + (lid !== 'el líder' ? ', ' + lid : '') + '. Aprobamos el expediente de ' + c.nombre + '. Sigue el contrato.';
+    const h = hojaN('hojaRvOk', 'tRvOk', ''); h.className = 'hoja rv-ok';
+    h.innerHTML = '<span class="ic">' + ic('check') + '</span><h2 id="tRvOk">Expediente aprobado</h2><p>Legal queda aprobado y el cliente pasa a Documentos recibidos. A la abogada le aparece para elaborar el contrato.</p>' +
+      '<div class="acc"><a class="hc-b s" id="rvAvisar" href="' + esc(wa ? C.enlaceWa(wa, msj) : 'https://wa.me/?text=' + encodeURIComponent(msj)) + '" target="_blank" rel="noopener">Avisar a ' + esc(lid) + '</a><button type="button" class="hc-b" id="rvSiguiente">Siguiente cliente</button></div>';
+    ver = null; cerrarHoja(); C.cache.borrarTodo(); abrirHoja('hojaRvOk'); cargar();
+    rvVelo('hojaRvOk');   // la ficha sigue difuminada detrás, como en la maqueta
+    if(!h.dataset.velo){ h.dataset.velo = '1'; h.addEventListener('hoja-cerrada', () => { const w = $('rvVelo'); if(w) w.classList.remove('ver'); }); }
+  }
   // Lote 22/10: el reporte "Clientes Empresariales" trae otra IP (otro equipo, o distinta a la puesta a mano)
   function ipConfHtml(x){
     if(!x.ip_conf) return '';
@@ -1804,8 +1905,8 @@
     const pdf = a.mime === 'application/pdf' || /\.pdf$/i.test(a.nombre || '');
     const imagen = /^image\//i.test(a.mime || '') || /\.(jpe?g|png|gif|webp)$/i.test(a.nombre || '');
     if(!pdf && !imagen){ if(ab) ab.classList.add('hidden'); z.innerHTML = '<div>' + papel('Este archivo no se puede ver aquí') + '<button type="button" class="btn btn-chico" id="bajarArch" data-url="' + esc(url) + '" data-nombre="' + esc(a.nombre || 'archivo') + '" style="margin-top:12px">Descargar el archivo</button></div>'; }
-    else if(!pdf) z.innerHTML = '<img src="' + esc(url) + '" alt="' + esc(casilla(d.casilla, d.numero)) + '">';
-    else if(window.matchMedia('(min-width:900px)').matches) z.innerHTML = '<iframe src="' + esc(url) + '" title="' + esc(casilla(d.casilla, d.numero)) + '"></iframe>';
+    else if(!pdf) z.innerHTML = '<img src="' + esc(url) + '" alt="' + esc(casilla(d.casilla, d.numero)) + '"' + (ver && ver.rv ? ' class="rv-img' + (ver.zoom ? ' zoom' : '') + '" data-rv-zoom="1"' : '') + '>';
+    else if(window.matchMedia('(min-width:900px)').matches || (ver && ver.rv)) z.innerHTML = '<iframe src="' + esc(url + (ver && ver.pagina ? '#page=' + ver.pagina : '')) + '" title="' + esc(casilla(d.casilla, d.numero)) + '"></iframe>';
     else z.innerHTML = '<div>' + papel('Documento en PDF') + '<a class="btn btn-chico" href="' + esc(url) + '" target="_blank" rel="noopener" style="margin-top:12px">Abrir el PDF</a></div>';
   }
   // Los archivos de Drive los entrega la función drive_archivo (la base revisa el permiso); quedan en memoria mientras el visor esté abierto
@@ -1830,6 +1931,7 @@
     if(!a){ ver.url[n] = ''; mostrarArchivo(); return; }
     if(ver.url[n] !== undefined){ mostrarArchivo(); return; }
     let url = '';
+    if(ver.rv && rvPre[a.id]){ try { url = await rvPre[a.id]; } catch (e) { url = ''; } if(url){ if(mio !== ver || ver.docId !== d.id) return; ver.url[n] = url; mostrarArchivo(); rvAdelantar(); return; } }
     if((a.url_externa || a.drive_id) && a.id){
       // La miniatura pesa poco y llega antes; el archivo completo se pide a la vez y la reemplaza al llegar
       ver.mini = ver.mini || {};
@@ -1838,7 +1940,7 @@
       catch (e) { if(mio === ver){ ver.fallo = ver.fallo || {}; ver.fallo[n] = e.message; } }
     }
     if(mio !== ver || ver.docId !== d.id) return;
-    ver.url[n] = url; mostrarArchivo();
+    ver.url[n] = url; mostrarArchivo(); if(ver.rv) rvAdelantar();
   }
   async function revisar(accionRev){
     const d = docVer(); if(!d) return;
@@ -1852,7 +1954,8 @@
       ver.nota = $('notaDev').value.trim();
       if(!ver.motivo){ $('eDev').textContent = 'Elige un motivo'; return; }
       if(ver.motivo === 'otro' && !ver.nota){ $('eDev').textContent = 'Escribe el motivo en la nota'; $('notaDev').focus(); return; }
-      args.p_motivo = ver.motivo === 'sin_registro' ? 'otro' : ver.motivo; args.p_nota = ver.motivo === 'sin_registro' ? 'Sin los datos del Registro' + (ver.nota ? '. ' + ver.nota : '') : ver.nota || null;
+      args.p_motivo = ver.motivo === 'sin_registro' || ver.motivo === 'falta_acta' ? 'otro' : ver.motivo;
+      args.p_nota = ver.motivo === 'sin_registro' ? 'Sin los datos del Registro' + (ver.nota ? '. ' + ver.nota : '') : ver.motivo === 'falta_acta' ? (ver.nota || 'Falta un acta') : ver.nota || null;
     }
     // Lote 21/10: la marca se ve al instante y se guarda por detrás; nunca espera la vista previa ni el recálculo.
     // Si el servidor la rechaza, se quita y se avisa.
@@ -1869,8 +1972,9 @@
     });
     marcasPend = marcasPend.then(() => p);
     p.then(() => { guardandoMarcas--; if(!guardandoMarcas && id === cliM) recargarRevision().then(() => { if(F && !encima()) pintarTodo(); }).catch(() => {}); });
-    toast(accionRev === 'aprobar' ? 'Marcado para aprobar' : 'Marcado para devolver');
+    if(!(ver && ver.rv)) toast(accionRev === 'aprobar' ? 'Marcado para aprobar' : 'Marcado para devolver');   // en la pantalla nueva la lista ya lo muestra
     if(!ver || hojaAbierta() !== 'hojaVer'){ pintarTodo(); return; }   // cerraron el visor
+    if(ver.rv){ ver.paso = 'ver'; ver.motivo = null; ver.nota = ''; const sg = rvSiguiente(d.id); if(sg) rvIr(sg); else pintarRv(); pintarDocumentos(); pintarCab(); return; }
     const cola = ver.cola; const actual = d.id;
     // Sigue con el próximo que quede sin marcar; si no hay, cierra
     const sig = cola ? cola.slice(cola.indexOf(actual) + 1).find((x) => { const y = (F.documentos || []).find((z) => z.id === x); return y && y.estado === 'por_revisar' && !marcaDe(x); }) : null;
@@ -1925,6 +2029,8 @@
     marcas().filter((m) => m.accion === 'devolver').forEach((m) => { const d = (F.documentos || []).find((x) => x.id === m.documento);
       lis.push('• ' + (d ? casilla(d.casilla, d.numero) : 'Documento') + ': ' + (C.MOTIVOS[m.motivo] || 'devuelto').toLowerCase() + (m.nota ? '. ' + m.nota : '')); });
     (F.faltantes || []).filter((x) => x.e === 'falta').forEach((x) => lis.push('• Falta ' + x.t));
+    // Lote 12/11 B: teléfono y correo revisados en la pantalla nueva
+    if(ver && ver.rv) Object.keys(ver.cont).filter((n) => ver.cont[n].acc === 'dev').forEach((n) => lis.push('• Teléfono y correo del ' + (c.es_natural ? 'titular' : 'representante ' + n) + ': ' + (MOT_CONT[ver.cont[n].motivo] || 'revisar').toLowerCase() + (ver.cont[n].nota ? '. ' + ver.cont[n].nota : '')));
     // Lo que la IA pide aparte, sin devolver un documento (junta vencida: acta de asamblea)
     const k = rev && rev.ia && rev.ia.estado === 'lista' ? rev.ia : null;
     if(k) (k.puntos || []).filter((p) => p.pedir && p.estado === 'bloquea' && p.falta).forEach((p) => lis.push('• Falta ' + p.falta.charAt(0).toLowerCase() + p.falta.slice(1)));
@@ -1933,26 +2039,28 @@
     return saludoHora() + (quien ? ', ' + quien : '') + '. Del cliente ' + c.nombre + (c.provisional ? '' : ' (' + docFmt(c.doc_tipo, c.doc_numero) + ')') + ' hace falta:\n' + lis.join('\n') + '\nCuando lo tengas, súbelo a la app. Gracias.';
   }
   function abrirCerrar(){
-    if(!rev || !rev.puede_cerrar || !marcas().length) return;
+    if(!rev || !rev.puede_cerrar || (!marcas().length && !(ver && ver.rv && Object.keys(ver.cont).length))) return;
     const ap = marcas().filter((m) => m.accion === 'aprobar'); const dv = marcas().filter((m) => m.accion === 'devolver');
     const nom = (m) => { const d = (F.documentos || []).find((x) => x.id === m.documento); return d ? casilla(d.casilla, d.numero) : 'Documento'; };
     const quedan = sinMarcar().length; const despues = estatusDespues(); const msj = mensajeRevision();
     const k = rev.ia && rev.ia.estado === 'lista' ? rev.ia : null; const v = k ? VEREDICTO[k.veredicto] : null;
     const iaMalos = k ? (k.puntos || []).filter((p) => p.estado === 'bloquea' || p.estado === 'mano') : [];
-    $('hojaCerrarRev').innerHTML = cabHoja('tCerrarRev', 'Cerrar revisión', F.cliente.nombre) +
+    // Lote 12/11 B (maqueta revision-nueva/04): "Avisar a [líder]": qué se aprueba, qué se devuelve, en qué queda y el mensaje
+    const nueva = !!(ver && ver.rv); const cdv = nueva ? Object.keys(ver.cont).filter((n) => ver.cont[n].acc === 'dev') : [];
+    $('hojaCerrarRev').innerHTML = cabHoja('tCerrarRev', nueva ? 'Avisar a ' + capital(liderCorto()) : 'Cerrar revisión', nueva ? '' : F.cliente.nombre) +
       '<div class="datos" style="margin-top:0">' +
         (ap.length ? fila('Se aprueban', esc(C.lista(ap.map(nom)))) : '') +
-        (dv.length ? fila('Se devuelven', dv.map((m) => esc(nom(m) + ': ' + (C.MOTIVOS[m.motivo] || ''))).join('<br>')) : '') +
-        (despues ? fila('Estatus', esc(despues)) : '') + (v ? fila('La IA', '<span class="chip ' + v[0] + '">' + v[1] + '</span>') : '') + '</div>' +
+        (dv.length || cdv.length ? fila(dv.length + cdv.length === 1 ? 'Se devuelve' : 'Se devuelven', dv.map((m) => esc(nom(m) + ': ' + (C.MOTIVOS[m.motivo] || '') + (m.nota && m.motivo === 'otro' ? ' (' + m.nota + ')' : ''))).concat(cdv.map((n) => esc('Teléfono y correo ' + n + ': ' + (MOT_CONT[ver.cont[n].motivo] || 'revisar')))).join('<br>')) : '') +
+        (despues ? fila(nueva ? 'Queda en' : 'Estatus', esc(despues)) : '') + (v && !nueva ? fila('La IA', '<span class="chip ' + v[0] + '">' + v[1] + '</span>') : '') + '</div>' +
       avisoViejo(k, true) +
       (iaMalos.length ? '<div class="ia-ps" style="margin-top:10px">' + iaMalos.map((p) => puntoIA(p, false)).join('') + '</div>' : '') +
       (quedan ? '<div class="estado ambar chico"><small>' + (quedan === 1 ? 'Queda 1 documento sin revisar. Seguirá' : 'Quedan ' + quedan + ' documentos sin revisar. Seguirán') + ' por revisar.</small></div>' : '') +
-      (msj ? '<label class="rotulo arriba" for="msjRev">Mensaje para ' + esc(liderCorto()) + '</label><textarea class="area" id="msjRev" maxlength="4000">' + esc(msj) + '</textarea>' +
-        '<p class="nota">Puedes cambiarlo antes de enviarlo. ' + (rev.lider_whatsapp ? 'Se abre el WhatsApp de ' + esc(liderCorto()) + '.' : 'No tiene WhatsApp en Usuarios: se abre WhatsApp para que elijas el chat.') + '</p>'
+      (msj ? '<label class="rotulo arriba" for="msjRev">' + (nueva ? 'Mensaje (puedes cambiarlo)' : 'Mensaje para ' + esc(liderCorto())) + '</label><textarea class="area" id="msjRev" maxlength="4000">' + esc(msj) + '</textarea>' +
+        (nueva && rev.lider_whatsapp ? '' : '<p class="nota">' + (nueva ? '' : 'Puedes cambiarlo antes de enviarlo. ') + (rev.lider_whatsapp ? 'Se abre el WhatsApp de ' + esc(liderCorto()) + '.' : 'No tiene WhatsApp en Usuarios: se abre WhatsApp para que elijas el chat.') + '</p>')
         : '<p class="nota">No hay nada que pedirle a ' + esc(liderCorto()) + '.</p>') +
       preguntaComision(claveDespues()) +
       '<div class="error" id="eCerrar" role="alert"></div>' +
-      '<div class="acciones">' + (msj ? '<button type="button" class="btn btn-2" id="cerrarRevSolo">Cerrar sin enviar</button><button type="button" class="btn" id="cerrarRevEnviar">Cerrar y enviar</button>'
+      '<div class="acciones' + (nueva && msj ? ' rv-acc2' : '') + '">' + (msj ? '<button type="button" class="btn btn-2" id="cerrarRevSolo">' + (nueva ? 'Solo guardar' : 'Cerrar sin enviar') + '</button><button type="button" class="btn' + (nueva ? ' rv-wa' : '') + '" id="cerrarRevEnviar">' + (nueva ? 'Guardar y enviar por WhatsApp' : 'Cerrar y enviar') + '</button>'
         : '<button type="button" class="btn btn-ancho" id="cerrarRevSolo">Cerrar revisión</button>') + '</div>';
     abrirHoja('hojaCerrarRev');
   }
@@ -1970,6 +2078,7 @@
     catch (e) { er.textContent = (enviar ? 'Se abrió WhatsApp, pero la revisión no se cerró: ' : '') + e.message; bs.forEach((x) => { if(document.contains(x)) x.disabled = false; }); return; }
     await quitarLegalTras(quitar, 'Revisión cerrada con documentos devueltos');
     if(hojaAbierta() === 'hojaCerrarRev') cerrarHoja();
+    if(hojaAbierta() === 'hojaVer' && ver && ver.rv) cerrarHoja();
     const e = C.ESTATUS[r && r.estatus] || null;
     toast('Revisión cerrada' + (e ? '. Quedó en ' + e.t : ''));
     cargar();
@@ -1986,6 +2095,21 @@
     recargarRevision().then(() => { if(F && !encima()) pintarTodo(); }).catch(() => {});
   }
 
+  // Lote 12/11 B, parte 6: teclado en la revisión (flechas cambian de documento; B = Bien; D = Devolver) y notas que se guardan al escribir
+  document.addEventListener('keydown', (e) => {
+    if(!ver || !ver.rv || hojaAbierta() !== 'hojaVer' || e.altKey || e.ctrlKey || e.metaKey) return;
+    if(/^(INPUT|TEXTAREA|SELECT)$/.test((e.target && e.target.tagName) || '')) return;
+    const l = rvItems(); const i = l.findIndex((x) => x.k === ver.sel);
+    if(e.key === 'ArrowDown' || e.key === 'ArrowUp'){ const j = Math.max(0, Math.min(l.length - 1, i + (e.key === 'ArrowDown' ? 1 : -1))); if(j !== i){ e.preventDefault(); rvIr(l[j].k); } return; }
+    const it = l[i]; if(!it || !rvDecidible(it)) return;
+    if(e.key === 'b' || e.key === 'B'){ e.preventDefault(); revisar('aprobar'); return; }
+    if(e.key === 'd' || e.key === 'D'){ e.preventDefault(); ver.paso = 'devolver'; ver.motivo = null; ver.nota = ''; pintarRv(); }
+  });
+  document.addEventListener('input', (e) => {
+    if(!ver || !ver.rv) return; const it = rvItems().find((x) => x.k === ver.sel);
+    if(e.target.id === 'rvContNota' && it && ver.cont[it.cont]) ver.cont[it.cont].nota = e.target.value;
+    if(e.target.id === 'rvProbNota' && ver.docId && ver.prob[ver.docId]) ver.prob[ver.docId].nota = e.target.value;
+  });
   // ---------- Eventos ----------
   document.addEventListener('click', (e) => {
     const t = e.target;
@@ -1995,7 +2119,7 @@
     if((b = t.closest('#hojaFicha [data-ir-tab]'))){ irTab(b.dataset.irTab); const g = b.dataset.irGrupo && document.querySelector('#tab-' + tab + ' [data-grupo="' + b.dataset.irGrupo + '"]'); if(g) g.scrollIntoView({ block: 'center' }); return; }
     if((b = t.closest('[data-paso]'))){
       const a = b.dataset.paso;
-      if(a === 'rif') abrirCampo('rif'); else if(a === 'revisar') abrirRevision(); else if(a === 'cerrarrev') abrirCerrar(); else if(a === 'estatus') abrirEstatus(); else if(a.indexOf('pedir:') === 0) pedir(a.slice(6)); else if(a.indexOf('tab:') === 0) irTab(a.slice(4));
+      if(a === 'rif') abrirCampo('rif'); else if(a === 'ia') abrirMandarIA(); else if(a === 'reanudar') reanudarIA(b); else if(a === 'revisar') abrirRevision(); else if(a === 'cerrarrev') abrirCerrar(); else if(a === 'estatus') abrirEstatus(); else if(a.indexOf('pedir:') === 0) pedir(a.slice(6)); else if(a.indexOf('tab:') === 0) irTab(a.slice(4));
       return;
     }
     if(t.closest('#hiloMas')){ hiloTodo = true; pintarHilo(); return; }
@@ -2018,14 +2142,13 @@
     if((b = t.closest('#hojaVgtSol [data-ver]'))){ abrirVer(Number(b.dataset.ver)); return; }
     if((b = t.closest('#hojaVgtSol [data-vg-firma]'))){ Array.prototype.forEach.call(b.parentNode.querySelectorAll('[data-vg-firma]'), (x) => { const on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-checked', String(on)); }); return; }
     if((b = t.closest('#hojaVgtSol [data-vgt-tramo]')) && window.FichaDedicado && window.FichaDedicado.abrirTramo){ window.FichaDedicado.abrirTramo(b.dataset.vgtTramo, b.dataset.tpaso || undefined); return; }
-    if((b = t.closest('[data-aprob-exp]'))){ abrirAprobExp(); return; }
     if((b = t.closest('[data-rp-revisar]'))){ abrirRevision(); return; }
-    if((b = t.closest('#hojaAprobExp [data-ae]'))){ const p = b.dataset.ae.split(':'); aprobSel[p[0]] = p[1]; pintarAprobExp(); return; }
-    if((b = t.closest('#aeOk'))){ guardarAprobExp(b); return; }
     if((b = t.closest('#hojaProblema [data-pb]'))){ leerProblema(); pb.tipo = b.dataset.pb; pintarProblema(); return; }
     if((b = t.closest('#hojaProblema [data-pb-mot]'))){ leerProblema(); pb.motivo = b.dataset.pbMot; pintarProblema(); return; }
     if((b = t.closest('#pbOk'))){ guardarProblema(b); return; }
     if((b = t.closest('#hojaFicha [data-problema]'))){ problemaLegal(id, null); return; }
+    if(t.closest('#hojaFicha [data-rv-leg]')){ abrirRv(); return; }
+    if((b = t.closest('#hojaVer [data-lp-sig]')) && ver && ver.rv){ cerrarHoja(); const x = document.querySelector('#hojaFicha [data-lp-sig="' + b.dataset.lpSig + '"]'); if(x) x.click(); else accion('cliente_estatus', { p_cliente: id, p_estatus: b.dataset.lpSig }, 'Listo: contrato en curso', null).then((ok) => { if(ok) C.cache.borrarTodo(); }); return; }
     if((b = t.closest('#hojaFicha [data-lp-sig]'))){ const v = b.dataset.lpSig; accion('cliente_estatus', { p_cliente: id, p_estatus: v }, v === 'por_firmar' ? 'Listo: pasó a Por firmar' : 'Listo: contrato en curso', b).then((ok) => { if(ok && alCerrar) C.cache.borrarTodo(); }); return; }
     if((b = t.closest('#hojaFicha [data-lp-est]'))){ abrirEstatus(); const x = $('hojaEstatus') && $('hojaEstatus').querySelector('[data-estatus="' + b.dataset.lpEst + '"]'); if(x) x.click(); return; }
     if(t.closest('#hojaFicha [data-lp-subir]')){ subirFirmado(); return; }
@@ -2033,7 +2156,25 @@
     if((b = t.closest('#hojaFicha [data-ctr-mas]'))){ elegirPara('otro', 0); toast(b.dataset.ctrMas === 'adendum' ? 'Al subirlo, ponle de título "Adendum al contrato"' : 'Al subirlo, ponle de título el nombre del contrato'); return; }
     if(t.closest('#agregarActa')){ actaExtra = Math.min(ACTAS.length, actaExtra + 1); pintarDocumentos(); const cs = document.querySelectorAll('[data-grupo="empresa"] [data-casilla^="acta_asamblea"]'); if(cs.length) cs[cs.length - 1].scrollIntoView({ block: 'center' }); return; }
     if((b = t.closest('[data-ver]')) && !t.closest('#docsCom')){ abrirVer(Number(b.dataset.ver)); return; }   // en la hoja de comisión lo maneja comisiones.js
-    if((b = t.closest('#hojaFicha [data-campo]'))){ fuera = null; abrirCampo(b.dataset.campo); return; }
+    if((b = t.closest('#hojaFicha [data-campo], #hojaVer [data-campo]'))){ fuera = null; abrirCampo(b.dataset.campo); return; }
+    // Lote 12/11 B, parte 6: la pantalla de revisión
+    if(ver && ver.rv && t.closest('#hojaVer')){
+      if((b = t.closest('[data-rv-ir]'))){ rvIr(b.dataset.rvIr); return; }
+      if((b = t.closest('[data-rv-cont]'))){ const it = rvItems().find((x) => x.k === ver.sel); if(!it || !it.cont) return; const a = b.dataset.rvCont; const x = ver.cont[it.cont];
+        if(x && x.acc === (a === 'bien' ? 'bien' : 'dev')) delete ver.cont[it.cont]; else ver.cont[it.cont] = a === 'bien' ? { acc: 'bien' } : { acc: 'dev', motivo: null, nota: '' }; pintarRv(); return; }
+      if((b = t.closest('[data-rv-cmot]'))){ const it = rvItems().find((x) => x.k === ver.sel); const x = it && ver.cont[it.cont]; if(!x) return; const nt = $('rvContNota'); if(nt) x.nota = nt.value; x.motivo = b.dataset.rvCmot; pintarRv(); return; }
+      if(t.closest('[data-rv-prob]') && ver.docId){ if(ver.prob[ver.docId]) delete ver.prob[ver.docId]; else ver.prob[ver.docId] = { motivo: null, nota: '' }; pintarRv(); return; }
+      if((b = t.closest('[data-rv-pmot]')) && ver.docId && ver.prob[ver.docId]){ const nt = $('rvProbNota'); if(nt) ver.prob[ver.docId].nota = nt.value; ver.prob[ver.docId].motivo = b.dataset.rvPmot; pintarRv(); return; }
+      if(t.closest('#rvPedir')){ abrirPedir({ tipo: 'otro' }); return; }
+      if(t.closest('#rvTerminar')){ abrirCerrar(); return; }
+      if((b = t.closest('#rvAprobar'))){ rvAprobar(b); return; }
+      if((b = t.closest('#rvLegTerminar'))){ rvLegTerminar(b); return; }
+      if(t.closest('[data-rv-zoom]')){ ver.zoom = !ver.zoom; mostrarArchivo(); return; }
+      if((b = t.closest('[data-rv-pagina]'))){ const donde = normalizeStr(b.dataset.rvDonde || ''); const pg = Number(b.dataset.rvPagina) || null;
+        const it = rvItems().find((x) => x.d && donde.indexOf(normalizeStr(x.t)) >= 0) || rvItems().find((x) => x.cas === 'acta_constitutiva');
+        if(it){ if(it.k !== ver.sel) rvIr(it.k); ver.pagina = pg; if(ver.url[ver.archivo]) mostrarArchivo(); else pintarRv(); } return; }
+    }
+    if(t.closest('#rvSiguiente')){ while(hojaAbierta()) cerrarHoja(); return; }
     if((b = t.closest('[data-quitar-rep]'))){ repExtra = Math.max(0, Number(b.dataset.quitarRep) - 1); pintarDocumentos(); return; }
     if(t.closest('#agregarRep')){ const vis = document.querySelectorAll('#tab-documentos [data-grupo^="rep"]').length; const n = Math.max(vis, repExtra, !F.cliente.es_natural && F.cliente.regimen_firma === 'conjunta' ? 2 : 1) + 1; repExtra = Math.min(REPS.length, n); pintarDocumentos(); const g = document.querySelector('[data-grupo="rep' + repExtra + '"]'); if(g) g.scrollIntoView({ block: 'center' }); return; }
     if(t.closest('#subirVarios')){ abrirVarios(); return; }
@@ -2052,11 +2193,6 @@
       accion('cliente_marca', { p_cliente: id, p_marca: 'contrato_presencial', p_valor: fis }, fis ? 'Firma física: no se piden correos ni teléfono' : 'Firma digital', b); return; }
     if(t.closest('#revisarTodo')){ abrirRevision(); return; }
     // Lote 05/11 parte C
-    if((b = t.closest('#hojaFicha [data-rp-abrir]'))){ rpAbierto = true; pintarDocumentos(); return; }
-    if((b = t.closest('#hojaFicha [data-rp-plegar]'))){ rpAbierto = false; pintarDocumentos(); return; }
-    if((b = t.closest('#hojaFicha [data-rp-cambiar]'))){ rpCambiar[b.dataset.rpCambiar] = true; pintarDocumentos(); return; }
-    if((b = t.closest('#hojaFicha [data-pt]'))){ marcarPunto(b); return; }
-    if((b = t.closest('#hojaFicha [data-pt-cerrar]'))){ cerrarPuntos(b); return; }
     if((b = t.closest('[data-req-quitar]'))){ if(b.dataset.armado !== '1'){ b.dataset.armado = '1'; b.textContent = '¿Quitar? Toca otra vez'; setTimeout(() => { if(document.contains(b)){ b.dataset.armado = ''; b.textContent = 'Quitar pedido'; } }, 4000); return; }
       accion('requerimiento_anular', { p_id: Number(b.dataset.reqQuitar) }, 'Pedido quitado', b); return; }
     if((b = t.closest('#hojaCampo [data-req-tipo]')) && pedirO){ leerPedir(); pedirO.tipo = b.dataset.reqTipo; pintarPedir(); if(pedirO.tipo === 'otro' && $('reqTexto')) $('reqTexto').focus(); return; }
@@ -2067,7 +2203,7 @@
     if((b = t.closest('[data-doc-acta]'))){ const d = (F.documentos || []).find((x) => x.id === Number(b.dataset.docActa)); if(d){ cerrarHoja(); abrirAActa(d); } return; }
     if((b = t.closest('[data-titulo-guardar]'))){ guardarTitulo(b); return; }
     if((b = t.closest('[data-a-acta]'))){ guardarAActa(b); return; }
-    if(t.closest('#verPedir')){ const d = docVer(); if(d){ const o = { origen: d.id, origenT: d.titulo || casilla(d.casilla, d.numero), tipo: d.casilla === 'acta_constitutiva' ? 'junta' : 'otro' }; cerrarHoja(); abrirPedir(o); } return; }
+    if(t.closest('#verPedir')){ const d = docVer(); if(d){ const o = { origen: d.id, origenT: d.titulo || casilla(d.casilla, d.numero), tipo: d.casilla === 'acta_constitutiva' ? 'junta' : 'otro' }; if(!(ver && ver.rv)) cerrarHoja(); abrirPedir(o); } return; }
     if(t.closest('#ajCambia')){ leerActa(); ver.ajCambia = t.checked; pintarVer(); return; }
     if(t.closest('#ajAgregar')){ leerActa(); ver.dirs.push({ nombre: '', cedula: '', cargo: '', firma: false }); pintarVer(); return; }
     if((b = t.closest('#ajGuardar'))){ guardarActa(b); return; }
@@ -2185,6 +2321,8 @@
     while(mas.firstChild) document.body.appendChild(mas.firstChild);
     C.prepararHojas();
     $('archivo').addEventListener('change', alElegir);
+    // Pantalla de revisión: la fecha del acta se guarda sola al elegirla
+    $('hojaVer').addEventListener('change', (e) => { if(e.target.id === 'fechaActa' && ver && ver.rv && (e.target.value || '') !== ((docVer() || {}).firmado_en || '')) guardarFechaActa({ disabled: false }); });
     $('archivosLote').addEventListener('change', () => { agregarLote(Array.prototype.slice.call($('archivosLote').files || [])); });
     // En escritorio también se puede arrastrar a la hoja de Subir varios
     $('hojaVarios').addEventListener('dragover', (e) => { e.preventDefault(); const s = $('soltar'); if(s) s.classList.add('sobre'); });
@@ -2192,7 +2330,7 @@
     $('hojaVarios').addEventListener('drop', (e) => { e.preventDefault(); if(e.dataTransfer && e.dataTransfer.files) agregarLote(Array.prototype.slice.call(e.dataTransfer.files)); });
     $('hojaVarios').addEventListener('hoja-cerrada', () => { soltarMinis(); lote = []; varF = null; varFin = null; });
     $('hojaVarios').addEventListener('input', (e) => { const x = e.target.closest('[data-titulo]'); if(x && lote[Number(x.dataset.titulo)]) lote[Number(x.dataset.titulo)].titulo = x.value; });
-    $('hojaVer').addEventListener('hoja-cerrada', () => { ver = null; soltarBlobs(); });
+    $('hojaVer').addEventListener('hoja-cerrada', () => { ver = null; soltarBlobs(); rvPre = {}; const v = $('rvVelo'); if(v) v.classList.remove('ver'); });
     $('hojaEnviar').addEventListener('hoja-cerrada', () => { env = null; envF = null; envFin = null; });
     $('hojaEnviar').addEventListener('change', (e) => { if(e.target.id === 'envNum'){ $('envOtroZ').classList.toggle('hidden', !!e.target.value); $('eEnv').textContent = ''; if(!e.target.value) $('envOtro').focus(); } });
     ['tab-documentos', 'tab-contrato', 'tab-vgt'].forEach((z) => { const zona = $(z);

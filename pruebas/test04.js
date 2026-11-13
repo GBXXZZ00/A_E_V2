@@ -126,26 +126,30 @@ const marcarFiltro = async (p, k, v) => { if(!(await p.evaluate(() => !!document
     await q.click('#quitarFiltros'); await q.waitForFunction(() => !location.search.includes('lid='));
     ok(nombre + ': Quitar filtros los limpia (solo queda la tarjeta)', Object.keys(llamo(m, 'clientes_lista3').slice(-1)[0][2].p_f).filter((k) => k !== 'tarjeta').length === 0);
 
-    await q.goto(H + 'cliente.html?id=1001&t=documentos&revisar=1'); await q.waitForSelector('#hojaVer.ver');
-    ok(nombre + ': el enlace viejo lleva a Clientes con el expediente y la revisión encima', q.url().includes('clientes.html') && (await abiertas(q)).join() === 'hojaFicha,hojaVer' && (await q.textContent('#hojaVer')).includes('Documento 1 de 4'));
+    await q.goto(H + 'cliente.html?id=1001&t=documentos&revisar=1'); await q.waitForSelector('#hojaVer.ver .rv-c #verAprobar');
+    const selQ = () => q.getAttribute('#hojaVer .rv-d.sel', 'data-rv-ir');
+    ok(nombre + ': el enlace viejo lleva a Clientes con el expediente y la revisión encima', q.url().includes('clientes.html') && (await abiertas(q)).join() === 'hojaFicha,hojaVer' && /Revisar expediente/.test(await q.textContent('#hojaVer')));
     await q.screenshot({ path: 'capturas/04-' + nombre + '-revisar.png' });
     ok(nombre + ': quien revisa también puede reemplazar el archivo', (await q.locator('#hojaVer #verReemplazar').count()) === 1);
-    await q.click('#verAprobar'); await q.waitForFunction(() => document.getElementById('hojaVer').textContent.includes('Documento 2'));
+    let kq = await selQ(); await q.click('#verAprobar'); await q.waitForFunction((k) => document.querySelector('#hojaVer .rv-d.sel').dataset.rvIr !== k, kq);
     ok(nombre + ': Aprobar solo marca y pasa al siguiente', llamo(m, 'documento_marcar')[0][2].p_accion === 'aprobar' && llamo(m, 'documento_revisar').length === 0);
     await q.click('#verDevolver'); await q.waitForSelector('#devConfirmar');
-    ok(nombre + ': Devolver exige motivo y avisa que el líder se entera al cerrar', await q.locator('#devConfirmar').isDisabled() && /se entera cuando se cierre/.test(await q.textContent('#hojaVer')));
-    await q.click('[data-motivo="ilegible"]'); await q.fill('#notaDev', 'No se lee el número'); await q.click('#devConfirmar');
-    await q.waitForFunction(() => document.getElementById('hojaVer').textContent.includes('Documento 3') || !document.querySelector('#hojaVer.ver'));
+    ok(nombre + ': Devolver exige motivo y avisa que nada se envía hasta terminar', await q.locator('#devConfirmar').isDisabled() && /nada se envía hasta terminar/.test(await q.textContent('#hojaVer')));
+    kq = await selQ(); await q.click('[data-motivo="ilegible"]'); await q.fill('#notaDev', 'No se lee el número'); await q.click('#devConfirmar');
+    await q.waitForFunction((k) => document.querySelector('#hojaVer .rv-d.sel').dataset.rvIr !== k, kq);
     const dev = llamo(m, 'documento_marcar')[1];
     ok(nombre + ': Devolver marca con motivo y nota', dev && dev[2].p_accion === 'devolver' && dev[2].p_motivo === 'ilegible' && dev[2].p_nota === 'No se lee el número');
     await q.keyboard.press('Escape'); await q.waitForFunction(() => window.Comun.hojasAbiertas().join() === 'hojaFicha');
-    await q.waitForSelector('#barraRev');
     ok(nombre + ': marcar no cambia el estatus ni deja hilo', !(await q.textContent('#cabFicha')).includes('pendientes') && m.datos.clientes.find((c) => c.id === 1001).hilo.every((h) => h.tipo !== 'documento_devuelto'));
-    ok(nombre + ': la casilla dice que se devolverá y la barra resume la revisión', (await q.textContent('#tab-documentos')).includes('Para devolver: ilegible') && /1 para aprobar y 1 para devolver/.test(await q.textContent('#barraRev')));
-    await q.click('#abrirCerrarRev'); await q.waitForSelector('#hojaCerrarRev.ver #msjRev');
-    ok(nombre + ': Cerrar revisión muestra el resumen y el mensaje para el líder', /Se devuelven/.test(await q.textContent('#hojaCerrarRev')) && /ilegible o incompleto\. No se lee el número/.test(await q.inputValue('#msjRev')));
+    ok(nombre + ': la casilla dice que se devolverá y la banda resume la revisión', (await q.textContent('#tab-documentos')).includes('Para devolver: ilegible') && /1 para aprobar y 1 para devolver/.test(await q.textContent('#paso')));
+    await q.click('#paso [data-paso="revisar"]'); await q.waitForSelector('#hojaVer.ver #rvTerminar');
+    for(let i = 0; i < 10 && await q.locator('#rvTerminar[disabled]').count(); i++){
+      kq = await selQ(); await q.click('#verAprobar'); await q.waitForFunction((k) => document.querySelector('#hojaVer .rv-d.sel').dataset.rvIr !== k || !document.querySelector('#rvTerminar[disabled]'), kq);
+    }
+    await q.click('#rvTerminar'); await q.waitForSelector('#hojaCerrarRev.ver #msjRev');
+    ok(nombre + ': Terminar y avisar muestra el resumen y el mensaje para el líder', /Se devuelve/.test(await q.textContent('#hojaCerrarRev')) && /ilegible o incompleto\. No se lee el número/.test(await q.inputValue('#msjRev')));
     await q.screenshot({ path: 'capturas/04-' + nombre + '-cerrar-revision.png' });
-    await q.click('#cerrarRevSolo'); await q.waitForFunction(() => !document.querySelector('#hojaCerrarRev.ver'));
+    await q.click('#cerrarRevSolo'); await q.waitForFunction(() => !document.querySelector('#hojaCerrarRev.ver') && !document.querySelector('#hojaVer.ver'));
     ok(nombre + ': cerrar llama una vez al servidor', llamo(m, 'revision_cerrar').length === 1 && llamo(m, 'revision_cerrar')[0][2].p_enviado === false);
     await q.goto(H + 'clientes.html?c=1001&t=documentos'); await q.waitForSelector('#tab-documentos .casilla');
     await q.waitForFunction(() => { const f = document.getElementById('filaDrive'); return f && !/Buscando/.test(f.textContent); });

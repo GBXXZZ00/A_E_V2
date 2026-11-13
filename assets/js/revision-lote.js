@@ -46,13 +46,17 @@
     if(cs.length < (L.total || 0)) h += '<button type="button" class="btn btn-chico btn-2 mt-mas" data-rl="mas">Ver ' + Math.min(30, L.total - cs.length) + ' clientes más de ' + (L.total - cs.length) + '</button>';
     $('rlLista').innerHTML = h; pintarBar();
   }
+  // Lote 12/11 B, parte 6: se aprueba por cliente, no por documento; solo se marcan los clientes donde la IA dice que todo cuadra
+  const cuadra = (c) => (c.docs || []).length > 0 && (c.docs || []).every((d) => d.ia === 'apto');
   function grupoHtml(c){
-    const docs = c.docs || []; const todos = docs.length && docs.every((d) => elegidos.has(d.id));
-    return '<div class="rl-grp" data-cli="' + esc(c.id) + '"><div class="rl-gh">' + (puede() ? '<button type="button" class="rl-cb' + (todos ? ' on' : '') + '" data-rl-cli="' + esc(c.id) + '" aria-pressed="' + todos + '" aria-label="Elegir todos los de ' + esc(c.nombre) + '"></button>' : '') +
+    const docs = c.docs || []; const todos = docs.length && docs.every((d) => elegidos.has(d.id)); const ok = cuadra(c);
+    return '<div class="rl-grp" data-cli="' + esc(c.id) + '"><div class="rl-gh">' + (puede() ? (ok ? '<button type="button" class="rl-cb' + (todos ? ' on' : '') + '" data-rl-cli="' + esc(c.id) + '" aria-pressed="' + todos + '" aria-label="Elegir a ' + esc(c.nombre) + '"></button>' : '<span class="rl-cb-no" aria-hidden="true"></span>') : '') +
       '<b>' + esc(c.nombre) + '</b><span class="rl-s">' + esc([c.lider, plural(c.n, 'documento', 'documentos'), c.en_corte ? 'en el corte' : c.espera > 0 ? 'espera ' + plural(c.espera, 'día', 'días') : 'de hoy'].join(' · ')) + '</span>' +
-      '<span class="rl-acts"><button type="button" class="btn btn-chico btn-2" data-rl-drive="' + esc(c.id) + '">Abrir en Drive</button><button type="button" class="btn btn-chico btn-2" data-rl-uno="' + esc(c.id) + '">Ver uno por uno</button></span></div>' +
+      '<span class="rl-acts"><button type="button" class="btn btn-chico btn-2" data-rl-drive="' + esc(c.id) + '">Abrir en Drive</button>' +
+        (puede() && docs.some((d) => d.ia === 'sin_leer') ? '<button type="button" class="btn btn-chico btn-2" data-rl-leer="' + esc(c.id) + '">Que la revise la IA</button>' : '') +
+        '<button type="button" class="btn btn-chico' + (ok ? ' btn-2' : '') + '" data-rl-uno="' + esc(c.id) + '">Revisar</button></span></div>' +
       docs.map((d) => { const x = IA.find((y) => y[0] === d.ia) || IA[3]; const on = elegidos.has(d.id);
-        return '<div class="rl-row">' + (puede() ? '<button type="button" class="rl-cb' + (on ? ' on' : '') + '" data-rl-doc="' + esc(d.id) + '" data-c="' + esc(c.id) + '" aria-pressed="' + on + '" aria-label="Elegir ' + esc(d.cas) + '"></button>' : '<span></span>') +
+        return '<div class="rl-row"><span></span>' +
           '<span class="rl-dn"><b>' + esc(d.cas) + '</b><small>' + esc(d.numero > 0 && d.numero < 60 && /cedula|rif_personal/.test(d.casilla) ? 'representante ' + d.numero : d.casilla === 'acta_asamblea' ? 'acta ' + d.numero : '') + '</small></span>' +
           '<span class="rl-why"><span class="chip ' + ({ ok: 'verde', r: 'rojo', a: 'ambar', g: '' }[x[2]]) + '">' + esc(x[1].replace('IA: ', '')) + '</span>' + esc(d.nota || d.texto || (d.ia === 'sin_leer' ? 'La IA no lo ha leído' : '')) + '</span>' +
           '<small class="rl-d">' + esc(d.dias > 0 ? 'hace ' + plural(d.dias, 'día', 'días') : 'hoy') + '</small></div>'; }).join('') + '</div>';
@@ -61,10 +65,8 @@
     const z = $('rlBar'); const n = elegidos.size; z.classList.toggle('hidden', !puede());
     if(!puede()) return;
     const cs = new Set(Array.from(elegidos.values()).map((x) => x.cliente));
-    z.innerHTML = '<b>' + (n ? esc(plural(n, 'documento', 'documentos') + ' de ' + plural(cs.size, 'cliente', 'clientes') + (n === 1 ? ' seleccionado' : ' seleccionados')) : 'Toca los documentos o el cliente para elegirlos') + '</b>' +
-      '<button type="button" class="btn btn-chico btn-2" data-rl="ia"' + (n ? '' : ' disabled') + '>Leer con IA</button>' +
-      '<button type="button" class="btn btn-chico btn-2 rl-no" data-rl="devolver"' + (n ? '' : ' disabled') + '>Devolver con el motivo de la IA</button>' +
-      '<button type="button" class="btn btn-chico" data-rl="aprobar"' + (n ? '' : ' disabled') + '>Aprobar seleccionados</button>';
+    z.innerHTML = '<b>' + (cs.size ? esc(plural(cs.size, 'cliente seleccionado', 'clientes seleccionados')) : 'Marca los clientes donde la IA dice que todo cuadra. Los demás se abren con Revisar') + '</b>' +
+      '<button type="button" class="btn btn-chico" data-rl="aprobar"' + (n ? '' : ' disabled') + '>Aprobar ' + (cs.size ? plural(cs.size, 'cliente', 'clientes') : 'clientes') + '</button>';
   }
   const docDe = (id) => { for(const c of (L.clientes || [])){ const d = (c.docs || []).find((x) => String(x.id) === String(id)); if(d) return { d, c }; } return null; };
   function elegir(id, cli, on){ const x = docDe(id); if(!x) return; if(on) elegidos.set(x.d.id, { doc: x.d, cliente: Number(cli) }); else elegidos.delete(x.d.id); }
@@ -111,8 +113,8 @@
     if(malo) return; cerrarHoja(); mandar(items, 'devolver');
   }
   // Leer con IA: cuánto cuesta lo nuevo, y se lanza (hasta 25 clientes a la vez)
-  async function abrirIA(){
-    const ids = Array.from(new Set(Array.from(elegidos.values()).map((x) => x.cliente)));
+  async function abrirIA(soloCli){
+    const ids = soloCli ? [Number(soloCli)] : Array.from(new Set(Array.from(elegidos.values()).map((x) => x.cliente)));
     if(ids.length > 25){ toast('Elige hasta 25 clientes para leer con IA', 'error'); return; }
     const h = hoja('hojaRlIA', 'tRlIA');
     h.innerHTML = cab('tRlIA', 'Leer con IA', plural(ids.length, 'cliente', 'clientes')) + '<div class="hoja-cuerpo" id="cRlIA"><span class="sk" style="height:120px;border-radius:16px;display:block"></span></div>';
@@ -151,6 +153,7 @@
     if((b = t.closest('[data-rl-doc]'))){ elegir(b.dataset.rlDoc, b.dataset.c, b.getAttribute('aria-pressed') !== 'true'); pintar(); return; }
     if((b = t.closest('[data-rl-uno]'))){ window.Ficha.abrir(Number(b.dataset.rlUno), { yo: O.yo, tab: 'documentos', revisar: puede(), alCerrar: () => cargar() }); return; }
     if((b = t.closest('[data-rl-drive]'))){ abrirDrive(b.dataset.rlDrive, b); return; }
+    if((b = t.closest('[data-rl-leer]'))){ abrirIA(b.dataset.rlLeer); return; }
     if((b = t.closest('[data-rl]'))){
       const a = b.dataset.rl;
       if(a === 'volver'){ Z = null; if(O.alSalir) O.alSalir(); }

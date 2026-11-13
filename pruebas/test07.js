@@ -33,7 +33,7 @@ const cerrarTodo = async (p) => { for(let i = 0; i < 4; i++){ if(await p.evaluat
     ok(nombre + ': el acta sin fecha lo dice', (await p.textContent('[data-casilla="acta_asamblea:1"]')).includes('Falta la fecha del acta'));
     // Lote 22/10: cada acta lleva su fecha
     await p.click('[data-casilla="acta_asamblea:1"]'); await p.waitForSelector('#fechaActa');
-    await p.fill('#fechaActa', '2019-05-20'); await p.click('#guardarFechaActa');
+    await p.fill('#fechaActa', '2019-05-20');   // lote 12/11 B: en la pantalla de revisión se guarda sola al elegirla
     await p.waitForFunction(() => /Acta del/.test(document.querySelector('#tab-documentos [data-casilla="acta_asamblea:1"]').textContent));
     ok(nombre + ': guarda la fecha del acta y la muestra', mundo.llamadas.some((l) => l[1] === 'documento_fecha_acta' && l[2].p_fecha === '2019-05-20'));
     await cerrarTodo(p); await abrirCliente(p, 'Vidrios El Faro'); await p.click('[data-tab="documentos"]');
