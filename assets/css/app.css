@@ -3033,6 +3033,9 @@ main.al-en-inicio #ayuda{display:none}
 .al-cas2 .tx{flex:1;min-width:0} .al-cas2 .tx b{display:block;font-size:13.5px}
 .al-cas2 .tx small{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text2);margin-top:2px}
 .al-cas2 .tx small.ok{color:var(--verde);font-weight:600} .al-cas2 .tx small.az{color:var(--accent);font-weight:600}
+/* Lote 13/11: lista "Ver los avisos" del administrador */
+.al-demo{width:100%;text-align:left;font:inherit;color:inherit;cursor:pointer}
+.al-demo .acc{color:var(--text2)}
 .al-cas2 .tx small.mal{color:var(--rojo);font-weight:600} .al-cas2 .tx small.w{color:var(--ambar);font-weight:600}
 .al-cas2 .tx .sd-barra2{margin-top:6px;max-width:180px}
 .al-cas2 .acc{display:flex;align-items:center;gap:10px;flex:none}

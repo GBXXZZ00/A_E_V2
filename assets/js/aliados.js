@@ -114,7 +114,7 @@
           '<label class="solo-lector" for="alAliadoF">Aliado</label><select class="al-sel" id="alAliadoF"><option value="">Aliado: todos</option>' + alis.map((n) => '<option value="' + esc(n) + '"' + (aliadoF === n ? ' selected' : '') + '>' + esc(n) + '</option>').join('') + '</select></div>' : '';
       $('filtros').innerHTML = '<span class="al-enl">' + tabs().filter((x) => x[0] !== tab).map((x) => { const c = cuenta(x[0]);
         return '<button type="button" class="enlace" data-tab="' + x[0] + '">' + esc(x[0] === 'registro' ? 'Volver a solicitudes' : x[1]) + (c ? ' (' + c + ')' : '') + '</button>'; }).join('') +
-        (tab === 'registro' && R && R.puedo && R.puedo.prueba ? '<button type="button" class="btn btn-chico btn-2" data-acc="nueva">Solicitud de prueba</button>' : '') + '</span>';
+        (tab === 'registro' && R && R.puedo && R.puedo.prueba ? '<button type="button" class="btn btn-chico btn-2" data-acc="nueva">Solicitud de prueba</button><button type="button" class="btn btn-chico btn-2" data-acc="avisosDemo">Ver los avisos</button>' : '') + '</span>';
       return;
     }
     $('filtros').innerHTML = tabs().length > 1 ? tabs().map((x) => { const c = cuenta(x[0]);
@@ -124,7 +124,7 @@
     $('ayuda').textContent = (AYUDA[tab] || '') + (tab === 'registro' && modo !== 'admin' ? ' Solo para ver: las decisiones las toma el administrador.' : '');
     $('zonaRegistro').classList.toggle('hidden', tab !== 'registro');
     $('accionCab').innerHTML = (modo === 'aliado' || modo === 'canales') && tab !== 'inicio' && tab !== 'pagos' && tab !== 'instalados' && tab !== 'mes' && tab !== 'sinp' ? '<button type="button" class="btn btn-chico solo-pc" data-acc="nueva">+ Nuevo cliente</button>'
-      : modo === 'admin' && tab === 'registro' && R && R.puedo && R.puedo.prueba ? '<button type="button" class="btn btn-chico btn-2" data-acc="nueva">Solicitud de prueba</button>' : '';
+      : modo === 'admin' && tab === 'registro' && R && R.puedo && R.puedo.prueba ? '<button type="button" class="btn btn-chico btn-2" data-acc="nueva">Solicitud de prueba</button><button type="button" class="btn btn-chico btn-2" data-acc="avisosDemo">Ver los avisos</button>' : '';
   }
   const clave = () => 'aliados:' + modo;
   async function cargar(){
@@ -752,10 +752,12 @@
       default: return null;
     }
   }
-  let resId = null; let resPara = null;
+  let resId = null; let resPara = null; let resDemo = false;
   // Recuadro grande centrado (600 px en PC, 350 en teléfono), todo del color del estado, con lo de atrás difuminado
-  function mostrarRes(d){
-    if(modo !== 'aliado' && modo !== 'canales') return;
+  // Lote 13/11: también en la Solicitud de prueba del administrador (y en "Ver los avisos", con datos de ejemplo)
+  function mostrarRes(d, demo){
+    if(modo === 'equipo') return;
+    resDemo = !!demo;
     const r = resDe(d); if(!r) return;
     let v = $('alResVelo'); if(!v){ v = document.createElement('div'); v.id = 'alResVelo'; v.className = 'al-res-velo'; document.body.appendChild(v); }
     let z = $('alRes'); if(!z){ z = document.createElement('section'); z.id = 'alRes'; z.setAttribute('role', 'dialog'); z.setAttribute('aria-modal', 'true'); z.setAttribute('aria-labelledby', 'alResT'); document.body.appendChild(z); }
@@ -773,9 +775,32 @@
       (r.resp ? '<div class="al-res-caja"><p class="al-res-n"><b>Respuesta del administrador:</b> ' + esc(r.resp) + '</p></div>' : '') +
       (r.b.length ? '<div class="al-res-acc">' + r.b.map((x) => '<button type="button" class="hc-b an ' + (x[2] === 'pri' ? '' : x[2] === 'wa' ? 'wa2' : 's') + '" data-res="' + x[0] + '">' + (x[2] === 'wa' ? ic('wa') : '') + esc(x[1]) + '</button>').join('') + '</div>' : '') + '</div>';
     z.classList.add('ver'); v.classList.add('ver'); document.documentElement.classList.add('con-res');
-    marcarVisto(d.id, d.etiqueta);
+    if(modo === 'aliado') marcarVisto(d.id, d.etiqueta);
   }
-  function cerrarRes(){ const z = $('alRes'); if(z) z.classList.remove('ver'); const v = $('alResVelo'); if(v) v.classList.remove('ver'); document.documentElement.classList.remove('con-res'); resId = null; }
+  // Lote 13/11: "Ver los avisos" (administrador): cada caso del aliado con datos de ejemplo, sin tocar la base
+  const DEMOS = [['analizando', 'Revisando', 'Mientras se leen los documentos'], ['lista', '¡Puedes instalar!', 'Pasó la revisión'], ['recaudos', 'Te falta algo', 'Falta un documento para instalar'],
+    ['cartera', 'Carterizado', 'El cliente ya tiene su ejecutivo'], ['otro', 'Ya está siendo gestionado', 'Otro aliado o una orden abierta'], ['excepcionNo', 'Excepción no aprobada', 'Pidió excepción y se negó'],
+    ['noprocede', 'No procede', 'El administrador cerró la solicitud'], ['repetida', 'Ya tienes una solicitud', 'El mismo RIF dos veces, dentro del alta'], ['referido', 'Referido enviado', 'Después de referir un cliente']];
+  function abrirAvisosDemo(){
+    const h = hoja('hojaAvisos'); h.classList.add('al-dw');
+    h.innerHTML = cab('hojaAvisos', 'Avisos del aliado', 'Así los ve el aliado. Son de ejemplo: no se guarda nada') + '<div class="hoja-cuerpo"><section class="al-sec"><div class="al-tarj">' +
+      DEMOS.map((x) => '<button type="button" class="al-cas2 al-demo" data-demo="' + x[0] + '"><span class="tx"><b>' + esc(x[1]) + '</b><small>' + esc(x[2]) + '</small></span><span class="acc">' + ic('derecha') + '</span></button>').join('') +
+      '</div></section></div><div class="hoja-pie al-pie2"><button type="button" class="hc-b s" data-cierra="1">Cerrar</button></div>';
+    abrirHoja('hojaAvisos');
+  }
+  function verDemo(k){
+    const nom = 'PANADERÍA EJEMPLO, C.A.';
+    if(k === 'repetida'){
+      N = { demo: true, id: null, tipo: 'empresa', rif: null, cliente: null, nombre: '', estado: 'repetida', repetida: 'AL-0001', repetidaId: 0, msg: '', cas: {}, reps: 1, c: { correo: '', tel: '', correoEmp: '' }, err: {}, otro: null };
+      const h = hoja('hojaNueva'); h.classList.add('al-dw');
+      h.innerHTML = cab('hojaNueva', 'Nuevo cliente', '') + '<div class="hoja-cuerpo" id="cNueva"></div><div class="hoja-pie" id="pNueva"></div>';
+      abrirHoja('hojaNueva'); pintarNueva(); return;
+    }
+    const d = { id: 0, cliente: nom, etiqueta: k === 'excepcionNo' ? 'recaudos' : k, ia: { estado: 'leyendo', total: 6, avance: 4, puntos: [{ estado: 'bloquea', titulo: 'Falta el acta de asamblea', detalle: 'La que nombra al representante que firma' }] },
+      excepcion: k === 'excepcionNo', respuesta: k === 'excepcionNo' ? 'Sin el acta no se puede firmar.' : k === 'noprocede' ? 'El cliente ya tiene una orden con otro vendedor.' : null };
+    mostrarRes(d, true);
+  }
+  function cerrarRes(){ const z = $('alRes'); if(z) z.classList.remove('ver'); const v = $('alResVelo'); if(v) v.classList.remove('ver'); document.documentElement.classList.remove('con-res'); resId = null; resDemo = false; }
   const K_VISTO = 'ae_al_vistos';
   function vistos(){ try { return JSON.parse(localStorage.getItem(K_VISTO) || 'null'); } catch (e) { return null; } }
   function marcarVisto(id, et){ try { const v = vistos() || {}; v[id] = et; localStorage.setItem(K_VISTO, JSON.stringify(v)); } catch (e) {} }
@@ -1016,6 +1041,8 @@
   document.addEventListener('click', async (ev) => {
     const t = ev.target; let b;
     if((b = t.closest('[data-tab]'))){ tab = b.dataset.tab; mostrar = POR_PAGINA; guardarUrl(); pintarTabs(); cargar(); return; }
+    if((b = t.closest('[data-sol]')) && N && N.demo){ toast('Es un ejemplo: aquí se abre esa solicitud'); return; }
+    if((b = t.closest('[data-demo]'))){ verDemo(b.dataset.demo); return; }
     if((b = t.closest('[data-sol]'))){ if(hojaAbierta() === 'hojaNueva') cerrarHoja(true); abrirSol(Number(b.dataset.sol)); return; }
     if((b = t.closest('[data-ref]'))){ abrirForm('ref', { id: Number(b.dataset.ref) }); return; }
     if((b = t.closest('[data-revisado]'))){ const p = b.dataset.revisado.split(':'); abrirForm('revisado', { tipo: p[0], id: Number(p[1]), nombre: b.dataset.nombre }); return; }
@@ -1033,9 +1060,10 @@
     if((b = t.closest('[data-pagar]'))){ const l = b.dataset.pagar === 'referido' ? (pagos.referidos || []) : (pagos.instalaciones || []); const f = l.find((y) => String(y.id) === b.dataset.id) || {}; abrirForm('pagar', { tipo: b.dataset.pagar, id: Number(b.dataset.id), cliente: f.cliente }); return; }
     if((b = t.closest('[data-form]'))){ abrirForm(b.dataset.form, { modo: b.dataset.modo }); return; }
     if((b = t.closest('[data-res]'))){ const r = b.dataset.res; const rid = resId;
+      if(resDemo){ cerrarRes(); return; }
       if(r === 'cerrar' || r === 'ver'){ cerrarRes(); return; }
       cerrarRes();
-      if(r === 'inicio' || r === 'solicitudes' || r === 'nueva' || r === 'referidos'){ while(hojaAbierta()) cerrarHoja(true); tab = r === 'solicitudes' ? 'solicitudes' : r === 'referidos' ? 'referidos' : 'inicio'; pintarTabs(); cargar(); if(r === 'nueva') abrirNueva(); return; }
+      if(r === 'inicio' || r === 'solicitudes' || r === 'nueva' || r === 'referidos'){ while(hojaAbierta()) cerrarHoja(true); tab = modo === 'admin' ? 'registro' : r === 'solicitudes' ? 'solicitudes' : r === 'referidos' ? 'referidos' : 'inicio'; pintarTabs(); cargar(); if(r === 'nueva') abrirNueva(); return; }
       if(r === 'referirSol'){ abrirForm('referir', { sol: rid, rif: N && N.rif, cliente: N && N.nombre }); return; }
       if(r === 'whats'){ const d = SOL && SOL.d; window.open(enlaceWa(ajustes.whatsapp_admin || '', 'Hola, sobre la solicitud ' + (d ? d.codigo + ' de ' + d.cliente : '') + ':'), '_blank', 'noopener'); return; }
       if(r.indexOf('form:') === 0){ abrirForm(r.slice(5), {}); return; }
@@ -1051,6 +1079,7 @@
     if(!(b = t.closest('[data-acc]'))) return;
     const a = b.dataset.acc;
     if(a === 'nueva') abrirNueva();
+    if(a === 'avisosDemo') abrirAvisosDemo();
     else if(a === 'referir') abrirForm('referir', {});
     else if(a === 'referirSol'){ const id = Number(b.dataset.id); const d = SOL && SOL.d && SOL.d.id === id ? SOL.d : null; abrirForm('referir', { sol: id, rif: d ? d.rif : N && N.rif, cliente: d ? d.cliente : N && N.nombre }); }
     else if(a === 'reintentar') cargar();
