@@ -52,12 +52,23 @@ const CH = '<svg class="i" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>';
       const w = document.createElement('div'); w.className = 'zz-cab'; cab.before(w); w.appendChild(cab);
       const nom = cab.querySelector('.tx'); const btn = '<span class="zz-env">' + window.Comun.ic('wa') + 'Enviar pendientes' + (o.ultimo && l === 'Rosa Paredes' ? ' <small>· ayer, Marcos</small>' : '') + '</span>';
       nom.insertAdjacentHTML('afterend', btn); });
+    // Migraciones dentro de la lista del líder, con etiqueta azul "Migración", y el filtro Migraciones
+    if(o.mig){ const g = document.querySelector('.cx-grupo.abierto') || document.querySelector('.cx-grupo'); const fila = g && g.querySelector('.cx-fila2');
+      if(fila){ const sub = Array.from(g.querySelectorAll('.sub-bloque')).find((x) => /Instaladas en este corte/.test(x.textContent)) || fila;
+        const mk = (nom, sub2, tag, tx, pts) => { const c = fila.cloneNode(true); c.querySelector('.cx-lf-c b').textContent = nom; c.querySelector('.cx-lf-c small').textContent = sub2;
+          let et = c.querySelector('.cx-et'); if(!et){ et = document.createElement('span'); et.className = 'cx-et'; c.querySelector('.cx-lf-c').appendChild(et); } et.innerHTML = tag;
+          c.querySelector('.cx-lf-p small').textContent = tx; c.querySelectorAll('.cx-3p i').forEach((i, k) => { i.className = pts[k] ? 'ok' : 'no'; }); return c; };
+        const a = mk('Óptica Central, C.A.', 'J-591000121 · 824-99100011', '<span class="chip azul">Migración</span>', 'Falta legal', [0, 1, 1]);
+        const b = mk('Bodegón La Esquina', 'V-99100033 · 824-99100013', '<span class="chip azul">Migración</span>', 'Comisiona', [1, 1, 1]);
+        sub.after(a); a.after(b); }
+      const fil = document.querySelector('#filtros'); if(fil){ const m = document.createElement('button'); m.type = 'button'; m.className = (fil.querySelector('button:not(.on)') || fil.firstElementChild).className; m.innerHTML = 'Migraciones <span style="opacity:.6">12</span>'; const mas = Array.from(fil.children).find((x) => /Más filtros/.test(x.textContent)); fil.insertBefore(m, mas || null); }
+      const seg = document.querySelectorAll('#segs > *')[1]; if(seg) seg.style.display = 'none'; }
   }, Object.assign({ CH, WA: '<svg class="i" viewBox="0 0 24 24"><path d="M4 20l1.3-3.9A8 8 0 1 1 8 19z"/></svg>' }, o));
   for(const [u, pin, suf] of [['marcos', '482913', ''], ['elena', '315806', '-analista']]){
     const { ctx } = await contexto(nav, PC); const p = await entrar(ctx, u, pin);
     const ir = async () => { await p.goto(H + 'comisiones.html'); await p.waitForSelector('.cx-grupo', { timeout: 15000 }); await p.waitForTimeout(800); await p.addStyleTag({ content: CSS }); };
     await ir(); await tomar(p, '10-comisiones-hoy' + suf);
-    await armar(p, { mos: '', ultimo: true }); await tomar(p, '11-comisiones-filtros' + suf);
+    await armar(p, { mos: '', ultimo: true, mig: !suf }); await tomar(p, '11-comisiones-filtros' + suf);
     if(!suf){
       await ir(); await armar(p, { pop: 'eq' }); await tomar(p, '11b-comisiones-equipo');
       await ir(); await armar(p, { pop: 'fe' }); await tomar(p, '11c-comisiones-fechas');
