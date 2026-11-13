@@ -56,7 +56,7 @@ Maquetas montadas sobre la app real del simulador: `claude/maquetas/obs-13nov/im
 ## 8. Comisiones: filtros en dos renglones sin recuadro (maquetas 10 hoy, 11, 11b, 11c, 11d)
 - Se quita el recuadro `.cx-panel` y las etiquetas EQUIPO y VER.
 - Renglón 1 (44 px de alto): buscador (ocupa lo que sobra) · **Equipo: Todos ▾** (desplegable con los equipos y sus números; debajo "Persona" con cada líder y su número, 11b) · **Fechas: todo el corte ▾** (Todo el corte, Esta semana, Semana pasada, Hoy, Entre fechas con Desde y Hasta, 11c) · selector **Por dueño | Por fecha** · botón **···** con Bajar Excel y Días para el pago (11d).
-- Renglón 2: Todas · Comisionan · Les falta algo · Carta por enviar · Más filtros (los de hoy, iguales).
+- Renglón 2 (aprobado 13/11, igual para administrador y líder): **Todas · Comisionan · Faltan documentos · Falta el pago · Carta por enviar · Migraciones · Más filtros**. "Les falta algo" pasa a Más filtros, junto con Del corte anterior, Por asignar y Archivos por subir. "Faltan documentos" = falta Legal; "Falta el pago" = sin pago.
 - "Aliado: todos" sigue saliendo como pastilla solo con ese equipo. Lo elegido queda en la dirección como hoy.
 - Teléfono: el renglón 1 queda buscador a todo el ancho y debajo Equipo, Fechas y ··· en una fila con desplazamiento propio (no la página).
 

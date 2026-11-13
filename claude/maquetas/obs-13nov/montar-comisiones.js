@@ -38,6 +38,10 @@ const CH = '<svg class="i" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>';
   const armar = async (p, o) => p.evaluate((o) => {
     const pan = document.querySelector('.cx-panel'); const bus = pan.querySelector('.cx-buscar'); const fil = document.querySelector('#filtros'); const acc = document.querySelector('#acciones');
     // filtros de estado tal cual (Todas, Comisionan, Les falta algo, Carta por enviar, Más filtros)
+    { const proto = fil.querySelector('button:not(.on)'); const on = fil.querySelector('button.on'); const mas = Array.from(fil.children).find((x) => /Más filtros/.test(x.textContent));
+      const mk = (t, nn, act) => { const b = (act ? on : proto).cloneNode(true); b.innerHTML = t + ' <span style="opacity:.6;margin-left:4px">' + nn + '</span>'; return b; };
+      Array.from(fil.children).forEach((x) => { if(x !== mas) x.remove(); });
+      [['Todas', 16, 1], ['Comisionan', 5], ['Faltan documentos', 11], ['Falta el pago', 10], ['Carta por enviar', 15]].concat(o.mig ? [['Migraciones', 12]] : []).forEach((x) => fil.insertBefore(mk(x[0], x[1], x[2]), mas || null)); }
     const t2 = document.createElement('div'); t2.className = 'zz-t2'; t2.appendChild(fil); t2.insertAdjacentHTML('beforeend', o.mos ? '<span class="zz-mos">' + o.mos + '</span>' : '');
     const t1 = document.createElement('div'); t1.className = 'zz-t1'; t1.style.position = 'relative'; t1.appendChild(bus);
     t1.insertAdjacentHTML('beforeend', '<button class="zz-dd' + (o.pop === 'eq' ? ' on' : '') + '">Equipo: <b>' + (o.eq || 'Todos') + '</b>' + o.CH + '</button>' + (o.persona ? '<button class="zz-dd on">Persona: <b>' + o.persona + '</b>' + o.CH + '</button>' : '') +
@@ -61,7 +65,7 @@ const CH = '<svg class="i" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>';
         const a = mk('Óptica Central, C.A.', 'J-591000121 · 824-99100011', '<span class="chip azul">Migración</span>', 'Falta legal', [0, 1, 1]);
         const b = mk('Bodegón La Esquina', 'V-99100033 · 824-99100013', '<span class="chip azul">Migración</span>', 'Comisiona', [1, 1, 1]);
         sub.after(a); a.after(b); }
-      const fil = document.querySelector('#filtros'); if(fil){ const m = document.createElement('button'); m.type = 'button'; m.className = (fil.querySelector('button:not(.on)') || fil.firstElementChild).className; m.innerHTML = 'Migraciones <span style="opacity:.6">12</span>'; const mas = Array.from(fil.children).find((x) => /Más filtros/.test(x.textContent)); fil.insertBefore(m, mas || null); }
+      
       const seg = document.querySelectorAll('#segs > *')[1]; if(seg) seg.style.display = 'none'; }
   }, Object.assign({ CH, WA: '<svg class="i" viewBox="0 0 24 24"><path d="M4 20l1.3-3.9A8 8 0 1 1 8 19z"/></svg>' }, o));
   for(const [u, pin, suf] of [['marcos', '482913', ''], ['elena', '315806', '-analista']]){
