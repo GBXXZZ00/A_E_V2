@@ -259,6 +259,37 @@ function gestionJson(m, x, det){
     clientes: det ? x.clientes.map((c) => { const k = m.datos.clientes.find((z) => z.id === c.cliente_id) || {}; return Object.assign({ nombre: k.nombre, lider: k.lider, cumple: false }, c); }) : null };
 }
 // Lote 11/11 H2: la coordinadora puede pasar una tarea de Canales a otra persona
+// Lote 13/11 partes 11 y 12: la forma nueva de comisiones_resumen (poblaciones, ritmo, cortes cerrados, días de calendario, dinero) y la del líder
+function resumen13(m, yo, R, corteF, base, ab, abre){
+  const eq = (e) => corteF.filter((f) => (f.equipo || 'corporativas') === e);
+  const pob = {}; ['corporativas', 'canales', 'aliados', 'sin_dueno'].forEach((e) => { const l = eq(e); const prev = Math.max(0, l.length - 1);
+    pob[e] = { inst: l.length, com: l.filter((f) => f.cumple).length, esperan: l.filter((f) => !f.cumple).length, prev, prev_total: prev, pct: prev ? Math.round(100 * (l.length - prev) / prev) : null }; });
+  const hoyD = new Date(); const dias = (o) => Math.max(0, Math.floor((hoyD - new Date(o.inicio || o.creada_en)) / 86400000));
+  const del = ab.filter((o) => new Date(o.inicio || o.creada_en).getTime() >= abre);
+  const pinst = R.en_curso ? { al_dia: del.filter((o) => dias(o) < 1).length, atrasadas: del.filter((o) => dias(o) >= 1 && dias(o) <= 3).length, muy: del.filter((o) => dias(o) >= 4 && dias(o) <= 9).length,
+    perdidas: ab.filter((o) => new Date(o.inicio || o.creada_en).getTime() < abre || dias(o) >= 10).length } : null;
+  const dia = Math.min(30, Math.max(1, hoyD.getDate() >= 18 ? hoyD.getDate() - 17 : hoyD.getDate() + 13));
+  const acum = (n, k) => Array.from({ length: k }, (_, i) => Math.round(n * (i + 1) / k));
+  const pc = pob.corporativas;
+  R.dia = dia; R.pob = pob;
+  R.nums = Object.assign({}, R.nums, { inst: pc.inst, inst_prev: pc.prev, pct: pc.pct, comisionan: pc.com, esperan: pc.esperan, atrasadas: pinst ? pinst.atrasadas + pinst.muy : null, mediana: 2.5, mediana_prev: 2.1 });
+  R.equipos = R.equipos.map((e) => Object.assign({}, e, { ahora: pob[e.equipo].inst, com: pob[e.equipo].com, anterior: pob[e.equipo].prev, pct: pob[e.equipo].pct }));
+  R.ritmo = { dia, largo: 31, en_curso: R.en_curso, actual: acum(pc.inst, dia), anterior: acum(pc.prev + 2, 31), promedio: acum(pc.prev + 1, 31) };
+  R.cerrados = [{ corte: '2026-09-01', mes: 'septiembre', comisionaron: 31, pasaron: 5, perdieron: 0 }, { corte: '2026-10-01', mes: 'octubre', comisionaron: 41, pasaron: 1, perdieron: 3 }];
+  R.por_instalar = pinst;
+  R.monto = { monto: 30, asegurado: base.filter((f) => f.cumple).length, en_juego: base.filter((f) => f.origen === 'corte' && !f.cumple && f.equipo !== 'aliados').length,
+    ultima: base.filter((f) => f.origen === 'anterior' && !f.cumple).length, migraciones: 0, limite: R.limite, cerrado: R.cerrado };
+  delete R.serie;
+  if(yo.rol === 'lider'){
+    const mio = base.filter((f) => f.lider === yo.nombre); const rkE = (R.ranking.corporativas || []); const pos = rkE.find((x) => x.nombre === yo.nombre);
+    const l = { pos: pos ? pos.pos : null, de: rkE.length, nombre: yo.nombre, inst: mio.filter((f) => f.origen === 'corte').length, prev: 1, com: mio.filter((f) => f.cumple).length,
+      faltan: mio.filter((f) => f.origen === 'corte' && !f.cumple).length, faltan_legal: mio.filter((f) => !f.cumple && !f.legal_ok).length, faltan_pago: mio.filter((f) => !f.cumple && !f.pago_ok).length,
+      pierden: mio.filter((f) => f.origen === 'anterior' && !f.cumple).length, limite: R.limite };
+    l.pct = l.prev ? Math.round(100 * (l.inst - l.prev) / l.prev) : null;
+    return { corte: R.corte, mes: R.mes, anterior: R.anterior, mes_anterior: R.mes_anterior, en_curso: R.en_curso, cerrado: R.cerrado, limite: R.limite, misma_fecha: R.misma_fecha, dia, lider: l, por_instalar: pinst, cortes: R.cortes, rol: 'lider', solo_lectura: false, horas_alerta: R.horas_alerta };
+  }
+  return R;
+}
 function puedePend(m, yo, lider){
   if(yo.rol === 'admin') return true; if(yo.rol !== 'analista') return false; if(yo.senior) return true;
   const p = m.personas.find((x) => norm(x.nombre) === norm(lider)); return !!(p && p.analista_id && p.analista_id === yo.id);
@@ -1855,7 +1886,7 @@ const RPC = {
     const del = ab.filter((o) => new Date(o.creada_en).getTime() >= abre);
     const cartas = corteF.map((f) => (f.carta || {}).k);
     const nm = (k) => ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'][Number(String(k).slice(5, 7)) - 1];
-    return { corte: c, mes: nm(c), anterior: p, mes_anterior: nm(p), en_curso: c === actual, cerrado: cerrado(c), misma_fecha: c === actual, limite: corteLimite(c), horas_alerta: lim, rol: yo.rol, solo_lectura: yo.rol === 'abogado',
+    const R = { corte: c, mes: nm(c), anterior: p, mes_anterior: nm(p), en_curso: c === actual, cerrado: cerrado(c), misma_fecha: c === actual, limite: corteLimite(c), horas_alerta: lim, rol: yo.rol, solo_lectura: yo.rol === 'abogado',
       nums: { inst: corteF.length, inst_prev: fp.filter((f) => f.origen === 'corte').length, comisionan: base.filter((f) => f.cumple).length, esperan: base.filter((f) => !f.cumple && f.equipo !== 'aliados').length,
         por_instalar: c === actual ? del.filter((o) => o.horas >= lim).length : null, mediana: 2.5, susp60: 0, siguen_prev: 96 },
       ranking: rk, lider_mes: { corte: p, mes: nm(p), cerrado: cerrado(p), lider: rk.corporativas[0] && rk.corporativas[0].inst ? { nombre: rk.corporativas[0].nombre, inst: rk.corporativas[0].inst, com: rk.corporativas[0].com } : null, canales: null, aliados: null },
@@ -1865,6 +1896,7 @@ const RPC = {
       monto: { monto: 30, cumplen: base.filter((f) => f.cumple).length, pasan: base.filter((f) => f.origen === 'corte' && !f.cumple && f.equipo !== 'aliados').length, pierden: base.filter((f) => f.origen === 'anterior' && !f.cumple).length, limite: corteLimite(c), cerrado: cerrado(c) },
       cartas: { canales: cartas.filter((k) => k === 'enviada').length, lider: cartas.filter((k) => k === 'lider').length, por_enviar: cartas.filter((k) => k === 'por_enviar' || k === 'falta_ip').length, falta_ip: cartas.filter((k) => k === 'falta_ip').length, esperan: 0 },
       cortes: [0, 1, 2].map((n) => { const k = masMeses(actual, -n); return { corte: k, mes: nm(k), cerrado: cerrado(k), en_curso: n === 0 }; }) };
+    return resumen13(m, yo, R, corteF, base, ab, abre);   // lote 13/11: la forma nueva del Resumen
   },
   comisiones_detalle(m, yo, a){
     if(!['admin', 'analista', 'lider', 'abogado'].includes(yo.rol)) return error('No tienes permiso para hacer esto');

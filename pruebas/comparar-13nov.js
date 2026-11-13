@@ -48,6 +48,15 @@ const CASOS = {
     { n: 'p8-tel-comisiones', tel: true, act: async (p) => { await p.goto(H + 'comisiones.html'); await p.waitForSelector('.cx-grupo', { timeout: 15000 }); await p.evaluate(() => document.querySelector('.cx-p2').scrollIntoView()); await p.waitForTimeout(600); } },
     { n: 'p8-tel-comisiones-equipo', tel: true, act: async (p) => { await p.goto(H + 'comisiones.html'); await p.waitForSelector('.cx-grupo', { timeout: 15000 }); await p.click('#cxEqBtn'); } }
   ],
+  parte12: [
+    { n: 'p12-20-lider-lista-pc', maq: '20-lider-lista-pc', u: 'lucia', pin: '739105', full: true, act: async (p) => { await p.goto(H + 'comisiones.html'); await p.waitForSelector('.cx-grupo', { timeout: 15000 }); await p.waitForTimeout(800); } },
+    { n: 'p12-20b-lider-lista-tel', tel: true, u: 'lucia', pin: '739105', act: async (p) => { await p.goto(H + 'comisiones.html'); await p.waitForSelector('.cx-grupo', { timeout: 15000 }); await p.evaluate(() => { const f = document.querySelector('.cx-p2'); window.scrollTo(0, f.getBoundingClientRect().top + window.scrollY - 90); }); await p.waitForTimeout(500); } },
+    { n: 'p12-11-admin-lista', maq: '11-comisiones-filtros', act: async (p) => { await p.goto(H + 'comisiones.html'); await p.waitForSelector('.cx-grupo', { timeout: 15000 }); await p.waitForTimeout(800); } },
+    { n: 'p12-21-resumen-pc', maq: '21-resumen-pc', full: true, act: async (p) => { await p.goto(H + 'comisiones.html?v=resumen'); await p.waitForSelector('.cr2-k', { timeout: 15000 }); await p.waitForTimeout(800); } },
+    { n: 'p12-21-resumen-tel', tel: true, full: true, act: async (p) => { await p.goto(H + 'comisiones.html?v=resumen'); await p.waitForSelector('.cr2-k', { timeout: 15000 }); await p.waitForTimeout(800); } },
+    { n: 'p12-resumen-lider-pc', u: 'lucia', pin: '739105', act: async (p) => { await p.goto(H + 'comisiones.html?v=resumen'); await p.waitForSelector('.cr2-k', { timeout: 15000 }); await p.waitForTimeout(800); } },
+    { n: 'p12-resumen-lider-tel', tel: true, u: 'lucia', pin: '739105', full: true, act: async (p) => { await p.goto(H + 'comisiones.html?v=resumen'); await p.waitForSelector('.cr2-k', { timeout: 15000 }); await p.waitForTimeout(800); } }
+  ],
   revisiontel: [
     { n: 'p10-tel-lista', tel: true, prep: separar, act: async (p) => { await abrirRev(p); } },
     { n: 'p10-tel-documento', tel: true, prep: separar, act: async (p) => { await abrirRev(p); await p.click('#hojaVer .rv-d.sel'); } },
@@ -60,9 +69,9 @@ module.exports = { CASOS };
 async function ladoALado(nav, maq, cap, sal){
   const pg = await nav.newPage({ viewport: { width: 2752, height: 800 } });
   const b64 = (f) => 'data:image/png;base64,' + fs.readFileSync(f).toString('base64');
-  await pg.setContent('<body style="margin:0;background:#888;display:flex;gap:20px;font:14px sans-serif"><div><div style="color:#fff;padding:4px">Maqueta</div><img src="' + b64(maq) + '" style="width:1366px;height:768px;display:block"></div>' +
-    '<div><div style="color:#fff;padding:4px">Publicado</div><img src="' + b64(cap) + '" style="width:1366px;height:768px;display:block"></div></body>');
-  await pg.screenshot({ path: sal }); await pg.close();
+  await pg.setContent('<body style="margin:0;background:#888;display:flex;gap:20px;font:14px sans-serif;align-items:flex-start"><div><div style="color:#fff;padding:4px">Maqueta</div><img src="' + b64(maq) + '" style="width:1366px;display:block"></div>' +
+    '<div><div style="color:#fff;padding:4px">Publicado</div><img src="' + b64(cap) + '" style="width:1366px;display:block"></div></body>');
+  await pg.waitForTimeout(100); await pg.screenshot({ path: sal, fullPage: true }); await pg.close();
 }
 if(require.main === module) (async () => {
   fs.mkdirSync(CMP, { recursive: true });
@@ -72,7 +81,7 @@ if(require.main === module) (async () => {
     for(const c of casos){
       const { ctx, mundo: m } = await contexto(nav, c.tel ? TEL : PC); if(c.prep) c.prep(m);
       const p = await entrar(ctx, c.u || 'marcos', c.pin || '482913'); p.on('pageerror', (e) => console.log('ERROR ' + c.n + ': ' + e.message));
-      try { await c.act(p, m); await p.waitForTimeout(500); const f = OUT + 'lote13nov-' + c.n + '-' + (c.tel ? 'tel' : 'pc') + '.png'; await p.screenshot({ path: f });
+      try { await c.act(p, m); await p.waitForTimeout(500); const f = OUT + 'lote13nov-' + c.n + '-' + (c.tel ? 'tel' : 'pc') + '.png'; await p.screenshot({ path: f, fullPage: !!c.full });
         if(c.maq) await ladoALado(nav, MAQ + c.maq + '.png', f, CMP + c.n + '.png'); console.log('ok ' + c.n); }
       catch (e) { console.log('NO ' + c.n + ': ' + e.message.split('\n')[0]); }
       await ctx.close();

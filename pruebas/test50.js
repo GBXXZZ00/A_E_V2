@@ -24,12 +24,13 @@ async function cerrarHojas(p){ for(let i = 0; i < 5 && await p.evaluate(() => !!
     await a.goto(H + 'comisiones.html'); await a.waitForSelector('#equipos button, #equipos [data-equipo]', { state: 'attached', timeout: 15000 });
     const eq = await a.textContent('#equipos');
     ok(nombre + ': Comisiones separa por equipo (Ventas corporativas, Canales, Aliados)', /corporativas/i.test(eq) && /Canales/i.test(eq) && /Aliado/i.test(eq));
-    ok(nombre + ': arriba las tarjetas Instalaciones, Cambios de categoría y Cartas y proformas', /Instalaciones/.test(await a.textContent('#segs')) && /Cambios de categor/.test(await a.textContent('#segs')) && /Cartas y proformas/.test(await a.textContent('#segs')));
+    // Lote 13/11 parte 12: la tarjeta Cambios de categoría se quitó (las migraciones van en la lista)
+    ok(nombre + ': arriba las tarjetas Instalaciones y Cartas y proformas', /Instalaciones/.test(await a.textContent('#segs')) && !/Cambios de categor/.test(await a.textContent('#segs')) && /Cartas y proformas/.test(await a.textContent('#segs')));
     ok(nombre + ': el aviso de Por instalar habla en horas', /\d+ h sin instalar/.test(await a.textContent('#alertas')));
     ok(nombre + ': Comisiones sin desborde', await sinDesborde(a));
     await a.goto(H + 'comisiones.html?v=resumen'); await a.waitForSelector('.cr-rank, .cr-podio, [data-cr]', { timeout: 15000 }).catch(() => {});
     const res = await a.textContent('main');
-    ok(nombre + ': el Resumen de Comisiones trae ranking, monto del corte y Líder del mes', /Ranking del corte/.test(res) && /\$/.test(res) && /Líder de /.test(res));
+    ok(nombre + ': el Resumen de Comisiones trae ranking, monto del corte y Líder del mes', /Ranking del corte/.test(res) && /\$/.test(res) && /Ganadores de /.test(res));
     ok(nombre + ': el Resumen se pide por corte', llamo(mundo, 'comisiones_resumen').length >= 1);
 
     // ----- Revisión en lote -----

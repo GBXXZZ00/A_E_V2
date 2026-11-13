@@ -10,7 +10,7 @@
   let alCerrarSolo = null;
   const FILTROS = [
     { id: 'todos', t: 'Todas' }, { id: 'comisionan', t: 'Comisionan' }, { id: 'legal', t: 'Faltan documentos' }, { id: 'pago', t: 'Falta el pago' },
-    { id: 'falta', t: 'Les falta algo' }, { id: 'carta', t: 'Carta por enviar' }, { id: 'ultimo', t: 'Del corte anterior' }, { id: 'pendientes', t: 'Pendientes por instalar' }, { id: 'asignar', t: 'Por asignar' }, { id: 'subir', t: 'Archivos por subir' }, { id: 'eventos', t: 'Eventos' }
+    { id: 'falta', t: 'Les falta algo' }, { id: 'carta', t: 'Carta por enviar' }, { id: 'migraciones', t: 'Migraciones' }, { id: 'ultimo', t: 'Del corte anterior' }, { id: 'pendientes', t: 'Pendientes por instalar' }, { id: 'asignar', t: 'Por asignar' }, { id: 'subir', t: 'Archivos por subir' }, { id: 'eventos', t: 'Eventos' }
   ];
   // Filtros que solo salen cuando tienen algo (o están elegidos)
   const OPCIONALES = ['asignar', 'subir', 'eventos', 'pendientes'];
@@ -30,7 +30,8 @@
     desde = /^\d{4}-\d{2}-\d{2}$/.test(u.get('desde') || '') ? u.get('desde') : ''; hasta = /^\d{4}-\d{2}-\d{2}$/.test(u.get('hasta') || '') ? u.get('hasta') : '';
     cartaUrl = /^\d+$/.test(u.get('carta') || '') ? u.get('carta') : '';
     const t = u.get('t') || '';
-    seg = t === 'cartas' || t === 'cambios' ? t : 'inst';
+    seg = t === 'cartas' ? t : 'inst';
+    if(t === 'cambios') filtro = 'migraciones';   // lote 13/11: la tarjeta Cambios de categoría se quitó
     if(t === 'por_asignar' || t === 'sin_lider') filtro = 'asignar';
     pedirCierre = u.get('cierre') === '1';
     pedidoInicial = ['instalar', 'sin_instalar', 'por_instalar'].indexOf(t) >= 0 ? 'por_instalar' : t === 'nuevo' ? 'nuevo' : '';
@@ -71,7 +72,7 @@
     return EQUIPOS;
   }
   const deEquipo = (f, e) => f.equipo === e || (e === 'corporativas' && (f.equipo === 'sin_dueno' || !f.equipo));
-  const filasInst = (e) => (e === 'todos' ? equiposVisibles().reduce((a, x) => a.concat(filasInst(x[0])), []) : e === 'aliados' ? (d.aliados || []) : d.filas.filter((f) => !f.migracion && deEquipo(f, e)));
+  const filasInst = (e) => (e === 'todos' ? equiposVisibles().reduce((a, x) => a.concat(filasInst(x[0])), []) : e === 'aliados' ? (d.aliados || []) : d.filas.filter((f) => deEquipo(f, e)));
   const pendInst = (e) => (e === 'todos' ? equiposVisibles().reduce((a, x) => a.concat(pendInst(x[0])), []) : e === 'aliados' ? [] : (d.pendientes || []).filter((p) => deEquipo(p, e)).map((p) => Object.assign({ pend: true, lider: p.dueno }, p)));
   // Dueño que se muestra: los aliados van todos juntos (sin subgrupos) y cada fila lleva el nombre del aliado
   const duenoDe = (f) => f.lider || f.dueno || 'Por asignar';
@@ -105,6 +106,7 @@
     if(filtro === 'legal') return !f.legal_ok;
     if(filtro === 'pago') return !f.pago_ok;
     if(filtro === 'subir') return !!f.por_subir;
+    if(filtro === 'migraciones') return !!f.migracion;
     if(filtro === 'falta') return !f.cumple;
     if(filtro === 'carta') return f.origen === 'corte' && cartaPend(f);
     return true;
@@ -144,7 +146,6 @@
     const mig = d.filas.filter((f) => f.migracion); const pe = todasCorte().filter((f) => f.origen === 'corte' && cartaPend(f)).length;
     const t = (id, n, tit, sub, cls) => '<button type="button" class="cx-seg' + (cls ? ' ' + cls : '') + (seg === id ? ' on' : '') + '" data-seg="' + id + '" aria-pressed="' + (seg === id) + '"><b>' + n + '</b><span><span class="t">' + tit + '</span><small>' + esc(sub) + '</small></span></button>';
     $('segs').innerHTML = t('inst', inst.length, 'Instalaciones PYME', plural(cumplen, 'comisiona', 'comisionan') + (ant ? ' · ' + plural(ant, 'viene', 'vienen') + ' del corte anterior' : '')) +
-      t('cambios', mig.length, 'Cambios de categoría', 'Migraciones confirmadas en este corte') +
       (d.puedo && d.puedo.enviar !== undefined ? t('cartas', pe, 'Cartas y proformas', 'por enviar', 'ambar') : '');
   }
   // Lote 13/11 parte 8: Equipo (con Persona debajo), Fechas, Por dueño | Por fecha y ··· en un solo renglón con desplegables
@@ -222,8 +223,9 @@
     // Lote 12/11 (maqueta comisiones): los 4 más usados como chips; el resto en "Más filtros"
     const vis = FILTROS.filter((f) => (OPCIONALES.indexOf(f.id) < 0 || filtro === f.id || Number(conteo(f.id)) > 0) && !(f.id === 'asignar' && esLider()));
     const btn = (f) => { const n = conteo(f.id); return '<button type="button" role="tab" data-filtro="' + f.id + '" class="' + (f.id === filtro ? 'on' : '') + '" aria-selected="' + (f.id === filtro) + '">' + esc(f.t) + (n === '' ? '' : ' <em>' + esc(n) + '</em>') + '</button>'; };
-    const PRIN = ['todos', 'comisionan', 'legal', 'pago', 'carta'];   // lote 13/11: igual para administrador y líder; Les falta algo pasa a Más filtros
+    const PRIN = ['todos', 'comisionan', 'legal', 'pago', 'carta', 'migraciones'];   // lote 13/11: igual para administrador y líder; Les falta algo pasa a Más filtros
     const otros = vis.filter((f) => PRIN.indexOf(f.id) < 0); const act = otros.find((f) => f.id === filtro);
+    if(esLider()){ $('filtros').innerHTML = vis.filter((f) => PRIN.indexOf(f.id) >= 0).map(btn).join('') + (act ? btn(act) : ''); const ay1 = $('ayudaFiltro'); if(ay1) ay1.innerHTML = ayudaFiltro(); return; }
     $('filtros').innerHTML = vis.filter((f) => PRIN.indexOf(f.id) >= 0).map(btn).join('') + (act ? btn(act) : '') +
       (otros.length ? '<details class="cx-mas"' + (masAbierto ? ' open' : '') + '><summary>Más filtros</summary><div class="cx-menu">' + otros.filter((f) => f !== act).map(btn).join('') + '</div></details>' : '');
     const ay = $('ayudaFiltro'); if(ay) ay.innerHTML = ayudaFiltro();
@@ -308,6 +310,7 @@
     const et = [];
     if(!f.pend){
       if(f.equipo === 'aliados') et.push(['morado', 'Aliado · ' + aliadoDe(f)]);
+      if(f.migracion) et.push(['azul', 'Migración']);
       if(!f.lider && !f.dueno) et.push(['ambar', 'Falta elegir dueño']);
       if(!f.orden_ok && f.motivo) et.push([/parec/i.test(f.motivo) ? 'azul' : '', f.motivo]);
       if(f.movida) et.push(['ambar', 'Movida a mano']);
@@ -356,7 +359,7 @@
         : seg === 'cartas' ? vacio('Todo enviado', 'No quedan cartas de bienvenida y proformas por enviar en este corte.')
         : seg === 'cambios' ? vacio('Sin cambios de categoría', 'Las migraciones a PYME confirmadas en el corte salen aquí.')
         : base.length ? vacio('Nada en este filtro', 'Prueba con otro filtro o mira todas.') : vacio('Sin instalaciones en este equipo', 'Cuando se instale un servicio que comisiona aparecerá aquí.')) +
-        (seg === 'cambios' ? migExtras() : '') + (seg === 'inst' ? bandejasExtra() : '');
+        (filtro === 'migraciones' ? migExtras() : '') + (seg === 'inst' ? bandejasExtra() : '');
       return;
     }
     let h = '';
@@ -370,8 +373,8 @@
       const gs = grupos(filas, grupoDe);
       gs.sort((a, b) => (a.l === 'Por asignar') - (b.l === 'Por asignar') || (a.l === 'Aliados comerciales') - (b.l === 'Aliados comerciales') || b.filas.filter((f) => !f.pend).length - a.filas.filter((f) => !f.pend).length || a.l.localeCompare(b.l));
       h = gs.map((g, n) => grupoHtml(seg + '|' + equipo + '|' + g.l, g.l, g.filas, false, solo || gs.length === 1 || (abiertos[seg + '|' + equipo + '|' + g.l] === undefined && n === 0))).join('');
-      if(seg === 'cambios') h += migExtras();
-      else h += migCorte() + bandejasExtra();
+      if(filtro === 'migraciones') h += migExtras();
+      else h += bandejasExtra();
     }
     $('lista').innerHTML = h;
   }
@@ -440,7 +443,7 @@
   // Migraciones del corte que no comisionan aquí: cambios a residencial (indicador negativo) e histórico pagado fuera de la app
   let MIG = null;
   async function cargarMig(mio){
-    try { const r = await rpc('migraciones_corte', { p_corte: d.corte }); if(mio !== pedido) return; MIG = r; if(seg === 'cambios') pintarLista(); }
+    try { const r = await rpc('migraciones_corte', { p_corte: d.corte }); if(mio !== pedido) return; MIG = r; if(filtro === 'migraciones') pintarLista(); }
     catch (e) { MIG = null; }
   }
   // Lote 05/11 E1: bloque "Migraciones del corte" en la lista (las confirmadas por el TAD; las por confirmar están en Migraciones)
@@ -461,7 +464,7 @@
         '<div class="grupo-cuerpo">' + items.map((o) => '<a class="fila" href="migraciones.html?f=confirmado&c=' + encodeURIComponent(o.id) + '"><span class="tx"><b>' + esc(o.nombre || 'Sin nombre') + '</b><small>' +
           esc([fecha(o.en), o.lider].filter(Boolean).join(' · ')) + '</small></span><span class="m ' + cls + '">' + esc(chip) + '</span></a>').join('') + '</div></div>';
     };
-    return caja('__res', 'Cambios a residencial', 'Indicador negativo del líder. No comisionan', MIG.residencial || [], 'Negativo', 'rojo') +
+    return caja('__res', 'Pasaron a residencial', 'Cuentan en contra del líder. No comisionan', MIG.residencial || [], 'Pasó a residencial', 'rojo') +
       caja('__his', 'Histórico pagado fuera de la app', 'Del consolidado de cambios de categoría. No entran al corte', MIG.historico || [], 'Pagado fuera', 'gris');
   }
   // Lote 21/10: bandejas plegables debajo de la lista: "No comisionan" (anuladas a mano) y, en un corte certificado, "Fuera de la foto"
@@ -489,7 +492,9 @@
     if(d.certificado) h += '<div class="franja verde">' + ic('check') + '<span><b>Corte cerrado</b>' + esc((d.certificado.por ? 'Por ' + primerNombre(d.certificado.por) + ', el ' : 'El ') + fecha(d.certificado.en)) + '. Lo que ves quedó fijo.</span>' +
       (P.quitar_certificado ? '<button type="button" class="mini" id="quitarCert">Quitar</button>' : '') + '</div>';
     $('avisos').innerHTML = h;
-    $('acciones').innerHTML = (esLider() && seg === 'inst' ? fechasHtml() + '<hr><button type="button" class="mini' + (filtro === 'ultimo' ? ' on' : '') + '" data-filtro="' + (filtro === 'ultimo' ? 'todos' : 'ultimo') + '">Del corte anterior</button>' : '') +
+    // El líder: Fechas, Del corte anterior y los demás filtros que no están a la vista
+    const extraLid = esLider() && seg === 'inst' ? FILTROS.filter((f) => ['todos', 'comisionan', 'legal', 'pago', 'carta', 'migraciones', 'asignar'].indexOf(f.id) < 0 && (f.id === 'ultimo' || OPCIONALES.indexOf(f.id) < 0 || filtro === f.id || Number(conteo(f.id)) > 0)) : [];
+    $('acciones').innerHTML = (esLider() && seg === 'inst' ? fechasHtml() + '<hr>' + extraLid.map((f) => '<button type="button" class="mini' + (filtro === f.id ? ' on' : '') + '" data-filtro="' + (filtro === f.id ? 'todos' : f.id) + '">' + esc(f.t) + '</button>').join('') : '') +
       (d.filas.length ? '<button type="button" class="mini" id="bajarExcel">' + ic('doc') + 'Bajar Excel</button>' : '') +
       (P.pago_dias ? '<button type="button" class="mini" id="pagoDiasAbrir">' + ic('reloj') + 'Días para el pago</button>' : '') +
       (P.certificar ? '<button type="button" class="mini pri" id="abrirCert">' + ic('check') + 'Cerrar corte</button>' : '');
