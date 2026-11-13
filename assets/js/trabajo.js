@@ -10,7 +10,7 @@
   let yo = null; let D = null; let sel = ''; let persona = ''; let pedido = 0; let cuantos = 40; let cola = null; let vista = 'buzon';
   let abierto = null;        // el ítem que se abrió con Ir: al volver se mira si se resolvió
   const tachados = {};       // resueltos en esta visita: se ven tachados hasta recargar la página
-  let avisoT = null; let filtroC = '';
+  let avisoT = null; let filtroC = ''; let SEG = {}; const abiertoLg = {};
   // Lote 11/11 H2/H3: datos de Canales (teléfono, descargadas, IP del pool, equipo) y modos de la coordinadora
   let CN = null; let modoC = 'equipo'; let cartasPor = 'persona'; let verEq = false;
 
@@ -23,6 +23,9 @@
     try {
       const r = await rpc('mi_trabajo', { p_persona: persona || null }); if(mio !== pedido) return;
       D = r; cache.guardar(clave, r); revisarAbierto(); pintar(); if(cola) seguirCola();
+      // Lote 12/11 B, parte 7: el tipo de cliente de cada fila de Legal (todas las secciones llevan su etiqueta y el filtro vale para todas)
+      if(r.vista === 'abogado'){ const ids = Array.from(new Set((r.items || []).map((f) => f.cliente_id).filter(Boolean))).filter((x) => !SEG[x]).slice(0, 1000);
+        if(ids.length) rpc('trabajo_segmentos', { p_clientes: ids }).then((x) => { if(mio !== pedido) return; Object.assign(SEG, x || {}); pintar(); }).catch(() => {}); }
       if((r.vista === 'analista' || r.vista === 'coord') && !r.persona) rpc('trabajo_canales').then((x) => { if(mio !== pedido) return; CN = x; pintar(); }).catch((e) => { if(mio !== pedido) return; CN = { error: e.message }; pintar(); });
     } catch (e) {
       if(mio !== pedido) return;
@@ -116,7 +119,7 @@
     else if(canales() && sel === '') l = null;
     else if(D.vista === 'analista' || D.vista === 'coord') l = [[n('carta'), 'Cartas y proformas por enviar', 'a', 'carta'], [n('ip'), 'IP por escribir', '', 'ip'], [n('pago'), 'Del corte sin pago', 'r', 'pago'], [n('emi'), 'Cambios por emitir', 'b', 'emi']];
     // Lote 05/11 D8: los mismos números que Inicio (salen de la misma lista)
-    else if(D.vista === 'abogado'){ const t = (x) => (D.items || []).filter((f) => f.tipo === x).length; l = [[t('elaborar_contrato') + t('elaborar_vgt'), 'Por elaborar contrato', 'r', ''], [t('seguir_firma'), 'Enviados a firmar', '', ''], [t('contrato_archivo'), 'Firmados, falta subir', 'a', ''], [t('contrato_vence'), 'Vencen pronto', 'a', 'ven']]; }
+    else if(D.vista === 'abogado'){ const t = (x) => (D.items || []).filter((f) => f.tipo === x).length; l = [[t('elaborar_contrato') + t('elaborar_vgt'), 'Por elaborar contrato', 'r', ''], [t('seguir_firma') + t('por_firmar'), 'Enviados a firmar', '', ''], [t('contrato_archivo'), 'Firmados, falta subir', 'a', ''], [t('contrato_vence'), 'Vencen pronto', 'a', 'ven']]; }
     else if(D.senior && D.rol !== 'admin') l = [[n('sin'), 'Sin dueño', 'r', 'sin'], [n('prov'), 'Provisionales y verificar', 'a', 'prov'], [n('car'), 'Cargas del día', 'a', 'car'], [(D.items || []).length, 'En total', '', '']];
     else if(D.vista === 'admin') l = [[n('rev'), 'Documentos por revisar', 'b', 'rev'], [n('dec'), 'Por decidir', 'r', 'dec'], [n('ale'), 'Alertas y cargas', 'a', 'ale'], [n('ali'), 'De aliados', '', 'ali']];
     z.classList.toggle('hidden', !l);
@@ -344,30 +347,40 @@
     try { const r = await rpc('trabajo_pasar', { p_tipo: pasando.tipo, p_clave: pasando.clave, p_analista: $('psQuien').value }); C.cerrarHoja(); aviso('Ahora la tiene ' + (r && r.analista ? r.analista : 'esa persona') + '. Le llegó un aviso', null, true); pasando = null; await cargar(); }
     catch (x) { er.textContent = x.message || 'No se pudo. Intenta de nuevo'; b.disabled = false; }
   }
-  // Legal: por elaborar por tipo de cliente, luego enviado a firmar, firmado sin subir y vencimientos
+  // Las secciones de Legal recuerdan si se abrieron (al repintar no se cierran solas)
+  document.addEventListener('toggle', (e) => { const d = e.target; if(d && d.dataset && d.dataset.lg) abiertoLg[d.dataset.lg] = d.open; }, true);
+  // Legal (lote 12/11 B, maqueta revision-nueva/img/21b): los tipos (Todos, ISP, Corporativo, VGT, PYME) arriba y valen para todas las secciones;
+  // cada fila lleva su etiqueta; las secciones van plegadas (se abre la que se necesita) y los pendientes por firmar van en "Enviado a firmar"
+  const TIPOS_C = [['isp', 'ISP'], ['corp', 'Corporativo'], ['vgt', 'VGT'], ['pyme', 'PYME']];
+  const ETQ_C = { isp: ['azul', 'ISP'], corp: ['', 'Corporativo'], vgt: ['morado', 'VGT'], pyme: ['', 'PYME'] };
+  function tipoDe(f){
+    if(f.tipo === 'elaborar_vgt') return 'vgt';
+    const s = String(SEG[f.cliente_id] || '') + ' ' + String(f.detalle || '');
+    return /ISP/.test(s) ? 'isp' : /corporativo/i.test(s) ? 'corp' : /VGT/.test(s) ? 'vgt' : 'pyme';
+  }
   function tableroLegal(gs){
     const its = D.items || []; const k = D.kpis || {};
     const ven = gs.find((g) => g.id === 'ven') || { items: [], tipos: ['contrato_vence'] };
-    // Lote 05/11 D4: "Por elaborar contrato" por tipo de cliente, prioridad ISP, corporativo, VGT, PYME, con filtros arriba
-    const TIPOS_C = [['isp', 'ISP', 'Prioridad 1'], ['corp', 'Corporativo', 'Prioridad 2'], ['vgt', 'VGT', 'Prioridad 3 · por solicitud'], ['pyme', 'PYME', 'Prioridad 4']];
-    const tipoDe = (f) => { if(f.tipo === 'elaborar_vgt') return 'vgt'; const s = String(f.seg || ''); return /ISP/.test(s) ? 'isp' : /corporativo/i.test(s) ? 'corp' : /VGT/.test(s) ? 'vgt' : 'pyme'; };
-    const elab = its.filter((f) => f.tipo === 'elaborar_contrato' || f.tipo === 'elaborar_vgt').sort((a, b) => (String(a.desde) < String(b.desde) ? -1 : 1));
-    const filtros = '<div class="bz-fl" role="group" aria-label="Filtrar por tipo de cliente"><button type="button" class="' + (!filtroC ? 'on' : '') + '" data-filtro-c="" aria-pressed="' + !filtroC + '">Todos <b>' + elab.length + '</b></button>' +
-      TIPOS_C.map((t) => '<button type="button" class="' + (filtroC === t[0] ? 'on' : '') + '" data-filtro-c="' + t[0] + '" aria-pressed="' + (filtroC === t[0]) + '">' + esc(t[1]) + ' <b>' + elab.filter((f) => tipoDe(f) === t[0]).length + '</b></button>').join('') + '</div>';
-    // Lote 10/11 H1 (maqueta 4a): un solo grupo "Por elaborar contrato" con chips por tipo; ISP primero, luego corporativo, VGT y PYME, y del más viejo al más nuevo
-    const ORD = { isp: 0, corp: 1, vgt: 2, pyme: 3 }; const ETQ_C = { isp: ['azul', 'ISP'], corp: ['', 'Corporativo'], vgt: ['morado', 'VGT'], pyme: ['', 'PYME'] };
+    const SECC = [['elab', 'Por elaborar contrato', ['elaborar_contrato', 'elaborar_vgt'], 'Primero los ISP. Cada uno abre el expediente donde se hace'], ['curso', 'En curso', ['contrato_curso'], 'Los que empezaste'],
+      ['firma', 'Enviado a firmar', ['seguir_firma', 'por_firmar'], ''], ['firmado', 'Firmado, falta subir', ['contrato_archivo'], ''], ['ven', 'Vencen en 60 días', ['contrato_vence'], 'Se tachan solos cuando suben el documento nuevo']];
+    const todos = its.filter((f) => SECC.some((x) => x[2].indexOf(f.tipo) >= 0));
+    const pasa = (f) => !filtroC || tipoDe(f) === filtroC;
+    const filtros = '<div class="bz-fl lg-tipos" role="group" aria-label="Filtrar por tipo de cliente"><button type="button" class="' + (!filtroC ? 'on' : '') + '" data-filtro-c="" aria-pressed="' + !filtroC + '">Todos <b>' + todos.length + '</b></button>' +
+      TIPOS_C.map((t) => '<button type="button" class="' + (filtroC === t[0] ? 'on' : '') + '" data-filtro-c="' + t[0] + '" aria-pressed="' + (filtroC === t[0]) + '">' + esc(t[1]) + ' <b>' + todos.filter((f) => tipoDe(f) === t[0]).length + '</b></button>').join('') +
+      '<span class="lg-vale">Vale para todas las secciones de abajo</span></div>';
+    const ORD = { isp: 0, corp: 1, vgt: 2, pyme: 3 };
     const diasDe = (f) => { const t = new Date(f.desde || f.en || ''); return isNaN(t) ? null : Math.max(0, Math.floor((Date.now() - t.getTime()) / 864e5)); };
-    const fila = (f) => { const tp = tipoDe(f); const dd = diasDe(f); const c = ETQ_C[tp];
-      return '<div class="lg-row"><span class="chip ' + c[0] + ' lg-tag">' + c[1] + '</span><div class="lg-it">' + itemHtml(f) + '</div>' + (dd === null ? '' : '<span class="chip ' + (dd > 5 ? 'rojo' : dd > 2 ? 'ambar' : '') + ' lg-dias">' + (dd === 0 ? 'Nuevo' : plural(dd, 'día', 'días')) + '</span>') + '</div>'; };
-    const lista = elab.filter((f) => !filtroC || tipoDe(f) === filtroC).sort((a, b) => ORD[tipoDe(a)] - ORD[tipoDe(b)] || (String(a.desde) < String(b.desde) ? -1 : 1));
-    const masViejos = elab.filter((f) => (diasDe(f) || 0) > 5).length;
-    const porTipo = seccion('Por elaborar contrato · ' + elab.length, masViejos ? plural(masViejos, 'lleva', 'llevan') + ' más de 5 días' : 'Primero los ISP. Cada uno abre el expediente donde se hace', filtros + (lista.length ? lista.slice(0, 60).map(fila).join('') : '<p class="nota-chica bz-nada">Nada por elaborar de este tipo.</p>'));
-    const etapa = (t, tipo, sub) => { const l = its.filter((f) => f.tipo === tipo); const viejo = l.reduce((m, f) => Math.max(m, diasDe(f) || 0), 0);
-      return '<details class="bz-pl lg-pl"' + (l.length ? ' open' : '') + '><summary><b>' + esc(t) + ' · ' + l.length + '</b><span class="lg-sub">' + esc(sub || (l.length && viejo ? 'El más viejo: ' + plural(viejo, 'día', 'días') : '')) + '</span></summary>' + (l.length ? l.slice(0, 40).map((f) => itemHtml(f)).join('') : '<p class="nota-chica bz-nada">Nada aquí.</p>') + '</details>'; };
-    return (elab.length > 1 && !solo() ? '<p style="margin:10px 0"><button type="button" class="btn btn-chico" data-tr="cola">Uno tras otro, del más viejo</button></p>' : '') + porTipo +
-      etapa('En curso', 'contrato_curso', 'Los que empezaste') + etapa('Enviado a firmar', 'seguir_firma') + etapa('Firmado, falta subir', 'contrato_archivo') +
-      '<details class="bz-pl lg-pl"' + (ven.items.length ? ' open' : '') + '><summary><b>Vencen en 60 días · ' + ven.items.length + '</b><span class="lg-sub">Se tachan solos cuando suben el documento nuevo</span></summary>' + listaGrupo(ven) + '</details>' +
-      '<p class="nota-chica">' + esc(plural(k.firmados || 0, 'contrato firmado', 'contratos firmados')) + ' en los últimos 7 días.</p>';
+    const fila = (f, conDias) => { const tp = tipoDe(f); const dd = diasDe(f); const c = ETQ_C[tp];
+      return '<div class="lg-row"><span class="chip ' + c[0] + ' lg-tag">' + c[1] + '</span><div class="lg-it">' + itemHtml(f) + '</div>' + (conDias && dd !== null ? '<span class="chip ' + (dd > 5 ? 'rojo' : dd > 2 ? 'ambar' : '') + ' lg-dias">' + (dd === 0 ? 'Nuevo' : plural(dd, 'día', 'días')) + '</span>' : '') + '</div>'; };
+    const secc = (x) => {
+      const l = its.filter((f) => x[2].indexOf(f.tipo) >= 0 && pasa(f)).sort((a, b) => (x[0] === 'elab' ? ORD[tipoDe(a)] - ORD[tipoDe(b)] : 0) || (String(a.desde) < String(b.desde) ? -1 : 1));
+      const viejo = l.reduce((m, f) => Math.max(m, diasDe(f) || 0), 0); const mas5 = x[0] === 'elab' ? l.filter((f) => (diasDe(f) || 0) > 5).length : 0;
+      const sub = mas5 ? plural(mas5, 'lleva', 'llevan') + ' más de 5 días' : x[3] || (l.length && viejo ? 'El más viejo: ' + plural(viejo, 'día', 'días') : '');
+      return '<details class="bz-pl lg-pl" data-lg="' + x[0] + '"' + (abiertoLg[x[0]] ? ' open' : '') + '><summary><b>' + esc(x[1]) + ' · ' + l.length + '</b><span class="lg-sub">' + esc(sub) + '</span></summary>' +
+        (l.length ? l.slice(0, 80).map((f) => fila(f, x[0] === 'elab')).join('') + (l.length > 80 ? '<p class="nota-chica">Y ' + (l.length - 80) + ' más. Usa el buscador o un tipo.</p>' : '') : '<p class="nota-chica bz-nada">Nada aquí.</p>') + '</details>'; };
+    const elab = its.filter((f) => f.tipo === 'elaborar_contrato' || f.tipo === 'elaborar_vgt');
+    return filtros + (elab.length > 1 && !solo() ? '<p style="margin:10px 0"><button type="button" class="btn btn-chico" data-tr="cola">Uno tras otro, del más viejo</button></p>' : '') +
+      SECC.map(secc).join('') + '<p class="nota-chica">' + esc(plural(k.firmados || 0, 'contrato firmado', 'contratos firmados')) + ' en los últimos 7 días.</p>';
   }
   // ---------- Notas personales ----------
   function notaHtml(n){

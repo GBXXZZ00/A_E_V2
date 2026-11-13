@@ -15,6 +15,7 @@ const dia = (n) => { const d = new Date(Date.now() - 4 * 3600e3); d.setUTCDate(d
     mundo.datos.extra = [
       { tipo: 'elaborar_contrato', clave: String(cli[0].id), cliente_id: cli[0].id, titulo: cli[0].nombre, detalle: 'PYME · en Documentos recibidos', para: 'abogado', vence: dia(-2), desde: dia(-5) + 'T12:00:00Z', ref: {} },
       { tipo: 'elaborar_contrato', clave: String(cli[1].id), cliente_id: cli[1].id, titulo: cli[1].nombre, detalle: 'PYME · en Documentos recibidos', para: 'abogado', vence: dia(1), desde: dia(-1) + 'T12:00:00Z', ref: {} },
+      { tipo: 'por_firmar', clave: 'pf' + cli[3].id, cliente_id: cli[3].id, titulo: cli[3].nombre, detalle: 'Contrato por firmar', para: 'abogado', vence: dia(5), desde: dia(-3) + 'T12:00:00Z', ref: {} },
       { tipo: 'revisar_docs', clave: String(cli[2].id), cliente_id: cli[2].id, titulo: cli[2].nombre, detalle: '3 archivos por revisar · subió Lucía Ferrer', para: 'admin', vence: dia(0), desde: dia(-2) + 'T12:00:00Z', ref: { revisar: true } },
       { tipo: 'alerta_carga', clave: 'noaparece', cliente_id: null, titulo: 'TAD', detalle: '2 clientes no aparecen en las dos últimas cargas del TAD', para: 'admin', vence: dia(2), desde: dia(0) + 'T08:00:00Z', ref: { no_aparece: true } }];
 
@@ -90,6 +91,16 @@ const dia = (n) => { const d = new Date(Date.now() - 4 * 3600e3); d.setUTCDate(d
     await s.goto(H + 'trabajo.html'); await s.waitForSelector('#tarjetas .bz-mi');
     // Lote 05/11 D4: Legal ve "Por elaborar" por tipo de cliente con filtros, y luego enviados, firmados y vencimientos
     ok(nombre + ': Legal ve Por elaborar contrato con chips por tipo y los vencimientos en 60 días plegados', /Por elaborar contrato · /.test(await s.textContent('#cuerpo')) && (await s.locator('#cuerpo [data-filtro-c]').count()) === 5 && /Vencen en 60 días/.test(await s.textContent('#cuerpo')));
+    // Lote 12/11 B, parte 7: los tipos van arriba y valen para todas; cada fila con su etiqueta; todo plegado; por firmar en "Enviado a firmar"
+    ok(nombre + ': los tipos van arriba de todas las secciones', /Vale para todas las secciones de abajo/.test(await s.textContent('#cuerpo .lg-tipos')) && (await s.locator('#cuerpo details.lg-pl').count()) === 5);
+    ok(nombre + ': todas las secciones empiezan plegadas', (await s.locator('#cuerpo details.lg-pl[open]').count()) === 0);
+    await s.evaluate(() => document.querySelectorAll('#cuerpo details.lg-pl').forEach((x) => { x.open = true; }));
+    ok(nombre + ': cada fila de cada sección lleva su tipo', await s.evaluate(() => [...document.querySelectorAll('#cuerpo details.lg-pl .lg-row')].every((r) => r.querySelector('.lg-tag'))));
+    ok(nombre + ': los pendientes por firmar salen en Enviado a firmar', (await s.textContent('#cuerpo details[data-lg="firma"]')).includes(cli[3].nombre.split(',')[0]));
+    await s.click('#cuerpo [data-filtro-c="isp"]'); await s.waitForTimeout(150);
+    ok(nombre + ': el tipo filtra todas las secciones y lo abierto sigue abierto', (await s.locator('#cuerpo details.lg-pl[open]').count()) === 5 && (await s.locator('#cuerpo .lg-row .lg-tag', { hasText: 'PYME' }).count()) === 0);
+    await s.click('#cuerpo [data-filtro-c=""]'); await s.waitForTimeout(150);
+    await s.screenshot({ path: 'capturas/lote12novB-p7-legal-' + nombre + '.png', fullPage: true });
     ok(nombre + ': Legal tiene la cola de contratos', (await s.locator('[data-tr="cola"]').count()) === 1);
     await s.click('[data-tr="cola"]'); await s.waitForSelector('#hojaFicha.ver #tFicha');
     ok(nombre + ': Empezar abre el más viejo', (await s.textContent('#tFicha')).includes(cli[0].nombre.split(',')[0]));

@@ -1099,6 +1099,8 @@ const RPC = {
       destinos: propio || !dest ? [] : [{ id: dest.id, nombre: dest.nombre, rol: dest.rol, whatsapp: dest.whatsapp === undefined ? '04141234567' : dest.whatsapp, correo: dest.correo || null }] };
   },
   contacto_anotar2(){ return null; },
+  // Lote 12/11 B: tipo de cliente de las filas de Mi trabajo (como public.trabajo_segmentos)
+  trabajo_segmentos(m, yo, a){ const r = {}; (a.p_clientes || []).forEach((id) => { const c = m.datos.clientes.find((x) => x.id === Number(id)); if(c) r[String(c.id)] = c.es_isp || c.isp ? 'Dedicado ISP' : c.dedicado ? 'Dedicado corporativo' : c.es_natural ? 'Natural' : 'PYME'; }); return r; },
   // 23/10: menú del tramo VGT (solo administrador)
   dedicado_tramo_editar(m, yo, a){ if(yo.rol !== 'admin') throw new Error('No tienes permiso para hacer esto'); return {}; },
   // Lote S: sesión viva (la prueba la puede cerrar con m.datos.sesionCerrada) y horas sin uso

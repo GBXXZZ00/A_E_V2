@@ -86,7 +86,18 @@
       const c = conteos && conteos[f.id] !== undefined ? '<em>' + esc(conteos[f.id]) + '</em>' : '';
       return '<button type="button" data-filtro="' + f.id + '" class="' + (f.id === filtro && !q ? 'on' : '') + '" aria-pressed="' + (f.id === filtro && !q) + '">' + esc(f.t) + ' ' + c + '</button>';
     }).join('');
-    pintarGestion();
+    pintarGestion(); pintarEstLegal();
+  }
+  // Lote 12/11 B, parte 7 (maqueta revision-nueva/img/20): una fila propia "Estatus legal" con los estatus de la app (mismo nombre y color),
+  // contados con la tarjeta elegida. Un toque filtra y queda en la dirección. Para el administrador y Legal.
+  function pintarEstLegal(){
+    const z = $('estLegal'); if(!z) return;
+    if(!yo || ['admin', 'abogado'].indexOf(yo.rol) < 0){ z.innerHTML = ''; return; }
+    const fa = (facetas && facetas.estatus) || {}; const act = (sel.estatus || []).length === 1 ? sel.estatus[0] : (sel.estatus || []).length ? null : '';
+    const tot = Object.keys(ESTATUS).reduce((a, e) => a + (Number(fa[e]) || 0), 0);
+    const b = (v, t, n, c) => '<button type="button" class="est-p' + (act === v ? ' on' : '') + '" data-est-legal="' + esc(v) + '" aria-pressed="' + (act === v) + '">' + (c ? '<i class="pt ' + c + '" aria-hidden="true"></i>' : '') + esc(t) + ' <em>' + esc(n) + '</em></button>';
+    z.innerHTML = '<p class="est-rot" id="rEstLegal">Estatus legal</p><div class="est-fila" role="group" aria-labelledby="rEstLegal">' + b('', 'Todos', facetas ? tot : '', '') +
+      Object.keys(ESTATUS).map((e) => b(e, ESTATUS[e].t, facetas ? Number(fa[e]) || 0 : '', ESTATUS[e].c)).join('') + '</div>';
   }
   // Los filtros puestos, como chips con X
   function nombreOpcion(k, v){
@@ -248,6 +259,7 @@
     if(t.closest('#quitarFiltros') || t.closest('#quitarFiltros2') || t.closest('#limpiarFiltros')){ limpiar(); return; }
     if(t.closest('#pagAnt')){ cargar(Math.max(0, desde - POR_PAGINA)); return; }
     if(t.closest('#pagSig')){ cargar(desde + POR_PAGINA); return; }
+    if((b = t.closest('[data-est-legal]'))){ const v = b.dataset.estLegal; if(v) sel.estatus = [v]; else delete sel.estatus; guardarUrl(); pintarAtajos(); pintarSels(); cargar(); return; }
     if((b = t.closest('[data-quitar-fil]'))){ const p = b.dataset.quitarFil.split('|'); sel[p[0]] = (sel[p[0]] || []).filter((v) => v !== p.slice(1).join('|')); if(!sel[p[0]].length) delete sel[p[0]]; guardarUrl(); pintarAtajos(); pintarSels(); cargar(); return; }
     if((b = t.closest('[data-etiquetar]'))){ window.Gestion.etiquetar(Number(b.dataset.etiquetar), refrescar, (filas.find((x) => x.id === Number(b.dataset.etiquetar)) || {}).etq); return; }
     if(t.closest('#lista #reintentar')){ cargar(); return; }

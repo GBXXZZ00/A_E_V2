@@ -3128,3 +3128,20 @@ main.al-en-inicio #ayuda{display:none}
 }
 @media (prefers-reduced-motion:reduce){ .al-kpi{transition:none} }
 #zonaRegistro .al-busca{margin-top:14px}
+/* Lote 12/11 B, parte 7: Mi trabajo de Legal con los tipos arriba para todas las secciones */
+.lg-tipos{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:14px 0 6px}
+.lg-vale{font-size:13px;color:var(--text2);margin-left:6px}
+@media (max-width:899px){ .lg-vale{flex-basis:100%;margin-left:0} }
+/* Lote 12/11 B, parte 7: Clientes por estatus legal (maqueta revision-nueva/img/20) */
+.est-legal:empty{display:none}
+.est-legal{margin-top:16px}
+.est-rot{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text2);margin-bottom:8px}
+.est-fila{display:flex;flex-wrap:wrap;gap:8px}
+.est-p{display:inline-flex;align-items:center;gap:8px;height:38px;padding:0 14px;border:1.5px solid var(--line);border-radius:var(--pill);background:#fff;font:inherit;font-weight:600;font-size:13.5px;color:var(--text);white-space:nowrap;transition:transform 120ms var(--ease-out)}
+.est-p:active{transform:scale(.97)}
+.est-p em{font-style:normal;font-size:11.5px;padding:1px 7px;border-radius:var(--pill);background:var(--surface-2);color:var(--text2)}
+.est-p.on{background:var(--text);border-color:var(--text);color:#fff} .est-p.on em{background:rgba(255,255,255,.18);color:#fff}
+.est-p .pt{width:8px;height:8px;border-radius:50%;background:var(--text3);flex:none}
+.est-p .pt.azul{background:var(--azul)} .est-p .pt.rojo{background:var(--rojo)} .est-p .pt.ambar{background:#C98A12} .est-p .pt.verde{background:var(--verde)} .est-p .pt.morado{background:#5B3AA6} .est-p .pt.gris{background:#9AA1AB}
+@media (max-width:899px){ .est-fila{flex-wrap:nowrap;overflow-x:auto;margin:0 -16px;padding:0 16px 4px;scrollbar-width:none} .est-fila::-webkit-scrollbar{display:none} .est-p{height:44px;flex:none} }
+@media (prefers-reduced-motion:reduce){ .est-p{transition:none} }
