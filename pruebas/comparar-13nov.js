@@ -39,6 +39,15 @@ const CASOS = {
         .concat([3, 4].map((i) => ({ tipo: 'legal_obs', clave: 'o' + i, cliente_id: cl[i].id, titulo: cl[i].nombre, detalle: 'Legal marcó un problema', para: 'admin', vence: hoyS(1), desde: hoyS(-1) + 'T12:00:00Z', ref: {} }))); },
       act: async (p) => { await p.goto(H + 'trabajo.html'); await p.waitForTimeout(1800); } }
   ],
+  comisiones: [
+    { n: 'p8-11-comisiones-filtros', maq: '11-comisiones-filtros', act: async (p) => { await p.goto(H + 'comisiones.html'); await p.waitForSelector('.cx-grupo', { timeout: 15000 }); await p.waitForTimeout(800); } },
+    { n: 'p8-11b-comisiones-equipo', maq: '11b-comisiones-equipo', act: async (p) => { await p.goto(H + 'comisiones.html'); await p.waitForSelector('.cx-grupo', { timeout: 15000 }); await p.click('#cxEqBtn'); } },
+    { n: 'p8-11c-comisiones-fechas', maq: '11c-comisiones-fechas', act: async (p) => { await p.goto(H + 'comisiones.html'); await p.waitForSelector('.cx-grupo', { timeout: 15000 }); await p.click('#cxFeBtn'); } },
+    { n: 'p8-11d-comisiones-mas', maq: '11d-comisiones-mas', act: async (p) => { await p.goto(H + 'comisiones.html'); await p.waitForSelector('.cx-grupo', { timeout: 15000 }); await p.click('#cxMasBtn'); } },
+    { n: 'p9-11-comisiones-analista', maq: '11-comisiones-filtros-analista', u: 'elena', pin: '315806', act: async (p) => { await p.goto(H + 'comisiones.html'); await p.waitForSelector('.cx-grupo', { timeout: 15000 }); await p.waitForTimeout(800); } },
+    { n: 'p8-tel-comisiones', tel: true, act: async (p) => { await p.goto(H + 'comisiones.html'); await p.waitForSelector('.cx-grupo', { timeout: 15000 }); await p.evaluate(() => document.querySelector('.cx-p2').scrollIntoView()); await p.waitForTimeout(600); } },
+    { n: 'p8-tel-comisiones-equipo', tel: true, act: async (p) => { await p.goto(H + 'comisiones.html'); await p.waitForSelector('.cx-grupo', { timeout: 15000 }); await p.click('#cxEqBtn'); } }
+  ],
   revisiontel: [
     { n: 'p10-tel-lista', tel: true, prep: separar, act: async (p) => { await abrirRev(p); } },
     { n: 'p10-tel-documento', tel: true, prep: separar, act: async (p) => { await abrirRev(p); await p.click('#hojaVer .rv-d.sel'); } },

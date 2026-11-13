@@ -259,6 +259,10 @@ function gestionJson(m, x, det){
     clientes: det ? x.clientes.map((c) => { const k = m.datos.clientes.find((z) => z.id === c.cliente_id) || {}; return Object.assign({ nombre: k.nombre, lider: k.lider, cumple: false }, c); }) : null };
 }
 // Lote 11/11 H2: la coordinadora puede pasar una tarea de Canales a otra persona
+function puedePend(m, yo, lider){
+  if(yo.rol === 'admin') return true; if(yo.rol !== 'analista') return false; if(yo.senior) return true;
+  const p = m.personas.find((x) => norm(x.nombre) === norm(lider)); return !!(p && p.analista_id && p.analista_id === yo.id);
+}
 function asignar(m, l){ const z = (m.datos && m.datos.asig) || {}; return l.map((p) => (p.para === 'analista' && z[p.tipo + '|' + p.clave] ? Object.assign({}, p, { analista_id: z[p.tipo + '|' + p.clave] }) : p)); }
 function pendientesBase(m){
   if(m.datos.pendientes) return m.datos.pendientes.concat(pendDecidir(m));
@@ -1706,14 +1710,15 @@ const RPC = {
     m.dedicadosCargados = c;
     return { dedicados: c.hojas['RESUMEN (clientes y contactos)'].filas.length, nuevos: 1, enlaces: c.hojas['RESUMEN (enlaces)'].filas.length, verificar: 0, contactos: 2 };
   },
+  // Lote 13/11 parte 9: la analista también, solo con los líderes que lleva (persona.analista_id); la Senior con todos
   pendientes_lider(m, yo, a){
-    if(yo.rol !== 'admin') return error('No tienes permiso para hacer esto');
+    if(!puedePend(m, yo, a.p_lider)) return error(yo.rol === 'admin' || yo.rol === 'analista' ? 'No le puedes enviar pendientes a ese líder' : 'No tienes permiso para hacer esto');
     const actual = enCurso(); const filas = filasComision(m, yo, actual).filter((f) => f.lider === a.p_lider);
     if(!filas.length) return error('Ese líder no tiene instalaciones en este corte');
     const txt = (x) => (x.k === 'cedula' || x.k === 'rif_personal') && x.n > 1 ? x.t + ' del representante ' + x.n : x.t;
     const p = m.personas.find((x) => x.activo && norm(x.nombre) === norm(a.p_lider));
     const ult = (m.bitacora || []).filter((b) => b.accion === 'pendientes_enviados' && b.registro_id === a.p_lider).pop();
-    return { lider: a.p_lider, nombre: p ? p.nombre : a.p_lider, whatsapp: p ? p.whatsapp || null : null, corte: actual, fin: corteFin(actual), limite: corteLimite(actual), dias: dias(hoy(), corteLimite(actual)), ultimo: ult ? ult.en : null,
+    return { lider: a.p_lider, nombre: p ? p.nombre : a.p_lider, whatsapp: p ? p.whatsapp || null : null, corte: actual, fin: corteFin(actual), limite: corteLimite(actual), dias: dias(hoy(), corteLimite(actual)), ultimo: ult ? ult.en : null, ultimo_por: ult ? ult.por || null : null, firma: yo.nombre,
       filas: filas.slice().sort((x, y) => (x.origen === 'corte') - (y.origen === 'corte') || x.instalada_en.localeCompare(y.instalada_en)).map((f) => {
         const c = m.datos.clientes.find((x) => x.id === f.cliente_id); const fl = faltantes(c);
         return { instalacion_id: f.instalacion_id, cliente_id: f.cliente_id, nombre: f.nombre, codigo: f.codigo, origen: f.origen, cumple: f.cumple, orden_ok: f.orden_ok, legal_ok: f.legal_ok, pago_ok: f.pago_ok,
@@ -1721,8 +1726,8 @@ const RPC = {
       }) };
   },
   pendientes_enviados(m, yo, a){
-    if(yo.rol !== 'admin') return error('No tienes permiso para hacer esto');
-    (m.bitacora = m.bitacora || []).push({ usuario: yo.usuario, accion: 'pendientes_enviados', registro_id: a.p_lider, despues: { pendientes: a.p_pendientes, pdf: a.p_pdf }, en: new Date().toISOString() });
+    if(!puedePend(m, yo, a.p_lider)) return error('No le puedes enviar pendientes a ese líder');
+    (m.bitacora = m.bitacora || []).push({ usuario: yo.usuario, por: yo.nombre, accion: 'pendientes_enviados', registro_id: a.p_lider, despues: { pendientes: a.p_pendientes, pdf: a.p_pdf, rol: yo.rol }, en: new Date().toISOString() });
   },
   instalacion_evento(m, yo, a){
     if(!esSenior(yo)) return error('Solo el Analista Senior puede hacer esto');
@@ -1782,6 +1787,8 @@ const RPC = {
     const ab = ordenesAbiertas(m, yo); const lim = m.horasAlerta || 24;
     r.pi = { mas24: ab.filter((o) => o.horas >= lim && new Date(o.creada_en).getTime() >= abre).length, menos24: ab.filter((o) => o.horas < lim && new Date(o.creada_en).getTime() >= abre).length, viejas: ab.filter((o) => new Date(o.creada_en).getTime() < abre).length };
     r.horas_alerta = lim; r.monto = 30; r.yo = { id: yo.id, equipo: equipoDe(m, yo.nombre) };
+    if(yo.rol === 'admin' || yo.rol === 'analista'){ const ul = {}; (m.bitacora || []).filter((b) => b.accion === 'pendientes_enviados').forEach((b) => { ul[b.registro_id] = { en: b.en, por: b.por || null }; });
+      r.pend_env = { lideres: yo.rol === 'admin' || yo.senior ? null : Array.from(new Set((r.filas || []).map((f) => f.lider).filter((l) => puedePend(m, yo, l)))), ultimos: ul }; }
     r.puedo = Object.assign({}, r.puedo, { enviar: ['admin', 'analista', 'lider'].includes(yo.rol), enviar_aliados: ['admin', 'analista'].includes(yo.rol), subir_nuevo: ['admin', 'analista', 'lider'].includes(yo.rol), horas: yo.rol === 'admin' });
     return r;
   },

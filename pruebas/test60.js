@@ -1,5 +1,5 @@
 // Lote 12/11 B, parte 2: arriba de Comisiones (maqueta comisiones-hoja.html 1, 6a, 6b y 8d), filtros que se suman y mensaje al líder. Datos inventados.
-const { chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar } = require('./simulador');
+const { irFiltro, ddAbrir, ddClick, chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar } = require('./simulador');
 const { ok, cerrar } = marcador();
 
 (async () => {
@@ -7,7 +7,7 @@ const { ok, cerrar } = marcador();
   for(const [nombre, dispositivo] of [['pc', PC], ['tel', TEL]]){
     const { ctx } = await contexto(nav, dispositivo);
     const p = await entrar(ctx, 'marcos', '482913'); p.on('pageerror', (e) => errores.push(nombre + ': ' + e.message));
-    await p.goto(H + 'comisiones.html'); await p.waitForSelector('#equipos [data-equipo]', { timeout: 15000 });
+    await p.goto(H + 'comisiones.html'); await p.waitForSelector('#equipos [data-equipo]', { state: 'attached', timeout: 15000 });
     ok(nombre + ': sin las tarjetas grandes de antes', (await p.locator('.cx-al').count()) === 0);
     ok(nombre + ': "+ Cliente nuevo" en la fila del título', (await p.locator('.cabeza #cxNuevo [data-abrir="nuevo"]').count()) === 1 && /Cliente nuevo/.test(await p.textContent('#cxNuevo')));
     const av = await p.textContent('#alertas');
@@ -16,17 +16,17 @@ const { ok, cerrar } = marcador();
     await p.screenshot({ path: 'capturas/lote12novB-p2-arriba-' + nombre + '.png' });
     // Cada número cuenta igual que la lista (lista por fecha, todas visibles)
     await p.click('[data-vista="fecha"]'); await p.waitForSelector('.cx-lfecha');
-    await p.click('#filtros [data-filtro="falta"]'); await p.waitForTimeout(150);
+    await irFiltro(p, 'falta'); await p.waitForTimeout(150);
     const nChip = Number((await p.textContent('#filtros [data-filtro="falta"] em')).trim()); const nFilas = await p.locator('.cx-lfecha .cx-lf[data-com]').count();
-    const nEq = Number((await p.textContent('#equipos .cx-eq.on .cnt')).trim());
+    const nEq = Number((await p.textContent('#equipos .cx-op.on .cnt')).trim());
     ok(nombre + ': la pastilla y el equipo cuentan igual que la lista', nChip === nFilas && nEq === nFilas, [nChip, nEq, nFilas]);
     // Con fechas sin resultados: "Nada … en estas fechas" y "Ver las N sin fechas"; Mostrando con Quitar todo
-    await p.fill('#cxDesde', '2020-01-01'); await p.dispatchEvent('#cxDesde', 'change'); await p.fill('#cxHasta', '2020-01-02'); await p.dispatchEvent('#cxHasta', 'change'); await p.waitForTimeout(200);
+    await ddAbrir(p, '#cxDesde'); await p.fill('#cxDesde', '2020-01-01'); await p.dispatchEvent('#cxDesde', 'change'); await p.fill('#cxHasta', '2020-01-02'); await p.dispatchEvent('#cxHasta', 'change'); await p.waitForTimeout(200);
     ok(nombre + ': sin nada en esas fechas dice cuántas hay en todo el corte', /Nada pendiente en estas fechas/.test(await p.textContent('#lista')) && /Hay \d+ pendiente en todo el corte/.test(await p.textContent('#lista')) && (await p.locator('#lista [data-sin-fechas]').count()) === 1);
     const mo = await p.textContent('#ayudaFiltro .cx-mostrando');
     ok(nombre + ': "Mostrando" lista los filtros puestos con Quitar todo', /Mostrando/.test(mo) && /Les falta algo/.test(mo) && /01\/01 al 02\/01/.test(mo) && /Quitar todo/.test(mo));
     ok(nombre + ': con las fechas, la pastilla cuenta 0 igual que la lista', /\b0\b/.test(await p.textContent('#filtros [data-filtro="falta"]')));
-    await p.click('#lista [data-sin-fechas]'); await p.waitForTimeout(150);
+    await p.keyboard.press('Escape'); await p.click('#lista [data-sin-fechas]'); await p.waitForTimeout(150);
     ok(nombre + ': "Ver las N sin fechas" quita solo las fechas', (await p.locator('.cx-lfecha .cx-lf[data-com]').count()) === nFilas && p.url().includes('f=falta'));
     // El filtro no se pierde al abrir y cerrar el drawer
     await p.locator('.cx-lfecha .cx-lf[data-com]').first().click(); await p.waitForSelector('#hojaComision.ver #cuerpoCom .plg-com', { timeout: 15000 });

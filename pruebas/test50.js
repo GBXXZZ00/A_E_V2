@@ -2,7 +2,7 @@
 // cliente nuevo sin orden, carta y proforma en un solo envío (Canales y líder; el líder no envía las de aliados), Mi trabajo por rol con
 // Ir y tachado al resolverse, notas personales con Deshacer, revisión en lote, Inicio con "Mis pendientes, agrupados", Actualizar y Usuarios.
 // Datos inventados (mundo.js).
-const { chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar } = require('./simulador');
+const { ddAbrir, ddClick, chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar } = require('./simulador');
 const { ok, cerrar } = marcador();
 const llamo = (m, f) => m.llamadas.filter((l) => l[1] === f);
 async function cerrarHojas(p){ for(let i = 0; i < 5 && await p.evaluate(() => !!window.Comun.hojaAbierta()); i++){ await p.keyboard.press('Escape'); await p.waitForTimeout(260); } }
@@ -21,7 +21,7 @@ async function cerrarHojas(p){ for(let i = 0; i < 5 && await p.evaluate(() => !!
     ok(nombre + ': "Grandes negocios" sale como Sin gestionar, nunca como completo', !/Grandes negocios/.test(txt));
 
     // ----- Comisiones: equipos, avisos de 24 horas, resumen con ranking y monto -----
-    await a.goto(H + 'comisiones.html'); await a.waitForSelector('#equipos button, #equipos [data-equipo]', { timeout: 15000 });
+    await a.goto(H + 'comisiones.html'); await a.waitForSelector('#equipos button, #equipos [data-equipo]', { state: 'attached', timeout: 15000 });
     const eq = await a.textContent('#equipos');
     ok(nombre + ': Comisiones separa por equipo (Ventas corporativas, Canales, Aliados)', /corporativas/i.test(eq) && /Canales/i.test(eq) && /Aliado/i.test(eq));
     ok(nombre + ': arriba las tarjetas Instalaciones, Cambios de categoría y Cartas y proformas', /Instalaciones/.test(await a.textContent('#segs')) && /Cambios de categor/.test(await a.textContent('#segs')) && /Cartas y proformas/.test(await a.textContent('#segs')));

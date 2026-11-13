@@ -1,5 +1,5 @@
 // Lote 12/11 B, parte 4: Actualizar datos (barras de subida, historial por día y por semana) y "Ya la envié" en un toque (maqueta 8a, 8b y 8c). Datos inventados.
-const { esperarDia, chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar, enHoja } = require('./simulador');
+const { ddAbrir, ddClick, esperarDia, chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar, enHoja } = require('./simulador');
 const { ok, cerrar } = marcador();
 function csv(n){
   let t = 'Sucursal,Cliente,Tipo,Documento,Fecha_Instalacion,Nombre,Equipo,Plan,Estado,CATEGORIA,CXCPENDIENTE,INSTALADOR,Telefono,Direccion\n';
@@ -33,7 +33,7 @@ function csv(n){
     // Carta descargada: "Ya la envié" marca con fecha de hoy y sale el aviso con Cambiar
     { const { ctx, mundo } = await contexto(nav, dispositivo);
       const p = await entrar(ctx, 'marcos', '482913'); p.on('pageerror', (e) => errores.push(nombre + ' carta: ' + e.message));
-      await p.goto(H + 'comisiones.html'); await p.waitForSelector('#equipos [data-equipo]', { timeout: 15000 });
+      await p.goto(H + 'comisiones.html'); await p.waitForSelector('#equipos [data-equipo]', { state: 'attached', timeout: 15000 });
       await p.click('#filtros [data-filtro="carta"]'); await p.click('[data-vista="fecha"]'); await p.waitForSelector('.cx-lfecha .cx-lf[data-com]');
       await p.locator('.cx-lfecha .cx-lf[data-com]').first().click(); await p.waitForSelector('#hojaComision.ver #cuerpoCom .plg-com', { timeout: 15000 });
       await enHoja(p, '#cartaPdfs'); await p.click('#cartaPdfs'); await p.waitForSelector('#hojaDescargada.ver');

@@ -26,11 +26,20 @@
   <div class="cx-segs" id="segs" aria-live="polite"></div>
   <div class="cx-alertas" id="alertas"></div>
   <div id="avisos" aria-live="polite"></div>
-  <!-- Lote 10/11 D: equipo (Todos por defecto), persona al elegir equipo, aliado, vista y fechas -->
-  <section class="cx-panel" aria-label="Filtros de la lista">
-    <div class="cx-fl"><span class="cx-rot">Equipo</span><div class="cx-equipos" id="equipos" role="tablist" aria-label="Equipos"></div><div class="buscar cx-buscar"><label class="solo-lector" for="busca">Buscar cliente, código u orden</label><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM20 20l-3.5-3.5"/></svg><input class="campo" id="busca" type="search" maxlength="60" autocomplete="off" enterkeyhint="search" placeholder="Cliente, código u orden"></div></div>
-    <div class="cx-fl" id="cxPersona"></div>
-    <div class="cx-fl cx-fl-ver"><div class="cx-ver" id="cxVer"></div><div class="filtros cx-filtros" id="filtros" role="tablist" aria-label="Filtros"></div><div class="acc-corte" id="acciones"></div></div>
+  <!-- Lote 13/11 parte 8 (maquetas obs-13nov 11, 11b, 11c, 11d): filtros en dos renglones, sin recuadro -->
+  <section class="cx-panel cx-p2" aria-label="Filtros de la lista">
+    <div class="cx-t1">
+      <div class="buscar cx-buscar"><label class="solo-lector" for="busca">Buscar cliente, código u orden</label><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14zM20 20l-3.5-3.5"/></svg><input class="campo" id="busca" type="search" maxlength="60" autocomplete="off" enterkeyhint="search" placeholder="Cliente, código u orden"></div>
+      <div class="cx-t1d" id="cxT1">
+        <span class="cx-ddw" id="cxEqW"><button type="button" class="cx-dd" id="cxEqBtn" aria-haspopup="menu" aria-expanded="false" aria-controls="equipos"></button><button type="button" class="cx-dd on hidden" id="cxPeBtn" aria-haspopup="menu" aria-expanded="false" aria-controls="equipos"></button><div class="cx-ddm" id="equipos" role="menu" aria-label="Equipo y persona"></div></span>
+        <span class="cx-alw" id="cxAlW"></span>
+        <span class="cx-ddw" id="cxFeW"><button type="button" class="cx-dd" id="cxFeBtn" aria-haspopup="dialog" aria-expanded="false" aria-controls="cxVer"></button><div class="cx-ddm cx-ddf" id="cxVer" role="dialog" aria-label="Fechas"></div></span>
+        <span class="cx-seg2" id="cxSeg" role="group" aria-label="Cómo se ve la lista"></span>
+        <span class="cx-ddw" id="cxMasW"><button type="button" class="cx-ic" id="cxMasBtn" aria-haspopup="menu" aria-expanded="false" aria-controls="acciones" aria-label="Más acciones">···</button><div class="cx-ddm cx-ddr" id="acciones" role="menu" aria-label="Más acciones"></div></span>
+      </div>
+    </div>
+    <div class="cx-t2"><div class="filtros cx-filtros" id="filtros" role="tablist" aria-label="Filtros"></div></div>
+    <div id="cxPersona" hidden></div>
   </section>
   <div id="ayudaFiltro" aria-live="polite"></div>
   <div id="lista" aria-live="polite"></div>

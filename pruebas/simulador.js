@@ -233,10 +233,17 @@ async function rvAbierto(p, sel){
   await p.waitForSelector('#hojaVer .rv-v >> visible=true');
 }
 async function rvLista(p){ if(await p.locator('#hojaVer [data-rv-lista]:visible').count()){ await p.click('#hojaVer [data-rv-lista]:visible'); await p.waitForSelector('#hojaVer .rv-l >> visible=true'); } }
+// Lote 13/11 parte 8: en Comisiones, Equipo, Fechas y ··· son desplegables; esto abre el que contiene sel (si hace falta) y toca sel
+async function ddAbrir(p, sel){
+  await p.waitForSelector(sel, { state: 'attached', timeout: 15000 });
+  const id = await p.evaluate((s) => { const el = document.querySelector(s); const m = el && el.closest('.cx-ddm'); return m && !m.classList.contains('ver') ? m.id : null; }, sel);
+  if(id) await p.click('[aria-controls="' + id + '"] >> visible=true');
+}
+async function ddClick(p, sel, opt){ await ddAbrir(p, sel); return p.click(sel, opt); }
 // Lote 12/11: los filtros poco usados viven en "Más filtros"; esto abre el menú si hace falta y toca el filtro
 async function irFiltro(p, id){
   const sel = '#filtros [data-filtro="' + id + '"]';
   if(!(await p.locator(sel).isVisible().catch(() => false))){ await p.click('#filtros .cx-mas > summary'); await p.waitForSelector(sel); }
   await p.click(sel);
 }
-module.exports = { rvAbierto, rvLista, irFiltro, abrirCtr, cerrarCtr, irContratos, enHoja, chromium, H, TEL, PC, contexto, marcador, pin, sinDesborde, basePersonas, entrar, plegables, esperarDia };
+module.exports = { ddAbrir, ddClick, rvAbierto, rvLista, irFiltro, abrirCtr, cerrarCtr, irContratos, enHoja, chromium, H, TEL, PC, contexto, marcador, pin, sinDesborde, basePersonas, entrar, plegables, esperarDia };

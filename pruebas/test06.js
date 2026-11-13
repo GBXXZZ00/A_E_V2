@@ -1,6 +1,6 @@
 // Comisiones, tanda A: orden de Odoo a la vista, pendientes por asignar, dueño, excepción, pago del Analista Senior, certificar, Excel y buscador.
 const fs = require('fs');
-const { irFiltro, enHoja, chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar, plegables } = require('./simulador');
+const { ddAbrir, ddClick, irFiltro, enHoja, chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar, plegables } = require('./simulador');
 const { ok, cerrar } = marcador();
 const { RPC } = require('./mundo');
 const llamo = (m, f) => m.llamadas.filter((l) => l[1] === f);
@@ -83,7 +83,7 @@ const cerrarHojas = async (p) => { for(let i = 0; i < 4; i++){ if(await p.evalua
     await cerrarHojas(p); await p.fill('#busca', ''); await p.waitForFunction(() => document.querySelectorAll('.grupo').length >= 3);
 
     // Excel
-    const [bajada] = await Promise.all([p.waitForEvent('download'), p.click('#bajarExcel')]);
+    const [bajada] = await Promise.all([p.waitForEvent('download'), ddClick(p, '#bajarExcel')]);
     const ruta = await bajada.path(); const bytes = fs.readFileSync(ruta); const txt = bytes.toString('latin1');
     ok(nombre + ': baja un Excel del corte', /^Comisiones-\d{4}-\d{2}\.xlsx$/.test(bajada.suggestedFilename()) && bytes[0] === 0x50 && bytes[1] === 0x4B && txt.includes('xl/worksheets/sheet2.xml') && txt.includes('Orden de Odoo') && txt.includes('Kiosco La Parada'));
     // El archivo se abre: el índice del ZIP cuadra con lo escrito
@@ -95,7 +95,7 @@ const cerrarHojas = async (p) => { for(let i = 0; i < 4; i++){ if(await p.evalua
     const rango = await p.textContent('#rango');
     ok(nombre + ': el rango del corte en curso dice el día límite como aviso (sin "cerrado")', /día límite|Día límite|sigue abierto/i.test(rango) && !/Corte cerrado/.test(rango), rango);
     if(puedeCerrar){
-      await p.click('#abrirCert'); await p.waitForSelector('#hojaCert.ver #certificar');
+      await ddClick(p, '#abrirCert'); await p.waitForSelector('#hojaCert.ver #certificar');
       const res = await p.textContent('#hojaCert'); const r = llamo(mundo, 'corte_cierre_resumen').slice(-1)[0];
       ok(nombre + ': cerrar corte pide el resumen al servidor: cuántas cumplen y cuántas pasan al siguiente', !!r && /\d+ de \d+ comisionan/.test(res) && res.includes('queda fijo') && (!/pasan? al corte siguiente/.test(res) || /\d+ pasan? al corte siguiente/.test(res)), res);
       await p.screenshot({ path: 'capturas/06-' + nombre + '-certificar.png' });
@@ -105,7 +105,7 @@ const cerrarHojas = async (p) => { for(let i = 0; i < 4; i++){ if(await p.evalua
       ok(nombre + ': lo que no cumplió pasa al corte siguiente como último corte', (await p.textContent('#mets')).includes('En su último corte'));
       await p.selectOption('#corte', antes); await p.waitForSelector('#avisos .franja.verde');
       ok(nombre + ': el corte cerrado queda fijo y ya no se puede cerrar de nuevo', (await p.textContent('#avisos')).includes('Corte cerrado') && (await p.locator('#abrirCert').count()) === 0 && /Corte cerrado/.test(await p.textContent('#rango')));
-      const [b2] = await Promise.all([p.waitForEvent('download'), p.click('#bajarExcel')]);
+      const [b2] = await Promise.all([p.waitForEvent('download'), ddClick(p, '#bajarExcel')]);
       ok(nombre + ': el Excel del corte cerrado lo dice en el nombre', b2.suggestedFilename().includes('-certificado.xlsx'));
       ok(nombre + ': corte cerrado sin desborde', await sinDesborde(p));
       await p.screenshot({ path: 'capturas/06-' + nombre + '-certificado.png', fullPage: true });

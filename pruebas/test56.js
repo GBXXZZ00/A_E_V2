@@ -1,6 +1,6 @@
 // Lote 10/11, parte D: Comisiones. Equipo "Todos" por defecto, persona solo al elegir un equipo, Lista por fecha (la más nueva primero),
 // Desde / Hasta, hoja con todo cerrado, "Corte y comisión" en vez de "Más acciones" y la carta descargada. Datos inventados.
-const { enHoja, chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar } = require('./simulador');
+const { ddAbrir, ddClick, enHoja, chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar } = require('./simulador');
 const { ok, cerrar } = marcador();
 
 (async () => {
@@ -8,17 +8,17 @@ const { ok, cerrar } = marcador();
   for(const [nombre, dispositivo] of [['pc', PC], ['tel', TEL]]){
     const { ctx, mundo } = await contexto(nav, dispositivo);
     const p = await entrar(ctx, 'marcos', '482913'); p.on('pageerror', (e) => errores.push(nombre + ': ' + e.message));
-    await p.goto(H + 'comisiones.html'); await p.waitForSelector('#equipos [data-equipo]', { timeout: 15000 });
-    ok(nombre + ': el equipo empieza en Todos', /Todos/.test(await p.textContent('#equipos .cx-eq.on')));
-    ok(nombre + ': sin equipo elegido no sale el filtro de persona', !(await p.locator('[data-persona]').count()));
-    await p.click('#equipos [data-equipo="corporativas"]'); await p.waitForSelector('[data-persona]');
+    await p.goto(H + 'comisiones.html'); await p.waitForSelector('#equipos [data-equipo]', { state: 'attached', timeout: 15000 });
+    ok(nombre + ': el equipo empieza en Todos', /Todos/.test(await p.textContent('#equipos .cx-op.on')));
+    ok(nombre + ': con Equipo Todos el desplegable ya trae la gente bajo Persona (maqueta 11b)', (await p.locator('#equipos [data-persona]').count()) >= 2 && /Persona/.test(await p.textContent('#equipos')));
+    await ddClick(p, '#equipos [data-equipo="corporativas"]'); await p.waitForSelector('[data-persona]', { state: 'attached' });
     const personas = await p.locator('[data-persona]').count();
     ok(nombre + ': al elegir el equipo sale la gente de ese equipo', personas >= 3);
     const quien = await p.locator('[data-persona]').nth(1).getAttribute('data-persona');
-    await p.locator('[data-persona]').nth(1).click(); await p.waitForTimeout(150);
+    await ddAbrir(p, '[data-persona]'); await p.locator('[data-persona]').nth(1).click(); await p.waitForTimeout(150);
     const lideres = await p.$$eval('.cx-grupo:not(.bandeja-extra)', (g) => g.map((x) => x.dataset.lider));
     ok(nombre + ': con una persona elegida solo sale su grupo', lideres.length === 1 && lideres[0] === quien, lideres);
-    await p.click('#equipos [data-equipo="todos"]');
+    await ddClick(p, '#equipos [data-equipo="todos"]');
     // Lista por fecha: la instalación más nueva primero
     await p.click('[data-vista="fecha"]'); await p.waitForSelector('.cx-lfecha .cx-lf[data-com]');
     const fechas = await p.$$eval('.cx-lfecha .cx-lf[data-com] .cx-lf-f b', (l) => l.map((x) => x.textContent));
@@ -30,10 +30,10 @@ const { ok, cerrar } = marcador();
     // Desde / Hasta
     const total = await p.locator('.cx-lfecha .cx-lf[data-com]').count();
     const primera = iso[0];
-    await p.fill('#cxDesde', primera); await p.dispatchEvent('#cxDesde', 'change'); await p.waitForTimeout(150);
+    await ddAbrir(p, '#cxDesde'); await p.fill('#cxDesde', primera); await p.dispatchEvent('#cxDesde', 'change'); await p.waitForTimeout(150);
     const conDesde = await p.locator('.cx-lfecha .cx-lf[data-com]').count();
     ok(nombre + ': Desde deja solo lo instalado desde esa fecha', conDesde >= 1 && conDesde < total, [conDesde, total]);
-    await p.click('[data-sin-fechas]'); await p.waitForTimeout(150);
+    await ddClick(p, '[data-cx-rango=""]'); await p.waitForTimeout(150);   // lote 13/11: "Todo el corte" quita las fechas
     ok(nombre + ': Quitar fechas vuelve a mostrar todo', (await p.locator('.cx-lfecha .cx-lf[data-com]').count()) === total);
     await p.click('[data-vista="dueno"]'); await p.waitForSelector('.cx-grupo');
     // Hoja: todo cerrado, sin "Más acciones", con "Corte y comisión" y la nota en el hilo

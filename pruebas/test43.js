@@ -1,7 +1,7 @@
 // Lote 21/10, tanda A: hoja de comisión con datos clave y plegables; No comisiona con su bandeja (solo el administrador la reactiva);
 // nota del pago; días para el pago (administrador) y la regla de N días del TAD; Revisar pago por factura del mes y por residenciales;
 // corregir un corte certificado sin tocar la foto y la bandeja "Fuera de la foto".
-const { enHoja, chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar, plegables } = require('./simulador');
+const { ddAbrir, ddClick, enHoja, chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar, plegables } = require('./simulador');
 const { ok, cerrar } = marcador();
 const { RPC } = require('./mundo');
 const llamo = (m, f) => m.llamadas.filter((l) => l[1] === f);
@@ -70,7 +70,7 @@ function cargaTad(m, yo, cl, conDeuda){
     ok(nombre + ': sin anuladas no sale la bandeja', true);
 
     // 3. Días para el pago (solo administrador)
-    await p.click('#pagoDiasAbrir'); await p.waitForSelector('#hojaPagoDias.ver #pagoDias');
+    await ddClick(p, '#pagoDiasAbrir'); await p.waitForSelector('#hojaPagoDias.ver #pagoDias');
     await p.waitForFunction(() => document.getElementById('pagoDias').value === '3');
     ok(nombre + ': Días para el pago trae 3 por defecto', true);
     await p.fill('#pagoDias', '45'); await p.click('#pagoDiasGuardar');

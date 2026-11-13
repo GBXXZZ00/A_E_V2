@@ -1,7 +1,7 @@
 // Comisiones del 13/10: período del 18 al 17 con límite el 18, evento a mano, orden de otra persona,
 // motivo visible, IP a mano, Excel con técnico, Proforma y carta en la hoja, archivos por subir y quienes crean órdenes por otros.
 const fs = require('fs');
-const { irFiltro, enHoja, chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar, plegables } = require('./simulador');
+const { ddAbrir, ddClick, irFiltro, enHoja, chromium, H, TEL, PC, contexto, marcador, sinDesborde, entrar, plegables } = require('./simulador');
 const { corte: K } = require('./mundo');
 const { ok, cerrar } = marcador();
 
@@ -97,8 +97,8 @@ async function cerrarHojas(p){ for(let i = 0; i < 4 && await p.evaluate(() => !!
     ok(nombre + ': al comisionar sale de Eventos y vuelve a la lista', (await p.locator('[data-filtro="eventos"]').count()) === 0 || !(await p.textContent('#lista')).includes('Comercial de Prueba 14'));
 
     // Excel del corte con técnico y número de orden
-    await p.click('[data-filtro="todos"]').catch(() => {}); await p.waitForSelector('#bajarExcel');
-    const [x] = await Promise.all([p.waitForEvent('download'), p.click('#bajarExcel')]);
+    await p.click('[data-filtro="todos"]').catch(() => {}); await p.waitForSelector('#bajarExcel', { state: 'attached' });
+    const [x] = await Promise.all([p.waitForEvent('download'), ddClick(p, '#bajarExcel')]);
     const txt = fs.readFileSync(await x.path()).toString('utf8');
     ok(nombre + ': el Excel trae técnico o instalador y número de orden', txt.includes('Técnico o instalador') && txt.includes('N° de orden de Odoo') && txt.includes('Instalador mb-02'));
     await ctx.close();

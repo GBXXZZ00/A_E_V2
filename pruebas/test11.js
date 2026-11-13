@@ -15,11 +15,11 @@ const cerrarTodo = async (p) => { for(let i = 0; i < 4; i++){ if(await p.evaluat
     await ctx.addInitScript(() => { try { Object.defineProperty(navigator, 'clipboard', { value: { writeText: (t) => { window.__copiado = t; return Promise.resolve(); } }, configurable: true }); } catch (e) {} });
     Object.assign(mundo.personas[1], { whatsapp: '04145550199' });
 
-    // El líder y el analista no ven el botón (cada uno en su equipo)
-    for(const [u, pin, quien] of [['lucia', '739105', 'el líder'], ['elena', '315806', 'el Analista Senior']]){
+    // Lote 13/11 parte 9: el líder no ve el botón; la Analista Senior sí (con todos sus líderes)
+    for(const [u, pin, quien, ve] of [['lucia', '739105', 'el líder', false], ['elena', '315806', 'la Analista Senior', true]]){
       const otro = await contexto(nav, dispositivo, mundo); const q = await entrar(otro.ctx, u, pin); q.on('pageerror', (e) => errores.push(e.message));
       await q.goto(H + 'comisiones.html'); await q.waitForSelector('#lista .grupo');
-      ok(nombre + ': ' + quien + ' no ve Enviar pendientes', (await q.locator('[data-pend]').count()) === 0);
+      ok(nombre + ': ' + quien + (ve ? ' ve' : ' no ve') + ' Enviar pendientes', ((await q.locator('[data-pend]').count()) > 0) === ve);
       await otro.ctx.close();
     }
     let p;
@@ -35,7 +35,7 @@ const cerrarTodo = async (p) => { for(let i = 0; i < 4; i++){ if(await p.evaluat
     let msj = await p.inputValue('#pendMsj');
     ok(nombre + ': saluda al líder y dice el corte y los días', /^(Buenos días|Buenas tardes|Buenas noches), Lucía\. Te paso tus pendientes del corte de [a-z]+\. (El límite para Legal y pago es el \d+ y falta|Hoy, el \d+, es el límite)/.test(msj), msj.slice(0, 120));
     ok(nombre + ': numera los clientes y dice qué falta', /\n1\. [^\n]+\(\d+\): /.test(msj) && /falta |debe la instalación|pendiente por asignar/.test(msj), msj);
-    ok(nombre + ': cierra con Ya cumplen y la despedida aprobada', /Ya cumplen: \d+ de \d+\./.test(msj) && msj.endsWith('Cualquier documento me lo envías por aquí o lo subes en la app. Gracias.'));
+    ok(nombre + ': cierra con Ya cumplen y la despedida aprobada', /Ya cumplen: \d+ de \d+\./.test(msj) && msj.endsWith('Cualquier documento me lo envías por aquí o lo subes en la app. Gracias.\nMarcos'));
     ok(nombre + ': sin enlaces ni guion largo', !/https?:|www\./.test(msj) && !msj.includes('—'));
     ok(nombre + ': dice a qué número va', (await p.textContent('#hojaPend')).includes('0414 555 0199'));
     ok(nombre + ': la hoja no desborda', await sinDesborde(p));

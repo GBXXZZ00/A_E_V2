@@ -3393,3 +3393,58 @@ main.al-en-inicio #ayuda{display:none}
 }
 /* Lote 13/11, parte 7 (maqueta obs-13nov 07): línea de ayuda arriba de los grupos plegados */
 .nota-chica.bz-plegado{margin:4px 0 10px}
+/* Lote 13/11, parte 8 (maquetas obs-13nov 11, 11b, 11c, 11d): filtros de Comisiones en dos renglones, sin recuadro */
+.cx-panel.cx-p2{border:0;padding:0;background:none;box-shadow:none;margin:8px 0 14px;display:flex;flex-direction:column;gap:12px}
+.cx-t1{display:flex;align-items:center;gap:8px}
+.cx-t1 .cx-buscar{flex:1;min-width:0;margin:0;width:auto}
+.cx-t1d{display:flex;align-items:center;gap:8px;flex:none}
+.cx-t1d [hidden]{display:none !important}
+.cx-ddw{position:relative;display:inline-flex;gap:8px}
+.cx-dd{height:44px;padding:0 14px;border-radius:99px;border:1.5px solid var(--line);background:#fff;font-weight:600;font-size:13.5px;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;color:var(--text)}
+.cx-dd b{font-weight:700}.cx-dd.on{border-color:var(--text)}.cx-dd.hidden{display:none}
+.cx-dd .i{width:14px;height:14px}
+.cx-seg2{display:inline-flex;background:var(--surface-2,#F3F4F6);border-radius:99px;padding:4px;height:44px;align-items:center}
+.cx-seg2 button{height:36px;padding:0 14px;border-radius:99px;display:inline-flex;align-items:center;font-size:13.5px;font-weight:600;color:var(--text2);background:none;white-space:nowrap}
+.cx-seg2 button.on{background:#fff;color:var(--text);box-shadow:0 1px 3px rgba(17,19,21,.12)}
+.cx-ic{width:44px;height:44px;border-radius:50%;border:1.5px solid var(--line);background:#fff;display:grid;place-items:center;font-weight:800;font-size:16px;letter-spacing:1px;color:var(--text);flex:none}
+.cx-ddm{position:absolute;z-index:30;top:calc(100% + 8px);left:0;background:#fff;border-radius:16px;box-shadow:0 16px 40px rgba(17,19,21,.16);border:1px solid var(--line);padding:8px;width:300px;display:none}
+.cx-ddm.ver{display:block}
+.cx-ddm.cx-ddr{left:auto;right:0;width:240px}
+.cx-ddm.cx-ddf{width:340px;left:auto;right:-54px}
+#equipos.cx-ddm{left:-35px}
+.cx-op{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:10px;font-size:13.5px;font-weight:600;width:100%;text-align:left;background:none;color:var(--text)}
+.cx-op.on{background:#F3F4F6}.cx-op em{margin-left:auto;font-style:normal;color:var(--text2);font-size:12.5px}
+.cx-ddm hr{border:0;border-top:1px solid var(--line);margin:6px 4px}
+.cx-ddm .cx-lbl{font-size:11.5px;font-weight:700;color:var(--text3,#69717C);text-transform:uppercase;letter-spacing:.06em;padding:8px 12px 2px;margin:0}
+.cx-ops{display:flex;flex-wrap:wrap;gap:6px;padding:4px 8px 8px}
+.cx-ops button{height:34px;padding:0 12px;border-radius:99px;border:1.5px solid var(--line);display:inline-flex;align-items:center;font-size:13px;font-weight:600;background:#fff;color:var(--text)}
+.cx-ops button.on{background:var(--text);border-color:var(--text);color:#fff}
+.cx-dos{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 8px 8px}
+.cx-fecha2 span{font-size:12.5px;font-weight:700;display:block;margin-bottom:4px}.cx-fecha2 .campo{height:40px;width:100%;min-width:0}
+.cx-ddm > .mini{display:flex;align-items:center;gap:10px;width:100%;padding:8px 12px;border-radius:10px;font-size:13.5px;font-weight:600;background:none;border:0;height:auto;min-height:0;color:var(--text);justify-content:flex-start}
+.cx-ddm > .mini.on{background:#F3F4F6}.cx-ddm > .mini.pri{color:var(--accent)}
+.cx-ddm > .mini .i{display:none}
+.cx-t2{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+@media (hover:hover) and (pointer:fine){ .cx-op:hover,.cx-ddm > .mini:hover{background:#F3F4F6} }
+@media (max-width:899px){
+  .cx-t1{flex-wrap:wrap}
+  .cx-t1 .cx-buscar{flex-basis:100%}
+  .cx-t1d{flex-basis:100%;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+  .cx-t1d::-webkit-scrollbar{display:none}
+  .cx-t1d > *{flex:none}
+  .cx-ddm,.cx-ddm.cx-ddr,.cx-ddm.cx-ddf{position:fixed;left:0;right:0;bottom:0;top:auto;width:auto;border-radius:24px 24px 0 0;padding:12px 12px calc(12px + var(--safe-b));max-height:80dvh;overflow:auto;z-index:60;box-shadow:0 -12px 40px rgba(17,19,21,.2)}
+  .cx-op,.cx-ddm > .mini{min-height:48px}
+  .cx-t2 .cx-filtros{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+  .cx-t2 .cx-filtros > *{flex:none}
+}
+/* Lote 13/11, parte 9 (maqueta obs-13nov 11): "Enviar pendientes" al lado del nombre del líder, fuera del botón del grupo */
+.cx-gcab{display:flex;align-items:center;min-width:0}
+.cx-gcab .grupo-cab.cx-ga{width:auto;flex:0 1 auto;min-width:0;padding-right:0}
+.cx-gcab .grupo-cab.cx-ga .tx{flex:0 1 auto}
+.cx-gcab .cx-gb{display:flex;align-items:center;gap:12px;padding:12px 14px 12px 12px;min-height:60px;flex:1;justify-content:flex-end;min-width:0;background:none;text-align:left}
+.cx-gcab .cx-gb .stats{margin-left:auto}
+.cx-env{height:32px;padding:0 12px;border-radius:99px;border:1.5px solid #BFE3CC;background:#fff;color:#0F6642;font-size:12.5px;font-weight:700;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;flex:none;margin-left:12px}
+.cx-env .i{width:14px;height:14px}
+.cx-env small{font-weight:500;color:var(--text2);font-size:12px}
+.cx-env:active{transform:scale(.97)}
+@media (max-width:899px){ .cx-gcab{flex-wrap:wrap} .cx-gcab .cx-gb{flex-basis:100%;padding-top:0;min-height:0;justify-content:flex-start;padding-left:14px} .cx-env{height:44px} }
