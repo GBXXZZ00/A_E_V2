@@ -59,7 +59,7 @@ begin
   perform privado.exigir_cliente(d.cliente_id);
   if d.casilla not in ('cedula', 'rif_personal', 'rif_empresa', 'acta_constitutiva', 'acta_asamblea', 'conatel', 'otro') then
     raise exception 'Este documento no se puede mover' using errcode = 'P0001'; end if;
-  if p_casilla not in ('cedula', 'rif_personal', 'rif_empresa', 'acta_constitutiva', 'acta_asamblea', 'otro') then
+  if p_casilla is null or p_casilla not in ('cedula', 'rif_personal', 'rif_empresa', 'acta_constitutiva', 'acta_asamblea', 'otro') then
     raise exception 'Elige qué documento es' using errcode = 'P0001'; end if;
   if p_modo is not null and p_modo not in ('reemplazar', 'dos') then raise exception 'Opción no reconocida' using errcode = 'P0001'; end if;
   if p_casilla in ('rif_empresa', 'acta_constitutiva') then v_num := 0;

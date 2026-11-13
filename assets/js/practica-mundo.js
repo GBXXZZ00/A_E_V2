@@ -739,6 +739,7 @@ const RPC = {
     const p = { tipo: (i) => !(f.tipo || []).length || f.tipo.includes(i.tip), estatus: (i) => !(f.estatus || []).length || f.estatus.includes(i.est), lider: (i) => !(f.lider || []).length || f.lider.includes(i.lid),
       gestion: (i) => !(f.gestion || []).length || i.ges.some((g) => f.gestion.includes(g) || f.gestion.includes(g.split(':')[0])), ctr: (i) => !(f.ctr || []).length || (i.ctr || []).some((k) => f.ctr.includes(k)),
       vgt: (i) => !(f.vgt || []).length || i.vgt.some((k) => f.vgt.includes(k)),
+      // Lote 13/11: filtro de fecha (entró, cambió de estatus, firmó, vence)
       fecha: (i) => { const fe = f.fecha; if(!fe || !fe.de) return true; const v = i.fec[fe.de]; return !!v && (!fe.desde || v >= fe.desde) && (!fe.hasta || v <= fe.hasta); } };
     filas.forEach((x) => { const c = m.datos.clientes.find((k) => k.id === x.id); const d10 = (s) => s ? String(s).slice(0, 10) : null;
       const ks = (c.dedicado && c.dedicado.contratos) || [];
@@ -1527,6 +1528,22 @@ const RPC = {
   revision_puntos_aplicar(m, yo, a){ if(!['admin', 'abogado'].includes(yo.rol)) return error('No tienes permiso para hacer esto'); const c = m.datos.clientes.find((x) => x.id === Number(a.p_cliente)); let ped = 0, man = 0, ok = 0;
     Object.keys(c.puntos || {}).forEach((k) => { const p = c.puntos[k]; if(p.decision === 'pedir'){ const tp = ['junta', 'razon', 'domicilio', 'prorroga', 'nombra'].includes(p.documento) ? p.documento : 'otro'; reqPoner(m, c, tp, tp === 'otro' ? p.documento : null, p.nota, null, null, yo); ped++; } else if(p.decision === 'revisar') man++; else ok++; });
     (m.bitacora = m.bitacora || []).push({ accion: 'revision_puntos', registro: c.id, puntos: c.puntos }); c.puntos = {}; return { pedidos: ped, a_mano: man, bien: ok }; },
+  // Lote 13/11 parte 4: Es otro documento (solo el administrador). Destino libre: el documento entero se mueve; ocupado: pregunta
+  documento_reclasificar(m, yo, a){
+    if(yo.rol !== 'admin') return error('No tienes permiso para hacer esto');
+    const c = m.datos.clientes.find((x) => (x.documentos || []).some((d) => d.id === Number(a.p_documento))); if(!c) return error('Ese documento ya no existe');
+    const d = c.documentos.find((x) => x.id === Number(a.p_documento)); const cas = a.p_casilla;
+    let n = ['rif_empresa', 'acta_constitutiva'].includes(cas) ? 0 : cas === 'acta_asamblea' ? Math.max(0, ...c.documentos.filter((x) => x.casilla === 'acta_asamblea').map((x) => x.numero)) + 1 : Number(a.p_numero) || 0;
+    if(cas === 'otro'){ if(String(a.p_titulo || '').trim().length < 3) return error('Escribe qué documento es'); n = 1; while(c.documentos.some((x) => x.casilla === 'otro' && x.numero === n)) n++; }
+    if((cas === 'cedula' || cas === 'rif_personal') && !(n >= 1 && n <= 10)) return error('Elige el representante');
+    const dst = c.documentos.find((x) => x.casilla === cas && x.numero === n && x !== d);
+    const nom = (cas === 'acta_asamblea' ? 'acta de asamblea ' + n : cas === 'otro' ? a.p_titulo : cas.replace('_', ' '));
+    if(dst && (dst.archivos || []).length && !a.p_modo) return { ocupada: true, destino: nom };
+    m.bitacora = m.bitacora || []; m.bitacora.push({ accion: 'documento_reclasificado', registro: d.id, antes: { casilla: d.casilla, numero: d.numero }, despues: { casilla: cas, numero: n, modo: a.p_modo || 'mover' } });
+    if(!dst){ d.casilla = cas; d.numero = n; d.estado = 'por_revisar'; d.titulo = cas === 'otro' ? a.p_titulo : null; if(c.marcas) delete c.marcas[d.id]; return { ok: true, documento: d.id, casilla: cas, numero: n, destino: nom }; }
+    dst.archivos = (a.p_modo === 'dos' ? dst.archivos : []).concat(d.archivos || []); dst.estado = 'por_revisar'; d.archivos = []; d.estado = 'devuelto'; d.motivo = 'otro'; d.nota = 'Se movió a ' + nom;
+    return { ok: true, documento: dst.id, casilla: cas, numero: n, destino: nom };
+  },
   requerimiento_crear(m, yo, a){ if(!['admin', 'abogado'].includes(yo.rol)) return error('No tienes permiso para hacer esto'); const c = m.datos.clientes.find((x) => x.id === Number(a.p_cliente)); if(!c) return error('No encontré ese cliente');
     if(a.p_tipo === 'otro' && String(a.p_texto || '').trim().length < 3) return error('Escribe qué documento falta'); return reqPoner(m, c, a.p_tipo, a.p_texto, a.p_motivo, a.p_origen, a.p_numero, yo); },
   requerimiento_anular(m, yo, a){ if(!['admin', 'abogado'].includes(yo.rol)) return error('No tienes permiso para hacer esto'); for(const c of m.datos.clientes){ const z = (c.requerimientos || []).find((x) => x.id === Number(a.p_id)); if(z){ z.estado = 'anulado'; (m.bitacora = m.bitacora || []).push({ accion: 'requerimiento_anulado', registro: z.id }); return null; } } return error('No encontré ese pedido'); },
@@ -1895,7 +1912,7 @@ const RPC = {
     let f = [];
     if(g === 'por_instalar') f = ordenesAbiertas(m, todos).map((o) => ({ c: o.cliente_id, n: o.cliente || 'Sin cliente en la app', s: 'Orden ' + o.numero, e: Math.floor(o.horas) + ' horas', t: o.horas >= 24 ? 'w' : '', d: o.lider || 'Por asignar' }));
     else f = base.filter((r) => r.origen === 'corte' || g === 'monto' || g === 'comisionan').filter((r) => g === 'cartas' ? (x === 'por_enviar' ? ['por_enviar', 'falta_ip'].includes((r.carta || {}).k) : x === 'canales' ? (r.carta || {}).k === 'enviada' : x === 'lider' ? (r.carta || {}).k === 'lider' : x === 'ip' ? (r.carta || {}).k === 'falta_ip' : ['enviada', 'lider'].includes((r.carta || {}).k))
-      : g === 'comisionan' ? r.cumple : g === 'equipo' ? r.equipo === x : g === 'ranking' ? r.equipo === x.split('|')[0] && (!x.split('|')[1] || norm(r.lider) === x.split('|')[1]) : g === 'monto' ? (x === 'cumplen' ? r.cumple : x === 'pasan' ? r.origen === 'corte' && !r.cumple : r.origen === 'anterior' && !r.cumple) : g === 'susp60' ? false : true)
+      : g === 'comisionan' ? r.cumple && (x !== 'corporativas' || ((r.equipo || 'corporativas') === 'corporativas' && r.origen === 'corte')) : g === 'equipo' ? r.equipo === x : g === 'ranking' ? r.equipo === x.split('|')[0] && (!x.split('|')[1] || norm(r.lider) === x.split('|')[1]) : g === 'monto' ? (x === 'cumplen' ? r.cumple : x === 'pasan' ? r.origen === 'corte' && !r.cumple : r.origen === 'anterior' && !r.cumple) : g === 'susp60' ? false : true)
       .map((r) => ({ c: r.cliente_id, n: r.nombre, s: 'Instalada ' + String(r.instalada_en).slice(8, 10) + '/' + String(r.instalada_en).slice(5, 7), e: g === 'cartas' ? ({ enviada: 'Enviada por Canales', lider: 'Enviada por el líder · falta Canales', falta_ip: 'Esperando la IP' }[(r.carta || {}).k] || 'Esperando ' + ((r.carta || {}).dias || 0) + ' días') : r.cumple ? 'Comisiona' : 'Falta legal', t: r.cumple ? 'ok' : 'w', d: r.lider }));
     const visible = yo.rol !== 'lider' ? f : f.filter((r) => norm(r.d) === norm(yo.nombre) || base.some((b) => b.cliente_id === r.c && b.equipo === 'aliados'));
     const gr = {}; f.forEach((r) => { gr[r.d] = (gr[r.d] || 0) + 1; });

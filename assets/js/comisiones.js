@@ -547,7 +547,7 @@
   function botonPendientes(g){
     if(!puedePend(g.lider) || !d.filas.some((f) => f.lider === g.lider && !f.cumple && f.equipo !== 'aliados')) return '';
     const u = ((d.pend_env || {}).ultimos || {})[g.lider];
-    const cuando = u ? (() => { const n = Math.round((new Date(String(d.hoy) + 'T12:00:00') - new Date(String(u.en).slice(0, 10) + 'T12:00:00')) / 86400000); return n <= 0 ? 'hoy' : n === 1 ? 'ayer' : 'el ' + diaMes(u.en); })() : '';
+    const cuando = u ? (() => { const e = new Date(u.en); const local = e.getFullYear() + '-' + String(e.getMonth() + 1).padStart(2, '0') + '-' + String(e.getDate()).padStart(2, '0'); const n = Math.round((new Date(String(d.hoy) + 'T12:00:00') - new Date(local + 'T12:00:00')) / 86400000); return n <= 0 ? 'hoy' : n === 1 ? 'ayer' : 'el ' + diaMes(u.en); })() : '';
     return '<button type="button" class="cx-env" data-pend="' + esc(g.lider) + '">' + ic('wa') + 'Enviar pendientes' + (u ? ' <small>· ' + esc(cuando + (u.por ? ', ' + primerNombre(u.por) : '')) + '</small>' : '') + '</button>';
   }
   const TOPE_MSJ = 12;   // con más clientes pendientes va un resumen y la lista en PDF

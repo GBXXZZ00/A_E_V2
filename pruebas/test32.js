@@ -18,15 +18,13 @@ function sembrar(m){
     const p = await entrar(ctx, 'marcos', '482913'); p.on('pageerror', (e) => errores.push(e.message));
     await p.waitForSelector('#zonaModulos a[data-modulo]');
     ok(nombre + ': Migraciones es un módulo en Inicio', (await p.locator('#zonaModulos a[data-modulo="migraciones"]').count()) === 1);
-    // Lote 28/10: Instalaciones PYME y Cambios de categoría son dos tarjetas arriba; los cambios van en su propia vista
+    // Lote 13/11 parte 12: la tarjeta Cambios de categoría se quitó; las migraciones van dentro de la lista con su etiqueta y el filtro Migraciones
     await p.goto(H + 'comisiones.html'); await p.waitForSelector('#segs');
-    ok(nombre + ': arriba las tarjetas Instalaciones PYME y Cambios de categoría', /Instalaciones PYME/.test(await p.textContent('#segs')) && /Cambios de categoría/.test(await p.textContent('#segs')));
-    const ti = await p.textContent('#lista');
-    ok(nombre + ': la migración no sale con las instalaciones', !ti.includes(cli.nombre) || (await p.locator('#lista [data-com]', { hasText: cli.nombre }).count()) === 0);
-    await p.goto(H + 'comisiones.html?t=cambios'); await p.waitForFunction(() => /Cambios a residencial/.test(document.getElementById('lista').textContent));
+    ok(nombre + ': arriba la tarjeta Instalaciones PYME, sin Cambios de categoría', /Instalaciones PYME/.test(await p.textContent('#segs')) && !/Cambios de categoría/.test(await p.textContent('#segs')));
+    await p.goto(H + 'comisiones.html?t=cambios'); await p.waitForFunction(() => /Pasaron a residencial/.test(document.getElementById('lista').textContent));
     const t = await p.textContent('#lista');
-    ok(nombre + ': en Cambios de categoría sale la migración', t.includes(cli.nombre));
-    ok(nombre + ': cambios a residencial e histórico pagado fuera van aparte', /Cambios a residencial/.test(t) && /Histórico pagado fuera de la app/.test(t));
+    ok(nombre + ': un enlace viejo a Cambios abre el filtro Migraciones con la migración y su etiqueta', t.includes(cli.nombre) && (await p.locator('#lista [data-com] .chip.azul', { hasText: 'Migración' }).count()) >= 1);
+    ok(nombre + ': las que pasaron a residencial e histórico pagado fuera van aparte', /Pasaron a residencial/.test(t) && /Pasó a residencial/.test(t) && /Histórico pagado fuera de la app/.test(t));
     ok(nombre + ': ya no hay aviso de cambios por decidir', (await p.locator('#avisoCam .cam-dec').count()) === 0);
     ok(nombre + ': sin desborde', await sinDesborde(p));
     await p.screenshot({ path: 'capturas/32-' + nombre + '-comisiones.png', fullPage: true });

@@ -42,7 +42,7 @@
       return '<div class="cr2-k">' +
         '<button type="button" class="cr2-kc"' + dato('equipo', 'corporativas', 'Instaladas del corte · Ventas corporativas') + '><span class="l">Instaladas del corte · Ventas corporativas</span><span class="v">' + num(de) + '</span>' + flecha(n.pct) +
           '<span class="x">' + num(n.inst_prev) + ' en ' + esc(d.mes_anterior) + ' al día ' + num(d.dia) + ' del corte</span></button>' +
-        '<button type="button" class="cr2-kc"' + dato('comisionan', 'todas', 'Ya comisionan') + '><span class="l">Ya comisionan</span><span class="v">' + num(com) + ' <small>de ' + num(de) + '</small></span><span class="cr2-mini"><i style="width:' + (de ? Math.round(100 * com / de) : 0) + '%"></i></span><span class="x">' + num(Math.max(0, de - com)) + ' todavía sin legal o pago</span></button>' +
+        '<button type="button" class="cr2-kc"' + dato('comisionan', 'corporativas', 'Ya comisionan · Ventas corporativas') + '><span class="l">Ya comisionan</span><span class="v">' + num(com) + ' <small>de ' + num(de) + '</small></span><span class="cr2-mini"><i style="width:' + (de ? Math.round(100 * com / de) : 0) + '%"></i></span><span class="x">' + num(Math.max(0, de - com)) + ' todavía sin legal o pago</span></button>' +
         '<button type="button" class="cr2-kc"' + (hay(n.atrasadas) ? dato('por_instalar', 'atrasadas_todas', 'Órdenes atrasadas') : ' disabled') + '><span class="l">Órdenes atrasadas</span><span class="v cr2-am">' + num(n.atrasadas) + '</span><span class="x">' + (hay(n.atrasadas) ? 'Del corte, sin instalar hace más de 1 día' : 'Solo se ve en el corte en curso') + '</span></button>' +
         '<div class="cr2-kc"><span class="l">Días de orden a instalación</span><span class="v">' + (hay(n.mediana) ? dec(n.mediana) : 'Sin datos') + '</span>' +
           (dif !== null ? '<span class="cr2-d ' + (dif > 0 ? 'dn' : 'up') + '">' + (dif > 0 ? '↑' : '↓') + ' ' + dec(Math.abs(dif)) + ' días</span>' : '') +
@@ -120,7 +120,8 @@
         '<button type="button" class="li"' + dato('cartas', 'canales', 'Enviadas por Canales') + '><span><i style="background:#0F6642"></i>Enviadas por Canales</span><b>' + num(c.canales) + '</b></button>' +
         '<button type="button" class="li"' + dato('cartas', 'lider', 'Enviadas por el líder') + '><span><i style="background:#8FA9EE"></i>Enviadas por el líder · falta Canales</span><b>' + num(c.lider) + '</b></button>' +
         '<button type="button" class="li"' + dato('cartas', 'por_enviar', 'Carta y proforma por enviar') + '><span><i style="background:#E0A93B"></i>Por enviar' + (c.esperan ? ' · ' + num(c.esperan) + ' esperan más de 2 días' : '') + '</span><b>' + num(c.por_enviar) + '</b></button>' +
-        '<button type="button" class="li"' + dato('susp60', 'x', 'Suspendidos antes de 60 días') + '><span><i style="background:#A32117"></i>Suspendidos antes de 60 días (este corte)</span><b>' + num(n.susp60) + '</b></button></section>';
+        '<button type="button" class="li"' + dato('susp60', 'x', 'Suspendidos antes de 60 días') + '><span><i style="background:#A32117"></i>Suspendidos antes de 60 días (este corte)</span><b>' + num(n.susp60) + '</b></button>' +
+        '<div class="li"><span><i style="background:#B8BEC6"></i>Siguen habilitadas de ' + esc(d.mes_anterior) + '</span><b>' + (n.siguen_prev === null || n.siguen_prev === undefined ? 'Sin datos' : num(n.siguen_prev) + ' %') + '</b></div></section>';
     }
     // Resumen del líder (sin maqueta propia, mismo estilo): lo suyo contra el corte pasado, su posición, lo que le falta y lo que pierde el día límite
     function vistaLider(d){

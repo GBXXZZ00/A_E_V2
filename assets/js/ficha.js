@@ -1925,6 +1925,8 @@
     const d = docVer(); const dv = ver.dev || {}; const er = $('eDev'); if(!d || !dv.acta) return;
     const tx = $('rvActaTx'); if(tx) dv.actaTx = tx.value.trim();
     if(dv.acta === 'otro' && String(dv.actaTx || '').length < 3){ er.textContent = 'Escribe qué acta falta'; if(tx) tx.focus(); return; }
+    // Si la IA la había devuelto, aprobarla es una excepción con motivo: se pide antes de crear el pedido (así no se crea dos veces)
+    const ex = $('excDoc'); if(ex && ex.value.trim().length < 5){ er.textContent = 'Escribe arriba el motivo para aprobar lo que la IA devolvió'; ex.focus(); return; }
     b.disabled = true;
     try { await rpc('requerimiento_crear', { p_cliente: id, p_tipo: dv.acta, p_texto: dv.acta === 'otro' ? dv.actaTx : null, p_motivo: null, p_origen: d.id }); }
     catch (e) { er.textContent = e.message; b.disabled = false; return; }
