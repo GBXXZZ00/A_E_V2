@@ -1,4 +1,4 @@
-// Maqueta 13/11 (consejo): Comisiones del líder (PC y teléfono) y Resumen nuevo, montados sobre la app real del simulador.
+// Maqueta 13/11 (consejo): Resumen nuevo de Comisiones (PC y teléfono), montados sobre la app real del simulador.
 // Datos inventados. Uso: servidor en la raíz y node claude/maquetas/obs-13nov/montar-lider-resumen.js /ruta/salida/
 const { chromium, H, PC, TEL, contexto, entrar } = require('../../../pruebas/simulador');
 const OUT = process.argv[2] || './img/';
@@ -122,16 +122,7 @@ const RES = '<div class="zz-r">' +
 (async () => {
   require('fs').mkdirSync(OUT, { recursive: true });
   const nav = await chromium.launch();
-  for(const [n, dev] of [['pc', PC], ['tel', TEL]]){
-    const { ctx } = await contexto(nav, dev); const p = await entrar(ctx, 'lucia', '739105');
-    await p.goto(H + 'comisiones.html'); await p.waitForSelector('#lista .cx-grupo, #lista', { timeout: 15000 }); await p.waitForTimeout(1500); await p.addStyleTag({ content: CSS });
-    await p.evaluate((h) => { document.querySelector('#rango').textContent = 'Tus instalaciones del corte. Cierra el 18/11: faltan 5 días.';
-      document.querySelector('#segs').innerHTML = ''; document.querySelector('.cx-panel').outerHTML = ''; document.querySelector('#lista').innerHTML = h;
-      const seg = document.querySelector('#segs'); seg.style.display = 'none'; document.body.insertAdjacentHTML('beforeend', '<button class="zz-fab">+ Cliente nuevo</button>'); const fab = document.querySelector('.zz-fab'); if(window.innerWidth >= 900) fab.remove(); }, LIDER);
-    await p.waitForTimeout(400); await p.screenshot({ path: OUT + '20-lider-lista-' + n + '.png', fullPage: n === 'pc' });
-    if(n === 'tel'){ await p.screenshot({ path: OUT + '20-lider-lista-tel-larga.png', fullPage: true }); }
-    await ctx.close();
-  }
+  // La lista del líder se monta en montar-lider-lista.js (diseño actual intacto, aprobado 13/11)
   for(const [n, dev] of [['pc', PC], ['tel', TEL]]){
     const { ctx } = await contexto(nav, dev); const p = await entrar(ctx, 'marcos', '482913');
     await p.goto(H + 'comisiones.html'); await p.waitForTimeout(1500);
