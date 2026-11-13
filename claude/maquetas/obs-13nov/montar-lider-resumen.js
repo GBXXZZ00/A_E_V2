@@ -119,6 +119,28 @@ const RES = '<div class="zz-r">' +
     '<div class="zz-bar" style="height:14px;margin:10px 0 6px"><i style="flex:150;background:#0F6642"></i><i style="flex:300;background:#E0A93B"></i><i style="flex:30;background:#A32117"></i></div>' +
     '<div class="li"><span><i style="background:#0F6642"></i>Asegurado · 5 clientes</span><b style="color:#0F6642">150 $</b></div><div class="li"><span><i style="background:#E0A93B"></i>En juego · 10 pueden cumplir antes del 18/11</span><b style="color:#754B00">300 $</b></div><div class="li"><span><i style="background:#A32117"></i>Última oportunidad · 1 viene de octubre</span><b style="color:#A32117">30 $</b></div></div></div>' +
   '</div>';
+
+const flechaL = (up, t) => '<span class="zz-d ' + (up ? 'up' : 'dn') + '">' + (up ? '↑' : '↓') + ' ' + t + '</span>';
+const RES_LIDER = '<div class="zz-r">' +
+  '<div class="zz-gan"><div class="t">Tu posición en el corte <span style="font-weight:500;color:var(--text2)">· Ventas corporativas, por instaladas</span></div><div><small>Vas</small><b style="font-size:26px">3.º de 7</b><span>Te falta 1 instalada para pasar al 2.º</span></div><div><small>Octubre</small><b>Quedaste 4.º</b><span>6 instaladas · 5 comisionaron</span></div><div><small>Cierra el corte</small><b>18/11</b><span>Faltan 5 días</span></div></div>' +
+  '<div class="zz-k"><div class="zz-kc"><span class="l">Tus instaladas del corte</span><span class="v">5</span>' + flechaL(true, '25 %') + '<span class="x">4 en octubre al día 26 del corte</span></div>' +
+  '<div class="zz-kc"><span class="l">Ya comisionan</span><span class="v">1 <small>de 5</small></span><div class="zz-mini"><i style="width:20%"></i></div><span class="x">4 todavía sin legal o pago</span></div>' +
+  '<div class="zz-kc"><span class="l">Deben documentos</span><span class="v" style="color:#754B00">3</span><span class="x">Toca para verlos en la lista</span></div>' +
+  '<div class="zz-kc"><span class="l">Deben el pago</span><span class="v" style="color:#A32117">2</span><span class="x">Toca para verlos en la lista</span></div></div>' +
+  '<div class="zz-g3"><div class="zz-box"><span class="zz-tabs2"><span class="on">Ritmo del corte</span><span>Cortes cerrados</span></span><h3>Tus instaladas por corte</h3><p class="sub">Día a día, contra tus cortes anteriores</p>' +
+    '<svg viewBox="0 0 420 190" style="width:100%;height:auto;display:block" role="img" aria-label="Tu ritmo del corte"><g stroke="#ECEEF1">' + [20, 60, 100, 140].map((y) => '<line x1="30" x2="410" y1="' + y + '" y2="' + y + '"/>').join('') + '</g>' +
+    '<g font-size="10" fill="#69717C">' + [['8', 20], ['6', 50], ['4', 80], ['2', 110], ['0', 140]].map((t) => '<text x="4" y="' + (t[1] + 3) + '">' + t[0] + '</text>').join('') + '<text x="30" y="160">día 1</text><text x="250" y="160">hoy, día 26</text><text x="380" y="160">día 31</text></g>' +
+    '<polyline fill="none" stroke="#B8BEC6" stroke-width="2" stroke-dasharray="4 4" points="30,140 90,125 150,110 210,95 270,80 330,65 410,55"/>' +
+    '<polyline fill="none" stroke="#69717C" stroke-width="2" points="30,140 90,140 150,125 210,110 270,80 330,65 410,50"/>' +
+    '<polyline fill="none" stroke="#1F45C4" stroke-width="3.5" points="30,140 90,125 150,110 210,95 270,65"/><circle cx="270" cy="65" r="5" fill="#1F45C4"/><text x="278" y="62" font-size="12" font-weight="800" fill="#1F45C4">5 · ↑ 25 %</text></svg>' +
+    '<div class="zz-ley"><span><i style="background:#1F45C4"></i>Noviembre (en curso)</span><span><i style="background:#69717C"></i>Octubre</span><span><i style="background:#B8BEC6"></i>Tu promedio de 3 cortes</span></div></div>' +
+  '<div class="zz-box"><h3>Tus órdenes por instalar</h3><p class="sub">Del corte. A los 10 días se dan por perdidas</p><div class="zz-pi">' +
+    [['Al día', 'menos de 1 día', 1, '#B8BEC6'], ['Atrasadas', '1 a 3 días', 1, '#E0A93B'], ['Muy atrasadas', '4 a 9 días', 0, '#E5776B']].map((r) => '<div class="f"><span><b style="text-align:left;display:block">' + r[0] + '</b><small style="color:var(--text2)">' + r[1] + '</small></span><span class="zz-bar"><i style="flex:' + r[2] + ';background:' + r[3] + '"></i><i style="flex:' + (3 - r[2]) + '"></i></span><b>' + r[2] + '</b></div>').join('') +
+    '<div class="perd"><span>Perdidas · 10 días o más, o de antes del corte</span><span>1 ›</span></div></div></div>' +
+  '<div class="zz-box zz-m"><h3>Lo que puedes cobrar</h3><p class="sub">30 $ por cliente con legal y pago, incluidas tus migraciones</p><div class="tot">150 $ <small>posibles</small></div>' +
+    '<div class="zz-bar" style="height:14px;margin:10px 0 6px"><i style="flex:30;background:#0F6642"></i><i style="flex:90;background:#E0A93B"></i><i style="flex:30;background:#A32117"></i></div>' +
+    '<div class="li"><span><i style="background:#0F6642"></i>Asegurado · 1 cliente</span><b style="color:#0F6642">30 $</b></div><div class="li"><span><i style="background:#E0A93B"></i>En juego · 3 pueden cumplir antes del 18/11</span><b style="color:#754B00">90 $</b></div><div class="li"><span><i style="background:#A32117"></i>Se pierde el 18/11 · 1 viene de octubre</span><b style="color:#A32117">30 $</b></div></div></div>' +
+  '</div>';
 (async () => {
   require('fs').mkdirSync(OUT, { recursive: true });
   const nav = await chromium.launch();
@@ -132,6 +154,16 @@ const RES = '<div class="zz-r">' +
       const desde = kids.findIndex((k) => /Líder de|cr-lider|cr-band/.test(k.className + ' ' + k.textContent.slice(0, 30)));
       kids.slice(desde >= 0 ? desde : i).forEach((k) => k.remove()); cont.insertAdjacentHTML('beforeend', h); }, RES);
     await p.waitForTimeout(400); await p.screenshot({ path: OUT + '21-resumen-' + n + '.png', fullPage: true });
+    await ctx.close();
+  }
+  for(const [n, dev] of [['pc', PC], ['tel', TEL]]){
+    const { ctx } = await contexto(nav, dev); const p = await entrar(ctx, 'lucia', '739105');
+    await p.goto(H + 'comisiones.html'); await p.waitForTimeout(1500);
+    await p.locator('button', { hasText: /^Resumen$/ }).first().click(); await p.waitForSelector('.cr-nums', { timeout: 15000 }); await p.waitForTimeout(800); await p.addStyleTag({ content: CSS });
+    await p.evaluate((h) => { const nums = document.querySelector('.cr-nums'); const cont = nums.parentElement; const kids = Array.from(cont.children); const i = kids.findIndex((k) => k.contains(nums) || k === nums);
+      const desde = kids.findIndex((k) => /Líder de|cr-lider|cr-band/.test(k.className + ' ' + k.textContent.slice(0, 30)));
+      kids.slice(desde >= 0 ? desde : i).forEach((k) => k.remove()); cont.insertAdjacentHTML('beforeend', h); }, RES_LIDER);
+    await p.waitForTimeout(400); await p.screenshot({ path: OUT + '22-resumen-lider-' + n + '.png', fullPage: true });
     await ctx.close();
   }
   await nav.close();
