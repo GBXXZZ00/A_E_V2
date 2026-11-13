@@ -33,6 +33,12 @@ const CASOS = {
     { n: 'p5-05c-mismo-archivo-devolver', maq: '05c-mismo-archivo-devolver', prep: mismo, act: async (p, m) => { await abrirRev(p); await ir(p, m, 'acta_asamblea'); await p.click('#verDevolver'); await p.click('[data-motivo="ilegible"]'); } },
     { n: 'p5-05b-varios-archivos', maq: '05b-varios-archivos', prep: varios, act: async (p, m) => { await abrirRev(p); await ir(p, m, 'acta_constitutiva'); } }
   ],
+  trabajo: [
+    { n: 'p7-07-mi-trabajo-plegado', maq: '07-mi-trabajo-plegado', prep: (m) => { const hoyS = (n) => { const x = new Date(); x.setDate(x.getDate() + n); return x.toISOString().slice(0, 10); }; const cl = m.datos.clientes;
+      m.datos.extra = [0, 1, 2].map((i) => ({ tipo: 'revisar_docs', clave: 'r' + i, cliente_id: cl[i].id, titulo: cl[i].nombre, detalle: 'Subió 3 documentos', para: 'admin', vence: hoyS(i - 1), desde: hoyS(-2) + 'T12:00:00Z', ref: {} }))
+        .concat([3, 4].map((i) => ({ tipo: 'legal_obs', clave: 'o' + i, cliente_id: cl[i].id, titulo: cl[i].nombre, detalle: 'Legal marcó un problema', para: 'admin', vence: hoyS(1), desde: hoyS(-1) + 'T12:00:00Z', ref: {} }))); },
+      act: async (p) => { await p.goto(H + 'trabajo.html'); await p.waitForTimeout(1800); } }
+  ],
   revisiontel: [
     { n: 'p10-tel-lista', tel: true, prep: separar, act: async (p) => { await abrirRev(p); } },
     { n: 'p10-tel-documento', tel: true, prep: separar, act: async (p) => { await abrirRev(p); await p.click('#hojaVer .rv-d.sel'); } },

@@ -10,7 +10,11 @@
   let yo = null; let D = null; let sel = ''; let persona = ''; let pedido = 0; let cuantos = 40; let cola = null; let vista = 'buzon';
   let abierto = null;        // el ítem que se abrió con Ir: al volver se mira si se resolvió
   const tachados = {};       // resueltos en esta visita: se ven tachados hasta recargar la página
-  let avisoT = null; let filtroC = ''; let SEG = {}; const abiertoLg = {};
+  let avisoT = null; let filtroC = ''; let SEG = {};
+  // Lote 13/11 parte 7: todo plegado para todos; se recuerda lo que se abrió (en el dispositivo)
+  const K_AB = 'ae_trabajo_abierto';
+  const abiertoLg = (() => { try { return JSON.parse(localStorage.getItem(K_AB) || '{}') || {}; } catch (e) { return {}; } })();
+  const guardarAb = () => { try { localStorage.setItem(K_AB, JSON.stringify(abiertoLg)); } catch (e) {} };
   // Lote 11/11 H2/H3: datos de Canales (teléfono, descargadas, IP del pool, equipo) y modos de la coordinadora
   let CN = null; let modoC = 'equipo'; let cartasPor = 'persona'; let verEq = false;
 
@@ -213,14 +217,17 @@
     else if(sel === 'sindueno'){ const sd = filtrar((CN && CN.sin_dueno) || []); h = seccion('Órdenes sin dueño · ' + sd.length, 'No comisionan hasta elegir de quién son', sd.length ? sd.map((f) => '<div class="cn-fila"><div class="cn-tx"><b>' + esc(f.titulo || '') + '</b><small>' + esc(f.detalle || '') + '</small></div><span class="chip ambar">Falta elegir</span><span class="cn-acc"><button type="button" class="btn btn-chico" data-cn-hacer="' + esc(kDe(f)) + '">Elegir dueño</button></span></div>').join('') : '<p class="nota-chica bz-nada">Todas las órdenes tienen dueño.</p>'); }
     else if(sel){ const g = gs.find((x) => x.id === sel); h = seccion(g.titulo, subGrupo(g), listaGrupo(g), accionesGrupo(g)); }
     else {
-      const urg = (D.items || []).slice().sort((a, b) => (String(a.vence || '9') < String(b.vence || '9') ? -1 : 1)).slice(0, 4);
-      if(urg.length) h += seccion('Lo más urgente', 'Los 4 primeros de todo, por fecha', urg.map((f) => itemHtml(f)).join(''));
-      else h += vacio('Todo al día', 'No tienes pendientes. Cuando algo necesite de ti, aparece aquí.');
-      // Lote 05/11 D3: grupos plegables con su número; los que tienen algo vencido o de hoy salen abiertos
-      gs.filter((g) => g.items.length).forEach((g) => { h += '<details class="bz-pl"' + (g.venc || g.hoy ? ' open' : '') + ' data-pl="' + g.id + '"><summary><b>' + esc(g.titulo) + '</b><span class="bz-pl-n">' + g.items.length + '</span>' +
-        (g.venc ? '<span class="mt-pill r">' + plural(g.venc, 'vencido', 'vencidos') + '</span>' : '') + '</summary>' + seccion(g.titulo, subGrupo(g), listaGrupo(g, 3), accionesGrupo(g)) + '</details>'; });
+      // Lote 13/11 parte 7 (maqueta 07): sin "Lo más urgente" suelto; todos los grupos plegados con su número, vencidos y de hoy
+      const conItems = gs.filter((g) => g.items.length); const eq = D.equipo && D.equipo.length && !D.persona ? D.equipo : [];
+      if(!conItems.length && !eq.length) h += vacio('Todo al día', 'No tienes pendientes. Cuando algo necesite de ti, aparece aquí.');
+      else h += '<p class="nota-chica bz-plegado">Todo plegado: abre solo lo que vas a trabajar. Se recuerda lo que dejaste abierto.</p>';
+      const pills = (venc, hoy) => (venc ? '<span class="mt-pill r">' + plural(venc, 'vencido', 'vencidos') + '</span>' : '') + (hoy ? '<span class="mt-pill a">' + hoy + ' hoy</span>' : '');
+      conItems.forEach((g) => { h += '<details class="bz-pl"' + (abiertoLg['pl:' + g.id] ? ' open' : '') + ' data-pl="' + g.id + '"><summary><b>' + esc(g.titulo) + '</b><span class="bz-pl-n">' + g.items.length + '</span>' +
+        pills(g.venc, g.hoy) + '</summary>' + seccion(g.titulo, subGrupo(g), listaGrupo(g, 3), accionesGrupo(g)) + '</details>'; });
       if(notas.length && !D.persona) h += seccion('Mis notas', 'Estas sí se marcan a mano', notas.slice(0, 3).map(notaHtml).join(''));
-      if(D.equipo && D.equipo.length && !D.persona) h += seccion('El equipo', 'Toca para ver su buzón tal como lo ve (solo consulta)', equipoHtml(4));
+      if(eq.length){ const ev = eq.reduce((a, e) => a + (Number(e.venc) || 0), 0); const eh = eq.reduce((a, e) => a + (Number(e.hoy) || 0), 0);
+        h += '<details class="bz-pl"' + (abiertoLg['pl:equipo'] ? ' open' : '') + ' data-pl="equipo"><summary><b>El equipo</b><span class="bz-pl-n">' + eq.length + '</span>' + pills(ev, eh) + '</summary>' +
+          seccion('El equipo', 'Toca para ver su buzón tal como lo ve (solo consulta)', equipoHtml()) + '</details>'; }
     }
     $('cuerpo').innerHTML = h;
   }
@@ -276,7 +283,7 @@
       (ip && sidDe(f) ? '<button type="button" class="btn btn-chico" data-cn-ip="' + esc(k) + '" data-fila="' + esc(ip.fila) + '">Usar ' + esc(ip.ip) + '</button>' : '') + '</span></div>';
   }
   function plegado(t, l, sub){
-    return '<details class="bz-pl cn-pl"><summary><b>' + esc(t) + ' · ' + l.length + '</b>' + (sub ? '<span class="lg-sub">' + esc(sub) + '</span>' : '') + '</summary>' +
+    return '<details class="bz-pl cn-pl" data-cn="' + esc(t) + '"' + (abiertoLg['cn:' + t] ? ' open' : '') + '><summary><b>' + esc(t) + ' · ' + l.length + '</b>' + (sub ? '<span class="lg-sub">' + esc(sub) + '</span>' : '') + '</summary>' +
       (l.length ? l.slice(0, 30).map((f) => itemHtml(f)).join('') : '<p class="nota-chica bz-nada">Nada aquí.</p>') + '</details>';
   }
   const porPersona = (l) => { const m = {}; l.forEach((f) => { const n = f.analista ? corto(f.analista) : 'Sin asignar'; m[n] = (m[n] || 0) + 1; }); return Object.keys(m).sort((a, b) => m[b] - m[a]).map((n) => n + ' ' + m[n]).join(' · '); };
@@ -348,7 +355,8 @@
     catch (x) { er.textContent = x.message || 'No se pudo. Intenta de nuevo'; b.disabled = false; }
   }
   // Las secciones de Legal recuerdan si se abrieron (al repintar no se cierran solas)
-  document.addEventListener('toggle', (e) => { const d = e.target; if(d && d.dataset && d.dataset.lg) abiertoLg[d.dataset.lg] = d.open; }, true);
+  document.addEventListener('toggle', (e) => { const d = e.target; if(!d || !d.dataset) return; const k = d.dataset.lg || (d.dataset.pl ? 'pl:' + d.dataset.pl : d.dataset.cn ? 'cn:' + d.dataset.cn : '');
+    if(k && !!abiertoLg[k] !== d.open){ abiertoLg[k] = d.open; guardarAb(); } }, true);
   // Legal (lote 12/11 B, maqueta revision-nueva/img/21b): los tipos (Todos, ISP, Corporativo, VGT, PYME) arriba y valen para todas las secciones;
   // cada fila lleva su etiqueta; las secciones van plegadas (se abre la que se necesita) y los pendientes por firmar van en "Enviado a firmar"
   const TIPOS_C = [['isp', 'ISP'], ['corp', 'Corporativo'], ['vgt', 'VGT'], ['pyme', 'PYME']];

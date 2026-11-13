@@ -11,7 +11,7 @@ const { ok, cerrar } = marcador();
     const c = mundo.datos.clientes.find((x) => x.lider === 'Lucía Ferrer' && !x.es_natural);
     c.requerimientos = [{ id: 501, casilla: 'acta_asamblea', numero: 3, tipo: 'junta', texto: 'Acta de asamblea de ratificación o cambio de junta directiva', motivo: null, estado: 'abierto', por: 'Marcos Rivas', en: new Date().toISOString() }];
     const l = await entrar(ctx, 'lucia', '739105'); l.on('pageerror', (e) => errores.push(nombre + ': ' + e.message));
-    await l.goto(H + 'trabajo.html'); await l.waitForSelector('#cuerpo .bz-it');
+    await l.goto(H + 'trabajo.html'); await l.waitForSelector('#cuerpo .bz-it', { state: 'attached' }); await l.evaluate(() => document.querySelectorAll('#cuerpo details.bz-pl').forEach((d) => { d.open = true; })); 
     const idx = await l.textContent('#tarjetas');
     ok(nombre + ': el líder tiene "Devueltos o pedidos" y ahí está lo pedido', /Devueltos o pedidos/.test(idx) && /Falta: Acta de asamblea de ratificación/.test(await l.textContent('#cuerpo')));
     ok(nombre + ': los grupos son plegables con su número', (await l.locator('#cuerpo details.bz-pl').count()) >= 1 && (await l.locator('#cuerpo details.bz-pl .bz-pl-n').count()) >= 1);

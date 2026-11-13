@@ -3391,3 +3391,5 @@ main.al-en-inicio #ayuda{display:none}
   .clf-pop .ops button{min-height:44px}
   .clf-pop .acc .hc-b{flex:1;height:48px}
 }
+/* Lote 13/11, parte 7 (maqueta obs-13nov 07): línea de ayuda arriba de los grupos plegados */
+.nota-chica.bz-plegado{margin:4px 0 10px}

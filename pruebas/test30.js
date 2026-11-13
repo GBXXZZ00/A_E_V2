@@ -29,7 +29,8 @@ const dia = (n) => { const d = new Date(Date.now() - 4 * 3600e3); d.setUTCDate(d
     await p.click('#tarjetas [data-grupo="ges"]');
     ok(nombre + ': tocar un grupo muestra solo su checklist', (await p.locator('#cuerpo .bz-it').count()) === 2 && /Gestiones asignadas/.test(await p.textContent('#cuerpo .bz-sh')));
     await p.click('#tarjetas [data-grupo=""]');
-    ok(nombre + ': Todo vuelve a Lo más urgente', /Lo más urgente/.test(await p.textContent('#cuerpo')));
+    // Lote 13/11 parte 7: Todo muestra los grupos plegados (ya no hay "Lo más urgente" suelto)
+    ok(nombre + ': Todo vuelve a los grupos plegados', /Todo plegado: abre solo lo que vas a trabajar/.test(await p.textContent('#cuerpo')) && !/Lo más urgente/.test(await p.textContent('#cuerpo')) && (await p.locator('#cuerpo details.bz-pl[open]').count()) === 0);
     ok(nombre + ': cada ítem lleva acción, cliente, motivo y botón', (await p.locator('#cuerpo .bz-it [data-hacer]').count()) >= 1 && (await p.locator('#cuerpo .bz-it .bz-ck').count()) >= 1);
     ok(nombre + ': Mi trabajo sin desborde', await sinDesborde(p));
     await p.screenshot({ path: 'capturas/30-' + nombre + '-lider.png', fullPage: true });
@@ -57,7 +58,7 @@ const dia = (n) => { const d = new Date(Date.now() - 4 * 3600e3); d.setUTCDate(d
     ok(nombre + ': la Senior ve Sin dueño, Provisionales y Cargas del día, sin Revisar documentos', ['Sin dueño', 'Provisionales', 'Cargas del día'].every((t) => c2t.some((x) => x.indexOf(t) === 0)) && !c2t.includes('Revisar documentos'));
     ok(nombre + ': El equipo en el índice y en Todo', (await q.locator('#tarjetas [data-grupo="equipo"]').count()) === 1 && (await q.locator('#cuerpo [data-persona]').count()) >= 1);
     await q.screenshot({ path: 'capturas/30-' + nombre + '-senior.png', fullPage: true });
-    await q.locator('#cuerpo [data-persona]').first().click(); await q.waitForSelector('#bandaPersona:not(.hidden)');
+    await q.waitForSelector('#cuerpo details.bz-pl', { state: 'attached' }); await q.evaluate(() => document.querySelectorAll('#cuerpo details.bz-pl').forEach((d) => { d.open = true; })); await q.locator('#cuerpo [data-persona]').first().click(); await q.waitForSelector('#bandaPersona:not(.hidden)');
     ok(nombre + ': tocar a una persona muestra su buzón en solo consulta', llamo(mundo, 'mi_trabajo').some((l) => l[2].p_persona) && (await q.locator('#cuerpo [data-hacer]').allTextContents()).every((t) => t === 'Ver'));
     await q.click('#bandaPersona [data-tr="volver"]'); await q.waitForSelector('#bandaPersona.hidden', { state: 'attached' });
     await q.click('#tarjetas [data-grupo="ges"]').catch(() => {});

@@ -66,7 +66,7 @@ async function cerrarHojas(p){ for(let i = 0; i < 5 && await p.evaluate(() => !!
     ok(nombre + ': la líder ve Mis ventas (Devueltos, Faltan para comisionar, Por instalar) y su rol', /Mis ventas/i.test(idx) && /Devueltos/.test(idx) && /Faltan para comisionar/.test(idx) && /Mi rol/i.test(idx) && /Gestiones asignadas/.test(idx));
     ok(nombre + ': un solo Por instalar en el índice', (idx.match(/Por instalar/g) || []).length === 1);
     ok(nombre + ': números arriba (devueltos, órdenes de 24 horas, cierre y faltan)', (await p.locator('#nums .bz-num').count()) === 4 && /24 horas/.test(await p.textContent('#nums')));
-    ok(nombre + ': Lo más urgente con su botón', /Lo más urgente/.test(await p.textContent('#cuerpo')) && (await p.locator('#cuerpo [data-hacer]').count()) > 0);
+    ok(nombre + ': los grupos plegados traen su botón', /Todo plegado/.test(await p.textContent('#cuerpo')) && (await p.locator('#cuerpo [data-hacer]').count()) > 0);
     ok(nombre + ': Mi trabajo de la líder sin desborde', await sinDesborde(p));
     await p.screenshot({ path: 'capturas/lote28-' + nombre + '-mitrabajo-lider.png', fullPage: true });
     // Ir: abre la hoja encima en la pestaña que toca; al resolverse queda tachado
@@ -106,7 +106,7 @@ async function cerrarHojas(p){ for(let i = 0; i < 5 && await p.evaluate(() => !!
     // ----- Mi trabajo del administrador: el equipo en solo consulta -----
     await a.goto(H + 'trabajo.html'); await a.waitForSelector('#tarjetas .bz-mi');
     if(await a.locator('[data-persona]').count()){
-      await a.locator('[data-persona]').first().click(); await a.waitForSelector('#bandaPersona:not(.hidden)');
+      await a.waitForSelector('#cuerpo details.bz-pl', { state: 'attached' }); await a.evaluate(() => document.querySelectorAll('#cuerpo details.bz-pl').forEach((d) => { d.open = true; })); await a.locator('[data-persona]').first().click(); await a.waitForSelector('#bandaPersona:not(.hidden)');
       ok(nombre + ': el administrador ve el buzón de otra persona en solo consulta, solo con "Ver"', /Solo consulta/.test(await a.textContent('#bandaPersona')) && (await a.locator('#cuerpo [data-hacer]').allTextContents()).every((t) => t === 'Ver'));
     }
 
