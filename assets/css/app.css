@@ -3507,3 +3507,12 @@ button.cr2-kc:disabled{cursor:default}
 .cr2-g1{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px}
 @media (hover:hover) and (pointer:fine){ .cr2-rk .f:hover .nm,.cr2-m .li:hover span,.cr2-pi .f:hover b{text-decoration:underline} }
 @media (max-width:899px){ .cr2-g1{grid-template-columns:1fr} .cr2-rk .f.yo{width:auto} }
+/* Lote 13/11 maqueta 22: Resumen del líder */
+.cr2-mov{font-size:11.5px;font-weight:800;margin-left:4px;color:var(--text2)}.cr2-mov.up{color:#0F6642}.cr2-mov.dn{color:#A32117}
+.cr2-tu{color:#1B3A9E;display:inline;font-size:inherit;margin:0}
+.cr2-pos>div:nth-child(2) b.g{font-size:26px}
+.cr2-rkl .f{grid-template-columns:22px minmax(130px,max-content) 1fr 190px}
+@media (max-width:899px){ .cr2-rkl .f{grid-template-columns:22px minmax(0,1fr) auto} .cr2-rkl .f .nm{white-space:normal} }
+.cr2-pos .t{display:block}.cr2-pos .t span{display:inline}
+.cr2-m .li b,.cr2-pi .perd span:last-child{white-space:nowrap}
+@media (hover:hover) and (pointer:fine){ .cr2-rk div.f:hover .nm{text-decoration:none} }

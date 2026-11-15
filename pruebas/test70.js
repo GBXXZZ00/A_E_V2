@@ -25,8 +25,17 @@ const { ok, cerrar } = marcador();
     // Resumen del líder: solo lo suyo
     await l.goto(H + 'comisiones.html?v=resumen'); await l.waitForSelector('.cr2-k', { timeout: 15000 });
     const rl = await l.textContent('.cr2-r');
-    ok(nombre + ': el Resumen del líder trae sus números, su posición y lo que pierde el día límite', /Tus instaladas del corte/.test(rl) && /Vas \d+\.º de \d+/.test(rl) && /Te falta para cobrar/.test(rl) && /Se pierden el/.test(rl));
-    ok(nombre + ': el líder no ve Equipos, Dinero del corte, Cartas ni el ranking de los demás', !/Equipos|Dinero del corte|Cartas y proformas|Ranking del corte/.test(rl));
+    ok(nombre + ': el Resumen del líder (maqueta 22) trae su posición, sus tarjetas, su ritmo, sus órdenes y lo que puede cobrar',
+      /Tu posición en el corte/.test(rl) && /\d+\.º de \d+/.test(rl) && /Tus instaladas del corte/.test(rl) && /Deben documentos/.test(rl) && /Deben el pago/.test(rl) && /Tus instaladas por corte/.test(rl) && /Tus órdenes por instalar/.test(rl) && /Lo que puedes cobrar/.test(rl) && /Se pierde el/.test(rl));
+    ok(nombre + ': el ranking trae a todos los líderes, su fila con (tú) y los puestos que subió o bajó', (await l.locator('.cr2-rk .f').count()) >= 2 && (await l.locator('.cr2-rk .f.yo', { hasText: '(tú)' }).count()) === 1 && (await l.locator('.cr2-rk .cr2-mov').count()) >= 1);
+    await l.click('[data-cr-rkl="prev"]');
+    ok(nombre + ': la pestaña del mes pasado muestra cómo terminó', /cómo terminó/.test(await l.textContent('.cr2-r')) && (await l.locator('.cr2-rk .cr2-mov').count()) === 0);
+    await l.click('[data-cr-vs="cerrados"]');
+    ok(nombre + ': Cortes cerrados con lo suyo', /Comisionaron/.test(await l.textContent('.cr2-r')));
+    ok(nombre + ': el líder no ve Equipos, Dinero del corte, Cartas ni Canales o Aliados', !/Equipos|Dinero del corte|Cartas y proformas|Aliados comerciales|Ganadores de/.test(await l.textContent('.cr2-r')));
+    ok(nombre + ': sin desborde (Resumen del líder)', await sinDesborde(l));
+    await l.click('a.cr2-kc[href*="f=legal"]'); await l.waitForSelector('#lista', { timeout: 15000 }); await l.waitForTimeout(300);
+    ok(nombre + ': Deben documentos abre la lista con Faltan documentos', (await l.getAttribute('#filtros [data-filtro="legal"]', 'aria-selected')) === 'true');
     ok(nombre + ': sin desborde (líder)', await sinDesborde(l));
 
     // Administrador

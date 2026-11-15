@@ -286,7 +286,13 @@ function resumen13(m, yo, R, corteF, base, ab, abre){
       faltan: mio.filter((f) => f.origen === 'corte' && !f.cumple).length, faltan_legal: mio.filter((f) => !f.cumple && !f.legal_ok).length, faltan_pago: mio.filter((f) => !f.cumple && !f.pago_ok).length,
       pierden: mio.filter((f) => f.origen === 'anterior' && !f.cumple).length, limite: R.limite };
     l.pct = l.prev ? Math.round(100 * (l.inst - l.prev) / l.prev) : null;
-    return { corte: R.corte, mes: R.mes, anterior: R.anterior, mes_anterior: R.mes_anterior, en_curso: R.en_curso, cerrado: R.cerrado, limite: R.limite, misma_fecha: R.misma_fecha, dia, lider: l, por_instalar: pinst, cortes: R.cortes, rol: 'lider', solo_lectura: false, horas_alerta: R.horas_alerta };
+    // Maqueta 22: ranking de los líderes de Ventas corporativas (solo nombre, instaladas y comisionan) con puestos contra el corte anterior
+    const rkL = rkE.map((x, i) => ({ pos: x.pos, nombre: x.nombre, inst: x.inst, com: x.com, yo: x.nombre === yo.nombre, mov: [1, -1, 0][i % 3] }));
+    const rkP = rkE.slice().reverse().map((x, i) => ({ pos: i + 1, nombre: x.nombre, inst: Math.max(0, x.inst - 1 + i), com: Math.max(0, x.com), yo: x.nombre === yo.nombre }));
+    const rit = { dia, largo: 31, en_curso: R.en_curso, actual: acum(l.inst, dia), anterior: acum(l.prev + 2, 31), promedio: acum(l.prev + 1, 31) };
+    const monL = { monto: 30, asegurado: mio.filter((f) => f.cumple).length, en_juego: mio.filter((f) => f.origen === 'corte' && !f.cumple).length, ultima: l.pierden, migraciones: 0, limite: R.limite, cerrado: R.cerrado };
+    if(l.pos) l.de = rkL.length;
+    return { corte: R.corte, mes: R.mes, anterior: R.anterior, mes_anterior: R.mes_anterior, en_curso: R.en_curso, cerrado: R.cerrado, limite: R.limite, misma_fecha: R.misma_fecha, dia, lider: l, ranking_lider: rkL, ranking_prev: rkP, ritmo: rit, cerrados: [{ corte: '2026-09-01', mes: 'septiembre', comisionaron: 1, pasaron: 1, perdieron: 0 }, { corte: '2026-10-01', mes: 'octubre', comisionaron: 3, pasaron: 1, perdieron: 1 }], monto: monL, por_instalar: pinst, cortes: R.cortes, rol: 'lider', solo_lectura: false, horas_alerta: R.horas_alerta };
   }
   return R;
 }

@@ -69,12 +69,12 @@
         '<div class="cr2-ley"><span><i style="background:#1F45C4"></i>Comisiona</span><span><i style="background:#A9BCF5"></i>Pendiente</span><span><i style="background:#4B5563"></i>Aliados</span><span><i style="background:#B8BEC6"></i>' + esc(cap(d.mes_anterior)) + ' al mismo día</span></div></section>';
     }
     // Instaladas por corte: Ritmo del corte (línea acumulada día a día, como la maqueta) o Cortes cerrados
-    function ritmoSvg(d){
+    function ritmoSvg(d, pctL, promL){
       const r = d.ritmo || {}; const A = r.actual || []; const P = r.anterior || []; const M = (r.promedio || []).map(Number); const L = Math.max(r.largo || 30, A.length, P.length, 2);
-      const tope = Math.max(10, ...A, ...P, ...M); const paso = tope <= 20 ? 5 : tope <= 40 ? 10 : tope <= 80 ? 20 : 50; const top = Math.ceil(tope / paso) * paso;
+      const tope = Math.max(promL ? 4 : 10, ...A, ...P, ...M); const paso = tope <= 8 ? 2 : tope <= 20 ? 5 : tope <= 40 ? 10 : tope <= 80 ? 20 : 50; const top = Math.ceil(tope / paso) * paso;
       const X = (i) => 30 + (380 * i / (L - 1)); const Y = (v) => 140 - 120 * v / top;
       const pts = (l) => l.map((v, i) => X(i).toFixed(1) + ',' + Y(Number(v)).toFixed(1)).join(' ');
-      const ult = A.length ? A[A.length - 1] : 0; const pct = d.nums ? d.nums.pct : null;
+      const ult = A.length ? A[A.length - 1] : 0; const pct = pctL !== undefined ? pctL : d.nums ? d.nums.pct : null;
       const grid = []; for(let v = 0; v <= top; v += paso) grid.push(v);
       return '<svg viewBox="0 0 420 170" class="cr2-svg" role="img" aria-label="' + esc('Ritmo del corte: ' + ult + ' instaladas al día ' + (r.dia || A.length)) + '"><g stroke="#ECEEF1">' + grid.map((v) => '<line x1="30" x2="410" y1="' + Y(v).toFixed(1) + '" y2="' + Y(v).toFixed(1) + '"/>').join('') + '</g>' +
         '<g font-size="10" fill="#69717C">' + grid.map((v) => '<text x="4" y="' + (Y(v) + 3).toFixed(1) + '">' + v + '</text>').join('') + '<text x="30" y="160">día 1</text>' +
@@ -85,10 +85,10 @@
           '<text x="' + Math.min(X(A.length - 1) + 8, 330).toFixed(1) + '" y="' + (Y(ult) - 2).toFixed(1) + '" font-size="12" font-weight="800" fill="#1F45C4">' + esc(num(ult) + (pct === null || pct === undefined ? '' : ' · ' + (pct >= 0 ? '↑' : '↓') + ' ' + num(Math.abs(pct)) + ' %')) + '</text>' : '') + '</svg>' +
         '<div class="cr2-ley"><span><i style="background:#1F45C4"></i>' + esc(cap(d.mes) + (d.en_curso ? ' (en curso)' : '')) + '</span><span><i style="background:#69717C"></i>' + esc(cap(d.mes_anterior)) + '</span><span><i style="background:#B8BEC6"></i>Promedio de 3 cortes</span></div>';
     }
-    function cerradosHtml(d){
+    function cerradosHtml(d, suyo){
       const C2 = d.cerrados || []; if(!C2.length) return '<p class="nota-chica">Todavía no hay cortes cerrados.</p>';
       const max = Math.max(1, ...C2.map((x) => x.comisionaron + x.pasaron + x.perdieron));
-      return '<div class="cr2-cer">' + C2.map((x) => '<button type="button" class="f"' + dato('serie', x.corte + '||corporativas', 'Instaladas en ' + x.mes) + '><span class="nm">' + esc(cap(x.mes)) + '</span><span class="cr2-bar"><i style="flex:' + x.comisionaron + ';background:#0F6642"></i><i style="flex:' + x.pasaron + ';background:#E0A93B"></i><i style="flex:' + x.perdieron + ';background:#A32117"></i><i style="flex:' + (max - x.comisionaron - x.pasaron - x.perdieron) + '"></i></span><b>' + num(x.comisionaron + x.pasaron + x.perdieron) + '</b></button>').join('') + '</div>' +
+      return '<div class="cr2-cer">' + C2.map((x) => '<button type="button" class="f"' + dato('serie', x.corte + '||' + (suyo ? '' : 'corporativas'), (suyo ? 'Tus instaladas en ' : 'Instaladas en ') + x.mes) + '><span class="nm">' + esc(cap(x.mes)) + '</span><span class="cr2-bar"><i style="flex:' + x.comisionaron + ';background:#0F6642"></i><i style="flex:' + x.pasaron + ';background:#E0A93B"></i><i style="flex:' + x.perdieron + ';background:#A32117"></i><i style="flex:' + (max - x.comisionaron - x.pasaron - x.perdieron) + '"></i></span><b>' + num(x.comisionaron + x.pasaron + x.perdieron) + '</b></button>').join('') + '</div>' +
         '<div class="cr2-ley"><span><i style="background:#0F6642"></i>Comisionaron</span><span><i style="background:#E0A93B"></i>Pasaron al siguiente</span><span><i style="background:#A32117"></i>Se perdieron</span></div>';
     }
     function serie(d){
@@ -123,16 +123,50 @@
         '<button type="button" class="li"' + dato('susp60', 'x', 'Suspendidos antes de 60 días') + '><span><i style="background:#A32117"></i>Suspendidos antes de 60 días (este corte)</span><b>' + num(n.susp60) + '</b></button>' +
         '<div class="li"><span><i style="background:#B8BEC6"></i>Siguen habilitadas de ' + esc(d.mes_anterior) + '</span><b>' + (n.siguen_prev === null || n.siguen_prev === undefined ? 'Sin datos' : num(n.siguen_prev) + ' %') + '</b></div></section>';
     }
-    // Resumen del líder (sin maqueta propia, mismo estilo): lo suyo contra el corte pasado, su posición, lo que le falta y lo que pierde el día límite
+    // Resumen del líder (maqueta obs-13nov 22): su posición, sus 4 tarjetas, el ranking de los líderes de Ventas corporativas
+    // (solo nombre, instaladas y comisionan, con los puestos que subió o bajó), su ritmo, sus órdenes y lo que puede cobrar
+    function bandaLider(d){
+      const l = d.lider || {}; const R = d.ranking_lider || []; const P = d.ranking_prev || [];
+      const yo = R.find((x) => x.yo); const ant = yo && R.find((x) => x.pos === yo.pos - 1); const yoP = P.find((x) => x.yo);
+      const falta = ant ? Math.max(1, (ant.inst || 0) - (yo.inst || 0) + 1) : 0;
+      const hoy = new Date(); const lim = d.limite ? new Date(d.limite + 'T00:00:00') : null;
+      const quedan = lim ? Math.max(0, Math.round((lim - new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate())) / 86400000)) : null;
+      return '<div class="cr2-gan cr2-pos"><div class="t">Tu posición en el corte <span>· Ventas corporativas, por instaladas</span></div>' +
+        '<div><small>Vas</small><b class="g">' + (yo ? num(yo.pos) + '.º de ' + num(R.length) : 'Sin puesto') + '</b><span>' +
+          (!yo ? 'Todavía sin instalaciones en este corte' : yo.pos === 1 ? 'Vas de primero' : 'Te falta ' + plural2(falta, 'instalada', 'instaladas') + ' para pasar al ' + num(yo.pos - 1) + '.º') + '</span></div>' +
+        '<div><small>' + esc(cap(d.mes_anterior)) + '</small><b>' + (yoP && yoP.inst ? 'Quedaste ' + num(yoP.pos) + '.º' : 'Sin instaladas') + '</b><span>' + (yoP ? plural2(yoP.inst, 'instalada', 'instaladas') + ' · ' + num(yoP.com) + ' ' + (yoP.com === 1 ? 'comisionó' : 'comisionaron') : '') + '</span></div>' +
+        '<div><small>' + (d.cerrado ? 'Corte cerrado' : 'Cierra el corte') + '</small><b>' + esc(ddmm(d.limite)) + '</b><span>' + (d.cerrado || quedan === null ? '' : quedan === 0 ? 'Cierra hoy' : quedan === 1 ? 'Falta 1 día' : 'Faltan ' + num(quedan) + ' días') + '</span></div></div>';
+    }
+    function rankingLider(d){
+      const prev = st.rkL === 'prev'; const L = (prev ? d.ranking_prev : d.ranking_lider) || []; const max = Math.max(1, ...L.map((x) => Number(x.inst) || 0));
+      const mov = (m) => m === null || m === undefined || prev ? '' : '<span class="cr2-mov ' + (m > 0 ? 'up' : m < 0 ? 'dn' : '') + '">' + (m > 0 ? '↑ ' + num(m) : m < 0 ? '↓ ' + num(-m) : '=') + '</span>';
+      const fila = (x) => '<div class="f' + (x.yo ? ' yo' : '') + '"><span class="n">' + num(x.pos) + '</span><span class="nm">' + esc(x.nombre) + (x.yo ? ' <b class="cr2-tu">(tú)</b>' : '') + ' ' + mov(x.mov) + '</span>' +
+        '<span class="cr2-bar bb"><i style="flex:' + (x.com || 0) + ';background:#0F6642"></i><i style="flex:' + Math.max(0, (x.inst || 0) - (x.com || 0)) + ';background:#8FD1AE"></i><i style="flex:' + Math.max(0, max - (x.inst || 0)) + '"></i></span>' +
+        '<span class="r"><b>' + plural2(x.inst, 'instalada', 'instaladas') + '</b> · ' + num(x.com) + ' ' + (prev ? (x.com === 1 ? 'comisionó' : 'comisionaron') : (x.com === 1 ? 'comisiona' : 'comisionan')) + '</span></div>';
+      return '<section class="cr2-box"><span class="cr2-tabs" role="tablist">' + [['corte', 'Este corte'], ['prev', cap(d.mes_anterior)]].map((x) => '<button type="button" role="tab" class="' + ((st.rkL || 'corte') === x[0] ? 'on' : '') + '" aria-selected="' + ((st.rkL || 'corte') === x[0]) + '" data-cr-rkl="' + x[0] + '">' + esc(x[1]) + '</button>').join('') + '</span>' +
+        '<h3>Ranking del corte</h3><p class="sub">' + (prev ? 'Líderes de Ventas corporativas, cómo terminó ' + esc(d.mes_anterior) : 'Líderes de Ventas corporativas, por instaladas. Contra ' + esc(d.mes_anterior) + ' al mismo día') + '</p>' +
+        '<div class="cr2-rk cr2-rkl">' + (L.length ? L.map(fila).join('') : '<p class="nota-chica">Nadie instaló todavía en este corte.</p>') + '</div>' +
+        '<div class="cr2-ley"><span><i style="background:#0F6642"></i>' + (prev ? 'Comisionó' : 'Comisiona') + '</span><span><i style="background:#8FD1AE"></i>Instalada, falta legal o pago</span>' + (prev ? '' : '<span>↑ ↓ puestos contra ' + esc(d.mes_anterior) + '</span>') + '</div></section>';
+    }
     function vistaLider(d){
-      const l = d.lider || {};
-      const pos = l.pos ? 'Vas ' + num(l.pos) + '.º de ' + num(l.de) : 'Todavía sin instalaciones en este corte';
-      return '<div class="cr2-k">' +
-        '<div class="cr2-kc"><span class="l">Tus instaladas del corte</span><span class="v">' + num(l.inst) + '</span>' + flecha(l.pct) + '<span class="x">' + num(l.prev) + ' en ' + esc(d.mes_anterior) + ' al día ' + num(d.dia) + ' del corte</span></div>' +
-        '<div class="cr2-kc"><span class="l">Ya comisionan</span><span class="v">' + num(l.com) + ' <small>de ' + num(l.inst) + '</small></span><span class="cr2-mini"><i style="width:' + (l.inst ? Math.round(100 * (l.com || 0) / l.inst) : 0) + '%"></i></span><span class="x">' + esc(pos) + '</span></div>' +
-        '<a class="cr2-kc" href="comisiones.html?f=falta"><span class="l">Te falta para cobrar</span><span class="v cr2-am">' + num(l.faltan) + '</span><span class="x">' + num(l.faltan_legal) + ' sin legal · ' + num(l.faltan_pago) + ' sin pago</span></a>' +
-        '<a class="cr2-kc" href="comisiones.html?f=ultimo"><span class="l">Se pierden el ' + esc(ddmm(d.limite)) + '</span><span class="v cr2-ro">' + num(l.pierden) + '</span><span class="x">Vienen de ' + esc(d.mes_anterior) + ' y todavía no cumplen</span></a></div>' +
-        '<div class="cr2-g3">' + porInstalar(d) + '</div>';
+      const l = d.lider || {}; const de = Number(l.inst) || 0; const com = Number(l.com) || 0;
+      const serieL = '<section class="cr2-box"><span class="cr2-tabs" role="tablist">' + [['ritmo', 'Ritmo del corte'], ['cerrados', 'Cortes cerrados']].map((x) => '<button type="button" role="tab" class="' + (st.vs === x[0] ? 'on' : '') + '" aria-selected="' + (st.vs === x[0]) + '" data-cr-vs="' + x[0] + '">' + x[1] + '</button>').join('') + '</span>' +
+        '<h3>Tus instaladas por corte</h3><p class="sub">' + (st.vs === 'ritmo' ? 'Día a día, contra tus cortes anteriores' : 'Cómo terminó cada corte') + '</p>' + (st.vs === 'ritmo' ? ritmoSvg(d, l.pct, 'Tu promedio de 3 cortes') : cerradosHtml(d, true)) + '</section>';
+      const pi = porInstalar(d).replace('<h3>Órdenes por instalar</h3>', '<h3>Tus órdenes por instalar</h3>');
+      return bandaLider(d) + '<div class="cr2-k">' +
+        '<button type="button" class="cr2-kc"' + dato('inst', 'x', 'Tus instaladas del corte') + '><span class="l">Tus instaladas del corte</span><span class="v">' + num(de) + '</span>' + flecha(l.pct) + '<span class="x">' + num(l.prev) + ' en ' + esc(d.mes_anterior) + ' al día ' + num(d.dia) + ' del corte</span></button>' +
+        '<button type="button" class="cr2-kc"' + dato('comisionan', 'corporativas', 'Ya comisionan') + '><span class="l">Ya comisionan</span><span class="v">' + num(com) + ' <small>de ' + num(de) + '</small></span><span class="cr2-mini"><i style="width:' + (de ? Math.round(100 * com / de) : 0) + '%"></i></span><span class="x">' + num(Math.max(0, de - com)) + ' todavía sin legal o pago</span></button>' +
+        '<a class="cr2-kc" href="comisiones.html?f=legal"><span class="l">Deben documentos</span><span class="v cr2-am">' + num(l.faltan_legal) + '</span><span class="x">Toca para verlos en la lista</span></a>' +
+        '<a class="cr2-kc" href="comisiones.html?f=pago"><span class="l">Deben el pago</span><span class="v cr2-ro">' + num(l.faltan_pago) + '</span><span class="x">Toca para verlos en la lista</span></a></div>' +
+        '<div class="cr2-g2">' + rankingLider(d) + serieL + '</div><div class="cr2-g2">' + pi + cobrar(d) + '</div>';
+    }
+    function cobrar(d){
+      const m = d.monto || {}; const v = Number(m.monto) || 0; const a = (m.asegurado || 0) * v; const j = (m.en_juego || 0) * v; const u = (m.ultima || 0) * v;
+      return '<section class="cr2-box cr2-m"><h3>Lo que puedes cobrar</h3><p class="sub">' + num(v) + ' $ por cliente con legal y pago, incluidas tus migraciones</p><div class="tot">' + num(a + j + u) + ' $ <small>posibles</small></div>' +
+        '<span class="cr2-bar gr"><i style="flex:' + a + ';background:#0F6642"></i><i style="flex:' + j + ';background:#E0A93B"></i><i style="flex:' + u + ';background:#A32117"></i>' + (a + j + u ? '' : '<i style="flex:1"></i>') + '</span>' +
+        '<button type="button" class="li"' + dato('monto', 'cumplen', 'Asegurado') + '><span><i style="background:#0F6642"></i>Asegurado · ' + plural2(m.asegurado, 'cliente', 'clientes') + '</span><b style="color:#0F6642">' + num(a) + ' $</b></button>' +
+        '<button type="button" class="li"' + dato('monto', 'pasan', 'En juego') + '><span><i style="background:#E0A93B"></i>En juego · ' + num(m.en_juego) + (m.cerrado ? ' pasaron al siguiente' : (m.en_juego === 1 ? ' puede' : ' pueden') + ' cumplir antes del ' + ddmm(m.limite)) + '</span><b style="color:#754B00">' + num(j) + ' $</b></button>' +
+        '<button type="button" class="li"' + dato('monto', 'pierden', 'Se pierde el ' + ddmm(m.limite)) + '><span><i style="background:#A32117"></i>Se pierde el ' + esc(ddmm(m.limite)) + ' · ' + num(m.ultima) + (m.ultima === 1 ? ' viene' : ' vienen') + ' de ' + esc(d.mes_anterior) + '</span><b style="color:#A32117">' + num(u) + ' $</b></button></section>';
     }
     function pintar(){
       const d = st.datos;
@@ -156,6 +190,7 @@
     cont.addEventListener('click', (ev) => {
       const t = ev.target; let b;
       if(t.closest('[data-cr-reintentar]')){ cargar(); return; }
+      if((b = t.closest('[data-cr-rkl]'))){ st.rkL = b.dataset.crRkl; pintar(); return; }
       if((b = t.closest('[data-cr-rk]'))){ st.rk = b.dataset.crRk; pintar(); return; }
       if((b = t.closest('[data-cr-vs]'))){ st.vs = b.dataset.crVs; pintar(); return; }
       if((b = t.closest('[data-cr-g]')) && st.datos){
@@ -168,6 +203,7 @@
           o.filtros = [{ x: 'por_enviar', t: 'Por enviar', n: c.por_enviar }, { x: 'ip', t: 'Esperan la IP', n: c.falta_ip }, { x: 'enviadas', t: 'Enviadas', n: (c.canales || 0) + (c.lider || 0) }];
           o.titulos = { por_enviar: 'Carta y proforma por enviar', ip: 'Esperan la IP', enviadas: 'Cartas y proformas enviadas' };
           if(!d.solo_lectura) o.accion = { t: 'Ir a enviar', href: 'comisiones.html?t=cartas' }; }
+        if(g === 'inst' && d.lider && !d.nums) o.comp = num(d.lider.prev) + ' en ' + d.mes_anterior + (d.misma_fecha ? ' a la misma fecha' : '');
         if((g === 'inst' || (g === 'equipo' && x === 'corporativas')) && d.nums) o.comp = num(d.nums.inst_prev) + ' en ' + d.mes_anterior + (d.misma_fecha ? ' a la misma fecha' : '');
         if(g === 'por_instalar'){ o.tono = 'w'; o.accion = d.solo_lectura ? null : { t: 'Ver órdenes', fn: () => { if(window.PorInstalar){ C.cerrarHoja(); window.PorInstalar.abrir({ yo: st.yo }); } } }; }
         if(g === 'monto') o.tono = x === 'cumplen' ? 'ok' : x === 'pasan' ? 'w' : 'r';
