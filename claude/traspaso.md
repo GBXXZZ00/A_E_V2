@@ -1,6 +1,15 @@
 # Traspaso (se actualiza al cerrar cada sesión)
 
-Actualizado: 13/11/2026, lote 13/11 completo (partes 1 a 12) publicado (`?v=100`).
+Actualizado: 16/11/2026. Publicado: lote 13/11 (`?v=101`). **Siguiente: ejecutar el LOTE 16/11 A.**
+
+## LOTE 16/11 A (aprobado, POR EJECUTAR: `claude/lote-16nov.md`)
+- Sale del chat del proyecto del 16/11: matriz de cargos corregida por el administrador (`claude/matriz-cargos.md`), recorrido de las 13 pantallas con 8 cargos en PC y teléfono (sin errores de JavaScript ni desbordes) y proceso de migraciones definido (`claude/migraciones-proceso-16nov.md`).
+- Seis partes: reporte de cambios de categoría en Actualizar; Migraciones rediseñado; solicitud de migración por pasos; Comisiones con los bloques Por instalar y Migraciones dentro del líder; permisos según la matriz; Usuarios con la columna Analista.
+- Maquetas aprobadas, montadas sobre la app: `claude/maquetas/lote-16nov/` (scripts y capturas en `img/`). Lo publicado debe quedar igual.
+- Antes de programar: explicar el plan por partes y los cambios de base, y esperar el OK.
+- Hecho ese día en la base desde el chat del proyecto (no toca código): dueño asignado a 6 instalaciones con `instalacion_asignar`.
+- **Lote B, después (falta maqueta y aprobación)**: pantalla del administrador para aprobar una migración; Resumen de Comisiones del líder en teléfono (muy largo, lo cobrable queda al final); Mi trabajo del líder en teléfono (contadores repetidos, se pierden los títulos Mis ventas y Mi rol); "+ Cliente nuevo" también en Clientes (solo PYME y Dedicado); Inicio en teléfono (el aviso de instalar la app va antes que los pendientes); Clientes del líder en teléfono (estatus legal y gestiones empujan la lista); Aliado en teléfono (Inicio sin las pestañas de PC y sin su pago del mes); Mi trabajo del administrador (muchos contadores en cero).
+- Aplazado: regla de pago por deuda, hasta que entre cobranza de PYME.
 
 ## LOTE 13/11 (terminado, `claude/lote-13nov.md`, publicado en v100)
 - **Antes de empezar**: las 7 migraciones del lote 12/11 B estaban en la base. Capturas de referencia de todas las pantallas por cargo en `pruebas/capturas/antes-13nov/` (script nuevo `pruebas/capturas-todas.js`); al cerrar se repiten en `despues-13nov/`. Comparaciones maqueta | publicado en `pruebas/capturas/lote13nov-comparar/` (script `pruebas/comparar-13nov.js`). Las capturas no se suben (carpeta en .gitignore).
