@@ -8,6 +8,8 @@
   const { $, esc, ic, rpc, toast, vacio, abrirHoja, cerrarHoja, prepararHojas, fecha, plural, normalizeStr } = C;
   let yo = null; let D = null; let activo = false; let busca = ''; let pedido = 0; let V = null; let abrirId = 0; let fresco = false;
   let filtro = ''; let vista = 'lider'; const plegados = {};
+  // Lote 16/11 B: fuera de migraciones.html (Comisiones) este archivo solo presta la solicitud por pasos y el detalle
+  const PAGINA = /migraciones\.html$/.test(location.pathname) || /migraciones$/.test(location.pathname); let alCerrarLib = null; let alCambiarLib = null;
   let S = null;   // la solicitud por pasos abierta
   const ESTADO = {
     por_revisar: ['ambar', 'Por revisar'], por_emitir: ['azul', 'Por emitir'], por_confirmar: ['morado', 'Por confirmar'], confirmado: ['verde', 'Confirmada'],
@@ -45,7 +47,7 @@
   const aResidencial = (c) => c.estado === 'sin_registro' && c.tipo === 'residencial';
   const faltanDocs = (c) => c.estado === 'por_revisar' && (c.borrador || !!(c.docs && c.docs.faltan));
   const porRevisar = (c) => c.estado === 'por_revisar' && !faltanDocs(c);
-  const porDecidir = (c) => c.estado === 'confirmado' && !c.comision && c.origen !== 'historico' && (c.tipo === 'migracion' || c.tipo === 'ambos');
+  const porDecidir = (c) => c.estado === 'confirmado' && c.comision === 'por_decidir' && c.origen !== 'historico' && (c.tipo === 'migracion' || c.tipo === 'ambos');
   const enCurso = (c) => c.estado === 'por_emitir' || c.estado === 'por_confirmar' || (!esLider() && faltanDocs(c));
   const delCorte = (c) => c.estado === 'confirmado' && c.origen !== 'historico' && !!D && !!c.corte_cambio && c.corte_cambio === D.corte;
   const mio = (c) => !!yo && (c.dueno_id === yo.id || c.creado_por === yo.nombre);
@@ -72,7 +74,7 @@
       const rep = c.reporte; const com = rep && rep.comentario;
       if(!c.dueno_id) return ['ambar', 'Sin registrar', c.sugerido ? 'El comentario nombra a ' + C.primerNombre(c.sugerido) : 'Cliente sin líder'];
       if(com && c.sugerido) return ['ambar', 'Sin registrar', 'Comentario: ' + com];
-      return ['ambar', 'Sin registrar', 'Faltan documentos · ' + (rep ? 'reporte del ' + diaMes(rep.fecha + 'T12:00:00') : 'lo vio el TAD')];
+      return ['ambar', 'Sin registrar', (c.natural ? 'Persona natural · no amerita documentos' : c.docs && c.docs.faltan ? 'Faltan documentos' : 'Expediente completo · regístrala') + ' · ' + (rep ? 'reporte del ' + diaMes(rep.fecha + 'T12:00:00') : 'lo vio el TAD')];
     }
     if(c.estado === 'por_revisar' && c.borrador) return ['gris', 'Sin enviar', 'Guardada por ' + C.primerNombre(c.creado_por || '') + ' el ' + diaMes(c.creado_en) + (c.docs && c.docs.faltan ? ' · ' + (c.docs.faltan === 1 ? 'falta 1 documento' : 'faltan ' + c.docs.faltan + ' documentos') : '')];
     if(c.estado === 'por_revisar' && c.docs && c.docs.faltan) return ['ambar', c.docs.faltan === 1 ? 'Falta 1 documento' : 'Faltan ' + c.docs.faltan + ' documentos', 'Registrada por ' + C.primerNombre(c.creado_por || '') + ' el ' + diaMes(c.creado_en)];
@@ -179,7 +181,7 @@
       const sr = x.filas.filter(sinReg); const resto = x.filas.filter((c) => !sinReg(c)); const de = x.filas.filter(esperaDecision).length; const res = x.filas.filter(aResidencial).length;
       const chips = esLider() ? '' : (sr.length ? '<span class="mg-p am">' + sr.length + ' sin registrar</span>' : '') + (de ? '<span class="mg-p az">' + de + (de === 1 ? ' espera tu decisión' : ' esperan tu decisión') + '</span>' : '') +
         (res ? '<span class="mg-p ro">' + (res === 1 ? '1 pasó a residencial' : res + ' pasaron a residencial') + '</span>' : '');
-      const env = x.id && !esLider() && puedeRecordar(x.id) && x.filas.some(teFalta) ? '<button type="button" class="mg-env" data-mg-env="' + esc(x.id) + '">Enviar pendientes</button>' : '';
+      const env = x.id && !esLider() && puedeRecordar(x.id) && (D.filas || []).some((c) => c.dueno_id === x.id && teFalta(c)) ? '<button type="button" class="mg-env" data-mg-env="' + esc(x.id) + '">Enviar pendientes</button>' : '';
       const k = x.id || '_'; const pleg = !!plegados[k];
       const cuerpo = !x.id ? x.filas.map(filaHtml).join('')
         : (sr.length ? '<div class="mg-sub am">Ya se hicieron y nadie las registró · ' + sr.length + '</div>' + sr.map(filaHtml).join('') : '') + (resto.length ? '<div class="mg-sub">Registradas · ' + resto.length + '</div>' + resto.map(filaHtml).join('') : '');
@@ -228,7 +230,7 @@
     f.hidden = true; f.innerHTML = ''; document.body.classList.remove('con-ms'); S = null;
     if(!desdeAtras){ try { if(history.state && history.state.ms) history.back(); } catch (e) {} }
     if(habia) toast('Quedó guardada en tus pendientes. Termínala cuando tengas los documentos');
-    cargar();
+    if(PAGINA) cargar(); else if(alCerrarLib){ const fcb = alCerrarLib; alCerrarLib = null; fcb(); }
   }
   window.addEventListener('popstate', () => { if(S) cerrarSolicitud(true); });
   const titularElegido = () => { const k = Object.keys(S.sel).find((x) => S.sel[x]); if(!k || !S.res) return null; return S.res.find((t) => t.servicios.some((s) => s.clave === k)) || null; };
@@ -313,6 +315,7 @@
     if(B && !B.error && rifLeido()){
       if(B.estado === 'otro') h += '<div class="ms-nota ro">Ese RIF ya es cliente de otro líder. Puedes seguir: el administrador lo revisa.</div>';
       else if(B.estado === 'existe') h += '<div class="ms-nota gr">Ya es cliente: lo que ya está aprobado en su expediente no se vuelve a pedir.</div>';
+      else if(S.parec && S.parec.posible) h += C.parecidoHtml(S.parec);
       else h += '<div class="ms-nota gr">No es cliente todavía: se crea al seguir.</div>';
     }
     return h + errSol('general');
@@ -325,15 +328,16 @@
       '<input type="file" id="msArchivos" accept="application/pdf,image/*" multiple hidden>';
     h += '<div class="ms-box">' + (req.length ? req.map((r) => {
       const k = r.casilla + ':' + r.numero; const x = ESTADO_SOL[r.estado]; const sube = S.subiendo[k];
-      const sub = sube ? 'Subiendo…' : r.estado === 'falta' ? 'Arrástralo aquí o toca Subir' : r.estado === 'devuelto' ? 'Devuelto: súbelo de nuevo' : /^rif_/.test(r.casilla) && S.rifNombre ? 'El que subiste en el paso 2' : r.estado === 'aprobado' ? 'Ya aprobado en el expediente' : 'En el expediente';
+      const sub = sube ? 'Subiendo…' : r.estado === 'falta' ? (r.opcional ? 'Opcional: arrástralo aquí o toca Subir' : 'Arrástralo aquí o toca Subir') : r.estado === 'devuelto' ? 'Devuelto: súbelo de nuevo' : /^rif_/.test(r.casilla) && S.rifNombre ? 'El que subiste en el paso 2' : r.estado === 'aprobado' ? 'Ya está en su expediente' : 'En el expediente';
       return '<div class="ms-doc" data-msdoc="' + esc(k) + '"><span>' + esc(r.texto) + '<small>' + esc(sub) + '</small></span>' +
-        (x && r.estado !== 'devuelto' ? '<i class="ms-ch ' + x[0] + '">' + x[1] + '</i>' : '<button type="button" class="ms-b" data-mssubir="' + esc(k) + '"' + (sube ? ' disabled' : '') + '>Subir</button>') + '</div>';
+        (x && r.estado !== 'devuelto' ? '<i class="ms-ch ' + x[0] + '">' + x[1] + '</i>' : (r.opcional && r.estado === 'falta' ? '<i class="ms-ch gr">Opcional</i>' : '') + '<button type="button" class="ms-b" data-mssubir="' + esc(k) + '"' + (sube ? ' disabled' : '') + '>Subir</button>') + '</div>';
     }).join('') : '<p class="nota-chica">Este cambio no pide documentos.</p>') + '</div>';
-    const f = faltanSol(); const n = req.length;
-    h += '<div class="ms-nota gr">' + (f ? 'Faltan ' + f + ' de ' + n + '. Puedes guardar y terminar después: queda en tus pendientes. <button type="button" class="enlace" data-ms="guardar">Guardar lo que llevo</button>' : 'Todo listo. Toca Siguiente para enviarla al administrador.') + '</div>';
+    const f = faltanSol(); const n = req.filter((r) => !r.opcional).length;
+    if(req.some((r) => r.opcional)) h += '<div class="ms-nota gr"><b>Persona natural · no amerita documentos.</b> Subirlos es opcional: puedes enviarla sin nada.</div>';
+    else h += '<div class="ms-nota gr">' + (f ? 'Faltan ' + f + ' de ' + n + '. Puedes guardar y terminar después: queda en tus pendientes. <button type="button" class="enlace" data-ms="guardar">Guardar lo que llevo</button>' : 'Todo listo. Toca Siguiente para enviarla al administrador.') + '</div>';
     return h + errSol('general');
   }
-  const faltanSol = () => S && S.d ? (S.d.requisitos || []).filter((r) => r.estado === 'falta' || r.estado === 'devuelto').length : 0;
+  const faltanSol = () => S && S.d ? (S.d.requisitos || []).filter((r) => (r.estado === 'falta' || r.estado === 'devuelto') && !r.opcional).length : 0;
   function pasoEnviada(){
     const e = S.enviada; const ya = e.estado !== 'por_revisar';
     const ahora = new Date();
@@ -390,6 +394,7 @@
     if(rifLeido()){
       const d = o.datos; S.natural = /^[VE]/.test(d.rif);
       try { S.busq = await rpc('cliente_rif_buscar', { p_rif: d.rif.charAt(0) + '-' + d.rif.slice(1), p_nombre: d.razon_social || null }); } catch (e) { S.busq = { error: e.message }; }
+      S.parec = S.busq && S.busq.estado !== 'existe' && S.busq.estado !== 'otro' ? await C.buscarParecido(d.razon_social, d.rif) : null;   // lote 16/11 B
       if(S !== mio) return;
     }
     pintarSol();
@@ -408,7 +413,11 @@
     try {
       const id = await rpc('cambio_crear', { p_datos: { tipo: S.tipo, servicios: claves, borrador: true, desde: S.desde ? S.desde.id : null, lider_id: S.lider || null, nuevo } });
       if(!S) return; S.id = Number(id); S.ocupado = false; S.paso = 3;
-      await cargarSol(); pintarSol();
+      await cargarSol();
+      // Lote 16/11 B: si el expediente ya tiene todo aprobado, no se piden documentos: pasa directo a Enviar
+      const req = (S.d && S.d.requisitos) || [];
+      if(req.length && req.every((r) => r.estado === 'aprobado') && !(S.archivo && rifLeido() && !S.rifSubido)){ S.paso = 4; pintarSol(); return enviarSol(); }
+      pintarSol();
       if(S.archivo && rifLeido() && !S.rifSubido) subirRifSol();
     } catch (e) { if(!S) return; S.ocupado = false; S.err.general = e.message; pintarSol(); }
   }
@@ -488,6 +497,7 @@
     if(d.estado === 'por_revisar') return d.docs && d.docs.faltan ? 'Faltan documentos. Súbelos aquí abajo; el administrador los revisa en el expediente.' : 'El administrador revisa los documentos. Al aprobarlos pasa solo al analista.';
     if(d.estado === 'por_emitir') return d.puedo_hecho ? 'Hazlo en Proham (plan y categoría a la vez) y toca Hecho.' : 'El analista del líder lo hace en Proham y marca Hecho.';
     if(d.estado === 'por_confirmar') return d.aviso ? AVISO[d.aviso] + ' en Proham. Se confirma con la siguiente carga del TAD.' : 'Se confirma solo con la siguiente carga del TAD completo.';
+    if(porDecidir(d)) return 'Confirmada. El administrador o la Senior deciden si comisiona (Sí o No con motivo). Solo el Sí entra al corte.';
     if(d.estado === 'confirmado') return d.pagado_fuera ? 'Histórico: se pagó fuera de la app. No entra al corte.' : d.tipo === 'residencial' ? 'Cuenta como indicador negativo del líder.' : d.comision === 'si' ? 'Comisiona en el corte con la regla de siempre (Legal y pago).' : 'No comisiona.';
     if(d.estado === 'sin_registro') return d.tipo === 'residencial' ? 'Pasó a residencial sin registro. Asígnalo a un líder para contarlo como indicador negativo, o márcalo como error o revertido.' : d.dueno_id ? 'Ya se hizo en el sistema y nadie la registró. ' + (yo && yo.rol === 'lider' ? 'Toca Registrar y sube sus documentos para que entre a tu comisión.' : 'El líder la registra con sus documentos.') : 'Ya se hizo en el sistema y no tiene líder. Asígnala a un líder, o márcala como error o revertida.';
     if(d.estado === 'por_revisar' && d.borrador) return 'Solicitud guardada sin enviar. Toca Seguir para subir lo que falta y enviarla.';
@@ -534,7 +544,7 @@
       ((D && D.lideres) || []).map((l) => '<option value="' + esc(l.id) + '"' + (l.id === (d.dueno_id || d.sugerido_id) ? ' selected' : '') + '>' + esc(l.nombre) + '</option>').join('') + '</select><div class="error" id="eCamLider" role="alert"></div>' +
       (d.sugerido && !d.dueno_id ? '<p class="nota-chica">Sugerido por el comentario del reporte' + (d.reporte && d.reporte.comentario ? ' ("' + esc(d.reporte.comentario) + '")' : '') + '. Confírmalo o elige otro.</p>' : '') +
       '<p class="nota-chica">Al asignarlo, el líder la registra con sus documentos y se le recuerda. Un cambio a residencial queda confirmado como indicador negativo del líder.</p>';
-    const notaAcc = (d.estado === 'por_revisar' && P.revisar) || d.estado === 'sin_registro' || ((d.estado === 'por_emitir' || d.estado === 'por_confirmar') && P.confirmar) || puedeCancelar(d);
+    const notaAcc = (porDecidir(d) && yo && (yo.rol === 'admin' || yo.senior)) || (d.estado === 'por_revisar' && P.revisar) || d.estado === 'sin_registro' || ((d.estado === 'por_emitir' || d.estado === 'por_confirmar') && P.confirmar) || puedeCancelar(d);
     if(notaAcc) h += '<label class="rotulo arriba" for="camNotaAcc">Nota</label><textarea class="area corta" id="camNotaAcc" maxlength="500"></textarea><div class="error" id="eCamAcc" role="alert"></div>';
     h += '<div class="secc">Qué ha pasado</div>' + ((d.bitacora || []).length ? '<div class="datos">' + d.bitacora.map((x) => fila(fecha(x.en) + ' ' + C.hora(x.en), esc(TEXTO_BIT[x.accion] || x.accion) + (x.por ? ' · ' + esc(C.primerNombre(x.por)) : ''))).join('') + '</div>' : '<p class="nota-chica">Sin movimientos.</p>');
     $('cCam').innerHTML = h; if(window.Contacto) window.Contacto.llenar($('cCam'));
@@ -547,6 +557,7 @@
     if(d.estado === 'sin_registro' && d.tipo !== 'residencial' && yo && yo.rol === 'lider' && !P.lectura) acc.push(['registrar', 'Registrar', '']);
     if(d.estado === 'por_revisar' && d.borrador && yo && (yo.rol === 'admin' || d.creado_por === yo.nombre || d.dueno_id === yo.id) && !P.lectura) acc.push(['seguir', 'Seguir', '']);
     if(P.lectura) acc.length = 0;
+    if(porDecidir(d) && yo && (yo.rol === 'admin' || yo.senior) && !P.lectura){ acc.push(['decidir_no', 'No comisiona', 'btn-2']); acc.push(['decidir_si', 'Sí comisiona', '']); }
     if(d.estado === 'sin_registro' && P.sin_registro){ acc.push(['error', 'Fue un error', 'btn-2']); acc.push(['revertido', 'Revertido', 'btn-2']); acc.push(['asignar', 'Asignar', '']); }
     const p = $('pCam'); p.classList.toggle('hidden', !acc.length);
     p.innerHTML = acc.map((a) => '<button type="button" class="btn ' + a[2] + '" data-cam-acc="' + a[0] + '">' + esc(a[1]) + '</button>').join('');
@@ -559,6 +570,14 @@
   async function accion(b, a){
     const d = V.d;
     if(a === 'registrar'){ cerrarHoja(true); abrirSolicitud({ desde: d }); return; }
+    if(a === 'decidir_si' || a === 'decidir_no'){
+      const mot = $('camNotaAcc') ? $('camNotaAcc').value.trim() : ''; const er = $('eCamAcc');
+      if(mot.length < 4){ if(er){ er.textContent = 'Escribe el motivo'; $('camNotaAcc').focus(); } return; }
+      const t0 = b.textContent; b.disabled = true; b.textContent = 'Guardando…';
+      try { await rpc('cambio_comision', { p_id: d.id, p_si: a === 'decidir_si', p_motivo: mot }); toast(a === 'decidir_si' ? 'Comisiona: entra al corte' : 'Quedó sin comisión'); cargar(); cargarDetalle(); if(alCambiarLib) alCambiarLib(); }
+      catch (e) { if(er) er.textContent = e.message; else toast(e.message, 'error'); b.disabled = false; b.textContent = t0; }
+      return;
+    }
     if(a === 'seguir'){ cerrarHoja(true); abrirSolicitud({ borrador: d }); return; }
     const nota = $('camNotaAcc') ? $('camNotaAcc').value.trim() : ''; const er = $('eCamAcc'); if(er) er.textContent = '';
     let lider = null;
@@ -684,6 +703,14 @@
   });
 
   // Página Migraciones
+  window.Migracion = {
+    usar(p){ yo = p; },
+    // c: la migración como la trae Comisiones (bloques); o.alCerrar se llama al cerrar la solicitud
+    registrar(c, o){ alCerrarLib = (o && o.alCerrar) || null; abrirSolicitud({ desde: c }); },
+    seguir(c, o){ alCerrarLib = (o && o.alCerrar) || null; abrirSolicitud({ borrador: c }); },
+    detalle(id, o){ alCambiarLib = (o && o.alCambiar) || null; abrirDetalle(Number(id)); }
+  };
+  if(!PAGINA) return;
   let tBusca = null;
   const bq = $('busca');
   const fb = $('formBusca'); if(fb) fb.addEventListener('submit', (e) => { e.preventDefault(); if(bq) bq.blur(); });

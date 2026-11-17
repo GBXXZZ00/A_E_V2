@@ -332,8 +332,7 @@
       else if(b.dataset.cnRec){ const r = await rpc('trabajo_recordar', { p_tipo: f.tipo, p_clave: f.clave }); aviso('Le llegó el recordatorio a ' + (r && r.a ? r.a : 'la persona'), null, true); b.disabled = false; return; }
       else if(b.dataset.cnIp){ await rpc('ip_usar', { p_servicio: sid, p_fila: Number(b.dataset.fila) }); aviso('IP guardada. Queda en la bitácora', null, true); }
       else if(b.dataset.cnWa){ const F = await fichaDe(f); const r = await window.Ficha.cartaWhatsapp(F, sid, null); if(!r){ b.disabled = false; return; } }
-      else if(b.dataset.cnPdf){ const F = await fichaDe(f); window.Ficha.cartaPdf(F, sid, 'proforma');
-        if(((F.servicios || []).find((x) => Number(x.id) === sid) || {}).carta) setTimeout(() => window.Ficha.cartaPdf(F, sid, 'bienvenida'), 600);
+      else if(b.dataset.cnPdf){ const F = await fichaDe(f); window.Ficha.cartaDescargar(F, sid);   // lote 16/11 B: las dos a la vez
         await rpc('carta_descargada', { p_servicio: sid }); aviso('Descargada. Cuando la envíes, toca "Ya la envié"', null, true); }
       cache.borrarTodo(); await cargar();
     } catch (e) { toast(e.message || 'No se pudo. Revisa tu conexión e intenta de nuevo', 'error'); if(document.contains(b)) b.disabled = false; }

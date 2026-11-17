@@ -397,6 +397,8 @@
   }
   function casillasHtml(emb){
     const c = F.cliente; let h = '';   // en la hoja de comisión la firma (Digital o Física) va en su bloque Legal
+    // Lote 16/11 B: a la persona natural no le hacen falta documentos para comisionar (desde el corte de noviembre); subirlos es opcional
+    if(c.es_natural && !emb) h += '<p class="hc-nat">Persona natural · no amerita documentos: subirlos es opcional y el legal no le frena la comisión.</p>';
     const nReq = !c.es_natural && c.regimen_firma === 'conjunta' ? 2 : 1;
     // Los representantes que se ven: los que pide el régimen, los que tienen algo y el que se acaba de agregar
     const conAlgo = REPS.slice(1).filter((n) => repConAlgo(n));
@@ -1091,15 +1093,9 @@
     const D = window.Documentos; const tipo = env.tipo; let files;
     try { files = archivosEnvio(tipo, num); } catch (e) { toast('No se pudo armar el PDF. Intenta de nuevo', 'error'); return; }
     const msj = mensajeWa(F, tipo);
-    try { copiar(D.telFmt(num)); } catch (e) {}   // si no deja copiar, igual se comparte
-    if(puedeCompartir()){
-      try { await navigator.share({ files, text: msj }); }
-      catch (e) { if(e && e.name === 'AbortError') return; toast('No se pudo abrir Compartir. Intenta de nuevo', 'error'); return; }
-    } else {
-      files.forEach((f) => window.Archivos.descargar(f, f.name));
-      window.open(C.enlaceWa(num, msj), '_blank', 'noopener');
-      toast('PDF descargado y número copiado. Arrástralo al chat');
-    }
+    // Lote 16/11 B: teléfono copia el mensaje y comparte; PC descarga y abre WhatsApp de escritorio (o wa.me)
+    try { const r = await C.compartirWa({ numero: num, texto: msj, archivos: files }); if(r === 'cancelado') return; }
+    catch (e) { toast(e.message, 'error'); return; }
     anotarEnvio(tipo, 'whatsapp', D.telFmt(num));
   }
   async function enviarCorreo(){
@@ -2565,29 +2561,31 @@
     const D = window.Documentos; const num = tels[0].n; let files;
     try { files = archivosEnvio(env.tipo, num); } catch (e) { toast('No se pudo armar el PDF. Intenta de nuevo', 'error'); return null; }
     const msj = mensajeWa(F, env.tipo); let paso2 = false;
-    try { copiar(D.telFmt(num)); } catch (e) {}   // si no deja copiar, igual se comparte
-    if(puedeCompartir()){
-      try { await navigator.share({ files, text: msj }); paso2 = true; }
-      catch (e) { if(e && e.name === 'AbortError') return null; toast('No se pudo abrir Compartir. Intenta de nuevo', 'error'); return null; }
-    } else {
-      try { files.forEach((f) => window.Archivos.descargar(f, f.name)); window.open('https://web.whatsapp.com/send?phone=' + D.waNumero(num) + '&text=' + encodeURIComponent(msj), '_blank', 'noopener'); }
-      catch (e) { toast('No se pudieron descargar los PDF. Intenta de nuevo', 'error'); return null; }
-    }
+    // Lote 16/11 B: teléfono copia el mensaje y comparte; PC descarga los dos PDF y abre WhatsApp de escritorio (o wa.me)
+    try { const r = await C.compartirWa({ numero: num, texto: msj, archivos: files }); if(r === 'cancelado') return null; paso2 = r === 'compartido'; }
+    catch (e) { toast(e.message, 'error'); return null; }
     try {
       if(env.tipo === 'ambas') await rpc('carta_enviar', { p_servicio: sv.id, p_canal: 'whatsapp', p_destino: D.telFmt(num) });
       else await rpc('envio_registrar', { p_servicio: sv.id, p_tipos: ['proforma'], p_canal: 'whatsapp', p_destino: D.telFmt(num) });
     } catch (e) { toast('Se abrió WhatsApp, pero no quedó anotado el envío: ' + e.message, 'error'); return null; }
-    toast(paso2 ? 'Quedó anotado. Paso 2: abre el chat del cliente' : 'PDF descargados y número copiado (' + D.telFmt(num) + '). Arrástralos al chat de WhatsApp Web');
+    toast(paso2 ? 'Quedó anotado. Paso 2: abre el chat del cliente' : 'Quedó anotado. Arrastra los PDF al chat que se abrió');
     if(alTerminar) alTerminar();
     return { telefono: D.telFmt(num), paso2, enlace: C.enlaceWa(num) };
   }
   function cartaPdf(ficha, servicioId, tipo){ montar(); envF = ficha; env = { servicio: Number(servicioId), tipo }; verPdf(tipo); }
+  // Lote 16/11 B: "Descargar" baja la proforma y la carta (si toca) a la vez, en dos PDF; no abre pestañas
+  function cartaDescargar(ficha, servicioId){
+    montar(); envF = ficha; const sv = (ficha.servicios || []).find((x) => Number(x.id) === Number(servicioId)) || {}; const tipo = sv.carta ? 'ambas' : 'proforma';
+    env = { servicio: Number(servicioId), tipo }; let files;
+    try { files = archivosEnvio(tipo); } catch (e) { toast('No se pudo armar el PDF. Intenta de nuevo', 'error'); return false; }
+    C.descargarVarios(files); toast(files.length > 1 ? 'Carta y proforma descargadas' : 'Proforma descargada'); return true;
+  }
   function cartaOtra(ficha, servicioId, alTerminar){ enviarDesde(ficha, servicioId, alTerminar); }
   function enviarDesde(ficha, servicioId, alTerminar){ montar(); envF = ficha; envFin = alTerminar || null; abrirEnviar(servicioId); }
   // Lote 10/11 D11: a qué número sale la carta (primero el del representante, si no el de Proham y luego el del TAD)
   function telefonosCarta(ficha, servicioId){ const g = envF; envF = ficha; try { const sv = (EF().servicios || []).find((x) => String(x.id) === String(servicioId)); return sv ? telefonosDe(sv) : []; } finally { envF = g; } }
   function editarCampo(ficha, clave, alTerminar){ montar(); fuera = { cliente: ficha.cliente.id, F: ficha, alTerminar }; abrirCampo(clave); }
   document.addEventListener('change', (e) => { if(e.target && e.target.id === 'pb_req' && pb){ leerProblema(); pintarProblema(); } });
-  window.Ficha = { problemaLegal, cartaWhatsapp, telefonosCarta, cartaPdf, cartaOtra, subirA, subirArchivoA, documentosPara, variosA, soltarA, ocupado: () => ocupado, editarCampo, enviarDesde, lineaHilo, abrir, montar, abierta: () => id, alContactarFuera: (f) => { externo = f; }, recargar: () => { if(id) cargar(); },
+  window.Ficha = { problemaLegal, cartaWhatsapp, telefonosCarta, cartaPdf, cartaDescargar, cartaOtra, subirA, subirArchivoA, documentosPara, variosA, soltarA, ocupado: () => ocupado, editarCampo, enviarDesde, lineaHilo, abrir, montar, abierta: () => id, alContactarFuera: (f) => { externo = f; }, recargar: () => { if(id) cargar(); },
     etiquetar: (cli, alTerminar) => { if(window.Gestion) window.Gestion.etiquetar(cli, alTerminar); } };
 })();

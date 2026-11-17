@@ -242,3 +242,10 @@ Se comparan el **Estado** del TAD (manda siempre), la instalación (I), la últi
 - Factibilidad para todos; cada quien ve lo suyo. Coordinador de analistas = Analista Senior.
 - Aliados para el equipo: solo lo suyo (solicitudes de su cartera o top y clientes suyos que instaló un aliado). El aliado no entra a Clientes; ve la ficha de su cliente cuando ya está instalado.
 - Comisiones: órdenes de Odoo de hasta 5 días dentro del líder; "Marcar como perdida" con motivo las saca de las listas (quedan en el filtro Perdidas, 60 días). Pedido del 16/11: las secciones dentro del líder se pliegan y las del corte anterior van dentro de Instaladas.
+
+## Ajustes del 18/11 (lote 16/11 B)
+- Una migración cuenta solo cuando está confirmada y se decidió "Sí": al confirmarse queda "Comisión por decidir" y la deciden el administrador o la Senior con motivo (bitácora). Solo el Sí crea la instalación del corte. El histórico no se toca.
+- Persona natural (PYME o migración): desde el corte de noviembre 2026 el legal no le frena la comisión; subir documentos es opcional ("no amerita documentos").
+- Pago por TAD: pagada cuando ningún servicio PYME o residencial del cliente en ese TAD tiene deuda; los dedicados (categoría DEDICADO o sucursal 900) no cuentan. 3 días y pago quitado a mano respetados.
+- Migraciones: solo cambios de categoría reales (residencial a PYME y PYME a residencial). Un servicio activado por RADIUS que después pasa a PYME es una instalación nueva, no una migración.
+- En Comisiones, "Meses anteriores · faltan documentos": lo que cobró en un corte certificado y hoy no tiene el legal ("Devuelto" o "Cobró con excepción"). No suma ni resta.

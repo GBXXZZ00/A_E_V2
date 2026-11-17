@@ -87,7 +87,7 @@ const msAbierta = (p) => p.waitForSelector('#msFondo:not([hidden]) .ms');
     await p.click('[data-ms="sig2"]'); await p.waitForSelector('.ms-doc');
     const c2 = llamo(mundo, 'cambio_crear').slice(-1)[0][2].p_datos;
     ok(nombre + ': el borrador lleva el nuevo titular leído del RIF', c2.tipo === 'titularidad' && c2.nuevo.tipo === 'J' && c2.nuevo.doc === '417779999' && c2.nuevo.nombre === 'NUEVA EMPRESA INVENTADA, C.A' && c2.nuevo.ocr.tipo === 'rif_viejo');
-    ok(nombre + ': los documentos son los del nuevo titular (empresa: el expediente de siempre)', /Acta constitutiva del nuevo titular/.test(await p.textContent('#msC')));
+    ok(nombre + ': los documentos son los del nuevo titular, con los nombres de la maqueta (empresa)', /RIF de la empresa[\s\S]*Acta constitutiva[\s\S]*Cédula del representante legal[\s\S]*RIF del representante legal/.test(await p.textContent('#msC')));
     await p.waitForFunction(() => !document.querySelector('.ms-doc small') || !/Subiendo/.test(document.getElementById('msC').textContent), null, { timeout: 8000 }).catch(() => {});
     ok(nombre + ': el RIF leído se sube solo a su casilla', mundo.llamadas.some((l) => l[0] === 'subir'));
     mundo.ocr = null;
@@ -120,12 +120,21 @@ const msAbierta = (p) => p.waitForSelector('#msFondo:not([hidden]) .ms');
     await q.reload(); await q.waitForSelector('#lista .mg-r'); await q.click('.mg-bar [data-mgf="curso"]');
     ok(nombre + ': En curso muestra "Falta cambiar el plan"', /Falta cambiar el plan/.test(await q.textContent('#lista')));
     cargarTad(mundo, [Object.assign({}, FILAS[0], { ca: 'PYME-1GB', p: 'ORO-EMP', e: '48575443AAAA0001' }), FILAS[1], FILAS[2]]);
-    ok(nombre + ': con plan y categoría la migración se confirma y comisiona', mig.estado === 'confirmado' && mig.comision === 'si');
+    ok(nombre + ': con plan y categoría la migración se confirma y queda "Comisión por decidir"', mig.estado === 'confirmado' && mig.comision === 'por_decidir' && !mig.instalacion_id);
+    // Lote 16/11 B: la Senior decide con motivo; solo el Sí crea la instalación
+    await q.reload(); await q.waitForSelector('#lista .mg-r'); await q.click('.mg-bar [data-mgf="decision"]');
+    await q.locator('.mg-r', { hasText: 'Panaderia' }).locator('[data-mg="abrir"]').click(); await q.waitForSelector('[data-cam-acc="decidir_si"]');
+    await q.click('[data-cam-acc="decidir_si"]');
+    ok(nombre + ': decidir sin motivo da error debajo', /Escribe el motivo/.test(await q.textContent('#eCamAcc')));
+    await q.fill('#camNotaAcc', 'Cliente nuevo para la empresa'); await q.click('[data-cam-acc="decidir_si"]');
+    await q.waitForFunction(() => /comisiona/i.test(document.querySelector('#cCam .estado').textContent) && !/decide/.test(document.querySelector('#cCam .estado').textContent));
+    ok(nombre + ': con el Sí comisiona y queda en la bitácora', mig.comision === 'si' && !!mig.instalacion_id && (mundo.bitacora || []).some((b) => b.accion === 'cambio_comision'));
+    await cerrarHojas(q);
 
     // ----- Sin registrar sin líder: la Senior le asigna líder (queda sin registrar para que el líder la registre) -----
     mundo.datos.cambiosK.filas.push({ id: 900, tipo: 'migracion', estado: 'sin_registro', origen: 'tad', creado_en: new Date().toISOString(), titular: { nombre: 'Ferreteria Inventada', doc: '417770501' },
       categoria_anterior: '1 GB', categoria_nueva: 'PYME-1GB', plan_anterior: 'BRONCE-RES', plan_nuevo: 'ORO-EMP', servicios: [{ sucursal: '824', codigo: '777050' }], bitacora: [{ accion: 'cambio_sin_registro', en: new Date().toISOString() }] });
-    await q.reload(); await q.waitForSelector('#lista .mg-r'); await q.click('.mg-bar [data-mgf="sin"]');
+    await q.reload(); await q.waitForSelector('.mg-kpis'); await q.click('.mg-bar [data-mgf="sin"]'); await q.waitForSelector('#lista .mg-r');
     ok(nombre + ': la sin líder cae en el grupo Por asignar con "Asignar líder"', /Por asignar/.test(await q.textContent('#lista')) && (await q.locator('.mg-r', { hasText: 'Ferreteria' }).locator('[data-mg="asignar"]').count()) === 1);
     await q.locator('.mg-r', { hasText: 'Ferreteria' }).locator('[data-mg="asignar"]').click(); await q.waitForSelector('[data-cam-acc="asignar"]');
     ok(nombre + ': ofrece Asignar, Fue un error y Revertido', (await q.locator('[data-cam-acc="error"]').count()) === 1 && (await q.locator('[data-cam-acc="revertido"]').count()) === 1);

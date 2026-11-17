@@ -370,7 +370,53 @@
     window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(() => {}); });
   }
 
-  window.Comun = { $, esc, normalizeStr, toast, mensajeError, iniciales, primerNombre, abrirHoja, cerrarHoja, cerrarTodas, hojaAbierta, hojasAbiertas: () => pila.map((x) => x.h.id), prepararHojas,
+  // ---------- Lote 16/11 B: compartir por WhatsApp con archivos ----------
+  // Teléfono: copia el mensaje (WhatsApp lo descarta cuando van archivos) y abre Compartir.
+  // PC: descarga los archivos (uno tras otro) y abre la app de WhatsApp de escritorio; si no abre en 1,5 s, wa.me.
+  const esTactil = () => { try { return window.matchMedia('(pointer: coarse)').matches; } catch (e) { return false; } };
+  function puedeCompartirArchivos(files){ try { return esTactil() && !!navigator.canShare && navigator.canShare({ files }); } catch (e) { return false; } }
+  function descargarVarios(files){ (files || []).forEach((f, i) => setTimeout(() => window.Archivos.descargar(f, f.name), i * 450)); }
+  async function compartirWa(o){
+    const num = o.numero ? telWa(o.numero) : ''; const texto = o.texto || ''; const files = o.archivos || [];
+    if(files.length && puedeCompartirArchivos(files)){
+      let copiado = false; try { if(navigator.clipboard && texto){ await navigator.clipboard.writeText(texto); copiado = true; } } catch (e) {}
+      if(copiado) toast('Mensaje copiado: pégalo en el chat');
+      try { await navigator.share({ files, text: texto }); return 'compartido'; }
+      catch (e) { if(e && e.name === 'AbortError') return 'cancelado'; throw new Error('No se pudo abrir Compartir. Intenta de nuevo'); }
+    }
+    if(files.length) descargarVarios(files);
+    const web = 'https://wa.me/' + num + (texto ? '?text=' + encodeURIComponent(texto) : '');
+    if(esTactil()){ window.open(web, '_blank', 'noopener'); }
+    else {
+      // La app de escritorio: si la ventana pierde el foco es que abrió; si no, se abre WhatsApp en el navegador
+      let abrio = false; const marca = () => { abrio = true; };
+      window.addEventListener('blur', marca, { once: true }); document.addEventListener('visibilitychange', marca, { once: true });
+      try { const a = document.createElement('a'); a.href = 'whatsapp://send?' + (num ? 'phone=' + num + '&' : '') + 'text=' + encodeURIComponent(texto); a.rel = 'noopener'; document.body.appendChild(a); a.click(); a.remove(); } catch (e) {}
+      setTimeout(() => { window.removeEventListener('blur', marca); document.removeEventListener('visibilitychange', marca); if(!abrio) window.open(web, '_blank', 'noopener'); }, 1500);
+    }
+    if(files.length) toast(files.length === 1 ? 'PDF descargado. Arrástralo al chat que se abrió' : 'PDF descargados. Arrástralos al chat que se abrió');
+    return 'abierto';
+  }
+
+  // ---------- Lote 16/11 B: ¿ya existe un cliente con ese nombre? (al crear uno) ----------
+  async function buscarParecido(nombre, doc, sol){
+    if(String(nombre || '').trim().length < 4) return null;
+    try { return await rpc('clientes_parecidos', { p_nombre: String(nombre).trim(), p_doc: doc || null, p_sol: sol || null }); } catch (e) { return null; }
+  }
+  function parecidoHtml(r){
+    if(!r || !r.posible) return '';
+    const l = r.clientes || []; const v = l.find((x) => x.ver);
+    if(!l.length) return '<p class="aviso-par" role="status"><b>Puede que ese cliente ya exista.</b> El administrador lo revisa.</p>';
+    if(v) return '<p class="aviso-par" role="status"><b>Ya existe ' + esc(v.nombre) + ' (' + esc(v.doc) + '): ¿es el mismo?</b> <button type="button" class="enlace" data-ir-cliente="' + esc(v.id) + '">Ir a ese cliente</button></p>';
+    return '<p class="aviso-par" role="status"><b>Ya existe un cliente con ese nombre en la cartera de otro líder.</b> Pídele al administrador que lo revise.</p>';
+  }
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest && e.target.closest('[data-ir-cliente]'); if(!b) return;
+    const id = Number(b.dataset.irCliente);
+    if(window.Ficha && window.Ficha.abrir){ window.Ficha.montar && window.Ficha.montar(); window.Ficha.abrir(id, { tab: 'documentos' }); } else location.href = 'clientes.html?c=' + id;
+  });
+
+  window.Comun = { buscarParecido, parecidoHtml, compartirWa, descargarVarios, $, esc, normalizeStr, toast, mensajeError, iniciales, primerNombre, abrirHoja, cerrarHoja, cerrarTodas, hojaAbierta, hojasAbiertas: () => pila.map((x) => x.h.id), prepararHojas,
     ic, partes, hoyClave, diasEntre, fecha, fechaDia, hora, mes, mesAnio, dia, capital, plural, lista,
     docFmt, telWa, enlaceWa, enlaceTel, enlaceCorreo,
     ESTATUS, MOTIVOS, GESTION, devueltoFrase, sucursal, chipEstatus, estadoServicio, casilla, faltaTexto,

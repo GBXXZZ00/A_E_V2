@@ -287,7 +287,7 @@
   function filaAl(i, conAliado){
     const dato = 'data-' + (i.t === 'vieja' ? 'vieja' : i.t) + '="' + esc(i.id) + '"';
     const sub = [conAliado ? i.aliado : '', TIPO_AL[i.t], i.rif, i.fecha ? fecha(i.fecha) : '', i.t === 'sinp' && i.x.origen === 'historico' ? 'Antes del módulo' : ''].filter(Boolean).join(' · ');
-    return '<button type="button" class="fila" ' + dato + '><span class="tx"><b>' + esc(i.cliente) + '</b><small>' + esc(sub) + '</small>' + (i.tu || (yo && yo.soloLectura && i.x && i.x.carterizado) ? '<small class="etqs">' + (i.tu ? '<span class="tagn azul">Tu cliente</span>' : '') + (yo && yo.soloLectura && i.x && i.x.carterizado ? '<span class="tagn morado">Cliente carterizado</span>' : '') + '</small>' : '') + '</span>' +
+    return '<button type="button" class="fila" ' + dato + '><span class="tx"><b>' + esc(i.cliente) + '</b><small>' + esc(sub) + '</small>' + (i.x && i.x.duplicado && modo === 'admin' ? '<small class="etqs"><span class="tagn ambar">Posible cliente repetido</span></small>' : '') + (i.tu || (yo && yo.soloLectura && i.x && i.x.carterizado) ? '<small class="etqs">' + (i.tu ? '<span class="tagn azul">Tu cliente</span>' : '') + (yo && yo.soloLectura && i.x && i.x.carterizado ? '<span class="tagn morado">Cliente carterizado</span>' : '') + '</small>' : '') + '</span>' +
       '<span class="par-m">' + chipItem(i) + '</span></button>';
   }
   // Sin autorización: instalaciones de aliados sin solicitud aprobada, las que faltan por revisar primero
@@ -627,7 +627,7 @@
     const num = (n, hecho) => '<i class="' + (hecho ? 'h' : '') + '">' + (hecho ? ic('check') : n) + '</i>';
     let h = '<section class="al-sec"><h3>' + num(1, libre) + 'El cliente</h3>' + (t ? '' : '<p class="al-q">¿Qué cliente es?</p>') +
       '<div class="al-seg2" role="radiogroup" aria-label="Qué cliente es">' + [['empresa', 'Empresa'], ['natural', 'Persona']].map((x) => '<button type="button" role="radio" aria-checked="' + (t === x[0]) + '" class="' + (t === x[0] ? 'on' : '') + '" data-tipon="' + x[0] + '"' + (N.estado && ['ilegible', 'no_es_rif', 'error'].indexOf(N.estado) < 0 ? ' disabled' : '') + '>' + x[1] + '</button>').join('') + '</div>' +
-      (t ? casRif() : '') + '</section>';
+      (t ? casRif() : '') + (libre && N.posibleDup ? window.Comun.parecidoHtml({ posible: true }) : '') + '</section>';
     // 2 Contacto: se puede escribir mientras se lee el RIF
     const campos = [['tel', t === 'natural' ? 'Teléfono' : 'Teléfono del representante', 'tel'], ['correo', t === 'natural' ? 'Correo' : 'Correo del representante', 'email']];
     const okC = !faltaContacto().length;
@@ -664,7 +664,9 @@
     if(!r.ok){ N.estado = 'error'; N.msg = String(d.error || 'No se pudo leer el RIF. Intenta de nuevo.'); pintarNueva(); return; }
     N.estado = d.estado; N.nombre = d.nombre || ''; N.rif = d.rif || null;
     if(d.estado === 'repetida'){ N.repetida = d.codigo; N.repetidaId = d.id; }
-    if(d.estado === 'libre'){ N.cliente = d.cliente; subirN(kDe(casillasN()[0]), file); }
+    if(d.estado === 'libre'){ N.cliente = d.cliente; subirN(kDe(casillasN()[0]), file);
+      const sol = N.id; window.Comun.buscarParecido(N.nombre, N.rif, sol).then((r) => { if(N && N.id === sol && r && r.posible){ N.posibleDup = true; pintarNueva(); } });   // lote 16/11 B
+    }
     pintarNueva(); invalidar();
     if(d.estado === 'cartera' || d.estado === 'otro') mostrarRes({ id: N.id, etiqueta: d.estado, cliente: N.nombre });
   }

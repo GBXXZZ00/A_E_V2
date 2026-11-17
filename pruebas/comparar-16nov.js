@@ -57,7 +57,7 @@ const CASOS = {
       await p.keyboard.press('Escape'); await p.waitForTimeout(300); await p.locator('.mg-r', { hasText: 'Comercial de Prueba 7' }).locator('[data-mg="seguir"]').click(); await p.waitForSelector('.ms-doc');
       await p.click('[data-ms="enviar"]'); await p.waitForSelector('.ms-ok'); await p.waitForTimeout(300); } }))),
   comisiones: [['admin', 'marcos', '482913'], ['lider', 'lucia', '739105']].reduce((a, x) => a.concat([false, true].map((tel) => ({ n: 'comisiones-' + x[0], maq: 'comisiones-' + x[0] + '-' + (tel ? 'tel' : 'pc'), tel, full: tel, u: x[1], pin: x[2], prep: mundoCom, alto: 900,
-    act: async (p) => { await p.goto(H + 'comisiones.html'); await p.waitForSelector('.cx-grupo .cx-sec.am', { state: 'attached' }); const g = p.locator('.cx-grupo', { hasText: 'Lucía Ferrer' }).first();
+    act: async (p) => { await p.goto(H + 'comisiones.html'); await p.waitForSelector('.cx-grupo .cx-blq.am', { state: 'attached' }); const g = p.locator('.cx-grupo', { hasText: 'Lucía Ferrer' }).first();
       if(!(await g.evaluate((y) => y.classList.contains('abierto')))) await g.locator('.cx-ga').click(); await p.waitForTimeout(400); await g.evaluate((y) => y.scrollIntoView({ block: 'start' })).catch(() => {}); await p.evaluate(() => window.scrollTo(0, 0)); } }))), [])
 };
 async function ladoALado(nav, maq, cap, sal){

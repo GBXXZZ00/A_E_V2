@@ -219,6 +219,7 @@
     if((B.parecidos || []).length) return '<div class="nv-banda ambar" role="status"><b>¿Es este?</b>Hay un cliente provisional con un nombre parecido. Si es el mismo, sus documentos y su orden se juntan.</div>' +
       '<div class="hc-tarj">' + B.parecidos.map((p) => '<div class="hc-fl"><span class="tx"><b>' + esc(p.nombre) + '</b><small>' + esc(p.lider) + '</small></span><button type="button" class="hc-b ch" data-nv-par="' + esc(p.id) + '">Sí, es este</button></div>').join('') +
         '<div class="hc-fl"><span class="tx"><b>Ninguno es</b><small>Se crea un cliente nuevo</small></span><button type="button" class="hc-b s ch" data-nv-par="0">No, es otro: crear</button></div></div>';
+    if(N.parec && N.parec.posible) return window.Comun.parecidoHtml(N.parec);
     return '<div class="nv-banda verde" role="status"><b>No está en la app</b>' + (N.archivo ? 'Se crea al continuar y el RIF queda subido en su casilla.' : 'Se crea al continuar.') + '</div>';
   }
   function filaOrden(){
@@ -355,7 +356,10 @@
     N.buscandoApp = true; if(!callado) pintarNuevo(); else refrescarBanda();
     let r; try { r = await rpc('cliente_rif_buscar', { p_rif: N.rif, p_nombre: N.nombre || null }); } catch (e) { r = { error: e.message }; }
     if(N !== mio || N.pb !== pedido) return;
-    N.buscandoApp = false; N.busq = r; if(callado) refrescarBanda(); else pintarNuevo();
+    N.buscandoApp = false; N.busq = r; N.parec = null;
+    if(r && !r.error && r.estado !== 'existe' && r.estado !== 'otro') N.parec = await window.Comun.buscarParecido(N.nombre, N.rif);   // lote 16/11 B: nombre casi igual
+    if(N !== mio) return;
+    if(callado) refrescarBanda(); else pintarNuevo();
   }
   // Mientras escribe no se repinta todo (no pierde el cursor): solo la banda, la orden y el botón
   function refrescarBanda(){

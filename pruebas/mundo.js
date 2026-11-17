@@ -239,7 +239,7 @@ function pendDecidir(){ return []; }
 const empresa = (cat, plan) => /pyme/i.test(cat || '') && /emp/i.test(plan || '');
 function confirmarCambio(m, c, fecha){
   c.estado = 'confirmado'; c.confirmado_en = fecha || new Date().toISOString(); c.fecha_cambio = c.fecha_cambio || c.confirmado_en; c.aviso = null;
-  c.comision = ['migracion', 'ambos'].includes(c.tipo) && c.lider_id ? 'si' : 'no'; if(c.comision === 'si') c.instalacion_id = 5000 + c.id;
+  c.comision = ['migracion', 'ambos'].includes(c.tipo) && c.lider_id ? 'por_decidir' : 'no';   // lote 16/11 B: lo decide el administrador o la Senior
   c.bitacora.push({ accion: 'cambio_confirmado', en: new Date().toISOString(), por: null });
 }
 // Lote 22/10: gestiones inventadas (una con dos clientes de Lucía)
@@ -358,11 +358,11 @@ function requisitosCambio(m, c){
   if(c.tipo === 'residencial') return [];
   const cid = c.tipo === 'migracion' ? c.cliente_id : c.nuevo && c.nuevo.cliente_id; const cli = m.datos.clientes.find((x) => x.id === cid); if(!cli) return [];
   const est = (cas, num) => { const d = (cli.documentos || []).find((x) => x.casilla === cas && x.numero === num && (x.archivos || []).length); return d ? d.estado : 'falta'; };
-  const sufijo = c.tipo === 'migracion' ? '' : ' del nuevo titular';
-  let r = [];   // lote 16/11 A: la planilla es obligatoria para hacer el cambio pero no entra en la revisión
-  r = r.concat(cli.es_natural ? [['cedula', 1, 'Cédula' + sufijo], ['rif_personal', 1, 'RIF personal' + sufijo]] : [['cedula', 1, 'Cédula' + sufijo], ['rif_personal', 1, 'RIF personal' + sufijo], ['rif_empresa', 0, 'RIF de la empresa' + sufijo], ['acta_constitutiva', 0, 'Acta constitutiva' + sufijo]]);
-  return r.map((x) => ({ cliente_id: cid, casilla: x[0], numero: x[1], texto: x[2], estado: est(x[0], x[1]) }));
+  // Lote 16/11 B: el orden y los nombres de la maqueta; persona natural: RIF y cédula, opcionales
+  const r = cli.es_natural ? [['rif_personal', 1, 'RIF'], ['cedula', 1, 'Cédula']] : [['rif_empresa', 0, 'RIF de la empresa'], ['acta_constitutiva', 0, 'Acta constitutiva'], ['cedula', 1, 'Cédula del representante legal'], ['rif_personal', 1, 'RIF del representante legal']];
+  return r.map((x) => ({ cliente_id: cid, casilla: x[0], numero: x[1], texto: x[2], opcional: !!cli.es_natural, estado: est(x[0], x[1]) }));
 }
+const faltanCambio = (m, c) => requisitosCambio(m, c).filter((r) => ['falta', 'devuelto'].includes(r.estado) && !r.opcional).length;
 function puedeHecho(m, yo, c){
   if(c.estado !== 'por_emitir') return false; if(yo.rol === 'admin') return true; if(yo.rol !== 'analista') return false;
   const l = m.personas.find((p) => p.id === c.lider_id); return !!yo.senior || !!yo.coordinador || !l || !l.analista_id || l.analista_id === yo.id;
@@ -378,11 +378,13 @@ function cambioJson(m, c, yo){
   const req = requisitosCambio(m, c); const d = cambioDueno(m, c); const pd = m.personas.find((p) => p.id === d);
   return Object.assign({}, c, { requisitos: undefined, puedo_hecho: !!yo && puedeHecho(m, yo, c), borrador: !!c.borrador, dueno_id: d, dueno: pd ? pd.nombre : c.lider || null, analista_id: pd ? pd.analista_id || null : null,
     sugerido: c.sugerido_id ? (m.personas.find((p) => p.id === c.sugerido_id) || {}).nombre : null, corte_cambio: c.fecha_cambio ? corteDe(String(c.fecha_cambio).slice(0, 10)) : null,
-    docs: { total: req.length, aprobados: req.filter((r) => r.estado === 'aprobado').length, faltan: req.filter((r) => r.estado === 'falta' || r.estado === 'devuelto').length } });
+    natural: !!((m.datos.clientes.find((x) => x.id === (c.tipo === 'migracion' || !c.nuevo ? c.cliente_id : c.nuevo.cliente_id)) || {}).es_natural),
+    docs: { total: req.length, aprobados: req.filter((r) => r.estado === 'aprobado').length, faltan: req.filter((r) => (r.estado === 'falta' || r.estado === 'devuelto') && !r.opcional).length } });
 }
 function avanzarCambio(m, c, yo){
   if(c.estado !== 'por_revisar' || c.borrador) return;
-  if(requisitosCambio(m, c).some((r) => r.estado !== 'aprobado')) return;
+  const rq = requisitosCambio(m, c);
+  if(rq.length && (rq.some((r) => !r.opcional && r.estado !== 'aprobado') || rq.some((r) => r.opcional && !['aprobado', 'falta'].includes(r.estado)) || !rq.some((r) => r.estado === 'aprobado'))) return;
   c.estado = 'por_emitir'; c.bitacora.push({ accion: 'cambio_docs_aprobados', en: new Date().toISOString(), por: yo ? yo.nombre : null });
   if(c.fecha_cambio && c.tipo !== 'titularidad') confirmarCambio(m, c, c.fecha_cambio);   // ya estaba hecha: salta el paso del analista
 }
@@ -686,8 +688,9 @@ const RPC = {
       .filter((c) => yo.rol !== 'lider' || cambioDueno(m, c) === yo.id || c.creado_por_id === yo.id)
       .map((c) => { const d = cambioDueno(m, c); return { id: c.id, estado: c.estado, borrador: !!c.borrador, tipo: c.tipo, comision: c.comision || null, fecha: c.fecha_cambio || c.creado_en, titular: c.titular.nombre, doc_tipo: c.titular.tipo, doc: c.titular.doc, servicios: c.servicios,
         categoria_anterior: c.categoria_anterior, categoria_nueva: c.categoria_nueva, cliente_id: c.cliente_id, lider: d ? (m.personas.find((p) => p.id === d) || {}).nombre : null, lider_id: d, equipo: eq(d),
-        faltan: requisitosCambio(m, c).filter((r) => ['falta', 'devuelto'].includes(r.estado)).length }; });
-    return { corte: enCurso(), ahora: new Date().toISOString(), ordenes, migraciones }; },
+        natural: !!((m.datos.clientes.find((x) => x.id === c.cliente_id) || {}).es_natural), reporte: c.reporte || null, instalacion_id: c.instalacion_id || null, faltan: faltanCambio(m, c) }; });
+    const devueltos = (m.datos.devueltos || []).filter((v) => yo.rol !== 'lider' || v.lider_id === yo.id).map((v) => Object.assign({ equipo: eq(v.lider_id) }, v));
+    return { corte: enCurso(), ahora: new Date().toISOString(), ordenes, migraciones, devueltos }; },
   orden_es_cliente(m, yo, a){
     if(!['admin', 'analista', 'lider'].includes(yo.rol)) return error('No tienes permiso para hacer esto');
     const i = (m.datos.sueltas || []).findIndex((o) => o.id === Number(a.p_orden)); if(i < 0) return error('Esa orden ya tiene cliente');
@@ -1108,7 +1111,7 @@ const RPC = {
     else k.filas.push(c);
     if(!c.borrador) avanzarCambio(m, c, yo); return c.id; },
   cambio_enviar(m, yo, a){ const k = m.datos.cambiosK || { filas: [] }; const c = k.filas.find((x) => x.id === Number(a.p_id)); if(!c || !cambioVer(m, yo, c)) return error('No encontré ese cambio');
-    if(!c.borrador) return error('Esa solicitud ya se envió'); const f = requisitosCambio(m, c).filter((r) => r.estado === 'falta').length;
+    if(!c.borrador) return error('Esa solicitud ya se envió'); const f = faltanCambio(m, c);
     if(f) return error(f === 1 ? 'Falta 1 documento por subir' : 'Faltan ' + f + ' documentos por subir');
     c.borrador = false; c.bitacora.push({ accion: 'cambio_enviado', en: new Date().toISOString(), por: yo.nombre }); avanzarCambio(m, c, yo); return cambioJson(m, c, yo); },
   cambio_recordar(m, yo, a){ if(!['admin', 'analista'].includes(yo.rol)) return error('No tienes permiso para hacer esto'); const k = m.datos.cambiosK || { filas: [] }; let lid = a.p_lider || null;
@@ -1133,7 +1136,7 @@ const RPC = {
   cambio_accion(m, yo, a){ const c = ((m.datos.cambiosK || {}).filas || []).find((x) => x.id === Number(a.p_id)); if(!c) return error('No encontré ese cambio');
     const ac = a.p_accion; const sen = esSenior(yo);
     if(ac === 'hecho'){ if(c.estado !== 'por_emitir') return error('Ese cambio no está por emitir'); if(!puedeHecho(m, yo, c)) return error('Lo marca el analista del líder o el coordinador'); c.estado = 'por_confirmar'; c.emitido_en = new Date().toISOString(); c.emitido_por = yo.nombre; }
-    else if(ac === 'pasar'){ if(yo.rol !== 'admin') return error('Solo el administrador'); if(!a.p_nota) return error('Escribe por qué pasa sin todos los documentos aprobados'); c.estado = 'por_emitir'; }
+    else if(ac === 'pasar'){ if(yo.rol !== 'admin') return error('Solo el administrador'); if(!a.p_nota && faltanCambio(m, c)) return error('Escribe por qué pasa sin todos los documentos aprobados'); c.estado = 'por_emitir'; if(c.fecha_cambio && c.tipo !== 'titularidad') confirmarCambio(m, c, c.fecha_cambio); }
     else if(ac === 'cancelar'){ if(!['por_revisar', 'por_emitir'].includes(c.estado)) return error('Ya no se puede cancelar'); c.estado = 'cancelado'; }
     else if(ac === 'confirmar'){ if(!sen) return error('Solo el administrador o el Analista Senior'); if(!a.p_nota) return error('Escribe por qué se confirma a mano'); confirmarCambio(m, c); }
     else if(['asignar', 'error', 'revertido'].includes(ac)){ if(!sen) return error('Solo el administrador o el Analista Senior'); if(c.estado !== 'sin_registro') return error('Ese cambio ya no está sin registro');
@@ -1167,7 +1170,17 @@ const RPC = {
       if(ap) r.sin_registrar++; r.nuevas++; });
     k.archivo = { en: new Date().toISOString(), filas: r.a_pyme + r.residencial }; if(r.hasta && (!k.hasta || r.hasta > k.hasta)) k.hasta = r.hasta;
     m.llamadas.push(['cambios_reporte', r]); return Object.assign({ con_fecha: r.registradas, ignoradas: r.descartadas + r.repetidas }, r); },
-  cambio_comision(){ return error('Las migraciones ya no se deciden a mano: comisionan solas con Legal y pago'); },
+  cambio_comision(m, yo, a){ if(!esSenior(yo)) return error('La deciden el administrador o la Senior'); const c = ((m.datos.cambiosK || {}).filas || []).find((x) => x.id === Number(a.p_id)); if(!c) return error('No encontré ese cambio');
+    if(c.origen === 'historico') return error('El histórico no se toca'); if(c.estado !== 'confirmado' || !['migracion', 'ambos'].includes(c.tipo)) return error('Solo se decide una migración confirmada');
+    if(String(a.p_motivo || '').trim().length < 4) return error('Escribe el motivo');
+    c.comision = a.p_si ? 'si' : 'no'; c.comision_motivo = String(a.p_motivo).trim(); if(a.p_si) c.instalacion_id = 5000 + c.id;
+    c.bitacora.push({ accion: 'cambio_comision', en: new Date().toISOString(), por: yo.nombre }); (m.bitacora = m.bitacora || []).push({ accion: 'cambio_comision', cambio: c.id, si: !!a.p_si }); return null; },
+  // Lote 16/11 B: ¿ya existe un cliente con ese nombre? (sin C.A., CA, puntos ni comas). Al aliado no se le dice cuál.
+  clientes_parecidos(m, yo, a){ const lim = (t) => String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9 ]/g, ' ').replace(/\b(compania anonima|c a|ca|s a|sa|srl)\b/g, ' ').replace(/\s+/g, ' ').trim();
+    const n = lim(a.p_nombre); if(n.length < 4) return { posible: false, clientes: [] }; const d = String(a.p_doc || '').replace(/\D/g, '').replace(/^0+/, '');
+    const l = m.datos.clientes.filter((c) => !c.unido_a && !c.provisional && lim(c.nombre) === n && (!d || String(c.doc_numero).replace(/^0+/, '') !== d)).slice(0, 3);
+    if(yo.rol === 'aliado'){ if(l.length && a.p_sol) (m.bitacora = m.bitacora || []).push({ accion: 'posible_duplicado', sol: a.p_sol }); return { posible: !!l.length }; }
+    return { posible: !!l.length, clientes: l.map((c) => (yo.rol !== 'lider' || c.lider_id === yo.id ? { id: c.id, nombre: c.nombre, doc: c.doc_tipo + '-' + c.doc_numero, ver: true } : { ver: false })) }; },
   migraciones_corte(m, yo, a){ return { corte: a.p_corte, residencial: (m.datos.migCorte || {}).residencial || [], historico: (m.datos.migCorte || {}).historico || [] }; },
   subidas_ultimas(m){ const k = m.datos.cambiosK || {}; return { tad: null, odoo: null, instalaciones: null, indice: k.vigente ? k.cargas[k.vigente - 1].en : null, cambios: k.archivo ? k.archivo.en : null, ip: m.datos.ipEn || null }; },
   // Lote 22/10: reporte "Clientes Empresariales" (la lógica real se prueba en la base; aquí solo lo que ve la pantalla)

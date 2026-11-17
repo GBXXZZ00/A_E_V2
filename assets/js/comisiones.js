@@ -100,6 +100,7 @@
     const ok = (x) => { const q = x.equipo || 'corporativas'; return e === 'todos' ? equiposVisibles().some((v) => v[0] === q) && q !== 'aliados' : e !== 'aliados' && deEquipo({ equipo: q }, e); };
     const cod = (m) => { const s0 = (m.servicios || [])[0] || {}; return s0.codigo ? String(s0.codigo).replace(/^0+/, '') : ''; };
     return (BLQ.ordenes || []).filter(ok).map((o) => ({ blk: 'orden', o, lider: o.lider || 'Por asignar', equipo: o.equipo || 'corporativas', nombre: o.provisional ? 'Cliente provisional · ' + (o.cliente || '') : o.cliente, doc: o.rif || '', orden: o.numero, instalada_en: o.inicio || o.creada_en, cliente_id: o.cliente_id }))
+      .concat((BLQ.devueltos || []).filter(ok).map((v) => ({ blk: 'dev', v, lider: v.lider || 'Por asignar', equipo: v.equipo || 'corporativas', nombre: v.nombre, doc: v.doc || '', codigo: v.codigo, sucursal: v.sucursal, instalada_en: v.instalada_en, cliente_id: v.cliente_id })))
       .concat((BLQ.migraciones || []).filter(ok).map((m) => ({ blk: 'mig', m, lider: m.lider || 'Por asignar', equipo: m.equipo || 'corporativas', nombre: m.titular, doc: m.doc ? window.Comun.docFmt(m.doc_tipo || '', m.doc) : '', codigo: cod(m), sucursal: ((m.servicios || [])[0] || {}).sucursal, instalada_en: m.fecha, cliente_id: m.cliente_id })));
   }
   const baseEq = (e, sinPersona, sinFechas) => filasInst(e).concat(pendInst(e)).concat(blkInst(e)).filter((f) => pasaExtra(f, sinPersona, sinFechas));
@@ -107,7 +108,7 @@
   const todasCorte = () => d.filas.concat(d.aliados || []);
   const porAsignar = () => (d ? Number(conteo('asignar')) || 0 : 0);
   function pasa(f){
-    if(f.blk) return filtro === 'todos' || (filtro === 'porinst' && f.blk === 'orden') || (filtro === 'migraciones' && f.blk === 'mig');
+    if(f.blk) return filtro === 'todos' || (filtro === 'porinst' && f.blk === 'orden') || (filtro === 'migraciones' && f.blk === 'mig');   // 'dev' solo en Todas
     if(filtro === 'porinst') return !!f.pend;
     if(f.pend) return filtro === 'todos' || filtro === 'pendientes';
     if(filtro === 'pendientes') return false;
@@ -322,7 +323,8 @@
     if(!f.pend){
       if(f.equipo === 'aliados') et.push(['morado', 'Aliado · ' + aliadoDe(f)]);
       if(f.migracion) et.push(['azul', 'Migración']);
-      if(f.origen === 'anterior' && !f.cumple) et.push(['rojo', 'Del corte anterior']);   // lote 16/11 A: van dentro de Instaladas
+      if(f.origen === 'anterior' && !f.cumple) et.push(['rojo', 'Del corte anterior']);
+      if(f.es_natural && d && d.corte >= '2026-11-01') et.push(['', 'Persona natural · no amerita documentos']);   // lote 16/11 B: el legal no le frena la comisión
       if(!f.lider && !f.dueno) et.push(['ambar', 'Falta elegir dueño']);
       if(!f.orden_ok && f.motivo) et.push([/parec/i.test(f.motivo) ? 'azul' : '', f.motivo]);
       if(f.movida) et.push(['ambar', 'Movida a mano']);
@@ -348,9 +350,19 @@
         '<span class="cx-lf-p"><span class="cx-bt' + (dd >= 4 ? ' tx-rojo' : '') + '">' + esc(lleva) + '</span></span>' +
         '<span class="cx-lf-k"><span class="chip ' + ch[0] + '">' + esc(ch[1]) + '</span></span>' + ic('derecha') + '</button>';
     }
+    if(f.blk === 'dev'){
+      const v = f.v; const ch = v.etiqueta === 'devuelto' ? ['rojo', 'Devuelto'] : ['ambar', 'Cobró con excepción'];
+      return '<button type="button" class="cx-lf cx-tg cx-fila2" data-dev-blk="' + esc(v.cliente_id) + '" aria-label="' + esc((f.nombre || 'Cliente') + '. Toca para ver sus documentos') + '"><span class="cx-lf-f"><b>' + esc(capital(mes(v.corte + 'T12:00:00Z'))) + '</b><small>corte certificado</small></span>' +
+        '<span class="cx-lf-c"><b>' + esc(f.nombre || 'Sin nombre') + '</b><small>' + esc([f.doc, [f.sucursal, f.codigo ? String(f.codigo).replace(/^0+/, '') : ''].filter(Boolean).join('-')].filter(Boolean).join(' · ')) + '</small></span>' +
+        '<span class="cx-lf-' + (porFecha ? 'd' : 'o') + '"></span><span class="cx-lf-p"><span class="cx-bt">Faltan documentos · no suma ni resta</span></span>' +
+        '<span class="cx-lf-k"><span class="chip ' + ch[0] + '">' + esc(ch[1]) + '</span></span>' + ic('derecha') + '</button>';
+    }
     const m = f.m; const sr = m.estado === 'sin_registro';
     const est = sr ? 'Migración sin registrar' : m.estado === 'confirmado' ? 'Migración confirmada' : m.borrador ? 'Solicitud sin enviar' : m.estado === 'por_revisar' ? 'Migración registrada' : m.estado === 'por_emitir' ? 'Migración por emitir' : 'Migración por confirmar';
-    const ch = sr || m.borrador || m.faltan ? ['ambar', 'Faltan documentos'] : m.estado === 'por_revisar' ? ['azul', 'Documentos por revisar'] : m.estado === 'confirmado' ? (m.comision ? (m.comision === 'si' ? ['verde', 'Comisiona'] : ['', 'No comisiona']) : ['azul', 'Comisión por decidir']) : ['', m.estado === 'por_emitir' ? 'La emite el analista' : 'Por confirmar'];
+    // Lote 16/11 B: "Faltan documentos" solo si de verdad falta algo; persona natural no amerita documentos
+    const docsCh = m.natural ? ['', 'Persona natural · no amerita documentos'] : m.faltan ? ['ambar', 'Faltan documentos'] : ['verde', 'Expediente completo · regístrala'];
+    const ch = sr || m.borrador ? docsCh : m.estado === 'por_revisar' ? (m.faltan ? ['ambar', 'Faltan documentos'] : ['azul', 'Documentos por revisar'])
+      : m.estado === 'confirmado' ? (m.comision === 'si' ? ['verde', 'Comisiona'] : m.comision === 'no' ? ['', 'No comisiona'] : ['azul', 'Comisión por decidir']) : ['', m.estado === 'por_emitir' ? 'La emite el analista' : 'Por confirmar'];
     const cat = (x) => String(x || '?').replace(/-.*$/, '');
     return '<button type="button" class="cx-lf cx-tg cx-fila2" data-mig-blk="' + esc(m.id) + '" aria-label="' + esc((f.nombre || 'Migración') + '. Toca para abrirla') + '"><span class="cx-lf-f"><b>' + esc(diaMes(m.fecha)) + '</b><small>' + esc(hace(m.fecha)) + '</small></span>' +
       '<span class="cx-lf-c"><b>' + esc(f.nombre || 'Sin nombre') + '</b><small>' + esc([f.doc, [f.sucursal, f.codigo].filter(Boolean).join('-')].filter(Boolean).join(' · ')) + '</small>' + (porFecha ? '<span class="cx-et"><span class="chip azul">Migración</span></span>' : '') + '</span>' +
@@ -358,13 +370,17 @@
       '<span class="cx-lf-p"><span class="cx-bt">' + esc(est) + '</span></span>' +
       '<span class="cx-lf-k"><span class="chip ' + ch[0] + '">' + esc(ch[1]) + '</span></span>' + ic('derecha') + '</button>';
   }
+  function plegarBlq(b){
+    const k = b.dataset.blq; const ab = b.getAttribute('aria-expanded') !== 'true'; plegSec[k] = ab; b.classList.toggle('abierto', ab); b.setAttribute('aria-expanded', String(ab));
+    const c = b.nextElementSibling; if(c && c.classList.contains('cx-blqc')) c.hidden = !ab;
+  }
   function plegarSec(b){
     const k = b.dataset.sec; plegSec[k] = !plegSec[k]; b.classList.toggle('plegada', plegSec[k]); b.setAttribute('aria-expanded', String(!plegSec[k]));
     const c = b.nextElementSibling; if(c && c.classList.contains('cx-secc')) c.hidden = plegSec[k];
   }
   document.addEventListener('keydown', (e) => { if((e.key === 'Enter' || e.key === ' ') && e.target && e.target.dataset && e.target.dataset.sec && e.target.closest('#lista')){ e.preventDefault(); plegarSec(e.target); } });
   async function cargarBloques(mio){
-    try { const r = await rpc('comisiones_bloques', {}); if(mio !== pedido) return; BLQ = r; cache.guardar('comisiones-bloques', r); if(d){ pintarFiltros(); pintarLista(); } }
+    try { const r = await rpc('comisiones_bloques', {}); if(mio !== pedido) return; BLQ = r; cache.guardar('comisiones-bloques', r); if(d) repintarQuieto(() => { pintarFiltros(); pintarLista(); }); }
     catch (e) { if(mio !== pedido) return; if(!BLQ) toast('No se pudieron cargar las órdenes y migraciones del líder. ' + e.message, 'error'); }
   }
   // Lote 10/11 D: "Lista por fecha": todo seguido, la instalación más nueva primero, con su dueño en una etiqueta
@@ -434,25 +450,24 @@
       : (nPorInst ? '<span class="p g">' + nPorInst + ' por instalar</span>' : '') + '<span class="p g">' + plural(inst.length, 'instalada', 'instaladas') + '</span><span class="p ok">' + inst.filter((f) => f.cumple).length + ' ' + (inst.filter((f) => f.cumple).length === 1 ? 'comisiona' : 'comisionan') + '</span>' +
         (inst.some((f) => !f.legal_ok) ? '<span class="p w">' + inst.filter((f) => !f.legal_ok).length + (inst.filter((f) => !f.legal_ok).length === 1 ? ' falta Legal' : ' faltan Legal') + '</span>' : '') +
         (inst.some(cartaPend) ? '<span class="p w">' + inst.filter(cartaPend).length + ' por enviar</span>' : '');
-    const base = filas.filter((f) => !f.blk && !f.pend && !f.migracion); const todo = completos[k] || base.length <= TOPE; const ver = todo ? base : base.slice(0, TOPE);
+    const base = filas.filter((f) => !f.blk && !f.pend); const todo = completos[k] || base.length <= TOPE; const ver = todo ? base : base.slice(0, TOPE);
     // Lote 05/11 E1: dentro de cada dueño, lo del corte anterior que se pierde (rojo), lo de este corte y lo que ya cumplió (verde)
     let cuerpo;
     if(cartas) cuerpo = ver.map(filaCarta).join('');
     else {
       const lim = d && d.limite ? diaMes(d.limite + 'T12:00:00') : '';
-      // Lote 16/11 A: cada sección se pliega tocando su título
-      const sec = (cls, t, l, id, der, fn) => { if(!l.length) return ''; const kk = k + '|' + id; const pl = !!plegSec[kk];
-        return '<div class="cx-sec cx-secb ' + cls + (pl ? ' plegada' : '') + '" role="button" tabindex="0" data-sec="' + esc(kk) + '" aria-expanded="' + !pl + '">' + esc(t) + ' · ' + l.length + (der ? '<span class="cx-sec-d">' + der + '</span>' : '') + '</div>' +
-          '<div class="cx-secc"' + (pl ? ' hidden' : '') + '>' + l.map(fn || filaTabla).join('') + '</div>'; };
-      // Las del corte anterior que todavía no cumplen van dentro de Instaladas, primero, con su aviso
+      const sec = (cls, t, l) => l.length ? '<div class="cx-sec ' + cls + '">' + esc(t) + ' · ' + l.length + '</div>' + l.map(filaTabla).join('') : '';
       const ant = ver.filter((f) => f.origen === 'anterior' && !f.cumple); const est = ver.filter((f) => f.origen !== 'anterior' && !f.cumple);
-      const migs = filas.filter((f) => f.blk === 'mig').concat(filas.filter((f) => !f.blk && f.migracion));
-      const corto = window.matchMedia && window.matchMedia('(max-width: 700px)').matches;
-      cuerpo = '<div class="cx-lf cx-lf-cab cx-tg" aria-hidden="true"><span>Instalado</span><span>Cliente</span><span>Orden</span><span>Legal · Pago · Orden</span><span>Carta</span><span></span></div>' +
-        sec('am', 'Por instalar · órdenes de hasta 5 días', ords, 'pi', esc(corto ? 'Más de 5 días: en Por instalar' : 'Las de más de 5 días están en Por instalar'), (f) => filaBlk(f)) +
-        sec('az', 'Migraciones', migs, 'mig', 'Ya hechas en el sistema', (f) => f.blk ? filaBlk(f) : filaTabla(f)) +
-        sec(ant.length ? '' : '', ant.length ? 'Instaladas' : 'Instaladas en este corte', ant.concat(est), 'inst', ant.length ? esc((ant.length === 1 ? '1 del corte anterior' : ant.length + ' del corte anterior') + ': si no cumplen al ' + lim + ' se pierden') : '') +
-        sec('verde', 'Cumplieron', ver.filter((f) => f.cumple), 'ok') + sec('gris', 'Por instalar', pends, 'pend');
+      // Lote 16/11 B: bloques de trabajo (no suman): una línea delgada con su número, cerrada; se abre al tocarla. Con su filtro, solo ese bloque abierto.
+      const blq = (cls, id, t, l, fn) => { if(!l.length) return ''; const kk = k + '|' + id;
+        const ab = filtro === 'porinst' ? id === 'pi' : filtro === 'migraciones' ? id === 'mig' : !!plegSec[kk];
+        return '<button type="button" class="cx-blq ' + cls + (ab ? ' abierto' : '') + '" data-blq="' + esc(kk) + '" aria-expanded="' + ab + '"><span class="cx-blq-f" aria-hidden="true">▸</span>' + esc(t) + ' · ' + l.length + '</button>' +
+          '<div class="cx-blqc"' + (ab ? '' : ' hidden') + '>' + l.map(fn).join('') + '</div>'; };
+      const migs = filas.filter((f) => f.blk === 'mig'); const devs = filas.filter((f) => f.blk === 'dev');
+      cuerpo = blq('am', 'pi', 'Por instalar', ords.concat(pends), (f) => f.blk ? filaBlk(f) : filaTabla(f)) +
+        '<div class="cx-lf cx-lf-cab cx-tg" aria-hidden="true"><span>Instalado</span><span>Cliente</span><span>Orden</span><span>Legal · Pago · Orden</span><span>Carta</span><span></span></div>' + sec('rojo', (d && d.corte ? 'Corte de ' + mes(menosMeses(d.corte, 1) + 'T12:00:00Z') : 'Corte anterior') + ': si no cumplen al ' + lim + ' se pierden', ant) + sec('', 'Instaladas en este corte', est) +
+        sec('verde', 'Cumplieron', ver.filter((f) => f.cumple)) +
+        blq('az', 'mig', 'Migraciones', migs, (f) => filaBlk(f)) + blq('gr', 'dev', 'Meses anteriores · faltan documentos', devs, (f) => filaBlk(f));
     }
     cuerpo += todo || cartas ? '' : '<button type="button" class="fila mas" data-mas="' + esc(k) + '">Ver ' + (base.length - TOPE) + ' más</button>';
     // Lote 13/11 parte 9: "Enviar pendientes" va en la cabecera, al lado del nombre (fuera del botón que abre y cierra el grupo)
@@ -682,18 +697,13 @@
     let archivo = null;
     if(P.armado.conPdf){ try { archivo = pdfPendientes(); } catch (e) { er.textContent = 'No se pudo armar el PDF. Intenta de nuevo'; return; } }
     const num = P.datos.whatsapp;
-    if(archivo && puedeCompartir()){
-      if(num) try { await navigator.clipboard.writeText(window.Documentos.telFmt(num)); } catch (e) {}
-      try { await navigator.share({ files: [archivo], text: texto }); }
-      catch (e) { if(e && e.name === 'AbortError') return; er.textContent = 'No se pudo abrir Compartir. Intenta de nuevo'; return; }
-    } else {
-      if(archivo) window.Archivos.descargar(archivo, archivo.name);
-      window.open(num ? window.Comun.enlaceWa(num, texto) : 'https://wa.me/?text=' + encodeURIComponent(texto), '_blank', 'noopener');
-    }
+    // Lote 16/11 B: PC descarga el PDF y abre WhatsApp de escritorio (o wa.me); teléfono copia el mensaje y comparte
+    try { const r = await window.Comun.compartirWa({ numero: num, texto, archivos: archivo ? [archivo] : [] }); if(r === 'cancelado') return; }
+    catch (e) { er.textContent = e.message; return; }
     b.disabled = true;
     try { await rpc('pendientes_enviados', { p_lider: P.lider, p_pendientes: P.armado.pendientes, p_pdf: !!archivo }); }
     catch (e) { toast('Se abrió WhatsApp, pero no quedó anotado el envío: ' + e.message, 'error'); b.disabled = false; return; }
-    toast(archivo && !puedeCompartir() ? 'PDF descargado. Adjúntalo en el chat de WhatsApp. Quedó anotado el envío' : 'Quedó anotado el envío');
+    toast('Quedó anotado el envío');
     if(d){ d.pend_env = d.pend_env || { lideres: null, ultimos: {} }; d.pend_env.ultimos = d.pend_env.ultimos || {}; d.pend_env.ultimos[P.lider] = { en: new Date().toISOString(), por: yo && yo.nombre }; if($('lista')) pintarLista(); }
     if(hojaAbierta() === 'hojaPend') cerrarHoja();
   }
@@ -745,10 +755,13 @@
     h.addEventListener('hoja-cerrada', () => { K = null; profAbierto = false; if(SOLO && alCerrarSolo){ const f = alCerrarSolo; setTimeout(f, 0); } });
     h.addEventListener('toggle', (e) => { if(e.target.classList && e.target.classList.contains('prof')) profAbierto = e.target.open; }, true);
   }
-  function abrirComision(inst, cliente, carta){
+  function abrirComision(inst, cliente, carta, mig){
     montarHoja();
-    const f = !d ? {} : d.filas.concat(d.aliados || []).find((x) => String(x.instalacion_id) === String(inst)) || (d.eventos || []).find((x) => String(x.instalacion_id) === String(inst)) || {};
-    K = { inst: Number(inst), cliente: Number(cliente), F: null, carta: !!carta }; profAbierto = false;
+    let f = !d ? {} : d.filas.concat(d.aliados || []).find((x) => String(x.instalacion_id) === String(inst)) || (d.eventos || []).find((x) => String(x.instalacion_id) === String(inst)) || {};
+    // Lote 16/11 B: una migración abre esta misma hoja (con su línea arriba); sin instalación, la hoja es la del cliente
+    if(mig && !f.nombre) f = { nombre: mig.titular, sucursal: ((mig.servicios || [])[0] || {}).sucursal, codigo: String(((mig.servicios || [])[0] || {}).codigo || '').replace(/^0+/, '') };
+    K = { inst: Number(inst) || 0, cliente: Number(cliente), F: null, carta: !!carta, mig: mig || null, decidir: false }; profAbierto = false;
+    if(!mig && f.cambio_id) cargarMigLinea(K, f.cambio_id);
     $('cabCom').innerHTML = '<div class="f-cab"><div class="tx"><h2 class="nom" id="tCom">' + esc(f.nombre || 'Cliente') + '</h2><p class="dat">' + esc([f.sucursal && f.codigo ? f.sucursal + '-' + f.codigo : f.codigo, f.instalada_en ? 'Instalado el ' + fecha(f.instalada_en) : ''].filter(Boolean).join(' · ')) + '</p></div>' +
       '<button type="button" class="cerrar" data-cierra="1" aria-label="Cerrar">' + ic('x') + '</button></div>' +
       // Lote A: contactar a quien tiene lo que falta para comisionar
@@ -758,6 +771,69 @@
     $('cuerpoCom').innerHTML = '<div class="sk-bloque"><span class="sk" style="height:64px;border-radius:16px"></span><span class="sk" style="height:150px;border-radius:16px"></span><span class="sk" style="height:90px;border-radius:16px"></span></div>';
     if(hojaAbierta() !== 'hojaComision') abrirHoja('hojaComision'); else $('cuerpoCom').scrollTop = 0;
     cargarComision();
+  }
+  // ---------- Lote 16/11 B: la migración en la hoja de comisión ----------
+  function abrirMigracion(id){
+    const m = ((BLQ && BLQ.migraciones) || []).find((x) => x.id === id); if(!m) return;
+    abrirComision(m.instalacion_id || 0, m.cliente_id, false, m);
+  }
+  // Una instalación que nació de una migración (confirmada y con "Sí") también lleva la línea de la migración
+  async function cargarMigLinea(k0, idCambio){
+    try { const c = await rpc('cambio_detalle', { p_id: idCambio }); if(K !== k0) return;
+      K.mig = { id: c.id, estado: c.estado, borrador: c.borrador, comision: c.comision, fecha: c.fecha_cambio || c.creado_en, titular: (c.titular || {}).nombre, categoria_anterior: c.categoria_anterior,
+        categoria_nueva: c.categoria_nueva, cliente_id: c.cliente_id, natural: c.natural, faltan: (c.docs || {}).faltan || 0, servicios: c.servicios, tipo: c.tipo, reporte: c.reporte, doc: (c.titular || {}).doc, doc_tipo: (c.titular || {}).tipo };
+      if(K.F) pintarComision(); } catch (e) { /* Legal no ve el detalle de la migración: la hoja sigue igual */ }
+  }
+  function estadoMig(m){
+    if(m.estado === 'sin_registro') return 'Sin registrar' + (m.natural ? ' · persona natural, no amerita documentos' : m.faltan ? ' · faltan documentos' : ' · expediente completo');
+    if(m.estado === 'por_revisar') return m.borrador ? 'Solicitud sin enviar' : m.faltan ? 'Registrada · faltan documentos' : 'Documentos por revisar';
+    if(m.estado === 'por_emitir') return 'Aprobada · la emite el analista';
+    if(m.estado === 'por_confirmar') return 'Hecha en el sistema · por confirmar';
+    if(m.estado === 'confirmado') return m.comision === 'si' ? 'Confirmada · comisiona' : m.comision === 'no' ? 'Confirmada · no comisiona' : 'Confirmada · comisión por decidir';
+    return m.estado;
+  }
+  function botonMig(m){
+    const P = (d && d.puedo) || {}; if(yo && yo.soloLectura) return null;
+    if(esLider() && m.estado === 'sin_registro') return ['registrar', 'Registrar'];
+    if(esLider() && m.estado === 'por_revisar' && m.borrador) return ['seguir', 'Seguir'];
+    if(yo && yo.rol === 'admin' && m.estado === 'por_revisar' && !m.borrador && !m.faltan) return ['revisar', 'Revisar'];
+    if(yo && (yo.rol === 'admin' || yo.senior) && m.estado === 'confirmado' && m.comision === 'por_decidir') return ['decidir', 'Decidir'];
+    return null;
+  }
+  function lineaMig(){
+    const m = K.mig; const b = botonMig(m);
+    let h = '<div class="hc-mig"><span class="tx"><b>Migración · ' + esc((m.categoria_anterior || '?') + ' → ' + (m.categoria_nueva || '?')) + '</b><small>' + esc(diaMes(m.fecha) + ' · ' + estadoMig(m)) + '</small></span>' +
+      (b ? '<button type="button" class="hc-b ch" data-hcmig="' + b[0] + '">' + esc(b[1]) + '</button>' : '') + '</div>';
+    if(K.decidir) h += '<div class="hc-dec"><label class="rotulo" for="hcMigMot">Motivo</label><textarea class="area corta" id="hcMigMot" maxlength="500"></textarea><div class="error" id="eHcMig" role="alert"></div>' +
+      '<div class="hc-tres dos"><button type="button" class="hc-b s ch" data-hcmig="no">No comisiona</button><button type="button" class="hc-b ch" data-hcmig="si">Sí comisiona</button></div></div>';
+    return h;
+  }
+  function pintarMigSinInst(){
+    const F = K.F; const c = F.cliente || {};
+    $('cuerpoCom').innerHTML = lineaMig() +
+      '<div class="hc-res gris"><b>Migración: todavía no comisiona</b><small>Comisiona cuando esté confirmada y se decida "Sí". Mientras tanto se trabaja el expediente.</small></div>' +
+      (c.es_natural ? '<p class="hc-nat">Persona natural · no amerita documentos: el legal no le frena la comisión.</p>' : '') +
+      bloqueLegal(F) + '<p class="nota-chica hc-nota">Pago, bienvenida y proforma, y ajustes se activan cuando la migración esté confirmada y decidida "Sí".</p>';
+  }
+  async function accionMig(b, a){
+    const m = K && K.mig; if(!m) return;
+    const despues = () => { const n = ++pedido; cargarBloques(n); if(K) cargarComision(); };
+    if(a === 'registrar' || a === 'seguir'){
+      if(!window.Migracion){ location.href = 'migraciones.html?c=' + m.id; return; }
+      window.Migracion.usar(yo); cerrarHoja();
+      const c = { id: m.id, tipo: m.tipo || 'migracion', servicios: m.servicios || [], titular: { nombre: m.titular, tipo: m.doc_tipo, doc: m.doc }, reporte: m.reporte, categoria_anterior: m.categoria_anterior, categoria_nueva: m.categoria_nueva };
+      // La solicitud se abre cuando la hoja ya se cerró (su "Atrás" no debe cerrarla)
+      setTimeout(() => { if(a === 'registrar') window.Migracion.registrar(c, { alCerrar: tras }); else window.Migracion.seguir(c, { alCerrar: tras }); }, 420); return;
+    }
+    if(a === 'revisar'){ window.Ficha.abrir(m.cliente_id, { yo, tab: 'documentos', revisar: true, alCerrar: despues }); return; }
+    if(a === 'decidir'){ K.decidir = !K.decidir; pintarComision(); const x = $('hcMigMot'); if(x) x.focus(); return; }
+    if(a === 'si' || a === 'no'){
+      const mot = ($('hcMigMot').value || '').trim(); const er = $('eHcMig'); er.textContent = '';
+      if(mot.length < 4){ er.textContent = 'Escribe el motivo'; $('hcMigMot').focus(); return; }
+      const t0 = b.textContent; b.disabled = true; b.textContent = 'Guardando…';
+      try { await rpc('cambio_comision', { p_id: m.id, p_si: a === 'si', p_motivo: mot }); toast(a === 'si' ? 'Comisiona: entra al corte' : 'Quedó sin comisión'); K.decidir = false; m.comision = a === 'si' ? 'si' : 'no'; tras(); }
+      catch (e) { er.textContent = e.message; b.disabled = false; b.textContent = t0; }
+    }
   }
   async function cargarComision(){
     if(!K) return; const mia = K;
@@ -939,6 +1015,7 @@
     return plegable('corte', 'Corte y comisión', est[0], est[1], cab + h, '', 'info');
   }
   function pintarComision(){
+    if(K.mig && !K.inst){ pintarMigSinInst(); return; }
     const F = K.F; const c = F.cliente; const i = (F.comision || []).find((x) => Number(x.id) === K.inst) || (F.comision || [])[0];
     const f = (d && d.filas.find((x) => Number(x.instalacion_id) === K.inst)) || {};
     const P = (d && d.puedo) || {}; const est = i ? i.estado : 'no_comisiona';
@@ -963,7 +1040,7 @@
     const subEst = pend && !sinAsignar ? (faltaTx.length ? 'Le falta ' + window.Comun.lista(faltaTx) + '.' : 'Tiene Legal, pago y orden de Odoo.') + (cartaFalta && F.puedo.enviar ? ' La carta está por enviar.' : '') : sub;
     const ctFalta = !oOk ? 'orden' : !lOk ? 'legal' : !pOk ? 'pago' : '';
     const ct = pend && faltaTx.length && window.Contacto && K.inst ? window.Contacto.boton('comision', K.inst, ctFalta, '', 'linea') : '';
-    let h = '<div class="hc-res ' + (ok ? 'ok' : ultimo || perdida || anulada ? 'mal' : !i || !i.comisiona ? 'gris' : 'pend') + '"><b>' + esc(tituloEstado) + '</b>' +
+    let h = (K.mig ? lineaMig() : '') + (c.es_natural && F.corte && F.corte.etiqueta >= '2026-11-01' ? '<p class="hc-nat">Persona natural · no amerita documentos: el legal no le frena la comisión.</p>' : '') + '<div class="hc-res ' + (ok ? 'ok' : ultimo || perdida || anulada ? 'mal' : !i || !i.comisiona ? 'gris' : 'pend') + '"><b>' + esc(tituloEstado) + '</b>' +
       '<small>' + esc(subEst) + '</small>' + ct + '</div>';
     // Lote 10/11 D10: todas las secciones cerradas al abrir (desde la lista de cartas, la carta abierta); siempre en el mismo orden
     if(!K.abInit){ K.abInit = true; K.ab = K.ab || {}; K.ab.carta = !!K.carta && cartaFalta; }
@@ -1229,7 +1306,19 @@
   }
   // Lo que se gestiona desde aquí abre el expediente encima; al cerrarlo se vuelve a esta hoja ya actualizada
   function alExpediente(o){ if(!K) return; window.Ficha.abrir(K.cliente, Object.assign({ yo, alCerrar: tras }, o || {})); }
-  function tras(){ cache.borrarTodo(); if(K) cargarComision(); cargar(); }
+  // Lote 16/11 B: después de guardar algo, sin saltos: se piden los datos en silencio y se repinta conservando el lugar,
+  // los líderes y bloques abiertos, el filtro y la hoja abierta (nada de esqueleto ni lista en blanco)
+  function tras(){ cache.borrarTodo(); if(K) cargarComision(); recargarQuieto(); }
+  async function recargarQuieto(){
+    if(SOLO) return cargarSolo();
+    const mio = ++pedido;
+    try {
+      const r = await rpc('comisiones_lista', { p_corte: corte || null }); if(mio !== pedido) return;
+      d = r; d.filas = d.filas || []; d.aliados = d.aliados || []; d.pendientes = d.pendientes || []; corte = d.corte; cache.guardar('comisiones4:' + (corte || 'actual'), d);
+      repintarQuieto(pintar); cargarMig(mio); cargarBloques(mio);
+    } catch (e) { if(mio === pedido) toast(e.message, 'error'); }
+  }
+  function repintarQuieto(fn){ const y = window.scrollY; const l = $('lista'); const h = l ? l.offsetHeight : 0; if(l) l.style.minHeight = h + 'px'; fn(); if(l) l.style.minHeight = ''; window.scrollTo(0, y); }
 
   const enHojaCom = (t) => !!(t && t.closest && t.closest('#hojaComision, .hoja-com'));
   document.addEventListener('click', (e) => {
@@ -1258,9 +1347,12 @@
     const ab = e.target.closest('[data-abrir]'); if(ab){ abrirExtra(ab.dataset.abrir); return; }
     const t = e.target; let b;
     // Lote 16/11 A: bloques del líder y secciones plegables
+    if((b = t.closest('[data-blq]'))){ plegarBlq(b); return; }
+    if((b = t.closest('[data-dev-blk]'))){ window.Ficha.abrir(Number(b.dataset.devBlk), { yo, tab: 'documentos', alCerrar: tras }); return; }
     if((b = t.closest('[data-sec]'))){ plegarSec(b); return; }
     if((b = t.closest('[data-orden-blk]'))){ if(window.PorInstalar && window.PorInstalar.orden) window.PorInstalar.orden(Number(b.dataset.ordenBlk), { yo, alCambiar: () => { const n = ++pedido; cargarBloques(n); } }); return; }
-    if((b = t.closest('[data-mig-blk]'))){ location.href = 'migraciones.html?c=' + encodeURIComponent(b.dataset.migBlk); return; }
+    if((b = t.closest('[data-mig-blk]'))){ abrirMigracion(Number(b.dataset.migBlk)); return; }
+    if((b = t.closest('[data-hcmig]'))){ accionMig(b, b.dataset.hcmig); return; }
     if((b = t.closest('[data-com]'))){ abrirComision(b.dataset.com, b.dataset.cliente, !!b.dataset.carta); return; }
     // Carta y proforma: un solo botón por WhatsApp, correo opcional y ver los PDF
     const iK = () => K && K.F && (K.F.comision || []).find((x) => Number(x.id) === K.inst);
@@ -1274,7 +1366,7 @@
     if(t.closest('#ipSug') && K && K.F){ abrirIp(false); return; }
     if(t.closest('#cartaTodavia') && K){ K.descNo = true; pintarComision(); return; }
     if(t.closest('#pagoNotaAbrir') && K){ K.notaPago = true; const z = $('pagoNotaZona'); if(z){ z.hidden = false; t.closest('#pagoNotaAbrir').hidden = true; $('pagoNota').focus(); } return; }
-    if(t.closest('#cartaPdfs') && iK()){ const sid = iK().servicio_id; window.Ficha.cartaPdf(K.F, sid, 'proforma'); if(((K.F.servicios || []).find((x) => Number(x.id) === Number(sid)) || {}).carta) setTimeout(() => window.Ficha.cartaPdf(K.F, sid, 'bienvenida'), 600);
+    if(t.closest('#cartaPdfs') && iK()){ const sid = iK().servicio_id; if(!window.Ficha.cartaDescargar(K.F, sid)) return;   // lote 16/11 B: las dos a la vez
       // Lote 10/11 D11: queda anotada la descarga (a las 2 horas, si no se marcó, llega el aviso) y se pregunta si se va a enviar por WhatsApp
       rpc('carta_descargada', { p_servicio: sid }).then(() => { cache.borrarTodo(); }).catch(() => {}); abrirDescargada(sid); return; }
     if(t.closest('#cartaMarcarYa') && iK()){ abrirMarcarCarta(); return; }

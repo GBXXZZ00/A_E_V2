@@ -90,7 +90,7 @@
     const h = hoja('hojaDedNuevo', 'tDedNuevo'); const esLider = o.yo && o.yo.rol === 'lider';
     h.innerHTML = cab('tDedNuevo', 'Registrar dedicado nuevo', 'Para adelantar documentos y contrato') + '<form id="formDedNuevo" novalidate>' +
       '<label class="rotulo" for="dnRif">RIF</label><input class="campo" id="dnRif" maxlength="14" autocomplete="off" inputmode="text" value="' + esc(o.rif || '') + '" data-foco><div class="error" id="eDnRif" role="alert"></div><p class="nota" id="dnRifNota" aria-live="polite"></p>' +
-      '<label class="rotulo arriba" for="dnNom">Razón social</label><input class="campo" id="dnNom" maxlength="200" autocomplete="off"><div class="error" id="eDnNom" role="alert"></div>' +
+      '<label class="rotulo arriba" for="dnNom">Razón social</label><input class="campo" id="dnNom" maxlength="200" autocomplete="off"><div class="error" id="eDnNom" role="alert"></div><div id="dnNomPar"></div>' +
       '<div class="rotulo arriba" id="dnTipoT">Tipo</div><div class="dp-modos" role="group" aria-labelledby="dnTipoT">' +
         '<button type="button" class="dp-modo' + (ctx.tipoDed === 'isp' ? ' on' : '') + '" data-dn-tipo="isp" aria-pressed="' + (ctx.tipoDed === 'isp') + '"><b>ISP</b></button>' +
         '<button type="button" class="dp-modo' + (ctx.tipoDed === 'corporativo' ? ' on' : '') + '" data-dn-tipo="corporativo" aria-pressed="' + (ctx.tipoDed === 'corporativo') + '"><b>Corporativo</b></button></div>' +
@@ -150,4 +150,9 @@
   });
 
   window.Gestion = { etiquetar, lider, suspender, registrarDedicado };
+  // Lote 16/11 B: al escribir la razón social, avisa si ya existe un cliente con el nombre casi igual
+  document.addEventListener('change', async (e) => {
+    if(!e.target || e.target.id !== 'dnNom') return;
+    const r = await window.Comun.buscarParecido(e.target.value, ($('dnRif') || {}).value || null); const z = $('dnNomPar'); if(z) z.innerHTML = window.Comun.parecidoHtml(r);
+  });
 })();

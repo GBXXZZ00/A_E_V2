@@ -15,6 +15,8 @@ async function entrarComo(ctx, u, c, eq){
 const FILAS = [{ s: '824', c: '777001', e: '48575443AAAA0001', t: 'J', d: 'J-41777001-2', n: 'Panaderia Inventada Uno', p: 'BRONCE-RES', ca: '1 GB', es: 'ACTIVO', di: 'Calle Falsa 1' }];
 // Migraciones de ejemplo: una sin registrar de Lucía (con el reporte) y una sin líder
 function sembrar(m){
+  const lu = m.personas.find((p) => p.usuario === 'lucia'); const cl = m.datos.clientes.find((c) => c.lider_id === lu.id);
+  m.datos.devueltos = [{ cliente_id: cl.id, nombre: cl.nombre, doc: cl.doc_tipo + '-' + cl.doc_numero, corte: '2026-10-01', instalada_en: '2026-10-05', codigo: '9910050', sucursal: '824', lider: lu.nombre, lider_id: lu.id, etiqueta: 'devuelto' }];
   const adm = m.personas.find((p) => p.rol === 'admin'); const k = RPC.tad_indice_iniciar(m, adm, { p_archivo: 'tad.csv', p_total: 1 }); RPC.tad_indice_parte(m, adm, { p_carga: k, p_filas: FILAS }); RPC.tad_indice_cerrar(m, adm, { p_carga: k });
   const lucia = m.personas.find((p) => p.usuario === 'lucia'); const hoy = new Date(); const f = (d) => new Date(hoy.getTime() - d * 86400000).toISOString();
   m.datos.cambiosK.filas.push(
@@ -32,26 +34,28 @@ function sembrar(m){
     const { ctx, mundo } = await contexto(nav, dispositivo); conCargos(mundo); sembrar(mundo); mundoAliados(mundo, mundo.personas.find((x) => x.usuario === 'redes'), mundo.personas.find((x) => x.usuario === 'canal'));
     // ----- Comisiones del administrador -----
     const p = await entrar(ctx, 'marcos', '482913'); cuida(p);
-    await p.goto(H + 'comisiones.html'); await p.waitForSelector('.cx-grupo .cx-sec.am', { state: 'attached' });
+    await p.goto(H + 'comisiones.html'); await p.waitForSelector('.cx-grupo .cx-blq.am', { state: 'attached' });
     const g = p.locator('.cx-grupo', { hasText: 'Lucía Ferrer' }).first();
     if(!(await g.evaluate((x) => x.classList.contains('abierto')))) await g.locator('.cx-ga').click();
-    ok(nombre + ': dentro de Lucía, el bloque ámbar Por instalar con sus órdenes de hasta 5 días', /Por instalar · órdenes de hasta 5 días · 1/.test(await g.textContent()) && (await g.locator('[data-orden-blk]').count()) === 1);
-    ok(nombre + ': la fila de la orden dice "Sin instalar · lleva" y el estado de documentos', /Sin instalar · lleva/.test(await g.locator('[data-orden-blk]').textContent()) && /Sin documentos/.test(await g.locator('[data-orden-blk]').textContent()));
-    ok(nombre + ': bloque azul Migraciones con la sin registrar (Faltan documentos)', /Migraciones · \d/.test(await g.textContent()) && /Migración sin registrar/.test(await g.textContent()) && (await g.locator('[data-mig-blk="801"]').count()) === 1);
-    ok(nombre + ': las filas nuevas usan las mismas clases de las filas actuales', (await g.locator('[data-orden-blk].cx-lf.cx-fila2').count()) === 1 && (await g.locator('[data-mig-blk].cx-lf.cx-fila2').count()) >= 1);
+    // Lote 16/11 B: "▸ Por instalar · N" es la primera línea del líder y viene cerrada; Migraciones y Meses anteriores al final, cerrados
+    const blPi = g.locator('.cx-blq.am'); const cuerpoG = g.locator('.grupo-cuerpo');
+    ok(nombre + ': la primera línea dentro del líder es "Por instalar · N", cerrada', /Por instalar · 1/.test(await blPi.textContent()) && (await blPi.getAttribute('aria-expanded')) === 'false' &&
+      (await cuerpoG.evaluate((x) => x.firstElementChild.classList.contains('cx-blq'))) && !(await g.locator('[data-orden-blk]').isVisible()));
+    await blPi.click();
+    ok(nombre + ': al tocarla se abre con la orden (Sin instalar · lleva y su estado de documentos)', (await g.locator('[data-orden-blk]').isVisible()) && /Sin instalar · lleva/.test(await g.locator('[data-orden-blk]').textContent()) && /Sin documentos/.test(await g.locator('[data-orden-blk]').textContent()));
+    await blPi.click();
+    ok(nombre + ': y se vuelve a cerrar', !(await g.locator('[data-orden-blk]').isVisible()));
+    const blMig = g.locator('.cx-blq.az');
+    ok(nombre + ': Migraciones al final y cerrado, con la sin registrar dentro', /Migraciones · \d/.test(await blMig.textContent()) && (await blMig.getAttribute('aria-expanded')) === 'false' && (await g.locator('[data-mig-blk="801"]').count()) === 1);
+    ok(nombre + ': "Meses anteriores · faltan documentos" al final, cerrado, con su etiqueta', /Meses anteriores · faltan documentos · 1/.test(await g.locator('.cx-blq.gr').textContent()) && /Devuelto/.test(await g.locator('[data-dev-blk]').textContent()));
+    ok(nombre + ': las filas de los bloques usan las clases de siempre', (await g.locator('[data-orden-blk].cx-lf.cx-fila2').count()) === 1 && (await g.locator('[data-mig-blk].cx-lf.cx-fila2').count()) >= 1);
     ok(nombre + ': la cabecera del líder cuenta las por instalar', /\d+ por instalar/.test(await g.locator('.stats').textContent()));
     const gr = p.locator('.cx-grupo', { hasText: 'Rosa Paredes' }).first(); if(!(await gr.evaluate((x) => x.classList.contains('abierto')))) await gr.locator('.cx-ga').click();
-    ok(nombre + ': las del corte anterior van dentro de Instaladas, primero, con su aviso y su etiqueta', /Instaladas · \d+/.test(await gr.textContent()) && /del corte anterior: si no cumplen al/.test(await gr.textContent()) && !/Corte de .*: si no cumplen/.test(await gr.textContent()) &&
-      /Del corte anterior/.test(await gr.locator('.cx-secb', { hasText: 'Instaladas' }).locator('xpath=following-sibling::div[1]').locator('.cx-fila2').first().textContent()));
-    ok(nombre + ': filtros nuevos Por instalar y Migraciones con número', /Por instalar\s*\d/.test(await p.textContent('#filtros [data-filtro="porinst"]')) && /Migraciones\s*\d/.test(await p.textContent('#filtros [data-filtro="migraciones"]')));
-    // Secciones plegables
-    const secPi = g.locator('.cx-secb', { hasText: 'Por instalar · órdenes' });
-    await secPi.click();
-    ok(nombre + ': tocar el título de una sección la pliega', (await secPi.getAttribute('aria-expanded')) === 'false' && (await g.locator('[data-orden-blk]').isVisible()) === false);
-    await secPi.click();
-    ok(nombre + ': tocarlo otra vez la abre', (await g.locator('[data-orden-blk]').isVisible()) === true);
+    ok(nombre + ': lo del medio como antes: el corte anterior en rojo aparte, con la etiqueta, e Instaladas en este corte', /Corte de .*: si no cumplen al/.test(await gr.locator('.cx-sec.rojo').textContent()) &&
+      /Del corte anterior/.test(await gr.locator('.cx-sec.rojo').locator('xpath=following-sibling::*[1]').textContent()));
+    ok(nombre + ': filtros Por instalar y Migraciones con número', /Por instalar\s*\d/.test(await p.textContent('#filtros [data-filtro="porinst"]')) && /Migraciones\s*\d/.test(await p.textContent('#filtros [data-filtro="migraciones"]')));
     await p.click('#filtros [data-filtro="porinst"]');
-    ok(nombre + ': el filtro Por instalar deja solo las órdenes', (await p.locator('#lista [data-orden-blk]').count()) === 1 && (await p.locator('#lista [data-com]').count()) === 0);
+    ok(nombre + ': con el filtro Por instalar se abre solo ese bloque y no hay instaladas', (await p.locator('#lista [data-orden-blk]').first().isVisible()) && (await p.locator('#lista [data-com]').count()) === 0 && (await p.locator('#lista .cx-blq.az').count()) === 0);
     ok(nombre + ': Comisiones sin desborde', await sinDesborde(p));
     await p.screenshot({ path: 'capturas/71-' + nombre + '-comisiones.png', fullPage: true });
     // La orden abre su hoja; Marcar como perdida con motivo
@@ -100,7 +104,7 @@ function sembrar(m){
     const lid = await entrar(C2.ctx, 'lucia', '739105'); cuida(lid);
     await lid.goto(H + 'actualizar.html'); await lid.waitForURL(/inicio\.html/);
     ok(nombre + ': el líder no entra a Actualizar', true);
-    await lid.goto(H + 'comisiones.html'); await lid.waitForSelector('.cx-grupo .cx-sec.am', { state: 'attached' });
+    await lid.goto(H + 'comisiones.html'); await lid.waitForSelector('.cx-grupo .cx-blq.am', { state: 'attached' });
     ok(nombre + ': el líder ve sus bloques (Por instalar y Migraciones) dentro de su plegable', (await lid.locator('[data-orden-blk]').count()) === 1 && (await lid.locator('[data-mig-blk="801"]').count()) === 1 && (await lid.locator('[data-mig-blk="802"]').count()) === 0);
     await lid.screenshot({ path: 'capturas/71-' + nombre + '-comisiones-lider.png', fullPage: true });
     await lid.goto(H + 'aliados.html'); await lid.waitForSelector('#ayuda');
