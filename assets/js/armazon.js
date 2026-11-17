@@ -7,18 +7,20 @@
 
   const NAV = [
     { id: 'inicio', texto: 'Inicio', icono: 'casa', enlace: 'inicio.html' },
-    { id: 'comisiones', texto: 'Comisiones', icono: 'barras', enlace: 'comisiones.html' },
+    { id: 'comisiones', texto: 'Comisiones', icono: 'barras', enlace: 'comisiones.html', roles: ['admin', 'analista', 'lider', 'abogado'] },
     { id: 'trabajo', texto: 'Mi trabajo', icono: 'check', enlace: 'trabajo.html', roles: ['admin', 'analista', 'lider', 'abogado'], soloPc: true },
-    { id: 'clientes', texto: 'Clientes', icono: 'edificio', enlace: 'clientes.html' },
+    { id: 'clientes', texto: 'Clientes', icono: 'edificio', enlace: 'clientes.html', roles: ['admin', 'analista', 'lider', 'abogado'] },
     // En el teléfono entra solo si la barra de abajo no pasa de 5 botones (el administrador la abre desde Inicio)
     { id: 'migraciones', texto: 'Migraciones', icono: 'cambio', enlace: 'migraciones.html', roles: ['admin', 'analista', 'lider'], opcionalTel: true },
-    { id: 'factibilidad', texto: 'Factibilidad', icono: 'wifi', enlace: 'factibilidad.html', roles: ['admin', 'analista', 'lider'] },
+    { id: 'factibilidad', texto: 'Factibilidad', icono: 'wifi', enlace: 'factibilidad.html', roles: ['admin', 'analista', 'lider', 'abogado', 'aliado'] },
     { id: 'aliados', texto: 'Aliados', icono: 'usuarios', enlace: 'aliados.html', roles: ['admin', 'analista', 'lider', 'abogado'], soloPc: true },
     { id: 'gerencia', texto: 'Gerencia', icono: 'barras', enlace: 'gerencia.html', roles: ['admin', 'analista', 'lider', 'abogado', 'gerencia'], soloPc: true }
   ];
 
   // Un módulo se ve por rol o, para un líder, por su marca (líder de dedicados)
-  const puedeVer = (n, p) => p.rol === 'gerencia' ? n.id === 'gerencia' : !n.roles || n.roles.indexOf(p.rol) >= 0 || (n.marca && p.rol === 'lider' && !!p[n.marca]);
+  // Lote 16/11 A: gerencia entra en solo lectura a Gerencia, Comisiones, Clientes, Migraciones, Aliados y Factibilidad
+  const GERENCIA_VE = ['gerencia', 'comisiones', 'clientes', 'migraciones', 'aliados', 'factibilidad'];
+  const puedeVer = (n, p) => p.rol === 'gerencia' ? GERENCIA_VE.indexOf(n.id) >= 0 : !n.roles || n.roles.indexOf(p.rol) >= 0 || (n.marca && p.rol === 'lider' && !!p[n.marca]);
   // opciones: { activo: 'inicio'|'comisiones'|'clientes'|'factibilidad'|'revision'|'aliados'|null, sinNav: bool, volver: {enlace, texto}, acciones: html }
   let montado = null;   // { clave, res }: lo que ya está dibujado, para no repetirlo al confirmar la sesión
   function montar(p, opciones){
@@ -60,7 +62,7 @@
       document.body.appendChild(hoja);
     }
     const ini = cache.leer('inicio') || {};
-    const admin = p.rol === 'admin'; const sube = p.rol === 'admin' || (p.rol === 'analista' && !!p.senior);   // Lote 28/10: Actualizar, solo administrador y Analista Senior
+    const admin = p.rol === 'admin'; const sube = p.rol === 'admin' || p.rol === 'analista';   // Lote 16/11 A: Actualizar, administrador y todos los analistas
     hoja.innerHTML =
       '<div class="asa" aria-hidden="true"></div>' +
       '<div class="yo-cab"><span class="av" aria-hidden="true">' + esc(iniciales(p.nombre)) + '</span>' +
@@ -354,14 +356,20 @@
 
   // Arranque de un módulo: con perfil guardado, iniciar() corre al instante (lista con lo último visto);
   // si no, espera a S.requerir(). Si el servidor dice algo distinto del perfil guardado, se recarga con el bueno.
+  // Lote 16/11 A: en los módulos, gerencia se ve como el administrador pero en solo lectura (la base rechaza toda escritura)
+  function vista(p, roles, o){
+    if(!p || p.rol !== 'gerencia' || !roles || roles.indexOf('gerencia') < 0 || (o && o.activo === 'gerencia')) return p;
+    document.body.classList.add('solo-lectura');
+    return Object.assign({}, p, { rol: 'admin', senior: false, soloLectura: true });
+  }
   async function arrancar(roles, o, iniciar, alConfirmar){
     const pre = temprano(roles);
-    if(pre){ montar(pre, o); iniciar(pre); }
+    if(pre){ montar(pre, o); iniciar(vista(pre, roles, o)); }
     const p = await S.requerir(roles);
     if(!p) return null;
     if(pre && S.firma(pre) !== S.firma(p)){ location.reload(); return null; }
     montar(p, o);
-    if(!pre) iniciar(p); else if(alConfirmar) alConfirmar(p);
+    if(!pre) iniciar(vista(p, roles, o)); else if(alConfirmar) alConfirmar(vista(p, roles, o));
     return p;
   }
 

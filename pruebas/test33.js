@@ -16,8 +16,8 @@ const { ok, cerrar } = marcador();
     await c1.ctx.close();
     // El administrador guarda a la líder: se enlaza solo y lo dice
     const p = await entrar(ctx, 'marcos', '482913'); p.on('pageerror', (e) => errores.push(e.message));
-    await p.goto(H + 'usuarios.html'); await p.waitForSelector('#lista button');
-    await p.locator('#lista button', { hasText: 'Lucía Ferrer' }).first().click(); await p.waitForSelector('#guardar');
+    await p.goto(H + 'usuarios.html'); await p.waitForSelector('#lista .persona');
+    await p.locator('#lista .persona', { hasText: 'Lucía Ferrer' }).first().click(); await p.waitForSelector('#guardar');
     await p.click('#guardar'); await p.waitForFunction(() => /cliente enlazado a su cuenta/.test(document.body.textContent));
     ok(nombre + ': al guardar a la líder avisa cuántos clientes se enlazaron', mundo.datos.clientes.find((c) => c.id === 99001).lider_id === '22222222-2222-4222-8222-222222222222');
     await p.screenshot({ path: 'capturas/33-' + nombre + '-usuarios.png' });

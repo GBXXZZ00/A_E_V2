@@ -233,6 +233,8 @@
         if(m.indexOf('Tu sesión venció') === 0 && window.Sesion){ await window.Sesion.salir(); location.replace('index.html'); }
         throw new Error(m);
       }
+      // Lote 16/11 A: la cuenta de gerencia es de solo lectura (la base rechaza cualquier escritura)
+      if(e.code === '25006' || /read-only transaction/i.test(m)) throw new Error('Gerencia es de solo lectura: aquí no se cambia nada');
       if(r.status === 401 || /jwt/i.test(m)){ if(window.Sesion){ await window.Sesion.salir(); location.replace('index.html'); } throw new Error('Tu sesión venció. Entra de nuevo'); }
       throw new Error(mensajeError(e));
     }

@@ -23,7 +23,7 @@
   // Perfil guardado en el dispositivo (rol y marcas, nunca el PIN) para dibujar la navegación al instante.
   // Solo vale si hay una sesión abierta del mismo usuario; el servidor sigue decidiendo los permisos.
   const K_PERFIL = 'ae_perfil';
-  const CAMPOS = ['id', 'usuario', 'nombre', 'rol', 'senior', 'canales', 'dedicados', 'gerencia', 'cargo', 'equipo', 'codigo_vendedor'];
+  const CAMPOS = ['id', 'usuario', 'nombre', 'rol', 'senior', 'coordinador', 'canales', 'dedicados', 'gerencia', 'cargo', 'equipo', 'codigo_vendedor'];
   function firma(p){ return p ? JSON.stringify(CAMPOS.map((k) => p[k] === undefined ? null : p[k])) : ''; }
   function guardarPerfil(p){
     if(!p){ guardar(K_PERFIL, null); return; }
@@ -53,12 +53,14 @@
     const s = await sesionActual();
     if(!s) return null;
     const { data, error } = await db.from('perfiles')
-      .select('id, usuario, nombre, rol, senior, canales, dedicados, gerencia, cargo, equipo, codigo_vendedor, activo, debe_cambiar_pin')
+      .select('id, usuario, nombre, rol, senior, coordinador, canales, dedicados, gerencia, cargo, equipo, codigo_vendedor, activo, debe_cambiar_pin')
       .eq('id', s.user.id).maybeSingle();
     if(error) throw error;
     perfilActual = data || null;
     // Lote 7: la marca Gerencia es un rol de solo lectura (en la base, privado.rol_actual() dice lo mismo)
     if(perfilActual && perfilActual.gerencia) perfilActual.rol = 'gerencia';
+    // Lote 16/11 A: el Coordinador de analistas ve y hace lo mismo que la Senior (en la base, privado.es_senior() dice lo mismo)
+    if(perfilActual && perfilActual.rol === 'analista' && perfilActual.coordinador) perfilActual.senior = true;
     guardarPerfil(perfilActual && perfilActual.activo && !perfilActual.debe_cambiar_pin ? perfilActual : null);
     return perfilActual;
   }

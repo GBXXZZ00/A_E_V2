@@ -44,12 +44,13 @@ const GINA = { id: '77777777-7777-4777-8777-777777777700', usuario: 'gina', pin:
     await g.locator('#hojaGMod .rs-s-barra button').first().click(); await g.waitForSelector('#hojaRes.ver .rs-df');
     ok(nombre + ': Gerencia ve la lista pero no abre fichas', (await g.locator('#hojaRes button.rs-df').count()) === 0);
     await cerrarHojas(g);
-    await g.goto(H + 'clientes.html'); await g.waitForURL('**/gerencia.html**');
-    ok(nombre + ': si Gerencia intenta entrar a otro módulo vuelve a Gerencia', true);
+    // Lote 16/11 A: Gerencia entra a los módulos en solo lectura
+    await g.goto(H + 'clientes.html'); await g.waitForFunction(() => document.body.classList.contains('solo-lectura'));
+    ok(nombre + ': Gerencia entra a Clientes en solo lectura', /clientes\.html/.test(g.url()));
     await c3.ctx.close();
     // ----- Usuarios: la opción Gerencia y la columna Avisos -----
     mundo.suscripciones = ['11111111-1111-4111-8111-111111111111'];
-    await p.goto(H + 'usuarios.html'); await p.waitForSelector('#lista button'); await p.waitForFunction(() => /Sin activar/.test(document.getElementById('lista').textContent));
+    await p.goto(H + 'usuarios.html'); await p.waitForSelector('#lista .persona'); await p.waitForFunction(() => /Sin activar/.test(document.getElementById('lista').textContent));
     ok(nombre + ': Usuarios muestra Gerencia (solo lectura) y ofrece la opción', /Gerencia \(solo lectura\)/.test(await p.textContent('#lista')) && (await p.locator('#fRol option[value="gerencia"]').count()) === 1);
     ok(nombre + ': columna Avisos: activos para quien tiene equipo, Sin activar para los demás', pc0(await p.textContent('#lista')));
     await ctx.close();

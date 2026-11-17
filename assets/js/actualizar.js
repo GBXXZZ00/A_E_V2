@@ -399,7 +399,7 @@
     if(!files || !files.length) return;
     // El mapa de red (KMZ) va a su propio panel
     const todos = Array.prototype.slice.call(files); const M = window.MapaRed;
-    if(M){ const mapas = todos.filter(M.esMapa); if(mapas.length){ M.recibir(mapas[0]); files = todos.filter((f) => !M.esMapa(f)); if(!files.length) return; } }
+    if(M){ const mapas = todos.filter(M.esMapa); if(mapas.length && (!yo || yo.rol !== 'admin')){ toast('El mapa de red lo sube el administrador', 'error'); files = todos.filter((f) => !M.esMapa(f)); if(!files.length) return; } else if(mapas.length){ M.recibir(mapas[0]); files = todos.filter((f) => !M.esMapa(f)); if(!files.length) return; } }
     if(ocupado) return;
     // Lote 10/11 B: lo ya terminado sale de la lista (su fila se ve con la carga de hoy); se queda lo pendiente, lo que falló y el índice en curso
     lista = lista.filter((x) => (fondo && x === fondo.a) || x.pregunta || x.estado === 'fallo' || x.leyendo || (x.datos && x.estado !== 'lista') || (x.tipo === 'tad' && x.indiceFallo && x.indice)); fin = null;
@@ -521,7 +521,11 @@
     const filas = a.datos.map((o) => ({ codigo: o.codigo, nombre: o.nombre, fecha: o.fecha, anterior: o.categoria_anterior, actual: o.categoria_actual, operador: o.operador, comentario: o.comentario }));
     const r = await rpc('cambios_archivo_cargar', { p_archivo: a.nombre, p_filas: filas });
     a.estado = 'lista'; a.datos = null;
-    a.resultado = plural(r.filas, 'cambio', 'cambios') + ' · ' + plural(r.con_fecha, 'cambio con fecha exacta', 'cambios con fecha exacta') + (r.ignoradas ? ' · ' + r.ignoradas + ' ignorados (RADIUS o repetidos)' : '');
+    // Lote 16/11 A: resumen del reporte "Consulta Cambio de Categoría"
+    const n = (x) => Number(x) || 0;
+    a.resultado = (r.hasta ? 'Hasta el ' + fecha(r.hasta + 'T12:00:00') + ' · ' : '') + plural(n(r.a_pyme), 'a PYME', 'a PYME') + ' · ' + plural(n(r.sin_registrar), 'sin registrar', 'sin registrar') +
+      ' · ' + (n(r.residencial) === 1 ? '1 salió a residencial' : n(r.residencial) + ' salieron a residencial') + ' · ' + plural(n(r.descartadas), 'descartada', 'descartadas') +
+      (n(r.registradas) ? ' · ' + plural(n(r.registradas), 'registrada confirmada', 'registradas confirmadas') : '') + (n(r.repetidas) ? ' · ' + plural(n(r.repetidas), 'repetida', 'repetidas') : '');
     return r;
   }
   // Lote 22/10: reporte "Clientes Empresariales" de Proham (sucursal + código + ONT)
@@ -731,10 +735,11 @@
 
   window.Armazon.arrancar(['admin', 'analista'], { activo: null, volver: { enlace: 'inicio.html', texto: 'Inicio' } }, (p) => {
     yo = p;
-    // Lote 28/10: Actualizar es solo del administrador y la Analista Senior
-    if(p.rol !== 'admin' && !p.senior){ document.querySelector('main.pagina').innerHTML = '<div class="vacio" role="alert" style="margin-top:40px"><b>Actualizar es del administrador y la Analista Senior</b><p>Si hace falta subir un archivo, pídeselo a ellos.</p><a class="btn btn-chico" href="inicio.html">Volver al inicio</a></div>'; return; }
+    // Lote 16/11 A: Actualizar es del administrador y de los analistas (Senior, Coordinador, analistas y canales). Los líderes no entran.
     pintar(); estadoCruce();
-    if(window.MapaRed) window.MapaRed.montar(yo);
+    // El mapa de red (KMZ) lo sube solo el administrador
+    if(p.rol !== 'admin'){ const z = $('mapaRed'); const sec = z && z.closest('section'); if(sec) sec.remove(); }
+    else if(window.MapaRed) window.MapaRed.montar(yo);
     $('cargas').innerHTML = esqueleto(2);
     cargas();
   }, (p) => { yo = p; });

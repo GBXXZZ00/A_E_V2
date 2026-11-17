@@ -369,7 +369,7 @@
   $('hojaFiltros').addEventListener('hoja-cerrada', () => setTimeout(guardarUrl, 60));
   document.addEventListener('visibilitychange', () => { if(!document.hidden && yo && filas.length && !window.Comun.hojaAbierta()) refrescar(); });
 
-  window.Armazon.arrancar(['admin', 'abogado', 'lider', 'analista'], { activo: 'clientes' }, (p) => {
+  window.Armazon.arrancar(['admin', 'abogado', 'lider', 'analista', 'gerencia'], { activo: 'clientes' }, (p) => {
     yo = p; rol = yo.rol;
     window.Ficha.montar(); window.Ficha.alContactarFuera(refrescar);
     // Lote 27/10: Lista | Resumen. Con las tarjetas de dedicados, el Resumen es el de Dedicados

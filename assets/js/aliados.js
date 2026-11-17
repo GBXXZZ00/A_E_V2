@@ -121,7 +121,9 @@
       return '<button type="button" data-tab="' + x[0] + '" class="' + (x[0] === tab ? 'on' : '') + '" aria-pressed="' + (x[0] === tab) + '">' + esc(x[1]) + (c !== null ? ' <em>' + c + '</em>' : '') + '</button>'; }).join('') : '';
     document.querySelector('main.pagina').classList.toggle('al-en-inicio', tab === 'inicio');   // maqueta aliado-flujo: el inicio va sin pestañas ni texto de ayuda
     if(holaTx && (modo === 'aliado' || modo === 'canales')) $('titulo').textContent = tab === 'inicio' ? holaTx : (tabs().find((x) => x[0] === tab) || ['', holaTx])[1];
-    $('ayuda').textContent = (AYUDA[tab] || '') + (tab === 'registro' && modo !== 'admin' ? ' Solo para ver: las decisiones las toma el administrador.' : '');
+    // Lote 16/11 A: el equipo solo ve lo suyo (validado en el servidor)
+    $('ayuda').textContent = tab === 'registro' && modo === 'equipo' ? 'Solo ves lo tuyo: solicitudes bloqueadas por ser de tu cartera o top, y clientes tuyos que instaló un aliado. Las decisiones las toma el administrador.'
+      : (AYUDA[tab] || '') + (tab === 'registro' && modo !== 'admin' ? ' Solo para ver: las decisiones las toma el administrador.' : '');
     $('zonaRegistro').classList.toggle('hidden', tab !== 'registro');
     $('accionCab').innerHTML = (modo === 'aliado' || modo === 'canales') && tab !== 'inicio' && tab !== 'pagos' && tab !== 'instalados' && tab !== 'mes' && tab !== 'sinp' ? '<button type="button" class="btn btn-chico solo-pc" data-acc="nueva">+ Nuevo cliente</button>'
       : modo === 'admin' && tab === 'registro' && R && R.puedo && R.puedo.prueba ? '<button type="button" class="btn btn-chico btn-2" data-acc="nueva">Solicitud de prueba</button><button type="button" class="btn btn-chico btn-2" data-acc="avisosDemo">Ver los avisos</button>' : '';
@@ -285,7 +287,7 @@
   function filaAl(i, conAliado){
     const dato = 'data-' + (i.t === 'vieja' ? 'vieja' : i.t) + '="' + esc(i.id) + '"';
     const sub = [conAliado ? i.aliado : '', TIPO_AL[i.t], i.rif, i.fecha ? fecha(i.fecha) : '', i.t === 'sinp' && i.x.origen === 'historico' ? 'Antes del módulo' : ''].filter(Boolean).join(' · ');
-    return '<button type="button" class="fila" ' + dato + '><span class="tx"><b>' + esc(i.cliente) + '</b><small>' + esc(sub) + '</small>' + (i.tu ? '<small class="etqs"><span class="tagn azul">Tu cliente</span></small>' : '') + '</span>' +
+    return '<button type="button" class="fila" ' + dato + '><span class="tx"><b>' + esc(i.cliente) + '</b><small>' + esc(sub) + '</small>' + (i.tu || (yo && yo.soloLectura && i.x && i.x.carterizado) ? '<small class="etqs">' + (i.tu ? '<span class="tagn azul">Tu cliente</span>' : '') + (yo && yo.soloLectura && i.x && i.x.carterizado ? '<span class="tagn morado">Cliente carterizado</span>' : '') + '</small>' : '') + '</span>' +
       '<span class="par-m">' + chipItem(i) + '</span></button>';
   }
   // Sin autorización: instalaciones de aliados sin solicitud aprobada, las que faltan por revisar primero
@@ -888,12 +890,15 @@
       else if(k === 'excepcion' || k === 'revision') acc = '<button type="button" class="btn btn-chico btn-2" data-acc="whats">Escribir al administrador</button>';
       // Lote C: el aliado solo contacta al administrador, y puede hacerlo en toda solicitud abierta o instalada
       if(acc.indexOf('data-acc="whats"') < 0 && ['recaudos', 'excepcion', 'revision', 'lista', 'listaobs', 'curso', 'instalada'].indexOf(k) >= 0) acc += '<button type="button" class="btn btn-chico btn-2" data-acc="whats">Escribir al administrador</button>';
+      // Lote 16/11 A: el aliado no entra a Clientes; solo abre la ficha de su cliente ya instalado, desde aquí
+      if(k === 'instalada' && d.cliente_id) acc += '<button type="button" class="btn btn-chico btn-2" data-acc="expediente">Ver ficha del cliente</button>';
     } else {
       if(k === 'excepcion') acc = '<button type="button" class="btn btn-chico" data-form="decidir" data-modo="aprobar">Admitir excepción</button><button type="button" class="btn btn-chico btn-2" data-form="decidir" data-modo="negar">Negar</button>';
       else if(k === 'revision') acc = '<button type="button" class="btn btn-chico" data-form="decidir" data-modo="aprobar">Aprobar</button><button type="button" class="btn btn-chico btn-2" data-form="decidir" data-modo="devolver">Pedir corregir</button>';
       else if(k === 'recaudos') acc = '<button type="button" class="btn btn-chico btn-2" data-form="decidir" data-modo="aprobar">Aprobar igual</button>';
       if(ABIERTA.indexOf(k) >= 0 && k !== 'borrador') acc += '<button type="button" class="btn btn-chico btn-2" data-form="decidir" data-modo="noprocede">No procede</button>';
       if(d.cliente_id) acc += '<button type="button" class="btn btn-chico btn-2" data-acc="expediente">Abrir expediente</button>';
+      if(yo && yo.soloLectura) acc = d.cliente_id ? '<button type="button" class="btn btn-chico btn-2" data-acc="expediente">Abrir expediente</button>' : '';
     }
     const det = k === 'recaudos' ? 'Revisa lo marcado abajo. ' + SIGUE[k] : k === 'curso' && d.fecha_instalacion ? 'Instalas el ' + fecha(d.fecha_instalacion) + '. ' + SIGUE[k] : k === 'sininst' ? (d.motivo_cierre || '') + ' ' + SIGUE[k] : SIGUE[k] || '';
     $('cSol').innerHTML = (adm ? '' : lineaSol(d)) + (k === 'analizando' ? pasos(d) :
@@ -1134,10 +1139,10 @@
   document.addEventListener('visibilitychange', () => { if(!document.hidden && yo && !hojaAbierta()) cargar(); });
   document.addEventListener('hoja-cerrada', () => {});
 
-  window.Armazon.arrancar(['admin', 'aliado', 'analista', 'lider', 'abogado'], { activo: 'aliados' }, (p) => {
+  window.Armazon.arrancar(['admin', 'aliado', 'analista', 'lider', 'abogado', 'gerencia'], { activo: 'aliados' }, (p) => {
     yo = p;
     modo = yo.rol === 'admin' ? 'admin' : yo.rol === 'aliado' ? 'aliado' : yo.rol === 'analista' && yo.canales ? 'canales' : 'equipo';
-    if(window.Ficha && modo === 'admin'){ window.Ficha.montar(); }
+    if(window.Ficha && (modo === 'admin' || modo === 'aliado')){ window.Ficha.montar(); }
     document.querySelector('main.pagina').classList.add('al-m-' + modo);   // Lote 12/11: el aliado en PC lleva el menú a la izquierda
     holaTx = 'Hola, ' + (window.Comun.primerNombre(yo.nombre) || yo.nombre);
     $('titulo').textContent = modo === 'equipo' || modo === 'admin' ? 'Aliados comerciales' : holaTx;

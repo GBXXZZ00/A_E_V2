@@ -384,7 +384,7 @@
   window.Factibilidad = { _textoOdoo: textoOdoo, VER };
   (async function(){
     leerCompartido();   // se guarda antes de exigir la sesión: si hay que entrar, se retoma después
-    await window.Armazon.arrancar(['admin', 'analista', 'lider'], { activo: 'factibilidad' }, (p) => { yo = p; iniciar(); }, (p) => { yo = p; });
+    await window.Armazon.arrancar(['admin', 'analista', 'lider', 'abogado', 'aliado', 'gerencia'], { activo: 'factibilidad' }, (p) => { yo = p; iniciar(); }, (p) => { yo = p; });
   })();
   function iniciar(){
     $('faSub').textContent = yo.rol === 'lider' ? 'Tus consultas. Se revisan solas con cada mapa nuevo.' : 'Las consultas de todos los líderes. Se revisan solas con cada mapa nuevo.';

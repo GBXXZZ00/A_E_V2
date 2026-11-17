@@ -25,7 +25,7 @@
     const mio = ++pedidoPI;
     try { const r = await rpc('por_instalar'); if(mio !== pedidoPI) return; PI = r; PI.filas = PI.filas || []; PI.pendientes = PI.pendientes || []; }
     catch (e) { if(mio !== pedidoPI) return; if(O){ O.error = e.message; } toast(e.message, 'error'); }
-    if(O) pintarPI(); if(N && N.buscando) pintarNuevo();
+    if(O) pintarPI(); if(O && O.ordenId) pintarOrden(); if(N && N.buscando) pintarNuevo();
   }
   const limite = () => (PI && PI.horas_alerta) || 24;
   function tabDe(o){ return o.vieja ? 'viejas' : Number(o.horas) >= limite() ? 'mas' : 'menos'; }
@@ -40,7 +40,8 @@
       '<b class="' + (o.cliente_id && !o.provisional ? '' : 'mal') + '">' + esc(o.cliente_id && !o.provisional ? o.cliente : 'Sin cliente en la app') + '</b>' +
       (o.cliente_id && !o.provisional ? '' : o.cliente ? '<small>En Odoo: ' + esc(o.cliente) + '</small>' : '') +
       '<small>Creada ' + esc(diaMes(o.creada_en)) + (o.etapa ? ' · ' + esc(o.etapa) : '') + (o.veces ? ' · reprogramada ' + (o.veces === 1 ? '1 vez' : o.veces + ' veces') : '') + '</small>' +
-      '<div class="pi-l3"><span class="chip ' + (o.docs ? 'verde">Documentos subidos' : 'gris">Sin documentos') + '</span>' + btn + '</div>' + acc + '</div>';
+      '<div class="pi-l3"><span class="chip ' + (o.docs ? 'verde">Documentos subidos' : 'gris">Sin documentos') + '</span>' + btn + '</div>' + acc +
+      (PI.puedo_perdida !== false && !(O && O.ordenId) ? '<div class="ins-acc"><button type="button" class="enlace" data-orden-perdida="' + esc(o.orden_id) + '">Marcar como perdida</button></div>' : '') + '</div>';
   }
   function pintarPI(){
     const h = hoja('hojaPorInst', 'tPorInst');
@@ -51,6 +52,8 @@
     else {
       const filas = PI.filas; const n = { mas: 0, menos: 0, viejas: 0 }; filas.forEach((o) => { n[tabDe(o)]++; });
       const tabs = [['mas', 'Pasan de ' + limite() + ' horas'], ['menos', 'Menos de ' + limite() + ' horas'], ['viejas', 'Viejas']];
+      // Lote 16/11 A: las órdenes marcadas como perdidas salen de las listas y quedan en su filtro
+      n.perdidas = (PI.perdidas || []).length; if(n.perdidas || O.tab === 'perdidas') tabs.push(['perdidas', 'Perdidas']);
       cuerpo += '<div class="tres pi-tabs" role="tablist">' + tabs.map((t) => '<button type="button" role="tab" data-pi-tab="' + t[0] + '" class="' + (O.tab === t[0] ? 'on' : '') + '" aria-selected="' + (O.tab === t[0]) + '">' + t[1] + ' · ' + n[t[0]] + '</button>').join('') + '</div>';
       cuerpo += '<label class="rotulo arriba" for="piBusca">Buscar la orden</label><input class="campo" id="piBusca" type="search" maxlength="60" autocomplete="off" enterkeyhint="search" value="' + esc(O.q || '') + '"><p class="nota-chica">Por número de orden, nombre o RIF</p>';
       const q = normalizeStr(O.q || ''); const dg = String(O.q || '').replace(/\D/g, '');
@@ -61,9 +64,16 @@
         '<div><label class="rotulo" for="piRif">RIF o cédula</label><input class="campo" id="piRif" maxlength="20" autocomplete="off" value="' + esc(O.rif || '') + '"><div class="error" id="ePiRif" role="alert"></div></div></div>' +
         '<p class="nota-chica">Queda como "Pendiente por instalar". Cuando el cruce con Odoo o el TAD lo encuentre, se une solo. Si ya existe uno parecido, te pregunta "¿Es este cliente?".</p>' +
         '<button type="button" class="btn btn-2 btn-chico" data-pi-igual>Continuar y subir documentos</button></div>';
-      const lista = filas.filter((o) => tabDe(o) === O.tab && (!q || coincide(o)));
+      const lista = O.tab === 'perdidas' ? [] : filas.filter((o) => tabDe(o) === O.tab && (!q || coincide(o)));
+      if(O.tab === 'perdidas'){
+        const pl = (PI.perdidas || []).filter((o) => !q || coincide(o));
+        cuerpo += '<h3 class="pi-h">Órdenes marcadas como perdidas</h3>' + (pl.length ? pl.map((o) => '<div class="pi-t"><div class="pi-l1"><small>' + esc(ordenCorta(o.numero) + ' · ' + (o.lider || 'Por asignar')) + '</small><span class="chip gris">Perdida</span></div><b>' + esc(o.cliente || 'Sin cliente') + '</b>' +
+          '<small>Creada ' + esc(diaMes(o.creada_en)) + ' · marcada el ' + esc(diaMes(o.perdida_en)) + (o.perdida_por ? ' por ' + esc(o.perdida_por) : '') + '</small><small>Motivo: ' + esc(o.motivo || '') + '</small>' +
+          (PI.puedo && PI.puedo.asignar && PI.puedo_perdida !== false ? '<div class="pi-l3"><span></span><button type="button" class="mini" data-orden-recuperar="' + esc(o.orden_id) + '">Recuperar</button></div>' : '') + '</div>').join('')
+          : vacio('Ninguna perdida', 'Las órdenes que se marquen como perdidas quedan aquí 60 días.'));
+      }
       cuerpo += '<h3 class="pi-h">' + esc(O.tab === 'mas' ? 'Órdenes que pasan de ' + limite() + ' horas' : O.tab === 'menos' ? 'Órdenes de menos de ' + limite() + ' horas' : 'Órdenes de antes de este corte') + '</h3>';
-      cuerpo += lista.length ? lista.map((o) => tarjeta(o)).join('') : vacio(O.tab === 'mas' ? 'Ninguna pasa de ' + limite() + ' horas' : 'Nada aquí', O.tab === 'viejas' ? 'No quedan órdenes viejas sin instalar.' : 'Cuando se monte una orden en Odoo, aparece aquí con su reloj.');
+      if(O.tab !== 'perdidas') cuerpo += lista.length ? lista.map((o) => tarjeta(o)).join('') : vacio(O.tab === 'mas' ? 'Ninguna pasa de ' + limite() + ' horas' : 'Nada aquí', O.tab === 'viejas' ? 'No quedan órdenes viejas sin instalar.' : 'Cuando se monte una orden en Odoo, aparece aquí con su reloj.');
       if((PI.pendientes || []).length) cuerpo += '<h3 class="pi-h">Subidos sin orden · ' + PI.pendientes.length + '</h3>' + PI.pendientes.map((p) => '<button type="button" class="fila pi-pend" data-pi-ver="' + esc(p.cliente_id) + '"><span class="tx"><b>' + esc(p.nombre) + '</b><small>' +
         esc(p.doc + ' · ' + (p.dueno || 'Por asignar') + ' · ' + plural(p.docs, 'documento', 'documentos')) + '</small></span><span class="chip ' + (p.enviado ? 'verde">Enviado a revisión' : 'gris">Pendiente por instalar') + '</span></button>').join('');
       if(PI.puedo && PI.puedo.realizadas && (PI.realizadas || []).length) cuerpo += '<h3 class="pi-h">Realizadas en Odoo sin instalación · ' + PI.realizadas.length + '</h3><p class="nota-chica">Odoo las marca realizadas pero no tienen instalación en el TAD. Revisa si falta cargar el TAD o falló el cruce.</p>' +
@@ -85,9 +95,39 @@
       h.addEventListener('hoja-cerrada', () => { const f = O && O.alCambiar; if(O && O.tocado && f) f(); });
     }
   }
+  // Lote 16/11 A: la hoja de una orden (desde Comisiones o Por instalar): la misma tarjeta, y "Marcar como perdida" con motivo
+  async function abrirOrden(id, o){
+    window.Ficha.montar();
+    O = Object.assign({ tab: 'mas', q: '' }, o || {}, { ordenId: Number(id), perder: false });
+    const h = hojaChica('hojaOrdenPI', 'tOrdenPI');
+    if(!h.dataset.listo){ h.dataset.listo = '1'; h.addEventListener('click', clicPI);
+      h.addEventListener('hoja-cerrada', () => { if(O && O.ordenId){ const f = O.alCambiar; const t = O.tocado; O.ordenId = 0; if(t && f) f(); } }); }
+    pintarOrden(); abrirHoja('hojaOrdenPI'); cargarPI();
+  }
+  function pintarOrden(){
+    const h = $('hojaOrdenPI'); if(!h || !O || !O.ordenId) return;
+    const o = PI && (PI.filas || []).find((x) => x.orden_id === O.ordenId);
+    let c;
+    if(!PI) c = esqueleto(2);
+    else if(!o) c = vacio('Esta orden ya no está abierta', 'Se instaló, se canceló o se marcó como perdida.');
+    else {
+      c = tarjeta(o, true);
+      if(PI.puedo_perdida !== false) c += O.perder ? '<form id="formPerdida" novalidate class="pi-perd"><label class="rotulo" for="perdMotivo">¿Por qué se perdió?</label><textarea class="area corta" id="perdMotivo" maxlength="300" data-foco></textarea><div class="error" id="ePerd" role="alert"></div>' +
+          '<p class="nota-chica">Sale de las listas y queda en el filtro Perdidas de Por instalar. Queda en la bitácora.</p><div class="acciones"><button type="button" class="btn btn-2" data-perd-no>Cancelar</button><button type="submit" class="btn" id="perdGuardar">Marcar como perdida</button></div></form>'
+        : '<div class="acciones"><button type="button" class="btn btn-2 btn-ancho" data-orden-perder>Marcar como perdida</button></div>';
+    }
+    h.innerHTML = cabChica('tOrdenPI', o ? 'Orden ' + ordenCorta(o.numero) : 'Orden', o ? (o.cliente || '') + (o.lider ? ' · ' + o.lider : '') : '') + c;
+    if(O.perder){ const x = $('perdMotivo'); if(x) setTimeout(() => x.focus(), 60); }
+  }
   function clicPI(ev){
     const t = ev.target; let b;
     if(!O) return;
+    if(t.closest('[data-orden-perder]')){ O.perder = true; pintarOrden(); return; }
+    if(t.closest('[data-perd-no]')){ O.perder = false; pintarOrden(); return; }
+    if((b = t.closest('[data-orden-perdida]'))){ abrirOrden(b.dataset.ordenPerdida, { yo: O.yo, alCambiar: () => cargarPI() }); O.perder = true; pintarOrden(); return; }
+    if((b = t.closest('[data-orden-recuperar]'))){ b.disabled = true;
+      rpc('orden_perdida', { p_orden: Number(b.dataset.ordenRecuperar), p_motivo: null, p_recuperar: true }).then(() => { toast('Orden recuperada: vuelve a Por instalar'); O.tocado = true; cargarPI(); })
+        .catch((err) => { b.disabled = false; toast(err.message, 'error'); }); return; }
     if(t.closest('[data-pi-reintentar]')){ O.error = null; cargarPI(); return; }
     if((b = t.closest('[data-pi-tab]'))){ O.tab = b.dataset.piTab; pintarPI(); return; }
     if((b = t.closest('[data-pi-ver]'))){ window.Ficha.abrir(Number(b.dataset.piVer), { yo: O.yo, alCerrar: () => { O.tocado = true; cargarPI(); } }); return; }
@@ -129,6 +169,12 @@
     abrirHoja('hojaHorasPI');
   }
   document.addEventListener('submit', (e) => {
+    if(e.target.id === 'formPerdida'){ e.preventDefault(); const m = ($('perdMotivo').value || '').trim(); const er = $('ePerd'); er.textContent = '';
+      if(m.length < 4){ er.textContent = 'Escribe el motivo'; $('perdMotivo').focus(); return; }
+      const b = $('perdGuardar'); b.disabled = true; b.textContent = 'Guardando…';
+      rpc('orden_perdida', { p_orden: O.ordenId, p_motivo: m, p_recuperar: false })
+        .then(() => { toast('Orden marcada como perdida. Queda en el filtro Perdidas de Por instalar'); O.tocado = true; O.perder = false; if(hojaAbierta() === 'hojaOrdenPI') cerrarHoja(); cargarPI(); })
+        .catch((err) => { er.textContent = err.message; b.disabled = false; b.textContent = 'Marcar como perdida'; }); return; }
     if(e.target.id === 'formDueno'){ e.preventDefault(); const v = $('duenoSel').value; $('eDueno').textContent = '';
       if(!v){ $('eDueno').textContent = 'Elige el líder'; return; }
       const b = $('guardarDueno'); b.disabled = true; b.textContent = 'Guardando…';
@@ -383,6 +429,6 @@
     if(window.SinInstalar) window.SinInstalar.mostrar('sin_lider', $('cuerpoSinLider'), (o && o.yo) || null, '');
   }
 
-  window.PorInstalar = { abrir: abrirPI, sinLider, recargar: cargarPI };
+  window.PorInstalar = { abrir: abrirPI, orden: abrirOrden, sinLider, recargar: cargarPI };
   window.ClienteNuevo = { abrir: abrirNuevo };
 })();

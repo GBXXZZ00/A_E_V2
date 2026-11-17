@@ -19,6 +19,24 @@ function basePersonas(){
   ];
 }
 
+// Lote 16/11 A: lo que la gerencia puede leer (todo lo demás escribe y la base lo rechaza) y lo que ya maneja la gerencia por sí misma
+const LECTURA_GER = /^(.*_lista3?|.*_detalle|.*_datos|.*_resumen|por_instalar|comisiones_.*|cliente_ficha|clientes_.*|avisos_(mios|contar|grupo)|inicio_datos|fact_(lista|detalle|cercanas)|instalados_aliados|aliados_(registro|por_mes|pagos)|servicios_buscar|trabajo_resumen|mi_trabajo|ocr_ajustes|ajustes_app|contacto_destino|push_clave_publica|migraciones_corte|cambio_categorias|perfiles_equipos|pendientes_lider|gestiones_lista|subidas_ultimas|corte_.*_lista)$/;
+const LECTURA_GER_PROPIA = /^(gerencia.*|modulo_.*|sesion_viva|avisos_leer.*|push_.*)$/;
+// Lote 16/11 A: los cargos para probar cada pantalla (el simulador base no trae analista normal, Legal, canales, aliado ni gerencia)
+const CARGOS = {
+  tomas: { id: '55555555-5555-4555-8555-000000000001', usuario: 'tomas', pin: '583014', nombre: 'Tomás Rangel', rol: 'analista', cargo: 'Analista', equipo: 'ventas', codigo_vendedor: null, nombre_odoo: null, whatsapp: null, correo: null, activo: true, debe_cambiar_pin: false },
+  coord: { id: '55555555-5555-4555-8555-000000000002', usuario: 'coral', pin: '692047', nombre: 'Coral Mendoza', rol: 'analista', coordinador: true, cargo: 'Coordinadora de analistas', equipo: 'ambos', codigo_vendedor: null, nombre_odoo: null, activo: true, debe_cambiar_pin: false },
+  paula: { id: '77777777-7777-4777-8777-777777777777', usuario: 'paula', pin: '615243', nombre: 'Paula Legal', rol: 'abogado', cargo: 'Legal', equipo: 'ventas', activo: true, debe_cambiar_pin: false },
+  canal: { id: '99999999-9999-4999-8999-999999999999', usuario: 'canal', pin: '640375', nombre: 'Carla Canales', rol: 'analista', canales: true, cargo: 'Coordinación de canales', equipo: 'ambos', codigo_vendedor: null, nombre_odoo: null, activo: true, debe_cambiar_pin: false },
+  redes: { id: '88888888-8888-4888-8888-888888888888', usuario: 'redes', pin: '571942', nombre: 'Redes Norte Ejemplo', rol: 'aliado', cargo: 'Aliado comercial', equipo: 'aliados', codigo_vendedor: null, nombre_odoo: null, activo: true, debe_cambiar_pin: false },
+  gina: { id: '77777777-7777-4777-8777-777777777700', usuario: 'gina', pin: '640218', nombre: 'Gina Paredes', rol: 'abogado', gerencia: true, cargo: 'Gerente', equipo: 'ambos', codigo_vendedor: null, nombre_odoo: null, activo: true, debe_cambiar_pin: false }
+};
+// Agrega los cargos que falten a un mundo (Tomás queda como analista de Lucía, salvo que se pida otra cosa)
+function conCargos(m, cuales, opc){
+  (cuales || Object.keys(CARGOS)).forEach((k) => { if(!m.personas.some((p) => p.id === CARGOS[k].id)) m.personas.push(Object.assign({}, CARGOS[k])); });
+  if(!(opc && opc.sinAnalista)){ const l = m.personas.find((p) => p.usuario === 'lucia'); if(l && m.personas.some((p) => p.usuario === 'tomas')) l.analista_id = CARGOS.tomas.id; }
+  return m;
+}
 // Corrida urgente 14/10: un líder creado o editado se queda con los clientes que tienen su nombre y no tienen cuenta
 const normal = (t) => String(t || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim();
 function enlazarMock(m, p){
@@ -122,7 +140,13 @@ async function contexto(navegador, opciones, mundo){
       if(m.lento) await new Promise((ok) => setTimeout(ok, m.lento));
       if(m.lentoRpc && m.lentoRpc[rp[1]]) await new Promise((ok) => setTimeout(ok, m.lentoRpc[rp[1]]));
       if(!RPC[rp[1]]) return j({ code: 'PGRST202', message: 'no existe' }, 404);
-      usar(m); const res = RPC[rp[1]](m, yo, args);
+      // Lote 16/11 A: la gerencia lee como el administrador, en solo lectura (como public.pre_request en la base)
+      let yoR = yo;
+      if(yo.gerencia && !LECTURA_GER_PROPIA.test(rp[1])){
+        if(!LECTURA_GER.test(rp[1])) return j({ code: '25006', message: 'cannot execute UPDATE in a read-only transaction' }, 400);
+        yoR = Object.assign({}, yo, { rol: 'admin', gerencia: false, lectura: true });
+      }
+      usar(m); const res = RPC[rp[1]](m, yoR, args);
       if(res && res.__error) return j(res.__error, 400);
       return j(res === undefined ? null : res);
     }
@@ -246,4 +270,4 @@ async function irFiltro(p, id){
   if(!(await p.locator(sel).isVisible().catch(() => false))){ await p.click('#filtros .cx-mas > summary'); await p.waitForSelector(sel); }
   await p.click(sel);
 }
-module.exports = { ddAbrir, ddClick, rvAbierto, rvLista, irFiltro, abrirCtr, cerrarCtr, irContratos, enHoja, chromium, H, TEL, PC, contexto, marcador, pin, sinDesborde, basePersonas, entrar, plegables, esperarDia };
+module.exports = { CARGOS, conCargos, ddAbrir, ddClick, rvAbierto, rvLista, irFiltro, abrirCtr, cerrarCtr, irContratos, enHoja, chromium, H, TEL, PC, contexto, marcador, pin, sinDesborde, basePersonas, entrar, plegables, esperarDia };

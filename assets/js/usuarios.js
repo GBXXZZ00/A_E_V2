@@ -51,7 +51,12 @@
       const est = !u.activo ? '<span class="chip chip-off">Sin acceso</span>'
         : u.debe_cambiar_pin ? '<span class="chip chip-warn">PIN temporal</span>' : '<span class="chip chip-ok">Activo</span>';
       const rol = u.gerencia ? 'Gerencia (solo lectura)' : u.rol === 'analista' && u.senior ? 'Analista Senior' : u.rol === 'analista' && u.coordinador ? 'Coordinador de analistas' : (S.ROLES[u.rol] || u.rol);
-      return '<button type="button" class="persona' + (u.activo ? '' : ' inactiva') + '" data-i="' + i + '">' +
+      // Lote 16/11 A: columna Analista (para líderes), se asigna aquí mismo sin abrir la ficha
+      // Solo la opción elegida; la lista completa se llena al tocarlo (así la fila no lleva los nombres de todos los analistas)
+      const anSel = LA && LA.analistas.find((a) => a.id === (LA.lideres[u.id] || ''));
+      const an = u.rol === 'lider' && !u.gerencia && u.activo && LA ? '<select class="campo us-an" data-analista="' + esc(u.id) + '" aria-label="Analista de ' + esc(u.nombre) + '">' +
+        (anSel ? '<option value="' + esc(anSel.id) + '" selected>' + esc(anSel.nombre) + '</option>' : '<option value="">' + (LA.analistas.length ? 'Sin analista' : 'No hay analistas') + '</option>') + '</select>' : '';
+      return '<div role="button" tabindex="0" class="persona' + (u.activo ? '' : ' inactiva') + '" data-i="' + i + '">' +
         '<span class="quien"><span class="av" aria-hidden="true">' + esc(iniciales(u.nombre)) + '</span><b>' + esc(u.nombre) + '</b>' +
         '<span class="det"><span class="solo-pc">' + esc(u.usuario) + (u.cargo ? ' · ' + esc(u.cargo) : '') + '</span>' +
         '<span class="solo-tel">' + esc(rol) + ' · ' + esc(u.usuario) + (AV && u.activo ? ' · ' + (AV[u.id] ? 'avisos activos' : 'sin avisos') : '') + '</span></span></span>' +
@@ -60,8 +65,9 @@
         '<span class="solo-pc">' + esc(['lider', 'analista'].indexOf(u.rol) >= 0 && !u.gerencia ? equipoCom(u) : '') + '</span>' +
         '<span class="solo-pc">' + esc(u.nombre_odoo || 'Sin asignar') + '</span>' +
         '<span class="solo-pc">' + (u.codigo_vendedor ? '#' + esc(u.codigo_vendedor) : '') + '</span>' +
+        '<span class="solo-pc">' + an + '</span>' +
         '<span class="solo-pc">' + avisoChip(u) + '</span>' +
-        '<span class="est">' + est + '</span></button>';
+        '<span class="est">' + est + '</span></div>';
     }).join('') + '</div>';
   }
 
@@ -76,7 +82,7 @@
       const r = await llamar({ accion: 'listar' });
       usuarios = r.usuarios || [];
       cache.guardar('usuarios', usuarios);
-      pintar(); cargarAvisos(); cargarEquipos();
+      pintar(); cargarAvisos(); cargarEquipos(); cargarAnalistas();
     } catch (e) {
       if(guardado && guardado.length){ pintar(); }
       else { $('resumen').textContent = ''; $('lista').innerHTML = '<div class="vacio"><b>No se pudo cargar la lista</b><p>' + esc(e.message) + '</p><button type="button" class="btn btn-chico" id="reintentar">Reintentar</button></div>'; }
@@ -271,8 +277,24 @@
   $('fAliado').addEventListener('change', () => { $('eAliado').textContent = ''; });
   $('lista').addEventListener('click', (e) => {
     if(e.target.closest('#reintentar')){ usuarios = []; cargar(); return; }
+    if(e.target.closest('[data-analista]')) return;
     const f = e.target.closest('.persona'); if(f) abrir(usuarios[Number(f.dataset.i)]);
   });
+  $('lista').addEventListener('keydown', (e) => { if((e.key === 'Enter' || e.key === ' ') && e.target.classList && e.target.classList.contains('persona')){ e.preventDefault(); abrir(usuarios[Number(e.target.dataset.i)]); } });
+  $('lista').addEventListener('change', async (e) => {
+    const x = e.target.closest('[data-analista]'); if(!x) return;
+    const lid = x.dataset.analista; const antes = (LA && LA.lideres[lid]) || ''; x.disabled = true;
+    try { await rpc('lider_analista', { p_lider: lid, p_analista: x.value || null }); LA.lideres[lid] = x.value || null; toast(x.value ? 'Analista asignado' : 'Quedó sin analista'); }
+    catch (err) { x.value = antes; toast(err.message, 'error'); }
+    x.disabled = false;
+  });
+  // Al tocar el selector se llena con todos los analistas
+  function llenarAnalistas(x){
+    if(!LA || x.dataset.lleno) return; const v = x.value; x.dataset.lleno = '1';
+    x.innerHTML = '<option value="">' + (LA.analistas.length ? 'Sin analista' : 'No hay analistas') + '</option>' + LA.analistas.map((a) => '<option value="' + esc(a.id) + '"' + (a.id === v ? ' selected' : '') + '>' + esc(a.nombre) + '</option>').join('');
+  }
+  ['mousedown', 'focusin', 'touchstart', 'keydown'].forEach((ev) => $('lista').addEventListener(ev, (e) => { const x = e.target.closest && e.target.closest('[data-analista]'); if(x) llenarAnalistas(x); }, { passive: true }));
+  async function cargarAnalistas(){ try { LA = await rpc('lideres_analistas', {}); pintar(); } catch (e) { LA = null; } }
   $('form').addEventListener('submit', guardar);
   $('generar').addEventListener('click', () => { $('fPin').value = pinAzar(); $('ePin').textContent = ''; });
   $('fUsuario').addEventListener('blur', () => { if(!editando) $('fUsuario').value = limpiarUsuario($('fUsuario').value); });

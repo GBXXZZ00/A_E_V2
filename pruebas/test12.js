@@ -11,8 +11,9 @@ const archivo = (nombre, buffer) => ({ name: nombre, mimeType: 'application/vnd.
     // El analista ve el mapa vigente pero no lo sube
     mundo.personas.find((x) => x.usuario === 'pedro').debe_cambiar_pin = false;
     { const o = await contexto(nav, dispositivo, mundo); const q = await entrar(o.ctx, 'pedro', '204871'); q.on('pageerror', (e) => errores.push(e.message));
-      await q.goto(H + 'actualizar.html'); await q.waitForFunction(() => /Analista Senior/.test(document.querySelector('main').textContent));
-      ok(nombre + ': el analista no puede subir el mapa (Actualizar es del administrador y la Senior)', (await q.locator('#mapaRed').count()) === 0 && (await q.locator('#archivos').count()) === 0);
+      // Lote 16/11 A: el analista entra a Actualizar, pero el mapa de red lo sube solo el administrador
+      await q.goto(H + 'actualizar.html'); await q.waitForSelector('#archivos', { state: 'attached' }); await q.waitForTimeout(400);
+      ok(nombre + ': el analista no puede subir el mapa (solo el administrador)', (await q.locator('#mapaRed').count()) === 0);
       await o.ctx.close(); }
 
     const p = await entrar(ctx, 'marcos', '482913'); p.on('pageerror', (e) => errores.push(e.message));

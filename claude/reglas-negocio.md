@@ -42,6 +42,9 @@ Sin nombres reales: el repo es público. "Analista Senior" es el responsable de 
 - Ningún cambio entra solo a comisión. Un cambio a PYME confirmado queda "Comisión: por decidir"; el Analista Senior o el administrador marcan Sí o No con motivo (bitácora). Solo el Sí entra al corte. Quitar el Sí lo saca, salvo que el corte esté certificado. Así hasta que se resuelva el flujo completo.
 - Fecha mínima para comisionar (ajuste editable, hoy 21/09/2026): un cambio de antes queda solo como registro.
 - No se cargan datos reales ni el histórico hasta que el administrador coteje los cambios del mes.
+- Decidido 16/11 (lote 16/11 A, `claude/migraciones-proceso-16nov.md`): el reporte "Consulta Cambio de Categoría" encuentra las hechas sin registro; quedan "sin registrar" del líder (quien la registró, líder del cliente, nombrado en el comentario como sugerencia, o Por asignar) hasta que las registre con sus documentos. Asignar líder no las da por registradas.
+- El líder registra por pasos: servicio, a nombre de quién queda (sube el RIF, se lee solo), documentos (persona natural: RIF y cédula; empresa: el expediente de siempre) y enviar. El administrador aprueba a mano, sin IA. La planilla de cambio de titular es obligatoria para hacer el cambio, pero no entra en la revisión. Aprobada pasa al analista del líder; si ya estaba hecha (reporte o TAD), se confirma sola.
+- Un cambio de titular solo no comisiona; comisiona el cambio a PYME. Después de confirmada sigue como una instalación: contrato con Legal, proforma y carta de bienvenida (la instalación que crea la migración lleva carta y proforma como cualquier otra).
 
 ## Nomenclatura de Odoo (arranca el lunes 12/10/2026)
 - Formato del texto que escribe el líder: `INST. [TIPO] NOMBRE J000000000` y, solo si la orden la crea otra persona por él, su código de vendedor en número al final. El MDT o nodo lo pone Odoo solo.
@@ -229,3 +232,10 @@ Se comparan el **Estado** del TAD (manda siempre), la instalación (I), la últi
 - Una sola aprobación: al aprobar el último documento sale el paso final con los 6 puntos (propuestos por la IA) y "Dar Legal". Ya no se aprueba dos veces.
 - Si Legal ya está dado, la línea de revisión queda en verde y la tarjeta de la IA no sale; la IA solo aparece cuando hay documentos por revisar.
 - Decidido 11/11 (maqueta legal, aprobada): Legal (Reina) no revisa ni aprueba documentos ni ve la IA: lee el expediente con "Ver" y, si algo no cuadra, usa "Hay un problema". Gestiona desde la hoja del cliente con "Tu paso": Recibidos, Contrato en curso, Por firmar y Firmado (con archivo y vencimiento). "Contrato en curso" también es tarea suya en Mi trabajo. Cuando el administrador mira el trabajo de otra persona, cada tarea trae "Ver" y abre la ficha.
+
+## Permisos por cargo (matriz del 16/11, `claude/matriz-cargos.md`)
+- Actualizar: administrador y analistas (Senior, Coordinador, analistas, canales). Líderes no. Dedicados y mapa de red, solo el administrador.
+- Gerencia ve todo en solo lectura (la base rechaza cualquier escritura de esa cuenta). Todos pueden abrir la pantalla Gerencia.
+- Factibilidad para todos; cada quien ve lo suyo. Coordinador de analistas = Analista Senior.
+- Aliados para el equipo: solo lo suyo (solicitudes de su cartera o top y clientes suyos que instaló un aliado). El aliado no entra a Clientes; ve la ficha de su cliente cuando ya está instalado.
+- Comisiones: órdenes de Odoo de hasta 5 días dentro del líder; "Marcar como perdida" con motivo las saca de las listas (quedan en el filtro Perdidas, 60 días). Pedido del 16/11: las secciones dentro del líder se pliegan y las del corte anterior van dentro de Instaladas.

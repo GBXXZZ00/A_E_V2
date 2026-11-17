@@ -10,7 +10,7 @@
   let alCerrarSolo = null;
   const FILTROS = [
     { id: 'todos', t: 'Todas' }, { id: 'comisionan', t: 'Comisionan' }, { id: 'legal', t: 'Faltan documentos' }, { id: 'pago', t: 'Falta el pago' },
-    { id: 'falta', t: 'Les falta algo' }, { id: 'carta', t: 'Carta por enviar' }, { id: 'migraciones', t: 'Migraciones' }, { id: 'ultimo', t: 'Del corte anterior' }, { id: 'pendientes', t: 'Pendientes por instalar' }, { id: 'asignar', t: 'Por asignar' }, { id: 'subir', t: 'Archivos por subir' }, { id: 'eventos', t: 'Eventos' }
+    { id: 'falta', t: 'Les falta algo' }, { id: 'carta', t: 'Carta por enviar' }, { id: 'porinst', t: 'Por instalar' }, { id: 'migraciones', t: 'Migraciones' }, { id: 'ultimo', t: 'Del corte anterior' }, { id: 'pendientes', t: 'Pendientes por instalar' }, { id: 'asignar', t: 'Por asignar' }, { id: 'subir', t: 'Archivos por subir' }, { id: 'eventos', t: 'Eventos' }
   ];
   // Filtros que solo salen cuando tienen algo (o están elegidos)
   const OPCIONALES = ['asignar', 'subir', 'eventos', 'pendientes'];
@@ -20,6 +20,8 @@
   // Lote 10/11 D: persona (al elegir un equipo), aliado, fechas Desde / Hasta y la vista (agrupado por dueño, lo normal, o lista por fecha)
   let persona = ''; let aliado = ''; let desde = ''; let hasta = ''; let vista = 'dueno'; let verFecha = 50; let cartaUrl = '';
   const abiertos = {}; const completos = {};
+  // Lote 16/11 A: bloques dentro del plegable del líder (órdenes de hasta 5 días y migraciones) y secciones plegables
+  let BLQ = null; const plegSec = {};
 
   function leerUrl(){
     const u = new URLSearchParams(location.search);
@@ -93,11 +95,20 @@
     return coincide(f);
   }
   // La base de la lista de un equipo; cada número de la pantalla cuenta sobre esta misma base
-  const baseEq = (e, sinPersona, sinFechas) => filasInst(e).concat(pendInst(e)).filter((f) => pasaExtra(f, sinPersona, sinFechas));
+  function blkInst(e){
+    if(!BLQ || !d || BLQ.corte !== d.corte || seg !== 'inst') return [];
+    const ok = (x) => { const q = x.equipo || 'corporativas'; return e === 'todos' ? equiposVisibles().some((v) => v[0] === q) && q !== 'aliados' : e !== 'aliados' && deEquipo({ equipo: q }, e); };
+    const cod = (m) => { const s0 = (m.servicios || [])[0] || {}; return s0.codigo ? String(s0.codigo).replace(/^0+/, '') : ''; };
+    return (BLQ.ordenes || []).filter(ok).map((o) => ({ blk: 'orden', o, lider: o.lider || 'Por asignar', equipo: o.equipo || 'corporativas', nombre: o.provisional ? 'Cliente provisional · ' + (o.cliente || '') : o.cliente, doc: o.rif || '', orden: o.numero, instalada_en: o.inicio || o.creada_en, cliente_id: o.cliente_id }))
+      .concat((BLQ.migraciones || []).filter(ok).map((m) => ({ blk: 'mig', m, lider: m.lider || 'Por asignar', equipo: m.equipo || 'corporativas', nombre: m.titular, doc: m.doc ? window.Comun.docFmt(m.doc_tipo || '', m.doc) : '', codigo: cod(m), sucursal: ((m.servicios || [])[0] || {}).sucursal, instalada_en: m.fecha, cliente_id: m.cliente_id })));
+  }
+  const baseEq = (e, sinPersona, sinFechas) => filasInst(e).concat(pendInst(e)).concat(blkInst(e)).filter((f) => pasaExtra(f, sinPersona, sinFechas));
   const cartaPend = (f) => f.carta && ['por_enviar', 'falta_ip', 'lider'].indexOf(f.carta.k) >= 0;
   const todasCorte = () => d.filas.concat(d.aliados || []);
   const porAsignar = () => (d ? Number(conteo('asignar')) || 0 : 0);
   function pasa(f){
+    if(f.blk) return filtro === 'todos' || (filtro === 'porinst' && f.blk === 'orden') || (filtro === 'migraciones' && f.blk === 'mig');
+    if(filtro === 'porinst') return !!f.pend;
     if(f.pend) return filtro === 'todos' || filtro === 'pendientes';
     if(filtro === 'pendientes') return false;
     if(filtro === 'comisionan') return !!f.cumple;
@@ -120,7 +131,7 @@
   function conteo(id, e, sinPersona, sinFechas){
     if(!d) return '';
     if(id === 'eventos') return (d.eventos || []).filter(coincide).length;
-    const g = filtro; filtro = id; const n = baseEq(e || equipo, sinPersona, sinFechas).filter(pasa).length; filtro = g; return n;
+    const g = filtro; filtro = id; const n = baseEq(e || equipo, sinPersona, sinFechas).filter((f) => pasa(f) && !(id === 'todos' && f.blk)).length; filtro = g; return n;
   }
 
   function pintarCorte(){
@@ -223,7 +234,7 @@
     // Lote 12/11 (maqueta comisiones): los 4 más usados como chips; el resto en "Más filtros"
     const vis = FILTROS.filter((f) => (OPCIONALES.indexOf(f.id) < 0 || filtro === f.id || Number(conteo(f.id)) > 0) && !(f.id === 'asignar' && esLider()));
     const btn = (f) => { const n = conteo(f.id); return '<button type="button" role="tab" data-filtro="' + f.id + '" class="' + (f.id === filtro ? 'on' : '') + '" aria-selected="' + (f.id === filtro) + '">' + esc(f.t) + (n === '' ? '' : ' <em>' + esc(n) + '</em>') + '</button>'; };
-    const PRIN = ['todos', 'comisionan', 'legal', 'pago', 'carta', 'migraciones'];   // lote 13/11: igual para administrador y líder; Les falta algo pasa a Más filtros
+    const PRIN = ['todos', 'comisionan', 'legal', 'pago', 'carta', 'porinst', 'migraciones'];   // lote 13/11: igual para administrador y líder; Les falta algo pasa a Más filtros
     const otros = vis.filter((f) => PRIN.indexOf(f.id) < 0); const act = otros.find((f) => f.id === filtro);
     if(esLider()){ $('filtros').innerHTML = vis.filter((f) => PRIN.indexOf(f.id) >= 0).map(btn).join('') + (act ? btn(act) : ''); const ay1 = $('ayudaFiltro'); if(ay1) ay1.innerHTML = ayudaFiltro(); return; }
     $('filtros').innerHTML = vis.filter((f) => PRIN.indexOf(f.id) >= 0).map(btn).join('') + (act ? btn(act) : '') +
@@ -311,6 +322,7 @@
     if(!f.pend){
       if(f.equipo === 'aliados') et.push(['morado', 'Aliado · ' + aliadoDe(f)]);
       if(f.migracion) et.push(['azul', 'Migración']);
+      if(f.origen === 'anterior' && !f.cumple) et.push(['rojo', 'Del corte anterior']);   // lote 16/11 A: van dentro de Instaladas
       if(!f.lider && !f.dueno) et.push(['ambar', 'Falta elegir dueño']);
       if(!f.orden_ok && f.motivo) et.push([/parec/i.test(f.motivo) ? 'azul' : '', f.motivo]);
       if(f.movida) et.push(['ambar', 'Movida a mano']);
@@ -323,6 +335,38 @@
       '<span class="cx-lf-p">' + (f.pend ? '' : '<span class="cx-3p" title="Legal · Pago · Orden">' + pt(f.legal_ok) + pt(f.pago_ok) + pt(f.orden_ok) + '</span>') + '<small>' + esc(texto) + '</small></span>' +
       '<span class="cx-lf-k"><span class="chip ' + c[0] + '">' + esc(c[1].replace(/^Carta y proforma por enviar/, 'Por enviar').replace(/^Carta enviada por Canales/, 'Enviada').replace(/^Carta: /, '')) + '</span></span>' + ic('derecha') + '</button>';
   }
+  // Lote 16/11 A: fila de los bloques Por instalar (órdenes de hasta 5 días) y Migraciones, con las clases de siempre
+  function filaBlk(f, porFecha){
+    if(f.blk === 'orden'){
+      const o = f.o; const ini = new Date(o.inicio || o.creada_en); const ms = Math.max(0, Date.now() - ini.getTime()); const dd = Math.floor(ms / 86400000); const hh = Math.floor((ms % 86400000) / 3600000);
+      const lleva = 'Sin instalar · lleva ' + (dd ? dd + ' d ' : '') + hh + ' h'; const dc = o.docs || {};
+      const ch = !o.cliente_id || !dc.subidos ? ['rojo', 'Sin documentos'] : dc.faltan ? ['ambar', dc.faltan === 1 ? 'Falta 1 documento' : 'Faltan ' + dc.faltan + ' documentos'] : ['verde', 'Documentos completos'];
+      const sub = o.provisional || !o.rif ? 'Sin RIF · súbelo para adelantar' : o.rif + ' · sin código todavía';
+      return '<button type="button" class="cx-lf cx-tg cx-fila2" data-orden-blk="' + esc(o.orden_id) + '" aria-label="' + esc((f.nombre || 'Orden') + '. Toca para abrir la orden') + '"><span class="cx-lf-f"><b>Orden ' + esc(diaMes(o.creada_en)) + '</b><small>' + esc(hace(o.creada_en)) + '</small></span>' +
+        '<span class="cx-lf-c"><b>' + esc(f.nombre || 'Sin nombre') + '</b><small>' + esc(sub) + '</small>' + (porFecha ? '<span class="cx-et"><span class="chip ambar">Por instalar · ' + esc(f.lider) + '</span></span>' : '') + '</span>' +
+        '<span class="cx-lf-' + (porFecha ? 'd' : 'o') + '">' + esc(ordenCorta(o.numero)) + '</span>' +
+        '<span class="cx-lf-p"><span class="cx-bt' + (dd >= 4 ? ' tx-rojo' : '') + '">' + esc(lleva) + '</span></span>' +
+        '<span class="cx-lf-k"><span class="chip ' + ch[0] + '">' + esc(ch[1]) + '</span></span>' + ic('derecha') + '</button>';
+    }
+    const m = f.m; const sr = m.estado === 'sin_registro';
+    const est = sr ? 'Migración sin registrar' : m.estado === 'confirmado' ? 'Migración confirmada' : m.borrador ? 'Solicitud sin enviar' : m.estado === 'por_revisar' ? 'Migración registrada' : m.estado === 'por_emitir' ? 'Migración por emitir' : 'Migración por confirmar';
+    const ch = sr || m.borrador || m.faltan ? ['ambar', 'Faltan documentos'] : m.estado === 'por_revisar' ? ['azul', 'Documentos por revisar'] : m.estado === 'confirmado' ? (m.comision ? (m.comision === 'si' ? ['verde', 'Comisiona'] : ['', 'No comisiona']) : ['azul', 'Comisión por decidir']) : ['', m.estado === 'por_emitir' ? 'La emite el analista' : 'Por confirmar'];
+    const cat = (x) => String(x || '?').replace(/-.*$/, '');
+    return '<button type="button" class="cx-lf cx-tg cx-fila2" data-mig-blk="' + esc(m.id) + '" aria-label="' + esc((f.nombre || 'Migración') + '. Toca para abrirla') + '"><span class="cx-lf-f"><b>' + esc(diaMes(m.fecha)) + '</b><small>' + esc(hace(m.fecha)) + '</small></span>' +
+      '<span class="cx-lf-c"><b>' + esc(f.nombre || 'Sin nombre') + '</b><small>' + esc([f.doc, [f.sucursal, f.codigo].filter(Boolean).join('-')].filter(Boolean).join(' · ')) + '</small>' + (porFecha ? '<span class="cx-et"><span class="chip azul">Migración</span></span>' : '') + '</span>' +
+      '<span class="cx-lf-' + (porFecha ? 'd' : 'o') + '">' + (porFecha ? '<span class="chip">' + esc(f.lider) + '</span>' : esc(cat(m.categoria_anterior) + ' → ' + cat(m.categoria_nueva))) + '</span>' +
+      '<span class="cx-lf-p"><span class="cx-bt">' + esc(est) + '</span></span>' +
+      '<span class="cx-lf-k"><span class="chip ' + ch[0] + '">' + esc(ch[1]) + '</span></span>' + ic('derecha') + '</button>';
+  }
+  function plegarSec(b){
+    const k = b.dataset.sec; plegSec[k] = !plegSec[k]; b.classList.toggle('plegada', plegSec[k]); b.setAttribute('aria-expanded', String(!plegSec[k]));
+    const c = b.nextElementSibling; if(c && c.classList.contains('cx-secc')) c.hidden = plegSec[k];
+  }
+  document.addEventListener('keydown', (e) => { if((e.key === 'Enter' || e.key === ' ') && e.target && e.target.dataset && e.target.dataset.sec && e.target.closest('#lista')){ e.preventDefault(); plegarSec(e.target); } });
+  async function cargarBloques(mio){
+    try { const r = await rpc('comisiones_bloques', {}); if(mio !== pedido) return; BLQ = r; cache.guardar('comisiones-bloques', r); if(d){ pintarFiltros(); pintarLista(); } }
+    catch (e) { if(mio !== pedido) return; if(!BLQ) toast('No se pudieron cargar las órdenes y migraciones del líder. ' + e.message, 'error'); }
+  }
   // Lote 10/11 D: "Lista por fecha": todo seguido, la instalación más nueva primero, con su dueño en una etiqueta
   function listaFecha(filas){
     const l = filas.slice().sort((a, b) => (a.pend - b.pend) || fechaDe(b).localeCompare(fechaDe(a)) || String(a.nombre).localeCompare(String(b.nombre)));
@@ -330,7 +374,7 @@
     const texto = (f) => { if(f.pend) return 'Sin instalar'; if(f.cumple) return 'Cumple'; const x = [!f.legal_ok ? 'Legal' : '', !f.pago_ok ? 'pago' : '', !f.orden_ok ? 'orden' : ''].filter(Boolean); return 'Falta ' + window.Comun.lista(x); };
     const pt = (ok) => '<i class="' + (ok ? 'ok' : 'no') + '" aria-hidden="true"></i>';
     const tag = (f) => f.equipo === 'aliados' ? ['morado', 'Aliado · ' + aliadoDe(f)] : duenoDe(f) === 'Por asignar' ? ['ambar', 'Falta elegir dueño'] : f.equipo === 'canales' ? ['azul', 'Canales · ' + duenoDe(f)] : ['', duenoDe(f)];
-    const fila = (f) => { const c = f.pend ? ['', 'Se envía al instalar'] : (etiquetaCarta(f) || ['', 'Sin registro']); const t = tag(f);
+    const fila = (f) => { if(f.blk) return filaBlk(f, true); const c = f.pend ? ['', 'Se envía al instalar'] : (etiquetaCarta(f) || ['', 'Sin registro']); const t = tag(f);
       const att = f.pend ? 'data-exp="' + esc(f.cliente_id) + '"' : 'data-com="' + esc(f.instalacion_id) + '" data-cliente="' + esc(f.cliente_id) + '"';
       return '<button type="button" class="cx-lf" ' + att + '><span class="cx-lf-f"><b>' + esc(f.pend ? 'Sin instalar' : diaMes(f.instalada_en)) + '</b><small>' + esc(f.pend ? '' : hace(f.instalada_en)) + '</small></span>' +
         '<span class="cx-lf-c"><b>' + esc(f.nombre || 'Sin nombre') + '</b><small>' + esc([f.sucursal, f.codigo ? String(f.codigo).replace(/^0+/, '') : ''].filter(Boolean).join('-') || f.doc || '') + '</small></span>' +
@@ -381,23 +425,36 @@
   function grupoHtml(k, titulo, filas, cartas, abrir){
     const ab = abiertos[k] !== undefined ? abiertos[k] : (cartas || !!abrir);
     const inst = filas.filter((f) => !f.pend);
+    // Lote 16/11 A: órdenes de hasta 5 días y migraciones en sus bloques; los pendientes con orden ya salen en el bloque de la orden
+    const ords = filas.filter((f) => f.blk === 'orden'); const conOrden = {}; ords.forEach((f) => { if(f.cliente_id) conOrden[f.cliente_id] = 1; });
+    const pends = filas.filter((f) => f.pend && !conOrden[f.cliente_id]);
+    inst.splice(0, inst.length, ...inst.filter((f) => !f.blk));
+    const nPorInst = ords.length + pends.length;
     const pills = cartas ? '<span class="p w">' + plural(filas.length, 'por enviar', 'por enviar') + '</span>'
-      : '<span class="p g">' + plural(inst.length, 'instalada', 'instaladas') + '</span><span class="p ok">' + inst.filter((f) => f.cumple).length + ' ' + (inst.filter((f) => f.cumple).length === 1 ? 'comisiona' : 'comisionan') + '</span>' +
+      : (nPorInst ? '<span class="p g">' + nPorInst + ' por instalar</span>' : '') + '<span class="p g">' + plural(inst.length, 'instalada', 'instaladas') + '</span><span class="p ok">' + inst.filter((f) => f.cumple).length + ' ' + (inst.filter((f) => f.cumple).length === 1 ? 'comisiona' : 'comisionan') + '</span>' +
         (inst.some((f) => !f.legal_ok) ? '<span class="p w">' + inst.filter((f) => !f.legal_ok).length + (inst.filter((f) => !f.legal_ok).length === 1 ? ' falta Legal' : ' faltan Legal') + '</span>' : '') +
-        (inst.some(cartaPend) ? '<span class="p w">' + inst.filter(cartaPend).length + ' por enviar</span>' : '') +
-        (filas.length > inst.length ? '<span class="p g">' + (filas.length - inst.length) + ' por instalar</span>' : '');
-    const todo = completos[k] || filas.length <= TOPE; const ver = todo ? filas : filas.slice(0, TOPE);
+        (inst.some(cartaPend) ? '<span class="p w">' + inst.filter(cartaPend).length + ' por enviar</span>' : '');
+    const base = filas.filter((f) => !f.blk && !f.pend && !f.migracion); const todo = completos[k] || base.length <= TOPE; const ver = todo ? base : base.slice(0, TOPE);
     // Lote 05/11 E1: dentro de cada dueño, lo del corte anterior que se pierde (rojo), lo de este corte y lo que ya cumplió (verde)
     let cuerpo;
     if(cartas) cuerpo = ver.map(filaCarta).join('');
     else {
       const lim = d && d.limite ? diaMes(d.limite + 'T12:00:00') : '';
-      const sec = (cls, t, l) => l.length ? '<div class="cx-sec ' + cls + '">' + esc(t) + ' · ' + l.length + '</div>' + l.map(filaTabla).join('') : '';
-      const ant = ver.filter((f) => !f.pend && f.origen === 'anterior' && !f.cumple); const est = ver.filter((f) => !f.pend && f.origen !== 'anterior' && !f.cumple);
-      cuerpo = '<div class="cx-lf cx-lf-cab cx-tg" aria-hidden="true"><span>Instalado</span><span>Cliente</span><span>Orden</span><span>Legal · Pago · Orden</span><span>Carta</span><span></span></div>' + sec('rojo', (d && d.corte ? 'Corte de ' + mes(menosMeses(d.corte, 1) + 'T12:00:00Z') : 'Corte anterior') + ': si no cumplen al ' + lim + ' se pierden', ant) + sec('', 'Instaladas en este corte', est) +
-        sec('verde', 'Cumplieron', ver.filter((f) => f.cumple)) + sec('gris', 'Por instalar', ver.filter((f) => f.pend));
+      // Lote 16/11 A: cada sección se pliega tocando su título
+      const sec = (cls, t, l, id, der, fn) => { if(!l.length) return ''; const kk = k + '|' + id; const pl = !!plegSec[kk];
+        return '<div class="cx-sec cx-secb ' + cls + (pl ? ' plegada' : '') + '" role="button" tabindex="0" data-sec="' + esc(kk) + '" aria-expanded="' + !pl + '">' + esc(t) + ' · ' + l.length + (der ? '<span class="cx-sec-d">' + der + '</span>' : '') + '</div>' +
+          '<div class="cx-secc"' + (pl ? ' hidden' : '') + '>' + l.map(fn || filaTabla).join('') + '</div>'; };
+      // Las del corte anterior que todavía no cumplen van dentro de Instaladas, primero, con su aviso
+      const ant = ver.filter((f) => f.origen === 'anterior' && !f.cumple); const est = ver.filter((f) => f.origen !== 'anterior' && !f.cumple);
+      const migs = filas.filter((f) => f.blk === 'mig').concat(filas.filter((f) => !f.blk && f.migracion));
+      const corto = window.matchMedia && window.matchMedia('(max-width: 700px)').matches;
+      cuerpo = '<div class="cx-lf cx-lf-cab cx-tg" aria-hidden="true"><span>Instalado</span><span>Cliente</span><span>Orden</span><span>Legal · Pago · Orden</span><span>Carta</span><span></span></div>' +
+        sec('am', 'Por instalar · órdenes de hasta 5 días', ords, 'pi', esc(corto ? 'Más de 5 días: en Por instalar' : 'Las de más de 5 días están en Por instalar'), (f) => filaBlk(f)) +
+        sec('az', 'Migraciones', migs, 'mig', 'Ya hechas en el sistema', (f) => f.blk ? filaBlk(f) : filaTabla(f)) +
+        sec(ant.length ? '' : '', ant.length ? 'Instaladas' : 'Instaladas en este corte', ant.concat(est), 'inst', ant.length ? esc((ant.length === 1 ? '1 del corte anterior' : ant.length + ' del corte anterior') + ': si no cumplen al ' + lim + ' se pierden') : '') +
+        sec('verde', 'Cumplieron', ver.filter((f) => f.cumple), 'ok') + sec('gris', 'Por instalar', pends, 'pend');
     }
-    cuerpo += todo ? '' : '<button type="button" class="fila mas" data-mas="' + esc(k) + '">Ver ' + (filas.length - TOPE) + ' más</button>';
+    cuerpo += todo || cartas ? '' : '<button type="button" class="fila mas" data-mas="' + esc(k) + '">Ver ' + (base.length - TOPE) + ' más</button>';
     // Lote 13/11 parte 9: "Enviar pendientes" va en la cabecera, al lado del nombre (fuera del botón que abre y cierra el grupo)
     const env = cartas ? '' : botonPendientes({ lider: titulo });
     return '<div class="grupo cx-grupo' + (ab ? ' abierto' : '') + '" data-lider="' + esc(titulo) + '" data-k="' + esc(k) + '"><div class="cx-gcab"><button type="button" class="grupo-cab cx-ga" data-grupo="' + esc(k) + '" aria-expanded="' + !!ab + '">' + ic('abajo') +
@@ -645,6 +702,7 @@
     if(SOLO) return cargarSolo();
     const mio = ++pedido; const clave = 'comisiones4:' + (corte || 'actual');
     const guardado = cache.leer(clave);
+    if(!BLQ){ const gb = cache.leer('comisiones-bloques'); if(gb) BLQ = gb; }
     if(guardado && guardado.rol === yo.rol){ d = guardado; pintar(); }
     else { $('lista').innerHTML = esqueleto(5); $('segs').innerHTML = '<span class="sk" style="height:66px;border-radius:18px"></span><span class="sk" style="height:66px;border-radius:18px"></span><span class="sk" style="height:66px;border-radius:18px"></span>'; }
     try {
@@ -656,7 +714,7 @@
       if(cartaUrl){ const f = todasCorte().find((x) => String(x.instalacion_id) === cartaUrl); cartaUrl = ''; if(f) abrirComision(f.instalacion_id, f.cliente_id, true); }
       // Lote 12/11 B: desde Mi trabajo, "Cerrar el corte" cae en el cierre
       if(pedirCierre){ pedirCierre = false; if((d.puedo || {}).certificar && !d.certificado) abrirCertificar(); }
-      cargarMig(mio);
+      cargarMig(mio); cargarBloques(mio);
     } catch (e) {
       if(mio !== pedido) return;
       if(!d) $('lista').innerHTML = '<div class="vacio" role="alert"><b>No se pudieron cargar las comisiones</b><p>' + esc(e.message) + '</p><button type="button" class="btn btn-chico" id="reintentar">Reintentar</button></div>';
@@ -1199,6 +1257,10 @@
     if(e.target.closest('[data-mas-fecha]') && d){ verFecha += 50; pintarLista(); return; }
     const ab = e.target.closest('[data-abrir]'); if(ab){ abrirExtra(ab.dataset.abrir); return; }
     const t = e.target; let b;
+    // Lote 16/11 A: bloques del líder y secciones plegables
+    if((b = t.closest('[data-sec]'))){ plegarSec(b); return; }
+    if((b = t.closest('[data-orden-blk]'))){ if(window.PorInstalar && window.PorInstalar.orden) window.PorInstalar.orden(Number(b.dataset.ordenBlk), { yo, alCambiar: () => { const n = ++pedido; cargarBloques(n); } }); return; }
+    if((b = t.closest('[data-mig-blk]'))){ location.href = 'migraciones.html?c=' + encodeURIComponent(b.dataset.migBlk); return; }
     if((b = t.closest('[data-com]'))){ abrirComision(b.dataset.com, b.dataset.cliente, !!b.dataset.carta); return; }
     // Carta y proforma: un solo botón por WhatsApp, correo opcional y ver los PDF
     const iK = () => K && K.F && (K.F.comision || []).find((x) => Number(x.id) === K.inst);
@@ -1371,7 +1433,7 @@
   $('busca').addEventListener('input', () => { clearTimeout(tBusca); tBusca = setTimeout(() => { busca = $('busca').value.trim(); guardarUrl(); if(d){ pintarEquipos(); pintarAlertas(); pintarFiltros(); pintarLista(); } }, 140); });
   $('corte').addEventListener('change', () => { corte = $('corte').value; d = null; cargar(); });
 
-  window.Armazon.arrancar(['admin', 'abogado', 'lider', 'analista'], { activo: 'comisiones' }, (p) => {
+  window.Armazon.arrancar(['admin', 'abogado', 'lider', 'analista', 'gerencia'], { activo: 'comisiones' }, (p) => {
     yo = p;
     window.Ficha.montar();
     // Lote 28/10: el Resumen de Comisiones va por corte (comisiones-resumen.js)

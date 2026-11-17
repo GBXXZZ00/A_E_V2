@@ -64,3 +64,7 @@ Igual a `img/comisiones-*`:
 
 ## Al terminar
 Qué quedó, qué debe probar el administrador (lista corta por módulo) y qué quedó pendiente.
+
+## Agregado por el administrador durante la ejecución (17/11)
+- Las secciones dentro del plegable del líder en Comisiones (Por instalar, Migraciones, Instaladas, Cumplieron) se pliegan tocando su título.
+- Las del corte anterior van dentro de "Instaladas" (primero, con su aviso de cuándo se pierden y la etiqueta "Del corte anterior").

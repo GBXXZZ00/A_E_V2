@@ -260,16 +260,13 @@ const entrarAliado = (ctx, persona) => entrarComo(ctx, persona, 'aliados');
     // ----- Líder: ve el registro completo solo para ver, con "Tu cliente" y "Lo mío" -----
     const l = await entrarComo(ctx, { usuario: 'lucia', pin: '739105' }, 'ventas'); await l.waitForSelector('[data-modulo="aliados"]');
     await l.goto(H + 'aliados.html'); await l.waitForSelector('#lista .grupo');
-    ok(nombre + ': el líder entra al Registro y tiene Instalados', (await l.locator('#filtros [data-tab]').count()) === 3 && (await l.textContent('#ayuda')).includes('Solo para ver'));
+    ok(nombre + ': el líder entra al Registro y tiene Instalados', (await l.locator('#filtros [data-tab]').count()) === 3 && (await l.textContent('#ayuda')).includes('Las decisiones las toma el administrador'));
     ok(nombre + ': el líder no ve el aviso de decisiones', (await l.textContent('#avisoAl')).trim() === '');
     await l.click('#chipsAl [data-chipal="mio"]'); await l.waitForSelector('#lista .tagn');
     ok(nombre + ': "Lo mío" deja sus clientes con la marca Tu cliente', (await l.textContent('#lista')).includes('Óptica Imaginaria') && (await l.locator('#lista .tagn', { hasText: 'Tu cliente' }).count()) >= 1 && !(await l.textContent('#lista')).includes('Comercial Ficticia'));
-    await l.click('#chipsAl [data-chipal="todo"]'); if(!(await l.locator('[data-grupoal]').count())){ await l.click('[data-vistaal="aliado"]'); await l.waitForSelector('[data-grupoal]'); }
-    await l.click('[data-grupoal="Conecta Sur Ejemplo"]'); await l.click('[data-sol="29"]'); await l.waitForSelector('#hojaSol.ver .estado');
-    ok(nombre + ': el líder abre la solicitud con todo y sin ningún botón de acción', (await l.locator('#hojaSol [data-form], #hojaSol [data-acc="revisarDeNuevo"], #hojaSol [data-acc="expediente"]').count()) === 0 && (await l.textContent('#cSol')).includes('Bitácora'));
-    await l.click('#hojaSol [data-cierra]'); await l.waitForTimeout(350);
-    await l.click('#chipsAl [data-chipal="refs"]'); await l.click('[data-grupoal="Conecta Sur Ejemplo"]').catch(() => {}); await l.waitForSelector('[data-ref="8"]'); await l.click('[data-ref="8"]'); await l.waitForSelector('#hojaForm.ver');
-    ok(nombre + ': el referido se ve sin poder aceptarlo', (await l.locator('#hojaForm [data-acc="guardarForm"], #hojaForm #fLider').count()) === 0);
+    // Lote 16/11 A: el equipo solo ve lo suyo (sus clientes o su cartera); las solicitudes ajenas no llegan, ni los referidos de otros
+    await l.click('#chipsAl [data-chipal="todo"]'); await l.waitForTimeout(300);
+    ok(nombre + ': en Todo el líder sigue viendo solo lo suyo, con el texto nuevo', !(await l.textContent('#lista')).includes('Conecta Sur Ejemplo') && /Solo ves lo tuyo/.test(await l.textContent('#ayuda')));
     await l.screenshot({ path: 'capturas/t20-' + nombre + '-lider-registro.png' });
     await l.close();
 
