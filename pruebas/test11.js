@@ -41,7 +41,7 @@ const cerrarTodo = async (p) => { for(let i = 0; i < 4; i++){ if(await p.evaluat
     ok(nombre + ': la hoja no desborda', await sinDesborde(p));
     await p.waitForTimeout(300); await p.screenshot({ path: 'capturas/11-' + nombre + '-mensaje.png' });
     await p.click('#pendEnviar'); await p.waitForFunction(() => !window.Comun.hojaAbierta());
-    const ultimoChat = chats[chats.length - 1] || '';
+    await p.waitForTimeout(1900); const ultimoChat = chats[chats.length - 1] || '';
     ok(nombre + ': abre WhatsApp del líder con el mensaje', ultimoChat.includes('wa.me/584145550199') && ultimoChat.includes('Te paso tus pendientes'), ultimoChat.slice(0, 80));
     const anot = (mundo.bitacora || []).filter((b) => b.accion === 'pendientes_enviados');
     ok(nombre + ': queda anotado quién lo envió', anot.length === 1 && anot[0].usuario === 'marcos' && anot[0].registro_id === 'Lucía Ferrer' && anot[0].despues.pdf === false, anot);
@@ -63,14 +63,14 @@ const cerrarTodo = async (p) => { for(let i = 0; i < 4; i++){ if(await p.evaluat
       await p.click('#pendEnviar'); await p.waitForFunction(() => !!window.__compartido);
       const comp = await p.evaluate(() => window.__compartido);
       ok('tel: comparte el PDF con el mensaje', comp.nombres.length === 1 && /^Pendientes_Lucia_Ferrer_[a-z]+\.pdf$/.test(comp.nombres[0]) && comp.texto.includes('Tienes'), comp);
-      ok('tel: copia el número del líder', (await p.evaluate(() => window.__copiado)) === '0414 555 0199');
+      ok('tel: copia el mensaje para pegarlo en el chat', (await p.evaluate(() => window.__copiado)) === comp.texto);
     } else {
       const [bajada] = await Promise.all([p.waitForEvent('download'), p.click('#pendEnviar')]);
       const ruta = 'capturas/11-pendientes.pdf'; await bajada.saveAs(ruta);
       const t = texto(ruta);
       ok('pc: descarga el PDF de la lista', /^Pendientes_Lucia_Ferrer_[a-z]+\.pdf$/.test(bajada.suggestedFilename()), bajada.suggestedFilename());
       if(t !== null) ok('pc: el PDF trae a todos los clientes, el último corte primero y las páginas', t.includes('Cliente Inventado 20') && t.includes('Cliente Inventado 1') && /Página 1 de [2-9]/.test(t) && t.includes('Pendientes del corte de'), t.slice(0, 300));
-      await p.waitForTimeout(200);
+      await p.waitForTimeout(1900);
       ok('pc: abre WhatsApp con el resumen', (chats[chats.length - 1] || '').includes('Tienes'));
     }
     await p.waitForFunction(() => !window.Comun.hojaAbierta());

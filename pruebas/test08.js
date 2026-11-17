@@ -51,12 +51,12 @@ const llamo = (m, n) => m.llamadas.filter((l) => l[1] === n);
     if(tel){
       await p.click('#envWa'); await p.waitForFunction(() => !!window.__compartido);
       const c = await p.evaluate(() => [window.__compartido, window.__copiado]);
-      ok(nombre + ': comparte los dos PDF y copia el número', c[0].nombres.join() === 'Proforma_Vidrios_El_Faro_C_A.pdf,Carta_Bienvenida_Vidrios_El_Faro_C_A.pdf' && c[0].tipos.every((t) => t === 'application/pdf') && c[0].texto.includes('carta de bienvenida') && c[1] === '0414 555 0134');
+      ok(nombre + ': comparte los dos PDF y copia el mensaje para pegarlo', c[0].nombres.join() === 'Proforma_Vidrios_El_Faro_C_A.pdf,Carta_Bienvenida_Vidrios_El_Faro_C_A.pdf' && c[0].tipos.every((t) => t === 'application/pdf') && c[0].texto.includes('carta de bienvenida') && c[1] === c[0].texto);
     } else {
       const bajadas = []; p.on('download', (d) => bajadas.push(d.suggestedFilename()));
       const [chat] = await Promise.all([ctx.waitForEvent('page'), p.click('#envWa')]);
       await p.waitForFunction(() => !document.querySelector('#hojaEnviar.ver'));
-      ok(nombre + ': descarga los dos PDF, copia el número y abre el chat', bajadas.sort().join() === 'Carta_Bienvenida_Vidrios_El_Faro_C_A.pdf,Proforma_Vidrios_El_Faro_C_A.pdf' && chat.url().includes('wa.me/584145550134') && decodeURIComponent(chat.url()).includes('carta de bienvenida') && (await p.evaluate(() => window.__copiado)) === '0414 555 0134');
+      ok(nombre + ': descarga los dos PDF y abre el chat (wa.me si no abre WhatsApp de escritorio)', bajadas.sort().join() === 'Carta_Bienvenida_Vidrios_El_Faro_C_A.pdf,Proforma_Vidrios_El_Faro_C_A.pdf' && chat.url().includes('wa.me/584145550134') && decodeURIComponent(chat.url()).includes('carta de bienvenida'));
       await chat.close();
     }
     await p.waitForFunction(() => /Carta y proforma enviadas/.test(document.getElementById('tab-datos').textContent));

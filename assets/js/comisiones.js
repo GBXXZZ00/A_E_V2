@@ -1315,7 +1315,7 @@
     try {
       const r = await rpc('comisiones_lista', { p_corte: corte || null }); if(mio !== pedido) return;
       d = r; d.filas = d.filas || []; d.aliados = d.aliados || []; d.pendientes = d.pendientes || []; corte = d.corte; cache.guardar('comisiones4:' + (corte || 'actual'), d);
-      repintarQuieto(pintar); cargarMig(mio); cargarBloques(mio);
+      repintarQuieto(pintar); guardarUrl(); if(K && K.F) pintarComision(); cargarMig(mio); cargarBloques(mio);
     } catch (e) { if(mio === pedido) toast(e.message, 'error'); }
   }
   function repintarQuieto(fn){ const y = window.scrollY; const l = $('lista'); const h = l ? l.offsetHeight : 0; if(l) l.style.minHeight = h + 'px'; fn(); if(l) l.style.minHeight = ''; window.scrollTo(0, y); }
