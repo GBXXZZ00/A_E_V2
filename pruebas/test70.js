@@ -13,7 +13,7 @@ const { ok, cerrar } = marcador();
     const l = await entrar(ctx, 'lucia', '739105'); l.on('pageerror', (e) => errores.push(nombre + ' líder: ' + e.message));
     await l.goto(H + 'comisiones.html'); await l.waitForSelector('#lista .cx-grupo', { timeout: 15000 });
     const fs = await l.$$eval('#filtros > button', (bs) => bs.map((b) => b.dataset.filtro));
-    ok(nombre + ': el líder ve los filtros de estado a la vista, sin Más filtros', fs.join() === 'todos,comisionan,legal,pago,carta,migraciones' && (await l.locator('#filtros .cx-mas').count()) === 0, fs);
+    ok(nombre + ': el líder ve los filtros de estado a la vista, sin Más filtros', fs.join() === 'todos,comisionan,legal,pago,carta,porinst,migraciones' && (await l.locator('#filtros .cx-mas').count()) === 0, fs);
     ok(nombre + ': sin la tarjeta Cambios de categoría', !/Cambios de categor/.test(await l.textContent('#segs')));
     ok(nombre + ': la migración sale dentro de su lista con la etiqueta Migración', (await l.locator('#lista .cx-grupo .chip.azul', { hasText: 'Migración' }).count()) >= 1);
     await l.click('#filtros [data-filtro="migraciones"]'); await l.waitForTimeout(200);

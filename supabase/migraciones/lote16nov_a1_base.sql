@@ -134,3 +134,8 @@ end $$;
 select privado.redefinir('public.cliente_ficha'::regproc::regprocedure, jsonb_build_array(jsonb_build_array(
   E'  select * into c from public.clientes where id = p_cliente;\n  if not found',
   E'  if v_rol = ''aliado'' and not exists (select 1 from public.aliado_solicitudes s where s.cliente_id = p_cliente and s.aliado_id = privado.mi_aliado() and s.etiqueta = ''instalada'') then\n    raise exception ''La ficha del cliente se abre cuando ya está instalado'' using errcode = ''P0001''; end if;\n  select * into c from public.clientes where id = p_cliente;\n  if not found')));
+
+-- Ajuste (lote16nov_a4_coordinador_vista): el Coordinador tiene los permisos de la Senior, pero conserva su tablero en Mi trabajo
+select privado.redefinir('privado.trabajo_vista'::regproc::regprocedure, '[["when r = ''admin'' or privado.es_senior() then ''admin'' when privado.es_coordinador() then ''coord''", "when r = ''admin'' then ''admin'' when privado.es_coordinador() then ''coord'' when privado.es_senior() then ''admin''"]]');
+-- Ajuste (lote16nov_a5_coordinador_mi_trabajo): en Mi trabajo el Coordinador no cuenta como Senior (conserva su tablero del lote 11/11)
+select privado.redefinir('public.mi_trabajo'::regproc::regprocedure, '[["senior boolean := privado.es_senior();", "senior boolean := privado.es_senior() and not privado.es_coordinador();"]]');

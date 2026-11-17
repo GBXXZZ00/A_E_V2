@@ -59,8 +59,6 @@
     perfilActual = data || null;
     // Lote 7: la marca Gerencia es un rol de solo lectura (en la base, privado.rol_actual() dice lo mismo)
     if(perfilActual && perfilActual.gerencia) perfilActual.rol = 'gerencia';
-    // Lote 16/11 A: el Coordinador de analistas ve y hace lo mismo que la Senior (en la base, privado.es_senior() dice lo mismo)
-    if(perfilActual && perfilActual.rol === 'analista' && perfilActual.coordinador) perfilActual.senior = true;
     guardarPerfil(perfilActual && perfilActual.activo && !perfilActual.debe_cambiar_pin ? perfilActual : null);
     return perfilActual;
   }

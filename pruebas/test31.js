@@ -39,7 +39,9 @@ const GINA = { id: '77777777-7777-4777-8777-777777777700', usuario: 'gina', pin:
     if(pc){ await g.locator('#pinCampo').focus(); await g.keyboard.type('640218', { delay: 15 }); } else for(const n of '640218') await g.locator('.tecla[data-k="' + n + '"]').click();
     await g.waitForURL('**/gerencia.html**'); await g.waitForSelector('#zonaG button.gtj');
     ok(nombre + ': la cuenta Gerencia entra directo a Gerencia y ve Comisiones', (await g.locator('.gtj[data-gt="comisiones"]').count()) >= 1);
-    ok(nombre + ': su menú solo tiene Gerencia', await g.evaluate(() => [...document.querySelectorAll('.navpc a, #navTel a, nav a')].every((a) => /gerencia\.html|inicio\.html|#/.test(a.getAttribute('href') || ''))));
+    // Lote 16/11 A: gerencia también entra (en solo lectura) a Comisiones, Clientes, Migraciones, Aliados y Factibilidad; nunca a Mi trabajo, Usuarios ni Actualizar
+    ok(nombre + ': su menú tiene Gerencia y los módulos de solo lectura', await g.evaluate(() => [...document.querySelectorAll('.navpc a, #navTel a, nav a')].every((a) => /gerencia\.html|inicio\.html|comisiones\.html|clientes\.html|migraciones\.html|aliados\.html|factibilidad\.html|#/.test(a.getAttribute('href') || ''))) &&
+      (await g.locator('a[href="trabajo.html"], a[href="usuarios.html"], a[href="actualizar.html"]').count()) === 0);
     await g.locator('.gtj[data-gt="clientes"]').first().click(); await g.waitForSelector('#hojaGMod.ver .rs-s-barra button');
     await g.locator('#hojaGMod .rs-s-barra button').first().click(); await g.waitForSelector('#hojaRes.ver .rs-df');
     ok(nombre + ': Gerencia ve la lista pero no abre fichas', (await g.locator('#hojaRes button.rs-df').count()) === 0);

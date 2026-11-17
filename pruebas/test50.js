@@ -118,7 +118,7 @@ async function cerrarHojas(p){ for(let i = 0; i < 5 && await p.evaluate(() => !!
     mundo.personas.find((x) => x.usuario === 'pedro').debe_cambiar_pin = false;
     const cP = await contexto(nav, dispositivo, mundo); const q = await entrar(cP.ctx, 'pedro', '204871').catch(() => null);
     if(q){ await q.goto(H + 'actualizar.html'); await q.waitForSelector('main .vacio', { timeout: 15000 }).catch(() => {});
-      ok(nombre + ': un analista que no es Senior no actualiza', /administrador y la Analista Senior/.test(await q.textContent('main'))); }
+      ok(nombre + ': un analista que no es Senior también actualiza (lote 16/11 A)', !/administrador y la Analista Senior/.test(await q.textContent('main')) && (await q.locator('#archivos').count()) === 1); }
 
     // ----- Usuarios: columna Equipo -----
     if(nombre === 'pc'){

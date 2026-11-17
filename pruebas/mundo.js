@@ -1224,7 +1224,7 @@ const RPC = {
     if(!['admin', 'analista', 'lider', 'abogado'].includes(yo.rol)) return error('No tienes permiso para hacer esto');
     const h = hoy(); const jefe = esSenior(yo); const coord = !!yo.coordinador; let quien = yo;
     if(a.p_persona && a.p_persona !== yo.id){ quien = m.personas.find((p) => p.id === a.p_persona); if(!quien || !(jefe || (coord && quien.rol === 'analista'))) return error('No puedes ver el trabajo de esa persona'); }
-    const vista = quien !== yo ? (quien.rol === 'analista' ? (quien.senior ? 'admin' : quien.coordinador ? 'coord' : 'analista') : quien.rol) : jefe ? 'admin' : coord ? 'coord' : yo.rol;
+    const vista = quien !== yo ? (quien.rol === 'analista' ? (quien.senior ? 'admin' : quien.coordinador ? 'coord' : 'analista') : quien.rol) : yo.rol === 'admin' ? 'admin' : coord ? 'coord' : jefe ? 'admin' : yo.rol;   // lote 16/11 A: el Coordinador conserva su tablero
     // Lote 05/11 D5: lo pedido (requerimientos abiertos) le sale al líder en "Devueltos o pedidos"
     const pedidos = []; m.datos.clientes.forEach((c) => { faltantes(c); (c.requerimientos || []).filter((z) => z.estado === 'abierto').forEach((z) => pedidos.push({ tipo: 'pedido', clave: String(z.id), cliente_id: c.id, titulo: c.nombre, detalle: 'Falta: ' + z.texto, lider_id: c.lider_id, analista_id: null, para: 'lider', desde: z.en, vence: null, ref: { casilla: z.casilla, numero: z.numero } })); });
     const base = asignar(m, pendientesBase(m).concat(m.datos.extra || []).concat(buzonMundo(m)).concat(pedidos));
@@ -1244,7 +1244,7 @@ const RPC = {
       const l = base.filter((x) => (p.rol === 'lider' && x.para === 'lider' && x.lider_id === p.id) || (p.rol === 'analista' && x.para === 'analista' && x.analista_id === p.id) || (p.rol === 'abogado' && x.para === 'abogado'));
       return { id: p.id, nombre: p.nombre, rol: p.rol === 'lider' ? 'Líder' : p.rol === 'abogado' ? 'Legal' : 'Analista', n: l.length, venc: l.filter((x) => x.vence < h).length, hoy: l.filter((x) => x.vence === h).length }; }).filter((e) => e.n) : [];
     m.datos.notas = m.datos.notas || [];
-    return { rol: yo.rol, vista, senior: jefe && yo.rol !== 'admin', coordinador: coord, hoy: h, nombre: quien.nombre, persona: quien !== yo ? { id: quien.id, nombre: quien.nombre } : null,
+    return { rol: yo.rol, vista, senior: jefe && yo.rol !== 'admin' && !coord, coordinador: coord, hoy: h, nombre: quien.nombre, persona: quien !== yo ? { id: quien.id, nombre: quien.nombre } : null,
       solo_consulta: quien !== yo, vende: ['lider', 'analista'].includes(quien.rol) && ['corporativas', 'canales'].includes(equipoDe(m, quien.nombre)), hoy_hechos: 0,
       notas: quien === yo ? m.datos.notas.filter((n) => n.perfil === yo.id).map((n) => Object.assign({}, n, { cliente: n.cliente_id ? (m.datos.clientes.find((c) => c.id === n.cliente_id) || {}).nombre : null })) : [],
       corte: enCurso(), limite: hoy(), items, puedo_crear_gestion: jefe || coord,

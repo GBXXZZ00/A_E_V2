@@ -236,8 +236,8 @@ function ordenesAbiertas(m, yo){
   if(['admin', 'analista'].includes(yo.rol)) (m.datos.sueltas || []).forEach((o) => { const h = horasReloj(o.creada_en); const p = m.datos.clientes.find((x) => x.id === o.parecido_id);
     r.push({ orden_id: o.id, numero: o.numero, titulo: o.titulo, etapa: o.etapa, creada_en: o.creada_en, inicio: o.creada_en, veces: 0, horas: h, color: h >= 24 ? 'rojo' : h >= 16 ? 'ambar' : 'verde',
       cliente_id: null, cliente: o.nombre, provisional: false, parecido_id: o.parecido_id, parecido: p ? p.nombre : null, lider: o.lider || 'Por asignar', de_otro: false }); });
-  const rango = { rojo: 0, ambar: 1, verde: 2 };
-  return r.sort((x, y) => rango[x.color] - rango[y.color] || y.horas - x.horas);
+  const rango = { rojo: 0, ambar: 1, verde: 2 }; const perd = m.datos.perdidas || {};
+  return r.filter((o) => !perd[o.orden_id]).sort((x, y) => rango[x.color] - rango[y.color] || y.horas - x.horas);
 }
 const error = (mensaje) => ({ __error: { code: 'P0001', message: mensaje } });
 // Lote 6: pendientes inventados como los arma privado.pendientes (analista del líder, líder, senior)
@@ -366,7 +366,7 @@ function requisitosCambio(m, c){
   const cid = c.tipo === 'migracion' ? c.cliente_id : c.nuevo && c.nuevo.cliente_id; const cli = m.datos.clientes.find((x) => x.id === cid); if(!cli) return [];
   const est = (cas, num) => { const d = (cli.documentos || []).find((x) => x.casilla === cas && x.numero === num && (x.archivos || []).length); return d ? d.estado : 'falta'; };
   const sufijo = c.tipo === 'migracion' ? '' : ' del nuevo titular';
-  let r = c.tipo === 'migracion' ? [] : [['otro', 80, 'Planilla de cambio de titular firmada'], ['otro', 81, 'Cédula o RIF del titular actual']];
+  let r = [];   // lote 16/11 A: la planilla es obligatoria para hacer el cambio pero no entra en la revisión
   r = r.concat(cli.es_natural ? [['cedula', 1, 'Cédula' + sufijo], ['rif_personal', 1, 'RIF personal' + sufijo]] : [['cedula', 1, 'Cédula' + sufijo], ['rif_personal', 1, 'RIF personal' + sufijo], ['rif_empresa', 0, 'RIF de la empresa' + sufijo], ['acta_constitutiva', 0, 'Acta constitutiva' + sufijo]]);
   return r.map((x) => ({ cliente_id: cid, casilla: x[0], numero: x[1], texto: x[2], estado: est(x[0], x[1]) }));
 }
@@ -374,15 +374,24 @@ function puedeHecho(m, yo, c){
   if(c.estado !== 'por_emitir') return false; if(yo.rol === 'admin') return true; if(yo.rol !== 'analista') return false;
   const l = m.personas.find((p) => p.id === c.lider_id); return !!yo.senior || !!yo.coordinador || !l || !l.analista_id || l.analista_id === yo.id;
 }
+const cambioDueno = (m, c) => c.lider_id || (c.estado === 'sin_registro' ? ((m.datos.clientes.find((x) => x.id === c.cliente_id) || {}).lider_id || null) : null);
+function cambioVer(m, yo, c){
+  if(yo.rol === 'admin') return true; if(c.creado_por_id === yo.id) return true; const d = cambioDueno(m, c);
+  if(yo.rol === 'lider') return !!d && d === yo.id;
+  if(yo.rol === 'analista'){ if(esSenior(yo)) return true; const l = m.personas.find((p) => p.id === d); return !!d && (!l || !l.analista_id || l.analista_id === yo.id); }
+  return false;
+}
 function cambioJson(m, c, yo){
-  const req = requisitosCambio(m, c);
-  return Object.assign({}, c, { requisitos: undefined, puedo_hecho: !!yo && puedeHecho(m, yo, c),
+  const req = requisitosCambio(m, c); const d = cambioDueno(m, c); const pd = m.personas.find((p) => p.id === d);
+  return Object.assign({}, c, { requisitos: undefined, puedo_hecho: !!yo && puedeHecho(m, yo, c), borrador: !!c.borrador, dueno_id: d, dueno: pd ? pd.nombre : c.lider || null, analista_id: pd ? pd.analista_id || null : null,
+    sugerido: c.sugerido_id ? (m.personas.find((p) => p.id === c.sugerido_id) || {}).nombre : null, corte_cambio: c.fecha_cambio ? corteDe(String(c.fecha_cambio).slice(0, 10)) : null,
     docs: { total: req.length, aprobados: req.filter((r) => r.estado === 'aprobado').length, faltan: req.filter((r) => r.estado === 'falta' || r.estado === 'devuelto').length } });
 }
 function avanzarCambio(m, c, yo){
-  if(c.estado !== 'por_revisar') return;
+  if(c.estado !== 'por_revisar' || c.borrador) return;
   if(requisitosCambio(m, c).some((r) => r.estado !== 'aprobado')) return;
   c.estado = 'por_emitir'; c.bitacora.push({ accion: 'cambio_docs_aprobados', en: new Date().toISOString(), por: yo ? yo.nombre : null });
+  if(c.fecha_cambio && c.tipo !== 'titularidad') confirmarCambio(m, c, c.fecha_cambio);   // ya estaba hecha: salta el paso del analista
 }
 // Lo que muestra hoy el TAD para el cambio: 'ok', 'falta_plan', 'falta_categoria' o null
 function evaluarCambio(k, c){
@@ -398,7 +407,7 @@ function evaluarCambio(k, c){
   return res;
 }
 
-const esSenior = (yo) => yo.rol === 'admin' || (yo.rol === 'analista' && !!yo.senior);
+const esSenior = (yo) => yo.rol === 'admin' || (yo.rol === 'analista' && (!!yo.senior || !!yo.coordinador));   // lote 16/11 A: el Coordinador como la Senior
 const duenoDe = (c, i) => (i.dueno !== undefined ? i.dueno : c.lider);
 const ordenOk = (c, i) => !!(i.confirmada && (i.orden || i.cruce === 'manual') && duenoDe(c, i));
 // B4: motivo en una frase; B8: aprobado por Legal con casillas obligatorias sin archivo
@@ -663,8 +672,29 @@ const RPC = {
       filas: ordenesAbiertas(m, yo).map((o) => { const c = m.datos.clientes.find((x) => x.id === o.cliente_id); const vieja = new Date(o.creada_en).getTime() < abre;
         return Object.assign({ anterior: vieja, vieja, en_app: !!c && !c.provisional, docs: c ? (c.documentos || []).filter((d) => (d.archivos || []).length).length : 0, rif: c && !c.provisional ? c.doc_tipo + '-' + c.doc_numero : null }, o); }),
       realizadas: yo.rol === 'admin' || sen ? (m.datos.realizadas || []) : null, duenos: sen ? DUENOS : [],
-      puedo: { asignar: sen, realizadas: yo.rol === 'admin' || sen, horas: yo.rol === 'admin' } };
+      puedo: { asignar: sen, realizadas: yo.rol === 'admin' || sen, horas: yo.rol === 'admin' }, puedo_perdida: !yo.lectura,
+      perdidas: Object.values(m.datos.perdidas || {}).filter((o) => yo.rol !== 'lider' || o.lider_id === yo.id) };
   },
+  // Lote 16/11 A: marcar una orden como perdida (o recuperarla) con motivo
+  orden_perdida(m, yo, a){ if(!['admin', 'analista', 'lider'].includes(yo.rol)) return error('No tienes permiso para hacer esto'); m.datos.perdidas = m.datos.perdidas || {};
+    if(a.p_recuperar){ if(!esSenior(yo)) return error('La recupera el administrador o la Senior'); if(!m.datos.perdidas[a.p_orden]) return error('Esa orden no está marcada como perdida'); delete m.datos.perdidas[a.p_orden]; (m.bitacora = m.bitacora || []).push({ accion: 'orden_recuperada', orden: a.p_orden }); return null; }
+    const o = ordenesAbiertas(m, yo.rol === 'lider' ? yo : { rol: 'admin' }).find((x) => x.orden_id === Number(a.p_orden)); if(!o) return error(yo.rol === 'lider' ? 'Esa orden no es tuya' : 'No encontré esa orden');
+    if(String(a.p_motivo || '').trim().length < 4) return error('Escribe el motivo');
+    const c = m.datos.clientes.find((x) => x.id === o.cliente_id);
+    m.datos.perdidas[o.orden_id] = { orden_id: o.orden_id, numero: o.numero, creada_en: o.creada_en, cliente_id: o.cliente_id, cliente: o.cliente, lider: o.lider, lider_id: c ? c.lider_id : null, perdida_en: new Date().toISOString(), perdida_por: yo.nombre, motivo: String(a.p_motivo).trim() };
+    (m.bitacora = m.bitacora || []).push({ accion: 'orden_perdida', orden: o.orden_id, motivo: String(a.p_motivo).trim() }); return null; },
+  comisiones_bloques(m, yo){ if(!['admin', 'analista', 'lider', 'abogado'].includes(yo.rol)) return error('No tienes permiso para hacer esto');
+    const k = m.datos.cambiosK || { filas: [] }; const lim = Date.now() - 5 * 86400000;
+    const eq = (id) => { const p = m.personas.find((x) => x.id === id); return p ? p.equipo_com || 'corporativas' : 'corporativas'; };
+    const ordenes = ordenesAbiertas(m, yo).filter((o) => new Date(o.inicio || o.creada_en).getTime() > lim).map((o) => { const c = m.datos.clientes.find((x) => x.id === o.cliente_id); const lid = c ? c.lider_id : null;
+      const sub = c ? (c.documentos || []).filter((d) => (d.archivos || []).length).length : 0; const falt = c ? faltantes(c).filter((x) => x.e === 'falta').length : null;
+      return Object.assign({}, o, { lider_id: lid, equipo: eq(lid), rif: c && !c.provisional ? c.doc_tipo + '-' + c.doc_numero : null, docs: { subidos: sub, faltan: falt } }); });
+    const migraciones = (k.filas || []).filter((c) => ['migracion', 'ambos'].includes(c.tipo) && c.origen !== 'historico' && (['sin_registro', 'por_revisar', 'por_emitir', 'por_confirmar'].includes(c.estado) || (c.estado === 'confirmado' && !c.instalacion_id && c.fecha_cambio && corteDe(String(c.fecha_cambio).slice(0, 10)) === enCurso())))
+      .filter((c) => yo.rol !== 'lider' || cambioDueno(m, c) === yo.id || c.creado_por_id === yo.id)
+      .map((c) => { const d = cambioDueno(m, c); return { id: c.id, estado: c.estado, borrador: !!c.borrador, tipo: c.tipo, comision: c.comision || null, fecha: c.fecha_cambio || c.creado_en, titular: c.titular.nombre, doc_tipo: c.titular.tipo, doc: c.titular.doc, servicios: c.servicios,
+        categoria_anterior: c.categoria_anterior, categoria_nueva: c.categoria_nueva, cliente_id: c.cliente_id, lider: d ? (m.personas.find((p) => p.id === d) || {}).nombre : null, lider_id: d, equipo: eq(d),
+        faltan: requisitosCambio(m, c).filter((r) => ['falta', 'devuelto'].includes(r.estado)).length }; });
+    return { corte: enCurso(), ahora: new Date().toISOString(), ordenes, migraciones }; },
   orden_es_cliente(m, yo, a){
     if(!['admin', 'analista', 'lider'].includes(yo.rol)) return error('No tienes permiso para hacer esto');
     const i = (m.datos.sueltas || []).findIndex((o) => o.id === Number(a.p_orden)); if(i < 0) return error('Esa orden ya tiene cliente');
@@ -1020,23 +1050,23 @@ const RPC = {
     return { total: f.length, pagina: pg, por_pagina: pp, filas: f.slice(pg * pp, pg * pp + pp), lista: a.p_grafica === 'legal' ? 'clientes.html?f=todos' : a.p_grafica === 'sin_instalar' ? 'comisiones.html?t=sin_instalar' : null };
   },
   // ----- Lote 22/10: índice del TAD (sucursal + código + equipo) y Migraciones -----
-  tad_indice_iniciar(m, yo, a){ if(yo.rol !== 'admin') return error('No tienes permiso para hacer esto'); const k = m.datos.cambiosK || (m.datos.cambiosK = { idx: {}, cargas: [], filas: [], sec: 0, archivo: null });
+  tad_indice_iniciar(m, yo, a){ if(!['admin', 'analista'].includes(yo.rol)) return error('No tienes permiso para hacer esto'); const k = m.datos.cambiosK || (m.datos.cambiosK = { idx: {}, cargas: [], filas: [], sec: 0, archivo: null });
     const abierta = k.cargas.find((c) => !c.en && c.archivo === a.p_archivo); if(abierta) return abierta.id;
     k.cargas.push({ id: k.cargas.length + 1, archivo: a.p_archivo, total: a.p_total, filas: 0 }); return k.cargas.length; },
   tad_indice_parte(m, yo, a){ const k = m.datos.cambiosK; (a.p_filas || []).forEach((f) => { const c = String(f.c).replace(/^0+/, ''); const e = f.e ? String(f.e).toUpperCase() : ''; const cl = f.s + '-' + c + '-' + e;
       k.idx[cl] = { clave: cl, sucursal: f.s, codigo: c, equipo: e || null, doc_tipo: f.t, doc_numero: String(f.d || '').replace(/\D/g, '').replace(/^0+/, ''), nombre: f.n, plan: f.p, categoria: f.ca, estado: f.es, direccion: f.di, pon: f.pon || null, carga: a.p_carga, huella: f.h || null }; });
     k.cargas[a.p_carga - 1].filas += (a.p_filas || []).length; return (a.p_filas || []).length; },
   // Lote 27/10: solo suben las filas cuya huella cambió; las iguales se marcan como vistas en esta carga
-  tad_indice_comparar(m, yo, a){ if(yo.rol !== 'admin') return error('No tienes permiso para hacer esto'); const k = m.datos.cambiosK; const faltan = [];
+  tad_indice_comparar(m, yo, a){ if(!['admin', 'analista'].includes(yo.rol)) return error('No tienes permiso para hacer esto'); const k = m.datos.cambiosK; const faltan = [];
     (a.p_filas || []).forEach((f, i) => { const cl = f.s + '-' + String(f.c).replace(/^0+/, '') + '-' + (f.e ? String(f.e).toUpperCase() : ''); const x = k.idx[cl];
       if(x && f.h && x.huella === f.h){ if(x.carga !== a.p_carga){ x.carga = a.p_carga; k.cargas[a.p_carga - 1].filas++; } } else faltan.push(i); });
     m.comparadas = (m.comparadas || 0) + (a.p_filas || []).length; return faltan; },
   // Lote 05/11 G: bloques de 1.000 claves ordenadas; un bloque igual a uno ya cerrado solo se marca como visto
-  tad_indice_bloques(m, yo, a){ if(yo.rol !== 'admin') return error('No tienes permiso para hacer esto'); const k = m.datos.cambiosK; k.pendBloques = k.pendBloques || {};
+  tad_indice_bloques(m, yo, a){ if(!['admin', 'analista'].includes(yo.rol)) return error('No tienes permiso para hacer esto'); const k = m.datos.cambiosK; k.pendBloques = k.pendBloques || {};
     const vistos = k.bloquesCerrados || {}; const dif = [];
     (a.p_bloques || []).forEach((b, i) => { const s = b.a + '|' + b.z + '|' + b.h; (k.pendBloques[a.p_carga] = k.pendBloques[a.p_carga] || []).push(s); if(!vistos[s]) dif.push(i); });
     m.bloquesPedidos = (m.bloquesPedidos || 0) + 1; return dif; },
-  tad_indice_marcar(m, yo, a){ if(yo.rol !== 'admin') return error('No tienes permiso para hacer esto'); const k = m.datos.cambiosK; let n = 0;
+  tad_indice_marcar(m, yo, a){ if(!['admin', 'analista'].includes(yo.rol)) return error('No tienes permiso para hacer esto'); const k = m.datos.cambiosK; let n = 0;
     (a.p_bloques || []).forEach((b) => Object.values(k.idx).forEach((x) => { if(x.clave >= b.a && x.clave <= b.z && x.carga !== a.p_carga){ x.carga = a.p_carga; n++; } }));
     k.cargas[a.p_carga - 1].filas += n; m.marcadas = (m.marcadas || 0) + n; return n; },
   tad_indice_cerrar(m, yo, a){ const k = m.datos.cambiosK; k.bloquesCerrados = {}; ((k.pendBloques || {})[a.p_carga] || []).forEach((s) => { k.bloquesCerrados[s] = true; }); k.vigente = a.p_carga; k.cargas[a.p_carga - 1].en = new Date().toISOString(); let conf = 0; let avisos = 0;
@@ -1050,42 +1080,60 @@ const RPC = {
     const g = {}; Object.values(k.idx).filter((i) => i.carga === k.vigente && (esCod ? i.codigo === d || i.doc_numero === d : d.length >= 5 ? i.doc_numero.indexOf(d) === 0 || d.indexOf(i.doc_numero) === 0 : String(i.nombre).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').indexOf(n) >= 0))
       .forEach((i) => { (g[i.doc_numero] = g[i.doc_numero] || { doc_tipo: i.doc_tipo, doc_numero: i.doc_numero, nombre: i.nombre, servicios: [] }).servicios.push(Object.assign({}, i, { empresa: empresa(i.categoria, i.plan) })); });
     return { sin_indice: false, titulares: Object.values(g) }; },
-  cambios_lista(m, yo){ if(!['admin', 'analista', 'lider'].includes(yo.rol)) return error('No tienes permiso para hacer esto'); const k = m.datos.cambiosK || { filas: [], cargas: [] }; const sen = esSenior(yo);
-    return { rol: yo.rol, desde: m.cambiosDesde || '2026-09-21', puedo: { revisar: yo.rol === 'admin', emitir: ['admin', 'analista'].includes(yo.rol), confirmar: sen, sin_registro: sen, coordinador: !!yo.coordinador, elegir_lider: ['admin', 'analista'].includes(yo.rol) },
-      indice: k.vigente ? { en: k.cargas[k.vigente - 1].en, filas: k.cargas[k.vigente - 1].filas } : null, archivo: k.archivo,
-      lideres: ['admin', 'analista'].includes(yo.rol) ? m.personas.filter((p) => p.rol === 'lider' && p.activo).map((p) => ({ id: p.id, nombre: p.nombre })) : [],
-      filas: (k.filas || []).filter((c) => (yo.rol !== 'lider' || c.lider_id === yo.id || c.creado_por_id === yo.id) && (c.estado !== 'sin_registro' || sen)).map((c) => cambioJson(m, c, yo)) }; },
+  cambios_lista(m, yo){ if(!['admin', 'analista', 'lider'].includes(yo.rol)) return error('No tienes permiso para hacer esto'); const k = m.datos.cambiosK || { filas: [], cargas: [] }; const sen = esSenior(yo); const lec = !!yo.lectura;
+    return { rol: yo.rol, yo: yo.id, desde: m.cambiosDesde || '2026-09-21', corte: enCurso(),
+      puedo: { revisar: yo.rol === 'admin' && !lec, emitir: ['admin', 'analista'].includes(yo.rol) && !lec, confirmar: sen && !lec, sin_registro: sen && !lec, asignar: sen && !lec, coordinador: !!yo.coordinador, elegir_lider: ['admin', 'analista'].includes(yo.rol) && !lec,
+        subir_reporte: ['admin', 'analista'].includes(yo.rol) && !lec, enviar_todos: sen && !lec, por_lider: yo.rol !== 'lider', nuevo: !lec, lectura: lec },
+      indice: k.vigente ? { en: k.cargas[k.vigente - 1].en, filas: k.cargas[k.vigente - 1].filas } : null, archivo: k.archivo, reporte: { hasta: k.hasta || null, en: k.archivo ? k.archivo.en : null },
+      lideres: ['admin', 'analista'].includes(yo.rol) ? m.personas.filter((p) => p.rol === 'lider' && p.activo).map((p) => ({ id: p.id, nombre: p.nombre, analista_id: p.analista_id || null })) : [],
+      filas: (k.filas || []).filter((c) => cambioVer(m, yo, c)).map((c) => cambioJson(m, c, yo)) }; },
   cambio_crear(m, yo, a){ const k = m.datos.cambiosK; const p = a.p_datos || {}; if(!k || !k.vigente) return error('Todavía no se ha subido el TAD completo');
     if(!['migracion', 'titularidad', 'ambos', 'residencial'].includes(p.tipo)) return error('Elige qué cambia');
     const sv = (p.servicios || []).map((cl) => k.idx[cl]).filter(Boolean); if(!sv.length) return error('Marca al menos un servicio');
     if(new Set(sv.map((x) => x.doc_numero)).size > 1) return error('Los servicios deben ser del mismo titular');
-    if(['migracion', 'ambos'].includes(p.tipo) && sv.every((x) => empresa(x.categoria, x.plan))) return error('Ese servicio ya es empresa (categoría PYME y plan EMP)');
+    if(['migracion', 'ambos'].includes(p.tipo) && !p.desde && sv.every((x) => empresa(x.categoria, x.plan))) return error('Ese servicio ya es empresa (categoría PYME y plan EMP)');
     if(p.tipo === 'residencial' && String(p.motivo || '').trim().length < 4) return error('Escribe el motivo del cambio a residencial');
-    if(k.filas.some((c) => ['por_revisar', 'por_emitir', 'por_confirmar', 'sin_registro'].includes(c.estado) && c.servicios.some((s) => (p.servicios || []).includes(s.clave)))) return error('Uno de esos servicios ya tiene un cambio en curso');
-    const lid = yo.rol === 'lider' ? yo.id : p.lider_id || null; const lider = lid ? (m.personas.find((x) => x.id === lid) || {}).nombre : null;
+    const d0 = p.desde ? k.filas.find((x) => x.id === Number(p.desde)) : null;
+    if(p.desde && (!d0 || !cambioVer(m, yo, d0))) return error('No encontré ese cambio'); if(d0 && d0.estado !== 'sin_registro') return error('Ese cambio ya se registró');
+    if(k.filas.some((c) => c !== d0 && ['por_revisar', 'por_emitir', 'por_confirmar', 'sin_registro'].includes(c.estado) && c.servicios.some((s) => (p.servicios || []).includes(s.clave)))) return error('Uno de esos servicios ya tiene un cambio en curso');
+    const lid = yo.rol === 'lider' ? yo.id : p.lider_id || (d0 ? cambioDueno(m, d0) : null); const lider = lid ? (m.personas.find((x) => x.id === lid) || {}).nombre : null;
     const nuevoCli = (doc, datos) => { let cli = m.datos.clientes.find((c) => c.doc_numero === doc); if(cli) return cli;
       cli = Object.assign({ id: 90000 + (++k.sec), estatus: 'documentos_solicitados', lider, lider_id: lid, servicios: [], representantes: [], documentos: [], hilo: [], instalaciones: [], orden: null, creado_en: new Date().toISOString(), direccion: null, correo_empresa: null, telefono: null }, datos);
       m.datos.clientes.push(cli); return cli; };
     const tc = p.tipo === 'residencial' ? m.datos.clientes.find((c) => c.doc_numero === sv[0].doc_numero) : nuevoCli(sv[0].doc_numero, { nombre: sv[0].nombre, doc_tipo: sv[0].doc_tipo, doc_numero: sv[0].doc_numero, es_natural: ['V', 'E'].includes(sv[0].doc_tipo) });
     let nuevo = null;
     if(['titularidad', 'ambos'].includes(p.tipo)){ const n = p.nuevo || {}; const d = String(n.doc || '').replace(/\D/g, '').replace(/^0+/, '');
-      if(d.length < 5) return error('Escribe la cédula o el RIF del nuevo titular'); if(String(n.nombre || '').trim().length < 3) return error('Escribe el nombre del nuevo titular');
-      if(!n.natural && String(n.rep_nombre || '').trim().length < 3) return error('Escribe el nombre del representante legal');
+      if(d.length < 5) return error('Sube el RIF del nuevo titular'); if(String(n.nombre || '').trim().length < 3) return error('Falta el nombre del nuevo titular');
       const cli = nuevoCli(d, { nombre: String(n.nombre).toUpperCase(), doc_tipo: n.tipo, doc_numero: d, es_natural: !!n.natural });
       nuevo = { tipo: n.tipo, doc: d, nombre: cli.nombre, natural: !!n.natural, cliente_id: cli.id, correo: n.correo || null, telefono: n.telefono || null, domicilio: n.domicilio || null, rep_nombre: n.rep_nombre || null, rep_cedula: n.rep_cedula || null }; }
     const c = { id: ++k.sec, tipo: p.tipo, estado: p.tipo === 'residencial' ? 'por_emitir' : 'por_revisar', origen: 'app', creado_en: new Date().toISOString(), creado_por: yo.nombre, creado_por_id: yo.id, lider_id: lid, lider,
       cliente_id: tc ? tc.id : null, titular: { tipo: sv[0].doc_tipo, doc: sv[0].doc_numero, nombre: sv[0].nombre, natural: ['V', 'E'].includes(sv[0].doc_tipo) }, nuevo,
       categoria_anterior: sv[0].categoria, categoria_nueva: ['migracion', 'ambos'].includes(p.tipo) ? 'PYME-1GB' : p.tipo === 'residencial' ? 'RESIDENCIAL' : null, plan_anterior: sv[0].plan,
       plan_nuevo: ['migracion', 'ambos'].includes(p.tipo) ? 'ORO-EMP' : p.tipo === 'residencial' ? 'RESIDENCIAL' : null, servicios: sv.map((x) => Object.assign({}, x)), nota: p.nota || null, motivo: p.motivo || null, aviso: null,
-      pagado_fuera: false, bitacora: [{ accion: 'cambio_creado', en: new Date().toISOString(), por: yo.nombre }] };
-    k.filas.push(c); avanzarCambio(m, c, yo); return c.id; },
+      pagado_fuera: false, borrador: !!p.borrador && p.tipo !== 'residencial', bitacora: [{ accion: p.borrador ? 'cambio_borrador' : 'cambio_creado', en: new Date().toISOString(), por: yo.nombre }] };
+    if(d0){ ['fecha_cambio', 'reporte', 'origen', 'id'].forEach((x) => { if(d0[x] !== undefined) c[x] = d0[x]; }); c.categoria_anterior = d0.categoria_anterior || c.categoria_anterior; c.bitacora = (d0.bitacora || []).concat(c.bitacora); k.filas.splice(k.filas.indexOf(d0), 1, c); }
+    else k.filas.push(c);
+    if(!c.borrador) avanzarCambio(m, c, yo); return c.id; },
+  cambio_enviar(m, yo, a){ const k = m.datos.cambiosK || { filas: [] }; const c = k.filas.find((x) => x.id === Number(a.p_id)); if(!c || !cambioVer(m, yo, c)) return error('No encontré ese cambio');
+    if(!c.borrador) return error('Esa solicitud ya se envió'); const f = requisitosCambio(m, c).filter((r) => r.estado === 'falta').length;
+    if(f) return error(f === 1 ? 'Falta 1 documento por subir' : 'Faltan ' + f + ' documentos por subir');
+    c.borrador = false; c.bitacora.push({ accion: 'cambio_enviado', en: new Date().toISOString(), por: yo.nombre }); avanzarCambio(m, c, yo); return cambioJson(m, c, yo); },
+  cambio_recordar(m, yo, a){ if(!['admin', 'analista'].includes(yo.rol)) return error('No tienes permiso para hacer esto'); const k = m.datos.cambiosK || { filas: [] }; let lid = a.p_lider || null;
+    if(a.p_id){ const c = k.filas.find((x) => x.id === Number(a.p_id)); if(!c || !cambioVer(m, yo, c)) return error('No encontré ese cambio'); lid = cambioDueno(m, c); }
+    if(!lid) return error('Esa migración no tiene líder: asígnale uno primero'); const l = m.personas.find((p) => p.id === lid) || {};
+    if(!(esSenior(yo) || l.analista_id === yo.id)) return error('Se lo recuerda el administrador, la Senior o su analista');
+    const items = k.filas.filter((c) => (!a.p_id || c.id === Number(a.p_id)) && cambioDueno(m, c) === lid && c.tipo !== 'residencial' && (c.estado === 'sin_registro' || (c.estado === 'por_revisar' && (c.borrador || requisitosCambio(m, c).some((r) => ['falta', 'devuelto'].includes(r.estado))))))
+      .map((c) => ({ id: c.id, titular: c.titular.nombre, tipo: c.tipo, servicios: c.servicios, fecha: c.fecha_cambio || c.creado_en, estado: c.estado, borrador: !!c.borrador }));
+    if(!items.length) return error('No tiene migraciones por registrar');
+    (m.bitacora = m.bitacora || []).push({ accion: 'cambio_recordar', lider: lid, cambios: items.map((x) => x.id) });
+    return { lider: l.nombre, telefono: l.whatsapp || null, items }; },
   // Corrida 14/10 tarde: ajustes del OCR (arrancan en NO)
   ocr_ajustes(m){ return Object.assign({ aliados: false, revision: false, expediente: false }, m.datos.ocrAjustes || {}); },
   ocr_ajuste_guardar(m, yo, a){ if(yo.rol !== 'admin') return error('No tienes permiso para hacer esto');
     m.datos.ocrAjustes = Object.assign({ aliados: false, revision: false, expediente: false }, m.datos.ocrAjustes || {}, { [a.p_clave]: !!a.p_si }); (m.bitacora = m.bitacora || []).push({ accion: 'ajuste', clave: 'ocr_' + a.p_clave, valor: a.p_si ? 'si' : 'no' }); return Object.assign({}, m.datos.ocrAjustes); },
   cambio_categorias(m, yo){ if(!['admin', 'analista', 'lider'].includes(yo.rol)) return error('No tienes permiso para hacer esto'); return CATEGORIAS.slice(); },
   cambio_detalle(m, yo, a){ const k = m.datos.cambiosK || { filas: [] }; const c = k.filas.find((x) => x.id === Number(a.p_id)); if(!c) return error('No encontré ese cambio');
-    if(c.estado === 'sin_registro' && !esSenior(yo)) return error('No encontré ese cambio');
+    if(!cambioVer(m, yo, c)) return error('No encontré ese cambio');
     return Object.assign(cambioJson(m, c, yo), { requisitos: requisitosCambio(m, c), tad_hoy: k.vigente ? evaluarCambio(k, c) : null,
       actual_contacto: { correo: 'actual@titular.test', telefono: '0261-555 00 11', direccion: (c.servicios[0] || {}).direccion || null },
       nuevo_contacto: c.nuevo ? { correo: c.nuevo.correo, telefono: c.nuevo.telefono, direccion: c.nuevo.domicilio } : null, bitacora: c.bitacora }); },
@@ -1097,16 +1145,35 @@ const RPC = {
     else if(ac === 'confirmar'){ if(!sen) return error('Solo el administrador o el Analista Senior'); if(!a.p_nota) return error('Escribe por qué se confirma a mano'); confirmarCambio(m, c); }
     else if(['asignar', 'error', 'revertido'].includes(ac)){ if(!sen) return error('Solo el administrador o el Analista Senior'); if(c.estado !== 'sin_registro') return error('Ese cambio ya no está sin registro');
       if(ac === 'asignar'){ if(!a.p_lider) return error('Elige el líder'); c.lider_id = a.p_lider; c.lider = (m.personas.find((p) => p.id === a.p_lider) || {}).nombre;
-        if(c.tipo === 'residencial') confirmarCambio(m, c, c.creado_en); else { c.estado = 'por_revisar'; avanzarCambio(m, c, yo); } }
+        c.sugerido_id = null; if(c.tipo === 'residencial') confirmarCambio(m, c, c.fecha_cambio || c.creado_en); }
       else c.estado = ac; }
     else return error('Acción no reconocida');
     c.bitacora.push({ accion: 'cambio_' + ac, en: new Date().toISOString(), por: yo.nombre }); return null; },
-  cambios_archivo_cargar(m, yo, a){ if(yo.rol !== 'admin') return error('No tienes permiso para hacer esto'); const k = m.datos.cambiosK || (m.datos.cambiosK = { idx: {}, cargas: [], filas: [], sec: 0 });
-    let ign = 0; let n = 0; let fec = 0;
-    (a.p_filas || []).forEach((f) => { if((/radius/i.test(f.operador || '') && /^\s*\d+\s*$/.test(f.anterior || '')) || f.anterior === f.actual){ ign++; return; } n++;
-      const fi = /^\d{1,2}-\d{1,2}-\d{4}/.test(f.fecha || '') ? f.fecha.slice(6, 10) + '-' + f.fecha.slice(3, 5) + '-' + f.fecha.slice(0, 2) + 'T12:00:00Z' : null;
-      k.filas.filter((x) => ['por_emitir', 'por_confirmar', 'confirmado', 'sin_registro'].includes(x.estado) && x.origen !== 'historico' && x.servicios.some((s) => s.codigo === String(f.codigo).replace(/^0+/, ''))).forEach((x) => { x.fecha_cambio = fi; fec++; }); });
-    k.archivo = { en: new Date().toISOString(), filas: n }; return { filas: n, ignoradas: ign, con_fecha: fec }; },
+  cambios_archivo_cargar(m, yo, a){ if(!['admin', 'analista'].includes(yo.rol)) return error('No tienes permiso para hacer esto'); const k = m.datos.cambiosK || (m.datos.cambiosK = { idx: {}, cargas: [], filas: [], sec: 0 });
+    // Lote 16/11 A: el mismo filtro del servidor (descartes, activaciones, PYME a PYME) y el emparejamiento por código
+    const pyme = (x) => /pyme/i.test(x || ''); const r = { filas: 0, a_pyme: 0, sin_registrar: 0, residencial: 0, descartadas: 0, repetidas: 0, registradas: 0, nuevas: 0, hasta: null };
+    k.vistos = k.vistos || {};
+    (a.p_filas || []).forEach((f) => { r.filas++; const cod = String(f.codigo || '').replace(/^0+/, ''); const ant = String(f.anterior || '').toUpperCase().trim(); const act = String(f.actual || '').toUpperCase().trim();
+      const fi = /^\d{1,2}-\d{1,2}-\d{4}/.test(f.fecha || '') ? f.fecha.slice(6, 10) + '-' + f.fecha.slice(3, 5) + '-' + f.fecha.slice(0, 2) : null;
+      if(!cod || !fi || /^(RECONEXION( 0?2)?|USO INTERNO|EMPLEADOS?|EXONERADOS?|1 ?GB ?- ?REACTIVACION)$/.test(act.normalize('NFD').replace(/[\u0300-\u036f]/g, '')) || /^0*(56|58|2)$/.test(ant) || (/change profile from radius/i.test(f.comentario || '') && /^\d+$/.test(ant)) || pyme(ant) === pyme(act)){ r.descartadas++; return; }
+      if(k.vistos[cod + '|' + fi]){ r.repetidas++; return; } k.vistos[cod + '|' + fi] = 1;
+      const ap = pyme(act); if(ap) r.a_pyme++; else r.residencial++; if(!r.hasta || fi > r.hasta) r.hasta = fi;
+      const rep = { fecha: fi, comentario: f.comentario || null, operador: f.operador || null }; const ts = fi + 'T16:00:00Z';
+      const z = k.filas.filter((x) => !['cancelado', 'error', 'revertido'].includes(x.estado) && x.origen !== 'historico' && x.tipo !== 'titularidad' && (x.tipo === 'residencial') === !ap && x.servicios.some((s) => String(s.codigo).replace(/^0+/, '') === cod) && !(x.reporte && x.estado === 'confirmado'))
+        .sort((p1, p2) => (p1.estado === 'sin_registro') - (p2.estado === 'sin_registro'))[0];
+      const sug = () => { const n = String(f.comentario || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); const l = m.personas.filter((p) => p.rol === 'lider' && p.activo && new RegExp('\\b' + p.nombre.split(' ')[0].toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '') + '\\b').test(n)); return l.length === 1 ? l[0].id : null; };
+      if(z){ z.fecha_cambio = ts; z.reporte = rep;
+        if(z.estado === 'sin_registro'){ const d = cambioDueno(m, z); if(d){ z.lider_id = d; z.lider = (m.personas.find((p) => p.id === d) || {}).nombre; } else z.sugerido_id = sug(); if(ap) r.sin_registrar++; }
+        else { if(['por_emitir', 'por_confirmar'].includes(z.estado)) confirmarCambio(m, z, ts); r.registradas++; }
+        return; }
+      const i = Object.values(k.idx).find((x) => String(x.codigo).replace(/^0+/, '') === cod) || null; const cli = i ? m.datos.clientes.find((c) => c.doc_numero === i.doc_numero) : null;
+      const lid = cli ? cli.lider_id || null : null;
+      k.filas.push({ id: ++k.sec, tipo: ap ? 'migracion' : 'residencial', estado: 'sin_registro', origen: 'archivo', creado_en: new Date().toISOString(), creado_por: null, lider_id: lid, lider: lid ? (m.personas.find((p) => p.id === lid) || {}).nombre : null,
+        sugerido_id: lid ? null : sug(), cliente_id: cli ? cli.id : null, titular: { tipo: i ? i.doc_tipo : 'J', doc: i ? i.doc_numero : '', nombre: i ? i.nombre : f.nombre, natural: i ? ['V', 'E'].includes(i.doc_tipo) : false }, nuevo: null,
+        categoria_anterior: ant, categoria_nueva: act, servicios: i ? [Object.assign({}, i)] : [{ codigo: cod }], fecha_cambio: ts, reporte: rep, aviso: null, pagado_fuera: false, bitacora: [{ accion: 'cambio_sin_registro', en: new Date().toISOString(), por: null }] });
+      if(ap) r.sin_registrar++; r.nuevas++; });
+    k.archivo = { en: new Date().toISOString(), filas: r.a_pyme + r.residencial }; if(r.hasta && (!k.hasta || r.hasta > k.hasta)) k.hasta = r.hasta;
+    m.llamadas.push(['cambios_reporte', r]); return Object.assign({ con_fecha: r.registradas, ignoradas: r.descartadas + r.repetidas }, r); },
   cambio_comision(){ return error('Las migraciones ya no se deciden a mano: comisionan solas con Legal y pago'); },
   migraciones_corte(m, yo, a){ return { corte: a.p_corte, residencial: (m.datos.migCorte || {}).residencial || [], historico: (m.datos.migCorte || {}).historico || [] }; },
   subidas_ultimas(m){ const k = m.datos.cambiosK || {}; return { tad: null, odoo: null, instalaciones: null, indice: k.vigente ? k.cargas[k.vigente - 1].en : null, cambios: k.archivo ? k.archivo.en : null, ip: m.datos.ipEn || null }; },
@@ -1164,7 +1231,7 @@ const RPC = {
     if(!['admin', 'analista', 'lider', 'abogado'].includes(yo.rol)) return error('No tienes permiso para hacer esto');
     const h = hoy(); const jefe = esSenior(yo); const coord = !!yo.coordinador; let quien = yo;
     if(a.p_persona && a.p_persona !== yo.id){ quien = m.personas.find((p) => p.id === a.p_persona); if(!quien || !(jefe || (coord && quien.rol === 'analista'))) return error('No puedes ver el trabajo de esa persona'); }
-    const vista = quien !== yo ? (quien.rol === 'analista' ? (quien.senior ? 'admin' : quien.coordinador ? 'coord' : 'analista') : quien.rol) : jefe ? 'admin' : coord ? 'coord' : yo.rol;
+    const vista = quien !== yo ? (quien.rol === 'analista' ? (quien.senior ? 'admin' : quien.coordinador ? 'coord' : 'analista') : quien.rol) : yo.rol === 'admin' ? 'admin' : coord ? 'coord' : jefe ? 'admin' : yo.rol;   // lote 16/11 A: el Coordinador conserva su tablero
     // Lote 05/11 D5: lo pedido (requerimientos abiertos) le sale al líder en "Devueltos o pedidos"
     const pedidos = []; m.datos.clientes.forEach((c) => { faltantes(c); (c.requerimientos || []).filter((z) => z.estado === 'abierto').forEach((z) => pedidos.push({ tipo: 'pedido', clave: String(z.id), cliente_id: c.id, titulo: c.nombre, detalle: 'Falta: ' + z.texto, lider_id: c.lider_id, analista_id: null, para: 'lider', desde: z.en, vence: null, ref: { casilla: z.casilla, numero: z.numero } })); });
     const base = asignar(m, pendientesBase(m).concat(m.datos.extra || []).concat(buzonMundo(m)).concat(pedidos));
@@ -1184,7 +1251,7 @@ const RPC = {
       const l = base.filter((x) => (p.rol === 'lider' && x.para === 'lider' && x.lider_id === p.id) || (p.rol === 'analista' && x.para === 'analista' && x.analista_id === p.id) || (p.rol === 'abogado' && x.para === 'abogado'));
       return { id: p.id, nombre: p.nombre, rol: p.rol === 'lider' ? 'Líder' : p.rol === 'abogado' ? 'Legal' : 'Analista', n: l.length, venc: l.filter((x) => x.vence < h).length, hoy: l.filter((x) => x.vence === h).length }; }).filter((e) => e.n) : [];
     m.datos.notas = m.datos.notas || [];
-    return { rol: yo.rol, vista, senior: jefe && yo.rol !== 'admin', coordinador: coord, hoy: h, nombre: quien.nombre, persona: quien !== yo ? { id: quien.id, nombre: quien.nombre } : null,
+    return { rol: yo.rol, vista, senior: jefe && yo.rol !== 'admin' && !coord, coordinador: coord, hoy: h, nombre: quien.nombre, persona: quien !== yo ? { id: quien.id, nombre: quien.nombre } : null,
       solo_consulta: quien !== yo, vende: ['lider', 'analista'].includes(quien.rol) && ['corporativas', 'canales'].includes(equipoDe(m, quien.nombre)), hoy_hechos: 0,
       notas: quien === yo ? m.datos.notas.filter((n) => n.perfil === yo.id).map((n) => Object.assign({}, n, { cliente: n.cliente_id ? (m.datos.clientes.find((c) => c.id === n.cliente_id) || {}).nombre : null })) : [],
       corte: enCurso(), limite: hoy(), items, puedo_crear_gestion: jefe || coord,
@@ -1970,7 +2037,7 @@ const RPC = {
     return { aprobados: ap, devueltos: dv, omitidos: om, listos };
   },
   actualizar_estado(m, yo){
-    if(yo.rol !== 'admin' && !esSenior(yo)) return error('No tienes permiso para hacer esto');
+    if(!['admin', 'analista'].includes(yo.rol)) return error('No tienes permiso para hacer esto');
     const cs = (m.cargas || []).filter((c) => c.estado !== 'procesando'); const ult = (f) => cs.filter((c) => c.fuente === f && ['lista', 'con_errores'].includes(c.estado)).map((c) => c.en).sort().slice(-1)[0] || null;
     const F = [['tad', 'TAD', 'diaria'], ['odoo', 'Órdenes de Odoo', 'diaria'], ['instalaciones', 'Órdenes de instalación', 'diaria'], ['kmz', 'Mapa de red (KMZ)', 'mapa'], ['cambios', 'Cambios de categoría', 'cuando'], ['ip', 'IP de clientes empresariales', 'cuando'], ['dedicados', 'Dedicados', 'cuando']];
     const porDia = {}; cs.slice().reverse().forEach((c) => { const d = fechaClave(caracas(c.en)); (porDia[d] = porDia[d] || []).push({ id: c.id, fuente: c.fuente, archivo: c.archivo, en: c.en, por: c.por, estado: c.estado, filas: c.filas, resumen: c.resumen }); });
@@ -2057,9 +2124,9 @@ function detalleFact(m, yo, c){
     historial: m.hist.filter((h) => h.consulta_id === c.id).map((h) => Object.assign({ fecha_mapa: (m.mapas.find((x) => x.id === h.mapa_id) || {}).fecha_mapa }, h)).reverse() });
 }
 function consultaDe(m, yo, id, editar){
-  if(!['admin', 'analista', 'lider'].includes(yo.rol)) return { e: error('No tienes permiso para hacer esto') };
+  if(!['admin', 'analista', 'lider', 'abogado', 'aliado'].includes(yo.rol)) return { e: error('No tienes permiso para hacer esto') };
   const c = (m.consultas || []).find((x) => x.id === Number(id)); if(!c) return { e: error('Esa consulta no existe') };
-  if(c.lider_id !== yo.id && (yo.rol === 'lider' || (editar && yo.rol !== 'admin'))) return { e: error('No tienes acceso a esta consulta') };
+  if(c.lider_id !== yo.id && (['lider', 'abogado', 'aliado'].includes(yo.rol) || (editar && yo.rol !== 'admin'))) return { e: error('No tienes acceso a esta consulta') };
   return { c };
 }
 function iniciarFact(m){ m.mapas = m.mapas || []; m.zonas = m.zonas || []; m.consultas = m.consultas || []; m.hist = m.hist || []; m.secF = m.secF || 70000; }
@@ -2090,7 +2157,7 @@ const RPC_FACT = {
       cambio_estado: ej.length, ahora_operativas: ej.filter((x) => op(x.a) && !op(x.de)).length, ejemplos: ej }, consultas: { revisadas: rev, cambiaron: cam, con_red: red } };
     (m.bitacora = m.bitacora || []).push({ usuario: yo.usuario, accion: 'mapa_red_subido', registro_id: String(mp.id), en: new Date().toISOString() });
     return mp.resumen; },
-  fact_consultar(m, yo, a){ iniciarFact(m); if(!['admin', 'analista', 'lider'].includes(yo.rol)) return error('No tienes permiso para hacer esto');
+  fact_consultar(m, yo, a){ iniciarFact(m); if(!['admin', 'analista', 'lider', 'abogado', 'aliado'].includes(yo.rol)) return error('No tienes permiso para hacer esto');
     const mp = vigente(m); if(!mp) return error('Todavía no hay mapa de red. Pide al administrador que lo suba en Actualizar');
     if(!['pyme', 'dedicado'].includes(a.p_tipo)) return error('Elige si es PYME o Dedicado');
     const x = evaluar(m, a.p_lat, a.p_lng, a.p_tipo, mp.id);
@@ -2103,7 +2170,7 @@ const RPC_FACT = {
     return { mapa: { id: mp.id, fecha: mp.fecha_mapa }, zonas: m.zonas.filter((z) => z.mapa_id === mp.id).map((z) => { const r = medir(a.p_lng, a.p_lat, z);
       return { id: z.id, mdt: z.mdt, estado: z.estado, operativa: z.operativa, exclusividad: z.exclusividad, aliado: z.aliado, capacidad: z.capacidad, ciudad: z.ciudad, punto: z.punto, dentro: r.dentro, distancia_m: Math.round(r.d), forma: z.lats.map((la, i) => [la, z.lngs[i]]) }; })
       .filter((z) => z.dentro || z.distancia_m <= 2000).sort((x, y) => (x.dentro ? 0 : x.distancia_m) - (y.dentro ? 0 : y.distancia_m)) }; },
-  fact_lista(m, yo, a){ iniciarFact(m); if(!['admin', 'analista', 'lider'].includes(yo.rol)) return error('No tienes permiso para hacer esto');
+  fact_lista(m, yo, a){ iniciarFact(m); if(!['admin', 'analista', 'lider', 'abogado', 'aliado'].includes(yo.rol)) return error('No tienes permiso para hacer esto');
     const mias = m.consultas.filter((c) => yo.rol !== 'lider' || c.lider_id === yo.id); const conRed = (c) => c.seguimiento === 'abierta' && c.resultado === 'hay_red' && c.anterior && c.anterior !== 'hay_red' && !c.visto;
     const f = a.p_filtro || 'abiertas'; const pasa = (c) => f === 'con_red' ? conRed(c) : f === 'espera' ? c.seguimiento === 'abierta' && c.resultado === 'espera' : f === 'excepcion' ? c.seguimiento === 'abierta' && c.resultado === 'excepcion' : f === 'cerradas' ? c.seguimiento !== 'abierta' : c.seguimiento === 'abierta';
     const filt = mias.filter(pasa).sort((x, y) => (x.visto - y.visto) || y.creada_en.localeCompare(x.creada_en)); const mp = vigente(m);
@@ -2170,8 +2237,10 @@ function mundoAliados(m, ALIADO, CANALES){
     aliado_inicio(m, yo){ if(!deAliado(yo)) return err('Tu usuario no está enlazado a un aliado. Avísale al administrador'); if(m.fallaInicio) return err('No se pudo leer'); return { aliado: yo.nombre, solicitudes: A.sols.filter((s) => s.aliado_id === deAliado(yo)), referidos: A.refs.filter((r) => r.aliado_id === deAliado(yo)) }; },
     aliados_registro(m, yo){ if(['admin', 'analista', 'lider', 'abogado'].indexOf(yo.rol) < 0) return err('No tienes permiso para hacer esto');
       const tu = (c) => yo.rol === 'lider' && c === 9003;
-      return { solicitudes: A.sols.map((x) => Object.assign({ tu_cliente: tu(x.cliente_id) }, x)), referidos: A.refs.map((x) => Object.assign({ tu_cliente: false }, x)), sin_permiso: A.sinp.map((x) => Object.assign({ tu_cliente: false }, x)),
-        viejas: [{ id: 41, cliente: 'Licorería Prueba', rif: 'J000000053', aliado: 'Conecta Sur Ejemplo', situacion: 'consulta' }], lideres: yo.rol === 'admin' ? ['Lucía Ferrer', 'Líder Dos'] : [], puedo: { decidir: yo.rol === 'admin', prueba: yo.rol === 'admin' } }; },
+      // Lote 16/11 A: el equipo solo ve lo suyo (cartera o top); el administrador todo. La gerencia, como el administrador y con "carterizado"
+      const todo = yo.rol === 'admin'; const mio = (c) => todo || tu(c);
+      return { solicitudes: A.sols.filter((x) => mio(x.cliente_id)).map((x) => Object.assign({ tu_cliente: tu(x.cliente_id), carterizado: x.cliente_id === 9003 }, x)), referidos: A.refs.filter(() => todo).map((x) => Object.assign({ tu_cliente: false }, x)), sin_permiso: A.sinp.filter(() => todo).map((x) => Object.assign({ tu_cliente: false }, x)),
+        viejas: todo ? [{ id: 41, cliente: 'Licorería Prueba', rif: 'J000000053', aliado: 'Conecta Sur Ejemplo', situacion: 'consulta' }] : [], lideres: yo.rol === 'admin' ? ['Lucía Ferrer', 'Líder Dos'] : [], puedo: { decidir: yo.rol === 'admin' && !yo.lectura, prueba: yo.rol === 'admin' && !yo.lectura, todo } }; },
     aliados_bandeja(m, yo){ if(yo.rol !== 'admin') return err('No tienes permiso para hacer esto'); return { solicitudes: A.sols, referidos: A.refs, sin_permiso: A.sinp, viejas: [{ id: 'v1', cliente: 'Licorería Prueba', rif: 'J000000053', aliado: 'Conecta Sur', situacion: 'consulta' }], lideres: ['Lucía Ferrer', 'Líder Dos'] }; },
     solicitud_crear(m, yo, a){ const ya = A.sols.find((s) => s.aliado_id === deAliado(yo) && s.etiqueta === 'borrador' && !s.rif); if(ya){ ya.tipo = a.p_tipo; return { id: ya.id, codigo: ya.codigo }; }
       const id = ++A.n; A.sols.push({ id, codigo: 'AL-00' + id, tipo: a.p_tipo, etiqueta: 'borrador', aliado: yo.nombre, aliado_id: deAliado(yo), creada_en: hoy, actualizada_en: hoy }); return { id, codigo: 'AL-00' + id }; },

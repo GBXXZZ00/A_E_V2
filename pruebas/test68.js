@@ -17,7 +17,7 @@ const { ok, cerrar } = marcador();
       if(nPl){
         ok(nombre + ' ' + cargo + ': la línea de arriba lo dice', /Todo plegado: abre solo lo que vas a trabajar/.test(tx));
         const k = await p.getAttribute('#cuerpo details.bz-pl >> nth=0', 'data-pl') || await p.getAttribute('#cuerpo details.bz-pl >> nth=0', 'data-cn');
-        await p.click('#cuerpo details.bz-pl >> nth=0 >> summary');
+        await p.click('#cuerpo details.bz-pl >> nth=0 >> summary'); await p.waitForTimeout(400);   // que se guarde antes de recargar
         await p.reload(); await p.waitForTimeout(1500);
         ok(nombre + ' ' + cargo + ': lo abierto se recuerda al volver', (await p.locator('#cuerpo details.bz-pl >> nth=0').getAttribute('open')) !== null, k);
       }
